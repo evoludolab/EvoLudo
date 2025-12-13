@@ -53,6 +53,8 @@ public abstract class AbstractLattice extends AbstractGeometry {
 	}
 
 	/**
+	 * Report whether the lattice uses fixed boundaries instead of periodic ones.
+	 * 
 	 * @return {@code true} if the lattice uses fixed boundaries instead of periodic
 	 *         ones.
 	 */
@@ -62,6 +64,8 @@ public abstract class AbstractLattice extends AbstractGeometry {
 
 	/**
 	 * Set whether the lattice uses fixed boundaries.
+	 * 
+	 * @param fixedBoundary {@code true} for fixed boundary conditions
 	 */
 	public void setFixedBoundary(boolean fixedBoundary) {
 		this.fixedBoundary = fixedBoundary;
@@ -70,6 +74,9 @@ public abstract class AbstractLattice extends AbstractGeometry {
 	/**
 	 * Helper to strip {@code f|F} boundary markers from the argument string and
 	 * store the result on the instance.
+	 * 
+	 * @param spec CLI fragment describing the geometry
+	 * @return the cleaned specification without boundary decorators
 	 */
 	protected String stripBoundary(String spec) {
 		if (spec == null || spec.isEmpty())

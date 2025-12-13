@@ -697,7 +697,10 @@ public class HistoGraph extends AbstractGraph<double[]> implements BasicTooltipP
 
 	/**
 	 * Handle the case where {@code yMax <= 1.0} by selecting an autoscale index and
-	 * updating style.yMax; returns the number of y-levels to use.
+	 * updating {@link GraphStyle#yMax}.
+	 * 
+	 * @param yMax observed maximum bin height
+	 * @return number of y-levels to use
 	 */
 	private int handleSmallYMax(double yMax) {
 		int yLevels = selectAutoscaleIndexForYMax(yMax);
@@ -706,8 +709,11 @@ public class HistoGraph extends AbstractGraph<double[]> implements BasicTooltipP
 	}
 
 	/**
-	 * Handle the case where yMax > 1.0 by rounding yMax up if necessary and
-	 * determining/rounding yMin when applicable.
+	 * Handle the case where {@code yMax > 1.0} by rounding the maximum up if
+	 * necessary and determining/rounding {@code yMin} when applicable.
+	 * 
+	 * @param yMax   observed maximum bin height
+	 * @param myData histogram counts
 	 */
 	private void handleLargeYMax(double yMax, double[] myData) {
 		if (yMax > style.yMax || yMax < 0.8 * style.yMax) {
@@ -728,8 +734,12 @@ public class HistoGraph extends AbstractGraph<double[]> implements BasicTooltipP
 	}
 
 	/**
-	 * Compute min/max from per-bin normalization row; returns {yMin, yMax}.
-	 * If no valid normalization entries are found returns {0.0, 1.0}.
+	 * Compute min/max from per-bin normalization row; returns {yMin, yMax}. If no
+	 * valid normalization entries are found returns {0.0, 1.0}.
+	 * 
+	 * @param myData histogram counts
+	 * @param norm   per-bin normalization data
+	 * @return two-element array {yMin, yMax}
 	 */
 	private double[] computeNormBounds(double[] myData, double[] norm) {
 		double yMin = Double.MAX_VALUE;
@@ -751,8 +761,10 @@ public class HistoGraph extends AbstractGraph<double[]> implements BasicTooltipP
 	}
 
 	/**
-	 * Adjusts autoscaleidx to match the given yMax and returns the number of
-	 * y-levels for the selected autoscale row.
+	 * Adjust {@link #autoscaleidx} to match the given {@code yMax}.
+	 * 
+	 * @param yMax observed maximum bin height
+	 * @return number of y-levels for the selected autoscale row
 	 */
 	private int selectAutoscaleIndexForYMax(double yMax) {
 		while (yMax > autoscale[autoscaleidx][0])
@@ -765,6 +777,12 @@ public class HistoGraph extends AbstractGraph<double[]> implements BasicTooltipP
 	/**
 	 * Draw bars for the histogram using either per-bin normalization row or global
 	 * normalization flag.
+	 * 
+	 * @param myData   histogram values
+	 * @param norm     per-bin normalization data (may be {@code null})
+	 * @param barwidth width of a bar in pixels
+	 * @param h        total graph height
+	 * @param map      conversion factor from value to pixels
 	 */
 	private void drawBars(double[] myData, double[] norm, double barwidth, double h, double map) {
 		double xshift = 0;

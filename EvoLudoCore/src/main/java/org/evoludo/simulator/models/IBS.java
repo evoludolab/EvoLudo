@@ -181,6 +181,13 @@ public abstract class IBS extends Model {
 		statisticsSettings = new Statistics(this);
 	}
 
+	/**
+	 * Factory method to create an {@link IBSPopulation} instance for the provided
+	 * module type.
+	 * 
+	 * @param mod module requesting a population implementation
+	 * @return instantiated population
+	 */
 	private IBSPopulation<?, ?> createIBSPopulation(Module<?> mod) {
 		IBSPopulation<?, ?> pop = mod.createIBSPopulation();
 		if (pop != null)

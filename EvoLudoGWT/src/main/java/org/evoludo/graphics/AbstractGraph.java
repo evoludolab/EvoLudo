@@ -1275,6 +1275,12 @@ public abstract class AbstractGraph<B> extends FocusPanel
 		g.restore();
 	}
 
+	/**
+	 * Draw the bounding box of the graph frame.
+	 *
+	 * @param w frame width
+	 * @param h frame height
+	 */
 	private void drawFrameBorder(double w, double h) {
 		if (!style.showFrame)
 			return;
@@ -1285,6 +1291,13 @@ public abstract class AbstractGraph<B> extends FocusPanel
 		g.strokeRect(0.5, 0.5, w, h);
 	}
 
+	/**
+	 * Draw regular vertical guide lines, ticks, and labels.
+	 *
+	 * @param xLevels number of levels
+	 * @param w       frame width
+	 * @param h       frame height
+	 */
 	private void drawXLevels(int xLevels, double w, double h) {
 		if (xLevels <= 0)
 			return;
@@ -1314,6 +1327,12 @@ public abstract class AbstractGraph<B> extends FocusPanel
 		}
 	}
 
+	/**
+	 * Draw vertical guide lines at custom x positions.
+	 *
+	 * @param w frame width
+	 * @param h frame height
+	 */
 	private void drawCustomXLevels(double w, double h) {
 		if (style.customXLevels == null)
 			return;
@@ -1379,7 +1398,13 @@ public abstract class AbstractGraph<B> extends FocusPanel
 	}
 
 	/**
-	 * Compute the y-value for tick number n.
+	 * Compute the y-value for tick number {@code n}.
+	 *
+	 * @param n      tick index
+	 * @param frac   fractional spacing between ticks
+	 * @param yrange total y-range (possibly logarithmic)
+	 * @param ymin   minimum y-value (possibly logarithmic)
+	 * @return the y-value represented by the tick
 	 */
 	private double computeYVal(int n, double frac, double yrange, double ymin) {
 		double yval = ymin + (1.0 - n * frac) * yrange;
@@ -1390,6 +1415,11 @@ public abstract class AbstractGraph<B> extends FocusPanel
 
 	/**
 	 * Draw the y-axis tick label at the specified screen level.
+	 *
+	 * @param w     frame width
+	 * @param level screen y-position for the tick
+	 * @param n     tick index
+	 * @param yval  y-value represented by the tick
 	 */
 	private void drawYTickLabel(double w, double level, int n, double yval) {
 		setFont(style.ticksLabelFont);
@@ -1410,6 +1440,12 @@ public abstract class AbstractGraph<B> extends FocusPanel
 			g.fillText("%", xpos, ypos);
 	}
 
+	/**
+	 * Draw horizontal guide lines at custom y positions.
+	 *
+	 * @param w frame width
+	 * @param h frame height
+	 */
 	private void drawCustomYLevels(double w, double h) {
 		for (double level : style.customYLevels) {
 			if (level > style.yMax || level < style.yMin)
@@ -1420,6 +1456,12 @@ public abstract class AbstractGraph<B> extends FocusPanel
 		}
 	}
 
+	/**
+	 * Draw the x-axis label.
+	 *
+	 * @param w frame width
+	 * @param h frame height
+	 */
 	private void drawXAxisLabel(double w, double h) {
 		// x-axis label
 		if (!style.showXLabel || style.xLabel == null)
@@ -1430,6 +1472,12 @@ public abstract class AbstractGraph<B> extends FocusPanel
 		g.fillText(style.xLabel, xpos, ypos);
 	}
 
+	/**
+	 * Draw the y-axis label, including positioning logic based on tick labels.
+	 *
+	 * @param w frame width
+	 * @param h frame height
+	 */
 	private void drawYAxisLabel(double w, double h) {
 		// y-axis label
 		if (!style.showYLabel || style.yLabel == null)
@@ -1449,6 +1497,11 @@ public abstract class AbstractGraph<B> extends FocusPanel
 		fillTextVertical(ylabel, w + tickskip + style.tickLength, (h + g.measureText(ylabel).getWidth()) / 2);
 	}
 
+	/**
+	 * Draw the label shown inside the graph canvas.
+	 *
+	 * @param gscale current canvas scale factor
+	 */
 	private void drawGraphLabel(double gscale) {
 		final String PX_SANS_SERIF = "px sans-serif";
 		if (!style.showLabel || style.label == null)

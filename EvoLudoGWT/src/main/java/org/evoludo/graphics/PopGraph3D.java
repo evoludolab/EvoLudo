@@ -697,6 +697,13 @@ public class PopGraph3D extends GenericPopGraph<MeshLambertMaterial, Network3DGW
 	public class Pop3DScene extends AnimatedScene implements RequiresResize {
 
 		/**
+		 * Create a scene wrapper for the outer graph; scene elements are configured in
+		 * {@link PopGraph3D#drawUniverse()}.
+		 */
+		public Pop3DScene() {
+		}
+
+		/**
 		 * The control for rotating and zooming the scene.
 		 */
 		TrackballControls control;

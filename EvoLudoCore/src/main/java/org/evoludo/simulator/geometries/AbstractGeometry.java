@@ -341,6 +341,8 @@ public abstract class AbstractGeometry {
 	}
 
 	/**
+	 * Get the current {@link GeometryType} that defines this structure.
+	 * 
 	 * @return the current geometry {@link GeometryType}
 	 */
 	public GeometryType getType() {
@@ -366,6 +368,9 @@ public abstract class AbstractGeometry {
 	}
 
 	/**
+	 * Retrieve (and lazily create) the 2D representation associated with this
+	 * geometry.
+	 * 
 	 * @return the stored 2D network representation (may be {@code null})
 	 */
 	public Network2D getNetwork2D() {
@@ -384,6 +389,9 @@ public abstract class AbstractGeometry {
 	}
 
 	/**
+	 * Retrieve (and lazily create) the 3D representation associated with this
+	 * geometry.
+	 * 
 	 * @return the stored 3D network representation (may be {@code null})
 	 */
 	public Network3D getNetwork3D() {
@@ -435,6 +443,8 @@ public abstract class AbstractGeometry {
 	}
 
 	/**
+	 * Get the CLI specification string that configured this geometry.
+	 * 
 	 * @return the CLI specification string that configured this geometry, or
 	 *         {@code null}
 	 */
@@ -478,6 +488,8 @@ public abstract class AbstractGeometry {
 	}
 
 	/**
+	 * Report the current number of nodes contained in the geometry.
+	 * 
 	 * @return the number of nodes in the network
 	 */
 	public int getSize() {
@@ -504,6 +516,8 @@ public abstract class AbstractGeometry {
 	}
 
 	/**
+	 * Get the probability used when rewiring existing links.
+	 * 
 	 * @return the rewiring probability
 	 */
 	public double getRewire() {
@@ -520,6 +534,8 @@ public abstract class AbstractGeometry {
 	}
 
 	/**
+	 * Get the probability used when adding new links.
+	 * 
 	 * @return the link-addition probability
 	 */
 	public double getAddwire() {
@@ -527,6 +543,8 @@ public abstract class AbstractGeometry {
 	}
 
 	/**
+	 * Check if the geometry was modified by rewiring.
+	 * 
 	 * @return {@code true} if the geometry has been rewired.
 	 */
 	public boolean isRewired() {
@@ -544,6 +562,9 @@ public abstract class AbstractGeometry {
 	}
 
 	/**
+	 * Check if a single geometry suffices for interaction and competition
+	 * structures.
+	 * 
 	 * @return {@code true} if a single geometry suffices for interaction and
 	 *         competition structures
 	 */
@@ -561,6 +582,8 @@ public abstract class AbstractGeometry {
 	}
 
 	/**
+	 * Get the average node degree (connectivity) configured for the geometry.
+	 * 
 	 * @return the current connectivity (average degree)
 	 */
 	public double getConnectivity() {
@@ -568,6 +591,8 @@ public abstract class AbstractGeometry {
 	}
 
 	/**
+	 * Check whether all links are undirected.
+	 * 
 	 * @return {@code true} if this geometry is undirected.
 	 */
 	public boolean isUndirected() {
@@ -575,6 +600,8 @@ public abstract class AbstractGeometry {
 	}
 
 	/**
+	 * Check whether the geometry is regular (all nodes share the same degree).
+	 * 
 	 * @return {@code true} if this geometry is regular (all nodes have identical
 	 *         degree).
 	 */
@@ -703,6 +730,8 @@ public abstract class AbstractGeometry {
 	/**
 	 * Evaluate geometry. Convenience method to set frequently used quantities such
 	 * as {@code minIn, maxOut, avgTot} etc.
+	 * 
+	 * @return cached or freshly computed {@link GeometryFeatures}
 	 */
 	public GeometryFeatures getFeatures() {
 		if (features == null) {
@@ -778,6 +807,8 @@ public abstract class AbstractGeometry {
 	}
 
 	/**
+	 * Check whether this geometry connects individuals from different populations.
+	 * 
 	 * @return {@code true} if this geometry links two different populations.
 	 */
 	public boolean isInterspecies() {
@@ -846,7 +877,6 @@ public abstract class AbstractGeometry {
 	 * </ol>
 	 * 
 	 * @param prob the probability of rewiring an undirected link
-	 * @return {@code true} if geometry rewired
 	 */
 	protected void rewireUndirected(double prob) {
 		RNGDistribution rng = engine.getRNG();
@@ -1166,9 +1196,12 @@ public abstract class AbstractGeometry {
 	 * <h3>Requirements/notes:</h3>
 	 * <ol>
 	 * <li>Allocates additional memory for adjacency lists as needed.</li>
-	 * <li>Marks the geometry as requiring {@link #evaluate()} before statistics
-	 * such as {@code minIn} or {@code avgOut} are used again.</li>
+	 * <li>Marks the geometry as requiring recomputation of statistics (via
+	 * {@link #getFeatures()}) before cached values are used again.</li>
 	 * </ol>
+	 * 
+	 * @param from the source node index
+	 * @param to   the destination node index
 	 */
 	public void addLinkAt(int from, int to) {
 		int[] mem = out[from];
@@ -1213,8 +1246,8 @@ public abstract class AbstractGeometry {
 
 	/**
 	 * Remove a directed link from node {@code from} to node {@code to}. Statistics
-	 * are not updated immediately; call {@link #evaluate()} when finished with a
-	 * batch of edits.
+	 * are not updated immediately; call {@link #getFeatures()} afterwards if fresh
+	 * metrics are required.
 	 *
 	 * @param from the index of the first node
 	 * @param to   the index of the second node
@@ -1227,6 +1260,8 @@ public abstract class AbstractGeometry {
 	/**
 	 * Remove all outgoing links from node {@code idx}. Memory is retained for
 	 * potential reuse.
+	 * 
+	 * @param idx the index of the node whose outgoing links should be removed
 	 */
 	public void clearLinksFrom(int idx) {
 		int len = kout[idx];
@@ -1240,6 +1275,8 @@ public abstract class AbstractGeometry {
 	/**
 	 * Remove all incoming links to node {@code idx}. Memory is retained for
 	 * potential reuse.
+	 * 
+	 * @param idx the index of the node whose incoming links should be removed
 	 */
 	public void clearLinksTo(int idx) {
 		int len = kin[idx];
@@ -1253,6 +1290,9 @@ public abstract class AbstractGeometry {
 	/**
 	 * Remove an incoming link (directed) to node {@code to} from node
 	 * {@code from}. Does not shrink the backing arrays.
+	 * 
+	 * @param from the node that previously pointed to {@code to}
+	 * @param to   the node that received the incoming edge
 	 */
 	private void removeInLink(int from, int to) {
 		int[] mem = in[to];
@@ -1271,6 +1311,9 @@ public abstract class AbstractGeometry {
 	/**
 	 * Remove an outgoing link (directed) from node {@code from} to node
 	 * {@code to}. Does not shrink the backing arrays.
+	 * 
+	 * @param from the node whose outgoing edge should be removed
+	 * @param to   the neighbor to disconnect from {@code from}
 	 */
 	private void removeOutLink(int from, int to) {
 		int[] mem = out[from];
@@ -1289,7 +1332,7 @@ public abstract class AbstractGeometry {
 	/**
 	 * Rewire a directed link so that an edge formerly connecting {@code from} to
 	 * {@code prev} now connects to {@code to}. Statistics are not updated until
-	 * {@link #evaluate()} is called.
+	 * {@link #getFeatures()} is called to recompute them.
 	 *
 	 * @param from the node whose outgoing link should change
 	 * @param to   the new neighbour
@@ -1517,7 +1560,15 @@ public abstract class AbstractGeometry {
 	}
 
 	/**
-	 * Helper: check whether neighs contains src.
+	 * Helper that checks whether {@code neighs} contains {@code src} and logs an
+	 * error if it does not.
+	 * 
+	 * @param src    the node whose reciprocal connection is required
+	 * @param target the node whose adjacency list is being inspected
+	 * @param neighs adjacency list of {@code target}
+	 * @param nNeigh number of valid entries in {@code neighs}
+	 * @param dir    textual description of the direction being verified
+	 * @return {@code true} if a reciprocal connection is present
 	 */
 	private boolean hasNeigh(int src, int target, int[] neighs, int nNeigh, String dir) {
 		for (int k = 0; k < nNeigh; k++)

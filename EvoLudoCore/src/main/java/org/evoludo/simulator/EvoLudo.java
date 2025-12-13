@@ -295,7 +295,14 @@ public abstract class EvoLudo
 	 */
 	protected final CLOController cloController = new CLOController(this);
 
+	/**
+	 * Command-line option controlling the RNG seed.
+	 */
 	public final CLOption cloSeed = cloController.cloSeed;
+
+	/**
+	 * Command-line option controlling the number of model runs.
+	 */
 	public final CLOption cloRun = cloController.cloRun;
 
 	/**

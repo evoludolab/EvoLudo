@@ -66,6 +66,9 @@ import org.evoludo.util.Plist;
  * represented by {@code int}s in discrete models but {@code double}s in
  * continuous models.
  * 
+ * @param <M> the module type controlling the population dynamics
+ * @param <P> the concrete population type used as opponent reference
+ * 
  * @author Christoph Hauert
  * 
  * @see IBSDPopulation
@@ -979,6 +982,8 @@ public abstract class IBSPopulation<M extends Module<?>, P extends IBSPopulation
 	/**
 	 * Handle failed pick and report details about failure.
 	 * 
+	 * @param remainder remaining probability mass that failed to select an
+	 *                  individual
 	 * @return never returns control
 	 */
 	private int pickFailed(double remainder) {
@@ -3258,8 +3263,13 @@ public abstract class IBSPopulation<M extends Module<?>, P extends IBSPopulation
 	}
 
 	/**
-	 * Handle failed pick and report details about failure.
+	 * Handle failed adoption decision and log diagnostic details before aborting.
 	 * 
+	 * @param me         the focal individual index
+	 * @param rGroupSize number of reference individuals considered
+	 * @param nProb      residual probability of no adoption
+	 * @param norm       normalization constant for cumulative probabilities
+	 * @param choice     sampled random number that failed to match a candidate
 	 * @return never returns control
 	 */
 	private boolean updateFailed(int me, int rGroupSize, double nProb, double norm, double choice) {
@@ -3273,7 +3283,11 @@ public abstract class IBSPopulation<M extends Module<?>, P extends IBSPopulation
 	 * Log report if updating failed to shed better light on what might be the root
 	 * cause for the failure.
 	 * 
-	 * @param me the index of the focal individual
+	 * @param me         the index of the focal individual
+	 * @param rGroupSize number of reference individuals considered
+	 * @param nProb      residual probability of no adoption
+	 * @param norm       normalization constant for cumulative probabilities
+	 * @param choice     sampled random value that failed to match a candidate
 	 */
 	protected void debugUpdate(int me, int rGroupSize, double nProb, double norm, double choice) {
 		if (!logger.isLoggable(Level.FINE))
@@ -3573,6 +3587,12 @@ public abstract class IBSPopulation<M extends Module<?>, P extends IBSPopulation
 		distrMigrants = new RNGDistribution.Geometric(rng.getRNG(), 1.0 - pMigration);
 	}
 
+	/**
+	 * Validate interaction structures and adjust incompatible settings.
+	 * 
+	 * @param nGroup interaction group size
+	 * @return {@code true} if changes require a reset
+	 */
 	boolean checkInteractions(int nGroup) {
 		boolean doReset = false;
 		interaction.setInterspecies(opponent != this);
@@ -3771,6 +3791,10 @@ public abstract class IBSPopulation<M extends Module<?>, P extends IBSPopulation
 		}
 	}
 
+	/**
+	 * Validate competition sampling rules for well-mixed populations and adjust if
+	 * required.
+	 */
 	void checkCompSampling() {
 		// Moran type and ecological updates ignore playerUpdate
 		if (populationUpdate.isMoran()

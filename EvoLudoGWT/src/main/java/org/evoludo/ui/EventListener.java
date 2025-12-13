@@ -32,7 +32,16 @@ package org.evoludo.ui;
 
 import jsinterop.annotations.JsFunction;
 
+/**
+ * JavaScript-compatible callback interface used to hook browser events.
+ */
 @JsFunction
 public interface EventListener {
+
+	/**
+	 * Callback receiving DOM events exposed via JSNI.
+	 *
+	 * @param evt event payload
+	 */
 	void handleEvent(Object evt);
 }

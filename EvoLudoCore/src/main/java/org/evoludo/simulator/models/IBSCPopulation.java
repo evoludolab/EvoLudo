@@ -112,7 +112,7 @@ public class IBSCPopulation extends IBSMCPopulation {
 	 * <p>
 	 * Continuous modules with multiple traits never get here.
 	 * 
-	 * @see IBSMCPopulation#playPairGameAt(int)
+	 * @see IBSMCPopulation#playPairGameAt(IBSGroup)
 	 */
 	@Override
 	public void playPairGameAt(IBSGroup group) {
@@ -204,7 +204,7 @@ public class IBSCPopulation extends IBSMCPopulation {
 	 * <p>
 	 * Continuous modules with multiple traits never get here.
 	 * 
-	 * @see IBSMCPopulation#playGroupGameAt(int)
+	 * @see IBSMCPopulation#playGroupGameAt(IBSGroup)
 	 */
 	@Override
 	public void playGroupGameAt(IBSGroup group) {
@@ -285,7 +285,7 @@ public class IBSCPopulation extends IBSMCPopulation {
 	 * <p>
 	 * Continuous modules with multiple traits never get here.
 	 * 
-	 * @see IBSMCPopulation#yalpGroupGameAt(int)
+	 * @see IBSMCPopulation#yalpGroupGameAt(IBSGroup)
 	 */
 	@Override
 	public void yalpGroupGameAt(IBSGroup group) {

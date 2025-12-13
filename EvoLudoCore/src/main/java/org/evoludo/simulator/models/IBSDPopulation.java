@@ -301,6 +301,13 @@ public class IBSDPopulation extends IBSPopulation<Discrete, IBSDPopulation> {
 		pickLinkMoran(totscore, nact);
 	}
 
+	/**
+	 * Select a reproduction event along one of the active links according to the
+	 * accumulated scores.
+	 * 
+	 * @param totscore sum of fitness values over all active links
+	 * @param nact     number of active links stored in {@link #activeLinks}
+	 */
 	private void pickLinkMoran(double totscore, int nact) {
 		if (nact == 0)
 			return; // nothing to do!
@@ -1320,6 +1327,12 @@ public class IBSDPopulation extends IBSPopulation<Discrete, IBSDPopulation> {
 		updateMixedScores();
 	}
 
+	/**
+	 * Adjust scores in the opponent population when a trait change happens in an
+	 * inter-species well-mixed setting.
+	 * 
+	 * @param me focal individual whose trait changed
+	 */
 	void adjustOpponentScoresAt(int me) {
 		if (!interaction.isInterspecies())
 			return; // no adjustment needed for intra-species interactions

@@ -47,6 +47,8 @@ import org.evoludo.simulator.geometries.HierarchicalGeometry;
  * network corresponds to a (possibly ephemeral) collection and configuration of
  * nodes. Implementations are available in 2D and 3D.
  * 
+ * @param <N> the node type managed by the network
+ * 
  * @author Christoph Hauert
  * 
  * @see Network2D

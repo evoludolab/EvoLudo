@@ -76,11 +76,15 @@ import org.evoludo.util.Formatter;
  * @see EvoLudo
  * @see RunListener
  * @see PendingAction
- * @see Model
+ * @see org.evoludo.simulator.models.Model
  */
 class RunController {
 
+	/**
+	 * Engine whose execution is coordinated by this controller.
+	 */
 	private final EvoLudo engine;
+
 	/**
 	 * Delay between subsequent updates in milliseconds when model is running.
 	 */
@@ -257,7 +261,8 @@ class RunController {
 	}
 
 	/**
-	 * Requests halting of a running {@link Model} on the next opportunity.
+	 * Requests halting of a running {@link org.evoludo.simulator.models.Model} on
+	 * the next opportunity.
 	 * 
 	 * @see EvoLudo#stop()
 	 */
@@ -559,17 +564,26 @@ class RunController {
 		setDelay(Math.max(newdelay, (int) EvoLudo.DELAY_MIN));
 	}
 
+	/**
+	 * Reset collected CPU sampling statistics.
+	 */
 	protected void resetCPUSample() {
 		cpu = -1.0;
 		cpuMean = cpuVar = 0.0;
 		cpuSamples = 0;
 	}
 
+	/**
+	 * Start a CPU sampling measurement if no sample is active.
+	 */
 	protected void startCPUSample() {
 		if (cpu < 0.0)
 			cpu = engine.elapsedTimeMsec();
 	}
 
+	/**
+	 * Complete a CPU sampling measurement and log aggregated statistics.
+	 */
 	protected void endCPUSample() {
 		if (engine.logger.isLoggable(java.util.logging.Level.FINE)) {
 			double time = engine.elapsedTimeMsec() - cpu;

@@ -353,7 +353,7 @@ public class KeyHandler {
 	 * <li>{@code keyup} events are ignored if:
 	 * <ol>
 	 * <li>this EvoLudo model is not visible.
-	 * <li>the command line options field {@link #evoludoCLO} has the focus. With
+	 * <li>the command line options field has the focus. With
 	 * the exception of {@code Shift-Enter} to apply the new settings to the model.
 	 * <li>in an ePub, except when on a standalone page.
 	 * </ol>
@@ -365,7 +365,7 @@ public class KeyHandler {
 	 * {@code keyup} events are ignored if:
 	 * <ul>
 	 * <li>this EvoLudo model is not visible.
-	 * <li>the command line options field {@link #evoludoCLO} has the focus. With
+	 * <li>the command line options field has the focus. With
 	 * the
 	 * exception of {@code Shift-Enter}, which applies the new settings to the
 	 * model.
@@ -655,6 +655,8 @@ public class KeyHandler {
 	}-*/;
 
 	/**
+	 * Check whether this controller currently receives priority for key events.
+	 * 
 	 * @return {@code true} if this controller currently receives priority for key
 	 *         events.
 	 */
@@ -663,6 +665,8 @@ public class KeyHandler {
 	}
 
 	/**
+	 * Determine whether the Alt modifier key is currently engaged.
+	 * 
 	 * @return {@code true} if the Alt modifier is currently engaged.
 	 */
 	public boolean isAltDown() {
@@ -670,6 +674,8 @@ public class KeyHandler {
 	}
 
 	/**
+	 * Determine whether the Shift modifier key is currently engaged.
+	 * 
 	 * @return {@code true} if the Shift modifier is currently engaged.
 	 */
 	public boolean isShiftDown() {

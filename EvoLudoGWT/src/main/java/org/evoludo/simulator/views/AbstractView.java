@@ -75,6 +75,8 @@ import com.google.gwt.user.client.ui.RequiresResize;
  * The parent class of all panels that provide graphical representations the
  * state of the current EvoLudo model.
  *
+ * @param <G> the concrete graph type rendered inside the view
+ *
  * @author Christoph Hauert
  */
 public abstract class AbstractView<G extends AbstractGraph<?>> extends Composite
@@ -228,7 +230,7 @@ public abstract class AbstractView<G extends AbstractGraph<?>> extends Composite
 	/**
 	 * The string with view specific options.
 	 * 
-	 * @see org.evoludo.EvoLudoWeb#cloView
+	 * @see org.evoludo.simulator.ui.ViewController#getCloView()
 	 */
 	String options;
 
@@ -242,10 +244,9 @@ public abstract class AbstractView<G extends AbstractGraph<?>> extends Composite
 	}
 
 	/**
-	 * Parse the arguments {@code args} provided to this view. The default
-	 * implementation simply passes {@code args} to all its {@code graphs}.
+	 * Parse the arguments provided to this view. The default implementation simply
+	 * passes the currently configured option string to all graphs.
 	 * 
-	 * @param args the arguments to parse
 	 * @return {@code true} if the arguments were successfully parsed
 	 */
 	public boolean parse() {
@@ -586,7 +587,7 @@ public abstract class AbstractView<G extends AbstractGraph<?>> extends Composite
 	 * @param key the code of the pressed key
 	 * @return {@code true} if the key was handled
 	 * 
-	 * @see org.evoludo.EvoLudoWeb#onKeyDown(String)
+	 * @see org.evoludo.simulator.ui.KeyHandler#onKeyDown(String)
 	 */
 	public boolean onKeyDown(String key) {
 		return false;

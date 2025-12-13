@@ -403,6 +403,12 @@ public abstract class Continuous extends Module<Continuous> {
 	public class Traits2Payoff {
 
 		/**
+		 * Create a payoff translator bound to the enclosing module.
+		 */
+		public Traits2Payoff() {
+		}
+
+		/**
 		 * The array of cost functions, one for each trait.
 		 */
 		Costs[] costs;

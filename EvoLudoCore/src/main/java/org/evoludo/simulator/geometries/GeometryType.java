@@ -474,7 +474,6 @@ public enum GeometryType implements CLOption.Key {
 	 * <h3>Requirements/notes:</h3>
 	 * Hierarchical geometries require recursive checks of uniqueness.
 	 * 
-	 * @param geo the geometry to be checked for uniqueness
 	 * @return {@code true} if geometry is unique
 	 */
 	public boolean isUnique() {

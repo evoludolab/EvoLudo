@@ -172,8 +172,10 @@ public class Pop3D extends GenericPop<MeshLambertMaterial, Network3DGWT, PopGrap
 	}
 
 	/**
-	 * Allocate graphs for individual‑based spatial models. This method creates
+	 * Allocate graphs for individual-based spatial models. This method creates
 	 * separate graphs for interaction and competition geometries.
+	 * 
+	 * @return {@code true} if graphs were reallocated
 	 */
 	private boolean allocateIBSGraphs() {
 		// how to deal with distinct interaction/competition geometries?
@@ -223,6 +225,8 @@ public class Pop3D extends GenericPop<MeshLambertMaterial, Network3DGWT, PopGrap
 
 	/**
 	 * Allocate graph for PDE models. Currently restricted to single species.
+	 * 
+	 * @return {@code true} if graphs were reallocated
 	 */
 	private boolean allocatePDEGraph() {
 		// PDEs currently restricted to single species
@@ -270,6 +274,9 @@ public class Pop3D extends GenericPop<MeshLambertMaterial, Network3DGWT, PopGrap
 	/**
 	 * Create the ColorMap for a given module/graph based on the current data type
 	 * and model settings.
+	 * 
+	 * @param module module whose data will be visualized
+	 * @return configured color map
 	 */
 	private ColorMap<MeshLambertMaterial> createColorMap(Module<?> module) {
 		switch (type) {
@@ -286,6 +293,9 @@ public class Pop3D extends GenericPop<MeshLambertMaterial, Network3DGWT, PopGrap
 
 	/**
 	 * Helper for continuous trait color maps.
+	 * 
+	 * @param module module providing trait metadata
+	 * @return configured color map
 	 */
 	private ColorMap<MeshLambertMaterial> createTraitColorMapContinuous(Module<?> module) {
 		ColorModelType cmt = ColorModelType.DEFAULT;
@@ -319,6 +329,9 @@ public class Pop3D extends GenericPop<MeshLambertMaterial, Network3DGWT, PopGrap
 
 	/**
 	 * Helper for discrete and PDE trait color maps.
+	 * 
+	 * @param module module providing trait metadata
+	 * @return configured color map
 	 */
 	private ColorMap<MeshLambertMaterial> createTraitColorMapDiscreteOrPDE(Module<?> module) {
 		if (model.getType().isPDE()) {
@@ -337,8 +350,11 @@ public class Pop3D extends GenericPop<MeshLambertMaterial, Network3DGWT, PopGrap
 	}
 
 	/**
-	 * Helper to create color map for FITNESS data. Marks monomorphic scores for
+	 * Helper to create color map for fitness data. Marks monomorphic scores for
 	 * IBS.
+	 * 
+	 * @param module module providing trait metadata
+	 * @return configured color map
 	 */
 	private ColorMap<MeshLambertMaterial> createFitnessColorMap(Module<?> module) {
 		ColorMap.Gradient1D<MeshLambertMaterial> cMap1D = new ColorMap3D.Gradient1D(

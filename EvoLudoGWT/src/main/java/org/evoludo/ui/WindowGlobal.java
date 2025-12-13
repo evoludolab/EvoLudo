@@ -33,10 +33,23 @@ package org.evoludo.ui;
 import jsinterop.annotations.JsPackage;
 import jsinterop.annotations.JsType;
 
+/**
+ * JSInterop bridge exposing the global {@code window} object.
+ */
 @JsType(isNative = true, namespace = JsPackage.GLOBAL, name = "window")
 public class WindowGlobal {
+
+	/**
+	 * Utility class – prevent instantiation.
+	 */
 	private WindowGlobal() {
 	}
 
+	/**
+	 * Register a JS event listener on the global window object.
+	 * 
+	 * @param type     event type
+	 * @param listener callback invoked for events
+	 */
 	public static native void addEventListener(String type, EventListener listener);
 }

@@ -93,6 +93,10 @@ public class S3 extends AbstractView<S3Graph> {
 
 	/**
 	 * Helper method to create and configure an S3Graph for a given role.
+	 * 
+	 * @param module module supplying the data
+	 * @param role   role index (strategy) to visualize
+	 * @return configured graph instance
 	 */
 	private S3Graph createS3Graph(Module<?> module, int role) {
 		S3Graph graph = new S3Graph(this, module, role);

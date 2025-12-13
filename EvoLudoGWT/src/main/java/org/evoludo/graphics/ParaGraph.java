@@ -102,7 +102,7 @@ import com.google.gwt.event.dom.client.TouchStartEvent;
  * <h3>Rendering details:</h3>
  * <ul>
  * <li>Painting is scheduled with
- * {@link com.google.gwt.user.client.Scheduler#scheduleDeferred} to avoid
+ * {@link com.google.gwt.core.client.Scheduler#scheduleDeferred} to avoid
  * redundant immediate repaints; a {@code paintScheduled} flag prevents
  * oversubscription of repaint requests.</li>
  * <li>Canvas transform sequence: global scale, translation for view corner and

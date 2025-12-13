@@ -192,12 +192,11 @@ public class IBSMCPopulation extends IBSPopulation<Continuous, IBSMCPopulation> 
 	}
 
 	/**
-	 * Get trait {@code d} of individual with index {@code idx}.
+	 * Set trait {@code d} of the individual with index {@code idx}.
 	 * 
 	 * @param idx   the index of the individual
 	 * @param d     the trait index
-	 * @param trait the trait of the individual
-	 * @return the trait of the individual
+	 * @param trait the new trait value
 	 */
 	public void setTraitAt(int idx, int d, double trait) {
 		traits[idx * nTraits + d] = trait;
@@ -437,7 +436,7 @@ public class IBSMCPopulation extends IBSPopulation<Continuous, IBSMCPopulation> 
 	 * <p>
 	 * Continuous modules with a single trait never get here.
 	 * 
-	 * @see IBSCPopulation#playPairGameAt(int)
+	 * @see IBSCPopulation#playPairGameAt(IBSGroup)
 	 */
 	@Override
 	public void playPairGameAt(IBSGroup group) {
@@ -533,7 +532,7 @@ public class IBSMCPopulation extends IBSPopulation<Continuous, IBSMCPopulation> 
 	 * <p>
 	 * Continuous modules with a single trait never get here.
 	 * 
-	 * @see IBSCPopulation#playGroupGameAt(int)
+	 * @see IBSCPopulation#playGroupGameAt(IBSGroup)
 	 */
 	@Override
 	public void playGroupGameAt(IBSGroup group) {
@@ -565,6 +564,12 @@ public class IBSMCPopulation extends IBSPopulation<Continuous, IBSMCPopulation> 
 		}
 	}
 
+	/**
+	 * Handle the case where a focal player has no opponents and should not play a
+	 * game.
+	 * 
+	 * @param me focal player index
+	 */
 	void playNoGameAt(int me) {
 		if (playerScoring.equals(ScoringType.EPHEMERAL)) {
 			resetScoreAt(me);
@@ -573,6 +578,14 @@ public class IBSMCPopulation extends IBSPopulation<Continuous, IBSMCPopulation> 
 		updateScoreAt(me, 0.0);
 	}
 
+	/**
+	 * Evaluate sequential group interactions when not enough opponents are
+	 * available simultaneously.
+	 * 
+	 * @param me     focal player index
+	 * @param group  sampled opponent group
+	 * @param nGroup number of players participating in each interaction
+	 */
 	void playGroupSequentiallyAt(int me, IBSGroup group, int nGroup) {
 		// interact with part of group sequentially
 		double myScore = 0.0;
@@ -599,6 +612,12 @@ public class IBSMCPopulation extends IBSPopulation<Continuous, IBSMCPopulation> 
 			opponent.updateScoreAt(group.group[i], smallScores[i], nGroup - 1);
 	}
 
+	/**
+	 * Evaluate a single group interaction with the sampled opponents.
+	 * 
+	 * @param me    focal player index
+	 * @param group sampled opponent group
+	 */
 	void playGroupOnceAt(int me, IBSGroup group) {
 		double myScore = groupmodule.groupScores(myTraits, tmpGroup, group.nSampled, groupScores);
 		// for ephemeral scores calculate score of focal only
@@ -617,7 +636,7 @@ public class IBSMCPopulation extends IBSPopulation<Continuous, IBSMCPopulation> 
 	 * <p>
 	 * Continuous modules with a single trait never get here.
 	 * 
-	 * @see IBSCPopulation#yalpGroupGameAt(int)
+	 * @see IBSCPopulation#yalpGroupGameAt(IBSGroup)
 	 */
 	@Override
 	public void yalpGroupGameAt(IBSGroup group) {
@@ -715,8 +734,6 @@ public class IBSMCPopulation extends IBSPopulation<Continuous, IBSMCPopulation> 
 	 * @param bins   the linear array to store the 2D histogram
 	 * @param trait1 the index of the first trait
 	 * @param trait2 the index of the second trait
-	 *
-	 * @see org.evoludo.simulator.geometries.AbstractGeometry#initGeometrySquare()
 	 */
 	public void get2DTraitHistogramData(double[] bins, int trait1, int trait2) {
 		// clear bins
@@ -1020,6 +1037,9 @@ public class IBSMCPopulation extends IBSPopulation<Continuous, IBSMCPopulation> 
 		}
 	}
 
+	/**
+	 * Initialize each trait uniformly at random in its allowed range.
+	 */
 	void initUniform() {
 		for (int s = 0; s < nTraits; s++) {
 			for (int n = s; n < nPopulation * nTraits; n += nTraits)
@@ -1027,6 +1047,9 @@ public class IBSMCPopulation extends IBSPopulation<Continuous, IBSMCPopulation> 
 		}
 	}
 
+	/**
+	 * Initialize all individuals with the same (monomorphic) trait value.
+	 */
 	void initMono() {
 		for (int s = 0; s < nTraits; s++) {
 			// initArgs contains monomorphic trait
@@ -1037,6 +1060,10 @@ public class IBSMCPopulation extends IBSPopulation<Continuous, IBSMCPopulation> 
 		}
 	}
 
+	/**
+	 * Initialize traits by sampling from a (possibly truncated) Gaussian
+	 * distribution per trait.
+	 */
 	void initGaussian() {
 		for (int s = 0; s < nTraits; s++) {
 			double mean = Math.min(Math.max(init.args[s][0], traitRangeMin[s]), traitRangeMax[s]);
@@ -1048,6 +1075,9 @@ public class IBSMCPopulation extends IBSPopulation<Continuous, IBSMCPopulation> 
 		}
 	}
 
+	/**
+	 * Initialize a monomorphic resident population with a single mutant.
+	 */
 	void initMutant() {
 		int mutidx = random0n(nPopulation);
 		for (int s = 0; s < nTraits; s++) {

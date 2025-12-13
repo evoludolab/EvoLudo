@@ -350,10 +350,16 @@ public class EcoPGG extends Discrete implements Payoffs,
 	}
 
 	/**
-	 * The map for translating the data of the ecological public goods game models
-	 * into 2D phase plane representation.
+	 * Map translating ecological public goods data to a 2D phase plane and tooltip
+	 * content.
 	 */
 	public class EcoPGGMap implements Data2Phase, BasicTooltipProvider {
+
+		/**
+		 * Create the 2D projection helper using the surrounding module settings.
+		 */
+		public EcoPGGMap() {
+		}
 
 		@Override
 		public boolean data2Phase(double[] data, Point2D point) {

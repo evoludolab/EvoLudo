@@ -32,6 +32,10 @@ package org.evoludo.simulator.geometries;
 
 import org.evoludo.simulator.EvoLudo;
 
+/**
+ * Geometry wrapper representing dynamically changing structures provided by the
+ * simulation modules.
+ */
 public class DynamicGeometry extends AbstractGeometry {
 
 	/**

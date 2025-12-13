@@ -1356,10 +1356,10 @@ public abstract class Model implements CLOProvider {
 	 * able to honour the request. However, some models allow to travel back in
 	 * time. In general, this is only possible for ODE and SDE models and even for
 	 * those it may not be feasible due to details of the dynamics, such as
-	 * dissipative terms in the differential equations. For example, in
-	 * {@link org.evoludo.simulator.modules.CG} the ecological dynamics of the patch
-	 * quality prevents time reversal, i.e. results are numerically unstable due to
-	 * exponential amplification of deviations in dissipative systems.
+	 * dissipative terms in the differential equations. For example, in certain
+	 * ecological modules the patch-quality dynamics prevents time reversal, i.e.
+	 * results are numerically unstable due to exponential amplification of
+	 * deviations in dissipative systems.
 	 *
 	 * @param reversed the request whether time should be reversed.
 	 *

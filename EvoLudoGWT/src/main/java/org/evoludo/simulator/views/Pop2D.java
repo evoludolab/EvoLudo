@@ -176,8 +176,10 @@ public class Pop2D extends GenericPop<String, Network2D, PopGraph2D> {
 	}
 
 	/**
-	 * Allocate graphs for individual‑based spatial models. This method creates
+	 * Allocate graphs for individual-based spatial models. This method creates
 	 * separate graphs for interaction and competition geometries.
+	 * 
+	 * @return {@code true} if graphs were reallocated
 	 */
 	private boolean allocateIBSGraphs() {
 		// how to deal with distinct interaction/competition geometries?
@@ -226,6 +228,8 @@ public class Pop2D extends GenericPop<String, Network2D, PopGraph2D> {
 
 	/**
 	 * Allocate graph for PDE models. Currently restricted to single species.
+	 * 
+	 * @return {@code true} if graphs were reallocated
 	 */
 	private boolean allocatePDEGraph() {
 		// PDEs currently restricted to single species
@@ -275,8 +279,10 @@ public class Pop2D extends GenericPop<String, Network2D, PopGraph2D> {
 	}
 
 	/**
-	 * Configure the graph's style according to its geometry and return true if a
-	 * change requires a hard reset (i.e. change of reporting frequency).
+	 * Configure the graph's style according to its geometry.
+	 * 
+	 * @param graph the graph to configure
+	 * @return {@code true} if a hard reset is required
 	 */
 	private boolean configureGraph(PopGraph2D graph) {
 		AbstractGeometry geometry = graph.getGeometry();
@@ -331,6 +337,9 @@ public class Pop2D extends GenericPop<String, Network2D, PopGraph2D> {
 	/**
 	 * Create the ColorMap for a given module/graph based on the current data type
 	 * and model settings.
+	 * 
+	 * @param module module whose data will be visualized
+	 * @return configured color map
 	 */
 	private ColorMap<String> createColorMap(Module<?> module) {
 		switch (type) {
@@ -347,6 +356,9 @@ public class Pop2D extends GenericPop<String, Network2D, PopGraph2D> {
 
 	/**
 	 * Helper for continuous trait color maps.
+	 * 
+	 * @param module module providing trait metadata
+	 * @return configured color map
 	 */
 	private ColorMap<String> createTraitColorMapContinuous(Module<?> module) {
 		ColorModelType cmt = ColorModelType.DEFAULT;
@@ -373,6 +385,9 @@ public class Pop2D extends GenericPop<String, Network2D, PopGraph2D> {
 
 	/**
 	 * Helper for discrete and PDE trait color maps.
+	 * 
+	 * @param module module providing trait metadata
+	 * @return configured color map
 	 */
 	private ColorMap<String> createTraitColorMapDiscreteOrPDE(Module<?> module) {
 		if (model.getType().isPDE()) {
@@ -394,8 +409,11 @@ public class Pop2D extends GenericPop<String, Network2D, PopGraph2D> {
 	}
 
 	/**
-	 * Helper to create color map for FITNESS data. Marks monomorphic scores for
+	 * Helper to create color map for fitness data. Marks monomorphic scores for
 	 * IBS.
+	 * 
+	 * @param module module providing trait metadata
+	 * @return configured color map
 	 */
 	private ColorMap<String> createFitnessColorMap(Module<?> module) {
 		ColorMap.Gradient1D<String> cMap1D = new ColorMapCSS.Gradient1D(

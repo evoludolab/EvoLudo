@@ -137,6 +137,11 @@ public class GeometryFeatures {
 		avgTot = sumtot * isize;
 	}
 
+	/**
+	 * Copy constructor to duplicate cached geometry metrics.
+	 * 
+	 * @param other source instance to copy from
+	 */
 	public GeometryFeatures(GeometryFeatures other) {
 		this.minIn = other.minIn;
 		this.maxIn = other.maxIn;

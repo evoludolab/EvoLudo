@@ -499,13 +499,13 @@ public class LineGraph extends AbstractGraph<double[]>
 	 * Draw a historical segment between 'start' and 'end', handling clipping
 	 * against the visible window (-w .. 0) and log/linear y transforms.
 	 * 
-	 * @param start   the starting x-coordinate of the segme
-	 * @param end     the ending x-coordinate of
+	 * @param start   starting x-coordinate of the segment
+	 * @param end     ending x-coordinate of the segment
 	 * @param prev    the previous data array
 	 * @param current the current data array
 	 * @param nLines  the number of lines to draw
 	 * @param yinfo   the y-axis transform info
-	 * @param w       the width of the plotting area
+	 * @param width   the width of the plotting area
 	 */
 	private void drawSegmentClipped(double start, double end,
 			double[] prev, double[] current, int nLines,
@@ -750,6 +750,10 @@ public class LineGraph extends AbstractGraph<double[]>
 
 	/**
 	 * Build and append the static header rows (label, x and y rows) to the tooltip.
+	 * 
+	 * @param tip    builder receiving the markup
+	 * @param mouset x-axis value under the cursor
+	 * @param yval   y-axis value under the cursor
 	 */
 	private void appendTipHeader(StringBuilder tip, double mouset, double yval) {
 		if (style.label != null) {

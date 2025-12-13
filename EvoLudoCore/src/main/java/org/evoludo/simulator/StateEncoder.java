@@ -40,8 +40,16 @@ import org.evoludo.util.Plist;
  */
 public class StateEncoder {
 
+	/**
+	 * Owning runtime whose state will be encoded.
+	 */
 	private final EvoLudo engine;
 
+	/**
+	 * Create a state encoder for the supplied engine.
+	 * 
+	 * @param engine EvoLudo runtime
+	 */
 	public StateEncoder(EvoLudo engine) {
 		this.engine = engine;
 	}

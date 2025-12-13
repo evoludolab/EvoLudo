@@ -303,6 +303,9 @@ public class SDE extends ODE {
 
 	/**
 	 * Process the three-trait stochastic update (including vacant).
+	 * 
+	 * @param step    Euler step size
+	 * @param sqrtdt  square root of the time step (for noise terms)
 	 */
 	private void process3Traits(double step, double sqrtdt) {
 		// NOTE: if not replicator equation some adjustments are required (references to

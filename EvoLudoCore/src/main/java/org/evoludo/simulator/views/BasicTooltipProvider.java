@@ -89,6 +89,9 @@ public interface BasicTooltipProvider {
 	 */
 	static final String TABLE_CELL_NEXT_COLOR = TABLE_CELL_NEXT + "<span style='color:";
 
+	/**
+	 * Table cell bullet used to highlight categorical values in tooltips.
+	 */
 	static final String TABLE_CELL_BULLET = "; font-size:175%; line-height:0.57;'>&#x25A0;</span> ";
 
 	/**

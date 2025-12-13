@@ -509,6 +509,12 @@ public class CLOption implements Comparable<CLOption> {
 		}
 	}
 
+	/**
+	 * Delegate parsing helper that handles optional vs required arguments.
+	 * 
+	 * @param isOptional {@code true} if the option argument is optional
+	 * @return {@code true} if parsing succeeds
+	 */
 	private boolean parse(boolean isOptional) {
 		try {
 			if (isOptional)
@@ -885,6 +891,13 @@ public class CLOption implements Comparable<CLOption> {
 
 	}
 
+	/**
+	 * Append the current and default argument description to the provided builder.
+	 * 
+	 * @param sb         builder to append to
+	 * @param currentArg textual representation of the current argument
+	 * @return the supplied builder for chaining
+	 */
 	private StringBuilder buildCurrent(StringBuilder sb, String currentArg) {
 		sb.append("\n      (");
 		if (type == Argument.NONE) {
@@ -906,6 +919,8 @@ public class CLOption implements Comparable<CLOption> {
 	/**
 	 * Build the base description string, using either the stored description or
 	 * asking the delegate and appending key descriptions if applicable.
+	 * 
+	 * @return builder containing the base description text
 	 */
 	private StringBuilder buildBaseDescription() {
 		StringBuilder myDescr = new StringBuilder(description);
@@ -919,6 +934,8 @@ public class CLOption implements Comparable<CLOption> {
 	/**
 	 * Construct the user-facing representation of the argument when keys are
 	 * defined; mirrors previous loop logic but extracted to reduce complexity.
+	 * 
+	 * @return textual representation of the key-based arguments
 	 */
 	private String buildArgKeys() {
 		// for multi-species modules, remember previous key
@@ -949,6 +966,15 @@ public class CLOption implements Comparable<CLOption> {
 		return sb.toString();
 	}
 
+	/**
+	 * Append the resolved key value and remaining arguments to the builder.
+	 * 
+	 * @param sb   builder to append to
+	 * @param key  resolved key
+	 * @param args tokenized argument list
+	 * @param pos  position of the key token within {@code args}
+	 * @return the key that was appended (for chaining)
+	 */
 	private Key buildKey(StringBuilder sb, Key key, String[] args, int pos) {
 		String[] lead = Arrays.copyOfRange(args, 0, pos);
 		String[] tail = Arrays.copyOfRange(args, pos + 1, args.length);

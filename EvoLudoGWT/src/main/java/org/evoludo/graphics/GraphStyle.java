@@ -36,6 +36,13 @@ package org.evoludo.graphics;
  */
 @SuppressWarnings("java:S1104") // Data class used to store style settings
 public class GraphStyle {
+
+	/**
+	 * Create a style with the default set of axis, label, and tick options.
+	 */
+	public GraphStyle() {
+		// defaults provided via field initializers
+	}
 	// public AxesStyle x = new AxesStyle();
 	// public AxesStyle y = new AxesStyle();
 
@@ -311,7 +318,7 @@ public class GraphStyle {
 	/**
 	 * The color of trajectories.
 	 * 
-	 * @see org.evoludo.simulator.EvoLudo#cloTrajectoryColor
+	 * @see org.evoludo.simulator.CLOController#cloTrajectoryColor
 	 */
 	public String trajColor = "#000";
 

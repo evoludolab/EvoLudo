@@ -43,8 +43,8 @@ import org.evoludo.util.CLOption;
  * PDEInitialize encapsulates a particular initialization "type" (uniform,
  * random, localized shapes, Gaussian, ring, etc.), a background density vector,
  * an optional dependent-component index and an RNG for randomized initial
- * configurations. It provides a single entry point {@code init(double[][],
- * double[], AbstractGeometry)} that fills a preallocated two‑dimensional
+ * configurations. It provides a single entry point {@link #init(double[][])}
+ * that fills a preallocated two-dimensional
  * density array where each row corresponds to the state vector at a lattice
  * site.
  *
@@ -75,23 +75,36 @@ import org.evoludo.util.CLOption;
  * <h3>Usage</h3>
  * <p>
  * Construct an instance with the desired {@link Type}, background vector,
- * dependent index and RNG (if needed), then call {@link #init(double[][],
- * double[], AbstractGeometry)} to populate the simulation density array prior
- * to starting integration or discrete updates.
+ * dependent index and RNG (if needed), then call {@link #init(double[][])} to
+ * populate the simulation density array prior to starting integration or
+ * discrete updates.
  *
  * @see AbstractGeometry
  * @see Type
- * @see #init(double[][], double[], AbstractGeometry)
+ * @see #init(double[][])
  */
 class PDEInitialize extends ODEInitialize {
 
+	/**
+	 * Owning PDE model providing geometry and background data.
+	 */
 	private final PDE pde;
 
+	/**
+	 * Create an initializer tied to the supplied PDE model.
+	 * 
+	 * @param pde owning PDE
+	 */
 	PDEInitialize(PDE pde) {
 		super(pde);
 		this.pde = pde;
 	}
 
+	/**
+	 * Initialize the density array according to the configured type.
+	 * 
+	 * @param density per-node trait densities to fill
+	 */
 	public void init(double[][] density) {
 		AbstractGeometry space = pde.space;
 		double[] y0 = new double[pde.nDim];
@@ -117,6 +130,13 @@ class PDEInitialize extends ODEInitialize {
 		}
 	}
 
+ 	/**
+ 	 * Initialize every lattice point with the same state.
+ 	 * 
+ 	 * @param density per-node density buffer to populate
+ 	 * @param y0      base state vector copied to each node
+ 	 * @param space   simulation geometry describing the lattice size
+ 	 */
 	private void initUniform(double[][] density, double[] y0, AbstractGeometry space) {
 		int nDim = y0.length;
 		int nodeCount = space.getSize();
@@ -124,6 +144,13 @@ class PDEInitialize extends ODEInitialize {
 			System.arraycopy(y0, 0, density[n], 0, nDim);
 	}
 
+	/**
+	 * Initialize a uniform background with a single perturbed site at the center.
+	 * 
+	 * @param density per-node density buffer to populate
+	 * @param y0      perturbed state vector applied to the central node
+	 * @param space   simulation geometry describing the lattice
+	 */
 	private void initPerturbation(double[][] density, double[] y0, AbstractGeometry space) {
 		int nDim = y0.length;
 		int nodeCount = space.getSize();
@@ -149,6 +176,13 @@ class PDEInitialize extends ODEInitialize {
 		}
 	}
 
+	/**
+	 * Initialize each site independently at random (normalized if needed).
+	 * 
+	 * @param density per-node density buffer to populate
+	 * @param y0      base amplitudes for random sampling
+	 * @param space   simulation geometry describing the lattice size
+	 */
 	private void initRandom(double[][] density, double[] y0, AbstractGeometry space) {
 		int nDim = y0.length;
 		int nodeCount = space.getSize();
@@ -161,6 +195,13 @@ class PDEInitialize extends ODEInitialize {
 		}
 	}
 
+	/**
+	 * Dispatch initialization based on the dimensionality of the geometry.
+	 * 
+	 * @param density per-node density buffer to populate
+	 * @param y0      peak density vector for the localized shapes
+	 * @param space   simulation geometry describing the lattice
+	 */
 	private void initFunction(double[][] density, double[] y0, AbstractGeometry space) {
 		switch (space.getType()) {
 			case CUBE:
@@ -175,7 +216,12 @@ class PDEInitialize extends ODEInitialize {
 	}
 
 	/**
-	 * Initialization for CUBE geometry extracted to reduce cognitive complexity.
+	 * Initialization for {@link GeometryType#CUBE} geometries extracted to reduce
+	 * complexity.
+	 * 
+	 * @param density per-node density buffer to populate
+	 * @param y0      peak density vector for the localized shape
+	 * @param space   simulation geometry describing the lattice
 	 */
 	private void initFunction3D(double[][] density, double[] y0, AbstractGeometry space) {
 		int l = 50;
@@ -191,7 +237,12 @@ class PDEInitialize extends ODEInitialize {
 	}
 
 	/**
-	 * Initialization for LINEAR geometry extracted to reduce cognitive complexity.
+	 * Initialization for {@link GeometryType#LINEAR} geometries extracted to reduce
+	 * complexity.
+	 * 
+	 * @param density per-node density buffer to populate
+	 * @param y0      peak density vector for the localized shape
+	 * @param space   simulation geometry describing the lattice
 	 */
 	private void initFunction1D(double[][] density, double[] y0, AbstractGeometry space) {
 		int nodeCount = space.getSize();
@@ -202,6 +253,10 @@ class PDEInitialize extends ODEInitialize {
 	/**
 	 * Initialization for square/triangular/hexagonal lattice geometries extracted
 	 * to reduce cognitive complexity.
+	 * 
+	 * @param density per-node density buffer to populate
+	 * @param y0      peak density vector for the localized shape
+	 * @param space   simulation geometry describing the lattice
 	 */
 	private void initFunction2D(double[][] density, double[] y0, AbstractGeometry space) {
 		int l = (int) (Math.sqrt(space.getSize()) + 0.5);
@@ -214,6 +269,7 @@ class PDEInitialize extends ODEInitialize {
 	 * Applies the initialization for {@link GeometryType#LINEAR}.
 	 * 
 	 * @param x    the x coordinate
+	 * @param l    the linear length of the lattice
 	 * @param y0   the initial state
 	 * @param dest the destination array
 	 */

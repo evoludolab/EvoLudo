@@ -964,6 +964,14 @@ public class PopGraph2D extends GenericPopGraph<String, Network2D> implements Sh
 		return r * geometry.getSize() + c;
 	}
 
+	/**
+	 * Locate the node under the given screen coordinates for general network
+	 * layouts.
+	 * 
+	 * @param sx screen x-coordinate
+	 * @param sy screen y-coordinate
+	 * @return node index or {@code -1} if none hit
+	 */
 	private int findNetworkNode(int sx, int sy) {
 		// note: cannot check bounds (or anything else) to rule out that mouse hovers
 		// over node because nodes may have been manually shifted.

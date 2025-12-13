@@ -46,12 +46,26 @@ import org.evoludo.util.CLOption;
  */
 class ODEInitialize {
 
+	/**
+	 * Hosting ODE model used to access species and state arrays.
+	 */
 	private final ODE ode;
 
+	/**
+	 * Create an initializer bound to the supplied ODE model.
+	 * 
+	 * @param ode owning model
+	 */
 	ODEInitialize(ODE ode) {
 		this.ode = ode;
 	}
 
+	/**
+	 * Initialize the model state vectors, optionally randomizing species flagged
+	 * with {@link InitType#RANDOM}.
+	 * 
+	 * @param doRandom {@code true} if random initialization should be applied
+	 */
 	void init(boolean doRandom) {
 		int idx = -1;
 		// y0 is initialized except for species with random initial frequencies
@@ -68,6 +82,12 @@ class ODEInitialize {
 		System.arraycopy(ode.y0, 0, ode.yt, 0, ode.nDim);
 	}
 
+	/**
+	 * Parse the CLI string describing initial conditions.
+	 * 
+	 * @param arg command-line fragment
+	 * @return {@code true} if parsing succeeded
+	 */
 	boolean parse(String arg) {
 		String[] inittypes = arg.split(CLOParser.SPECIES_DELIMITER);
 		int idx = 0;
@@ -115,6 +135,14 @@ class ODEInitialize {
 		return true;
 	}
 
+	/**
+	 * Parse a mutant initialization specification and append it to {@link ODE#y0}.
+	 * 
+	 * @param pop   module being initialized
+	 * @param iargs string containing mutant parameters
+	 * @param start index where the species slice begins
+	 * @return {@code true} if parsing succeeded
+	 */
 	private boolean processMutant(Module<?> pop, String iargs, int start) {
 		// SDE models only (no population size in ODE)
 		double[] initargs = CLOParser.parseVector(iargs);
@@ -157,6 +185,14 @@ class ODEInitialize {
 		return true;
 	}
 
+	/**
+	 * Parse a density/frequency specification and append it to {@link ODE#y0}.
+	 * 
+	 * @param pop   module being initialized
+	 * @param iargs density values as a string
+	 * @param start index where the species slice begins
+	 * @return {@code true} if parsing succeeded
+	 */
 	private boolean processDensity(Module<?> pop, String iargs, int start) {
 		double[] initargs = CLOParser.parseVector(iargs);
 		if (initargs == null || initargs.length != pop.getNTraits())
@@ -165,6 +201,13 @@ class ODEInitialize {
 		return true;
 	}
 
+	/**
+	 * Append the provided population initialization vector at the given offset
+	 * within {@link ODE#y0}, resizing as needed.
+	 * 
+	 * @param popinit initialization data
+	 * @param start   target offset within {@link ODE#y0}
+	 */
 	private void appendY0(double[] popinit, int start) {
 		if (ode.y0 == null)
 			ode.y0 = new double[popinit.length];

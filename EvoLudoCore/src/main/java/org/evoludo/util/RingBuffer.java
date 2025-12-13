@@ -421,6 +421,12 @@ public class RingBuffer<T> implements Iterable<T> {
 		 */
 		int cursor = 0;
 
+		/**
+		 * Create a backwards iterator starting at the newest element.
+		 */
+		BckItr() {
+		}
+
 		@Override
 		public boolean hasNext() {
 			return cursor < buffer.size();
@@ -445,6 +451,12 @@ public class RingBuffer<T> implements Iterable<T> {
 		 * Index of current element in Iterator.
 		 */
 		int cursor = buffer.size();
+
+		/**
+		 * Create a forward iterator starting at the oldest element.
+		 */
+		FwdItr() {
+		}
 
 		@Override
 		public boolean hasNext() {

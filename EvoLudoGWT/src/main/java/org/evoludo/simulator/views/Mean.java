@@ -73,7 +73,7 @@ import org.evoludo.simulator.modules.Module;
  * @author Christoph Hauert
  * 
  * @see org.evoludo.simulator.views.AbstractView
- * @see org.evoludo.simulator.views.LineGraph
+ * @see org.evoludo.graphics.LineGraph
  * @see org.evoludo.simulator.models.Data
  * @see org.evoludo.simulator.models.DModel
  * @see org.evoludo.simulator.models.IBSC
@@ -142,6 +142,8 @@ public class Mean extends AbstractView<LineGraph> implements Shifter, Zoomer {
 	/**
 	 * Create and register the LineGraph(s) for a single module: one graph for the
 	 * module, and additional graphs for extra traits when the model is continuous.
+	 * 
+	 * @param module module for which graphs should be created
 	 */
 	private void addLineGraph(Module<?> module) {
 		LineGraph graph = new LineGraph(this, module);
@@ -263,8 +265,7 @@ public class Mean extends AbstractView<LineGraph> implements Shifter, Zoomer {
 	/**
 	 * Configure a graph style and colors for fitness in discrete models.
 	 * 
-	 * @param graph  the graph to configure
-	 * @param nState the number of states (traits)
+	 * @param graph the graph to configure
 	 */
 	private void setupDFitGraph(LineGraph graph) {
 		Color[] fitcolors;
@@ -308,9 +309,8 @@ public class Mean extends AbstractView<LineGraph> implements Shifter, Zoomer {
 	/**
 	 * Finalize the setup of a graph (x-label, x-range, module label).
 	 * 
-	 * @param graph  the graph to configure
-	 * @param nState the number of states (traits) plus one for average fitness
-	 * @param hard   if true, forces a hard reset of the graph
+	 * @param graph the graph to configure
+	 * @param hard  if true, forces a hard reset of the graph
 	 */
 	private void finishGraphSetup(LineGraph graph, boolean hard) {
 		int nState = graph.getNLines();
@@ -364,6 +364,16 @@ public class Mean extends AbstractView<LineGraph> implements Shifter, Zoomer {
 		timestamp = newtime;
 	}
 
+	/**
+	 * Pull updated mean data for the supplied graph and append it to the data
+	 * buffer.
+	 * 
+	 * @param graph   graph to update
+	 * @param module  module currently being processed
+	 * @param idx     index offset used when processing multiple traits
+	 * @param newtime latest simulation time
+	 * @return updated index offset for subsequent graphs
+	 */
 	private int updateGraph(LineGraph graph, Module<?> module, int idx, double newtime) {
 		Module<?> nod = graph.getModule();
 		boolean newmod = module != nod;
@@ -398,12 +408,25 @@ public class Mean extends AbstractView<LineGraph> implements Shifter, Zoomer {
 		return idx;
 	}
 
+	/**
+	 * Build the data array for a discrete-trait graph.
+	 * 
+	 * @param nState number of traits
+	 * @return data array (time slot left unassigned)
+	 */
 	private double[] updateDTraitGraph(int nState) {
 		double[] data = new double[nState + 1];
 		System.arraycopy(state, 0, data, 1, nState);
 		return data;
 	}
 
+	/**
+	 * Build the data array for a continuous-trait graph (mean +/- stddev).
+	 * 
+	 * @param nState number of traits
+	 * @param idx    state offset of the current trait
+	 * @return data array (time slot left unassigned)
+	 */
 	private double[] updateCTraitGraph(int nState, int idx) {
 		double[] data = new double[4];
 		double m = state[idx];
@@ -414,6 +437,12 @@ public class Mean extends AbstractView<LineGraph> implements Shifter, Zoomer {
 		return data;
 	}
 
+	/**
+	 * Build the data array for discrete fitness graphs.
+	 * 
+	 * @param nState number of traits
+	 * @return data array (time slot left unassigned)
+	 */
 	private double[] updateDFitGraph(int nState) {
 		// +1 for time, +1 for average
 		double[] data = new double[nState + 1 + 1];
@@ -421,6 +450,11 @@ public class Mean extends AbstractView<LineGraph> implements Shifter, Zoomer {
 		return data;
 	}
 
+	/**
+	 * Build the data array for continuous fitness graphs (mean +/- stddev).
+	 * 
+	 * @return data array (time slot left unassigned)
+	 */
 	private double[] updateCFitGraph() {
 		// fitness graph has only a single panel
 		double[] data = new double[4];

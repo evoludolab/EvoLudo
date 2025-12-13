@@ -86,6 +86,9 @@ public class HierarchicalGeometry extends AbstractLattice {
 	}
 
 	/**
+	 * Retrieve the geometry used within each hierarchy level (e.g. square or
+	 * well-mixed).
+	 * 
 	 * @return the geometry used within each hierarchy level (e.g. square or
 	 *         well-mixed)
 	 */
@@ -94,6 +97,8 @@ public class HierarchicalGeometry extends AbstractLattice {
 	}
 
 	/**
+	 * Report the weight applied to inter-level interactions.
+	 * 
 	 * @return the weight applied to inter-level interactions
 	 */
 	public double getHierarchyWeight() {
@@ -101,6 +106,9 @@ public class HierarchicalGeometry extends AbstractLattice {
 	}
 
 	/**
+	 * Retrieve a copy of the processed hierarchy definition (levels plus
+	 * individuals per deme).
+	 * 
 	 * @return a copy of the processed hierarchy definition (levels plus
 	 *         individuals per deme)
 	 */
@@ -772,10 +780,8 @@ public class HierarchicalGeometry extends AbstractLattice {
 
 	/**
 	 * Parse the hierarchy-related CLI spec, updating subtype, boundary flag and
-	 * weight, and returning the raw hierarchy levels (without the computed leaf
+	 * weight, and storing the raw hierarchy levels (without the computed leaf
 	 * size).
-	 *
-	 * @return the parsed hierarchy levels (never {@code null} or empty)
 	 */
 	private void parseHierarchy() {
 		CLOption clo = engine.getModule().cloGeometry;

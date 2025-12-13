@@ -296,13 +296,19 @@ public class simCDL extends CDL implements ChangeListener {
 		}
 	}
 
-	/**
-	 * Temporary variables for fixation probabilities and absorption times.
-	 */
+	/** Temporary running mean for fixation probabilities. */
 	double[] mean;
+
+	/** Temporary running variance for fixation probabilities. */
 	double[] variance;
+
+	/** Temporary state buffer for sampling. */
 	double[] state;
+
+	/** Mean of recorded means (used for statistics). */
 	double[] meanmean;
+
+	/** Variance of recorded means. */
 	double[] meanvar;
 
 	/**

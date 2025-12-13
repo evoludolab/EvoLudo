@@ -65,6 +65,12 @@ public class Console extends AbstractView<AbstractGraph<?>> implements ContextMe
 	public static class Log extends HTML implements ContextMenu.Listener {
 
 		/**
+		 * Create an empty log widget.
+		 */
+		public Log() {
+		}
+
+		/**
 		 * The default capacity of the log buffer.
 		 */
 		public static final int DEFAULT_CAPACITY = 1000;

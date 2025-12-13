@@ -99,9 +99,8 @@ import com.google.gwt.core.client.Duration;
  * <li>Manage histogram buffers and binning parameters (bin size, scale factors,
  * max bins) and ensure data arrays are allocated with proper dimensions.</li>
  * <li>Periodically update histogram contents by querying the underlying model
- * (e.g., {@link #getTraitHistogramData}, {@link #getFitnessHistogramData},
- * {@link #getDegreeHistogramData},
- * mean traits for stationary statistics, fixation sample callbacks).</li>
+ * (e.g., fetching trait/fitness/degree histogram data, mean traits for stationary
+ * statistics, fixation sample callbacks).</li>
  * <li>Handle special cases such as PDE/DE/ODE/SDE models and well-mixed
  * populations (display messages instead of histograms where appropriate).</li>
  * <li>Support context menu actions and export types appropriate for the
@@ -290,6 +289,8 @@ public class Histogram extends AbstractView<HistoGraph> {
 	/**
 	 * Count how many graphs are required based on current {@link Data} type and
 	 * module settings.
+	 * 
+	 * @return number of histogram panels required
 	 */
 	private int countGraphs() {
 		int nGraphs = 0;
@@ -340,9 +341,10 @@ public class Histogram extends AbstractView<HistoGraph> {
 	}
 
 	/**
-	 * Create and configure graphs for a single module; returns the number of
-	 * x-label rows that should be considered when computing layout.
+	 * Create and configure graphs for all species; returns the number of x-label
+	 * rows that should be considered when computing layout.
 	 * 
+	 * @param nGraphs total number of graphs to create across species
 	 * @return the number of x-label rows created
 	 */
 	private int createGraphs(int nGraphs) {
@@ -392,6 +394,7 @@ public class Histogram extends AbstractView<HistoGraph> {
 	 * Add fitness graphs for the given module.
 	 * 
 	 * @param species the list of modules to consider
+	 * @param nGraphs total number of graphs being created
 	 * @return the number of x-label rows added
 	 */
 	private int addFitnessGraphs(List<? extends Module<?>> species, int nGraphs) {
@@ -420,6 +423,7 @@ public class Histogram extends AbstractView<HistoGraph> {
 	 * Add degree graphs for the given module.
 	 * 
 	 * @param species the list of modules to consider
+	 * @param nGraphs total number of graphs being created
 	 * @return the number of x-label rows added
 	 */
 	private int addDegreeGraphs(List<? extends Module<?>> species, int nGraphs) {
@@ -457,6 +461,7 @@ public class Histogram extends AbstractView<HistoGraph> {
 	 * Add fixation probability graphs for the given module.
 	 * 
 	 * @param species the list of modules to consider
+	 * @param nGraphs total number of graphs being created
 	 * @return the number of x-label rows added
 	 */
 	private int addFixationProbabilityGraphs(List<? extends Module<?>> species, int nGraphs) {
@@ -491,6 +496,7 @@ public class Histogram extends AbstractView<HistoGraph> {
 	 * Add fixation time graphs for the given module.
 	 * 
 	 * @param species the list of modules to consider
+	 * @param nGraphs total number of graphs being created
 	 * @return the number of x-label rows added
 	 */
 	private int addFixationTimeGraphs(List<? extends Module<?>> species, int nGraphs) {
@@ -526,6 +532,7 @@ public class Histogram extends AbstractView<HistoGraph> {
 	 * Add stationary distribution graphs for the given module.
 	 * 
 	 * @param species the list of modules to consider
+	 * @param nGraphs total number of graphs being created
 	 * @return the number of x-label rows added
 	 */
 	private int addStationaryGraphs(List<? extends Module<?>> species, int nGraphs) {
@@ -676,7 +683,7 @@ public class Histogram extends AbstractView<HistoGraph> {
 	 * @param graph   the graph to style
 	 * @param n       the index of the graph
 	 * @param nGraphs the total number of graphs
-	 * @param bottom  whether this is the bottom graph
+	 * @param xdeco   decoration level: 0 none, 1 show tick labels, 2 show labels
 	 */
 	private void applyDegreeStyle(HistoGraph graph, int n, int nGraphs, int xdeco) {
 		Module<?> module = graph.getModule();
@@ -717,9 +724,9 @@ public class Histogram extends AbstractView<HistoGraph> {
 	/**
 	 * Apply style settings for fixation probability histograms.
 	 * 
-	 * @param graph  the graph to style
-	 * @param n      the index of the graph
-	 * @param bottom whether this is the bottom graph
+	 * @param graph the graph to style
+	 * @param n     the index of the graph
+	 * @param xdeco decoration level: 0 none, 1 show tick labels, 2 show labels
 	 */
 	private void applyFixationProbabilityStyle(HistoGraph graph, int n, int xdeco) {
 		GraphStyle style = graph.getStyle();
@@ -745,9 +752,11 @@ public class Histogram extends AbstractView<HistoGraph> {
 	/**
 	 * Apply style settings for fixation time histograms.
 	 * 
-	 * @param graph  the graph to style
-	 * @param n      the index of the graph
-	 * @param bottom whether this is the bottom graph
+	 * @param graph          the graph to style
+	 * @param n              the index of the graph
+	 * @param xdeco          decoration level: 0 none, 1 show tick labels, 2 show
+	 *                       labels
+	 * @param isDistribution {@code true} when plotting fixation-time distributions
 	 */
 	private void applyFixationTimeStyle(HistoGraph graph, int n, int xdeco, boolean isDistribution) {
 		GraphStyle style = graph.getStyle();
@@ -790,9 +799,9 @@ public class Histogram extends AbstractView<HistoGraph> {
 	/**
 	 * Apply style settings for stationary distribution histograms.
 	 * 
-	 * @param graph  the graph to style
-	 * @param n      the index of the graph
-	 * @param bottom whether this is the bottom graph
+	 * @param graph the graph to style
+	 * @param n     the index of the graph
+	 * @param xdeco decoration level: 0 none, 1 show tick labels, 2 show labels
 	 */
 	private void applyStationaryStyle(HistoGraph graph, int n, int xdeco) {
 		GraphStyle style = graph.getStyle();
@@ -1214,6 +1223,11 @@ public class Histogram extends AbstractView<HistoGraph> {
 	/**
 	 * Handle messaging for DE/PDE models; returns true if a message was set on the
 	 * graph and further processing should be skipped.
+	 * 
+	 * @param graph  target histogram
+	 * @param mt     current model type
+	 * @param module module owning the histogram
+	 * @return {@code true} if the graph now displays a message
 	 */
 	private boolean handleDEGraph(HistoGraph graph, ModelType mt, Module<?> module) {
 		if (mt.isPDE()) {
@@ -1236,6 +1250,12 @@ public class Histogram extends AbstractView<HistoGraph> {
 	 * Ensure the provided data buffer is sized appropriately for the given
 	 * interaction/competition geometries, update the histogram data and set axis
 	 * limits on the graph; returns the (possibly new) data buffer.
+	 * 
+	 * @param graph target histogram
+	 * @param inter interaction geometry
+	 * @param comp  competition geometry
+	 * @param data  current data buffer
+	 * @return data buffer ready to be reused by the histogram
 	 */
 	private double[][] ensureDegreeData(HistoGraph graph, AbstractGeometry inter, AbstractGeometry comp,
 			double[][] data) {
@@ -1325,6 +1345,8 @@ public class Histogram extends AbstractView<HistoGraph> {
 
 	/**
 	 * Build status string for fixation probabilities.
+	 * 
+	 * @return formatted status text
 	 */
 	private String getFixationProbabilityStatus() {
 		int nSamp = model.getNStatisticsSamples();
@@ -1347,6 +1369,8 @@ public class Histogram extends AbstractView<HistoGraph> {
 
 	/**
 	 * Build status string for fixation times.
+	 * 
+	 * @return formatted status text
 	 */
 	private String getFixationTimeStatus() {
 		StringBuilder sb = new StringBuilder("Avg. fix. time: ");

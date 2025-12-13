@@ -53,6 +53,12 @@ public class SettingsController {
 	 */
 	private static final class Settings {
 
+		/**
+		 * Create a new settings record with default capability flags.
+		 */
+		private Settings() {
+		}
+
 		/** {@code true} if the lab runs in an ePub reader. */
 		boolean isEPub;
 
@@ -157,7 +163,6 @@ public class SettingsController {
 	/**
 	 * Creates a new settings controller.
 	 * 
-	 * @param isEPub         the flag to indicate whether running in an ePub reader
 	 * @param cloField       the command-line option field
 	 * @param applyButton    the apply button
 	 * @param defaultButton  the default button
@@ -191,6 +196,7 @@ public class SettingsController {
 	 * editing is permitted.
 	 *
 	 * @param dropHandlerRegistrar callback that installs drag-and-drop handlers
+	 * @return {@code true} if editing is enabled
 	 */
 	public boolean applyUiToggles(Runnable dropHandlerRegistrar) {
 		boolean editCLO = !SETTINGS.isEPub || SETTINGS.standalone;

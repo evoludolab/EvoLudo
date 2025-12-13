@@ -53,10 +53,24 @@ import org.evoludo.util.CLOption.Key;
  */
 public class CLOController {
 
+	/**
+	 * Owning EvoLudo engine coordinating models and modules.
+	 */
 	private final EvoLudo engine;
+
+	/**
+	 * Parser used to manage all registered command-line options.
+	 */
 	private final CLOParser parser;
 
+	/**
+	 * Flag indicating whether the CLI string needs to be reparsed.
+	 */
 	private boolean reparseCLO = false;
+
+	/**
+	 * Cached command-line string that should be applied when parsing.
+	 */
 	private String clo = "";
 
 	/**
@@ -218,45 +232,94 @@ public class CLOController {
 	 */
 	public final String[] helpCLO = new String[] { cloHelp.getName() };
 
+	/**
+	 * Create a controller bound to the supplied engine.
+	 * 
+	 * @param evo owning EvoLudo instance
+	 */
 	public CLOController(EvoLudo evo) {
 		this.engine = evo;
 		this.parser = new CLOParser(evo);
 	}
 
+	/**
+	 * Return the underlying parser used to register CLOs.
+	 * 
+	 * @return the underlying parser used to register CLOs
+	 */
 	public CLOParser getParser() {
 		return parser;
 	}
 
+	/**
+	 * Get the raw command-line string currently stored in the parser.
+	 * 
+	 * @return the raw command-line string currently stored in the parser
+	 */
 	public String getParserCLO() {
 		return parser.getCLO();
 	}
 
+	/**
+	 * Check whether this controller (or its providers) supplies the given option.
+	 * 
+	 * @param name option name
+	 * @return {@code true} if provided
+	 */
 	public boolean providesCLO(String name) {
 		return parser.providesCLO(name);
 	}
 
+	/**
+	 * Register an additional source of command-line options.
+	 * 
+	 * @param provider provider to add
+	 */
 	public void addCLOProvider(CLOProvider provider) {
 		parser.addCLOProvider(provider);
 	}
 
+	/**
+	 * Remove a previously registered provider.
+	 * 
+	 * @param provider provider to remove
+	 */
 	public void removeCLOProvider(CLOProvider provider) {
 		parser.removeCLOProvider(provider);
 	}
 
+	/**
+	 * Request that the command-line string be reparsed before the next run.
+	 */
 	public void requestParseCLO() {
 		reparseCLO = true;
 	}
 
+	/**
+	 * Return the cached command-line string awaiting parsing.
+	 * 
+	 * @return cached command-line string
+	 */
 	public String getCLO() {
 		return clo;
 	}
 
+	/**
+	 * Update the cached command-line string to be parsed.
+	 * 
+	 * @param clo command-line input
+	 */
 	public void setCLO(String clo) {
 		if (clo == null)
 			clo = "";
 		this.clo = clo.trim();
 	}
 
+	/**
+	 * Return the cached command-line string split on option boundaries.
+	 * 
+	 * @return cached command-line string split on option boundaries
+	 */
 	public String[] getSplitCLO() {
 		// strip all whitespace at start and end
 		String[] args = clo.trim().split("\\s+--");
@@ -266,14 +329,31 @@ public class CLOController {
 		return args;
 	}
 
+	/**
+	 * Parse the cached command-line string.
+	 * 
+	 * @return parser exit status
+	 */
 	public int parseCLO() {
 		return parseCLO(getSplitCLO());
 	}
 
+	/**
+	 * Parse the provided command-line arguments.
+	 * 
+	 * @param cloarray arguments to parse
+	 * @return parser exit status
+	 */
 	public int parseCLO(String[] cloarray) {
 		return parsePreprocessedCLO(preprocessCLO(cloarray));
 	}
 
+	/**
+	 * Parse arguments after preprocessing (quoting, substitutions) has completed.
+	 * 
+	 * @param cloarray processed arguments
+	 * @return parser exit status
+	 */
 	public int parsePreprocessedCLO(String[] cloarray) {
 		parser.setLogger(engine.logger);
 		parser.initCLO();
@@ -293,6 +373,13 @@ public class CLOController {
 		return issues;
 	}
 
+	/**
+	 * Apply preprocessing to the command-line arguments (module/model resolution,
+	 * helper options).
+	 * 
+	 * @param cloarray raw arguments
+	 * @return processed arguments ready for parsing
+	 */
 	public String[] preprocessCLO(String[] cloarray) {
 		// first, deal with --help option
 		boolean helpRequested = containsHelpOption(cloarray);
@@ -315,6 +402,12 @@ public class CLOController {
 		return cloarray;
 	}
 
+	/**
+	 * Check whether the {@code --help} option was provided.
+	 * 
+	 * @param cloarray arguments to inspect
+	 * @return {@code true} if help was requested
+	 */
 	private boolean containsHelpOption(String[] cloarray) {
 		String helpName = cloHelp.getName();
 		for (String param : cloarray) {
@@ -324,6 +417,13 @@ public class CLOController {
 		return false;
 	}
 
+	/**
+	 * Process the {@code --module} option (loading modules early if needed).
+	 * 
+	 * @param cloarray      arguments to inspect
+	 * @param helpRequested whether help has been requested already
+	 * @return updated argument array
+	 */
 	private String[] handleModuleOption(String[] cloarray, boolean helpRequested) {
 		String moduleParam = cloModule.getName();
 		CLOption.Key moduleKey = null;
@@ -355,6 +455,14 @@ public class CLOController {
 		return cloarray;
 	}
 
+	/**
+	 * Process the {@code --model} option, constraining choices based on the
+	 * selected module.
+	 * 
+	 * @param cloarray      arguments to inspect
+	 * @param helpRequested whether help has been requested already
+	 * @return updated argument array
+	 */
 	private String[] handleModelOption(String[] cloarray, boolean helpRequested) {
 		String modelName = cloModel.getName();
 		Collection<Key> keys = cloModel.getKeys();
@@ -410,6 +518,12 @@ public class CLOController {
 		return cloarray;
 	}
 
+	/**
+	 * Process the {@code --verbose} option and update logger state.
+	 * 
+	 * @param cloarray arguments to inspect
+	 * @return updated argument array
+	 */
 	private String[] handleVerboseOption(String[] cloarray) {
 		String verboseName = cloVerbose.getName();
 		for (int i = 0; i < cloarray.length; i++) {
@@ -431,6 +545,12 @@ public class CLOController {
 		return cloarray;
 	}
 
+	/**
+	 * Build a help string summarizing all available options for the active module
+	 * and model.
+	 * 
+	 * @return formatted help text
+	 */
 	public String getCLOHelp() {
 		// list trait indices and names
 		String globalMsg = "List of command line options";
@@ -474,6 +594,11 @@ public class CLOController {
 		return parser.helpCLO(true);
 	}
 
+	/**
+	 * Register all built-in CLOs with the supplied parser.
+	 * 
+	 * @param prsr parser to populate
+	 */
 	public void collectCLO(CLOParser prsr) {
 		prsr.addCLO(cloHelp);
 		prsr.addCLO(cloVerbose);

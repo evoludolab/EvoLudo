@@ -658,16 +658,22 @@ public class EvoLudoWeb extends Composite
 	}
 
 	/**
-	 * 
+	 * Reset the current view selection to the default entry.
 	 */
 	public void resetViewSelection() {
 		viewController.resetSelection();
 	}
 
+	/**
+	 * Clear the command line option field in the GUI.
+	 */
 	public void clearCommandLineOptions() {
 		evoludoCLO.setText("");
 	}
 
+	/**
+	 * Restore the default log threshold (display all severities).
+	 */
 	public void resetStatusThreshold() {
 		displayStatusThresholdLevel = Level.ALL.intValue();
 	}
@@ -1042,6 +1048,8 @@ public class EvoLudoWeb extends Composite
 	}
 
 	/**
+	 * Obtain the DOM element that backs the CLO label for direct manipulation.
+	 * 
 	 * @return the DOM element that backs the CLO label
 	 */
 	public Element getCLOElement() {
@@ -1368,6 +1376,12 @@ public class EvoLudoWeb extends Composite
 	class GUIState {
 
 		/**
+		 * Create an empty GUI state snapshot.
+		 */
+		GUIState() {
+		}
+
+		/**
 		 * The active module.
 		 */
 		Module<?> module;
@@ -1493,8 +1507,8 @@ public class EvoLudoWeb extends Composite
 	}
 
 	/**
-	 * Process the command line options for snap execution, {@link #cloSnap}, and
-	 * start the model accordingly.
+	 * Process the command line options for snap execution,
+	 * {@link EvoLudoGWT#cloSnap}, and start the model accordingly.
 	 */
 	private void processCLOSnap() {
 		if (!engine.cloSnap.isSet())
@@ -1870,6 +1884,9 @@ public class EvoLudoWeb extends Composite
 		Document.get().getBody().appendChild(snapmarker);
 	}
 
+	/**
+	 * Remove the temporary DOM marker indicating that a snapshot is ready.
+	 */
 	public void clearSnapshotMarker() {
 		if (snapmarker == null)
 			return;
@@ -2042,6 +2059,9 @@ public class EvoLudoWeb extends Composite
 			logEvoHandler.setLevel(editCLO ? logger.getLevel() : Level.OFF);
 	}
 
+	/**
+	 * Update drag-and-drop handlers after UI toggles changed the layout.
+	 */
 	private void updateDropHandlers() {
 		if (dragEnterHandler == null)
 			dragEnterHandler = addDomHandler((DragEnterEvent event) -> {

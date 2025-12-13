@@ -46,6 +46,9 @@ import org.evoludo.simulator.modules.Module;
  */
 class LifecycleController {
 
+	/**
+	 * Owning engine used to query modules and dispatch events.
+	 */
 	private final EvoLudo engine;
 
 	/**
@@ -53,6 +56,11 @@ class LifecycleController {
 	 */
 	protected List<LifecycleListener> lifecycleListeners = new ArrayList<>();
 
+	/**
+	 * Create a controller bound to the supplied engine.
+	 * 
+	 * @param engine EvoLudo runtime to interact with
+	 */
 	public LifecycleController(EvoLudo engine) {
 		this.engine = engine;
 	}

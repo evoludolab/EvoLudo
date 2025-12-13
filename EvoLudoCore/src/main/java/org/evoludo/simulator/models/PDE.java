@@ -122,6 +122,9 @@ public class PDE extends ODE {
 	 */
 	double[] background;
 
+	/**
+	 * Helper responsible for parsing and applying PDE initialization options.
+	 */
 	private final PDEInitialize initializer;
 
 	/**
@@ -1079,7 +1082,12 @@ public class PDE extends ODE {
 	}
 
 	/**
-	 * Validate that the parsed init matrix is acceptable for the chosen initType.
+	 * Validate that the parsed init matrix is acceptable for the chosen
+	 * initialization type.
+	 * 
+	 * @param init candidate initialization matrix
+	 * @return {@code true} if {@code init} satisfies the requirements of
+	 *         {@link #initType}
 	 */
 	private boolean isValidInitForType(double[][] init) {
 		if (initType == null)

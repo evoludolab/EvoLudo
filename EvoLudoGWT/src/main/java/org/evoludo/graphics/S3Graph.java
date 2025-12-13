@@ -58,23 +58,10 @@ import com.google.gwt.user.client.ui.Widget;
 
 /**
  * Graph for the simplex \(S_3\). The graph is used to visualize the evolution
- * of three traits. The traits are projected onto the three corners of the
- * simplex. The graph provides a context menu to set and/or swap the order of
- * the traits.
- * <p>
- * The graph is backed by a {@link RingBuffer} to store the trajectory. The
- * buffer is updated by calling {@link #addData(double, double[], boolean)}. It
- * is interactive and allows the user to zoom and shift the view. The user can
- * set the initial state by double-clicking on the graph. The graph can be
- * exported in PNG or SVG graphics formats or the trajectory data as CSV.
- *
- * @author Christoph Hauert
- */
-/**
- * The graphical representation of the simplex \(S_3\). The graph displays the
- * parametric plot of trajectories projected onto the simplex. For more than two
- * traits the context menu allows to pick the displayed traits and swap their
- * corners.
+ * of three traits by projecting them onto the corners of the simplex. The view
+ * renders parametric trajectories stored in a {@link RingBuffer}, exposes zoom
+ * and shift interactions, supports swapping trait assignments via a context
+ * menu, and allows exporting to PNG/SVG or CSV.
  *
  * <h3>Responsibilities</h3>
  * <ul>
@@ -400,6 +387,9 @@ public class S3Graph extends AbstractGraph<double[]> implements Zooming, Shiftin
 
 	/**
 	 * Draw the trajectory stored in the buffer.
+	 * 
+	 * @param w graph width
+	 * @param h graph height
 	 */
 	private void drawTrajectory(double w, double h) {
 		Point2D prevPt = new Point2D();
@@ -431,6 +421,9 @@ public class S3Graph extends AbstractGraph<double[]> implements Zooming, Shiftin
 
 	/**
 	 * Draw start and end markers for the trajectory.
+	 * 
+	 * @param w graph width
+	 * @param h graph height
 	 */
 	private void drawStartEndMarkers(double w, double h) {
 		Point2D prevPt = new Point2D();
@@ -446,7 +439,10 @@ public class S3Graph extends AbstractGraph<double[]> implements Zooming, Shiftin
 	}
 
 	/**
-	 * Draw any additional markers stored in 'markers'.
+	 * Draw any additional markers stored in {@code markers}.
+	 * 
+	 * @param w graph width
+	 * @param h graph height
 	 */
 	private void drawCustomMarkers(double w, double h) {
 		if (markers == null)

@@ -432,6 +432,12 @@ public class ATBT extends TBT implements HasS3, HasPhase2D {
 	 */
 	public class ATBTMap implements Data2Phase, BasicTooltipProvider {
 
+		/**
+		 * Create the 2D projection helper using the surrounding module settings.
+		 */
+		public ATBTMap() {
+		}
+
 		@Override
 		public boolean data2Phase(double[] data, Point2D point) {
 			// NOTE: data[0] is time!

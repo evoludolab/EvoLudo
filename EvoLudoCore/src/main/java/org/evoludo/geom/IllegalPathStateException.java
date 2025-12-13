@@ -59,7 +59,7 @@ package org.evoludo.geom;
  * exception that is thrown if an operation is performed on a path
  * that is in an illegal state with respect to the particular
  * operation being performed, such as appending a path segment
- * to a {@link GeneralPath} without an initial moveto.
+ * to a {@link Path2D} without an initial moveto.
  * <p>
  * Adapted from {@code java.awt.geom.IllegalPathStateException} and made more
  * GWT friendly.

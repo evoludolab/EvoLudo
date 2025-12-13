@@ -96,7 +96,6 @@ public class CubicGeometry extends AbstractLattice {
 	 *
 	 * @param l  side length of the lattice
 	 * @param lz number of layers along the z-direction
-	 * @param l2 cached {@code l*l}
 	 */
 	private void initSelf(int l, int lz) {
 		int l2 = l * l;
@@ -118,7 +117,6 @@ public class CubicGeometry extends AbstractLattice {
 	 *
 	 * @param l  side length of the lattice
 	 * @param lz number of layers along the z-direction
-	 * @param l2 cached {@code l*l}
 	 */
 	private void initSixNeighbors(int l, int lz) {
 		boolean interspecies = isInterspecies();
@@ -143,6 +141,12 @@ public class CubicGeometry extends AbstractLattice {
 
 	/**
 	 * Adds the six nearest-neighbors with fixed boundary conditions.
+	 *
+	 * @param interspecies whether self-links are permitted
+	 * @param z            layer offset
+	 * @param up           index offset of the layer above
+	 * @param down         index offset of the layer below
+	 * @param l            side length of the lattice
 	 */
 	private void addSixNeighborsFixed(boolean interspecies, int z, int up, int down, int l) {
 		for (int i = 0; i < l; i++) {
@@ -167,6 +171,11 @@ public class CubicGeometry extends AbstractLattice {
 
 	/**
 	 * Adds a neighbor if all indices are valid (non-negative).
+	 *
+	 * @param aPlayer the focal node
+	 * @param z       layer offset
+	 * @param y       row offset within the layer
+	 * @param x       column offset within the row
 	 */
 	private void addNeighbor(int aPlayer, int z, int y, int x) {
 		if (z >= 0 && y >= 0 && x >= 0) {
@@ -176,6 +185,12 @@ public class CubicGeometry extends AbstractLattice {
 
 	/**
 	 * Adds the six nearest-neighbors with toroidal boundary conditions.
+	 *
+	 * @param interspecies whether self-links are permitted
+	 * @param z            layer offset
+	 * @param up           index offset of the layer above
+	 * @param down         index offset of the layer below
+	 * @param l            side length of the lattice
 	 */
 	private void addSixNeighborsToroidal(boolean interspecies, int z, int up, int down, int l) {
 		for (int i = 0; i < l; i++) {
@@ -204,7 +219,6 @@ public class CubicGeometry extends AbstractLattice {
 	 *
 	 * @param l  side length of the lattice
 	 * @param lz number of layers along the z-direction
-	 * @param l2 cached {@code l*l}
 	 */
 	private void initRange(int l, int lz) {
 		if (fixedBoundary)

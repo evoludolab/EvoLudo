@@ -307,6 +307,13 @@ public abstract class GenericPop<T, N extends Network<?>, G extends GenericPopGr
 
 	/**
 	 * Assemble tooltip for IBS models.
+	 * 
+	 * @param node   node index
+	 * @param nNodes total number of geometry nodes
+	 * @param module module owning the graph
+	 * @param graph  graph providing geometry and color mapping
+	 * @param tip    builder used to accumulate HTML
+	 * @return tooltip HTML string
 	 */
 	private String tooltipForIBS(int node, int nNodes, Module<?> module, G graph,
 			StringBuilder tip) {
@@ -558,6 +565,7 @@ public abstract class GenericPop<T, N extends Network<?>, G extends GenericPopGr
 	 * @param module   the module
 	 * @param graph    the graph
 	 * @param tip      the StringBuilder to append to
+	 * @return tooltip HTML string
 	 */
 	private String tooltipForPDE(int node, int nNodes, AbstractGeometry geometry, Module<?> module, G graph,
 			StringBuilder tip) {
@@ -723,10 +731,11 @@ public abstract class GenericPop<T, N extends Network<?>, G extends GenericPopGr
 	/**
 	 * Return a formatted string of the neighbourhood structure at the given node.
 	 * 
-	 * @param links the array of indices of the neighbours
-	 * @param k     the number of links
-	 * @param type  the type of the geometry
-	 * @return the formatted string
+	 * @param label label describing the neighbour set
+	 * @param links array of neighbour indices
+	 * @param k     number of links
+	 * @param tip   builder to append to
+	 * @return the updated builder
 	 */
 	private static StringBuilder appendNeighbors(String label, int[] links, int k, StringBuilder tip) {
 		tip.append(TABLE_ROW_START)

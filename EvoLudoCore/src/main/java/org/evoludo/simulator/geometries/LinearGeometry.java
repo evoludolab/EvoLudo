@@ -39,6 +39,9 @@ import org.evoludo.util.CLOParser;
  */
 public class LinearGeometry extends AbstractLattice {
 
+	/**
+	 * Difference between the number of neighbours on the left vs right.
+	 */
 	private int linearAsymmetry = 0;
 
 	/**
@@ -116,6 +119,8 @@ public class LinearGeometry extends AbstractLattice {
 	}
 
 	/**
+	 * Get the current left-right neighbour difference.
+	 * 
 	 * @return the left-right neighbour difference
 	 */
 	public int getLinearAsymmetry() {

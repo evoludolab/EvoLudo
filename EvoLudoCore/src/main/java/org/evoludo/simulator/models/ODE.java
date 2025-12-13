@@ -65,6 +65,9 @@ import org.evoludo.util.Plist;
  */
 public class ODE extends Model implements DModel {
 
+	/**
+	 * Helper responsible for parsing and initializing ODE state vectors.
+	 */
 	private final ODEInitialize initializer;
 
 	/**
@@ -373,6 +376,12 @@ public class ODE extends Model implements DModel {
 		return doReset;
 	}
 
+	/**
+	 * Validate modules and derive aggregate state vector dimensions and scaling
+	 * factors.
+	 * 
+	 * @return {@code true} if a reset is required due to module changes
+	 */
 	private boolean evaluateSpecies() {
 		invFitRange = null;
 		idxSpecies = new int[nSpecies + 1];
@@ -414,6 +423,11 @@ public class ODE extends Model implements DModel {
 		return doReset;
 	}
 
+	/**
+	 * Allocate working arrays for the current dimensionality and payoff mode.
+	 * 
+	 * @param hasPayoffs {@code true} if at least one module provides payoffs
+	 */
 	private void allocArrays(boolean hasPayoffs) {
 		if (yt == null || yt.length != nDim) {
 			yt = new double[nDim];
@@ -424,6 +438,12 @@ public class ODE extends Model implements DModel {
 			ft = new double[nDim];
 	}
 
+	/**
+	 * Determine whether the current setup should use density- or frequency-based
+	 * dynamics and refresh dependent indices accordingly.
+	 * 
+	 * @return {@code true} if the mode changed and a reset is required
+	 */
 	private boolean updateDynamicsMode() {
 		InitType init = initType[0];
 		boolean isDensityNow = (init == InitType.DENSITY || init == InitType.UNITY);

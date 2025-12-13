@@ -93,6 +93,7 @@ public class FSController implements FullscreenChangeHandler {
 	 * Create a new controller for the given engine.
 	 *
 	 * @param engine the owning EvoLudoGWT instance
+	 * @param widget widget whose size/fullscreen state should be managed
 	 */
 	// GWT 2.12.2 is unable to handle HandlerRegistration with lambda here
 	@SuppressWarnings("java:S1604")
