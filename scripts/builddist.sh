@@ -61,14 +61,16 @@ if [ -d ${EVOLUDO_DIST} ]; then
 	exit 1
 fi
 
-# start by running tests
-${EVOLUDO_SH}/runtests.sh
+read -p "Run tests? [Yes|no] " -n 1 -r
+echo # (optional) move to a new line
+if [[ ! $REPLY =~ ^[Nn]$ ]]; then
+	${EVOLUDO_SH}/runtests.sh
+	passed=$?
 
-passed=$?
-
-if [ $passed -ne 0 ]; then
-	echo "EvoLudo test(s) failed - aborting!"
-	exit $passed
+	if [ $passed -ne 0 ]; then
+		echo "EvoLudo test(s) failed - aborting!"
+		exit $passed
+	fi
 fi
 
 # build API documentation (if needed) - places javadoc in docs/api
@@ -76,24 +78,45 @@ fi
 if [[ ! -d ${EVOLUDO_API} || (-d ${EVOLUDO_API} && ${LATEST_JAVA} -nt ${LATEST_DOC}) ]]; then
 	echo "Building public API documentation..."
 	mvn -P public,-private javadoc:aggregate
+	passed=$?
+
+	if [ $passed -ne 0 ]; then
+		echo "Building javadoc failed - aborting!"
+		exit $passed
+	fi
 else
 	echo "Building public API documentation skipped..."
-fi
-
-passed=$?
-
-if [ $passed -ne 0 ]; then
-	echo "Building javadoc failed - aborting!"
-	exit $passed
 fi
 
 # create distribution directory
 mkdir -p dist/war
 
+# building GWT app (if needed)
+if [[ ${LATEST_JAVA} -nt ${LATEST_GWT} ]]; then
+	echo "Building EvoLudo GWT application..."
+	mvn -pl EvoLudoGWT -am install
+	passed=$?
+	if [ $passed -ne 0 ]; then
+		echo "Building EvoLudo GWT files failed - aborting!"
+		exit $passed
+	fi
+fi
+
 # copy GWT files
 echo "Copying EvoLudo GWT files..."
 cp -a "$EVOLUDO_GWT_HOME"/target/EvoLudoGWT*/evoludoweb dist/war/
 cp -a "$EVOLUDO_GWT_HOME"/src/main/webapp/* dist/war/
+
+# building JRE executable (if needed)
+if [[ ${LATEST_JAVA} -nt ${LATEST_GWT} ]]; then
+	echo "Building EvoLudo JRE executable..."
+	mvn -pl EvoLudoJRE -am install
+	passed=$?
+	if [ $passed -ne 0 ]; then
+		echo "Building EvoLudo JRE files failed - aborting!"
+		exit $passed
+	fi
+fi
 
 # copy JRE executable
 echo "Copying EvoLudo JRE executable..."
