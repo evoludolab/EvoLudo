@@ -49,21 +49,16 @@ import org.evoludo.simulator.models.RunListener;
 import org.evoludo.simulator.models.SampleListener;
 import org.evoludo.simulator.modules.Module;
 import org.evoludo.simulator.ui.SettingsController;
+import org.evoludo.simulator.ui.FSController;
 import org.evoludo.simulator.ui.KeyHandler;
 import org.evoludo.simulator.ui.ViewController;
 import org.evoludo.simulator.views.AbstractView;
 import org.evoludo.simulator.views.Console;
 import org.evoludo.ui.ContextMenu;
-import org.evoludo.ui.FullscreenChangeEvent;
-import org.evoludo.ui.FullscreenChangeHandler;
-import org.evoludo.ui.HasFullscreenChangeHandlers;
 import org.evoludo.ui.InputEvent;
 import org.evoludo.ui.Slider;
-import org.evoludo.util.CLOCategory;
-import org.evoludo.util.CLODelegate;
 import org.evoludo.util.CLOParser;
 import org.evoludo.util.CLOProvider;
-import org.evoludo.util.CLOption;
 import org.evoludo.util.NativeJS;
 import org.evoludo.util.Plist;
 import org.evoludo.util.PlistParser;
@@ -340,7 +335,7 @@ import com.google.gwt.user.client.ui.Widget;
  * @see Console
  */
 public class EvoLudoWeb extends Composite
-		implements HasFullscreenChangeHandlers, FullscreenChangeHandler, LifecycleListener, RunListener, ChangeListener,
+		implements LifecycleListener, RunListener, ChangeListener,
 		SampleListener, CLOProvider, EntryPoint {
 
 	/**
@@ -396,16 +391,6 @@ public class EvoLudoWeb extends Composite
 	HandlerRegistration dragLeaveHandler;
 
 	/**
-	 * The reference to the fullscreen event handler.
-	 */
-	HandlerRegistration fullscreenHandler;
-
-	/**
-	 * The reference to the fullscreen widget.
-	 */
-	Widget fullscreenWidget;
-
-	/**
 	 * ID of element in DOM that contains the EvoLudo lab.
 	 */
 	String elementID = "EvoLudoWeb";
@@ -425,6 +410,11 @@ public class EvoLudoWeb extends Composite
 	 * feature detection get reported.
 	 */
 	Console viewConsole;
+
+	/**
+	 * Controller handling fullscreen and --size option.
+	 */
+	private FSController fsController;
 
 	/**
 	 * Early initializations.
@@ -504,9 +494,6 @@ public class EvoLudoWeb extends Composite
 		// note: the {}-place holders interfere with UiBinder...
 		evoludoSlider.setTitle("Set delay between updates ({max} - {min}msec); now at {value}msec");
 
-		// add full screen change handler
-		if (NativeJS.isFullscreenSupported())
-			fullscreenHandler = addFullscreenChangeHandler(this);
 	}
 
 	/**
@@ -644,8 +631,7 @@ public class EvoLudoWeb extends Composite
 
 		// now evoludoPanel is attached and we can set the grandparent as the
 		// fullscreen element
-		fullscreenWidget = evoludoPanel.getParent().getParent();
-		engine.setFullscreenElement(fullscreenWidget.getElement());
+		fsController = new FSController(engine, (evoludoPanel.getParent().getParent()));
 
 		String clo = engine.getCLO();
 		// clo may have been set from the URL or as an HTML attribute
@@ -1508,7 +1494,7 @@ public class EvoLudoWeb extends Composite
 			// single issue is already displayed in status line
 			displayStatus("Multiple parsing problems (" + guiState.issues + ") - check log for details.",
 					Level.WARNING.intValue() + 1);
-			cloSize.parse();
+			fsController.parseSize();
 		}
 		evoludoSlider.setValue(engine.getDelay());
 		revertCLO();
@@ -1928,62 +1914,11 @@ public class EvoLudoWeb extends Composite
 		Document.get().getBody().appendChild(snapmarker);
 	}
 
-	/**
-	 * Command line option to set the size of the GUI or enter fullscreen.
-	 */
-	public final CLOption cloSize = new CLOption("size", "530,620", CLOCategory.GUI,
-			"--size <w,h|fullscreen>  size of GUI, w: width, h: height", new CLODelegate() {
-				/**
-				 * {@inheritDoc}
-				 * <p>
-				 * Set the initial size of the lab to {@code arg}.
-				 */
-				@Override
-				public boolean parse(String arg) {
-					if (arg.startsWith("full")) {
-						if (NativeJS.isFullscreenSupported()) {
-							engine.setFullscreen(true);
-							return true;
-						}
-						arg = cloSize.getDefault();
-					}
-					double[] dim = CLOParser.parseVector(arg);
-					if (dim.length != 2)
-						return false;
-					// note: why do we need to set the initial size on the grandparent?
-					fullscreenWidget.setSize((int) dim[0] + "px", (int) dim[1] + "px");
-					return true;
-				}
-			});
-
 	@Override
 	public void collectCLO(CLOParser parser) {
 		parser.addCLO(settingsController.getCloEmulate());
 		parser.addCLO(viewController.getCloView());
-		parser.addCLO(cloSize);
-	}
-
-	@Override
-	public HandlerRegistration addFullscreenChangeHandler(FullscreenChangeHandler handler) {
-		String eventname = NativeJS.fullscreenChangeEventName();
-		NativeJS.addFullscreenChangeHandler(eventname, handler);
-		return new HandlerRegistration() {
-			@Override
-			public void removeHandler() {
-				NativeJS.removeFullscreenChangeHandler(eventname, handler);
-			}
-		};
-	}
-
-	// note: works in Safari and Chrome; some weird scaling issues remain with
-	// Firefox for Chrome it is important to use {@code onfullscreenchange} and not
-	// {@code onwebkitfullscreenchange}! the two do not seem to be identical
-	@Override
-	public void onFullscreenChange(FullscreenChangeEvent event) {
-		if (NativeJS.isFullscreen())
-			NativeJS.getFullscreenElement().addClassName("fullscreen");
-		else
-			evoludoPanel.getParent().getParent().getElement().removeClassName("fullscreen");
+		parser.addCLO(fsController.getCloSize());
 	}
 
 	/**
