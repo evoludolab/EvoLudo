@@ -270,9 +270,11 @@
               <arg>-style</arg>
               <arg>${gwt.style.devmode}</arg>
             </devmodeArgs>
-            <launcherDir>${basedir}/EvoLudoGWT/target/EvoLudoGWT-${project.version}</launcherDir>
-            <devmodeWorkDir>${basedir}/EvoLudoGWT/target/gwt/devmode/work</devmodeWorkDir>
-            <warDir>${basedir}/EvoLudoGWT/target/EvoLudoGWT-${project.version}</warDir>
+            <launcherDir>
+              ${maven.multiModuleProjectDirectory}/EvoLudoGWT/target/EvoLudoGWT-${project.version}</launcherDir>
+            <devmodeWorkDir>${maven.multiModuleProjectDirectory}/EvoLudoGWT/target/gwt/devmode/work</devmodeWorkDir>
+            <warDir>
+              ${maven.multiModuleProjectDirectory}/EvoLudoGWT/target/EvoLudoGWT-${project.version}</warDir>
           </configuration>
         </plugin>
 
@@ -380,19 +382,6 @@
         <module>EvoLudoGWT</module>
         <module>EvoLudoTest</module>
         <module>EvoLudoSims</module>
-      </modules>
-    </profile>
-
-    <!-- Convenience profile to run GWT goals from the repo root -->
-    <profile>
-      <id>gwt</id>
-      <build>
-        <defaultGoal>gwt:devmode</defaultGoal>
-        <!-- Redirect build output to target folder inside the EvoLudoGWT module -->
-        <directory>${basedir}/EvoLudoGWT/target</directory>
-      </build>
-      <modules>
-        <module>EvoLudoGWT</module>
       </modules>
     </profile>
 

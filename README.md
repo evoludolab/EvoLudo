@@ -24,7 +24,7 @@ Start exploring the fascinating world of evolutionary dynamics and spatio-tempor
 > In order to initialize your *EvoLudo* development environment execute `mvn clean` to download and install all required software dependencies into your local maven repository. This includes those from remote repositories as well as those provided by *EvoLudo*. This is only needed for the initial setup.
 
 1. Compile all modules with `mvn clean install`.
-2. Execute `mvn -Pgwt` or `mvn gwt:devmode` to launch a local [*Jetty*](https://github.com/jetty) web server.
+2. Execute `mvn gwt:devmode` to launch a local [*Jetty*](https://github.com/jetty) web server.
 
 > [!NOTE]
 > All warnings that are displayed in the terminal are issued by *Jetty*. They can be safely ignored. However, *Jetty* should exclusively be used for development and never for deployment.
@@ -50,7 +50,7 @@ With the [Quick start](#quick-start) steps everything is already setup for devel
 1. The configuration files in the *EvoLudo* repository are designed to support development using [*VSCode*](https://code.visualstudio.com) but should be easy to adjust to your favourite IDE.
 2. The second step in the [Quick start](#quick-start) above translates the java code into *JavaScript* using the [GWT](https://www.gwtproject.org) toolkit. The third step launches a development server at *localhost*. Unsurprisingly *localhost* is only reachable from the local machine. 
 
-   Instead, if you would like to test the *EvoLudo* web application on another device (for example to test touch features on a tablet), add the option `-Devoludo.server=<server>` to the command line, where `<server>` is the DNS name or IP address of the machine that runs the development server. The simplest way is to use the `hostname` command to determine the name of you machine, for example by running ``mvn -Pgwt -Devoludo.server=`hostname` ``. Alternatively, the local IP address can be retrieved with `ipconfig` on Windows, `ipconfig getifaddr en0` (or `en1` depending on your hardware and network configuration) on macOS, and `hostname -I` on Linux. 
+   Instead, if you would like to test the *EvoLudo* web application on another device (for example to test touch features on a tablet), add the option `-Devoludo.server=<server>` to the command line, where `<server>` is the DNS name or IP address of the machine that runs the development server. The simplest way is to use the `hostname` command to determine the name of you machine, for example by running ``mvn -Devoludo.server=`hostname` gwt:devmode``. Alternatively, the local IP address can be retrieved with `ipconfig` on Windows, `ipconfig getifaddr en0` (or `en1` depending on your hardware and network configuration) on macOS, and `hostname -I` on Linux. 
    
    Now the server is reachable on your local network or the outside world at `http://<server>:8888/<yourfile>.html`, depending on your network configuration. On port *9876* listens the source map provider linking the compiled and obfuscated *JavaScript* code to the actual source code files.
 3. For development, three modes are available:
