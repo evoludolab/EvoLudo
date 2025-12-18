@@ -806,11 +806,6 @@ public abstract class EvoLudo
 	}
 
 	/**
-	 * Flag to indicate if a backstep is in progress.
-	 */
-	// maintained in RunController
-
-	/**
 	 * Attempts to backtrack a single step of the EvoLudo model. Called when
 	 * pressing the 'Prev' button, the 'p' or 'left-arrow' key.
 	 */
