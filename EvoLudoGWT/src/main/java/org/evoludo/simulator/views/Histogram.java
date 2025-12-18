@@ -237,6 +237,12 @@ public class Histogram extends AbstractView<HistoGraph> {
 	}
 
 	@Override
+	public void unload() {
+		super.unload();
+		engine.removeSampleListener(this);
+	}
+
+	@Override
 	public Mode getMode() {
 		return type.getMode();
 	}

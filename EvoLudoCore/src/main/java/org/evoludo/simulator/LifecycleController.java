@@ -172,8 +172,9 @@ class LifecycleController {
 			if (engine.activeModule == null)
 				return false;
 			if (engine.logger.isLoggable(Level.WARNING))
-				engine.logger
-						.warning("module '" + newModuleKey + "' not found - keeping '" + engine.activeModule.getKey() + "'.");
+				engine.logger.warning("module '" + newModuleKey +
+						"' not found - keeping '" +
+						engine.activeModule.getKey() + "'.");
 			return true;
 		}
 		if (engine.activeModule != null) {
@@ -236,7 +237,8 @@ class LifecycleController {
 			}
 			return;
 		}
-		unloadModel();
+		if (engine.activeModel != newModel)
+			unloadModel();
 		engine.activeModel = newModel;
 		engine.addCLOProvider(engine.activeModel);
 		engine.activeModule.setModel(engine.activeModel);

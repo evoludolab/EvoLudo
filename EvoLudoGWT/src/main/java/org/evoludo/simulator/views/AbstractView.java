@@ -201,6 +201,11 @@ public abstract class AbstractView<G extends AbstractGraph<?>> extends Composite
 	}
 
 	@Override
+	public void modelLoaded() {
+		model = engine.getModel();
+	}
+
+	@Override
 	public void modelUnloaded() {
 		unload();
 	}
@@ -212,6 +217,9 @@ public abstract class AbstractView<G extends AbstractGraph<?>> extends Composite
 	public void unload() {
 		if (!isLoaded)
 			return;
+		engine.removeLifecycleListener(this);
+		engine.removeRunListener(this);
+		engine.removeChangeListener(this);
 		destroyGraphs();
 		isActive = false;
 		model = null;
@@ -221,10 +229,6 @@ public abstract class AbstractView<G extends AbstractGraph<?>> extends Composite
 	@Override
 	protected void onUnload() {
 		unload();
-		engine.removeLifecycleListener(this);
-		engine.removeRunListener(this);
-		engine.removeChangeListener(this);
-		engine.removeSampleListener(this);
 	}
 
 	/**
