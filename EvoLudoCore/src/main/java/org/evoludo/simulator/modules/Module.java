@@ -971,6 +971,29 @@ public abstract class Module<T extends Module<T>>
 	}
 
 	/**
+	 * Per capita birth rate for ecological population updates.
+	 */
+	protected double birthRate = 1.0;
+
+	/**
+	 * Get the per capita birth rate for ecological population updates.
+	 * 
+	 * @return the birth rate
+	 */
+	public double getBirthRate() {
+		return birthRate;
+	}
+
+	/**
+	 * Set the per capita birth rate for ecological population updates.
+	 * 
+	 * @param birthRate the birth rate
+	 */
+	public void setBirthRate(double birthRate) {
+		this.birthRate = birthRate;
+	}
+
+	/**
 	 * Death rate for ecological population updates.
 	 */
 	protected double deathRate = 1.0;
@@ -995,6 +1018,54 @@ public abstract class Module<T extends Module<T>>
 	 */
 	public double getDeathRate() {
 		return deathRate;
+	}
+
+	/**
+	 * Competition rates for multi-species ecological population updates. Note,
+	 * rates are positive for competition or predation, and negative for synergistic
+	 * interactions (mutualisms).
+	 */
+	protected double[] competitionRates;
+
+	/**
+	 * Competition rate with kin for ecological population updates. This is a
+	 * shortcut for single species modules and corresponds to the entry in
+	 * {@code competitionRates[ID]}.
+	 */
+	protected double competitionRate = 0.0;
+
+	/**
+	 * Sets the competition rate for ecological population updates.
+	 * 
+	 * @param rate the competition rate
+	 * @return {@code true} if the competition rate changed
+	 */
+	public boolean setCompetitionRates(double[] rates) {
+		if (rates == null || rates.length != species.size()
+				|| Arrays.equals(competitionRates, rates))
+			// invalid or equal, ignore
+			return false;
+		competitionRates = rates;
+		competitionRate = rates[id];
+		return true;
+	}
+
+	/**
+	 * Gets the competition rate for ecological population updates.
+	 * 
+	 * @return the competition rate
+	 */
+	public double[] getCompetitionRates() {
+		return competitionRates;
+	}
+
+	/**
+	 * Gets the competition rate for ecological population updates.
+	 * 
+	 * @return the competition rate
+	 */
+	public double getCompetitionRate() {
+		return competitionRate;
 	}
 
 	/**
@@ -1171,6 +1242,67 @@ public abstract class Module<T extends Module<T>>
 			});
 
 	/**
+	 * Command line option to set the birth rate uninfected hosts.
+	 */
+	public final CLOption cloBirthRate = new CLOption("birthrate", "0.0", CLOCategory.Module,
+			"--birthrate <b>  host rate of reproduction", new CLODelegate() {
+
+				/**
+				 * {@inheritDoc}
+				 * <p>
+				 * Parse birth rate for ecological population updates for a single or multiple
+				 * populations/species. {@code arg} can be a single value or an array of
+				 * values. The parser cycles through {@code arg} until all populations/species
+				 * have the birth rate set.
+				 * 
+				 * @param arg birth rate
+				 */
+				@Override
+				public boolean parse(String arg) {
+					double[] rates;
+					// allow vector delimiter as well as species delimiter for multiple species
+					if (arg.contains(CLOParser.SPECIES_DELIMITER))
+						rates = CLOParser.parseVector(arg, CLOParser.SPECIES_DELIMITER);
+					else
+						rates = CLOParser.parseVector(arg);
+					if (rates.length == 0)
+						return false;
+					int n = 0;
+					for (T pop : species) {
+						double rate = rates[n++ % rates.length];
+						// sanity checks
+						if (rate >= 0.0) {
+							pop.setBirthRate(rate);
+							continue;
+						}
+						if (logger.isLoggable(Level.WARNING)) {
+							String sn = pop.getName();
+							logger.warning("birth rate" + (sn.isEmpty() ? "" : " of " + sn)
+									+ " must be non-negative (changed to 0).");
+						}
+						pop.setBirthRate(0.0);
+					}
+					return true;
+				}
+
+				@Override
+				public String getDescription() {
+					String descr = "";
+					int nSpecies = species.size();
+					switch (nSpecies) {
+						case 1:
+							return "--birthrate <b>  per capita rate of reproduction";
+						case 2:
+							descr = "--birthrate <b0[,b1]>  per capita rates of reproduction";
+							break;
+						default:
+							descr = "--birthrate <b0[,...,b" + nSpecies + "]>  per capita rates of reproduction";
+					}
+					return descr;
+				}
+			});
+
+	/**
 	 * Command line option to set death rate for ecological population updates.
 	 */
 	public final CLOption cloDeathRate = new CLOption("deathrate", "0.0", CLOCategory.Module, null,
@@ -1224,11 +1356,76 @@ public abstract class Module<T extends Module<T>>
 						case 2:
 							descr = "--deathrate <d0[,d1]>  rates of dying";
 							break;
-						case 3:
-							descr = "--deathrate <d0[,d1,d2]>  rates of dying";
-							break;
 						default:
 							descr = "--deathrate <d0[,...,d" + nSpecies + "]>  rates of dying";
+					}
+					return descr;
+				}
+			});
+
+	/**
+	 * Command line option to set the competition rate for ecological population
+	 * updates.
+	 */
+	public final CLOption cloCompRate = new CLOption("comprate", "0.0", CLOCategory.Module, null,
+			new CLODelegate() {
+
+				/**
+				 * {@inheritDoc}
+				 * <p>
+				 * Parse competition rate for ecological population updates for a single or
+				 * multiple populations/species. {@code arg} can be a single value, an array, or
+				 * a matrix. The parser cycles through {@code arg} until all populations/species
+				 * have their competition rates set, where the entry {@code [i][j]} captures the
+				 * rates of competition/predation/synergies on species {@code i} exerted by
+				 * species {@code j}.
+				 * 
+				 * @param arg the (matrix of) competition rate(s)
+				 */
+				@Override
+				public boolean parse(String arg) {
+					double[][] cMat = CLOParser.parseMatrix(arg);
+					int nSpecies = species.size();
+					if (cMat.length == 0 || cMat[0].length != nSpecies) {
+						// if only single value provided, expand to constant matrix
+						if (cMat.length != 1 || cMat[0].length != 1)
+							return false;
+						double val = cMat[0][0];
+						cMat = new double[1][nSpecies];
+						Arrays.fill(cMat[0], val);
+					}
+					int n = 0;
+					for (T pop : species) {
+						double[] cVec = cMat[n++ % cMat.length];
+						// sanity checks
+						if (cVec[pop.getId()] >= 0.0) {
+							pop.setCompetitionRates(cVec);
+							continue;
+						}
+						if (logger.isLoggable(Level.WARNING)) {
+							String sn = pop.getName();
+							logger.warning("competition rate" + (sn.isEmpty() ? "" : " of " + sn + " with kin ")
+									+ " must be non-negative.");
+						}
+						return false;
+					}
+					return true;
+				}
+
+				@Override
+				public String getDescription() {
+					String descr = "";
+					int nSpecies = species.size();
+					switch (nSpecies) {
+						case 1:
+							return "--comprate <d>  rate of competition";
+						case 2:
+							descr = "--comprate <d00[,d01[;d10,d11]]>  rates of competition";
+							break;
+						default:
+							descr = "--comprate <d00[,...,d0" + (nSpecies - 1) + "[;d10,...,d1" + (nSpecies - 1) +
+									";...;d" + (nSpecies - 1) + "0,...,d" + (nSpecies - 1) + (nSpecies - 1) +
+									"]>  rates of competition";
 					}
 					return descr;
 				}
@@ -1567,7 +1764,9 @@ public abstract class Module<T extends Module<T>>
 			}
 		}
 		if (anyVacant) {
+			parser.addCLO(cloBirthRate);
 			parser.addCLO(cloDeathRate);
+			parser.addCLO(cloCompRate);
 		}
 		// add option to disable traits if >=3 traits, except >=2 traits for
 		// continuous modules with no vacancies (cannot disable vacancies)

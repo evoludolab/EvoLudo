@@ -443,12 +443,17 @@ public class IBSDPopulation extends IBSPopulation<Discrete, IBSDPopulation> {
 		debugFocal = me;
 		debugModel = -1;
 		int nPop = getPopulationSize();
-		double deathRate = module.getDeathRate();
-		// must use maxFitness to ensure probabilities (at the possible
-		// expense of no event happening)
-		double maxRate = deathRate + maxFitness;
-		double randomTestVal = random01() * maxRate; // time rescaling
-		if (randomTestVal < deathRate) {
+		double rDeath = module.getDeathRate() + module.getCompetitionRate();
+		double rBirth = module.getBirthRate();
+		// notes:
+		// 1) maxFitness == 0 if module does not implement Payoffs
+		// 2) must use maxFitness to ensure probabilities are in [0,1]
+		// at the expense of no event happening
+		// 3) can become highly inefficient if few individuals have much larger fitness
+		// 4) cannot subtract minFitness to improve efficiency since fitness is relative
+		// to other rates (birth, death and competition)
+		double randomTestVal = random01() * (rDeath + rBirth + maxFitness); // time rescaling
+		if (randomTestVal < rDeath) {
 			// vacate focal site
 			traitsNext[me] = vacantIdx + nTraits; // more efficient than setNextTraitAt(me, VACANT)
 			updateScoreAt(me, true);
@@ -457,18 +462,17 @@ public class IBSDPopulation extends IBSPopulation<Discrete, IBSDPopulation> {
 				return -1;
 			}
 		} else {
-			randomTestVal -= deathRate;
-			if (randomTestVal < getFitnessAt(me)) {
+			randomTestVal -= rDeath;
+			if (randomTestVal < rBirth + getFitnessAt(me)) {
 				// fill neighbor site if vacant
 				debugModel = pickNeighborSiteAt(me);
 				if (isVacantAt(debugModel)) {
 					maybeMutateMoran(me, debugModel);
-				} else {
-					return 0; // nothing happened, no time elapsed
+					return 1;
 				}
-			} else
-				// nothing happened, no time elapsed
-				return 0;
+			}
+			// nothing happened, no time elapsed
+			return 0;
 		}
 		return 1;
 	}

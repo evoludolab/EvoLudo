@@ -3428,6 +3428,7 @@ public abstract class IBSPopulation<M extends Module<?>, P extends IBSPopulation
 			interactions = null;
 			typeFitness = null;
 			typeScores = null;
+			maxFitness = 0.0;
 		}
 
 		if (tags == null || tags.length != nPopulation)
@@ -3445,8 +3446,7 @@ public abstract class IBSPopulation<M extends Module<?>, P extends IBSPopulation
 
 	/**
 	 * Check the interaction and competition geometries for consistency and adjust
-	 * if
-	 * necessary (and feasible).
+	 * if necessary (and feasible).
 	 * 
 	 * @return {@code true} if reset is required
 	 */
