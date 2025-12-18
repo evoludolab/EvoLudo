@@ -31,6 +31,27 @@ Start exploring the fascinating world of evolutionary dynamics and spatio-tempor
 
 3. Click *Launch Default Browser* and try out the different *EvoLudo* modules.
 
+## *EvoLudo* features
+The rich feature set of *EvoLudo* is best experienced through examples. Please visit the *EvoLudo* wiki at [https://www.evoludo.org](https://www.evoludo.org) for a collection of interactive tutorial that illustrate and invite further exploration of evolutionary dynamics based on the *EvoLudo* simulation toolkit.
+
+Some less obvious *EvoLudo* features are nevertheless of crucial importance for scientific research are transparency and reproducibility, which is addressed by the release of the *EvoLudo* source code into the public domain. This enables the reproduction of results in a number of [influential scientific publications](https://wiki.evoludo.org/index.php?title=Research).
+
+On a more technical level, perfect replication of simulations is possible, yielding *identical* results.
+
+1. Reproducible simulations are obtained using the command line option `--seed[=<seed>]`, where `<seed>` is an arbitrary integer number (defaults to zero).
+
+2. The *GWT* application produces *identical* output as the *java* simulations. 
+
+In fact, the state of any *EvoLudo* module/model can be exported in one framework and continued in the other again with *identical* results.
+
+## Research
+Explorations in the web browser are very useful but have significant limitations. Most importantly execution speed is of the essence for running simulations but also access to data. The *EvoLudo* project offers different modes for running simulations depending on how the `EvoLudo.jar` is launched:
+
+1. Simply running *EvoLudo* with `java -jar EvoLudoJRE/target/EvoLudo.<git version>.jar` launches the *JRE* GUI. Through the *Settings* panel an *EvoLudo* module can be loaded, and a model selected as well as setting all the relevant parameters.
+2. Alternatively, all parameters can be set on the command line. For example, `java -jar EvoLudoJRE/target/EvoLudo.<git version>.jar --module 2x2 --delay 200 --geometry m --init kaleidoscope 0,1 --interactions all --mutation 0.0 --playerupdate b --popsize 165x --popupdate s --references a --timestep 1 --paymatrix 1,0;1.65,0 --view Traits_-_Structure`. For comparison, pointing your web browser to [`https://www.evoludo.org/supplement/EvoLudoLab.html?clo=--module 2x2 --delay 200 --geometry m --init kaleidoscope 0,1 --interactions all --mutation 0.0 --playerupdate b --popsize 165x --popupdate s --references a --timestep 1 --paymatrix 1,0;1.65,0 --view Traits_-_Structure`](https://www.evoludo.org/supplement/EvoLudoLab.html?clo=--module%202x2%20--delay%20200%20--geometry%20m%20--init%20kaleidoscope%200,1%20--interactions%20all%20--mutation%200.0%20--playerupdate%20b%20--popsize%20165x%20--popupdate%20s%20--references%20a%20--timestep%201%20--paymatrix%201,0;1.65,0%20--view%20Traits_-_Structure) shows identical results running in the browser. Note that the string of options on the command line or the URL are identical.
+
+See [Documentation](#Documentation) and, in particular, the extensive step-by-step tutorials on recreating the *EvoLudo* modules for 2x2 games or SIR models.
+
 ## Documentation
 The documentation for the *EvoLudo* simulation toolkit is designed to provide a quick introduction to the source code to rapidly pave the way to run your own simulations or even develop your own custom *EvoLudo* modules. The documentation is divided into multiple parts:
 
@@ -39,7 +60,7 @@ The documentation for the *EvoLudo* simulation toolkit is designed to provide a 
 3. A growing collection of step-by-step tutorials to re-create key *EvoLudo* modules, as an easy and hands-on introduction on using *EvoLudo* simulation toolkit.
 
     1. [Tutorial to re-create the `TBT` module](https://www.evoludo.org/docs/tutorial/TBT.html) to explore the evolution of cooperation in the prisoner's dilemma, or more general 2x2 games, in structured populations.
-    2. Tutorial to re-create the `SIR` module to explore the disease dynamics in structured population for an epidemiological model of susceptible, infected and recovered individuals (coming soon).
+    2. [Tutorial to re-create the `SIR` module](https://www.evoludo.org/docs/tutorial/SIR.html) to explore the disease dynamics in structured population for an epidemiological model of susceptible, infected and recovered individuals.
     3. Tutorial to re-create the `LV` module to explore the ecological dynamics of a predator-prey interactions in the Lotka-Volterra model for infinite, finite and structured populations (in preparation).
 
 4. The [complete API reference](https://www.evoludo.org/docs/api/) for all packages, classes, methods and fields.
@@ -62,10 +83,11 @@ With the [Quick start](#quick-start) steps everything is already setup for devel
 > [!IMPORTANT]
 > Always keep in mind that the shared *java* code in the `EvoLudoCore` module *must* be agnostic to special features of the *GWT* or of *JRE*. *GWT* specific code resides in the `EvoLudoGWT` module while *JRE* specific variants are in the `EvoLudoJRE` module
 
-6. The API documentation for the *EvoLudo* simulation toolkit is automatically generated from the source files by executing `mvn javadoc:aggregate` and placed in `docs/api`.
-> [!NOTE]
+6. The API documentation for the *EvoLudo* simulation toolkit is automatically generated from the source files by executing `mvn javadoc:aggregate` and placed in `docs/api`. The documentation of the latest tagged version is available at https://www.evoludo.org/docs/api. 
+
+<!-- > [!NOTE]
 > 1. The javadoc generation is configured to use *Java SDK 11*, which is the last version to support frames when generating the documentation. You may need to adjust the `<javadocExecutable>` in the `pom.xml` to fit your development setup and `java` version and possibly remove the `--frames` option from the `<additionalJOption>`. 
-> 2. Documentation of the latest tagged version is available at https://www.evoludo.org/docs/api. 
+> 2. Documentation of the latest tagged version is available at https://www.evoludo.org/docs/api. -->
 
 7. A number of useful shell scripts are located in the `script` folder. Most notably, `builddist.sh` builds all *maven* modules, runs consistency tests and if they all pass assembles all parts of the *EvoLudo* toolkit in the `dist` folder (including the API documentation).
 
@@ -103,25 +125,6 @@ There are three main reasons that tests may legitimately fail:
 > In case some *EvoLudo* tests happen to fail on your platform, a new set of reference tests needs to be generated by running the script `./scripts/generatetests.sh` *prior* to making any changes to the source code.
 
 In case of failing tests, the changes must be carefully checked and, once identified and verified as a legitimate failure, a new set of tests needs to be generated.
-
-
-## *EvoLudo* features
-1. Reproducible simulations using the command line option `--seed[=<seed>]` where `<seed>` is an arbitrary integer number (defaults to zero).
-
-2. The *GWT* application produces *identical* output as the *java* simulations. In fact, the state of any *EvoLudo* module/model can be exported in one framework and continued in the other again with *identical* results.
-
-> [!WARNING]
-> Draft - incomplete.
-
-
-## Research
-Explorations in the web browser are very useful but have significant limitations. Most importantly execution speed is of the essence for running simulations but also access to data. The *EvoLudo* project offers different modes for running simulations depending on how the `EvoLudo.jar` is launched:
-
-1. Simply running *EvoLudo* with `java -jar EvoLudoJRE/target/EvoLudo.<git version>.jar` launches the *JRE* GUI. Through the *Settings* panel an *EvoLudo* module can be loaded, and a model selected as well as setting all the relevant parameters.
-2. Alternatively, all parameters can be set on the command line. For example, `java -jar EvoLudoJRE/target/EvoLudo.<git version>.jar --module 2x2 --delay 200 --geometry m --init kaleidoscope 0,1 --interactions all --mutation 0.0 --playerupdate b --popsize 165x --popupdate s --references a --timestep 1 --paymatrix 1,0;1.65,0 --view Traits_-_Structure`. For comparison, pointing your web browser to [`https://www.evoludo.org/supplement/EvoLudoLab.html?clo=--module 2x2 --delay 200 --geometry m --init kaleidoscope 0,1 --interactions all --mutation 0.0 --playerupdate b --popsize 165x --popupdate s --references a --timestep 1 --paymatrix 1,0;1.65,0 --view Traits_-_Structure`](https://www.evoludo.org/supplement/EvoLudoLab.html?clo=--module%202x2%20--delay%20200%20--geometry%20m%20--init%20kaleidoscope%200,1%20--interactions%20all%20--mutation%200.0%20--playerupdate%20b%20--popsize%20165x%20--popupdate%20s%20--references%20a%20--timestep%201%20--paymatrix%201,0;1.65,0%20--view%20Traits_-_Structure) shows identical results running in the browser. Note the identical string of options on the command line or the URL.
-
-> [!WARNING]
-> Draft - incomplete.
 
 <!-- ## History
 Unmaintained instructions for developing *EvoLudo* using the [*eclipse* IDE](docs/installation/ECLIPSE.md) are available for reference.-->
