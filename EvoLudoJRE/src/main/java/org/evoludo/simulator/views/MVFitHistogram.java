@@ -167,8 +167,8 @@ public class MVFitHistogram extends MVAbstract implements HistoGraphListener {
 			CModel cmodel = (CModel) model;
 			// for continuous strategies we have a single histogram and may want to mark
 			// several bins
-			boolean changed = frame.updateMarkedBin(0, cmodel.getMinMonoScore(module.getID()), tcolor.darker());
-			changed |= frame.updateMarkedBin(1, cmodel.getMaxMonoScore(module.getID()), tcolor.brighter());
+			boolean changed = frame.updateMarkedBin(0, cmodel.getMinMonoScore(module.getId()), tcolor.darker());
+			changed |= frame.updateMarkedBin(1, cmodel.getMaxMonoScore(module.getId()), tcolor.brighter());
 			return changed;
 		}
 		// cast is save because pop is not Continuous
@@ -176,7 +176,7 @@ public class MVFitHistogram extends MVAbstract implements HistoGraphListener {
 		// for discrete strategies we have different histograms and mark only a single
 		// bin
 		return frame.updateMarkedBin(0,
-				dmodel.getMonoScore(module.getID(), tag),
+				dmodel.getMonoScore(module.getId(), tag),
 				new Color(Math.max(colors[tag].getRed(), 127),
 						Math.max(colors[tag].getGreen(), 127),
 						Math.max(colors[tag].getBlue(), 127)));

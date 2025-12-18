@@ -361,7 +361,7 @@ public class Pop3D extends GenericPop<MeshLambertMaterial, Network3DGWT, PopGrap
 				new Color[] { ColorMap.addAlpha(Color.BLACK, 220), ColorMap.addAlpha(Color.GRAY, 220),
 						ColorMap.addAlpha(Color.YELLOW, 220), ColorMap.addAlpha(Color.RED, 220) },
 				500);
-		int id = module.getID();
+		int id = module.getId();
 		cMap1D.setRange(model.getMinFitness(id), model.getMaxFitness(id));
 
 		if (!model.getType().isIBS())

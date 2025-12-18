@@ -165,7 +165,7 @@ public class S3 extends AbstractView<S3Graph> {
 	public void modelDidInit() {
 		super.modelDidInit();
 		for (S3Graph graph : graphs) {
-			model.getMeanTraits(graph.getModule().getID(), state);
+			model.getMeanTraits(graph.getModule().getId(), state);
 			graph.addData(Double.NaN, state, true);
 			graph.paint(true);
 		}
@@ -177,7 +177,7 @@ public class S3 extends AbstractView<S3Graph> {
 		boolean isNext = (Math.abs(timestamp - newtime) > 1e-8);
 		for (S3Graph graph : graphs) {
 			if (isNext) {
-				model.getMeanTraits(graph.getModule().getID(), state);
+				model.getMeanTraits(graph.getModule().getId(), state);
 				graph.addData(newtime, state, force);
 			}
 			graph.paint(force);

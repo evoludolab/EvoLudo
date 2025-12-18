@@ -89,18 +89,16 @@ import com.google.gwt.core.client.Duration;
  * <h3>Responsibilities</h3>
  * <ul>
  * <li>Allocate and layout the required number of {@code HistoGraph} panels for
- * each
- * module and data type, taking into account multi-species modules and
+ * each module and data type, taking into account multi-species modules and
  * module-specific settings (traits, vacant indices, population size,
  * etc.).</li>
  * <li>Configure default and data-specific {@link GraphStyle} settings (axis
- * labels,
- * normalization, color, autoscaling, custom y-levels).</li>
+ * labels, normalization, color, autoscaling, custom y-levels).</li>
  * <li>Manage histogram buffers and binning parameters (bin size, scale factors,
  * max bins) and ensure data arrays are allocated with proper dimensions.</li>
  * <li>Periodically update histogram contents by querying the underlying model
- * (e.g., fetching trait/fitness/degree histogram data, mean traits for stationary
- * statistics, fixation sample callbacks).</li>
+ * (e.g., fetching trait/fitness/degree histogram data, mean traits for
+ * stationary statistics, fixation sample callbacks).</li>
  * <li>Handle special cases such as PDE/DE/ODE/SDE models and well-mixed
  * populations (display messages instead of histograms where appropriate).</li>
  * <li>Support context menu actions and export types appropriate for the
@@ -115,9 +113,8 @@ import com.google.gwt.core.client.Duration;
  * <li>{@link #load()} registers listeners for statistical sample events when
  * displaying fixation statistics.</li>
  * <li>{@link #allocateGraphs()} is responsible for creating HistoGraph
- * instances based
- * on the currently configured modules; it avoids unnecessary rebuilds by
- * comparing required and existing graph counts.</li>
+ * instances based on the currently configured modules; it avoids unnecessary
+ * rebuilds by comparing required and existing graph counts.</li>
  * <li>{@link #reset(boolean)} recomputes graph-specific configuration (axis
  * ranges,
  * markers, normalization flags) and may force a full repaint when axis
@@ -131,8 +128,7 @@ import com.google.gwt.core.client.Duration;
  * increments the appropriate histogram bins; it also handles per-sample
  * bookkeeping to avoid double-counting.</li>
  * <li>{@link #modelSettings()} and {@link #modelDidInit()} are used to reapply
- * module-specific
- * settings and to initialize HistoGraph objects after model
+ * module-specific settings and to initialize HistoGraph objects after model
  * initialization.</li>
  * </ul>
  *
@@ -163,8 +159,8 @@ import com.google.gwt.core.client.Duration;
  * <h3>Fixation statistics</h3>
  * <ul>
  * <li>For {@code STATISTICS_FIXATION_PROBABILITY} the view accumulates counts
- * per node
- * (possibly binned) and reports normalized probabilities in the y-axis.</li>
+ * per node (possibly binned) and reports normalized probabilities in the
+ * y-axis.</li>
  * <li>For {@code STATISTICS_FIXATION_TIME} the view supports two modes:
  * <ul>
  * <li>a per-node fixation time histogram (node index on x-axis and
@@ -640,7 +636,7 @@ public class Histogram extends AbstractView<HistoGraph> {
 			style.showLabel = true;
 
 		Module<?> module = graph.getModule();
-		int id = module.getID();
+		int id = module.getId();
 		double min = model.getMinScore(id);
 		double max = model.getMaxScore(id);
 		if (Math.abs(min - style.xMin) > 1e-6 || Math.abs(max - style.xMax) > 1e-6) {
@@ -1169,7 +1165,7 @@ public class Histogram extends AbstractView<HistoGraph> {
 			double[][] graphdata = graph.getData();
 			if (data != graphdata) {
 				data = graphdata;
-				cmodel.getTraitHistogramData(graph.getModule().getID(), data);
+				cmodel.getTraitHistogramData(graph.getModule().getId(), data);
 			}
 		}
 	}
@@ -1183,7 +1179,7 @@ public class Histogram extends AbstractView<HistoGraph> {
 			double[][] graphdata = graph.getData();
 			if (data != graphdata) {
 				data = graphdata;
-				model.getFitnessHistogramData(graph.getModule().getID(), data);
+				model.getFitnessHistogramData(graph.getModule().getId(), data);
 			}
 		}
 	}

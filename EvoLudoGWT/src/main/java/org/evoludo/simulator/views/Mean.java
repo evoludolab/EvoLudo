@@ -245,7 +245,7 @@ public class Mean extends AbstractView<LineGraph> implements Shifter, Zoomer {
 	 */
 	private boolean setFitRange(LineGraph graph) {
 		Module<?> module = graph.getModule();
-		int id = module.getID();
+		int id = module.getId();
 		double min = model.getMinScore(id);
 		double max = model.getMaxScore(id);
 		if (max - min < 1e-8) {
@@ -285,7 +285,7 @@ public class Mean extends AbstractView<LineGraph> implements Shifter, Zoomer {
 		// the first entry is for dashed (>0) and dotted (<0) lines
 		monoScores[0] = 1.0;
 		for (int n = 0; n < nState; n++)
-			monoScores[n + 1] = dmodel.getMonoScore(module.getID(), n);
+			monoScores[n + 1] = dmodel.getMonoScore(module.getId(), n);
 		String[] monoColors = new String[nState + 1];
 		int k = 0;
 		for (Color color : fitcolors)
@@ -378,7 +378,7 @@ public class Mean extends AbstractView<LineGraph> implements Shifter, Zoomer {
 		Module<?> nod = graph.getModule();
 		boolean newmod = module != nod;
 		module = nod;
-		int id = module.getID();
+		int id = module.getId();
 		int nState = model.getNMean(id);
 		double[] data;
 		switch (type) {

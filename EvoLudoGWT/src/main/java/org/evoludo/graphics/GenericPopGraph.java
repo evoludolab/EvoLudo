@@ -515,7 +515,7 @@ public abstract class GenericPopGraph<T, N extends Network<?>> extends AbstractG
 		int node = findNodeAt(event.getX(), event.getY());
 		if (node >= 0 && !view.isRunning()) {
 			// population signals change back to us
-			view.mouseHitNode(module.getID(), node, event.isAltKeyDown());
+			view.mouseHitNode(module.getId(), node, event.isAltKeyDown());
 		}
 	}
 
@@ -566,7 +566,7 @@ public abstract class GenericPopGraph<T, N extends Network<?>> extends AbstractG
 		// double tap?
 		if (!view.isRunning())
 			// population signals change back to us
-			view.mouseHitNode(module.getID(), node);
+			view.mouseHitNode(module.getId(), node);
 		event.preventDefault();
 	}
 

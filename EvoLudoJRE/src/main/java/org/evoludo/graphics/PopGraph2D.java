@@ -209,7 +209,7 @@ public class PopGraph2D extends AbstractGraph implements Network.LayoutListener 
 	public void reinit() {
 		if (hasHistory)
 			clear();
-		((PopListener) controller).initColor(module.getID());
+		((PopListener) controller).initColor(module.getId());
 		super.reinit();
 	}
 
@@ -567,7 +567,7 @@ public class PopGraph2D extends AbstractGraph implements Network.LayoutListener 
 	protected void prepare() {
 		if (geometry == null) // ODE/SDE models
 			return;
-		int id = module.getID();
+		int id = module.getId();
 		boolean isDynamic = geometry.isType(GeometryType.DYNAMIC);
 		if (isDynamic) {
 			if (timestamp < network.getTimestamp()) {
@@ -623,7 +623,7 @@ public class PopGraph2D extends AbstractGraph implements Network.LayoutListener 
 			return null;
 		}
 		infonode = findNodeAt(infoloc);
-		return ((PopListener) controller).getInfoAt(network, infonode, module.getID());
+		return ((PopListener) controller).getInfoAt(network, infonode, module.getId());
 	}
 
 	private int refnode = -1;
@@ -702,7 +702,7 @@ public class PopGraph2D extends AbstractGraph implements Network.LayoutListener 
 						// worth keeping? only if GWT is on board as well.
 						// ((PopListener)controller).mouseHitNode(node, refnode, tag); // population
 						// signals change back to us
-						((PopListener) controller).mouseHitNode(node, module.getID()); // population signals change back
+						((PopListener) controller).mouseHitNode(node, module.getId()); // population signals change back
 																						// to us
 						return true;
 
@@ -714,10 +714,10 @@ public class PopGraph2D extends AbstractGraph implements Network.LayoutListener 
 							// make sure changes get repainted
 							if (hasHistory)
 								forceRepaint = true;
-							((PopListener) controller).mouseHitNode(node, module.getID()); // population signals change
+							((PopListener) controller).mouseHitNode(node, module.getId()); // population signals change
 																							// back to us
 						}
-						setToolTipText(((PopListener) controller).getInfoAt(network, node, module.getID()));
+						setToolTipText(((PopListener) controller).getInfoAt(network, node, module.getId()));
 						// dispatch fake mouse moved event to re-display tooltip
 						dispatchEvent(new MouseEvent(this, MouseEvent.MOUSE_MOVED, System.currentTimeMillis(), 0, loc.x,
 								loc.y, 0, false));

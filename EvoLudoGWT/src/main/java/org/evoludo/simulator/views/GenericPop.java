@@ -232,11 +232,11 @@ public abstract class GenericPop<T, N extends Network<?>, G extends GenericPopGr
 					continue;
 				switch (type) {
 					case TRAIT:
-						model.getTraitData(graph.getModule().getID(), graph.getData(), graph.getColorMap());
+						model.getTraitData(graph.getModule().getId(), graph.getData(), graph.getColorMap());
 						break;
 					case FITNESS:
 						// cast should be safe for fitness data
-						model.getFitnessData(graph.getModule().getID(), graph.getData(),
+						model.getFitnessData(graph.getModule().getId(), graph.getData(),
 								(ColorMap.Gradient1D<T>) graph.getColorMap());
 						break;
 					default:
@@ -324,7 +324,7 @@ public abstract class GenericPop<T, N extends Network<?>, G extends GenericPopGr
 			return tip.append(TABLE_END).toString();
 		}
 		IBS ibs = (IBS) model;
-		int id = module.getID();
+		int id = module.getId();
 
 		// node + trait (+ color if trait view)
 		appendNodeTraitTip(node, id, graph, tip);
@@ -441,7 +441,7 @@ public abstract class GenericPop<T, N extends Network<?>, G extends GenericPopGr
 					.append(TABLE_CELL_BULLET);
 		else
 			tip.append(TABLE_CELL_NEXT);
-		tip.append(model.getTraitNameAt(module.getID(), node))
+		tip.append(model.getTraitNameAt(module.getId(), node))
 				.append(TABLE_ROW_END);
 	}
 
@@ -457,7 +457,7 @@ public abstract class GenericPop<T, N extends Network<?>, G extends GenericPopGr
 	private void appendFitnessTip(int node, Module<?> module, StringBuilder tip) {
 		if (!(module instanceof Payoffs))
 			return;
-		int id = module.getID();
+		int id = module.getId();
 		// with payoff-to-fitness report score first, then fitness (see below)
 		// with fitness map report scores as well
 		if (!module.getMap2Fitness().isMap(Map2Fitness.Map.NONE))
@@ -504,7 +504,7 @@ public abstract class GenericPop<T, N extends Network<?>, G extends GenericPopGr
 		// with payoff-to-fitness report score first, then fitness (see below)
 		// with fitness map report scores as well
 		int vac = module.getVacantIdx();
-		int id = module.getID();
+		int id = module.getId();
 		double[] fitness = model.getMeanFitnessAt(id, node);
 		Map2Fitness map = module.getMap2Fitness();
 

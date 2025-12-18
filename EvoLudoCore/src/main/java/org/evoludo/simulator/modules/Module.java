@@ -130,15 +130,15 @@ public abstract class Module<T extends Module<T>>
 	 * {@link #species}. The {@code ID} provides a unique identifier for each
 	 * species.
 	 */
-	final int ID;
+	final int id;
 
 	/**
 	 * Gets unique identifier {@code ID} of species.
 	 * 
 	 * @return the unique identifier of the species.
 	 */
-	public int getID() {
-		return ID;
+	public int getId() {
+		return id;
 	}
 
 	/**
@@ -171,11 +171,11 @@ public abstract class Module<T extends Module<T>>
 		logger = engine.getLogger();
 		T mod = (T) this;
 		if (partner == null) {
-			ID = 0;
+			id = 0;
 			opponent = mod;
 			return;
 		}
-		ID = partner.species.size();
+		id = partner.species.size();
 		species = partner.species;
 		opponent = partner;
 		partner.opponent = mod;
@@ -204,12 +204,12 @@ public abstract class Module<T extends Module<T>>
 				// start naming species (if needed)
 				for (T mod : species) {
 					if (mod.getName().isEmpty())
-						mod.setName("Species-" + mod.ID);
+						mod.setName("Species-" + mod.id);
 				}
 				break;
 			default:
 				if (pop.getName().isEmpty())
-					pop.setName("Species-" + pop.ID);
+					pop.setName("Species-" + pop.id);
 		}
 		return true;
 	}
@@ -514,6 +514,7 @@ public abstract class Module<T extends Module<T>>
 	 * 
 	 * @return the IBSPopulation that represents this module or {@code null}
 	 */
+	@SuppressWarnings("java:S1452") // impossible to specify generic type here
 	public IBSPopulation<?, ?> getIBSPopulation() {
 		return ibspop;
 	}
@@ -523,6 +524,7 @@ public abstract class Module<T extends Module<T>>
 	 * 
 	 * @return the custom IBSPopulation or {@code null} to use default.
 	 */
+	@SuppressWarnings("java:S1452") // impossible to specify generic type here
 	public IBSPopulation<?, ?> createIBSPopulation() {
 		return null;
 	}

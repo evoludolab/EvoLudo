@@ -421,14 +421,14 @@ public class Pop2D extends GenericPop<String, Network2D, PopGraph2D> {
 						ColorMap.addAlpha(Color.YELLOW, 220), ColorMap.addAlpha(Color.RED, 220) },
 				500);
 		ColorMap<String> cMap = cMap1D;
-		int tag = module.getID();
+		int tag = module.getId();
 		cMap1D.setRange(model.getMinFitness(tag), model.getMaxFitness(tag));
 
 		if (!model.getType().isIBS())
 			return cMap;
 
 		Map2Fitness map2fit = module.getMap2Fitness();
-		int id = module.getID();
+		int id = module.getId();
 
 		if (module instanceof Discrete) {
 			// mark homogeneous fitness values by pale color

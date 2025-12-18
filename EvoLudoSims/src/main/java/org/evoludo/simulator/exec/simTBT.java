@@ -165,7 +165,7 @@ public class simTBT extends TBT implements ChangeListener {
 				prevsample = ibs.getUpdates();
 				if (converged) {
 					// simulations converged already - mean is current state and sdev is zero
-					model.getMeanTraits(getID(), mean);
+					model.getMeanTraits(getId(), mean);
 				} else {
 					while ((converged = !engine.modelNext())) {
 						// loop until converged (or timeend reached)
@@ -214,7 +214,7 @@ public class simTBT extends TBT implements ChangeListener {
 					prevsample = ibs.getUpdates();
 					if (converged) {
 						// simulations converged already - mean is current state and sdev is zero
-						model.getMeanTraits(getID(), mean);
+						model.getMeanTraits(getId(), mean);
 					} else {
 						while (engine.modelNext()) {
 							// loop until converged (or timeend reached)
@@ -266,7 +266,7 @@ public class simTBT extends TBT implements ChangeListener {
 			double timeStop = model.getTimeStop();
 			if (converged) {
 				// simulations converged already - mean is current state and sdev is zero
-				model.getMeanTraits(getID(), mean);
+				model.getMeanTraits(getId(), mean);
 			} else {
 				for (long g = 1; g <= timeStop; g++) {
 					if (snapinterval > 0 && g % snapinterval == 0) {
@@ -328,7 +328,7 @@ public class simTBT extends TBT implements ChangeListener {
 		if (model.isRelaxing() || prevsample >= generation) {
 			return;
 		}
-		model.getMeanTraits(getID(), state);
+		model.getMeanTraits(getId(), state);
 		// calculate weighted mean and sdev - see wikipedia
 		double w = generation - prevsample;
 		double wn = w / (generation - model.getTimeRelax());
@@ -347,7 +347,7 @@ public class simTBT extends TBT implements ChangeListener {
 			return;
 		}
 		// absorbing state reached
-		model.getMeanTraits(getID(), state);
+		model.getMeanTraits(getId(), state);
 		// calculate weighted mean and sdev - see wikipedia
 		double timeStop = model.getTimeStop();
 		double timeRelax = model.getTimeRelax();

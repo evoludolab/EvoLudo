@@ -103,7 +103,7 @@ public class MVCTraitHistogram extends MVAbstract implements HistoGraphListener 
 		if (nData == nGraphs) {
 			for (AbstractGraph graph : graphs) {
 				GraphAxis x = graph.getXAxis();
-				int id = graph.getModule().getID();
+				int id = graph.getModule().getId();
 				x.min = module.getTraitMin()[id];
 				x.max = module.getTraitMax()[id];
 			}

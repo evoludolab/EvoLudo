@@ -281,7 +281,7 @@ public class Distribution extends AbstractView<PopGraph2D> implements TooltipPro
 				throw new UnsupportedOperationException("Distribution: not implemented for type " + type);
 			}
 			// casts ok because trait histograms make sense only for continuous models
-			((CModel) model).get2DTraitHistogramData(graph.getModule().getID(),
+			((CModel) model).get2DTraitHistogramData(graph.getModule().getId(),
 					bins, traitXIdx, traitYIdx);
 			ColorMap.Gradient1D<String> cMap = (ColorMap.Gradient1D<String>) graph.getColorMap();
 			cMap.setRange(0.0, ArrayMath.max(bins));

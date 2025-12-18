@@ -3624,7 +3624,7 @@ public abstract class IBSPopulation<M extends Module<?>, P extends IBSPopulation
 		// currently: if pop has interaction structure different from WELLMIXED its
 		// opponent population needs to be of the same size
 		// IMPORTANT: the parameters of modules with higher ID may not yet been checked!
-		if (module.getOpponent().getID() < module.getID()
+		if (module.getOpponent().getId() < module.getId()
 				&& module.getNPopulation() != opponent.getModule().getNPopulation()
 				&& opponent.interaction != null // opponent geometry may not yet be initialized
 												// check will be repeated for opponent

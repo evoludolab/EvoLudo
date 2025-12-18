@@ -389,7 +389,7 @@ public class simCDLP extends CDLP implements ChangeListener {
 	protected void updateStatistics(double time) {
 		if (prevsample >= time)
 			return;
-		model.getMeanTraits(getID(), state);
+		model.getMeanTraits(getId(), state);
 		// calculate weighted mean and sdev - see wikipedia
 		double w = time - prevsample;
 		double wn = w / (time);

@@ -56,7 +56,7 @@ public class MVFitness extends MVAbstract implements StateGraphListener {
 			super.reset(clear);
 			return;
 		}
-		LineGraph graph = new LineGraph(this, module, module.getID());
+		LineGraph graph = new LineGraph(this, module, module.getId());
 		GraphAxis x = graph.getXAxis();
 		GraphAxis y = graph.getYAxis();
 		x.label = "time";
@@ -113,7 +113,7 @@ public class MVFitness extends MVAbstract implements StateGraphListener {
 		DModel dmodel = (DModel) model;
 		for (int i = 0; i < n; i++) {
 			changed |= frame.updateYThreshold(i,
-					dmodel.getMonoScore(module.getID(), i),
+					dmodel.getMonoScore(module.getId(), i),
 					new Color(Math.max(colors[i].getRed(), 127),
 							Math.max(colors[i].getGreen(), 127),
 							Math.max(colors[i].getBlue(), 127)));
