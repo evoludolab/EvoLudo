@@ -928,7 +928,7 @@ public abstract class Model implements CLOProvider {
 	/**
 	 * The type of the model: IBS, ODE, SDE, or PDE.
 	 */
-	ModelType type;
+	protected ModelType type;
 
 	/**
 	 * Gets the type of the model.

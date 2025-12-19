@@ -32,6 +32,7 @@ package org.evoludo.simulator;
 
 import java.awt.Color;
 import java.util.Collection;
+import java.util.List;
 import java.util.logging.Level;
 
 import org.evoludo.math.ArrayMath;
@@ -390,7 +391,7 @@ public class CLOController {
 		// determine feasible --model options for given module
 		cloModel.clearKeys();
 		Module<?> module = engine.getModule();
-		ModelType[] mt = module.getModelTypes();
+		List<ModelType> mt = module.getModelTypes();
 		cloModel.addKeys(mt);
 
 		// handle model option

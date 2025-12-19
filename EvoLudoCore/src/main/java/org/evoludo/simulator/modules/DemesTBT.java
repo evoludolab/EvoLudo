@@ -31,6 +31,7 @@
 package org.evoludo.simulator.modules;
 
 import java.util.Arrays;
+import java.util.List;
 
 import org.evoludo.math.RNGDistribution;
 import org.evoludo.simulator.EvoLudo;
@@ -81,8 +82,8 @@ public class DemesTBT extends TBT {
 	 */
 	@Override
 
-	public ModelType[] getModelTypes() {
-		return new ModelType[] { ModelType.IBS };
+	public List<ModelType> getModelTypes() {
+		return Arrays.asList(ModelType.IBS);
 	}
 
 	@Override

@@ -34,6 +34,9 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.List;
+
+import org.evoludo.simulator.models.ModelType;
 
 /**
  * Command line option and argument.
@@ -545,6 +548,26 @@ public class CLOption implements Comparable<CLOption> {
 	 * @see #addKey(String, String)
 	 */
 	public void addKeys(Key[] chain) {
+		for (Key key : chain) {
+			String keyname = key.getKey();
+			if (keyname.length() > 1 && keyname.startsWith("-"))
+				continue;
+			addKey(key);
+		}
+	}
+
+	/**
+	 * Add all {@link Key}s in the collection {@code chain} to this option. Note,
+	 * this ignores keys starting with '-', except if '-' is the key. If needed,
+	 * those keys can still be added by calling {@code addKey(Key)} or
+	 * {@code #addKey(String, String)}.
+	 * 
+	 * @param chain the array of {@link Key}s to be added
+	 * 
+	 * @see #addKey(Key)
+	 * @see #addKey(String, String)
+	 */
+	public void addKeys(Collection<? extends Key> chain) {
 		for (Key key : chain) {
 			String keyname = key.getKey();
 			if (keyname.length() > 1 && keyname.startsWith("-"))

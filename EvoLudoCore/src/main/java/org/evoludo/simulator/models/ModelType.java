@@ -38,11 +38,19 @@ import org.evoludo.util.CLOption;
  * <dt>IBS</dt>
  * <dd>individual based simulations</dd>
  * <dt>ODE</dt>
- * <dd>ordinary differential equations</dd>
+ * <dd>ordinary differential equations (default)</dd>
+ * <dt>ODEEM</dt>
+ * <dd>ODE, Euler method</dd>
+ * <dt>ODERK5</dt>
+ * <dd>ODE, Fifth order Runge-Kutta method</dd>
  * <dt>SDE</dt>
  * <dd>stochastic differential equations</dd>
  * <dt>PDE</dt>
- * <dd>partial differential equations</dd>
+ * <dd>partial differential equations (default)</dd>
+ * <dt>PDERD</dt>
+ * <dd>PDE, reaction-diffusion model</dd>
+ * <dt>PDEADV</dt>
+ * <dd>PDE, reaction-diffusion-advection model</dd>
  * </dl>
  */
 public enum ModelType implements CLOption.Key {

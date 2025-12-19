@@ -232,12 +232,8 @@ public abstract class Module<T extends Module<T>>
 	public Model createModel(ModelType type) {
 		if (model != null && model.getType() == type)
 			return model;
-		// default for ODE is RK5, if available
-		if (type == ModelType.ODE && this instanceof HasDE.RK5)
-			type = ModelType.RK5;
-		// default for PDE is PDERD, if available
-		else if (type == ModelType.PDE && this instanceof HasDE.PDERD)
-			type = ModelType.PDERD;
+		if (!getModelTypes().contains(type))
+			return null;
 		// return default model for type
 		switch (type) {
 			case IBS:
@@ -247,6 +243,7 @@ public abstract class Module<T extends Module<T>>
 				if (!(this instanceof HasDE.SDE))
 					return null;
 				return new SDE(engine);
+			case ODE: // defaults to RK5
 			case RK5:
 				if (!(this instanceof HasDE.ODE))
 					return null;
@@ -259,6 +256,7 @@ public abstract class Module<T extends Module<T>>
 				if (!(this instanceof HasDE.PDEADV))
 					return null;
 				return new Advection(engine);
+			case PDE: // defaults to PDERD
 			case PDERD:
 				if (!(this instanceof HasDE.PDERD))
 					return null;
@@ -471,7 +469,7 @@ public abstract class Module<T extends Module<T>>
 	 * 
 	 * @return the array of supported Model types
 	 */
-	public ModelType[] getModelTypes() {
+	public List<ModelType> getModelTypes() {
 		ArrayList<ModelType> types = new ArrayList<>();
 		if (this instanceof HasIBS)
 			types.add(ModelType.IBS);
@@ -489,7 +487,7 @@ public abstract class Module<T extends Module<T>>
 			types.add(ModelType.PDERD);
 		if (this instanceof HasDE.PDEADV)
 			types.add(ModelType.PDEADV);
-		return types.toArray(new ModelType[0]);
+		return types;
 	}
 
 	/**

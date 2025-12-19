@@ -32,6 +32,8 @@ package org.evoludo.simulator.exec;
 
 import java.io.PrintStream;
 import java.text.DecimalFormat;
+import java.util.Arrays;
+import java.util.List;
 
 import org.evoludo.math.Distributions;
 import org.evoludo.simulator.EvoLudoJRE;
@@ -87,8 +89,8 @@ public class simMoran extends Moran {
 	}
 
 	@Override
-	public ModelType[] getModelTypes() {
-		return new ModelType[] { ModelType.IBS, ModelType.SDE };
+	public List<ModelType> getModelTypes() {
+		return Arrays.asList(ModelType.IBS, ModelType.SDE);
 	}
 
 	@Override
