@@ -4837,7 +4837,7 @@ public abstract class IBSPopulation<M extends Module<?>, P extends IBSPopulation
 	 * @see Model#encodeState(StringBuilder)
 	 */
 	public void encodeFitness(StringBuilder plist) {
-		if (!hasLookupTable)
+		if (!hasLookupTable && module instanceof Payoffs)
 			plist.append(Plist.encodeKey("Fitness", scores));
 	}
 
@@ -4879,7 +4879,7 @@ public abstract class IBSPopulation<M extends Module<?>, P extends IBSPopulation
 	 * @see Model#encodeState(StringBuilder)
 	 */
 	public void encodeInteractions(StringBuilder plist) {
-		if (!hasLookupTable)
+		if (!hasLookupTable && module instanceof Payoffs)
 			plist.append(Plist.encodeKey("Interactions", interactions));
 	}
 

@@ -1808,7 +1808,9 @@ public class ODE extends Model implements DModel {
 	 * @param plist the string builder for the encoded state
 	 */
 	void encodeFitness(StringBuilder plist) {
-		plist.append(Plist.encodeKey("Fitness", ft));
+		// the fitness array is null if modules do not implement the Payoffs interface
+		if (ft != null)
+			plist.append(Plist.encodeKey("Fitness", ft));
 	}
 
 	/**

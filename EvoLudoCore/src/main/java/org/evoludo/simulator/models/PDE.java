@@ -1456,7 +1456,8 @@ public class PDE extends ODE {
 
 	@Override
 	public void encodeFitness(StringBuilder plist) {
-		plist.append(Plist.encodeKey("Fitness", fitness));
+		if (module instanceof Payoffs)
+			plist.append(Plist.encodeKey("Fitness", fitness));
 	}
 
 	@Override
