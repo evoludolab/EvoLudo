@@ -282,8 +282,8 @@ public abstract class IBS extends Model {
 				break;
 			}
 		}
-
-		nextSpeciesIdx = -1;
+		// start with first species when taking turns
+		nextSpeciesIdx = (speciesUpdate != null && speciesUpdate.getType() == SpeciesUpdate.Type.TURNS ? -1 : 0);
 		for (Module<?> mod : species) {
 			IBSPopulation<?, ?> pop = mod.getIBSPopulation();
 			pop.reset();
