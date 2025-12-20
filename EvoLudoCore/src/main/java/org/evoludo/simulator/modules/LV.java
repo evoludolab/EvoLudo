@@ -309,6 +309,9 @@ public class LV extends Discrete implements HasDE.ODE, HasDE.SDE, HasDE.DualDyna
 		 */
 		public ODE() {
 			super(LV.this.engine);
+			// LV does not advertise ODERK5 but this is the default when extending
+			// RungeKutta; causes troubles with tests otherwise
+			type = ModelType.ODE;
 		}
 
 		@Override
