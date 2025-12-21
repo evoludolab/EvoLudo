@@ -30,25 +30,19 @@
 package org.evoludo.simulator.modules;
 
 import java.awt.Color;
-import java.util.Arrays;
-import java.util.logging.Level;
 
 import org.evoludo.simulator.EvoLudo;
 import org.evoludo.simulator.models.IBSDPopulation;
 import org.evoludo.simulator.models.Model;
 import org.evoludo.simulator.models.Model.HasDE;
 import org.evoludo.simulator.models.Model.HasIBS;
-import org.evoludo.simulator.models.RungeKutta;
 import org.evoludo.simulator.models.ModelType;
+import org.evoludo.simulator.models.RungeKutta;
 import org.evoludo.simulator.modules.Features.Multispecies;
 import org.evoludo.simulator.views.HasMean;
 import org.evoludo.simulator.views.HasPhase2D;
 import org.evoludo.simulator.views.HasPop2D;
 import org.evoludo.simulator.views.HasPop3D;
-import org.evoludo.util.CLODelegate;
-import org.evoludo.util.CLOParser;
-import org.evoludo.util.CLOption;
-import org.evoludo.util.CLOCategory;
 
 /**
  * Lotka-Volterra module for EvoLudo. This module implements the
@@ -136,8 +130,8 @@ public class LV extends Discrete implements HasDE.ODE, HasDE.SDE, HasDE.DualDyna
 		boolean doReset = super.check();
 		if (model.getType().isDE()) {
 			// initialize convenience variables for derivative calculations
-			rx = rates[0] - getDeathRate();
-			ry = predator.rates[0] - predator.getDeathRate();
+			rx = getBirthRate() - getDeathRate();
+			ry = predator.getBirthRate() - predator.getDeathRate();
 		}
 		return doReset;
 	}
@@ -153,57 +147,6 @@ public class LV extends Discrete implements HasDE.ODE, HasDE.SDE, HasDE.DualDyna
 		// of phase plane; note the nTraits of the host species
 		map.setTraits(new int[] { PREY }, new int[] { nTraits + Predator.PREDATOR });
 		map.setFixedAxes(true);
-	}
-
-	/**
-	 * Error message templates for invalid birth parameter.
-	 */
-	static final String BIRTH_ERROR = "birth rate of %s must be non-negative (changed to 0).";
-
-	/**
-	 * Error message templates for invalid competition parameter.
-	 */
-	static final String COMPETITION_ERROR = "competition rate of %s must be non-negative (changed to 0).";
-
-	/**
-	 * Command line option to set the prey parameters.
-	 */
-	public final CLOption cloPrey = new CLOption("prey", "0.667,-1.333,0.0", CLOCategory.Module,
-			"--prey <a0,a1[,a2]>  x' = (a0-dx)*x + a1*x*y - a2*x^2\n" +
-					"           a0: birth rate\n" +
-					"           dx: death rate (see --deathrate)\n" +
-					"           a1: predation rate\n" +
-					"           a2: competition rate",
-			new CLODelegate() {
-
-				@Override
-				public boolean parse(String arg) {
-					double[] args = CLOParser.parseVector(arg);
-					if (args.length < 1 || args.length > 3)
-						return false;
-					if (rates == null || rates.length != 3)
-						rates = new double[3];
-					Arrays.fill(rates, 0.0);
-					System.arraycopy(args, 0, rates, 0, args.length);
-					// sanity checks
-					if (rates[0] < 0.0) {
-						rates[0] = 0.0; // birth rate must be non-negative
-						if (logger.isLoggable(Level.WARNING))
-							logger.warning(BIRTH_ERROR.replace("%s", getName()));
-					}
-					if (rates[2] < 0.0) {
-						rates[2] = 0.0; // competition rate must be non-negative
-						if (logger.isLoggable(Level.WARNING))
-							logger.warning(COMPETITION_ERROR.replace("%s", getName()));
-					}
-					return true;
-				}
-			});
-
-	@Override
-	public void collectCLO(CLOParser parser) {
-		super.collectCLO(parser);
-		parser.addCLO(cloPrey);
 	}
 
 	/**
@@ -257,17 +200,21 @@ public class LV extends Discrete implements HasDE.ODE, HasDE.SDE, HasDE.DualDyna
 		double x = state[PREY];
 		double y = state[predatorIdx];
 		// NOTE: the cross-terms cause problems for aligning DEs and IBS results
+		double[] preyRates = this.competitionRates;
+		double[] predRates = predator.competitionRates;
 		if (isDensity) {
 			// density dynamics
-			change[PREY] = x * (rx - x * rates[2] + y * rates[1]);
-			change[predatorIdx] = y * (ry - y * predator.rates[2] + x * predator.rates[1]);
+			change[PREY] = x * (rx - x * preyRates[getId()] + y * preyRates[predator.getId()]);
+			change[predatorIdx] = y
+					* (ry - y * predRates[predator.getId()] + x * predRates[getId()]);
 			return;
 		}
 		// frequency dynamics
-		double delta = x * (rx - x * (rates[0] + rates[2]) + y * rates[1]);
+		double delta = x * (rx - x * (getBirthRate() + preyRates[getId()]) + y * preyRates[predator.getId()]);
 		change[PREY] = delta;
 		change[VACANT] = -delta;
-		delta = y * (ry - y * (predator.rates[0] + predator.rates[2]) + x * (1.0 - y) * predator.rates[1]);
+		delta = y * (ry - y * (predator.getBirthRate() + predRates[predator.getId()])
+				+ x * (1.0 - y) * predRates[getId()]);
 		change[predatorIdx] = delta;
 		change[nTraits + VACANT] = -delta;
 	}
@@ -388,47 +335,6 @@ class Predator extends Discrete implements Multispecies, HasDE {
 		return LV.VACANT;
 	}
 
-	/**
-	 * Command line option to set the predator parameters.
-	 */
-	public final CLOption cloPredator = new CLOption("predator", "-1.0,1.0,0.0", CLOCategory.Module,
-			"--predator <b0,b1[,b2]>  y' = (b0-dy)*y + b1*x*y - b2*y^2\n" +
-					"           b0: birth rate\n" +
-					"           dy: death rate (see --deathrate)\n" +
-					"           b1: predation rate\n" +
-					"           b2: competition rate",
-			new CLODelegate() {
-
-				@Override
-				public boolean parse(String arg) {
-					double[] args = CLOParser.parseVector(arg);
-					if (args.length < 1 || args.length > 3)
-						return false;
-					if (rates == null || rates.length != 3)
-						rates = new double[3];
-					Arrays.fill(rates, 0.0);
-					System.arraycopy(args, 0, rates, 0, args.length);
-					// sanity checks
-					if (rates[0] < 0.0) {
-						rates[0] = 0.0; // birth rate must be non-negative
-						if (logger.isLoggable(Level.WARNING))
-							logger.warning(LV.BIRTH_ERROR.replace("%s", getName()));
-					}
-					if (rates[2] < 0.0) {
-						rates[2] = 0.0; // competition rate must be non-negative
-						if (logger.isLoggable(Level.WARNING))
-							logger.warning(LV.COMPETITION_ERROR.replace("%s", getName()));
-					}
-					return true;
-				}
-			});
-
-	@Override
-	public void collectCLO(CLOParser parser) {
-		super.collectCLO(parser);
-		parser.addCLO(cloPredator);
-	}
-
 	@Override
 	public IBSPop createIBSPopulation() {
 		return new IBSPop(engine, this);
@@ -459,13 +365,26 @@ class IBSPop extends IBSDPopulation {
 	final boolean isPredator;
 
 	/**
-	 * The reaction rates for the predator/prey population. Convenience variable.
+	 * The interaction rates with other populations rates for the predator/prey
+	 * population. Convenience variable.
+	 * 
+	 * @see Module#getCompetitionRates()
 	 */
-	double[] rates;
+	double[] competitionRates;
+
+	/**
+	 * The per capita birth rate for the predator/prey population. Convenience
+	 * variable.
+	 * 
+	 * @see Module#getBirthRate()
+	 */
+	double birthRate;
 
 	/**
 	 * The per capita death rate for the predator/prey population. Convenience
 	 * variable.
+	 * 
+	 * @see Module#getDeathRate()
 	 */
 	double deathRate;
 
@@ -496,17 +415,21 @@ class IBSPop extends IBSDPopulation {
 	@Override
 	public boolean check() {
 		boolean doReset = super.check();
-		rates = (isPredator ? ((Predator) module).rates : ((LV) module).rates);
 		deathRate = module.getDeathRate();
+		birthRate = module.getBirthRate();
+		competitionRates = module.getCompetitionRates();
 		// focal peer opponent
-		// X 0 0 death, birth: deathRate + rates[0]
-		// X X 0 death, competition: deathRate + rates[2]
-		// X 0 Y death, birth, predation: deathRate + rates[0] + |rates[1]|
-		// X X Y death, competition, predation: deathRate + rates[2] + |rates[1]|
-		maxRate = deathRate + Math.max(Math.max(Math.max(rates[0], // birth
-				rates[2]), // competition
-				rates[0] + Math.abs(rates[1])), // birth + predation
-				rates[2] + Math.abs(rates[1])); // competition + predation
+		// X 0 0 death, birth: deathRate + birthRate
+		// X X 0 death, competition: deathRate + rates[module.getId()]
+		// X 0 Y death, birth, predation: deathRate + birthRate + |rates[1]|
+		// X X Y death, competition, predation: deathRate + rates[module.getId()] +
+		// |rates[1]|
+		maxRate = deathRate + Math.max(Math.max(Math.max(birthRate, // birth
+				competitionRates[module.getId()]), // competition
+				birthRate + Math.abs(competitionRates[opponent.getModule().getId()])), // birth + predation
+				competitionRates[module.getId()] + Math.abs(competitionRates[opponent.getModule().getId()])); // competition
+																												// +
+																												// predation
 		return doReset;
 	}
 
@@ -548,19 +471,19 @@ class IBSPop extends IBSDPopulation {
 		boolean peerVacant = isVacantAt(peer);
 		if (peerVacant) {
 			// focal may reproduce because neighbouring site is vacant
-			focalReproduces = rates[0];
+			focalReproduces = birthRate;
 		} else {
 			// focal fails to reproduce due to lack of space
 			focalReproduces = 0.0;
 			// focal may also die due to competition
-			focalDies += rates[2];
+			focalDies += competitionRates[module.getId()];
 		}
 		// predation if random neighbouring opponent site is occupied
 		double focalPredation = 0.0;
 		int predation = opponent.pickNeighborSiteAt(me);
 		if (!opponent.isVacantAt(predation)) {
 			// assume predator.rates[1] > 0 and prey.rates[1] < 0 (at least for now)
-			focalPredation = Math.abs(rates[1]);
+			focalPredation = Math.abs(competitionRates[opponent.getModule().getId()]);
 			// NOTE: the cross-terms cause problems for aligning DEs and IBS results
 			// if (!isPredator)
 			// focalPredation += Math.abs(predator.rates[1]);
