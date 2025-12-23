@@ -74,6 +74,7 @@ import com.google.gwt.dom.client.DivElement;
 import com.google.gwt.dom.client.Document;
 import com.google.gwt.dom.client.Element;
 import com.google.gwt.dom.client.NodeList;
+import com.google.gwt.event.dom.client.BlurEvent;
 import com.google.gwt.event.dom.client.ChangeEvent;
 import com.google.gwt.event.dom.client.ClickEvent;
 import com.google.gwt.event.dom.client.DragEnterEvent;
@@ -90,6 +91,7 @@ import com.google.gwt.uibinder.client.UiField;
 import com.google.gwt.uibinder.client.UiHandler;
 import com.google.gwt.user.client.Timer;
 import com.google.gwt.user.client.Window;
+import com.google.gwt.event.dom.client.FocusEvent;
 import com.google.gwt.user.client.ui.Button;
 import com.google.gwt.user.client.ui.Composite;
 import com.google.gwt.user.client.ui.DeckLayoutPanel;
@@ -488,6 +490,8 @@ public class EvoLudoWeb extends Composite
 		// set command line options
 		evoludoCLO.getElement().setAttribute("contenteditable", "true");
 		evoludoCLO.setText(clo != null ? clo : "");
+		evoludoCLO.addDomHandler(event -> keyController.onCLOFocusGained(), FocusEvent.getType());
+		evoludoCLO.addDomHandler(event -> keyController.onCLOFocusLost(), BlurEvent.getType());
 
 		// layout speed controls - GWT has no slider...
 		// but we can construct one from HTML5!
@@ -495,7 +499,6 @@ public class EvoLudoWeb extends Composite
 		evoludoSlider.setLogBase(1.1);
 		// note: the {}-place holders interfere with UiBinder...
 		evoludoSlider.setTitle("Set delay between updates ({max} - {min}msec); now at {value}msec");
-
 	}
 
 	/**

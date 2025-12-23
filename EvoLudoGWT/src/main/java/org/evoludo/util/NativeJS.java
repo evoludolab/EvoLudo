@@ -113,6 +113,16 @@ public class NativeJS {
 	}-*/;
 
 	/**
+	 * JSNI method: return the currently focused element in the document.
+	 * 
+	 * @return the active element or {@code null} if none
+	 */
+	public static final native Element getActiveElement()
+	/*-{
+		return $doc.activeElement || null;
+	}-*/;
+
+	/**
 	 * JSNI method: focus on {@code element}.
 	 * 
 	 * @param element the element to focus on
@@ -587,11 +597,6 @@ public class NativeJS {
 	// public static native int getBoundingHeight(Element element)
 	// /*-{
 	// return element.getBoundingClientRect().height;
-	// }-*/;
-
-	// public final native Element activeElement()
-	// /*-{
-	// return $doc.activeElement;
 	// }-*/;
 
 	// public static native JsArray<Node> getAttributes(Element elem) /*-{

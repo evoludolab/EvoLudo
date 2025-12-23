@@ -40,6 +40,8 @@ import org.evoludo.simulator.views.AbstractView;
 import org.evoludo.util.CLOParser;
 import org.evoludo.util.NativeJS;
 
+import com.google.gwt.dom.client.Element;
+
 /**
  * Handles global key events and delegates actions to the owning EvoLudoWeb.
  */
@@ -149,6 +151,8 @@ public class KeyHandler {
 			return;
 		unregisterGlobal(this);
 		registered = false;
+		if (active == this)
+			active = null;
 	}
 
 	/**
@@ -242,6 +246,21 @@ public class KeyHandler {
 				return true;
 		}
 		return false;
+	}
+
+	/**
+	 * Determines whether any controller's CLO field currently has focus.
+	 *
+	 * @return {@code true} if one of the registered controllers has its CLO field
+	 *         focused
+	 */
+	@SuppressWarnings("java:S1144") // Used by JSNI
+	private static boolean isCLOFieldFocused() {
+		if (active == null)
+			return false;
+		Element focused = NativeJS.getActiveElement();
+		Element cloElement = active.gui.getCLOElement();
+		return focused != null && cloElement != null && focused.equals(cloElement);
 	}
 
 	/**
@@ -618,22 +637,26 @@ public class KeyHandler {
 			$wnd.EvoLudoUtils.keyListeners = new Map();
 		}
 		if (!$wnd.EvoLudoUtils.keyListeners.get('keydown')) {
-			$wnd.EvoLudoUtils.keyListeners.set(
-					'keydown',
-					$entry(function(event) {
-						if (@org.evoludo.simulator.ui.KeyHandler::dispatchKeyDown(Ljava/lang/String;)(event.key)) {
-							event.preventDefault();
-						}
-						event.stopPropagation();
-					}));
-			$wnd.EvoLudoUtils.keyListeners.set(
-					'keyup',
-					$entry(function(event) {
-						if (@org.evoludo.simulator.ui.KeyHandler::dispatchKeyUp(Ljava/lang/String;)(event.key)) {
-							event.preventDefault();
-						}
-						event.stopPropagation();
-					}));
+		$wnd.EvoLudoUtils.keyListeners.set(
+				'keydown',
+				$entry(function(event) {
+					if (@org.evoludo.simulator.ui.KeyHandler::isCLOFieldFocused()())
+						return;
+					if (@org.evoludo.simulator.ui.KeyHandler::dispatchKeyDown(Ljava/lang/String;)(event.key)) {
+						event.preventDefault();
+					}
+					event.stopPropagation();
+				}));
+		$wnd.EvoLudoUtils.keyListeners.set(
+				'keyup',
+				$entry(function(event) {
+					if (@org.evoludo.simulator.ui.KeyHandler::isCLOFieldFocused()())
+						return;
+					if (@org.evoludo.simulator.ui.KeyHandler::dispatchKeyUp(Ljava/lang/String;)(event.key)) {
+						event.preventDefault();
+					}
+					event.stopPropagation();
+				}));
 		}
 		$wnd.addEventListener('keydown', $wnd.EvoLudoUtils.keyListeners.get('keydown'), true);
 		$wnd.addEventListener('keyup', $wnd.EvoLudoUtils.keyListeners.get('keyup'), true);
@@ -662,6 +685,21 @@ public class KeyHandler {
 	 */
 	public boolean isActive() {
 		return active == this;
+	}
+
+	/**
+	 * Marks this handler as active because its CLO field just gained focus.
+	 */
+	public void onCLOFocusGained() {
+		setActive(this);
+	}
+
+	/**
+	 * Releases priority when this handler's CLO field loses focus.
+	 */
+	public void onCLOFocusLost() {
+		if (!gui.hasPopup() && active == this)
+			active = null;
 	}
 
 	/**
