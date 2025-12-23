@@ -34,9 +34,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
-import java.util.List;
-
-import org.evoludo.simulator.models.ModelType;
 
 /**
  * Command line option and argument.
@@ -519,16 +516,17 @@ public class CLOption implements Comparable<CLOption> {
 	 * @return {@code true} if parsing succeeds
 	 */
 	private boolean parse(boolean isOptional) {
+		boolean isSet = isSet();
 		try {
 			if (isOptional)
-				return delegate.parse(getArg(), isSet());
-			if (delegate.parse(getArg()))
+				return delegate.parse(getArg(), isSet);
+			if (isSet && delegate.parse(getArg()))
 				return true;
-			return delegate.parse(getDefault());
+			return !isSet && delegate.parse(getDefault());
 		} catch (Exception e) {
 			try {
 				if (isOptional)
-					return delegate.parse(getDefault(), isSet());
+					return delegate.parse(getDefault(), isSet);
 				return delegate.parse(getDefault());
 			} catch (Exception ex) {
 				return false;

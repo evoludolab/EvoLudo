@@ -204,7 +204,7 @@ public class CLOParser {
 		// argument(s) which can be separated by ' ' or '='
 		int issues = 0;
 		for (String clo : cloargs) {
-			Integer result = parseCommandLineOption(clo);
+			Integer result = processCommandLineOption(clo);
 			if (result != null) {
 				issues += result;
 			}
@@ -225,7 +225,7 @@ public class CLOParser {
 	 * @return the number of issues (0, 1, or null if option was found and
 	 *         processed)
 	 */
-	private Integer parseCommandLineOption(String clo) {
+	private Integer processCommandLineOption(String clo) {
 		String[] args = clo.split(SPLIT_ARG_REGEX);
 		String name = args[0];
 
