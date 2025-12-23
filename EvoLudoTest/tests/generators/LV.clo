@@ -14,8 +14,7 @@
 # PDE not implemented
 
 # IBS
-# base scenarios (density and frequency dynamics)
---module LV --model IBS --birthrate 0.667,0 --deathrate 0,1 --comprate 0,-1.333;1,0 --init density 1,1 --popsize 1000 --timestop 100
+# base scenarios (frequency dynamics)
 --module LV --model IBS --birthrate 0.667,0 --deathrate 0,1 --comprate 0,-1.333;1,0 --init frequency 1,1 --popsize 1000 --timestop 100
 
 # population sizes
