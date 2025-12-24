@@ -501,36 +501,33 @@ class IBSPop extends IBSDPopulation {
 			// nothing happens
 			return 0;
 		}
-		boolean isExtinct = false;
 		if (randomTestVal < focalReproduces) {
 			// focal reproduces spontaneously
 			setNextTraitAt(peer, 0); // note: works because Predator.PREDATOR == LV.PREY == 0
 			commitTraitAt(peer);
-		} else {
-			randomTestVal -= focalReproduces;
-			if (randomTestVal < focalDies) {
-				// focal dies spontaneously or due to competition: vacate focal site
-				// more efficient than setNextTraitAt
-				traitsNext[me] = LV.VACANT + nTraits;
-				commitTraitAt(me);
-				isExtinct = (getPopulationSize() == 0);
-			} else {
-				// focal predation: prey dies, predator reproduces if neighbour vacant
-				if (isPredator) {
-					// predator reproduces provided random neighbouring site is vacant
-					if (peerVacant) {
-						setNextTraitAt(peer, Predator.PREDATOR);
-						commitTraitAt(peer);
-					}
-				} else {
-					// prey dies; more efficient than setNextTraitAt
-					traitsNext[me] = LV.VACANT + nTraits;
-					commitTraitAt(me);
-					isExtinct = (getPopulationSize() == 0);
-				}
-			}
+			return 1;
 		}
-		return (isExtinct ? -1 : 1);
+		randomTestVal -= focalReproduces;
+		if (randomTestVal < focalDies) {
+			// focal dies spontaneously or due to competition: vacate focal site
+			// more efficient than setNextTraitAt
+			traitsNext[me] = LV.VACANT + nTraits;
+			commitTraitAt(me);
+			return (getPopulationSize() == 0 ? -1 : 1);
+		}
+		// focal predation: prey dies, predator reproduces if neighbour vacant
+		if (isPredator) {
+			// predator reproduces provided random neighbouring site is vacant
+			if (peerVacant) {
+				setNextTraitAt(peer, Predator.PREDATOR);
+				commitTraitAt(peer);
+			}
+			return 1;
+		}
+		// prey dies; more efficient than setNextTraitAt
+		traitsNext[me] = LV.VACANT + nTraits;
+		commitTraitAt(me);
+		return (getPopulationSize() == 0 ? -1 : 1);
 	}
 
 	@Override
