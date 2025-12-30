@@ -479,16 +479,18 @@ class IBSPop extends IBSDPopulation {
 			focalDies += competitionRates[module.getId()];
 		}
 		// predation if random neighbouring opponent site is occupied
-		double focalPredation = 0.0;
 		int predation = opponent.pickNeighborSiteAt(me);
 		if (!opponent.isVacantAt(predation)) {
-			// assume predator.rates[1] > 0 and prey.rates[1] < 0 (at least for now)
-			focalPredation = Math.abs(competitionRates[opponent.getModule().getId()]);
-			// NOTE: the cross-terms cause problems for aligning DEs and IBS results
-			// if (!isPredator)
-			// focalPredation += Math.abs(predator.rates[1]);
+			double predationRate = Math.abs(competitionRates[opponent.getModule().getId()]);
+			if (isPredator) {
+				// predator benefits from presence of prey
+				focalReproduces += predationRate;
+			} else {
+				// prey suffers from presence of predator
+				focalDies += predationRate;
+			}
 		}
-		double totRate = focalReproduces + focalDies + focalPredation;
+		double totRate = focalReproduces + focalDies;
 		if (totRate <= 0.0) {
 			// this implies deathRate == 0. converged if at maximum population size
 			// and opponent extinct.
@@ -502,29 +504,15 @@ class IBSPop extends IBSDPopulation {
 			return 0;
 		}
 		if (randomTestVal < focalReproduces) {
-			// focal reproduces spontaneously
+			if (!peerVacant)
+				return 1;
+			// focal reproduces because neighbouring site is vacant
 			setNextTraitAt(peer, 0); // note: works because Predator.PREDATOR == LV.PREY == 0
 			commitTraitAt(peer);
 			return 1;
 		}
-		randomTestVal -= focalReproduces;
-		if (randomTestVal < focalDies) {
-			// focal dies spontaneously or due to competition: vacate focal site
-			// more efficient than setNextTraitAt
-			traitsNext[me] = LV.VACANT + nTraits;
-			commitTraitAt(me);
-			return (getPopulationSize() == 0 ? -1 : 1);
-		}
-		// focal predation: prey dies, predator reproduces if neighbour vacant
-		if (isPredator) {
-			// predator reproduces provided random neighbouring site is vacant
-			if (peerVacant) {
-				setNextTraitAt(peer, Predator.PREDATOR);
-				commitTraitAt(peer);
-			}
-			return 1;
-		}
-		// prey dies; more efficient than setNextTraitAt
+		// focal dies spontaneously, due to competition, or as prey due to predation:
+		// vacate focal site (more efficient than setNextTraitAt)
 		traitsNext[me] = LV.VACANT + nTraits;
 		commitTraitAt(me);
 		return (getPopulationSize() == 0 ? -1 : 1);
