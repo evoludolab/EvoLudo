@@ -31,7 +31,6 @@
 package org.evoludo.simulator.exec;
 
 import java.io.PrintStream;
-import java.text.DecimalFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -39,16 +38,10 @@ import java.util.stream.Collectors;
 
 import org.evoludo.simulator.EvoLudo;
 import org.evoludo.simulator.EvoLudoJRE;
-import org.evoludo.simulator.Geometry;
 import org.evoludo.simulator.models.ChangeListener;
 import org.evoludo.simulator.models.IBSDPopulation;
-import org.evoludo.simulator.models.IBSPopulation;
 import org.evoludo.simulator.modules.EcoMoran;
 import org.evoludo.util.CLOParser;
-import org.evoludo.util.CLOption;
-import org.evoludo.util.CLOption.CLODelegate;
-import org.evoludo.util.Formatter;
-import org.evoludo.util.Plist;
 
 /**
  * Simulations to investigate the Moran process on graph structured populations.
@@ -90,6 +83,13 @@ public class simEMoran extends EcoMoran implements ChangeListener {
 	private List<String> statuses;
 	private List<String> geometries;
 	private List<String> allTimes;
+	private List<String> nVAdist;
+	private List<String> nAVdist;
+	private List<String> adjToAAdist;
+	private List<String> vvAdjToAVdist;
+	private List<String> vvAdjToVVdist;
+	private List<String> allNumNStepsAway;
+	private List<String> allTotalNStepsAway;
 
 	private String successString = "1";
 
@@ -111,6 +111,13 @@ public class simEMoran extends EcoMoran implements ChangeListener {
 		// evolve population
 		statuses = new ArrayList<>();
 		geometries = new ArrayList<>();
+		nVAdist = new ArrayList<>();
+		nAVdist = new ArrayList<>();
+		adjToAAdist = new ArrayList<>();
+		vvAdjToAVdist = new ArrayList<>();
+		vvAdjToVVdist = new ArrayList<>();
+		allNumNStepsAway = new ArrayList<>();
+		allTotalNStepsAway = new ArrayList<>();
 
 		for (long r = 1; r <= nSamples; r++) {
 			engine.modelNext();
@@ -130,6 +137,32 @@ public class simEMoran extends EcoMoran implements ChangeListener {
 		for (String time : allTimes) {
 			out.println(time);
 		}
+		for (String nva : nVAdist) {
+			out.println(nva);
+		}
+		for (String nav : nAVdist) {
+			out.println(nav);
+		}
+
+		for (String adjToAA : adjToAAdist) {
+			out.println(adjToAA);
+		}
+
+		for (String vvAdjToAV : vvAdjToAVdist) {
+			out.println(vvAdjToAV);
+		}
+
+		for (String vvAdjToVV : vvAdjToVVdist) {
+			out.println(vvAdjToVV);
+		}
+
+		for (String numNStepsAway : allNumNStepsAway) {
+			out.println(numNStepsAway);
+		}
+		for (String totalNStepsAway : allTotalNStepsAway) {
+			out.println(totalNStepsAway);
+		}
+
 		out.flush();
 	}
 
@@ -223,31 +256,128 @@ public class simEMoran extends EcoMoran implements ChangeListener {
 		double nav = 0.0;
 		double naa = 0.0;
 		double na = 0.0;
+		double[] nvaDistArr = new double[outNodes[0].length + 1];
+		double[] navDistArr = new double[outNodes[0].length + 1];
+		double[] adjToAA = new double[outNodes[0].length * 2 - 1];
+		double[] vvAdjToAV = new double[outNodes[0].length];
+		double[] vvAdjToVV = new double[outNodes[0].length];
+		double[] numNStepsAway = new double[Math.min(50, values.size()) + 1];
+		double[] totalNStepsAway = new double[Math.min(50, values.size()) + 1];
 		for (int n = 0; n < values.size(); n++) {
 			String node = values.get(n);
+
 			if (node.equals(successString)) {
-				na++;
+				int currentStep = 0;
+				ArrayList<Integer> currentNodes = new ArrayList<>(Arrays.asList(n));
+				ArrayList<Integer> nextNodes = new ArrayList<>();
+				boolean[] visited = new boolean[values.size()];
+				visited[n] = true;
+				numNStepsAway[currentStep] += currentNodes.size();
+				totalNStepsAway[currentStep] += currentNodes.size();
+				int count = 0;
+				int countAll = 0;
+				while (!currentNodes.isEmpty()) {
+					count = 0;
+					countAll = 0;
+					for (int cn : currentNodes) {
+						for (int adj : outNodes[cn]) {
+							if (!visited[adj]) {
+								visited[adj] = true;
+								countAll++;
+								nextNodes.add(adj);
+								if (values.get(adj).equals(successString)) {
+									count++;
+								}
+							}
+						}
+					}
+					currentNodes = nextNodes;
+					nextNodes = new ArrayList<>();
+					currentStep++;
+					if (currentStep >= numNStepsAway.length) {
+						break;
+					}
+					numNStepsAway[currentStep] += count;
+
+					totalNStepsAway[currentStep] += countAll;
+				}
+
 			}
+
+			int temp_nav = 0;
 			for (int adj : outNodes[n]) {
 				String adjNode = values.get(adj);
 				if (node.equals(successString)) {
 					if (adjNode.equals(successString)) {
 						naa++;
+						int adjToAddCounter = 0;
+						for (int tempAdj : outNodes[n]) {
+							String tempAdjNode = values.get(tempAdj);
+							if (tempAdj != adj && tempAdjNode.equals(successString)) {
+								adjToAddCounter++;
+							}
+						}
+						for (int tempAdj : outNodes[adj]) {
+							String tempAdjNode = values.get(tempAdj);
+							if (!tempAdjNode.equals(node) && tempAdjNode.equals(successString)) {
+								adjToAddCounter++;
+							}
+						}
+						adjToAA[adjToAddCounter]++;
 					} else {
 						nav++;
+						temp_nav++;
+
+						int adjToAddCounter = 0;
+						for (int tempAdj : outNodes[adj]) {
+							String tempAdjNode = values.get(tempAdj);
+							if (tempAdj != n && !tempAdjNode.equals(successString)) {
+								adjToAddCounter++;
+							}
+						}
+						vvAdjToAV[adjToAddCounter]++;
 					}
 				} else {
 					if (adjNode.equals(successString)) {
 						nav++;
+						temp_nav++;
 					} else {
 						nvv++;
+						int adjToAddCounter = 0;
+						for (int tempAdj : outNodes[adj]) {
+							String tempAdjNode = values.get(tempAdj);
+							if (tempAdj != n && !tempAdjNode.equals(successString)) {
+								adjToAddCounter++;
+							}
+						}
+						vvAdjToVV[adjToAddCounter]++;
 					}
 				}
 			}
+			if (node.equals(successString)) {
+				na++;
+				nvaDistArr[temp_nav]++;
+			} else {
+				navDistArr[temp_nav]++;
+			}
+		}
+
+		for (int i = 0; i < numNStepsAway.length; i++) {
+			numNStepsAway[i] /= na;
+		}
+		for (int i = 0; i < totalNStepsAway.length; i++) {
+			totalNStepsAway[i] /= na;
 		}
 
 		geometries.add("Nav " + String.valueOf(nav));
 		statuses.add("Na " + String.valueOf(na));
 		allTimes.add("Time: " + String.valueOf(generation));
+		nVAdist.add("Nva Distribution " + Arrays.toString(nvaDistArr));
+		nAVdist.add("Nav Distribution " + Arrays.toString(navDistArr));
+		adjToAAdist.add("AdjToAA Distribution " + Arrays.toString(adjToAA));
+		vvAdjToAVdist.add("VVAdjToAV Distribution " + Arrays.toString(vvAdjToAV));
+		vvAdjToVVdist.add("VVAdjToVV Distribution " + Arrays.toString(vvAdjToVV));
+		allNumNStepsAway.add("NumNStepsAway " + Arrays.toString(numNStepsAway));
+		allTotalNStepsAway.add("TotalNStepsAway " + Arrays.toString(totalNStepsAway));
 	}
 }

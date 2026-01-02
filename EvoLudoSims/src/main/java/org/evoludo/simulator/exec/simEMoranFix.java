@@ -105,6 +105,7 @@ public class simEMoranFix extends EcoMoran {
 
 		// evolve population
 		for (long r = 1; r <= nSamples; r++) {
+			jrengine.modelReset();
 			FixationData fixData = jrengine.generateSample();
 			int typeFixed = (fixData.typeFixed == fixData.mutantTrait ? 0 : 1);
 			fixProb[fixData.popSize - 1][typeFixed]++;
