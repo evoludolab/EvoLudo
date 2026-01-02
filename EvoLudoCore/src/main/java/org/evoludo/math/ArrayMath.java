@@ -546,8 +546,11 @@ public class ArrayMath {
 	public static int min(int[] a) {
 		int dim = a.length;
 		int min = Integer.MAX_VALUE;
-		for (int n = 0; n < dim; n++)
-			min = Math.min(min, a[n]);
+		for (int n = 0; n < dim; n++) {
+			int an = a[n];
+			if (an < min)
+				min = an;
+		}
 		return min;
 	}
 
@@ -560,8 +563,11 @@ public class ArrayMath {
 	public static long min(long[] a) {
 		int dim = a.length;
 		long min = Long.MAX_VALUE;
-		for (int n = 0; n < dim; n++)
-			min = Math.min(min, a[n]);
+		for (int n = 0; n < dim; n++) {
+			long an = a[n];
+			if (an < min)
+				min = an;
+		}
 		return min;
 	}
 
@@ -574,8 +580,11 @@ public class ArrayMath {
 	public static float min(float[] a) {
 		int dim = a.length;
 		float min = Float.MAX_VALUE;
-		for (int n = 0; n < dim; n++)
-			min = Math.min(min, a[n]);
+		for (int n = 0; n < dim; n++) {
+			float an = a[n];
+			if (an < min)
+				min = an;
+		}
 		return min;
 	}
 
@@ -588,8 +597,11 @@ public class ArrayMath {
 	public static double min(double[] a) {
 		int dim = a.length;
 		double min = Double.MAX_VALUE;
-		for (int n = 0; n < dim; n++)
-			min = Math.min(min, a[n]);
+		for (int n = 0; n < dim; n++) {
+			double an = a[n];
+			if (an < min)
+				min = an;
+		}
 		return min;
 	}
 
@@ -602,8 +614,11 @@ public class ArrayMath {
 	public static int min(int[][] a) {
 		int dim = a.length;
 		int min = Integer.MAX_VALUE;
-		for (int n = 0; n < dim; n++)
-			min = Math.min(min, min(a[n]));
+		for (int n = 0; n < dim; n++) {
+			int an = min(a[n]);
+			if (an < min)
+				min = an;
+		}
 		return min;
 	}
 
@@ -616,8 +631,11 @@ public class ArrayMath {
 	public static long min(long[][] a) {
 		int dim = a.length;
 		long min = Long.MAX_VALUE;
-		for (int n = 0; n < dim; n++)
-			min = Math.min(min, min(a[n]));
+		for (int n = 0; n < dim; n++) {
+			long an = min(a[n]);
+			if (an < min)
+				min = an;
+		}
 		return min;
 	}
 
@@ -630,8 +648,11 @@ public class ArrayMath {
 	public static float min(float[][] a) {
 		int dim = a.length;
 		float min = Float.MAX_VALUE;
-		for (int n = 0; n < dim; n++)
-			min = Math.min(min, min(a[n]));
+		for (int n = 0; n < dim; n++) {
+			float an = min(a[n]);
+			if (an < min)
+				min = an;
+		}
 		return min;
 	}
 
@@ -644,8 +665,11 @@ public class ArrayMath {
 	public static double min(double[][] a) {
 		int dim = a.length;
 		double min = Double.MAX_VALUE;
-		for (int n = 0; n < dim; n++)
-			min = Math.min(min, min(a[n]));
+		for (int n = 0; n < dim; n++) {
+			double an = min(a[n]);
+			if (an < min)
+				min = an;
+		}
 		return min;
 	}
 
@@ -807,8 +831,11 @@ public class ArrayMath {
 	public static int max(int[] a) {
 		int dim = a.length;
 		int max = -Integer.MAX_VALUE;
-		for (int n = 0; n < dim; n++)
-			max = Math.max(max, a[n]);
+		for (int n = 0; n < dim; n++) {
+			int an = a[n];
+			if (an > max)
+				max = an;
+		}
 		return max;
 	}
 
@@ -821,8 +848,11 @@ public class ArrayMath {
 	public static long max(long[] a) {
 		int dim = a.length;
 		long max = -Long.MAX_VALUE;
-		for (int n = 0; n < dim; n++)
-			max = Math.max(max, a[n]);
+		for (int n = 0; n < dim; n++) {
+			long an = a[n];
+			if (an > max)
+				max = an;
+		}
 		return max;
 	}
 
@@ -835,8 +865,11 @@ public class ArrayMath {
 	public static float max(float[] a) {
 		int dim = a.length;
 		float max = -Float.MAX_VALUE;
-		for (int n = 0; n < dim; n++)
-			max = Math.max(max, a[n]);
+		for (int n = 0; n < dim; n++) {
+			float an = a[n];
+			if (an > max)
+				max = an;
+		}
 		return max;
 	}
 
@@ -849,8 +882,11 @@ public class ArrayMath {
 	public static double max(double[] a) {
 		int dim = a.length;
 		double max = -Double.MAX_VALUE;
-		for (int n = 0; n < dim; n++)
-			max = Math.max(max, a[n]);
+		for (int n = 0; n < dim; n++) {
+			double an = a[n];
+			if (an > max)
+				max = an;
+		}
 		return max;
 	}
 
@@ -863,8 +899,11 @@ public class ArrayMath {
 	public static int max(int[][] a) {
 		int dim = a.length;
 		int max = -Integer.MAX_VALUE;
-		for (int n = 0; n < dim; n++)
-			max = Math.max(max, max(a[n]));
+		for (int n = 0; n < dim; n++) {
+			int an = max(a[n]);
+			if (an > max)
+				max = an;
+		}
 		return max;
 	}
 
@@ -877,8 +916,11 @@ public class ArrayMath {
 	public static long max(long[][] a) {
 		int dim = a.length;
 		long max = -Long.MAX_VALUE;
-		for (int n = 0; n < dim; n++)
-			max = Math.max(max, max(a[n]));
+		for (int n = 0; n < dim; n++) {
+			long an = max(a[n]);
+			if (an > max)
+				max = an;
+		}
 		return max;
 	}
 
@@ -891,8 +933,11 @@ public class ArrayMath {
 	public static float max(float[][] a) {
 		int dim = a.length;
 		float max = -Float.MAX_VALUE;
-		for (int n = 0; n < dim; n++)
-			max = Math.max(max, max(a[n]));
+		for (int n = 0; n < dim; n++) {
+			float an = max(a[n]);
+			if (an > max)
+				max = an;
+		}
 		return max;
 	}
 
@@ -905,8 +950,11 @@ public class ArrayMath {
 	public static double max(double[][] a) {
 		int dim = a.length;
 		double max = -Double.MAX_VALUE;
-		for (int n = 0; n < dim; n++)
-			max = Math.max(max, max(a[n]));
+		for (int n = 0; n < dim; n++) {
+			double an = max(a[n]);
+			if (an > max)
+				max = an;
+		}
 		return max;
 	}
 
