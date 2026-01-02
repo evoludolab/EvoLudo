@@ -525,7 +525,7 @@ public abstract class AbstractGraph extends JLayeredPane implements ActionListen
 			return;
 		}
 		if (cmd.equals(MENU_SAVE_IMAGE)) {
-			controller.saveSnapshot(module.getID(), hasViewport, getSnapshotFormat());
+			controller.saveSnapshot(module.getId(), hasViewport, getSnapshotFormat());
 			return;
 		}
 		if (cmd.equals(MENU_SAVE_STATE)) {

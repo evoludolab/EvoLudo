@@ -38,14 +38,14 @@ import org.evoludo.simulator.EvoLudo;
 import org.evoludo.simulator.EvoLudoJRE;
 import org.evoludo.simulator.models.IBSD;
 import org.evoludo.simulator.models.IBSDPopulation;
-import org.evoludo.simulator.models.Type;
+import org.evoludo.simulator.models.ModelType;
 import org.evoludo.simulator.models.PopulationUpdate;
 import org.evoludo.simulator.modules.PlayerUpdate;
 import org.evoludo.simulator.modules.Traits;
+import org.evoludo.util.CLODelegate;
 import org.evoludo.util.CLOParser;
 import org.evoludo.util.CLOption;
-import org.evoludo.util.CLOption.CLODelegate;
-import org.evoludo.util.CLOption.Category;
+import org.evoludo.util.CLOCategory;
 import org.evoludo.util.Formatter;
 
 import com.sun.management.OperatingSystemMXBean;
@@ -123,7 +123,7 @@ public class simTraits extends Traits {
 					ManagementFactory.OPERATING_SYSTEM_MXBEAN_NAME,
 					OperatingSystemMXBean.class);
 		} catch (IOException e) {
-			throw new Error("failed to initialize timing system - " + e.getMessage() + ".");
+			throw new IllegalStateException("failed to initialize timing system - " + e.getMessage() + ".");
 		}
 
 		model.setTimeStep(1.0);
@@ -135,12 +135,12 @@ public class simTraits extends Traits {
 
 		// dry-run to give the JIT a chance to compile the relevant parts
 		setNPopulation(100);
-		mutation.probability = 0.01;
+		mutation.setProbability(0.01);
 		pop.getPopulationUpdate().setType(PopulationUpdate.Type.ASYNC);
-		engine.loadModel(Type.IBS);
+		engine.loadModel(ModelType.IBS);
 		engine.modelReset();
 		engine.modelRelax();
-		engine.loadModel(Type.SDE);
+		engine.loadModel(ModelType.SDE);
 		engine.modelReset();
 		engine.modelRelax();
 
@@ -149,10 +149,10 @@ public class simTraits extends Traits {
 				"# traits, size,\tmcSims [1k MC],\tcpuSims [msec/1k MC],\tmcSDE [1k MC],\tcpuSDE [msec/1k MC],\tratio");
 		for (int n = 0; n < popsizes.length; n++) {
 			setNPopulation(popsizes[n]);
-			mutation.probability = 1.0 / popsizes[n];
+			mutation.setProbability(1.0 / popsizes[n]);
 
 			// individual based simulations
-			engine.loadModel(Type.IBS);
+			engine.loadModel(ModelType.IBS);
 			pop.getPopulationUpdate().setType(PopulationUpdate.Type.ASYNC);
 			engine.modelReset();
 			long cpuBefore = osMBean.getProcessCpuTime(); // time in nanoseconds
@@ -164,7 +164,7 @@ public class simTraits extends Traits {
 				mcSims += 1000L;
 			}
 			// stochastic differential equations
-			engine.loadModel(Type.SDE);
+			engine.loadModel(ModelType.SDE);
 			engine.modelReset();
 			cpuBefore = osMBean.getProcessCpuTime(); // time in nanoseconds
 			long cpuSDE;
@@ -189,7 +189,7 @@ public class simTraits extends Traits {
 	/**
 	 * Command line option to specify the population sizes.
 	 */
-	public final CLOption cloNPopulations = new CLOption("popsize", "100", Category.Simulation,
+	public final CLOption cloNPopulations = new CLOption("popsize", "100", CLOCategory.Simulation,
 			"--popsize <n1:n2:...>  array of population sizes",
 			new CLODelegate() {
 				@Override
@@ -202,12 +202,12 @@ public class simTraits extends Traits {
 	/**
 	 * Command line option to show the simulation progress.
 	 */
-	public final CLOption cloProgress = new CLOption("progress", Category.Simulation,
+	public final CLOption cloProgress = new CLOption("progress", CLOCategory.Simulation,
 			"--progress      make noise about progress",
 			new CLODelegate() {
 				@Override
-				public boolean parse(String arg) {
-					progress = cloProgress.isSet();
+				public boolean parse(boolean isSet) {
+					progress = isSet;
 					return true;
 				}
 			});
@@ -215,7 +215,7 @@ public class simTraits extends Traits {
 	/**
 	 * Command line option to set the minimal measurement time.
 	 */
-	public final CLOption cloMinTime = new CLOption("mintime", "60", Category.Simulation, // 60 seconds
+	public final CLOption cloMinTime = new CLOption("mintime", "60", CLOCategory.Simulation, // 60 seconds
 			"--mintime <t>   minimal measurement time in seconds",
 			new CLODelegate() {
 				@Override

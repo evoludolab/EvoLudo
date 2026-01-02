@@ -32,6 +32,7 @@ package org.evoludo.simulator.models;
 
 import org.evoludo.math.ArrayMath;
 import org.evoludo.simulator.EvoLudo;
+import org.evoludo.simulator.models.ODEInitialize.InitType;
 import org.evoludo.simulator.modules.Module;
 import org.evoludo.simulator.modules.Mutation;
 import org.evoludo.simulator.views.HasHistogram;
@@ -68,7 +69,7 @@ public class SDE extends ODE {
 	 */
 	public SDE(EvoLudo engine) {
 		super(engine);
-		type = Type.SDE;
+		type = ModelType.SDE;
 	}
 
 	@Override
@@ -93,14 +94,14 @@ public class SDE extends ODE {
 					continue;
 				// multiple traits implies evolutionary module - revert to ODE
 				logger.warning("SDE model for multi-species modules requires single trait - revert to ODE.");
-				engine.loadModel(Type.ODE);
+				engine.loadModel(ModelType.ODE);
 				return true;
 			}
 		} else {
 			// single species module requires dependent trait
 			if (((HasDE) module).getDependent() < 0) {
 				logger.warning("SDE model requires dependent trait - revert to ODE.");
-				engine.loadModel(Type.ODE);
+				engine.loadModel(ModelType.ODE);
 				return true;
 			}
 		}
@@ -112,7 +113,7 @@ public class SDE extends ODE {
 		if (!getClass().getSuperclass().equals(SDE.class) && (dim < 1 || dim > 2)) {
 			logger.warning(getClass().getSimpleName()
 					+ " - max. 3 traits incl. dependent - revert to ODE (use SDEN).");
-			engine.loadModel(Type.ODE);
+			engine.loadModel(ModelType.ODE);
 			return true;
 		}
 		if (isAdjustedDynamics) {
@@ -144,10 +145,21 @@ public class SDE extends ODE {
 			init();
 			initStatisticsSample();
 			update();
-			// debugCheck("next (new sample)");
 			return true;
 		}
 		return super.next();
+	}
+
+	@Override
+	public boolean setMode(Mode mode) {
+		if (mode == Mode.STATISTICS_SAMPLE && fixData == null) {
+			fixData = new FixationData();
+			// the index of the mutant trait is meaningless in SDE models
+			// but must be non-negative (otherwise indicates an invalid sample)
+			fixData.mutantTrait = 0;
+		} else
+			fixData = null;
+		return super.setMode(mode);
 	}
 
 	/**
@@ -163,7 +175,7 @@ public class SDE extends ODE {
 			return true;
 		converged = true;
 		for (Module<?> mod : species) {
-			if (mod.getMutation().probability > 0.0) {
+			if (mod.getMutation().getProbability() > 0.0) {
 				// if dist2 is zero (or very small) and (at least) one trait is absent,
 				// random noise may be invalid (pushing state outside of permissible values)
 				if (dist2 < accuracy && ArrayMath.min(yt) < accuracy)
@@ -195,149 +207,23 @@ public class SDE extends ODE {
 	protected double deStep(double step) {
 		double stepSize = Math.abs(step);
 		double sqrtdt = Math.sqrt(stepSize) / stepSize;
-		double x;
-		int idx;
+
 		switch (nDim) {
-			case 2: // two traits
-				process2DNoise(0, step, sqrtdt, mutation[0].probability, getEffectiveNoise(module, 0));
+			case 2:
+				process2Traits(0, step, sqrtdt, mutation[0].getProbability(), getEffectiveNoise(module, 0));
 				break;
 
-			case 3: // two dimensions (or three traits) - e.g. RSP game
-				// NOTE: if not replicator equation some adjustments are required (references to
-				// e.g. yt[2] would fail)
-				// 1) stochastic term
-				x = yt[0];
-				double y = yt[1];
-				double x2 = x * x;
-				double xy = x * y;
-				double y2 = y * y;
-				// B matrix
-				// mutations need careful definition - generate any trait vs any of the
-				// _other_ traits.
-
-				// mutations to any trait (may result in no change)
-				// double bxx = (x-x2+mu*(x2+(1.0-x-x)/3.0))*noise;
-				// double bxy, byx = bxy = (-xy+mu*(xy-(x+y)/3.0))*noise;
-				// double byy = (y-y2+mu*(y2+(1.0-y-y)/3.0))*noise;
-
-				// mutations to only other traits
-				double mu = mutation[0].probability;
-				double effnoise = getEffectiveNoise(module, 0);
-				double bxx = (x - x2 + mu * ((1.0 - x) * 0.5 + x2)) * effnoise;
-				double bxy = -(xy + mu * ((x + y) * 0.5 - xy)) * effnoise;
-				double byx = bxy;
-				double byy = (y - y2 + mu * ((1.0 - y) * 0.5 + y2)) * effnoise;
-
-				// eigenvalues of B
-				double trB2 = (bxx + byy) * 0.5;
-				double detB = bxx * byy - byx * bxy;
-				// B has real, non-negative eigenvalues
-				double discr = Math.max(0.0, trB2 * trB2 - detB); // discriminant must be non-negative
-				double root = Math.sqrt(discr);
-				double e1 = trB2 + root;
-				double e2 = trB2 - root;
-				double u1;
-				double u2;
-				double v1;
-				double v2;
-				// avoid problems due to roundoff errors
-				if (yt[2] <= 0.0 || e2 < 0.0)
-					e2 = 0.0;
-				if (Math.abs(bxy) > 1e-12) {
-					u1 = e1 - byy;
-					u2 = bxy;
-					double norm = Math.sqrt(u1 * u1 + u2 * u2);
-					u1 /= norm;
-					u2 /= norm;
-					v1 = e2 - byy;
-					v2 = bxy;
-					norm = Math.sqrt(v1 * v1 + v2 * v2);
-					v1 /= norm;
-					v2 /= norm;
-				} else
-				// eigenvectors u, v of B (sync with eigenvalues: e1 -> u, e2 -> v)
-				if (Math.abs(bxx) > 1e-12) {
-					u1 = 1.0;
-					u2 = 0.0;
-					v1 = 0.0;
-					v2 = 1.0;
-				} else {
-					u1 = 0.0;
-					u2 = 1.0;
-					v1 = 1.0;
-					v2 = 0.0;
-				}
-				// lambda matrix
-				double sqrte1 = Math.sqrt(e1);
-				double sqrte2 = Math.sqrt(e2);
-				// C matrix
-				double cxx = sqrte1 * u1 * u1 + sqrte2 * v1 * v1;
-				double cxy = sqrte1 * u1 * u2 + sqrte2 * v1 * v2;
-				double cyx = cxy;
-				double cyy = sqrte1 * u2 * u2 + sqrte2 * v2 * v2;
-
-				// noise (note this scales with sqrt(dt) - for efficiency applied here)
-				double r1 = rng.nextGaussian() * sqrtdt;
-				double r2 = rng.nextGaussian() * sqrtdt;
-				double nx = cxx * r1 + cxy * r2;
-				double ny = cyx * r1 + cyy * r2;
-				// 2) deterministic term stored in dyt
-				// 3) combine terms - noise must not push us beyond boundaries of simplex
-				if (mu > 0.0) {
-					// the deterministic drift term also depends on mutations
-					ArrayMath.multiply(dyt, 1.0 - mu);
-					// mutations to any of the 3 traits
-					/*
-					 * double invd = 1.0/3.0; double mudt = mu*dt; double mx = mudt*(invd-yt[0])+nx;
-					 * double my = mudt*(invd-yt[1])+ny;
-					 */
-					// mutations to any of the _other_ 2 traits
-					double mudt = mu * 0.5;
-					double mx = mudt * (1.0 - 3.0 * x) + nx;
-					double my = mudt * (1.0 - 3.0 * y) + ny;
-					dyt[0] += mx;
-					dyt[1] += my;
-					dyt[2] -= mx + my;
-					ArrayMath.addscale(yt, dyt, step, yout);
-				} else {
-					dyt[0] += nx;
-					dyt[1] += ny;
-					if (yt[2] > 0.0)
-						dyt[2] -= nx + ny;
-					// in the absence of mutations, extinct traits (or species) must not make
-					// a sudden reappearance due to roundoff errors!
-					for (int i = 0; i < nDim; i++)
-						if (yt[i] > 0.0)
-							yout[i] = yt[i] + step * dyt[i];
-						else
-							yout[i] = 0.0;
-				}
+			case 3:
+				process3Traits(step, sqrtdt);
 				break;
 
-			default: // any number of traits (single traits in multiple species)
-				int skip = 0;
-				if (isDensity) {
-					for (Module<?> mod : species) {
-						double noise = Math.sqrt(getEffectiveNoise(mod, skip)) * rng.nextGaussian() * sqrtdt;
-						// species that went extinct should not make a sudden reappearance
-						if (yt[skip] > 0.0) {
-							dyt[skip] += noise;
-							yout[skip] = yt[skip] + step * dyt[skip];
-						}
-						skip += mod.getNTraits();
-					}
-					break;
-				}
-				// frequency dynamics
-				for (Module<?> mod : species) {
-					// no mutations in ecological processes
-					process2DNoise(skip, step, sqrtdt, 0.0, getEffectiveNoise(mod, skip));
-					skip += mod.getNTraits();
-				}
+			default:
+				processAnyTraits(step, sqrtdt);
 				break;
 		}
-		// polish result
-		idx = ArrayMath.minIndex(yout);
+
+		// polish result (shared across cases)
+		int idx = ArrayMath.minIndex(yout);
 		if (yout[idx] < 0.0) {
 			// step too big, resulted in negative densities/frequencies
 			// note, yt[idx]>0 must hold (from previous step) but
@@ -368,7 +254,7 @@ public class SDE extends ODE {
 	}
 
 	/**
-	 * Helper method to process noise with two dependent traits.
+	 * Process noise with two dependent traits.
 	 * 
 	 * @param skip   the start index of the two traits
 	 * @param step   the step size
@@ -376,7 +262,7 @@ public class SDE extends ODE {
 	 * @param mu     the mutation rate
 	 * @param noise  the noise to be processed
 	 */
-	private void process2DNoise(int skip, double step, double sqrtdt, double mu, double noise) {
+	private void process2Traits(int skip, double step, double sqrtdt, double mu, double noise) {
 		double x = yt[skip];
 		double b = ((1.0 - mu) * x * (1.0 - x) + mu) * noise;
 		double c = Math.sqrt(b);
@@ -412,6 +298,139 @@ public class SDE extends ODE {
 				yout[skip1] = yt[skip1] + step * dyt[skip1];
 			else
 				yout[skip1] = 0.0;
+		}
+	}
+
+	/**
+	 * Process the three-trait stochastic update (including vacant).
+	 * 
+	 * @param step    Euler step size
+	 * @param sqrtdt  square root of the time step (for noise terms)
+	 */
+	private void process3Traits(double step, double sqrtdt) {
+		// NOTE: if not replicator equation some adjustments are required (references to
+		// e.g. yt[2] would fail)
+		double x = yt[0];
+		double y = yt[1];
+		double x2 = x * x;
+		double xy = x * y;
+		double y2 = y * y;
+
+		// mutations to only other traits
+		double mu = mutation[0].getProbability();
+		double effnoise = getEffectiveNoise(module, 0);
+		double bxx = (x - x2 + mu * ((1.0 - x) * 0.5 + x2)) * effnoise;
+		double bxy = -(xy + mu * ((x + y) * 0.5 - xy)) * effnoise;
+		double byx = bxy;
+		double byy = (y - y2 + mu * ((1.0 - y) * 0.5 + y2)) * effnoise;
+
+		// eigenvalues of B
+		double trB2 = (bxx + byy) * 0.5;
+		double detB = bxx * byy - byx * bxy;
+		// B has real, non-negative eigenvalues
+		double discr = Math.max(0.0, trB2 * trB2 - detB); // discriminant must be non-negative
+		double root = Math.sqrt(discr);
+		double e1 = trB2 + root;
+		double e2 = trB2 - root;
+
+		double u1;
+		double u2;
+		double v1;
+		double v2;
+		// avoid problems due to roundoff errors
+		if (yt[2] <= 0.0 || e2 < 0.0)
+			e2 = 0.0;
+		if (Math.abs(bxy) > 1e-12) {
+			u1 = e1 - byy;
+			u2 = bxy;
+			double norm = Math.sqrt(u1 * u1 + u2 * u2);
+			u1 /= norm;
+			u2 /= norm;
+			v1 = e2 - byy;
+			v2 = bxy;
+			norm = Math.sqrt(v1 * v1 + v2 * v2);
+			v1 /= norm;
+			v2 /= norm;
+		} else if (Math.abs(bxx) > 1e-12) {
+			// eigenvectors u, v of B (sync with eigenvalues: e1 -> u, e2 -> v)
+			u1 = 1.0;
+			u2 = 0.0;
+			v1 = 0.0;
+			v2 = 1.0;
+		} else {
+			u1 = 0.0;
+			u2 = 1.0;
+			v1 = 1.0;
+			v2 = 0.0;
+		}
+
+		// lambda matrix
+		double sqrte1 = Math.sqrt(e1);
+		double sqrte2 = Math.sqrt(e2);
+		// C matrix
+		double cxx = sqrte1 * u1 * u1 + sqrte2 * v1 * v1;
+		double cxy = sqrte1 * u1 * u2 + sqrte2 * v1 * v2;
+		double cyx = cxy;
+		double cyy = sqrte1 * u2 * u2 + sqrte2 * v2 * v2;
+
+		// noise (note this scales with sqrt(dt) - for efficiency applied here)
+		double r1 = rng.nextGaussian() * sqrtdt;
+		double r2 = rng.nextGaussian() * sqrtdt;
+		double nx = cxx * r1 + cxy * r2;
+		double ny = cyx * r1 + cyy * r2;
+
+		// combine deterministic and stochastic terms - noise must not push us beyond
+		// boundaries of simplex
+		if (mu > 0.0) {
+			// the deterministic drift term also depends on mutations
+			ArrayMath.multiply(dyt, 1.0 - mu);
+			// mutations to any of the _other_ 2 traits
+			double mudt = mu * 0.5;
+			double mx = mudt * (1.0 - 3.0 * x) + nx;
+			double my = mudt * (1.0 - 3.0 * y) + ny;
+			dyt[0] += mx;
+			dyt[1] += my;
+			dyt[2] -= mx + my;
+			ArrayMath.addscale(yt, dyt, step, yout);
+		} else {
+			dyt[0] += nx;
+			dyt[1] += ny;
+			if (yt[2] > 0.0)
+				dyt[2] -= nx + ny;
+			// in the absence of mutations, extinct traits (or species) must not make
+			// a sudden reappearance due to roundoff errors!
+			for (int i = 0; i < nDim; i++)
+				if (yt[i] > 0.0)
+					yout[i] = yt[i] + step * dyt[i];
+				else
+					yout[i] = 0.0;
+		}
+	}
+
+	/**
+	 * Process the default case (any number of traits).
+	 * 
+	 * @param step   the step size
+	 * @param sqrtdt the square root of the step size
+	 */
+	private void processAnyTraits(double step, double sqrtdt) {
+		int skip = 0;
+		if (isDensity) {
+			for (Module<?> mod : species) {
+				double noise = Math.sqrt(getEffectiveNoise(mod, skip)) * rng.nextGaussian() * sqrtdt;
+				// species that went extinct should not make a sudden reappearance
+				if (yt[skip] > 0.0) {
+					dyt[skip] += noise;
+					yout[skip] = yt[skip] + step * dyt[skip];
+				}
+				skip += mod.getNTraits();
+			}
+			return;
+		}
+		// frequency dynamics: no mutations in ecological processes
+		for (Module<?> mod : species) {
+			process2Traits(skip, step, sqrtdt, 0.0, getEffectiveNoise(mod, skip));
+			skip += mod.getNTraits();
 		}
 	}
 
@@ -483,14 +502,11 @@ public class SDE extends ODE {
 		if (nSpecies > 1)
 			return false;
 		Module<?> mod = engine.getModule();
-		if (!(mod instanceof HasHistogram.StatisticsProbability
+		// unlike structured populations any initialization is
+		// acceptable for sampling statistics
+		return (mod instanceof HasHistogram.StatisticsProbability
 				|| mod instanceof HasHistogram.StatisticsTime)
-				|| mod.getMutation().probability > 0.0)
-			return false;
-		// sampling statistics also require:
-		// - mutant initialization (same as temperature in well-mixed populations)
-		// - convergence unaffected by vacant sites
-		return initType[0].equals(InitType.MUTANT);
+				&& mod.getMutation().getProbability() <= 0.0;
 	}
 
 	@Override

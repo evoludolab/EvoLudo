@@ -255,20 +255,28 @@ import org.evoludo.util.Plist;
 
 public class MersenneTwister {
 
-	/**
-	 * Period parameters
-	 */
+	/** Period parameter {@code n} (degree of recurrence). */
 	private static final int N = 624;
-	private static final int M = 397;
-	private static final int MATRIX_A = 0x9908b0df; // private static final * constant vector a
-	private static final int BIT32_MASK = 0xffffffff; // 32 bit mask
-	private static final int UPPER_MASK = 0x80000000; // most significant w-r bits
-	private static final int LOWER_MASK = 0x7fffffff; // least significant r bits
 
-	/**
-	 * Tempering parameters
-	 */
+	/** Period parameter {@code m} (middle word). */
+	private static final int M = 397;
+
+	/** Constant vector {@code a} used in the twist transformation. */
+	private static final int MATRIX_A = 0x9908b0df;
+
+	/** Mask used to force results into 32-bit precision. */
+	private static final int BIT32_MASK = 0xffffffff;
+
+	/** Mask isolating the most significant {@code w-r} bits. */
+	private static final int UPPER_MASK = 0x80000000;
+
+	/** Mask isolating the least significant {@code r} bits. */
+	private static final int LOWER_MASK = 0x7fffffff;
+
+	/** Tempering parameter used in the final transformation. */
 	private static final int TEMPERING_MASK_B = 0x9d2c5680;
+
+	/** Second tempering parameter. */
 	private static final int TEMPERING_MASK_C = 0xefc60000;
 
 	/**
@@ -372,7 +380,10 @@ public class MersenneTwister {
 	 * Constants for encoding and restoring state in plist.
 	 */
 	private static final String ENCODE_MT = "mt";
+	/** Key used when encoding {@link #mti}. */
 	private static final String ENCODE_MTI = "mti";
+
+	/** Key used when encoding {@link #nextGaussian}. */
 	private static final String ENCODE_NEXT_GAUSSIAN = "nextGaussian";
 
 	/**

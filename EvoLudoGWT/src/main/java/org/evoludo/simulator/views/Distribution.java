@@ -34,14 +34,15 @@ import java.awt.Color;
 import java.util.List;
 
 import org.evoludo.graphics.AbstractGraph;
-import org.evoludo.graphics.AbstractGraph.GraphStyle;
+import org.evoludo.graphics.GraphStyle;
 import org.evoludo.graphics.PopGraph2D;
 import org.evoludo.graphics.TooltipProvider;
 import org.evoludo.math.ArrayMath;
 import org.evoludo.simulator.ColorMap;
 import org.evoludo.simulator.ColorMapCSS;
 import org.evoludo.simulator.EvoLudoGWT;
-import org.evoludo.simulator.Geometry;
+import org.evoludo.simulator.geometries.AbstractGeometry;
+import org.evoludo.simulator.geometries.GeometryType;
 import org.evoludo.simulator.models.CModel;
 import org.evoludo.simulator.models.Data;
 import org.evoludo.simulator.modules.Continuous;
@@ -53,25 +54,75 @@ import org.evoludo.util.Formatter;
 import com.google.gwt.user.client.Command;
 
 /**
- * The view to display the distribution of continuous traits. For a single trait
- * the histrogram of trait densities is shown as a heatmap over time. For two
- * traits a 2D distribution is shown and for multiple traits the traits shown
- * along the horizontal and vertical axes can be selected.
+ * View component that renders the distribution of continuous traits for one or
+ * more species in the EvoLudo simulation. This view produces either a 1D
+ * histogram (for a single trait) with temporal history represented as stacked
+ * rows, or a 2D density plot (phase plane) for pairs of traits. The view is
+ * intended to be used with continuous models only and expects the simulation
+ * model to provide trait ranges and histogram data. For more than two traits
+ * the context menu allows to select the traits shown along the horizontal and
+ * vertical axes.
  *
+ * <h3>Responsibilities</h3>
+ * <ul>
+ * <li>Create and manage one PopGraph2D per species module returned by the
+ * engine.
+ * <li>Allocate and maintain a shared bin storage array sized to the current
+ * geometry ({@code MAX_BINS} for 1D, {@code MAX_BINS * MAX_BINS} for 2D).</li>
+ * <li>Configure graph appearance (axis labels, ranges, ticks, color map) based
+ * on the underlying Continuous module trait metadata.</li>
+ * <li>Request 1D/2D trait histogram data from the CModel implementation and
+ * translate those values into the graph data using the graph's color map.</li>
+ * <li>Provide tooltips for histogram bins and a contextual menu to select which
+ * traits to display on the X/Y axes (the latter only for multi-trait
+ * modules).</li>
+ * </ul>
+ *
+ * <h3>Behavioral notes</h3>
+ * <ul>
+ * <li>{@code MAX_BINS} (100) controls the resolution along each trait axis. For
+ * single-trait modules a LINEAR geometry of size {@code MAX_BINS} is used (with
+ * history rows), for multi-trait modules a square lattice with
+ * {@code MAX_BINS * MAX_BINS} bins is used.</li>
+ * <li>The shared {@code bins} array is reallocated when the geometry size
+ * changes.</li>
+ * <li>When initializing or resetting, the view updates axis ranges from the
+ * {@link Continuous} module's reported trait min/max; changes to those ranges
+ * trigger
+ * a hard reset of the corresponding PopGraph2D.</li>
+ * <li>The view currently only supports {@link Data#TRAIT} type; calls with
+ * other {@link Data} types throw {@code UnsupportedOperationException}.</li>
+ * <li>The tooltip content formats trait interval(s), frequency, and (for 1D
+ * histograms) the associated time slice.</li>
+ * <li>Trait selection via the context menu is available when the module exposes
+ * three or more traits; submenus allow choosing the trait displayed on each
+ * axis. Selecting an axis trait triggers a hard reset to rebuild geometries
+ * and redraw.</li>
+ * <li>Export formats supported by this view are SVG and PNG.</li>
+ * </ul>
+ *
+ * <h3>Collaborators</h3>
+ * <ul>
+ * <li>{@link EvoLudoGWT} engine — provides modules, configuration, and model
+ * time/updates.</li>
+ * <li>{@link PopGraph2D} — per-species graph widget used to render
+ * histogram/heatmap data.</li>
+ * <li>{@link CModel} — queried for 1D/2D trait histogram data.</li>
+ * <li>{@link Continuous} — module type that exposes trait names and min/max
+ * ranges.</li>
+ * <li>{@link AbstractGeometry} — describes graph layout (LINEAR or SQUARE) and
+ * required
+ * storage size.</li>
+ * </ul>
+ *
+ * <h3>Notes</h3>
+ * Histogram data are copied into the shared bins buffer and immediately applied
+ * to the graph's data arrays. This avoids repeated allocations but means that
+ * graphs cannot retain history independently.
+ * 
  * @author Christoph Hauert
  */
-public class Distribution extends AbstractView implements TooltipProvider.Index {
-
-	/**
-	 * The list of graphs that display the trajectories in 2D phase planes.
-	 * 
-	 * @evoludo.impl {@code List<ParaGraph> graphs} is deliberately hiding
-	 *               {@code List<AbstractGraph> graphs} from the superclass because
-	 *               it saves a lot of ugly casting. Note that the two fields point
-	 *               to one and the same object.
-	 */
-	@SuppressWarnings("hiding")
-	protected List<PopGraph2D> graphs;
+public class Distribution extends AbstractView<PopGraph2D> implements TooltipProvider.Index {
 
 	/**
 	 * The maximum number of bins for the trait histograms.
@@ -100,10 +151,8 @@ public class Distribution extends AbstractView implements TooltipProvider.Index 
 	 * @param engine the pacemaker for running the model
 	 * @param type   the type of data to display
 	 */
-	@SuppressWarnings("unchecked")
 	public Distribution(EvoLudoGWT engine, Data type) {
 		super(engine, type);
-		graphs = (List<PopGraph2D>) super.graphs;
 	}
 
 	@Override
@@ -112,96 +161,100 @@ public class Distribution extends AbstractView implements TooltipProvider.Index 
 	}
 
 	@Override
-	protected void allocateGraphs() {
+	protected boolean allocateGraphs() {
 		List<? extends Module<?>> species = engine.getModule().getSpecies();
 		int nGraphs = species.size();
-		if (graphs.size() != nGraphs) {
-			destroyGraphs();
-			for (Module<?> module : species) {
-				PopGraph2D graph = new PopGraph2D(this, module);
-				graph.setDebugEnabled(false);
-				wrapper.add(graph);
-				graphs.add(graph);
-				// even if nGraphs did not change, the geometries associated with the graphs
-				// still need to be updated
-				graph.setGeometry(createGeometry(module.getNTraits()));
-			}
-			gRows = species.size();
-			if (gRows * gCols == 2) {
-				// always arrange horizontally if only two graphs
-				gRows = 1;
-				gCols = 2;
-			}
-			int width = 100 / gCols;
-			int height = 100 / gRows;
-			for (PopGraph2D graph : graphs)
-				graph.setSize(width + "%", height + "%");
+		if (graphs.size() == nGraphs)
+			return false;
+		destroyGraphs();
+		for (Module<?> module : species) {
+			PopGraph2D graph = new PopGraph2D(this, module);
+			graph.setDebugEnabled(false);
+			wrapper.add(graph);
+			graphs.add(graph);
+			// even if nGraphs did not change, the geometries associated with the graphs
+			// still need to be updated
+			graph.setGeometry(createGeometry(module.getNTraits()));
 		}
+		gRows = species.size();
+		if (gRows * gCols == 2) {
+			// always arrange horizontally if only two graphs
+			gRows = 1;
+			gCols = 2;
+		}
+		int width = 100 / gCols;
+		int height = 100 / gRows;
+		for (PopGraph2D graph : graphs)
+			graph.setSize(width + "%", height + "%");
+		return true;
 	}
 
 	@Override
 	public void reset(boolean hard) {
 		super.reset(hard);
 		for (PopGraph2D graph : graphs) {
-			Module<?> module = graph.getModule();
-			int nTraits = module.getNTraits();
-			AbstractGraph.GraphStyle style = graph.getStyle();
-			switch (type) {
-				default:
-				case FITNESS:
-					// not implemented
-					break;
-				case TRAIT:
-					graph.setColorMap(new ColorMapCSS.Gradient1D(
-							new Color[] { Color.WHITE, Color.BLACK, Color.YELLOW, Color.RED }, 500));
-					Continuous cmod = (Continuous) module;
-					double min = cmod.getTraitMin()[traitXIdx];
-					double max = cmod.getTraitMax()[traitXIdx];
-					if (Math.abs(min - style.xMin) > 1e-6 || Math.abs(max - style.xMax) > 1e-6) {
-						style.xMin = min;
-						style.xMax = max;
-						hard = true;
-					}
-					style.xLabel = cmod.getTraitName(traitXIdx);
-					style.showLabel = false;
-					style.showXLabel = true;
-					style.showXTicks = true;
-					style.showXTickLabels = true;
-					style.showXLevels = false;
-					if (nTraits == 1) {
-						double rFreq = model.getTimeStep();
-						// adjust y-axis scaling if report frequency has changed
-						if (Math.abs(style.yIncr - rFreq) > 1e-6) {
-							style.yMax = 0.0;
-							style.yIncr = -rFreq;
-							hard = true;
-						}
-						style.yLabel = "time";
-						style.showYLevels = true;
-					} else {
-						min = cmod.getTraitMin()[traitYIdx];
-						max = cmod.getTraitMax()[traitYIdx];
-						if (Math.abs(min - style.yMin) > 1e-6 || Math.abs(max - style.yMax) > 1e-6) {
-							style.yMin = min;
-							style.yMax = max;
-							hard = true;
-						}
-						style.yLabel = cmod.getTraitName(traitYIdx);
-						style.showYLevels = false;
-					}
-					style.showDecoratedFrame = true;
-					style.percentY = false;
-					style.showYLabel = true;
-					style.showYTickLabels = true;
-					style.showYTicks = true;
-					break;
-				case DEGREE:
-					// not implemented
+			if (!type.equals(Data.TRAIT)) {
+				throw new UnsupportedOperationException("Distribution: not implemented for type " + type);
 			}
-			if (hard)
-				graph.reset();
+			resetTrait(graph, hard);
 		}
 		update(hard);
+	}
+
+	/**
+	 * Reset the given graph for displaying trait distributions.
+	 * 
+	 * @param graph the graph to reset
+	 * @param hard  the flag to indicate whether to force a hard reset
+	 */
+	private void resetTrait(PopGraph2D graph, boolean hard) {
+		Continuous module = (Continuous) graph.getModule();
+		int nTraits = module.getNTraits();
+		GraphStyle style = graph.getStyle();
+		graph.setColorMap(new ColorMapCSS.Gradient1D(
+				new Color[] { Color.WHITE, Color.BLACK, Color.YELLOW, Color.RED }, 500));
+		double min = module.getTraitMin()[traitXIdx];
+		double max = module.getTraitMax()[traitXIdx];
+		if (Math.abs(min - style.xMin) > 1e-6 ||
+				Math.abs(max - style.xMax) > 1e-6) {
+			style.xMin = min;
+			style.xMax = max;
+			hard = true;
+		}
+		style.xLabel = module.getTraitName(traitXIdx);
+		style.showLabel = false;
+		style.showXLabel = true;
+		style.showXTicks = true;
+		style.showXTickLabels = true;
+		style.showXLevels = false;
+		if (nTraits == 1) {
+			double rFreq = model.getTimeStep();
+			// adjust y-axis scaling if report frequency has changed
+			if (Math.abs(style.yIncr - rFreq) > 1e-6) {
+				style.yMax = 0.0;
+				style.yIncr = -rFreq;
+				hard = true;
+			}
+			style.yLabel = "time";
+			style.showYLevels = true;
+		} else {
+			min = module.getTraitMin()[traitYIdx];
+			max = module.getTraitMax()[traitYIdx];
+			if (Math.abs(min - style.yMin) > 1e-6 || Math.abs(max - style.yMax) > 1e-6) {
+				style.yMin = min;
+				style.yMax = max;
+				hard = true;
+			}
+			style.yLabel = module.getTraitName(traitYIdx);
+			style.showYLevels = false;
+		}
+		style.showDecoratedFrame = true;
+		style.percentY = false;
+		style.showYLabel = true;
+		style.showYTickLabels = true;
+		style.showYTicks = true;
+		if (hard)
+			graph.reset();
 	}
 
 	@Override
@@ -224,23 +277,15 @@ public class Distribution extends AbstractView implements TooltipProvider.Index 
 			// otherwise may lead to problems if graph has never been activated
 			if (!doUpdate)
 				continue;
-			switch (type) {
-				case TRAIT:
-					// process data first
-					// casts ok because trait histograms make sense only for continuous models
-					((CModel) model).get2DTraitHistogramData(graph.getModule().getID(),
-							bins, traitXIdx,
-							traitYIdx);
-					ColorMap.Gradient1D<String> cMap = (ColorMap.Gradient1D<String>) graph.getColorMap();
-					cMap.setRange(0.0, ArrayMath.max(bins));
-					cMap.translate(bins, graph.getData());
-					break;
-				// case FITNESS:
-				// population.getFitHistogramData(bins);
-				// break;
-				default:
-					throw new Error("Distribution: not implemented for type " + type);
+			if (!type.equals(Data.TRAIT)) {
+				throw new UnsupportedOperationException("Distribution: not implemented for type " + type);
 			}
+			// casts ok because trait histograms make sense only for continuous models
+			((CModel) model).get2DTraitHistogramData(graph.getModule().getId(),
+					bins, traitXIdx, traitYIdx);
+			ColorMap.Gradient1D<String> cMap = (ColorMap.Gradient1D<String>) graph.getColorMap();
+			cMap.setRange(0.0, ArrayMath.max(bins));
+			cMap.translate(bins, graph.getData());
 			graph.update(isNext);
 			graph.paint(force);
 		}
@@ -254,21 +299,21 @@ public class Distribution extends AbstractView implements TooltipProvider.Index 
 	 * @param nTraits the number of traits
 	 * @return the geometry
 	 */
-	private Geometry createGeometry(int nTraits) {
-		Geometry geometry = new Geometry(engine);
+	private AbstractGeometry createGeometry(int nTraits) {
+		AbstractGeometry geometry;
 		// adding a geometry name will display a label on the graph - not sure whether
 		// we really want this...
 		// geometry.name = module.getTraitName(n);
 		if (nTraits == 1) {
-			geometry.setType(Geometry.Type.LINEAR);
-			geometry.size = MAX_BINS;
+			geometry = AbstractGeometry.create(engine, GeometryType.LINEAR);
+			geometry.setSize(MAX_BINS);
 		} else {
-			geometry.setType(Geometry.Type.SQUARE);
-			geometry.connectivity = 4;
-			geometry.size = MAX_BINS * MAX_BINS;
+			geometry = AbstractGeometry.create(engine, GeometryType.SQUARE);
+			geometry.setConnectivity(4);
+			geometry.setSize(MAX_BINS * MAX_BINS);
 		}
-		if (bins == null || bins.length != geometry.size)
-			bins = new double[geometry.size];
+		if (bins == null || bins.length != geometry.getSize())
+			bins = new double[geometry.getSize()];
 		return geometry;
 	}
 
@@ -307,28 +352,66 @@ public class Distribution extends AbstractView implements TooltipProvider.Index 
 			return null;
 		GraphStyle style = graph.getStyle();
 		int nBins = MAX_BINS;
+		StringBuilder tip = new StringBuilder(TABLE_STYLE);
+		if (style.label != null)
+			tip.append("<b>")
+					.append(style.label)
+					.append("</b>");
+		tip.append(TABLE_ROW_START)
+				.append(style.xLabel)
+				.append(TABLE_CELL_NEXT);
 		Module<?> module = engine.getModule();
 		int nTraits = module.getNTraits();
 		if (nTraits == 1) {
 			int bar = node % nBins;
-			double time = -node / nBins * model.getTimeStep();
-			return (style.label != null ? "<b>" + style.label + "</b><br/>" : "") +
-					"<i>" + style.xLabel + ":</i> ["
-					+ Formatter.format(style.xMin + bar * (style.xMax - style.xMin) / nBins, 2) + ", " +
-					Formatter.format(style.xMin + (bar + 1) * (style.xMax - style.xMin) / nBins, 2) + "]<br/>" +
-					(node < nBins ? "<i>frequency:</i> " + Formatter.formatPercent(bins[bar], 1) + "<br/>" : "") +
-					"<i>" + style.yLabel + ":</i> " + Formatter.format(time, 2);
+			int row = node / nBins;
+			double time = -row * model.getTimeStep();
+			tip.append(Formatter.format(style.xMin + bar * (style.xMax - style.xMin) / nBins, 2))
+					.append(", ")
+					.append(Formatter.format(style.xMin + (bar + 1) * (style.xMax - style.xMin) / nBins, 2))
+					.append("]")
+					.append(TABLE_ROW_END);
+			if (node < nBins) {
+				// report frequency for most recent row
+				// all historical data is stored in terms of colors only...
+				tip.append(TABLE_ROW_START)
+						.append("frequency")
+						.append(TABLE_CELL_NEXT)
+						.append(Formatter.formatPercent(bins[bar], 1))
+						.append(TABLE_ROW_END);
+			}
+			// + 0.0: silly trick to avoid -0 display
+			tip.append(TABLE_ROW_START)
+					.append(style.yLabel)
+					.append(TABLE_CELL_NEXT)
+					.append(Formatter.format(time + 0.0, 2));
+		} else {
+			int bar1 = node % MAX_BINS;
+			int bar2 = node / MAX_BINS;
+			// horizontal trait
+			tip.append(Formatter.format(style.xMin + bar1 * (style.xMax - style.xMin) / nBins, 2))
+					.append(", ")
+					.append(Formatter.format(style.xMin + (bar1 + 1) * (style.xMax - style.xMin) / nBins, 2))
+					.append("]")
+					.append(TABLE_ROW_END);
+			// vertical trait
+			tip.append(TABLE_ROW_START)
+					.append(style.yLabel)
+					.append(TABLE_CELL_NEXT)
+					.append(Formatter.format(style.yMin + bar2 * (style.yMax - style.yMin) / nBins, 2))
+					.append(", ")
+					.append(Formatter.format(style.yMin + (bar2 + 1) * (style.yMax - style.yMin) / nBins, 2))
+					.append("]");
+			// report frequency
+			tip.append(TABLE_ROW_START)
+					.append("frequency")
+					.append(TABLE_CELL_NEXT)
+					.append(Formatter.formatPercent(bins[node], 1))
+					.append(TABLE_ROW_END);
 		}
-		int bar1 = node % MAX_BINS;
-		int bar2 = node / MAX_BINS;
-		return (style.label != null ? "<b>" + style.label + "</b><br/>" : "") +
-				"<i>" + style.xLabel + ":</i> ["
-				+ Formatter.format(style.xMin + bar1 * (style.xMax - style.xMin) / nBins, 2) + ", " +
-				Formatter.format(style.xMin + (bar1 + 1) * (style.xMax - style.xMin) / nBins, 2) + "]<br/>" +
-				"<i>" + style.yLabel + ":</i> ["
-				+ Formatter.format(style.yMin + bar2 * (style.yMax - style.yMin) / nBins, 2) + ", " +
-				Formatter.format(style.yMin + (bar2 + 1) * (style.yMax - style.yMin) / nBins, 2) + "]<br/>" +
-				"<i>frequency:</i> " + Formatter.formatPercent(bins[node], 1) + "<br/>";
+		tip.append(TABLE_ROW_END)
+				.append(TABLE_END);
+		return tip.toString();
 	}
 
 	@Override

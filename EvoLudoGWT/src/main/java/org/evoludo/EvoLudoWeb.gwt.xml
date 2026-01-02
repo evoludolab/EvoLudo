@@ -68,6 +68,7 @@
 	<set-configuration-property name="CssResource.enableGss" value="true" />
 
 	<source path="" />
+	<source path="simulator" />
 
 	<!-- would be great to have resource files in resources directory... -->
 	<!-- <public path="resources" includes="**/*" /> -->

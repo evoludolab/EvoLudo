@@ -47,9 +47,10 @@ import org.evoludo.simulator.EvoLudoGWT;
 import org.evoludo.simulator.Resources;
 import org.evoludo.simulator.models.ChangeListener;
 import org.evoludo.simulator.models.Data;
-import org.evoludo.simulator.models.MilestoneListener;
+import org.evoludo.simulator.models.LifecycleListener;
 import org.evoludo.simulator.models.Mode;
 import org.evoludo.simulator.models.Model;
+import org.evoludo.simulator.models.RunListener;
 import org.evoludo.simulator.models.SampleListener;
 import org.evoludo.ui.ContextMenu;
 import org.evoludo.ui.ContextMenuItem;
@@ -74,10 +75,13 @@ import com.google.gwt.user.client.ui.RequiresResize;
  * The parent class of all panels that provide graphical representations the
  * state of the current EvoLudo model.
  *
+ * @param <G> the concrete graph type rendered inside the view
+ *
  * @author Christoph Hauert
  */
-public abstract class AbstractView extends Composite implements RequiresResize, ProvidesResize,
-		MilestoneListener, SampleListener, ChangeListener {
+public abstract class AbstractView<G extends AbstractGraph<?>> extends Composite
+		implements RequiresResize, ProvidesResize,
+		LifecycleListener, RunListener, SampleListener, ChangeListener {
 
 	/**
 	 * The reference to the EvoLudo engine that manages the simulation.
@@ -102,7 +106,7 @@ public abstract class AbstractView extends Composite implements RequiresResize, 
 	/**
 	 * The list of graphs that are displayed in this view.
 	 */
-	protected List<? extends AbstractGraph<?>> graphs = new ArrayList<>();
+	protected final List<G> graphs;
 
 	/**
 	 * The number of rows of graphs in this view.
@@ -153,6 +157,7 @@ public abstract class AbstractView extends Composite implements RequiresResize, 
 		this.engine = engine;
 		this.type = type;
 		logger = engine.getLogger();
+		this.graphs = new ArrayList<>();
 		wrapper = new FlowPanel();
 		wrapper.getElement().getStyle().setPosition(Position.RELATIVE);
 		initWidget(wrapper);
@@ -178,7 +183,8 @@ public abstract class AbstractView extends Composite implements RequiresResize, 
 	public boolean load() {
 		if (isLoaded)
 			return false;
-		engine.addMilestoneListener(this);
+		engine.addLifecycleListener(this);
+		engine.addRunListener(this);
 		engine.addChangeListener(this);
 		gRows = 1;
 		gCols = 1;
@@ -195,6 +201,11 @@ public abstract class AbstractView extends Composite implements RequiresResize, 
 	}
 
 	@Override
+	public void modelLoaded() {
+		model = engine.getModel();
+	}
+
+	@Override
 	public void modelUnloaded() {
 		unload();
 	}
@@ -206,42 +217,47 @@ public abstract class AbstractView extends Composite implements RequiresResize, 
 	public void unload() {
 		if (!isLoaded)
 			return;
+		engine.removeLifecycleListener(this);
+		engine.removeRunListener(this);
+		engine.removeChangeListener(this);
 		destroyGraphs();
 		isActive = false;
 		model = null;
 		isLoaded = false;
 	}
 
-	/**
-	 * Dispose of view. Deregister listeners and free up resources.
-	 */
-	public void dispose() {
+	@Override
+	protected void onUnload() {
 		unload();
-		engine.removeMilestoneListener(this);
-		engine.removeChangeListener(this);
-		engine.removeSampleListener(this);
 	}
 
 	/**
 	 * The string with view specific options.
 	 * 
-	 * @see org.evoludo.EvoLudoWeb#cloView
+	 * @see org.evoludo.simulator.ui.ViewController#getCloView()
 	 */
 	String options;
 
 	/**
-	 * Parse the arguments {@code args} provided to this view. The default
-	 * implementation simply passes {@code args} to all its {@code graphs}.
+	 * Set the options string for this view.
 	 * 
-	 * @param args the arguments to parse
+	 * @param options the options string
+	 */
+	public void setOptions(String options) {
+		this.options = options;
+	}
+
+	/**
+	 * Parse the arguments provided to this view. The default implementation simply
+	 * passes the currently configured option string to all graphs.
+	 * 
 	 * @return {@code true} if the arguments were successfully parsed
 	 */
-	public boolean parse(String args) {
-		options = args;
+	public boolean parse() {
 		if (options == null)
 			return true;
 		boolean ok = true;
-		for (AbstractGraph<?> graph : graphs)
+		for (G graph : graphs)
 			ok &= graph.parse(options);
 		return ok;
 	}
@@ -252,16 +268,18 @@ public abstract class AbstractView extends Composite implements RequiresResize, 
 	 * {@code calcBounds(int, int)} is triggered through {@code setBounds(int, int)}
 	 * to properly calculate the layout.
 	 * 
+	 * @return {@code true} if graphs were (re)allocated
+	 * 
 	 * @see #load()
 	 * @see #setBounds(int, int)
 	 */
-	protected abstract void allocateGraphs();
+	protected abstract boolean allocateGraphs();
 
 	/**
 	 * Destroy all graphs in this view and free up resources.
 	 */
 	protected void destroyGraphs() {
-		for (AbstractGraph<?> graph : graphs) {
+		for (G graph : graphs) {
 			graph.deactivate();
 			graph.removeFromParent();
 		}
@@ -304,15 +322,15 @@ public abstract class AbstractView extends Composite implements RequiresResize, 
 		if (isActive)
 			return;
 		isActive = true;
-		for (AbstractGraph<?> graph : graphs)
+		for (G graph : graphs)
 			graph.activate();
-		update(true);
-		if (!setMode(getMode())) {
+		if (!model.requestMode(getMode())) {
 			// this is should not happen because view should not be available
 			// if mode is not supported, see EvoLudoWeb#updateViews()
-			for (AbstractGraph<?> graph : graphs)
+			for (G graph : graphs)
 				graph.displayMessage("Mode '" + getMode() + "'' not supported");
 		}
+		update(true);
 		layoutComplete();
 	}
 
@@ -322,8 +340,17 @@ public abstract class AbstractView extends Composite implements RequiresResize, 
 	 */
 	public void deactivate() {
 		isActive = false;
-		for (AbstractGraph<?> graph : graphs)
+		for (G graph : graphs)
 			graph.deactivate();
+	}
+
+	/**
+	 * Get the mode required by this view.
+	 * 
+	 * @return the mode required by this view
+	 */
+	Mode getMode() {
+		return Mode.DYNAMICS;
 	}
 
 	/**
@@ -348,38 +375,6 @@ public abstract class AbstractView extends Composite implements RequiresResize, 
 		if (!hasLayout())
 			return;
 		engine.layoutComplete();
-	}
-
-	/**
-	 * Get the mode of this view. The graphical visualizations can request different
-	 * modes for running the model. The default mode is {@link Mode#DYNAMICS} to
-	 * generate a time series of the states of the model. Some views may digest data
-	 * and, for example, show statistics such as fixation probabilities or times, in
-	 * which case the mode {@link Mode#STATISTICS_SAMPLE} or
-	 * {@link Mode#STATISTICS_UPDATE} should be requested.
-	 * 
-	 * @return the mode of this view
-	 * 
-	 * @see Mode
-	 */
-	public Mode getMode() {
-		return Mode.DYNAMICS;
-	}
-
-	/**
-	 * Set the mode of the model to {@code mode}. Does nothing if the model does not
-	 * support the requested mode.
-	 * 
-	 * @param mode the mode to set
-	 * @return {@code true} if the mode was successfully set
-	 */
-	public boolean setMode(Mode mode) {
-		// if no module specified there is no model either
-		if (model == null)
-			return false;
-		if (model.getMode() == mode)
-			return true;
-		return model.requestMode(mode);
 	}
 
 	/**
@@ -409,14 +404,14 @@ public abstract class AbstractView extends Composite implements RequiresResize, 
 	public void moduleRestored() {
 		timestamp = -Double.MAX_VALUE;
 		updatetime = -1.0;
-		for (AbstractGraph<?> graph : graphs)
+		for (G graph : graphs)
 			graph.reset();
 	}
 
 	@Override
 	public void modelDidReset() {
 		reset(true);
-		parse(options);
+		parse();
 	}
 
 	/**
@@ -428,7 +423,12 @@ public abstract class AbstractView extends Composite implements RequiresResize, 
 	public void reset(boolean hard) {
 		timestamp = -Double.MAX_VALUE;
 		updatetime = -1.0;
-		allocateGraphs();
+		if (allocateGraphs()) {
+			int with = getOffsetWidth();
+			int height = getOffsetHeight();
+			if (with > 0 && height > 0)
+				setBounds(with, height);
+		}
 	}
 
 	@Override
@@ -561,7 +561,7 @@ public abstract class AbstractView extends Composite implements RequiresResize, 
 	 * @see AbstractGraph.Shifter#shift(int, int)
 	 */
 	public void shift(int dx, int dy) {
-		for (AbstractGraph<?> graph : graphs) {
+		for (G graph : graphs) {
 			if (graph instanceof Shifter)
 				((Shifter) graph).shift(dx, dy);
 		}
@@ -578,7 +578,7 @@ public abstract class AbstractView extends Composite implements RequiresResize, 
 	 * @see AbstractGraph.Zoomer#zoom(double, int, int)
 	 */
 	public void zoom(double zoom, int x, int y) {
-		for (AbstractGraph<?> graph : graphs) {
+		for (G graph : graphs) {
 			if (graph instanceof Zoomer)
 				((Zoomer) graph).zoom(zoom, x, y);
 		}
@@ -591,9 +591,9 @@ public abstract class AbstractView extends Composite implements RequiresResize, 
 	 * @param key the code of the pressed key
 	 * @return {@code true} if the key was handled
 	 * 
-	 * @see org.evoludo.EvoLudoWeb#keyDownHandler(String)
+	 * @see org.evoludo.simulator.ui.KeyHandler#onKeyDown(String)
 	 */
-	public boolean keyDownHandler(String key) {
+	public boolean onKeyDown(String key) {
 		return false;
 	}
 
@@ -621,7 +621,7 @@ public abstract class AbstractView extends Composite implements RequiresResize, 
 	 * @param key the code of the released key
 	 * @return {@code true} if the key was handled
 	 */
-	public boolean keyUpHandler(String key) {
+	public boolean onKeyUp(String key) {
 		switch (key) {
 			case "S":
 				// save svg snapshot (if supported)
@@ -637,7 +637,7 @@ public abstract class AbstractView extends Composite implements RequiresResize, 
 				break;
 			case "C":
 				// export csv data (if supported)
-				if (!hasExportType(ExportType.STAT_DATA))
+				if (!hasExportType(ExportType.CSV_STAT))
 					return false;
 				exportStatData();
 				break;
@@ -664,7 +664,7 @@ public abstract class AbstractView extends Composite implements RequiresResize, 
 	public void onResize() {
 		if (getOffsetWidth() == 0 || getOffsetHeight() == 0)
 			return;
-		for (AbstractGraph<?> graph : graphs)
+		for (G graph : graphs)
 			graph.onResize();
 		engine.guiReady();
 		if (isActive)
@@ -679,7 +679,7 @@ public abstract class AbstractView extends Composite implements RequiresResize, 
 	 * @param height the height of the view
 	 */
 	public void setBounds(int width, int height) {
-		for (AbstractGraph<?> graph : graphs)
+		for (G graph : graphs)
 			graph.calcBounds(width, height);
 	}
 
@@ -723,10 +723,8 @@ public abstract class AbstractView extends Composite implements RequiresResize, 
 	 * @param y the y-coordinate
 	 * @return the graph at the coordinates {@code (x,y)}
 	 */
-	public AbstractGraph<?> getGraphAt(int x, int y) {
-		if (graphs == null)
-			return null;
-		for (AbstractGraph<?> graph : graphs)
+	public G getGraphAt(int x, int y) {
+		for (G graph : graphs)
 			if (graph.contains(x, y))
 				return graph;
 		return null;
@@ -761,7 +759,7 @@ public abstract class AbstractView extends Composite implements RequiresResize, 
 
 		// process exports context menu (suppress in ePub, regardless of whether a
 		// standalone lab or not)
-		if (!EvoLudoGWT.isEPub) {
+		if (!NativeJS.isEPub()) {
 			exportSubmenu = new ContextMenu(contextMenu);
 			exportSubmenu.add(new ContextMenuItem(ExportType.STATE.toString(), new ExportCommand(ExportType.STATE)));
 			for (ExportType e : exportTypes()) {
@@ -827,17 +825,17 @@ public abstract class AbstractView extends Composite implements RequiresResize, 
 		/**
 		 * Statistics data as a comma separated list, {@code csv}
 		 */
-		STAT_DATA("Statistics (csv)"),
+		CSV_STAT("Statistics (csv)"),
 
 		/**
 		 * Trajectory data as a comma separated list, {@code csv} (not yet implemented).
 		 */
-		TRAJ_DATA("Trajectory (csv)"),
+		CSV_TRAJ("Trajectory (csv)"),
 
 		/**
 		 * Mean state data as a comma separated list, {@code csv} (not yet implemented).
 		 */
-		MEAN_DATA("Mean state (csv)"),
+		CSV_MEAN("Mean state (csv)"),
 
 		/**
 		 * Current state of simulation, {@code plist}
@@ -889,13 +887,13 @@ public abstract class AbstractView extends Composite implements RequiresResize, 
 			case PNG:
 				exportPNG();
 				break;
-			case STAT_DATA:
+			case CSV_STAT:
 				exportStatData();
 				break;
-			case MEAN_DATA:
+			case CSV_MEAN:
 				exportMeanData();
 				break;
-			case TRAJ_DATA:
+			case CSV_TRAJ:
 				exportTrajData();
 				break;
 			case STATE:
@@ -951,7 +949,7 @@ public abstract class AbstractView extends Composite implements RequiresResize, 
 		int hOffset = 0;
 		int vOffset = 0;
 		int count = 0;
-		for (AbstractGraph<?> graph : graphs) {
+		for (G graph : graphs) {
 			ctx.save();
 			ctx.translate(hOffset, vOffset);
 			graph.export(ctx);
@@ -980,7 +978,7 @@ public abstract class AbstractView extends Composite implements RequiresResize, 
 	 * Export the statistics data.
 	 * <p>
 	 * <strong>Important:</strong> Must be overridden by subclasses that return
-	 * {@link ExportType#STAT_DATA} among their export data types.
+	 * {@link ExportType#CSV_STAT} among their export data types.
 	 * 
 	 * @see #exportTypes()
 	 */
@@ -999,11 +997,10 @@ public abstract class AbstractView extends Composite implements RequiresResize, 
 		int header = export.length();
 		// focus on Mean for now
 		RingBuffer<double[]> buffer = null;
-		for (AbstractGraph<?> graph : graphs) {
+		for (G graph : graphs) {
 			RingBuffer<?> newbuffer = graph.getBuffer();
-			if (newbuffer == null || newbuffer.isEmpty() || newbuffer == buffer)
-				continue;
-			if (!(newbuffer.first() instanceof double[]))
+			if (newbuffer == null || newbuffer.isEmpty() ||
+					newbuffer == buffer || !(newbuffer.first() instanceof double[]))
 				continue;
 			// cast is safe because of the instanceof check
 			buffer = (RingBuffer<double[]>) newbuffer;
@@ -1040,7 +1037,7 @@ public abstract class AbstractView extends Composite implements RequiresResize, 
 	protected void exportTrajData() {
 		StringBuilder export = exportDataHeader();
 		int header = export.length();
-		for (AbstractGraph<?> graph : graphs) {
+		for (G graph : graphs) {
 			if (!(graph instanceof HasTrajectory))
 				continue;
 			((HasTrajectory) graph).exportTrajectory(export);

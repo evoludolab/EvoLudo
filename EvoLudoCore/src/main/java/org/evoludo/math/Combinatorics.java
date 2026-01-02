@@ -353,6 +353,7 @@ public class Combinatorics {
 	 * @param y the number samples from second pool
 	 * @return {@code H_2[X, x, Y, y]}
 	 */
+	@SuppressWarnings({ "java:S100", "java:S117" })
 	public static double H2(int X, int x, int Y, int y) {
 		if (x < 0 || x > X || y < 0 || y > Y)
 			return 0.0;
@@ -365,12 +366,12 @@ public class Combinatorics {
 			Y = swap;
 		}
 		double num = X;
-		double XY = X + Y;
+		double XY = num + Y;
 		double frac = 1.0;
 		for (int n = 0; n < x; n++)
 			frac *= (num--) / (XY--);
 		num = Y;
-		double xy = x + y;
+		double xy = (double) x + y;
 		int terms = y;
 		for (int n = 0; n < terms; n++)
 			frac *= ((num--) * (xy--)) / ((XY--) * (y--));

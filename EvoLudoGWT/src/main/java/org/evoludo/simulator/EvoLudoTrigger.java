@@ -32,6 +32,7 @@ package org.evoludo.simulator;
 
 import org.evoludo.EvoLudoWeb;
 import org.evoludo.ui.ContextMenu;
+import org.evoludo.ui.WindowGlobal;
 import org.evoludo.util.NativeJS;
 
 import com.google.gwt.dom.client.NativeEvent;
@@ -125,13 +126,29 @@ public class EvoLudoTrigger extends PushButton {
 	public class LightboxPanel extends SimplePanel {
 
 		/**
+		 * Flag to track if window just got focus.
+		 */
+		private boolean justFocussed;
+
+		/**
 		 * Create a new lightbox panel.
 		 */
 		public LightboxPanel() {
+			// track window focus
+			WindowGlobal.addEventListener("focus", e -> justFocussed = true);
+			WindowGlobal.addEventListener("blur", e -> justFocussed = false);
+
 			DOM.sinkEvents(getElement(), Event.ONKEYDOWN);
 			addBitlessDomHandler(event -> {
-				if (mouseOverLab || event.getNativeButton() != NativeEvent.BUTTON_LEFT || ContextMenu.isShowing()
-						|| NativeJS.isFullscreen())
+				if (justFocussed) { // ignore if window just got focus
+					justFocussed = false;
+					event.stopPropagation();
+					return;
+				}
+				if (mouseOverLab || // ignore clicks inside lab
+						event.getNativeButton() != NativeEvent.BUTTON_LEFT || // process left clicks only
+						ContextMenu.isShowing() || // ignore if context menu visible (close context menu instead)
+						NativeJS.isFullscreen()) // ignore if in fullscreen mode
 					return;
 				close();
 			}, MouseDownEvent.getType());
@@ -168,6 +185,7 @@ public class EvoLudoTrigger extends PushButton {
 			RootPanel root = RootPanel.get();
 			root.getElement().getStyle().setProperty("overflow", "hidden");
 			root.add(this);
+			justFocussed = false;
 		}
 
 		/**

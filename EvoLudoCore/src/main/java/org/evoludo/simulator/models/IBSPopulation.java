@@ -42,15 +42,19 @@ import org.evoludo.math.Functions;
 import org.evoludo.math.RNGDistribution;
 import org.evoludo.simulator.ColorMap;
 import org.evoludo.simulator.EvoLudo;
-import org.evoludo.simulator.Geometry;
+import org.evoludo.simulator.geometries.AbstractGeometry;
+import org.evoludo.simulator.geometries.GeometryFeatures;
+import org.evoludo.simulator.geometries.GeometryType;
+import org.evoludo.simulator.geometries.HierarchicalGeometry;
 import org.evoludo.simulator.models.IBS.MigrationType;
 import org.evoludo.simulator.models.IBS.ScoringType;
 import org.evoludo.simulator.models.IBSGroup.SamplingType;
-import org.evoludo.simulator.modules.Map2Fitness;
-import org.evoludo.simulator.modules.Module;
-import org.evoludo.simulator.modules.PlayerUpdate;
 import org.evoludo.simulator.modules.Features;
 import org.evoludo.simulator.modules.Features.Payoffs;
+import org.evoludo.simulator.modules.Map2Fitness;
+import org.evoludo.simulator.modules.Module;
+import org.evoludo.simulator.modules.Mutation;
+import org.evoludo.simulator.modules.PlayerUpdate;
 import org.evoludo.util.Formatter;
 import org.evoludo.util.Plist;
 
@@ -62,13 +66,16 @@ import org.evoludo.util.Plist;
  * represented by {@code int}s in discrete models but {@code double}s in
  * continuous models.
  * 
+ * @param <M> the module type controlling the population dynamics
+ * @param <P> the concrete population type used as opponent reference
+ * 
  * @author Christoph Hauert
  * 
  * @see IBSDPopulation
  * @see IBSMCPopulation
  * @see IBSCPopulation
  */
-public abstract class IBSPopulation {
+public abstract class IBSPopulation<M extends Module<?>, P extends IBSPopulation<?, ?>> {
 
 	/**
 	 * The pacemaker of all models. Interface with the outside world.
@@ -78,7 +85,7 @@ public abstract class IBSPopulation {
 	/**
 	 * The module associated with this population.
 	 */
-	protected Module<?> module;
+	protected M module;
 
 	/**
 	 * Convenience field for static modules to avoid casts.
@@ -90,7 +97,7 @@ public abstract class IBSPopulation {
 	 * 
 	 * @return the module associated with this population
 	 */
-	public Module<?> getModule() {
+	public M getModule() {
 		return module;
 	}
 
@@ -99,7 +106,7 @@ public abstract class IBSPopulation {
 	 * {@code opponent.getModule()==getModule().getOpponent()}. In intra-species
 	 * interactions {@code opponent==this}. Convenience field.
 	 */
-	protected IBSPopulation opponent;
+	protected P opponent;
 
 	/**
 	 * Logger for keeping track of and reporting events and issues.
@@ -130,14 +137,15 @@ public abstract class IBSPopulation {
 	 * @param engine the pacemaker for running the model
 	 * @param module the module that defines the game
 	 */
-	protected IBSPopulation(EvoLudo engine, Module<?> module) {
+	@SuppressWarnings("unchecked")
+	protected IBSPopulation(EvoLudo engine, M module) {
 		this.engine = engine;
 		logger = engine.getLogger();
-		opponent = this;
+		opponent = (P) this;
 		this.module = module;
 		// initialize helper variables
 		nTraits = module.getNTraits();
-		VACANT = module.getVacantIdx();
+		vacantIdx = module.getVacantIdx();
 
 		// get shared random number generator
 		rng = engine.getRNG();
@@ -153,8 +161,9 @@ public abstract class IBSPopulation {
 	 * 
 	 * @param opponent the interaction partner/opponent
 	 */
-	public void setOpponentPop(IBSPopulation opponent) {
-		this.opponent = opponent;
+	@SuppressWarnings("unchecked")
+	public void setOpponentPop(IBSPopulation<?, ?> opponent) {
+		this.opponent = (opponent == null) ? (P) this : (P) opponent;
 	}
 
 	/**
@@ -304,7 +313,7 @@ public abstract class IBSPopulation {
 	 *         reset)
 	 */
 	public boolean updatePlayerBestResponse(int me, int[] group, int size) {
-		throw new Error("Best-response dynamics ill defined!");
+		throw new UnsupportedOperationException("Best-response dynamics ill defined!");
 	}
 
 	/**
@@ -373,7 +382,9 @@ public abstract class IBSPopulation {
 	 *
 	 * @return {@code true} if converged.
 	 */
-	public abstract boolean checkConvergence();
+	public boolean checkConvergence() {
+		return isMonomorphic() && mutation.getProbability() <= 0.0 && !optimizeHomo;
+	}
 
 	/**
 	 * The update type of players. Convenience field.
@@ -388,7 +399,7 @@ public abstract class IBSPopulation {
 	 * 
 	 * @see Module#getVacantIdx()
 	 */
-	protected int VACANT = -1;
+	protected int vacantIdx = -1;
 
 	/**
 	 * The number of traits in module. Convenience field.
@@ -408,7 +419,16 @@ public abstract class IBSPopulation {
 	/**
 	 * The geometry of the interaction graph.
 	 */
-	protected Geometry interaction;
+	protected AbstractGeometry interaction;
+
+	/**
+	 * Gets the interaction geometry.
+	 * 
+	 * @return the interaction geometry
+	 */
+	public AbstractGeometry getInteractionGeometry() {
+		return interaction;
+	}
 
 	/**
 	 * Reference to the interaction group.
@@ -427,7 +447,16 @@ public abstract class IBSPopulation {
 	/**
 	 * The geometry of the competition graph.
 	 */
-	protected Geometry competition;
+	protected AbstractGeometry competition;
+
+	/**
+	 * Gets the competition geometry.
+	 * 
+	 * @return the competition geometry
+	 */
+	public AbstractGeometry getCompetitionGeometry() {
+		return competition;
+	}
 
 	/**
 	 * Reference to the competition/reference/model group.
@@ -581,7 +610,7 @@ public abstract class IBSPopulation {
 
 	/**
 	 * Optimization: Number of interactions in well-mixed populations for update
-	 * rules that take advantage of {@link IBSDPopulation#updateMixedMeanScores()}.
+	 * rules that take advantage of {@link IBSDPopulation#updateMixedScores()}.
 	 * {@code nMixedInter} is calculated ahead of time in {@link #check()}.
 	 */
 	protected int nMixedInter = -1;
@@ -616,7 +645,7 @@ public abstract class IBSPopulation {
 	 * <li>Adjusting scores is only feasible if all individuals have a fixed number
 	 * of interactions. For example, if all individuals always interact with all
 	 * their neighbours, see {@link IBSGroup.SamplingType#ALL}. The only exception
-	 * are well-mixed populations, {@link Geometry.Type#MEANFIELD}. With continuous
+	 * are well-mixed populations, {@link GeometryType#WELLMIXED}. With continuous
 	 * traits all possible encounters would need to be considered, which is
 	 * computationally not feasible. In contrast, for discrete traits separate
 	 * calculations to determine the scores of each trait type are possible.
@@ -676,7 +705,7 @@ public abstract class IBSPopulation {
 					doDiffusionMigration();
 				break;
 			default: // should never get here
-				throw new Error("Unknown migration type (" + migrationType + ")");
+				throw new UnsupportedOperationException("Unknown migration type (" + migrationType + ")");
 		}
 		return nMigrants;
 	}
@@ -698,7 +727,7 @@ public abstract class IBSPopulation {
 				doDiffusionMigration();
 				break;
 			default: // should never get here
-				throw new Error("Unknown migration type (" + migrationType + ")");
+				throw new UnsupportedOperationException("Unknown migration type (" + migrationType + ")");
 		}
 	}
 
@@ -820,54 +849,147 @@ public abstract class IBSPopulation {
 	 * @return the index of the picked individual
 	 */
 	public int pickFocalIndividual() {
-		if (VACANT < 0)
+		if (vacantIdx < 0)
 			return pickFocalSite();
-		return pickFocal(-1);
+		return pickFocalSkipVacant();
+	}
+
+	/**
+	 * Pick a focal individual uniformly at random but skipping vacant sites.
+	 * 
+	 * @return the index of the picked individual
+	 */
+	private int pickFocalSkipVacant() {
+		int nTot = getPopulationSize();
+		int pick = random0n(nTot);
+		if (pick + pick > nTot) {
+			pick = nTot - pick - 1;
+			return pickFocalTail(pick);
+		}
+		return pickFocalHead(pick);
 	}
 
 	/**
 	 * Pick a focal individual uniformly at random but excluding the individual with
-	 * index <code>excl</code>. Helper method.
+	 * index <code>excl</code>.
 	 * 
 	 * @param excl the index of the excluded individual
 	 * @return the index of the picked individual
 	 */
-	private int pickFocal(int excl) {
-		int nTot = getPopulationSize();
-		if (excl >= 0)
-			nTot--;
+	private int pickFocalSkipVacant(int excl) {
+		int nTot = getPopulationSize() - 1;
 		int pick = random0n(nTot);
 		if (pick + pick > nTot) {
 			pick = nTot - pick - 1;
-			// start search at tail, cannot stop halfway
-			// vacancies may be concentrated at tail
-			for (int n = nPopulation - 1; n >= 0; n--) {
-				if (isVacantAt(n))
-					continue;
-				pick--;
-				if (pick < 0) {
-					if (n == excl)
-						continue;
-					return n;
-				}
-			}
-		} else {
-			// start search at head, cannot stop halfway
-			// vacancies may be concentrated at head
-			for (int n = 0; n < nPopulation; n++) {
-				if (isVacantAt(n))
-					continue;
-				pick--;
-				if (pick < 0) {
-					if (n == excl)
-						continue;
-					return n;
-				}
-			}
+			return pickFocalTail(pick, excl);
 		}
-		engine.fatal("pickFocal() failed to pick individual...");
+		return pickFocalHead(pick, excl);
+	}
+
+	/**
+	 * Pick a focal individual uniformly at random starting from head.
+	 * 
+	 * @param pick the pick index
+	 * @return the index of the picked individual
+	 */
+	private int pickFocalHead(int pick) {
+		// start search at head, cannot stop halfway
+		// vacancies may be concentrated at tail
+		for (int n = 0; n < nPopulation; n++) {
+			if (!isVacantAt(n) && --pick < 0)
+				return n;
+		}
+		// should not get here, does not return control
+		return pickFailed();
+	}
+
+	/**
+	 * Pick a focal individual uniformly at random starting from head, excluding
+	 * individual <code>excl</code>.
+	 * 
+	 * @param pick the pick index
+	 * @param excl the index of the excluded individual
+	 * @return the index of the picked individual
+	 */
+	private int pickFocalHead(int pick, int excl) {
+		// start search at head, cannot stop halfway
+		// vacancies may be concentrated at tail
+		for (int n = 0; n < excl; n++) {
+			if (!isVacantAt(n) && --pick < 0)
+				return n;
+		}
+		// two loops avoid repeated n != excl checks
+		for (int n = excl + 1; n < nPopulation; n++) {
+			if (!isVacantAt(n) && --pick < 0)
+				return n;
+		}
+		// should not get here, does not return control
+		return pickFailed();
+	}
+
+	/**
+	 * Pick a focal individual uniformly at random starting from tail.
+	 * 
+	 * @param pick the pick index
+	 * @return the index of the picked individual
+	 */
+	private int pickFocalTail(int pick) {
+		// start search at tail, cannot stop halfway
+		// vacancies may be concentrated at head
+		for (int n = nPopulation - 1; n >= 0; n--) {
+			if (!isVacantAt(n) && --pick < 0)
+				return n;
+		}
+		// should not get here, does not return control
+		return pickFailed();
+	}
+
+	/**
+	 * Pick a focal individual uniformly at random starting from tail, excluding
+	 * individual <code>excl</code>.
+	 * 
+	 * @param pick the pick index
+	 * @param excl the index of the excluded individual
+	 * @return the index of the picked individual
+	 */
+	private int pickFocalTail(int pick, int excl) {
+		// start search at tail, cannot stop halfway
+		// vacancies may be concentrated at head
+		for (int n = nPopulation - 1; n > excl; n--) {
+			if (!isVacantAt(n) && --pick < 0)
+				return n;
+		}
+		// two loops avoid repeated n != excl checks
+		for (int n = excl - 1; n >= 0; n--) {
+			if (!isVacantAt(n) && --pick < 0)
+				return n;
+		}
+		// should not get here, does not return control
+		return pickFailed();
+	}
+
+	/**
+	 * Handle failed pick.
+	 * 
+	 * @return never returns control
+	 */
+	private int pickFailed() {
+		engine.fatal("failed to pick individual...");
 		// fatal does not return control
 		return -1;
+	}
+
+	/**
+	 * Handle failed pick and report details about failure.
+	 * 
+	 * @param remainder remaining probability mass that failed to select an
+	 *                  individual
+	 * @return never returns control
+	 */
+	private int pickFailed(double remainder) {
+		debugScores(remainder);
+		// does not return control
+		return pickFailed();
 	}
 
 	/**
@@ -882,11 +1004,11 @@ public abstract class IBSPopulation {
 	 * @return the index of the picked individual
 	 */
 	public int pickFocalIndividual(int excl) {
-		if (VACANT < 0)
+		if (vacantIdx < 0)
 			return pickFocalSite(excl);
 		if (excl < 0 || excl > nPopulation)
-			return pickFocalIndividual();
-		return pickFocal(excl);
+			return pickFocalSkipVacant();
+		return pickFocalSkipVacant(excl);
 	}
 
 	/**
@@ -915,40 +1037,72 @@ public abstract class IBSPopulation {
 		if (isNeutral)
 			return pickFocalIndividual();
 
-		if (VACANT < 0) {
-			if (nPopulation >= 100) {
-				// optimization of gillespie algorithm to prevent bookkeeping (at the expense of
-				// drawing more random numbers) see e.g. http://arxiv.org/pdf/1109.3627.pdf
-				double mScore;
-				// note: for constant selection maxEffScoreIdx is never set; using the
-				// effective current maximum score makes this optimization more efficient
-				if (maxEffScoreIdx < 0)
-					mScore = maxFitness;
-				else
-					mScore = getFitnessAt(maxEffScoreIdx);
-				int aRand = -1;
-				do {
-					aRand = random0n(nPopulation);
-				} while (random01() * mScore > getFitnessAt(aRand)); // note: if < holds aRand is ok
-				return aRand;
-			}
-			// standard, non-optimized version
-			double hit = random01() * sumFitness;
-			for (int n = 0; n < nPopulation; n++) {
-				hit -= getFitnessAt(n);
-				if (hit < 0.0)
-					return n;
-			}
-			if (hit < 1e-6 && getFitnessAt(nPopulation - 1) > 1e-6)
-				return nPopulation - 1;
-			debugScores(hit);
-			engine.fatal("pickFitFocalIndividual() failed to pick individual...");
-			// fatal does not return control
-			return -1;
-		}
+		if (vacantIdx < 0)
+			return pickFitFocalNoVacant();
+		return pickFitFocalSkipVacant();
+	}
 
+	/**
+	 * Threshold population size for using the Gillespie optimization for picking
+	 * individuals proportional to fitness.
+	 */
+	private static final int GILLESPIE_OPTIMIZATION_THRESHOLD = 100;
+
+	/**
+	 * Draws the index of a member of the population with a probability proportional
+	 * to fitness but assuming no vacant sites.
+	 * <p>
+	 * <strong>Note:</strong> scores must be <code>&ge;0</code>
+	 * <p>
+	 * <strong>Important:</strong> This method is highly time sensitive. Any
+	 * optimization effort is worth making.
+	 * 
+	 * @return the index of the picked member
+	 */
+	private int pickFitFocalNoVacant() {
+		if (nPopulation >= GILLESPIE_OPTIMIZATION_THRESHOLD) {
+			// optimization of gillespie algorithm to prevent bookkeeping (at the expense of
+			// drawing more random numbers) see e.g. http://arxiv.org/pdf/1109.3627.pdf
+			double mScore;
+			// note: for constant selection maxEffScoreIdx is never set; using the
+			// effective current maximum score makes this optimization more efficient
+			if (maxEffScoreIdx < 0)
+				mScore = maxFitness;
+			else
+				mScore = getFitnessAt(maxEffScoreIdx);
+			int aRand = -1;
+			do {
+				aRand = random0n(nPopulation);
+			} while (random01() * mScore > getFitnessAt(aRand)); // note: if < holds aRand is ok
+			return aRand;
+		}
+		// standard, non-optimized version
+		double hit = random01() * sumFitness;
+		for (int n = 0; n < nPopulation; n++) {
+			hit -= getFitnessAt(n);
+			if (hit < 0.0)
+				return n;
+		}
+		if (hit < 1e-6 && getFitnessAt(nPopulation - 1) > 1e-6)
+			return nPopulation - 1;
+		// should not get here, does not return control
+		return pickFailed(hit);
+	}
+
+	/**
+	 * Draws the index of a member of the population with a probability proportional
+	 * to fitness but assuming vacant sites.
+	 * <p>
+	 * <strong>Note:</strong> scores must be <code>&ge;0</code>
+	 * <p>
+	 * <strong>Important:</strong> This method is highly time sensitive. Any
+	 * optimization effort is worth making.
+	 * 
+	 * @return the index of the picked member
+	 */
+	private int pickFitFocalSkipVacant() {
 		// vacancies require some extra care
-		if (nPopulation >= 100) {
+		if (nPopulation >= GILLESPIE_OPTIMIZATION_THRESHOLD) {
 			// optimization of gillespie algorithm to prevent bookkeeping (at the expense of
 			// drawing more random numbers) see e.g. http://arxiv.org/pdf/1109.3627.pdf
 			double mScore;
@@ -974,10 +1128,10 @@ public abstract class IBSPopulation {
 			if (hit <= 0.0)
 				return n;
 		}
-		debugScores(hit);
-		engine.fatal("pickFitFocalIndividual() failed to pick individual...");
-		// fatal does not return control
-		return -1;
+		if (hit < 1e-6 && getFitnessAt(nPopulation - 1) > 1e-6)
+			return nPopulation - 1;
+		// should not get here, does not return control
+		return pickFailed(hit);
 	}
 
 	/**
@@ -1000,95 +1154,69 @@ public abstract class IBSPopulation {
 		if (isNeutral)
 			return pickFocalIndividual(excl);
 
-		if (VACANT < 0) {
-			// note: review threshold for optimizations (see pickFitFocalIndividual above)
-			if (nPopulation >= 100) {
-				// optimization of gillespie algorithm to prevent bookkeeping (at the expense of
-				// drawing more random numbers) see e.g. http://arxiv.org/pdf/1109.3627.pdf
-				if (excl == maxEffScoreIdx) {
-					// excluding the maximum score can cause issues if it is much larger than the
-					// rest. need to find the second largest fitness value (note using
-					// mapToFitness(maxScore)
-					// may be even worse because most candidates are rejected
-					double mScore = map2fit.map(second(maxEffScoreIdx));
-					int aRand = -1;
-					do {
-						aRand = random0n(nPopulation - 1);
-						if (aRand >= excl)
-							aRand++;
-					} while (random01() * mScore > getFitnessAt(aRand)); // note: if < holds aRand is ok
-					return aRand;
-				}
+		if (vacantIdx < 0)
+			return pickFitFocalNoVacant(excl);
+		return pickFitFocalSkipVacant(excl);
+	}
 
-				double mScore;
-				// note: for constant selection maxEffScoreIdx is never set
-				// using the effective current maximum score makes this optimization more
-				// efficient
-				if (maxEffScoreIdx < 0)
-					mScore = maxFitness;
-				else
-					mScore = getFitnessAt(maxEffScoreIdx);
-				int aRand = -1;
-				do {
-					aRand = random0n(nPopulation - 1);
-					if (aRand >= excl)
-						aRand++;
-				} while (random01() * mScore > getFitnessAt(aRand)); // note: if < holds aRand is ok
-				return aRand;
-			}
-			double hit = random01() * (sumFitness - getFitnessAt(excl));
-			// two loops prevent repeated checks concerning excl
-			for (int n = 0; n < excl; n++) {
-				hit -= getFitnessAt(n);
-				if (hit < 0.0)
-					return n;
-			}
-			for (int n = excl + 1; n < nPopulation; n++) {
-				hit -= getFitnessAt(n);
-				if (hit < 0.0)
-					return n;
-			}
-			// last resort...
-			if (excl == nPopulation - 1) {
-				if (hit < 1e-6 && getFitnessAt(nPopulation - 2) > 1e-6)
-					return nPopulation - 2;
-				if (hit < 1e-6 && getFitnessAt(nPopulation - 1) > 1e-6)
-					return nPopulation - 1;
-			}
-			debugScores(hit);
-			engine.fatal("pickFitFocalIndividual(int) failed to pick individual...");
-			// fatal does not return control
-			return -1;
+	/**
+	 * Draws the index of a member of the population with a probability proportional
+	 * to fitness but assuming no vacant sites.
+	 * <p>
+	 * <strong>Note:</strong> scores must be <code>&ge;0</code>
+	 * <p>
+	 * <strong>Important:</strong> This method is highly time sensitive. Any
+	 * optimization effort is worth making.
+	 * 
+	 * @param excl the index of the member that should be excluded from picking
+	 * @return the index of the picked member
+	 */
+	private int pickFitFocalNoVacant(int excl) {
+		if (nPopulation >= GILLESPIE_OPTIMIZATION_THRESHOLD)
+			return pickFitFocalNoVacantGillespieOptimized(excl);
+		// standard, non-optimized version
+		double hit = random01() * (sumFitness - getFitnessAt(excl));
+		// two loops prevent repeated checks concerning excl
+		for (int n = 0; n < excl; n++) {
+			hit -= getFitnessAt(n);
+			if (hit < 0.0)
+				return n;
 		}
+		for (int n = excl + 1; n < nPopulation; n++) {
+			hit -= getFitnessAt(n);
+			if (hit < 0.0)
+				return n;
+		}
+		// last resort...
+		if (excl == nPopulation - 1) {
+			if (hit < 1e-6 && getFitnessAt(nPopulation - 2) > 1e-6)
+				return nPopulation - 2;
+			if (hit < 1e-6 && getFitnessAt(nPopulation - 1) > 1e-6)
+				return nPopulation - 1;
+		}
+		// should not get here, does not return control
+		return pickFailed(hit);
+	}
 
-		// vacancies require some extra care
-		if (nPopulation >= 100) {
-			// optimization of gillespie algorithm to prevent bookkeeping (at the expense of
-			// drawing more random numbers) see e.g. http://arxiv.org/pdf/1109.3627.pdf
-			if (excl == maxEffScoreIdx) {
-				// excluding the maximum score can cause issues if it is much larger than the
-				// rest, need to find the second largest fitness value (note using
-				// mapToFitness(maxScore)
-				// may be even worse because most candidates are rejected
-				double mScore = map2fit.map(second(maxEffScoreIdx));
-				int aRand = -1;
-				do {
-					aRand = random0n(nPopulation - 1);
-					if (aRand >= excl)
-						aRand++;
-				} while (isVacantAt(aRand) || random01() * mScore > getFitnessAt(aRand)); // note: if < holds aRand is
-																							// ok
-				return aRand;
-			}
-
-			double mScore;
-			// note: for constant selection maxEffScoreIdx is never set
-			// using the effective current maximum score makes this optimization more
-			// efficient
-			if (maxEffScoreIdx < 0)
-				mScore = maxFitness;
-			else
-				mScore = getFitnessAt(maxEffScoreIdx);
+	/**
+	 * Draws the index of a member of the population with a probability proportional
+	 * to fitness but assuming no vacant sites.
+	 * <p>
+	 * <strong>Note:</strong> scores must be <code>&ge;0</code>
+	 * <p>
+	 * <strong>Important:</strong> This method is highly time sensitive. Any
+	 * optimization effort is worth making.
+	 * 
+	 * @param excl the index of the member that should be excluded from picking
+	 * @return the index of the picked member
+	 */
+	private int pickFitFocalNoVacantGillespieOptimized(int excl) {
+		if (excl == maxEffScoreIdx) {
+			// excluding the maximum score can cause issues if it is much larger than the
+			// rest. need to find the second largest fitness value (note using
+			// mapToFitness(maxScore)
+			// may be even worse because most candidates are rejected
+			double mScore = map2fit.map(second(maxEffScoreIdx));
 			int aRand = -1;
 			do {
 				aRand = random0n(nPopulation - 1);
@@ -1097,6 +1225,40 @@ public abstract class IBSPopulation {
 			} while (random01() * mScore > getFitnessAt(aRand)); // note: if < holds aRand is ok
 			return aRand;
 		}
+
+		double mScore;
+		// note: for constant selection maxEffScoreIdx is never set
+		// using the effective current maximum score makes this optimization more
+		// efficient
+		if (maxEffScoreIdx < 0)
+			mScore = maxFitness;
+		else
+			mScore = getFitnessAt(maxEffScoreIdx);
+		int aRand = -1;
+		do {
+			aRand = random0n(nPopulation - 1);
+			if (aRand >= excl)
+				aRand++;
+		} while (random01() * mScore > getFitnessAt(aRand)); // note: if < holds aRand is ok
+		return aRand;
+	}
+
+	/**
+	 * Draws the index of a member of the population with a probability proportional
+	 * to fitness but assuming vacant sites.
+	 * <p>
+	 * <strong>Note:</strong> scores must be <code>&ge;0</code>
+	 * <p>
+	 * <strong>Important:</strong> This method is highly time sensitive. Any
+	 * optimization effort is worth making.
+	 * 
+	 * @param excl the index of the member that should be excluded from picking
+	 * @return the index of the picked member
+	 */
+	private int pickFitFocalSkipVacant(int excl) {
+		// vacancies require some extra care
+		if (nPopulation >= GILLESPIE_OPTIMIZATION_THRESHOLD)
+			pickFitFocalSkipVacantGillespieOptimized(excl);
 		double hit = random01() * (sumFitness - getFitnessAt(excl));
 		// two loops prevent repeated checks concerning excl
 		for (int n = 0; n < excl; n++) {
@@ -1113,10 +1275,55 @@ public abstract class IBSPopulation {
 			if (hit <= 0.0)
 				return n;
 		}
-		debugScores(hit);
-		engine.fatal("pickFitFocalIndividual(int) failed to pick individual...");
-		// fatal does not return control
-		return -1;
+		// should not get here, does not return control
+		return pickFailed(hit);
+	}
+
+	/**
+	 * Draws the index of a member of the population with a probability proportional
+	 * to fitness but assuming vacant sites.
+	 * <p>
+	 * <strong>Note:</strong> scores must be <code>&ge;0</code>
+	 * <p>
+	 * <strong>Important:</strong> This method is highly time sensitive. Any
+	 * optimization effort is worth making.
+	 * 
+	 * @param excl the index of the member that should be excluded from picking
+	 * @return the index of the picked member
+	 */
+	private int pickFitFocalSkipVacantGillespieOptimized(int excl) {
+		// optimization of gillespie algorithm to prevent bookkeeping (at the expense of
+		// drawing more random numbers) see e.g. http://arxiv.org/pdf/1109.3627.pdf
+		if (excl == maxEffScoreIdx) {
+			// excluding the maximum score can cause issues if it is much larger than the
+			// rest, need to find the second largest fitness value (note using
+			// mapToFitness(maxScore)
+			// may be even worse because most candidates are rejected
+			double mScore = map2fit.map(second(maxEffScoreIdx));
+			int aRand = -1;
+			do {
+				aRand = random0n(nPopulation - 1);
+				if (aRand >= excl)
+					aRand++;
+			} while (isVacantAt(aRand) || random01() * mScore > getFitnessAt(aRand)); // note: if < holds aRand is ok
+			return aRand;
+		}
+
+		double mScore;
+		// note: for constant selection maxEffScoreIdx is never set
+		// using the effective current maximum score makes this optimization more
+		// efficient
+		if (maxEffScoreIdx < 0)
+			mScore = maxFitness;
+		else
+			mScore = getFitnessAt(maxEffScoreIdx);
+		int aRand = -1;
+		do {
+			aRand = random0n(nPopulation - 1);
+			if (aRand >= excl)
+				aRand++;
+		} while (random01() * mScore > getFitnessAt(aRand)); // note: if < holds aRand is ok
+		return aRand;
 	}
 
 	/**
@@ -1192,55 +1399,87 @@ public abstract class IBSPopulation {
 			return pickNeutralNeighbourAt(me, withSelf);
 
 		// mean-field
-		if (competition.getType() == Geometry.Type.MEANFIELD) {
+		if (competition.isType(GeometryType.WELLMIXED)) {
 			debugNModels = 0;
 			if (withSelf)
 				return pickFitFocalIndividual();
 			return pickFitFocalIndividual(me);
 		}
 
-		if (VACANT < 0) {
-			// structured population
-			debugModels = competition.in[me];
-			debugNModels = competition.kin[me];
-			double totFitness = 0.0;
-			double myFit = 0.0;
-			if (withSelf) {
-				if (debugNModels == 0)
-					return me;
-				myFit = getFitnessAt(me);
-				totFitness = myFit;
-			} else {
-				switch (debugNModels) {
-					case 0:
-						// no upstream neighbour
-						return -1;
-					case 1:
-						return debugModels[0];
-					default:
-				}
-			}
-			for (int n = 0; n < debugNModels; n++)
-				totFitness += getFitnessAt(debugModels[n]);
+		if (vacantIdx < 0)
+			return pickFitNeighborNoVacantAt(me, withSelf);
+		return pickFitNeighborSkipVacantAt(me, withSelf);
+	}
 
-			// negligible fitness, pick uniformly at random; same as neutral above
-			if (totFitness <= 1e-8)
-				return pickNeutralNeighbourAt(me, withSelf);
-
-			double hit = random01() * totFitness - myFit;
-			if (hit < 0.0)
+	/**
+	 * Pick a neighbour of the focal individual {@code me} with probability
+	 * proportional to their fitness assuming no vacant sites. If the flag
+	 * {@code withSelf==true} then the focal individual is included in the picking.
+	 *
+	 * @param me       the index of the focal individual
+	 * @param withSelf the flag whether to include self
+	 * @return the index of a neighbour
+	 */
+	private int pickFitNeighborNoVacantAt(int me, boolean withSelf) {
+		double totFitness = 0.0;
+		double myFit = 0.0;
+		if (withSelf) {
+			if (debugNModels == 0)
 				return me;
-			for (int n = 0; n < debugNModels; n++) {
-				hit -= getFitnessAt(debugModels[n]);
-				if (hit < 0.0)
-					return debugModels[n];
-			}
-			// should not get here
-			debugScores(hit);
-			throw new Error(
-					"drawFitNeighborAt(int) failed to pick neighbour... (" + hit + ", sum: " + totFitness + ")");
+			myFit = getFitnessAt(me);
+			totFitness = myFit;
 		}
+		totFitness += totFitnessNoVacant(me);
+		// negligible fitness, pick uniformly at random; same as neutral above
+		if (totFitness <= 1e-8)
+			return pickNeutralNeighbourAt(me, withSelf);
 
+		double hit = random01() * totFitness - myFit;
+		if (hit < 0.0)
+			return me;
+		for (int n = 0; n < debugNModels; n++) {
+			hit -= getFitnessAt(debugModels[n]);
+			if (hit < 0.0)
+				return debugModels[n];
+		}
+		// should not get here, does not return control
+		return pickFailed(hit);
+	}
+
+	/**
+	 * Compute total fitness of neighbours of individual {@code me} assuming no
+	 * vacant sites.
+	 * 
+	 * @param me the index of the focal individual
+	 * @return the total fitness of neighbours
+	 */
+	private double totFitnessNoVacant(int me) {
+		debugModels = competition.in[me];
+		debugNModels = competition.kin[me];
+		double totFitness = 0.0;
+		switch (debugNModels) {
+			case 0:
+				// no upstream neighbour
+				return -1;
+			case 1:
+				return debugModels[0];
+			default:
+		}
+		for (int n = 0; n < debugNModels; n++)
+			totFitness += getFitnessAt(debugModels[n]);
+		return totFitness;
+	}
+
+	/**
+	 * Pick a neighbour of the focal individual {@code me} with probability
+	 * proportional to their fitness assuming vacant sites. If the flag
+	 * {@code withSelf==true} then the focal individual is included in the picking.
+	 *
+	 * @param me       the index of the focal individual
+	 * @param withSelf the flag whether to include self
+	 * @return the index of a neighbour
+	 */
+	private int pickFitNeighborSkipVacantAt(int me, boolean withSelf) {
 		// vacancies require some extra care
 		debugModels = competition.in[me];
 		debugNModels = competition.kin[me];
@@ -1251,25 +1490,8 @@ public abstract class IBSPopulation {
 				return me;
 			myFit = getFitnessAt(me);
 			totFitness = myFit;
-		} else {
-			switch (debugNModels) {
-				case 0:
-					return -1;
-				case 1:
-					int neigh = debugModels[0];
-					if (isVacantAt(neigh))
-						return -1;
-					return neigh;
-				default:
-			}
 		}
-		for (int n = 0; n < debugNModels; n++) {
-			int neigh = debugModels[n];
-			if (isVacantAt(neigh))
-				continue;
-			totFitness += getFitnessAt(neigh);
-		}
-
+		totFitness += totFitnessSkipVacant(me);
 		// negligible fitness, pick uniformly at random; same as neutral above
 		if (totFitness <= 1e-8)
 			return pickNeutralNeighbourAt(me, withSelf);
@@ -1285,9 +1507,39 @@ public abstract class IBSPopulation {
 			if (hit < 0.0)
 				return neigh;
 		}
-		// should not get here
-		debugScores(hit);
-		throw new Error("drawFitNeighborAt(int) failed to pick neighbour... (" + hit + ", sum: " + totFitness + ")");
+		// should not get here, does not return control
+		return pickFailed(hit);
+	}
+
+	/**
+	 * Compute total fitness of neighbours of individual {@code me} assuming vacant
+	 * sites.
+	 * 
+	 * @param me the index of the focal individual
+	 * @return the total fitness of neighbours
+	 */
+	private double totFitnessSkipVacant(int me) {
+		// vacancies require some extra care
+		debugModels = competition.in[me];
+		debugNModels = competition.kin[me];
+		double totFitness = 0.0;
+		switch (debugNModels) {
+			case 0:
+				return -1;
+			case 1:
+				int neigh = debugModels[0];
+				if (isVacantAt(neigh))
+					return -1;
+				return neigh;
+			default:
+		}
+		for (int n = 0; n < debugNModels; n++) {
+			int neigh = debugModels[n];
+			if (isVacantAt(neigh))
+				continue;
+			totFitness += getFitnessAt(neigh);
+		}
+		return totFitness;
 	}
 
 	/**
@@ -1301,7 +1553,7 @@ public abstract class IBSPopulation {
 	 * @return the index of a neighbour
 	 */
 	private int pickNeutralNeighbourAt(int me, boolean withSelf) {
-		if (competition.getType() == Geometry.Type.MEANFIELD) {
+		if (competition.isType(GeometryType.WELLMIXED)) {
 			debugNModels = 0;
 			if (withSelf)
 				return pickFocalIndividual();
@@ -1333,7 +1585,7 @@ public abstract class IBSPopulation {
 	 */
 	public int pickNeighborSiteAt(int me) {
 		// mean-field
-		if (competition.getType() == Geometry.Type.MEANFIELD)
+		if (competition.isType(GeometryType.WELLMIXED))
 			return pickFocalSite(me);
 
 		debugModels = competition.out[me];
@@ -1367,6 +1619,28 @@ public abstract class IBSPopulation {
 		tags[me] = tags[you];
 		debugModel = you;
 	}
+
+	/**
+	 * The mutation parameters.
+	 */
+	protected Mutation mutation;
+
+	/**
+	 * <code>true</code> if optimizations for homogeneous populations requested.
+	 * <p>
+	 * <strong>Note:</strong>
+	 * <ul>
+	 * <li>optimizations can be requested with the command line option
+	 * <code>--optimize</code>, see {@link IBSD#cloOptimize}.</li>
+	 * <li>currently restricted to discrete traits where homogeneous population
+	 * states can be skipped by deterministically introducing new mutant after an
+	 * geometrically (exponentially) distributed waiting time (see
+	 * {@link IBSD}).</li>
+	 * <li>requires small mutation rates.</li>
+	 * <li>does not work for variable population sizes.</li>
+	 * </ul>
+	 */
+	protected boolean optimizeHomo = false;
 
 	/**
 	 * Update the score of individual {@code me}.
@@ -1417,13 +1691,13 @@ public abstract class IBSPopulation {
 		// any graph - interact with out-neighbors
 		// same as earlier approach to undirected graphs
 		if (adjustScores) {
-			throw new Error("ERROR: playGameAt(int idx) and adjustScores are incompatible!");
+			throw new IllegalStateException("playGameAt(int idx) and adjustScores are incompatible!");
 		}
 		if (module.isPairwise()) {
 			interGroup.pickAt(me, true);
 			playPairGameAt(interGroup);
 			// if undirected, we are done
-			if (interaction.isUndirected)
+			if (interaction.isUndirected())
 				return;
 
 			// directed graph - additionally/separately interact with in-neighbors
@@ -1433,7 +1707,7 @@ public abstract class IBSPopulation {
 			interGroup.pickAt(me, true);
 			playGroupGameAt(interGroup);
 			// if undirected, we are done
-			if (interaction.isUndirected)
+			if (interaction.isUndirected())
 				return;
 			// directed graph - additionally/separately interact with in-neighbors
 			interGroup.pickAt(me, false);
@@ -1449,7 +1723,7 @@ public abstract class IBSPopulation {
 	 * <ol>
 	 * <li>This optimized method is only applicable if
 	 * {@link IBSGroup.SamplingType#ALL}
-	 * is true and not {@link Geometry.Type#MEANFIELD}, i.e. if the interaction
+	 * is true and not {@link GeometryType#WELLMIXED}, i.e. if the interaction
 	 * group includes all neighbors but not all other members of the population.
 	 * <li>For pairwise interactions more efficient approaches are possible but
 	 * those require direct access to the trait and are hence delegated to
@@ -1482,7 +1756,7 @@ public abstract class IBSPopulation {
 		}
 		// any graph - interact with out-neighbors
 		// same as earlier approach to undirected graphs
-		if (interaction.isUndirected) {
+		if (interaction.isUndirected()) {
 			// undirected graph - same as earlier approach
 			// remove old scores
 			int[] neigh = interaction.out[me];
@@ -1721,7 +1995,7 @@ public abstract class IBSPopulation {
 		if (interactions != null)
 			Arrays.fill(interactions, 0);
 		sumFitness = 0.0;
-		if (VACANT < 0 || getPopulationSize() == 0) {
+		if (vacantIdx < 0 || getPopulationSize() == 0) {
 			// no vacancies or no population
 			maxEffScoreIdx = 0;
 			return;
@@ -1860,76 +2134,149 @@ public abstract class IBSPopulation {
 	 * @return the number of elapsed realtime units
 	 */
 	public int step() {
-		int[] remain;
+		if (optimizeHomo && isMonomorphic()) {
+			return optimizeHomo();
+		}
 		if (pMigration > 0.0 && random01() < pMigration) {
-			// migration event
 			doMigration();
 			return 1;
 		}
-		// real time increment based on current fitness
 		switch (populationUpdate.getType()) {
-			case SYNC: // synchronous updates (do not commit traits)
+			case SYNC:
 				prepareTraits();
-				if (syncFraction >= 1.0) {
-					// no noise, update everyone
-					for (int n = 0; n < nPopulation; n++)
-						updatePlayerAt(n);
-					return nPopulation;
-				}
-				// update only fraction of individuals (at least one but at most once)
-				int nSamples = Math.max(1, (int) (syncFraction * nPopulation + 0.5));
-				remain = new int[nPopulation];
-				for (int n = 0; n < nPopulation; n++)
-					remain[n] = n;
-				for (int n = nPopulation - 1; n >= nPopulation - nSamples; n--) {
-					int idx = random0n(n);
-					int focal = remain[idx];
-					remain[idx] = remain[n];
-					updatePlayerAt(focal);
-				}
-				return nSamples;
-
-			// case WRIGHT_FISHER:
-			// return rincr;
-
-			case ONCE: // asynchronous updates (every individual once)
-				int nRemain = nPopulation;
-				remain = new int[nRemain];
-				for (int n = 0; n < nRemain; n++)
-					remain[n] = n;
-				while (nRemain > 0) {
-					int idx = random0n(nRemain);
-					int focal = remain[idx];
-					remain[idx] = remain[--nRemain];
-					updatePlayerAsyncAt(focal);
-				}
-				// last to update
-				updatePlayerAsyncAt(remain[0]);
-				return nPopulation;
-
-			case ASYNC: // exclusively the current payoff matters
+				if (syncFraction >= 1.0)
+					return updateSyncAll();
+				return updateSyncFraction();
+			case ONCE:
+				return updateOnce();
+			case ASYNC:
 				updatePlayerAsync();
 				return 1;
-
-			case MORAN_BIRTHDEATH: // moran process - birth-death
+			case MORAN_BIRTHDEATH:
 				updatePlayerMoranBirthDeath();
 				return 1;
-
-			case MORAN_DEATHBIRTH: // moran process - death-birth
+			case MORAN_DEATHBIRTH:
 				updatePlayerMoranDeathBirth();
 				return 1;
-
-			case MORAN_IMITATE: // moran process - imitate
+			case MORAN_IMITATE:
 				updatePlayerMoranImitate();
 				return 1;
-
-			case ECOLOGY: // ecological updating - varying population sizes
+			case ECOLOGY:
 				return updatePlayerEcology();
-
 			default:
 				logger.warning("unknown population update type (" + populationUpdate.getType().getKey() + ").");
 				return -1;
 		}
+	}
+
+	/**
+	 * Optimize homogeneous population states by skipping to the next mutation
+	 * event.
+	 * 
+	 * @return the number of elapsed realtime units
+	 */
+	private int optimizeHomo() {
+		int dt = RNGDistribution.Geometric.next(rng.getRNG(), mutation.getProbability());
+		resetTraits();
+		resetScores();
+		updateScores();
+		engine.fireModelChanged();
+		mutateAt(pickFocalIndividual());
+		return dt + 1;
+	}
+
+	/**
+	 * Update all individuals in the population synchronously.
+	 * 
+	 * @return the number of elapsed realtime units
+	 */
+	private int updateSyncAll() {
+		if (vacantIdx < 0) {
+			for (int n = 0; n < nPopulation; n++)
+				updatePlayerAt(n);
+			return nPopulation;
+		}
+		int nUpdates = 0;
+		for (int n = 0; n < nPopulation; n++) {
+			if (isVacantAt(n))
+				continue;
+			updatePlayerAt(n);
+			nUpdates++;
+		}
+		return nUpdates;
+	}
+
+	/**
+	 * Update a fraction of individuals in the population synchronously.
+	 * 
+	 * @return the number of elapsed realtime units
+	 */
+	private int updateSyncFraction() {
+		int nRemain = nPopulation;
+		int[] remain = new int[nRemain];
+		for (int n = 0; n < nPopulation; n++)
+			remain[n] = n;
+		int nSamples = Math.max(1, (int) (syncFraction * nPopulation + 0.5));
+		int nEnd = nPopulation - nSamples;
+		if (vacantIdx < 0) {
+			while (nRemain > nEnd) {
+				int idx = random0n(nRemain);
+				int focal = remain[idx];
+				remain[idx] = remain[--nRemain];
+				updatePlayerAsyncAt(focal);
+			}
+			return nSamples;
+		}
+		int nUpdates = 0;
+		while (nRemain > nEnd) {
+			int idx = random0n(nRemain);
+			int focal = remain[idx];
+			remain[idx] = remain[--nRemain];
+			if (isVacantAt(focal))
+				continue;
+			updatePlayerAt(focal);
+			nUpdates++;
+		}
+		return nUpdates;
+	}
+
+	/**
+	 * Update all individuals in the population once asynchronously.
+	 * 
+	 * @return the number of elapsed realtime units
+	 */
+	private int updateOnce() {
+		int nRemain = nPopulation;
+		int[] remain = new int[nRemain];
+		for (int n = 0; n < nRemain; n++)
+			remain[n] = n;
+		if (vacantIdx < 0) {
+			// no vacancies
+			while (nRemain > 0) {
+				int idx = random0n(nRemain);
+				int focal = remain[idx];
+				remain[idx] = remain[--nRemain];
+				updatePlayerAsyncAt(focal);
+			}
+			updatePlayerAsyncAt(remain[0]);
+			return nPopulation;
+		}
+		// with vacant sites
+		int nUpdates = 0;
+		while (nRemain > 0) {
+			int idx = random0n(nRemain);
+			int focal = remain[idx];
+			remain[idx] = remain[--nRemain];
+			if (isVacantAt(focal))
+				continue;
+			updatePlayerAsyncAt(focal);
+			nUpdates++;
+		}
+		if (!isVacantAt(remain[0])) {
+			updatePlayerAsyncAt(remain[0]);
+			nUpdates++;
+		}
+		return nUpdates;
 	}
 
 	/**
@@ -2190,7 +2537,7 @@ public abstract class IBSPopulation {
 	 */
 	protected void updatePlayerMoranBirthDeathAt(int parent) {
 		debugFocal = parent;
-		if (competition.getType() == Geometry.Type.MEANFIELD) {
+		if (competition.isType(GeometryType.WELLMIXED)) {
 			debugModel = pickFocalIndividual();
 			debugNModels = 0;
 		} else
@@ -2320,7 +2667,7 @@ public abstract class IBSPopulation {
 	 * @return the number of elapsed realtime units
 	 */
 	protected int updatePlayerEcologyAt(int index) {
-		throw new Error("updatePlayerEcologyAt not implemented.");
+		throw new UnsupportedOperationException("updatePlayerEcologyAt not implemented.");
 	}
 
 	/**
@@ -2402,7 +2749,7 @@ public abstract class IBSPopulation {
 				break;
 
 			default:
-				throw new Error("Unknown update method for players (" + playerUpdate + ")");
+				throw new UnsupportedOperationException("Unknown update method for players (" + playerUpdate + ")");
 		}
 		if (maybeMutateAt(me, switched))
 			return true;
@@ -2578,7 +2925,7 @@ public abstract class IBSPopulation {
 			choice -= bin;
 		}
 		// should not get here!
-		throw new Error("Problem in updateProportionalAbs()...");
+		throw new IllegalStateException("Problem in updateProportionalAbs()...");
 	}
 
 	/**
@@ -2648,76 +2995,19 @@ public abstract class IBSPopulation {
 	 */
 	private boolean updateReplicator(int me, int[] refGroup, int rGroupSize, boolean betterOnly) {
 		// neutral case
-		if (isNeutral) {
-			// return if betterOnly because no one is better
-			if (betterOnly)
-				return false;
-			// choose random neighbor or individual itself
-			int hit = random0n(rGroupSize + 1);
-			if (hit == rGroupSize)
-				return false;
-			updateFromModelAt(me, refGroup[hit]);
-			return true;
-		}
+		if (isNeutral)
+			return updateReplicatorNeutral(me, refGroup, rGroupSize, betterOnly);
 
 		double myFitness = getFitnessAt(me);
-		double aProb;
-		double nProb;
-		double norm;
 		double noise = playerUpdate.getNoise();
-		double error = playerUpdate.getError();
-		double equalProb = betterOnly ? error : 0.5;
+		double nProb;
 		// generalize update to competition among arbitrary numbers of players
-		if (noise <= 0.0) { // zero noise
-			double aDiff = getFitnessAt(refGroup[0]) - myFitness;
-			if (aDiff > 0.0)
-				aProb = 1.0 - error;
-			else
-				aProb = (aDiff < 0.0 ? error : equalProb);
-			norm = aProb;
-			nProb = 1.0 - aProb;
-			if (rGroupSize > 1) {
-				cProbs[0] = aProb;
-				for (int i = 1; i < rGroupSize; i++) {
-					aDiff = getFitnessAt(refGroup[i]) - myFitness;
-					if (aDiff > 0.0)
-						aProb = 1.0 - error;
-					else
-						aProb = (aDiff < 0.0 ? error : equalProb);
-					cProbs[i] = cProbs[i - 1] + aProb;
-					nProb *= 1.0 - aProb;
-					norm += aProb;
-				}
-			}
-		} else { // some noise
-			double inoise = 1.0 / noise;
-			double shift = 0.0;
-			if (!betterOnly) {
-				inoise *= 0.5;
-				shift = 0.5;
-			}
-			if (playerScoreAveraged || adjustScores || playerScoring.equals(ScoringType.EPHEMERAL)) {
-				inoise /= (maxFitness - minFitness);
-				// generalize update to competition among arbitrary numbers of players
-				aProb = Math.min(1.0 - error,
-						Math.max(error, (getFitnessAt(refGroup[0]) - myFitness) * inoise + shift));
-				norm = aProb;
-				nProb = 1.0 - aProb;
-				if (rGroupSize > 1) {
-					cProbs[0] = aProb;
-					for (int i = 1; i < rGroupSize; i++) {
-						aProb = Math.min(1.0 - error,
-								Math.max(error, (getFitnessAt(refGroup[i]) - myFitness) * inoise + shift));
-						cProbs[i] = cProbs[i - 1] + aProb;
-						nProb *= 1.0 - aProb;
-						norm += aProb;
-					}
-				}
-			} else {
-				// not ready for unbounded accumulated payoffs... check() should catch this
-				throw new Error("cannot handle unbounded accumulated scores");
-			}
-		}
+		if (noise <= 0.0) // zero noise
+			nProb = updateReplicatorNoNoise(refGroup, rGroupSize, myFitness, betterOnly);
+		else // some noise
+			nProb = updateReplicatorNoise(refGroup, rGroupSize, myFitness, betterOnly);
+		double norm = cProbs[rGroupSize - 1];
+
 		if (norm <= 0.0)
 			return false;
 
@@ -2731,8 +3021,7 @@ public abstract class IBSPopulation {
 			return true;
 		}
 
-		norm = (1.0 - nProb) / norm;
-		for (int i = 0; i < rGroupSize; i++) {
+		for (int i = 1; i < rGroupSize; i++) {
 			// normalize cumulative probabilities only if and when needed
 			if (choice < cProbs[i] * norm) {
 				updateFromModelAt(me, refGroup[i]);
@@ -2740,7 +3029,110 @@ public abstract class IBSPopulation {
 			}
 		}
 		/* should not get here! */
-		throw new Error("Problem in " + (betterOnly ? "updateReplicatorPlus()..." : "updateReplicatorHalf()..."));
+		throw new IllegalStateException(
+				"Problem in " + (betterOnly ? "updateReplicatorPlus()..." : "updateReplicatorHalf()..."));
+	}
+
+	/**
+	 * Replicator type update in the neutral case.
+	 * 
+	 * @param me         the index of the focal individual
+	 * @param refGroup   the group of reference individuals
+	 * @param rGroupSize the number of reference individuals
+	 * @param betterOnly the flag to indicate whether only better performing
+	 *                   reference individuals are considered
+	 * @return {@code true} if trait of reference adopted
+	 */
+	private boolean updateReplicatorNeutral(int me, int[] refGroup, int rGroupSize, boolean betterOnly) {
+		// return if betterOnly because no one is better
+		if (betterOnly)
+			return false;
+		// choose random neighbor or individual itself
+		int hit = random0n(rGroupSize + 1);
+		if (hit == rGroupSize)
+			return false;
+		updateFromModelAt(me, refGroup[hit]);
+		return true;
+
+	}
+
+	/**
+	 * Replicator type update without noise.
+	 * 
+	 * @param refGroup   the group of reference individuals
+	 * @param rGroupSize the number of reference individuals
+	 * @param myFitness  the fitness of the focal individual
+	 * @param betterOnly the flag to indicate whether only better performing
+	 *                   reference individuals are considered
+	 * @return the probability of no adoption
+	 */
+	private double updateReplicatorNoNoise(int[] refGroup, int rGroupSize, double myFitness, boolean betterOnly) {
+		double error = playerUpdate.getError();
+		double aProb;
+		double equalProb = betterOnly ? error : 0.5;
+		double aDiff = getFitnessAt(refGroup[0]) - myFitness;
+		if (aDiff > 0.0)
+			aProb = 1.0 - error;
+		else if (aDiff < 0.0)
+			aProb = error;
+		else
+			aProb = equalProb;
+		double nProb = 1.0 - aProb;
+		cProbs[0] = aProb;
+		if (rGroupSize > 1) {
+			for (int i = 1; i < rGroupSize; i++) {
+				aDiff = getFitnessAt(refGroup[i]) - myFitness;
+				if (aDiff > 0.0)
+					aProb = 1.0 - error;
+				else if (aDiff < 0.0)
+					aProb = error;
+				else
+					aProb = equalProb;
+				cProbs[i] = cProbs[i - 1] + aProb;
+				nProb *= 1.0 - aProb;
+			}
+		}
+		return nProb;
+	}
+
+	/**
+	 * Replicator type update with noise.
+	 * 
+	 * @param refGroup   the group of reference individuals
+	 * @param rGroupSize the number of reference individuals
+	 * @param myFitness  the fitness of the focal individual
+	 * @param betterOnly the flag to indicate whether only better performing
+	 *                   reference individuals are considered
+	 * @return the probability of no adoption
+	 */
+	private double updateReplicatorNoise(int[] refGroup, int rGroupSize, double myFitness, boolean betterOnly) {
+		if (playerScoreAveraged || adjustScores || playerScoring.equals(ScoringType.EPHEMERAL)) {
+			double error = playerUpdate.getError();
+			double noise = playerUpdate.getNoise();
+			double inoise = (noise <= 0.0 ? 1.0 : 1.0 / noise);
+			double shift = 0.0;
+			if (!betterOnly) {
+				inoise *= 0.5;
+				shift = 0.5;
+			}
+			inoise /= (maxFitness - minFitness);
+			// generalize update to competition among arbitrary numbers of players
+			double aProb = Math.min(1.0 - error,
+					Math.max(error, (getFitnessAt(refGroup[0]) - myFitness) * inoise + shift));
+			double nProb = 1.0 - aProb;
+			cProbs[0] = aProb;
+			if (rGroupSize > 1) {
+				for (int i = 1; i < rGroupSize; i++) {
+					aProb = Math.min(1.0 - error,
+							Math.max(error, (getFitnessAt(refGroup[i]) - myFitness) * inoise + shift));
+					cProbs[i] = cProbs[i - 1] + aProb;
+					nProb *= 1.0 - aProb;
+				}
+			}
+			return nProb;
+		}
+		// not ready for unbounded accumulated payoffs... check() should catch this
+		throw new UnsupportedOperationException("cannot handle unbounded accumulated scores");
 	}
 
 	/**
@@ -2776,53 +3168,13 @@ public abstract class IBSPopulation {
 			return true;
 		}
 
-		double myFitness = getFitnessAt(me);
-		double aProb;
 		double nProb;
-		double norm;
-		double noise = playerUpdate.getNoise();
-		double error = playerUpdate.getError();
 		// generalize update to competition among arbitrary numbers of players
-		if (noise <= 0.0) { // zero noise
-			double aDiff = getFitnessAt(refGroup[0]) - myFitness;
-			if (aDiff > 0.0)
-				aProb = 1.0 - error;
-			else
-				aProb = (aDiff < 0.0 ? error : 0.5);
-			norm = aProb;
-			nProb = 1.0 - aProb;
-			if (rGroupSize > 1) {
-				cProbs[0] = aProb;
-				for (int i = 1; i < rGroupSize; i++) {
-					aDiff = getFitnessAt(refGroup[i]) - myFitness;
-					if (aDiff > 0)
-						aProb = 1.0 - error;
-					else
-						aProb = (aDiff < 0.0 ? error : 0.5);
-					cProbs[i] = cProbs[i - 1] + aProb;
-					nProb *= 1.0 - aProb;
-					norm += aProb;
-				}
-			}
-		} else { // some noise
-			double inoise = 1.0 / noise;
-			// the increased accuracy of Math.expm1(x) for x near 0 is not so important but
-			// hopefully this also means the accuracy is more symmetrical for x and 1/x
-			aProb = Math.min(1.0 - error, Math.max(error,
-					1.0 / (2.0 + Math.expm1(-(getFitnessAt(refGroup[0]) - myFitness) * inoise))));
-			norm = aProb;
-			nProb = 1.0 - aProb;
-			if (rGroupSize > 1) {
-				cProbs[0] = aProb;
-				for (int i = 1; i < rGroupSize; i++) {
-					aProb = Math.min(1.0 - error, Math.max(error,
-							1.0 / (2.0 + Math.expm1(-(getFitnessAt(refGroup[i]) - myFitness) * inoise))));
-					cProbs[i] = cProbs[i - 1] + aProb;
-					nProb *= 1.0 - aProb;
-					norm += aProb;
-				}
-			}
-		}
+		if (playerUpdate.getNoise() <= 0.0) // zero noise
+			nProb = updateThermalNoNoise(me, refGroup, rGroupSize);
+		else // some noise
+			nProb = updateThermalNoise(me, refGroup, rGroupSize);
+		double norm = cProbs[rGroupSize - 1];
 		if (norm <= 0.0)
 			return false;
 
@@ -2836,27 +3188,119 @@ public abstract class IBSPopulation {
 			return true;
 		}
 
-		norm = (1.0 - nProb) / norm;
-		for (int i = 0; i < rGroupSize; i++) {
+		for (int i = 1; i < rGroupSize; i++) {
 			// normalize cumulative probabilities only if and when needed
 			if (choice < cProbs[i] * norm) {
 				updateFromModelAt(me, refGroup[i]);
 				return true;
 			}
 		}
-		// should not get here!
-		if (logger.isLoggable(Level.FINE)) {
-			StringBuilder sb = new StringBuilder();
-			sb.append("Report: myScore=").append(myFitness)
-					.append(", nProb=").append(nProb)
-					.append(", norm=").append(norm)
-					.append(", choice=").append(choice)
-					.append("\nCumulative probabilities: ");
-			for (int i = 0; i < rGroupSize; i++)
-				sb.append(cProbs[i]).append('\t');
-			logger.fine(sb.toString());
+		// should not get here! doesn't return
+		return updateFailed(me, rGroupSize, nProb, norm, choice);
+	}
+
+	/**
+	 * Thermal update without noise.
+	 * 
+	 * @param me         the index of the focal individual
+	 * @param refGroup   the group of reference individuals
+	 * @param rGroupSize the number of reference individuals
+	 * @return the probability of no adoption
+	 */
+	private double updateThermalNoNoise(int me, int[] refGroup, int rGroupSize) {
+		double aProb;
+		double error = playerUpdate.getError();
+		double myFitness = getFitnessAt(me);
+		double aDiff = getFitnessAt(refGroup[0]) - myFitness;
+		if (aDiff > 0.0)
+			aProb = 1.0 - error;
+		else
+			aProb = (aDiff < 0.0 ? error : 0.5);
+		double nProb = 1.0 - aProb;
+		cProbs[0] = aProb;
+		if (rGroupSize > 1) {
+			for (int i = 1; i < rGroupSize; i++) {
+				aDiff = getFitnessAt(refGroup[i]) - myFitness;
+				if (aDiff > 0)
+					aProb = 1.0 - error;
+				else
+					aProb = (aDiff < 0.0 ? error : 0.5);
+				cProbs[i] = cProbs[i - 1] + aProb;
+				nProb *= 1.0 - aProb;
+			}
 		}
-		throw new Error("Problem in updateThermal()...");
+		return nProb;
+	}
+
+	/**
+	 * Thermal update with noise.
+	 * 
+	 * @param me         the index of the focal individual
+	 * @param refGroup   the group of reference individuals
+	 * @param rGroupSize the number of reference individuals
+	 * @return the probability of no adoption
+	 */
+	private double updateThermalNoise(int me, int[] refGroup, int rGroupSize) {
+		double noise = playerUpdate.getNoise();
+		double error = playerUpdate.getError();
+		double inoise = 1.0 / noise;
+		double myFitness = getFitnessAt(me);
+		// the increased accuracy of Math.expm1(x) for x near 0 is not so important but
+		// hopefully this also means the accuracy is more symmetrical for x and 1/x
+		double aProb = Math.min(1.0 - error, Math.max(error,
+				1.0 / (2.0 + Math.expm1(-(getFitnessAt(refGroup[0]) - myFitness) * inoise))));
+		double nProb = 1.0 - aProb;
+		cProbs[0] = aProb;
+		if (rGroupSize > 1) {
+			for (int i = 1; i < rGroupSize; i++) {
+				aProb = Math.min(1.0 - error, Math.max(error,
+						1.0 / (2.0 + Math.expm1(-(getFitnessAt(refGroup[i]) - myFitness) * inoise))));
+				cProbs[i] = cProbs[i - 1] + aProb;
+				nProb *= 1.0 - aProb;
+			}
+		}
+		return nProb;
+	}
+
+	/**
+	 * Handle failed adoption decision and log diagnostic details before aborting.
+	 * 
+	 * @param me         the focal individual index
+	 * @param rGroupSize number of reference individuals considered
+	 * @param nProb      residual probability of no adoption
+	 * @param norm       normalization constant for cumulative probabilities
+	 * @param choice     sampled random number that failed to match a candidate
+	 * @return never returns control
+	 */
+	private boolean updateFailed(int me, int rGroupSize, double nProb, double norm, double choice) {
+		debugUpdate(me, rGroupSize, nProb, norm, choice);
+		engine.fatal("failed to pick individual...");
+		// does not get here,
+		return false;
+	}
+
+	/**
+	 * Log report if updating failed to shed better light on what might be the root
+	 * cause for the failure.
+	 * 
+	 * @param me         the index of the focal individual
+	 * @param rGroupSize number of reference individuals considered
+	 * @param nProb      residual probability of no adoption
+	 * @param norm       normalization constant for cumulative probabilities
+	 * @param choice     sampled random value that failed to match a candidate
+	 */
+	protected void debugUpdate(int me, int rGroupSize, double nProb, double norm, double choice) {
+		if (!logger.isLoggable(Level.FINE))
+			return;
+		StringBuilder sb = new StringBuilder();
+		sb.append("Report: myScore=").append(getFitnessAt(me))
+				.append(", nProb=").append(nProb)
+				.append(", norm=").append(norm)
+				.append(", choice=").append(choice)
+				.append("\nCumulative probabilities: ");
+		for (int i = 0; i < rGroupSize; i++)
+			sb.append(cProbs[i]).append('\t');
+		logger.fine(sb.toString());
 	}
 
 	/**
@@ -2870,7 +3314,8 @@ public abstract class IBSPopulation {
 		if (playerScoreAveraged)
 			return min;
 		// accumulated payoffs
-		return processScore(min, (min < 0.0 ? interaction.maxOut : interaction.minOut));
+		GeometryFeatures features = interaction.getFeatures();
+		return processScore(min, (min < 0.0 ? features.maxOut : features.minOut));
 	}
 
 	/**
@@ -2884,7 +3329,8 @@ public abstract class IBSPopulation {
 		if (playerScoreAveraged)
 			return max;
 		// accumulated payoffs
-		return processScore(max, (max < 0.0 ? interaction.minOut : interaction.maxOut));
+		GeometryFeatures features = interaction.getFeatures();
+		return processScore(max, (max < 0.0 ? features.minOut : features.maxOut));
 	}
 
 	/**
@@ -2922,7 +3368,7 @@ public abstract class IBSPopulation {
 			return score;
 		}
 		// not ready for unbounded accumulated payoffs... check() should catch this
-		throw new Error("cannot handle unbounded accumulated scores");
+		throw new IllegalStateException("cannot handle unbounded accumulated scores");
 	}
 
 	/**
@@ -2959,337 +3405,22 @@ public abstract class IBSPopulation {
 		map2fit = module.getMap2Fitness();
 		playerUpdate = module.getPlayerUpdate();
 
-		// check geometries: --geometry set structure, --geominter set interaction and
-		// --geomcomp set competition.
-		// now it is time to amalgamate. the more specific options --geominter,
-		// --geomcomp take precedence. structure
-		// is always available from parsing the default of cloGeometry. hence first
-		// check --geominter, --geomcomp.
-		IBS master = (IBS) engine.getModel();
-		Geometry structure = module.getGeometry();
-		if (interaction != null) {
-			if (competition != null) {
-				// NOTE: this is hackish because every population has its own cloGeometry
-				// parsers but only one will actually do the parsing...
-				if (structure != null) {
-					// --geometry was provided on command line
-					if (!interaction.equals(structure) && !master.cloGeometryInteraction.isSet()) {
-						interaction = structure;
-						doReset = true;
-					}
-					if (!competition.equals(structure) && !master.cloGeometryCompetition.isSet()) {
-						competition = structure;
-						doReset = true;
-					}
-					interaction.interCompSame = competition.interCompSame = interaction.equals(competition);
-				}
-				// both geometries set on command line OR parameters manually changed and
-				// applied - check if can be collapsed
-				// NOTE: assumes that same arguments imply same geometries. this precludes that
-				// interaction and competition are both random
-				// structures with otherwise identical parameters (e.g. random regular graphs of
-				// same degree but different realizations)
-				if (!interaction.isValid || !competition.isValid) {
-					interaction.interCompSame = competition.interCompSame = master.cloGeometryInteraction.getArg()
-							.equals(master.cloGeometryCompetition.getArg());
-				}
-			} else {
-				// competition not set - use --geometry (or its default for competition)
-				interaction.interCompSame = master.cloGeometryInteraction.getArg().equals(module.cloGeometry.getArg());
-				if (!interaction.interCompSame) {
-					competition = structure;
-					competition.interCompSame = false;
-				}
-			}
-		} else {
-			// interaction not set
-			if (competition != null) {
-				// competition set - use --geometry (or its default for interaction)
-				// NOTE: this is slightly different from above because competition knows
-				// nothing about potentially different opponents in
-				// inter-species interactions.
-				interaction = structure;
-				interaction.interCompSame = master.cloGeometryCompetition.getArg()
-						.equals(module.cloGeometry.getArg());
-			} else {
-				// neither geometry is set - e.g. initial launch with --geometry specified (or
-				// no geometry specifications at all)
-				interaction = structure;
-				interaction.interCompSame = true;
-			}
-		}
-		// make sure competiton geometry is set
-		if (competition == null)
-			competition = interaction;
-		interGroup.setGeometry(interaction);
-		compGroup.setGeometry(competition);
-		// set adding of links to geometries
-		if (pAddwire != null) {
-			double prev = interaction.pAddwire;
-			interaction.pAddwire = pAddwire[0];
-			doReset |= (Math.abs(prev - interaction.pAddwire) > 1e-8);
-			if (competition != null) {
-				prev = competition.pAddwire;
-				competition.pAddwire = pAddwire[1];
-				doReset |= (Math.abs(prev - competition.pAddwire) > 1e-8);
-			}
-		}
-		// set rewiring of links in geometries
-		if (pRewire != null) {
-			double prev = interaction.pRewire;
-			interaction.pRewire = pRewire[0];
-			doReset |= (Math.abs(prev - interaction.pRewire) > 1e-8);
-			if (competition != null) {
-				prev = competition.pRewire;
-				competition.pRewire = pRewire[1];
-				doReset |= (Math.abs(prev - competition.pRewire) > 1e-8);
-			}
-		}
-		// set names of geometries
-		String name = module.getName();
-		if (interaction.interCompSame) {
-			if (name.isEmpty())
-				interaction.name = "Structure";
-			else
-				interaction.name = name + ": Structure";
-		} else {
-			if (Geometry.displayUniqueGeometry(interaction, competition)) {
-				if (name.isEmpty())
-					interaction.name = competition.name = "Structure";
-				else
-					interaction.name = competition.name = name + ": Structure";
-			} else {
-				if (name.isEmpty()) {
-					interaction.name = "Interaction";
-					competition.name = "Competition";
-				} else {
-					interaction.name = name + ": Interaction";
-					competition.name = name + ": Competition";
-				}
-			}
-		}
+		doReset |= checkGeometry();
 		// Note: now that interaction and competition are set, we still cannot set
 		// structure to null because of subsequent CLO parsing
 
-		// check geometries
-		// Warning: there is a small chance that the interaction and competition
-		// geometries require different population sizes, which does not make sense
-		// and would most likely result in a never ending initialization loop...
-		interaction.size = nPopulation;
-		doReset |= interaction.check();
-		if (competition != null) {
-			module.setNPopulation(interaction.size);
-			nPopulation = interaction.size; // keep local copy in sync
-			competition.size = nPopulation;
-			doReset |= competition.check();
-			if (competition.size != nPopulation) {
-				// try checking interaction geometry again
-				interaction.size = competition.size;
-				if (interaction.check())
-					logger.severe("incompatible interaction and competition geometries!");
-			}
-		}
-		// population structure may require special population sizes
-		module.setNPopulation(interaction.size);
-		nPopulation = interaction.size; // keep local copy in sync
-
-		// check sampling in special geometries
 		int nGroup = module.getNGroup();
-		if (interaction.getType() == Geometry.Type.SQUARE && interaction.isRegular && interaction.connectivity > 8 &&
-				interGroup.isSampling(IBSGroup.SamplingType.ALL) && nGroup > 2 && nGroup < 9) {
-			// if count > 8 then the interaction pattern Group.SAMPLING_ALL with a group
-			// size between 2 and 8
-			// (excluding boundaries is not allowed because this pattern requires a
-			// particular (internal)
-			// arrangement of the neighbors.
-			interGroup.setSampling(IBSGroup.SamplingType.RANDOM);
-			if (logger.isLoggable(Level.WARNING))
-				logger.warning(
-						"square " + name + " geometry has incompatible interaction pattern and neighborhood size" +
-								" - using random sampling of interaction partners!");
-		}
-		if (interaction.getType() == Geometry.Type.CUBE && interGroup.isSampling(IBSGroup.SamplingType.ALL) &&
-				nGroup > 2 && nGroup <= interaction.connectivity) {
-			// Group.SAMPLING_ALL only works with pairwise interactions or all neighbors
-			// restrictions do not apply for PDE's
-			interGroup.setSampling(IBSGroup.SamplingType.RANDOM);
-			if (logger.isLoggable(Level.WARNING))
-				logger.warning(
-						"cubic " + name + " geometry has incompatible interaction pattern and neighborhood size" +
-								" - using random sampling of interaction partners!");
-		}
+		doReset |= checkInteractions(nGroup);
 
-		// check competition geometry (may still be undefined at this point)
-		Geometry compgeom = (competition != null ? competition : interaction);
-		if ((module instanceof Payoffs) // best-response not an option with contact processes
-				&& !populationUpdate.isMoran()
-				&& !populationUpdate.getType().equals(PopulationUpdate.Type.ECOLOGY)) {
-			// Moran type updates ignore playerUpdate
-			if (compgeom.getType() == Geometry.Type.MEANFIELD && compGroup.isSampling(IBSGroup.SamplingType.ALL)
-					&& playerUpdate.getType() != PlayerUpdate.Type.BEST_RESPONSE) {
-				// 010320 using everyone as a reference in mean-field simulations is not
-				// feasible - except for best-response
-				// ecological updates are based on births and deaths rather than references
-				if (logger.isLoggable(Level.WARNING))
-					logger.warning("reference type (" + compGroup.getSampling()
-							+ ") unfeasible in well-mixed populations!");
-				compGroup.setSampling(IBSGroup.SamplingType.RANDOM);
-			}
-			// best-response in well-mixed populations should skip sampling of references
-			if (compgeom.getType() == Geometry.Type.MEANFIELD
-					&& playerUpdate.getType() == PlayerUpdate.Type.BEST_RESPONSE) {
-				compGroup.setSampling(IBSGroup.SamplingType.NONE);
-			}
-		}
-		// in the original Moran process offspring can replace the parent
-		compGroup.setSelf(populationUpdate.isMoran() && compgeom.getType() == Geometry.Type.MEANFIELD);
+		// check consistency of migration settings
+		checkMigration();
 
-		// currently: if pop has interaction structure different from MEANFIELD its
-		// opponent population needs to be of the same size
-		if (module.getNPopulation() != opponent.getModule().getNPopulation()
-				&& opponent.getInteractionGeometry() != null // opponent geometry may not yet be initialized
-																// check will be repeated for opponent
-				&& (getInteractionGeometry().getType() != Geometry.Type.MEANFIELD
-						|| opponent.getInteractionGeometry().getType() != Geometry.Type.MEANFIELD)) {
-			// at least for now, both populations need to be of the same size - except for
-			// well-mixed populations
-			logger.warning(
-					"inter-species interactions with populations of different size limited to well-mixed structures"
-							+ " - well-mixed structure forced!");
-			getInteractionGeometry().setType(Geometry.Type.MEANFIELD);
-			opponent.getInteractionGeometry().setType(Geometry.Type.MEANFIELD);
-			doReset = true;
-		}
-		// combinations of unstructured and structured populations in inter-species
-		// interactions require more attention. exclude for now.
-		if (getInteractionGeometry().isInterspecies() && opponent.getInteractionGeometry() != null &&
-				(getInteractionGeometry().getType() != opponent.getInteractionGeometry().getType()) &&
-				(getInteractionGeometry().getType() == Geometry.Type.MEANFIELD ||
-						opponent.getInteractionGeometry().getType() == Geometry.Type.MEANFIELD)) {
-			// opponent not yet ready; check will be repeated for opponent
-			logger.warning(
-					"interspecies interactions combining well-mixed and structured populations not (yet) tested"
-							+ " - well-mixed structure forced!");
-			getInteractionGeometry().setType(Geometry.Type.MEANFIELD);
-			opponent.getInteractionGeometry().setType(Geometry.Type.MEANFIELD);
-			doReset = true;
-		}
-
-		if (pMigration < 1e-10)
-			setMigrationType(MigrationType.NONE);
-		if (migrationType != MigrationType.NONE && pMigration > 0.0) {
-			if (!interaction.isUndirected) {
-				logger.warning("no migration on directed graphs!");
-				setMigrationType(MigrationType.NONE);
-			} else if (!interaction.interCompSame) {
-				logger.warning("no migration on graphs with different interaction and competition neighborhoods!");
-				setMigrationType(MigrationType.NONE);
-			} else if (interaction.getType() == Geometry.Type.MEANFIELD) {
-				logger.warning("no migration in well-mixed populations!");
-				setMigrationType(MigrationType.NONE);
-			}
-		}
-		if (migrationType == MigrationType.NONE)
-			setMigrationProb(0.0);
+		// check settings for modules implementing Payoffs
+		if (module instanceof Payoffs)
+			doReset |= checkPayoffs(nGroup);
 		else {
-			// need to get new instance to make sure potential changes in pMigration are
-			// reflected
-			distrMigrants = new RNGDistribution.Geometric(rng.getRNG(), 1.0 - pMigration);
-		}
-
-		nMixedInter = -1;
-		if (module instanceof Payoffs) {
-			boolean ephemeralScores;
-			if (module.isStatic()) {
-				adjustScores = true;
-				playerScoring = ScoringType.RESET_ALWAYS;
-				ephemeralScores = false;
-			} else {
-				// check if adjustScores can be used - subclasses may have different opinions
-				adjustScores = doAdjustScores();
-				ephemeralScores = playerScoring.equals(ScoringType.EPHEMERAL);
-				if (!adjustScores && !playerScoreAveraged && !ephemeralScores) {
-					// non-adjustable and accumulated scores result in potentially unbounded payoffs
-					// - revert to averaged scores
-					setPlayerScoreAveraged(true);
-					logger.warning("accumulated scores may result in unbounded fitness - forcing averaged scores.");
-					adjustScores = doAdjustScores(); // should now be true
-				}
-			}
-
-			hasLookupTable = module.isStatic() || //
-					(adjustScores && interaction.getType() == Geometry.Type.MEANFIELD) || //
-					(ephemeralScores && interaction.getType() == Geometry.Type.MEANFIELD //
-							&& interGroup.isSampling(SamplingType.ALL));
-			if (hasLookupTable) {
-				// allocate memory for fitness lookup table
-				if (typeFitness == null || typeFitness.length != nTraits)
-					typeFitness = new double[nTraits];
-				if (module.isStatic()) {
-					// initialize lookup table for static modules
-					typeScores = staticmodule.getStaticScores();
-					for (int n = 0; n < nTraits; n++)
-						typeFitness[n] = map2fit.map(typeScores[n]);
-					maxEffScoreIdx = -1;
-				} else {
-					// allocate memory for score lookup table
-					if (typeScores == null || typeScores.length != nTraits)
-						typeScores = new double[nTraits];
-					// determine number of interactions in well-mixed populations with adjustScores
-					int oPop = opponent.getModule().getNPopulation();
-					if (interaction.isInterspecies()) {
-						// XXX check how to count the number of interactions for inter-species group
-						// interactions only max. population size is known at this point (if sizes can
-						// vary)
-						nMixedInter = oPop * nGroup;
-					} else {
-						// this can easily exceed the range of int's... would cause issues with
-						// accumulated payoffs; excluded in check()
-						// should not affect averaged payoffs. catch exception and set to MAX_VALUE
-						try {
-							nMixedInter = Combinatorics.combinations(oPop - 1, nGroup - 1);
-						} catch (ArithmeticException ae) {
-							// note: nMixedInter < 0 means no interactions (static modules)
-							nMixedInter = Integer.MAX_VALUE;
-						}
-					}
-				}
-				// with lookup tables scores, fitness and interaction arrays not needed
-				scores = null;
-				fitness = null;
-				interactions = null;
-				// allocate lookup tables
-				if (typeScores == null || typeScores.length != nTraits)
-					typeScores = new double[nTraits];
-				if (typeFitness == null || typeFitness.length != nTraits)
-					typeFitness = new double[nTraits];
-			} else {
-				// request reset if we had lookup tables before to allocate arrays scores,
-				// fitness
-				// and interaction
-				doReset |= (typeFitness != null || typeScores != null);
-				typeFitness = null;
-				typeScores = null;
-			}
-			if (!hasLookupTable || ephemeralScores) {
-				// emphemeral scores need both
-				if (scores == null || scores.length != nPopulation)
-					scores = new double[nPopulation];
-				if (fitness == null || fitness.length != nPopulation)
-					fitness = new double[nPopulation];
-				if (interactions == null || interactions.length != nPopulation)
-					interactions = new int[nPopulation];
-			}
-
-			// number of interactions can also be determined in structured populations with
-			// well-mixed demes
-			if (adjustScores && interaction.getType() == Geometry.Type.HIERARCHY && //
-					interaction.subgeometry.equals(Geometry.Type.MEANFIELD)) {
-				nMixedInter = interaction.hierarchy[interaction.hierarchy.length - 1]
-						- (interaction.isInterspecies() ? 0 : 1);
-			}
-		} else {
-			// module has no payoffs, e.g. contact process
+			// free up resources, module has no payoffs, e.g. contact process
+			nMixedInter = -1;
 			adjustScores = false;
 			playerScoring = ScoringType.NONE;
 			scores = null;
@@ -3297,17 +3428,426 @@ public abstract class IBSPopulation {
 			interactions = null;
 			typeFitness = null;
 			typeScores = null;
+			maxFitness = 0.0;
 		}
+
 		if (tags == null || tags.length != nPopulation)
 			tags = new double[nPopulation];
 
 		// check for scenarios that are untested or work in progress
-		if (!interaction.isUndirected && !module.isStatic())
+		if (!interaction.isUndirected() && !module.isStatic())
 			logger.warning("interactions on directed graphs have received very limited testing...");
 
-		if (VACANT >= 0 && nGroup > 2)
+		if (vacantIdx >= 0 && nGroup > 2)
 			logger.warning("group interactions with vacant sites have NOT been tested...");
 
+		return doReset || checkOptimizations();
+	}
+
+	/**
+	 * Check the interaction and competition geometries for consistency and adjust
+	 * if necessary (and feasible).
+	 * 
+	 * @return {@code true} if reset is required
+	 */
+	boolean checkGeometry() {
+		boolean doReset = false;
+		// --geometry provides sane defaults
+		AbstractGeometry structure = module.getGeometry();
+		IBS ibs = (IBS) engine.getModel();
+		if (!ibs.cloGeometryInteraction.isSet()) {
+			doReset |= (interaction != structure);
+			// use default for interaction
+			interaction = structure;
+		}
+		if (!ibs.cloGeometryCompetition.isSet()) {
+			doReset |= (competition != structure);
+			// use default for competition
+			competition = structure;
+		}
+		boolean sameGeometry = interaction.equals(competition);
+		interaction.setSingle(sameGeometry);
+		competition.setSingle(sameGeometry);
+		interGroup.setGeometry(interaction);
+		compGroup.setGeometry(competition);
+
+		// rewire geometries if requested
+		doReset |= checkGeometryRewire();
+
+		// set names of geometries
+		setGeometryNames();
+
+		// check geometries
+		// Warning: there is a small chance that the interaction and competition
+		// geometries require different population sizes, which does not make sense
+		// and would most likely result in a never ending initialization loop...
+		doReset |= interaction.setSize(nPopulation);
+		doReset |= interaction.check();
+		if (!interaction.isSingle()) {
+			module.setNPopulation(interaction.getSize());
+			nPopulation = interaction.getSize(); // keep local copy in sync
+			doReset |= competition.setSize(nPopulation);
+			doReset |= competition.check();
+			if (competition.getSize() != nPopulation) {
+				// try checking interaction geometry again
+				doReset |= interaction.setSize(competition.getSize());
+				if (interaction.check()) {
+					logger.severe("incompatible interaction and competition geometries!");
+				}
+			}
+		}
+		// population structure may require special population sizes
+		module.setNPopulation(interaction.getSize());
+		nPopulation = interaction.getSize(); // keep local copy in sync
+		return doReset;
+	}
+
+	/**
+	 * Rewire the interaction and competition geometries if requested.
+	 * 
+	 * @return {@code true} if rewiring changed
+	 */
+	boolean checkGeometryRewire() {
+		boolean doReset = false;
+		// set adding of links to geometries
+		if (pAddwire != null) {
+			double next = pAddwire[0];
+			double prev = interaction.getAddwire();
+			interaction.setAddwire(next);
+			doReset |= (Math.abs(prev - next) > 1e-8);
+			if (!interaction.isSingle()) {
+				next = pAddwire[1];
+				prev = competition.getAddwire();
+				competition.setAddwire(next);
+				doReset |= (Math.abs(prev - next) > 1e-8);
+			}
+		}
+		// set rewiring of links in geometries
+		if (pRewire != null) {
+			double next = pRewire[0];
+			double prev = interaction.getRewire();
+			interaction.setRewire(next);
+			doReset |= (Math.abs(prev - next) > 1e-8);
+			if (!interaction.isSingle()) {
+				next = pRewire[1];
+				prev = competition.getRewire();
+				competition.setRewire(next);
+				doReset |= (Math.abs(prev - next) > 1e-8);
+			}
+		}
+		return doReset;
+	}
+
+	/**
+	 * Set the names of the interaction and competition geometries based on the
+	 * module name and whether the geometries are the same or different.
+	 */
+	void setGeometryNames() {
+		String name = module.getName();
+		if (interaction.isSingle() || AbstractGeometry.displaySingle(interaction, competition)) {
+			if (name.isEmpty())
+				name = "Structure";
+			else
+				name = name + ": Structure";
+			interaction.setName(name);
+			competition.setName(name);
+			return;
+		}
+		if (name.isEmpty()) {
+			interaction.setName("Interaction");
+			competition.setName("Competition");
+		} else {
+			interaction.setName(name + ": Interaction");
+			competition.setName(name + ": Competition");
+		}
+	}
+
+	/**
+	 * Check consistency of migration settings and adjust if necessary (and
+	 * feasible).
+	 */
+	void checkMigration() {
+		if (pMigration < 1e-10 || migrationType == MigrationType.NONE) {
+			setMigrationType(MigrationType.NONE);
+			setMigrationProb(0.0);
+			distrMigrants = null;
+			return;
+		}
+		if (!interaction.isUndirected()) {
+			logger.warning("no migration on directed graphs!");
+			setMigrationType(MigrationType.NONE);
+		} else if (!interaction.isSingle()) {
+			logger.warning("no migration on graphs with different interaction and competition neighborhoods!");
+			setMigrationType(MigrationType.NONE);
+		} else if (interaction.isType(GeometryType.WELLMIXED)) {
+			logger.warning("no migration in well-mixed populations!");
+			setMigrationType(MigrationType.NONE);
+		}
+		// new instance to ensure potential changes in pMigration are reflected
+		distrMigrants = new RNGDistribution.Geometric(rng.getRNG(), 1.0 - pMigration);
+	}
+
+	/**
+	 * Validate interaction structures and adjust incompatible settings.
+	 * 
+	 * @param nGroup interaction group size
+	 * @return {@code true} if changes require a reset
+	 */
+	boolean checkInteractions(int nGroup) {
+		boolean doReset = false;
+		interaction.setInterspecies(opponent != this);
+		// check sampling in special geometries
+		if (interaction.isType(GeometryType.SQUARE) && interaction.isRegular() && interaction.getConnectivity() > 8 &&
+				interGroup.isSampling(IBSGroup.SamplingType.ALL) && nGroup > 2 && nGroup < 9) {
+			// if connectivity > 8 then the interaction pattern Group.SAMPLING_ALL with a
+			// group size between 2 and 8 (excluding boundaries is not allowed because this
+			// pattern requires a particular (internal) arrangement of the neighbors.
+			interGroup.setSampling(IBSGroup.SamplingType.RANDOM);
+			if (logger.isLoggable(Level.WARNING))
+				logger.warning(
+						"square " + interaction.getName()
+								+ " geometry has incompatible interaction pattern and neighborhood size"
+								+ " - using random sampling of interaction partners!");
+		}
+		if (interaction.isType(GeometryType.CUBE) && interGroup.isSampling(IBSGroup.SamplingType.ALL) &&
+				nGroup > 2 && nGroup <= interaction.getConnectivity()) {
+			// Group.SAMPLING_ALL only works with pairwise interactions or all neighbors
+			// restrictions do not apply for PDE's
+			interGroup.setSampling(IBSGroup.SamplingType.RANDOM);
+			if (logger.isLoggable(Level.WARNING))
+				logger.warning(
+						"cubic " + interaction.getName()
+								+ " geometry has incompatible interaction pattern and neighborhood size"
+								+ " - using random sampling of interaction partners!");
+		}
+
+		// currently: if pop has interaction structure different from WELLMIXED its
+		// opponent population needs to be of the same size
+		// IMPORTANT: the parameters of modules with higher ID may not yet been checked!
+		if (module.getOpponent().getId() < module.getId()
+				&& module.getNPopulation() != opponent.getModule().getNPopulation()
+				&& opponent.interaction != null // opponent geometry may not yet be initialized
+												// check will be repeated for opponent
+				&& (!interaction.isType(GeometryType.WELLMIXED)
+						|| !opponent.interaction.isType(GeometryType.WELLMIXED))) {
+			// at least for now, both populations need to be of the same size - except for
+			// well-mixed populations
+			logger.warning(
+					"inter-species interactions with populations of different size limited to well-mixed structures"
+							+ " - well-mixed structure forced!");
+			interaction = AbstractGeometry.create(engine, GeometryType.WELLMIXED);
+			opponent.interaction = AbstractGeometry.create(engine, GeometryType.WELLMIXED);
+			doReset = true;
+		}
+		// combinations of unstructured and structured populations in inter-species
+		// interactions require more attention. exclude for now.
+		if (interaction.isInterspecies() && opponent.interaction != null &&
+				(interaction.getType() != opponent.interaction.getType()) &&
+				(interaction.isType(GeometryType.WELLMIXED) ||
+						opponent.interaction.isType(GeometryType.WELLMIXED))) {
+			// opponent not yet ready; check will be repeated for opponent
+			logger.warning(
+					"interspecies interactions combining well-mixed and structured populations not (yet) tested"
+							+ " - well-mixed structure forced!");
+			interaction = AbstractGeometry.create(engine, GeometryType.WELLMIXED);
+			opponent.interaction = AbstractGeometry.create(engine, GeometryType.WELLMIXED);
+			doReset = true;
+		}
+		return doReset;
+	}
+
+	/**
+	 * Check settings for modules implementing Payoffs.
+	 * 
+	 * @param nGroup the interaction group size
+	 * @return {@code true} if reset is required
+	 */
+	boolean checkPayoffs(int nGroup) {
+		boolean doReset = false;
+		boolean ephemeralScores;
+		if (module.isStatic()) {
+			adjustScores = true;
+			playerScoring = ScoringType.RESET_ALWAYS;
+			ephemeralScores = false;
+		} else {
+			// check if adjustScores can be used - subclasses may have different opinions
+			adjustScores = doAdjustScores();
+			ephemeralScores = playerScoring.equals(ScoringType.EPHEMERAL);
+			if (!adjustScores && !playerScoreAveraged && !ephemeralScores) {
+				// non-adjustable and accumulated scores result in potentially unbounded payoffs
+				// - revert to averaged scores
+				setPlayerScoreAveraged(true);
+				logger.warning("accumulated scores may result in unbounded fitness - forcing averaged scores.");
+				adjustScores = doAdjustScores(); // should now be true
+			}
+		}
+
+		// check if lookup tables can be used
+		doReset |= checkLookupTable(nGroup, ephemeralScores);
+
+		// number of interactions can also be determined in structured populations with
+		// well-mixed demes
+		if (adjustScores && interaction.isType(GeometryType.HIERARCHY) && //
+				((HierarchicalGeometry) interaction).isSubtype(GeometryType.WELLMIXED)) {
+			HierarchicalGeometry hgeom = (HierarchicalGeometry) interaction;
+			int[] hierarchy = hgeom.getHierarchyLevels();
+			nMixedInter = hierarchy[hierarchy.length - 1]
+					- (interaction.isInterspecies() ? 0 : 1);
+		}
+		checkCompSampling();
+		return doReset;
+	}
+
+	/**
+	 * Check whether lookup tables for scores and fitness can be used. Free memory
+	 * if possible and request a reset if the use of lookup tables has changed.
+	 * 
+	 * @param nGroup          the interaction group size
+	 * @param ephemeralScores the flag for ephemeral scores
+	 * @return {@code true} if reset is required
+	 */
+	boolean checkLookupTable(int nGroup, boolean ephemeralScores) {
+		hasLookupTable = module.isStatic() || //
+				(adjustScores && interaction.isType(GeometryType.WELLMIXED)) || //
+				(ephemeralScores && interaction.isType(GeometryType.WELLMIXED) //
+						&& interGroup.isSampling(SamplingType.ALL));
+
+		if (!hasLookupTable || ephemeralScores)
+			return checkNoLookupTable(ephemeralScores);
+
+		// allocate memory for fitness lookup table
+		if (typeFitness == null || typeFitness.length != nTraits)
+			typeFitness = new double[nTraits];
+		if (module.isStatic()) {
+			// initialize lookup table for static modules
+			typeScores = staticmodule.getStaticScores();
+			for (int n = 0; n < nTraits; n++)
+				typeFitness[n] = map2fit.map(typeScores[n]);
+			maxEffScoreIdx = -1;
+			nMixedInter = -1;
+		} else {
+			// allocate memory for score lookup table
+			if (typeScores == null || typeScores.length != nTraits)
+				typeScores = new double[nTraits];
+			nMixedInter = getNMixedInteractions(nGroup);
+		}
+		// with lookup tables scores, fitness and interaction arrays not needed
+		scores = null;
+		fitness = null;
+		interactions = null;
+		return false;
+	}
+
+	/**
+	 * Free memory used for lookup tables and allocate arrays for scores, fitness
+	 * and interactions. Returns {@code true} if reset is required.
+	 * 
+	 * @param ephemeralScores the flag for ephemeral scores
+	 * @return {@code true} if reset is required
+	 */
+	boolean checkNoLookupTable(boolean ephemeralScores) {
+		nMixedInter = -1;
+		// ephemeral scores need both (except in well-mixed populations)
+		if (scores == null || scores.length != nPopulation)
+			scores = new double[nPopulation];
+		if (fitness == null || fitness.length != nPopulation)
+			fitness = new double[nPopulation];
+		if (interactions == null || interactions.length != nPopulation)
+			interactions = new int[nPopulation];
+		if (ephemeralScores)
+			return false;
+		// request reset if we had lookup tables before to allocate arrays scores,
+		// fitness and interaction
+		boolean doReset = (typeFitness != null || typeScores != null);
+		typeFitness = null;
+		typeScores = null;
+		return doReset;
+	}
+
+	/**
+	 * Determine the number of interactions in well-mixed populations with
+	 * lookup tables.
+	 * 
+	 * @param nGroup the interaction group size
+	 * @return the number of interactions
+	 */
+	int getNMixedInteractions(int nGroup) {
+		// determine number of interactions in well-mixed populations with adjustScores
+		int oPop = opponent.getModule().getNPopulation();
+		if (interaction.isInterspecies()) {
+			// XXX check how to count the number of interactions for inter-species group
+			// interactions only max. population size is known at this point (if sizes can
+			// vary)
+			return oPop * nGroup;
+		}
+		// this can easily exceed the range of int's... would cause issues with
+		// accumulated payoffs; excluded in check()
+		// should not affect averaged payoffs. catch exception and set to MAX_VALUE
+		try {
+			return Combinatorics.combinations(oPop - 1, nGroup - 1);
+		} catch (ArithmeticException ae) {
+			// note: nMixedInter < 0 means no interactions (static modules)
+			return Integer.MAX_VALUE;
+		}
+	}
+
+	/**
+	 * Validate competition sampling rules for well-mixed populations and adjust if
+	 * required.
+	 */
+	void checkCompSampling() {
+		// Moran type and ecological updates ignore playerUpdate
+		if (populationUpdate.isMoran()
+				|| populationUpdate.getType().equals(PopulationUpdate.Type.ECOLOGY)
+				|| !competition.isType(GeometryType.WELLMIXED))
+			return;
+
+		// best-response in well-mixed populations should skip sampling of references
+		if (playerUpdate.getType() == PlayerUpdate.Type.BEST_RESPONSE) {
+			compGroup.setSampling(IBSGroup.SamplingType.NONE);
+		} else if (compGroup.isSampling(IBSGroup.SamplingType.ALL)) {
+			// 010320 using everyone as a reference in mean-field simulations is not
+			// feasible - except for best-response
+			// ecological updates are based on births and deaths rather than references
+			if (logger.isLoggable(Level.WARNING))
+				logger.warning("reference type (" + compGroup.getSampling()
+						+ ") unfeasible in well-mixed populations!");
+			compGroup.setSampling(IBSGroup.SamplingType.RANDOM);
+		}
+	}
+
+	/**
+	 * Check whether optimizations for homogeneous states can be used. Disable if
+	 * necessary (and log warnings).
+	 * 
+	 * @return {@code true} if reset is required
+	 */
+	boolean checkOptimizations() {
+		if (!optimizeHomo)
+			return false;
+
+		boolean doReset = false;
+		if (populationUpdate.getType() == PopulationUpdate.Type.ECOLOGY) {
+			optimizeHomo = false;
+			logger.warning(
+					"optimizations for homogeneous states disabled (incompatible with variable population sizes).");
+			doReset = true;
+		}
+		double pMutation = mutation.getProbability();
+		if (pMutation <= 0.0) {
+			optimizeHomo = false;
+			logger.warning("optimizations for homogeneous states disabled (small mutations required).");
+			doReset = true;
+		}
+		if (pMutation < 0.0 || pMutation > 0.1 * nPopulation) {
+			if (logger.isLoggable(Level.WARNING))
+				logger.warning(
+						"optimizations for homogeneous states not recommended (mutations in [0, "
+								+ (0.1 / nPopulation)
+								+ ") recommended, now " + Formatter.format(pMutation, 4)
+								+ ", proceeding)");
+			doReset = true;
+		}
 		return doReset;
 	}
 
@@ -3315,7 +3855,7 @@ public abstract class IBSPopulation {
 	 * The array containing the probabilities for rewiring links of the interaction
 	 * and competition graphs.
 	 * 
-	 * @see Geometry#rewire()
+	 * @see AbstractGeometry#rewire()
 	 */
 	protected double[] pRewire;
 
@@ -3345,7 +3885,7 @@ public abstract class IBSPopulation {
 	 * The array containing the probabilities for adding links to the interaction
 	 * and competition graphs.
 	 * 
-	 * @see Geometry#rewire()
+	 * @see AbstractGeometry#rewire()
 	 */
 	protected double[] pAddwire;
 
@@ -3384,7 +3924,7 @@ public abstract class IBSPopulation {
 	 * <dt>Group.SAMPLING_ALL</dt>
 	 * <dd>individuals need to be interacting with all their neighbours (not just a
 	 * randomly selected subset).</dd>
-	 * <dt>Geometry.MEANFIELD</dt>
+	 * <dt>AbstractGeometry.MEANFIELD</dt>
 	 * <dd>interactions with everyone are not feasible (impossible to model
 	 * efficiently), in general, for unstructured populations (subclasses can do
 	 * better, e.g. for discrete trait it is possible, see
@@ -3418,42 +3958,18 @@ public abstract class IBSPopulation {
 	public synchronized void reset() {
 		interaction.init();
 		interaction.rewire();
-		interaction.evaluate();
 
 		// for accumulated payoffs the min and max scores can only be determined
 		// after the structure of the population is known. note scores are potentially
 		// unbounded for accumulated scores with random interactions (not adjustable)
 		updateMinMaxScores();
 
-		// check for specific population update types
-		if (populationUpdate.isMoran()) {
-			// avoid negative fitness for Moran type updates
-			if (minFitness < 0.0) {
-				if (logger.isLoggable(Level.WARNING))
-					logger.warning("Moran updates require fitness>=0 (score range [" + Formatter.format(minScore, 6)
-							+ ", " + Formatter.format(maxScore, 6) + "]; " + "fitness range ["
-							+ Formatter.format(minFitness, 6) + ", " + Formatter.format(maxFitness, 6) + "]).\n"
-							+ "Changed baseline fitness to " + map2fit.getBaseline()
-							+ (!map2fit.isMap(Map2Fitness.Map.STATIC) ? " with static payoff-to-fitness map" : ""));
-				// just change to something meaningful
-				map2fit.setMap(Map2Fitness.Map.STATIC);
-				map2fit.setBaseline(-minFitness);
-				updateMinMaxScores();
-				if (minFitness < 0.0) {
-					throw new Error("Adjustment of selection failed... (minimal fitness: "
-							+ Formatter.format(minScore, 6) + " should be positive)");
-				}
-			}
-			// use referenceGroup for picking random neighbour in Moran process
-			// (birth-death)
-			// reason: referenceGroup properly deals with hierarchies
-			// future: pick parent to populate vacated site (death-birth, fitness dependent)
-			compGroup.setSampling(IBSGroup.SamplingType.RANDOM);
-			compGroup.setNSamples(1);
-		}
+		// ensure positive fitness for Moran updates
+		resetMoran();
+
 		// avoid numerical overflow for strong selection (mainly applies to exponential
 		// payoff-to-fitness mapping)
-		if (maxFitness * nPopulation > Double.MAX_VALUE) {
+		if (maxFitness > Double.MAX_VALUE / nPopulation) {
 			double mScore = map2fit.invmap(Double.MAX_VALUE / nPopulation) * 0.99; // only go to 99% of maximum, just in
 																					// case
 			map2fit.setSelection(Functions.round(mScore / maxScore * map2fit.getSelection()));
@@ -3467,19 +3983,24 @@ public abstract class IBSPopulation {
 			updateMinMaxScores();
 		}
 
-		if (interaction.interCompSame) {
-			competition = interaction.deriveCompetitionGeometry();
+		if (interaction.isSingle()) {
+			if (opponent != this) {
+				// interspecies interaction
+				competition = interaction.deriveCompetitionGeometry();
+			} else {
+				competition = interaction;
+			}
 		} else {
 			competition.init();
 			competition.rewire();
-			competition.evaluate();
 		}
-		module.setGeometries(interaction, competition);
 		// determine maximum reasonable group size
-		int maxGroup = Math.max(Math.max(interaction.maxIn, interaction.maxOut),
-				Math.max(competition.maxIn, competition.maxOut));
+		GeometryFeatures iFeats = interaction.getFeatures();
+		GeometryFeatures cFeats = competition.getFeatures();
+		int maxGroup = Math.max(Math.max(iFeats.maxIn, iFeats.maxOut),
+				Math.max(cFeats.maxIn, cFeats.maxOut));
 		int nGroup = module.getNGroup();
-		maxGroup = Math.max(maxGroup, nGroup) + 1; // add 1 if focal should be part of group
+		maxGroup = Math.max(maxGroup, nGroup) + 1; // add 1 in case focal is part of group
 		if (groupScores == null || groupScores.length != maxGroup)
 			groupScores = new double[maxGroup]; // can hold scores for any group size!
 		if (smallScores == null || smallScores.length != maxGroup)
@@ -3487,24 +4008,71 @@ public abstract class IBSPopulation {
 		if (cProbs == null || cProbs.length != maxGroup)
 			cProbs = new double[maxGroup]; // can hold groups of any size!
 
-		// number of interactions can be determined for ephemeral payoffs
-		// store in interactions array
-		if (playerScoring.equals(ScoringType.EPHEMERAL)) {
-			if (interGroup.isSampling(SamplingType.ALL)) {
-				if (nGroup > 2) {
-					// single interaction with all members in neighbourhood
-					Arrays.fill(interactions, 1);
-				} else {
-					// pairwise interactions
-					if (interaction.isRegular)
-						Arrays.fill(interactions, (int) (interaction.connectivity + 0.5));
-					else
-						System.arraycopy(interaction.kin, 0, interactions, 0, interactions.length);
-				}
-			} else {
-				Arrays.fill(interactions, Combinatorics.combinations(interGroup.nSamples, nGroup - 1));
+		// initialize ephemeral interactions
+		resetEphemeral(nGroup);
+	}
+
+	/**
+	 * Ensure that Moran type population updates have non-negative fitness values.
+	 * Adjust the payoff-to-fitness mapping if necessary.
+	 */
+	void resetMoran() {
+		// check for specific population update types
+		if (!populationUpdate.isMoran())
+			return;
+		// avoid negative fitness for Moran type updates
+		if (minFitness < 0.0) {
+			if (logger.isLoggable(Level.WARNING))
+				logger.warning("Moran updates require fitness>=0 (score range [" + Formatter.format(minScore, 6)
+						+ ", " + Formatter.format(maxScore, 6) + "]; " + "fitness range ["
+						+ Formatter.format(minFitness, 6) + ", " + Formatter.format(maxFitness, 6) + "]).\n"
+						+ "Changed baseline fitness to " + map2fit.getBaseline()
+						+ (!map2fit.isMap(Map2Fitness.Map.STATIC) ? " with static payoff-to-fitness map" : ""));
+			// just change to something meaningful
+			map2fit.setMap(Map2Fitness.Map.STATIC);
+			map2fit.setBaseline(-minFitness);
+			updateMinMaxScores();
+			if (minFitness < 0.0) {
+				throw new IllegalStateException("Adjustment of selection failed... (minimal fitness: "
+						+ Formatter.format(minScore, 6) + " should be positive)");
 			}
 		}
+		// use referenceGroup for picking random neighbour in Moran process
+		// (birth-death)
+		// reason: referenceGroup properly deals with hierarchies
+		// future: pick parent to populate vacated site (death-birth, fitness dependent)
+		compGroup.setSampling(IBSGroup.SamplingType.RANDOM);
+		compGroup.setNSamples(1);
+		// in the original Moran process offspring can replace the parent
+		compGroup.setSelf(competition.isType(GeometryType.WELLMIXED));
+	}
+
+	/**
+	 * Precalculate the number of interactions for ephemeral payoffs and store in
+	 * the interactions array.
+	 * 
+	 * @param nGroup the group size
+	 */
+	void resetEphemeral(int nGroup) {
+		// number of interactions can be determined for ephemeral payoffs
+		// store in interactions array
+		if (!playerScoring.equals(ScoringType.EPHEMERAL))
+			return;
+
+		if (interGroup.isSampling(SamplingType.ALL)) {
+			if (nGroup > 2) {
+				// single interaction with all members in neighbourhood
+				Arrays.fill(interactions, 1);
+			} else {
+				// pairwise interactions
+				if (interaction.isRegular())
+					Arrays.fill(interactions, (int) (interaction.getConnectivity() + 0.5));
+				else
+					System.arraycopy(interaction.kin, 0, interactions, 0, interactions.length);
+			}
+			return;
+		}
+		Arrays.fill(interactions, Combinatorics.combinations(interGroup.nSamples, nGroup - 1));
 	}
 
 	/**
@@ -3524,15 +4092,15 @@ public abstract class IBSPopulation {
 			for (int n = 0; n < nPopulation; n++)
 				tags[n] = n;
 		// if flagged as inconsistent, no (further) checks are performed
-		isConsistent = consistencyCheckRequested;
+		nIssues = (consistencyCheckRequested ? 0 : -1);
 	}
 
 	/**
-	 * The flag to indicate whether the state of the IBS model is consistent.
+	 * The number of concistency issues encountered in the state of the IBS model.
 	 * 
 	 * @see #isConsistent()
 	 */
-	boolean isConsistent;
+	int nIssues;
 
 	/**
 	 * The flag to indicate whether consistency checks on the state of the IBS model
@@ -3561,176 +4129,251 @@ public abstract class IBSPopulation {
 	 * code.
 	 */
 	public void isConsistent() {
-		if (!isConsistent || !logger.isLoggable(Level.WARNING))
+		// nIssues < 0 means consistency checks disabled
+		// nIssues > 0 means inconsistencies already found
+		if (nIssues != 0 || !logger.isLoggable(Level.WARNING))
 			return;
-		// universal consistency checks
-		for (int n = 0; n < nPopulation; n++) {
-			double scoren = getScoreAt(n);
-			if (Double.isNaN(scoren)) {
-				logger.warning("scoring issue @ " + n + ": score=" + scoren + " is NaN...");
-				isConsistent = false;
-				continue;
-			}
-			int interactionsn = getInteractionsAt(n);
-			if (isVacantAt(n)) {
-				if (scoren > 1e-12) {
-					logger.warning("scoring issue @ " + n + ": score=" + scoren + " of vacant site should be zero");
-					isConsistent = false;
-				}
-				if (interactionsn != -1) {
-					// vacant sites and static modules have an interaction count of -1
-					logger.warning("interactions issue @ " + n + ": interactions=" + interactionsn
-							+ " of vacant site should be -1");
-					isConsistent = false;
-				}
-				continue;
-			}
-			if (interactionsn == 0) {
-				if (scoren > 1e-12) {
-					logger.warning(
-							"scoring issue @ " + n + ": score=" + scoren + " of isolated site should be zero");
-					isConsistent = false;
-				}
-				continue;
-			}
-			if (scoren + 1e-12 < minScore || scoren - 1e-12 > maxScore) {
-				logger.warning(
-						"scoring issue @ " + n + ": score=" + scoren + " not in [" + minScore + ", " + maxScore
-								+ "]");
-				isConsistent = false;
-			}
-			double fitn = getFitnessAt(n);
-			if (fitn + 1e-12 < minFitness || fitn - 1e-12 > maxFitness) {
-				logger.warning(
-						"scoring issue @ " + n + ": fitness=" + fitn + " not in [" + minFitness + ", " + maxFitness
-								+ "]");
-				isConsistent = false;
-			}
-			if (Math.abs(map2fit.map(scoren) - fitn) > 1e-12) {
-				logger.warning(
-						"scoring issue @ " + n + ": score=" + scoren + " maps to " + map2fit.map(scoren)
-								+ " instead of fitness=" + fitn);
-				isConsistent = false;
-			}
-		}
+		if (module instanceof Payoffs)
+			checkConsistentFitness();
+		// TODO consistency checks for geometries & interactions
+		// interaction.isConsistent();
+		// if (!interaction.isSingle())
+		// competition.isConsistent();
+		if (nIssues > 0)
+			logger.warning(nIssues + " inconsistencies found @ " + engine.getModel().getUpdates());
+	}
+
+	/**
+	 * Check consistency of scores and fitness values for modules that implement
+	 * Payoffs.
+	 */
+	void checkConsistentFitness() {
+		for (int n = 0; n < nPopulation; n++)
+			checkIndividualConsistency(n);
+
 		if (adjustScores) {
-			// recalculate scores/fitness
-			if (hasLookupTable) {
-				double[] typeScoresStore = typeScores;
-				double[] typeFitnessStore = ArrayMath.clone(typeFitness);
-				Arrays.fill(typeFitness, Double.MAX_VALUE);
-				double sumFitnessStore = sumFitness;
-				if (!module.isStatic()) {
-					// don't destroy static scores
-					typeScoresStore = ArrayMath.clone(typeScores);
-					Arrays.fill(typeScores, Double.MAX_VALUE);
-					sumFitness = 0.0;
-					engine.getModel().update(); // initialize typeScores/typeFitness
-				}
-				for (int n = 0; n < nTraits; n++) {
-					if (n == VACANT && typeScores[n] != typeScoresStore[n]) {
-						logger.warning("scoring issue for vacant trait " + n + ": score=" + typeScoresStore[n]
-								+ " instead of " + typeScores[n] + " (NaN)");
-						isConsistent = false;
-					}
-					if (Math.abs(typeScores[n] - typeScoresStore[n]) > 1e-12) {
-						logger.warning(
-								"scoring issue for trait " + n + ": score=" + typeScoresStore[n] + " instead of "
-										+ typeScores[n]);
-						isConsistent = false;
-					}
-					typeFitness[n] = map2fit.map(typeScores[n]);
-					if (Math.abs(typeFitness[n] - typeFitnessStore[n]) > 1e-12) {
-						logger.warning(
-								"fitness issue for trait " + n + ": fitness=" + typeFitnessStore[n] + " instead of "
-										+ typeFitness[n]);
-						isConsistent = false;
-					}
-					if (Math.abs(map2fit.map(typeScores[n]) - typeFitness[n]) > 1e-12) {
-						logger.warning(
-								"scoring issue for trait " + n + ": score=" + typeScores[n] + " maps to "
-										+ map2fit.map(typeScores[n])
-										+ " instead of fitness=" + typeFitness[n]);
-						isConsistent = false;
-					}
-				}
-				if (Math.abs(sumFitness - sumFitnessStore) > 1e-12) {
-					logger.warning("accounting issue: sum of fitness is " + sumFitnessStore
-							+ " instead of recalculated fitness " + sumFitness);
-					isConsistent = false;
-				}
-				double checkFitness = 0.0;
-				for (int n = 0; n < nPopulation; n++)
-					checkFitness += getFitnessAt(n);
-				if (Math.abs(sumFitness - checkFitness) > Combinatorics.pow(10,
-						-11 + Functions.magnitude(sumFitness))) {
-					logger.warning(
-							"accounting issue: fitness sums to " + checkFitness + " instead of sumFitness=" + sumFitness
-									+
-									" (delta=" + Math.abs(sumFitness - checkFitness) + ", max="
-									+ Combinatorics.pow(10, -11 + Functions.magnitude(sumFitness)) + ")");
-					isConsistent = false;
-				}
-				// restore data
-				typeScores = typeScoresStore;
-				typeFitness = typeFitnessStore;
-				sumFitness = sumFitnessStore;
-			} else {
-				// no lookup tables
-				double[] scoresStore = scores;
-				scores = new double[nPopulation];
-				double[] fitnessStore = fitness;
-				fitness = new double[nPopulation];
-				double sumFitnessStore = sumFitness;
-				engine.getModel().update();
-				for (int n = 0; n < nPopulation; n++) {
-					if (Math.abs(scores[n] - scoresStore[n]) > 1e-12) {
-						logger.warning(
-								"scoring issue @ " + n + ": score=" + scoresStore[n] + " instead of " + scores[n]);
-						isConsistent = false;
-					}
-					if (Math.abs(fitness[n] - fitnessStore[n]) > 1e-12) {
-						logger.warning(
-								"fitness issue @ " + n + ": fitness=" + fitnessStore[n] + " instead of " + fitness[n]);
-						isConsistent = false;
-					}
-					if (Math.abs(map2fit.map(scores[n]) - fitness[n]) > 1e-12) {
-						logger.warning(
-								"scoring issue @ " + n + ": score=" + scores[n] + " maps to " + map2fit.map(scores[n])
-										+ " instead of fitness=" + fitness[n]);
-						isConsistent = false;
-					}
-				}
-				if (Math.abs(sumFitness - sumFitnessStore) > 1e-12) {
-					logger.warning("accounting issue: sum of fitness is " + sumFitnessStore
-							+ " instead of recalculated fitness " + sumFitness);
-					isConsistent = false;
-				}
-				double checkFitness = ArrayMath.norm(fitness);
-				if (Math.abs(sumFitness - checkFitness) > 1e-12) {
-					logger.warning(
-							"accounting issue: sum of fitness is " + checkFitness + " instead of sumFitness="
-									+ sumFitness);
-					isConsistent = false;
-				}
-				// restore data
-				scores = scoresStore;
-				fitness = fitnessStore;
-				sumFitness = sumFitnessStore;
-			}
+			if (hasLookupTable)
+				checkLookupTableConsistency();
+			else
+				checkAdjustScoresConsistency();
+
 		} else {
-			// no adjust scores
-			double checkFitness = 0.0;
-			// fitness array may not exist
-			for (int n = 0; n < nPopulation; n++)
-				checkFitness += getFitnessAt(n);
-			if (Math.abs(checkFitness - sumFitness) > 1e-8) {
-				logger.warning("accounting issue: sum of fitness is " + checkFitness + " but sumFitness=" + sumFitness);
-				isConsistent = false;
-			}
+			checkNoAdjustScoresConsistency();
 		}
-		if (!isConsistent)
-			logger.warning("inconsistency found @ " + engine.getModel().getUpdates());
+	}
+
+	/**
+	 * Check consistency of scores for a single individual.
+	 * 
+	 * @param n the index of the individual
+	 */
+	private void checkIndividualConsistency(int n) {
+		double scoren = getScoreAt(n);
+		if (Double.isNaN(scoren))
+			logScoringIssue(n, scoren, "is NaN...");
+
+		if (isVacantAt(n) && scoren > 1e-12)
+			logScoringIssue(n, scoren, "of vacant site should be zero");
+		// check score range
+		if (scoren + 1e-12 < minScore || scoren - 1e-12 > maxScore)
+			logScoringIssue(n, scoren, "not in [" + minScore + ", " + maxScore + "]");
+		// check fitness
+		double fitn = getFitnessAt(n);
+		if (fitn + 1e-12 < minFitness || fitn - 1e-12 > maxFitness)
+			logScoringIssue(n, fitn, "not in [" + minFitness + ", " + maxFitness + "]");
+		if (Math.abs(map2fit.map(scoren) - fitn) > 1e-12)
+			logMapIssue(n, scoren, fitn);
+	}
+
+	/**
+	 * Check consistency of scores when using lookup tables.
+	 */
+	private void checkLookupTableConsistency() {
+		double[] typeScoresStore = typeScores;
+		double[] typeFitnessStore = ArrayMath.clone(typeFitness);
+		Arrays.fill(typeFitness, Double.MAX_VALUE);
+		double sumFitnessStore = sumFitness;
+
+		if (!module.isStatic()) {
+			typeScoresStore = ArrayMath.clone(typeScores);
+			Arrays.fill(typeScores, Double.MAX_VALUE);
+			sumFitness = 0.0;
+			engine.getModel().update();
+		}
+
+		checkTraitScores(typeScoresStore, typeFitnessStore);
+		checkFitnessSum(sumFitnessStore);
+
+		// restore data
+		typeScores = typeScoresStore;
+		typeFitness = typeFitnessStore;
+		sumFitness = sumFitnessStore;
+	}
+
+	/**
+	 * Check consistency of scores for all traits.
+	 * 
+	 * @param typeScoresStore  the stored type scores
+	 * @param typeFitnessStore the stored type fitness
+	 */
+	private void checkTraitScores(double[] typeScoresStore, double[] typeFitnessStore) {
+		for (int n = 0; n < nTraits; n++) {
+			if (n == vacantIdx && typeScores[n] != typeScoresStore[n])
+				logScoringIssue(n, typeScoresStore[n], "instead of " + typeScores[n] + " (NaN)");
+			if (Math.abs(typeScores[n] - typeScoresStore[n]) > 1e-12)
+				logScoringIssue(n, typeScoresStore[n], typeScores[n]);
+
+			typeFitness[n] = map2fit.map(typeScores[n]);
+			if (Math.abs(typeFitness[n] - typeFitnessStore[n]) > 1e-12)
+				logFitnessIssue(n, typeFitnessStore[n], typeFitness[n]);
+			if (Math.abs(map2fit.map(typeScores[n]) - typeFitness[n]) > 1e-12)
+				logMapIssue(n, typeScores[n], typeFitness[n]);
+		}
+	}
+
+	/**
+	 * Check consistency of total fitness.
+	 * 
+	 * @param sumFitnessStore the stored fitness sum
+	 */
+	private void checkFitnessSum(double sumFitnessStore) {
+		if (Math.abs(sumFitness - sumFitnessStore) > 1e-12)
+			logAccountingIssue(sumFitnessStore, sumFitness);
+
+		double checkFitness = 0.0;
+		for (int n = 0; n < nPopulation; n++)
+			checkFitness += getFitnessAt(n);
+
+		if (Math.abs(sumFitness - checkFitness) > Combinatorics.pow(10, -11 + Functions.magnitude(sumFitness)))
+			logAccountingIssue("sum of fitness is ", sumFitnessStore, sumFitness,
+					"(delta=" + Math.abs(sumFitness - checkFitness) + ", max="
+							+ Combinatorics.pow(10, -11 + Functions.magnitude(sumFitness)) + ")");
+	}
+
+	/**
+	 * Check consistency when not using lookup tables.
+	 */
+	private void checkAdjustScoresConsistency() {
+		double[] scoresStore = scores;
+		scores = new double[nPopulation];
+		double[] fitnessStore = fitness;
+		fitness = new double[nPopulation];
+		double sumFitnessStore = sumFitness;
+
+		engine.getModel().update();
+
+		for (int n = 0; n < nPopulation; n++) {
+			if (Math.abs(scores[n] - scoresStore[n]) > 1e-12)
+				logScoringIssue(n, scoresStore[n], scores[n]);
+			if (Math.abs(fitness[n] - fitnessStore[n]) > 1e-12)
+				logFitnessIssue(n, fitnessStore[n], fitness[n]);
+			if (Math.abs(map2fit.map(scores[n]) - fitness[n]) > 1e-12)
+				logMapIssue(n, scores[n], fitness[n]);
+		}
+
+		if (Math.abs(sumFitness - sumFitnessStore) > 1e-12)
+			logAccountingIssue(sumFitnessStore, sumFitness);
+
+		double checkFitness = ArrayMath.norm(fitness);
+		if (Math.abs(sumFitness - checkFitness) > 1e-12)
+			logAccountingIssue(checkFitness, sumFitness);
+
+		// restore data
+		scores = scoresStore;
+		fitness = fitnessStore;
+		sumFitness = sumFitnessStore;
+	}
+
+	/**
+	 * Check consistency when scores are not adjusted.
+	 */
+	private void checkNoAdjustScoresConsistency() {
+		double checkFitness = 0.0;
+		for (int n = 0; n < nPopulation; n++)
+			checkFitness += getFitnessAt(n);
+		if (Math.abs(checkFitness - sumFitness) > 1e-8)
+			logAccountingIssue(checkFitness, sumFitness);
+	}
+
+	/**
+	 * Log a scoring issue.
+	 * 
+	 * @param idx    the index of the individual
+	 * @param actual the actual score
+	 * @param issue  the issue description
+	 */
+	void logScoringIssue(int idx, double actual, String issue) {
+		if (logger.isLoggable(Level.WARNING))
+			logger.warning("score issue @ " + idx + ": score=" + actual + " " + issue);
+		nIssues++;
+	}
+
+	/**
+	 * Log a scoring issue.
+	 * 
+	 * @param idx      the index of the individual
+	 * @param actual   the actual score
+	 * @param expected the expected score
+	 */
+	void logScoringIssue(int idx, double actual, double expected) {
+		logScoringIssue(idx, actual, "instead of " + expected);
+	}
+
+	/**
+	 * String for formatting log messages
+	 */
+	private static final String INSTEAD_OF = " instead of ";
+
+	/**
+	 * Log a mapping issue.
+	 * 
+	 * @param idx      the index of the individual
+	 * @param actual   the actual score
+	 * @param expected the expected score
+	 */
+	void logMapIssue(int idx, double actual, double expected) {
+		if (logger.isLoggable(Level.WARNING))
+			logger.warning("map issue @ " + idx + ": score=" + actual + " maps to " + map2fit.map(actual)
+					+ INSTEAD_OF + expected);
+		nIssues++;
+	}
+
+	/**
+	 * Log a fitness issue.
+	 * 
+	 * @param idx      the index of the individual
+	 * @param actual   the actual fitness
+	 * @param expected the expected fitness
+	 */
+	void logFitnessIssue(int idx, double actual, double expected) {
+		if (logger.isLoggable(Level.WARNING))
+			logger.warning("fit issue @ " + idx + ": fitness=" + actual + INSTEAD_OF + expected);
+		nIssues++;
+	}
+
+	/**
+	 * Log an accounting issue.
+	 * 
+	 * @param actual   the actual value
+	 * @param expected the expected value
+	 */
+	void logAccountingIssue(double actual, double expected) {
+		logAccountingIssue("sum of fitness is ", actual, expected, "");
+	}
+
+	/**
+	 * Log an accounting issue.
+	 * 
+	 * @param descr    the description of the value
+	 * @param actual   the actual value
+	 * @param expected the expected value
+	 * @param issue    the issue description
+	 */
+	void logAccountingIssue(String descr, double actual, double expected, String issue) {
+		if (logger.isLoggable(Level.WARNING))
+			logger.warning(
+					"accounting issue: " + descr + actual + INSTEAD_OF + expected + " " + issue);
+		nIssues++;
 	}
 
 	/**
@@ -3745,7 +4388,7 @@ public abstract class IBSPopulation {
 	 * <p>
 	 * <strong>Note:</strong> The number of mean traits in a model may differ from
 	 * the number of traits in the corresponding module. This is the case for
-	 * example for {@link Geometry.Type#SQUARE_NEUMANN_2ND} with two disjoint
+	 * example for {@link GeometryType#SQUARE_NEUMANN_2ND} with two disjoint
 	 * interaction or competition graphs.
 	 *
 	 * @return the number of mean values
@@ -3812,7 +4455,7 @@ public abstract class IBSPopulation {
 	 */
 	public <T> void getFitnessData(T[] colors, ColorMap.Gradient1D<T> colorMap) {
 		if (hasLookupTable) {
-			if (VACANT < 0) {
+			if (vacantIdx < 0) {
 				for (int n = 0; n < nPopulation; n++)
 					colors[n] = colorMap.translate(getFitnessAt(n));
 				return;
@@ -3828,7 +4471,7 @@ public abstract class IBSPopulation {
 			}
 			return;
 		}
-		if (VACANT < 0) {
+		if (vacantIdx < 0) {
 			colorMap.translate(fitness, colors);
 			return;
 		}
@@ -3948,10 +4591,11 @@ public abstract class IBSPopulation {
 			return "-";
 		// for strong selection fitness can be huge - use scientific notation if >10^7
 		double fiti = getFitnessAt(idx);
-		return fiti > 1e7
-				? (pretty ? (Formatter.formatSci(fiti, 4).replace("E", "⋅10<sup>") + "</sup>")
-						: Formatter.formatSci(fiti, 4))
-				: Formatter.format(fiti, 4);
+		if (fiti <= 1e7)
+			return Formatter.format(fiti, 4);
+		if (pretty)
+			return Formatter.formatSci(fiti, 4).replace("E", "⋅10<sup>") + "</sup>";
+		return Formatter.formatSci(fiti, 4);
 	}
 
 	/**
@@ -4120,46 +4764,6 @@ public abstract class IBSPopulation {
 	}
 
 	/**
-	 * Gets the structure of interactions.
-	 * 
-	 * @return the interaction structure
-	 */
-	public Geometry getInteractionGeometry() {
-		return interaction;
-	}
-
-	/**
-	 * Creates a new instance of the interaction structure, if needed.
-	 * 
-	 * @return the interaction structure
-	 */
-	public Geometry createInteractionGeometry() {
-		if (interaction == null || interaction == module.getGeometry())
-			interaction = new Geometry(engine, module, opponent.getModule());
-		return interaction;
-	}
-
-	/**
-	 * Gets the structure of competition or imitations.
-	 * 
-	 * @return the competition structure
-	 */
-	public Geometry getCompetitionGeometry() {
-		return competition;
-	}
-
-	/**
-	 * Creates a new instance of the competition or imitation structure, if needed.
-	 * 
-	 * @return the competition structure
-	 */
-	public Geometry createCompetitionGeometry() {
-		if (competition == null || competition == module.getGeometry())
-			competition = new Geometry(engine, module);
-		return competition;
-	}
-
-	/**
 	 * Sets the type for managing scores of individuals.
 	 * 
 	 * @param type the type for managing scores
@@ -4201,56 +4805,6 @@ public abstract class IBSPopulation {
 	}
 
 	/**
-	 * Provide opportunity/hook for subclasses to introduce new geometries.
-	 * 
-	 * @param geom the current empty/uninitialized geometry
-	 * @param arg  the commandline argument
-	 * @return {@code true} if parsing was successful
-	 * 
-	 * @see Geometry#parse(String)
-	 */
-	public boolean parseGeometry(Geometry geom, String arg) {
-		return false;
-	}
-
-	/**
-	 * Provide opportunity/hook for subclasses to introduce new geometries.
-	 * 
-	 * @param geom the geometry to check
-	 * @return {@code true} if checks were successful
-	 * 
-	 * @see Geometry#check()
-	 */
-	public boolean checkGeometry(Geometry geom) {
-		return false;
-	}
-
-	/**
-	 * Provide opportunity/hook for subclasses to introduce new geometries.
-	 * 
-	 * @param geom the geometry to initialize
-	 * @return {@code true} if generation of structure was successful
-	 * 
-	 * @see Geometry#init()
-	 */
-	public boolean generateGeometry(Geometry geom) {
-		return false;
-	}
-
-	// private long linkCount(Geometry geom) {
-	// long outcount = 0, incount = 0;
-	// for( int n=0; n<nPopulation; n++ ) {
-	// outcount += geom.kout[n];
-	// incount += geom.kin[n];
-	// }
-	// if( outcount != incount ) {
-	// logger.severe("ALARM: some links point to nirvana!? ("+incount+",
-	// "+outcount+")");
-	// }
-	// return outcount;
-	// }
-
-	/**
 	 * Called from GUI if node/individual with index {@code idx} received a mouse
 	 * click or tap.
 	 *
@@ -4260,17 +4814,6 @@ public abstract class IBSPopulation {
 	public boolean mouseHitNode(int hit) {
 		return mouseHitNode(hit, false);
 	}
-
-	// allows drawing of initial configurations - feature got retired; revive?
-	// /**
-	// *
-	// * @param hit
-	// * @param ref
-	// * @return
-	// */
-	// public boolean mouseHitNode(int hit, int ref) {
-	// return false;
-	// }
 
 	/**
 	 * Called from GUI if node/individual with index {@code idx} received a mouse
@@ -4294,7 +4837,7 @@ public abstract class IBSPopulation {
 	 * @see Model#encodeState(StringBuilder)
 	 */
 	public void encodeFitness(StringBuilder plist) {
-		if (!hasLookupTable)
+		if (!hasLookupTable && module instanceof Payoffs)
 			plist.append(Plist.encodeKey("Fitness", scores));
 	}
 
@@ -4336,7 +4879,7 @@ public abstract class IBSPopulation {
 	 * @see Model#encodeState(StringBuilder)
 	 */
 	public void encodeInteractions(StringBuilder plist) {
-		if (!hasLookupTable)
+		if (!hasLookupTable && module instanceof Payoffs)
 			plist.append(Plist.encodeKey("Interactions", interactions));
 	}
 
@@ -4394,14 +4937,14 @@ public abstract class IBSPopulation {
 	 */
 	public void encodeGeometry(StringBuilder plist) {
 		plist.append(
-				"<key>" + interaction.name + "</key>\n" +
+				"<key>" + interaction.getEncodeKey() + "</key>\n" +
 						"<dict>\n");
 		plist.append(interaction.encodeGeometry());
 		plist.append("</dict>\n");
-		if (interaction.interCompSame)
+		if (interaction.isSingle())
 			return;
 		plist.append(
-				"<key>" + competition.name + "</key>\n" +
+				"<key>" + competition.getEncodeKey() + "</key>\n" +
 						"<dict>\n");
 		plist.append(competition.encodeGeometry());
 		plist.append("</dict>\n");
@@ -4417,30 +4960,19 @@ public abstract class IBSPopulation {
 	 * @see Model#restoreState(Plist)
 	 */
 	public boolean restoreGeometry(Plist plist) {
-		Plist igeo = (Plist) plist.get(interaction.name);
+		Plist igeo = (Plist) plist.get(interaction.getEncodeKey());
 		if (igeo == null)
 			return false;
 		interaction.decodeGeometry(igeo);
-		if (interaction.interCompSame) {
+		if (interaction.isSingle()) {
 			competition = interaction.deriveCompetitionGeometry();
 			return true;
 		}
-		Plist rgeo = (Plist) plist.get(competition.name);
+		Plist rgeo = (Plist) plist.get(competition.getEncodeKey());
 		if (rgeo == null)
 			return false;
 		competition.decodeGeometry(rgeo);
 		return true;
-	}
-
-	/**
-	 * Draw a uniformly distributed random integer number from the closed interval
-	 * {@code [0, n]}.
-	 *
-	 * @param n the upper limit of interval (inclusive)
-	 * @return the random integer number in <code>[0, n]</code>.
-	 */
-	public int random0N(int n) {
-		return rng.random0N(n);
 	}
 
 	/**
@@ -4462,18 +4994,6 @@ public abstract class IBSPopulation {
 	 */
 	public double random01() {
 		return rng.random01();
-	}
-
-	/**
-	 * Draw a uniformly distributed random {@code double} from the semi-closed
-	 * interval {@code [0, 1)} with maximal 53bit resolution.
-	 * <p>
-	 * <strong>Note:</strong> takes twice as long as regular precision.
-	 *
-	 * @return the random number in <code>[0, 1)</code>.
-	 */
-	public double random01d() {
-		return rng.random01d();
 	}
 
 	/**

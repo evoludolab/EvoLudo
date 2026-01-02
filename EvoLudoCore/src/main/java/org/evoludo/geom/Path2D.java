@@ -243,9 +243,7 @@ public class Path2D {
 
 	void needRoom(boolean needMove, int newCoords) {
 		if ((numTypes == 0) && needMove) {
-			// GWT throw new IllegalPathStateException("missing initial moveto "+
-			// cannot throw exception because of override - suck it up or throw error...
-			throw new Error("missing initial moveto " +
+			throw new IllegalPathStateException("missing initial moveto " +
 					"in path definition");
 		}
 		if (numTypes >= pointTypes.length) {
@@ -262,8 +260,7 @@ public class Path2D {
 		if (newSizeMin < oldSize) {
 			// hard overflow failure - we can't even accommodate
 			// new items without overflowing
-			// GWT throw new ArrayIndexOutOfBoundsException(
-			throw new Error(
+			throw new ArrayIndexOutOfBoundsException(
 					"coords exceeds maximum capacity !");
 		}
 		// growth algorithm computation

@@ -32,9 +32,12 @@ package org.evoludo.graphics;
 
 import org.evoludo.graphics.AbstractGraph.Zooming;
 import org.evoludo.simulator.ColorMap;
-import org.evoludo.simulator.Geometry;
 import org.evoludo.simulator.Network;
 import org.evoludo.simulator.Network.Status;
+import org.evoludo.simulator.geometries.AbstractGeometry;
+import org.evoludo.simulator.geometries.GeometryFeatures;
+import org.evoludo.simulator.geometries.GeometryType;
+import org.evoludo.simulator.geometries.HierarchicalGeometry;
 import org.evoludo.simulator.modules.Module;
 import org.evoludo.simulator.views.AbstractView;
 import org.evoludo.ui.ContextMenu;
@@ -53,20 +56,96 @@ import com.google.gwt.event.dom.client.TouchStartEvent;
 import com.google.gwt.user.client.ui.Label;
 
 /**
- * The base class for population graphs. This class provides the basic
- * functionality for drawing population structures, e.g. lattices or networks.
- * The class is abstract and must be subclassed to provide the actual drawing
- * functionality, including:
+ * Abstract base class for visualizing a population as a graph. GenericPopGraph
+ * ties a population AbstractGeometry to an optional Network representation and
+ * provides common support for layouting, drawing, interaction and debugging for
+ * concrete graph views (2D/3D, lattice or general network).
+ *
+ * <h3>Key responsibilities:</h3>
  * <ul>
- * <li>(dynamical) layouting of the population structure
- * <li>coloring of nodes according to their traits or fitness
- * <li>handling of mouse events
+ * <li>Manage the backing AbstractGeometry and its Network (if present). The
+ * network may be null for models without spatial structure (e.g. ODE/SDE).</li>
+ * <li>Coordinate layouting: static lattice layouts are drawn directly via
+ * {@link #drawLattice()}; {@link #drawNetwork()} is used for dynamic/network
+ * layouts which calls back via {@link Network.LayoutListener} and this class
+ * drives the animation and final drawing via {@link #layoutNetwork()} and
+ * {@link #drawNetwork()}.</li>
+ * <li>Provide common interaction handling: tooltips, double-clicks, touch
+ * gestures (single/double tap, long press, pinch zoom), mouse cursor
+ * styling when hovering nodes, and context menu entries (shake,
+ * animate layout, clear history, debug submenu).</li>
+ * <li>Maintain display state such as labelling, color mapping for node
+ * traits, invalidation/refresh logic and flags controlling animated
+ * layouting.</li>
  * </ul>
- * The class is designed to be used in conjunction with a controller that
- * provides additional functionality, e.g. the ability to change the strategy of
- * a node or to display additional information.
- * 
- * @author Christoph Hauert
+ *
+ * <h3>Design notes and behavior:</h3>
+ * <ul>
+ * <li>The class is generic in the node color/type T and the concrete Network
+ * implementation N. Subclasses are responsible for converting node data
+ * to CSS color strings and for hit-testing nodes at screen coordinates.</li>
+ * <li>Subclasses must implement the rendering and hit-testing contract:
+ * {@link #drawLattice()}, {@link #drawNetwork()}, {@link #getCSSColorAt(int)}
+ * and {@link #findNodeAt(int,int)}. These methods encapsulate geometry-specific
+ * drawing and input logic.</li>
+ * <li>Layout updates are coordinated with the Network. For animated layouts
+ * the class may repeatedly request redraws during progress updates; for
+ * non-animated or very large networks animation can be disabled using the
+ * animate flag and size threshold constants.</li>
+ * <li>{@link #layoutUpdate(double)} and {@link #layoutComplete()} are
+ * synchronized and used by the Network to report progress and completion.
+ * {@link #layoutNetwork()} ensures that a layout exists before calling
+ * {@link #drawNetwork()}.</li>
+ * <li>Touch handling distinguishes single tap, double tap, long press and
+ * multi-touch gestures to support node selection, tooltip display,
+ * pinching zoom and invoking node-specific actions.</li>
+ * <li>Context menu population is centralized here. Implementations add
+ * graph-specific menu items but benefit from the common items provided
+ * (shake, animate, clear history and debug/update options). The debug
+ * submenu is gated by isDebugEnabled and the model type.</li>
+ * <li>Invalidation resets the network (if present) and marks the view for
+ * redraw; {@link #update(boolean isNext)} defers layout work using a scheduler
+ * to allow dependent views (3D rendering) to become ready.</li>
+ * <li>TooltipProvider integration: if the view implements TooltipProvider.Index
+ * the class will use it to produce tooltips for nodes; otherwise a fallback
+ * basic provider may be used when available.</li>
+ * </ul>
+ *
+ * <h3>Important fields and conventions referenced by subclasses:</h3>
+ * <ul>
+ * <li>{@code geometry} - the population structure (may be null for non-spatial
+ * models).</li>
+ * <li>{@code network} - the Network representation derived from the geometry
+ * (may be null).</li>
+ * <li>{@code data} - array of node trait values used for coloring or other
+ * per-node state.</li>
+ * <li>{@code colorMap} - maps node trait values (T) to display colors.</li>
+ * <li>{@code label} - optional label displayed on the graph wrapper.</li>
+ * <li>{@code animate} - flag enabling/disabling animated layout progress.</li>
+ * <li>{@code invalidated} / {@code noGraph} / {@code hasMessage} - control
+ * redraw and message display behavior.</li>
+ * <li>{@code hitNode} - index of last node hit by touch/mouse
+ * interactions.</li>
+ * <li>Return codes for {@link #findNodeAt(int,int)}:
+ * {@code FINDNODEAT_OUT_OF_BOUNDS} and {@code FINDNODEAT_UNIMPLEMENTED} are
+ * used to signal special cases.</li>
+ * </ul>
+ *
+ * <h3>Extensibility:</h3>
+ * Subclasses should concentrate on rendering and input mapping for a specific
+ * geometry (e.g. linear history plot, 2D lattice, 3D view). They should:
+ * <ol>
+ * <li>Populate and maintain the {@code data} array and {@code colorMap} as
+ * needed.</li>
+ * <li>Implement {@link #getCSSColorAt(int)} to return a valid CSS color string
+ * for a node.</li>
+ * <li>Implement {@link #drawLattice()} for static lattice-based layouts and
+ * {@link #drawNetwork()} for network-based rendering. {@link #drawNetwork()} is
+ * invoked after network layout is finished (or repeatedly during animated
+ * layout).</li>
+ * <li>Implement {@link #findNodeAt(int,int)} to map screen coordinates to node
+ * indices and honor the documented special return values.</li>
+ * </ol>
  * 
  * @param <T> the type for storing the color data
  * @param <N> the type of the network representation, 2D or 3D
@@ -75,9 +154,11 @@ import com.google.gwt.user.client.ui.Label;
  * @see PopGraph3D
  * @see Network2DGWT
  * @see Network3DGWT
+ * 
+ * @author Christoph Hauert
  */
 @SuppressWarnings("java:S110")
-public abstract class GenericPopGraph<T, N extends Network> extends AbstractGraph<T[]>
+public abstract class GenericPopGraph<T, N extends Network<?>> extends AbstractGraph<T[]>
 		implements Network.LayoutListener, Zooming, DoubleClickHandler {
 
 	/**
@@ -88,7 +169,7 @@ public abstract class GenericPopGraph<T, N extends Network> extends AbstractGrap
 	/**
 	 * The structure of the population.
 	 */
-	protected Geometry geometry;
+	protected AbstractGeometry geometry;
 
 	/**
 	 * The network representation of the population structure or {@code null} if not
@@ -145,7 +226,7 @@ public abstract class GenericPopGraph<T, N extends Network> extends AbstractGrap
 	 * @param view   the view of this graph
 	 * @param module the module backing the graph
 	 */
-	protected GenericPopGraph(AbstractView view, Module<?> module) {
+	protected GenericPopGraph(AbstractView<?> view, Module<?> module) {
 		super(view, module);
 	}
 
@@ -198,7 +279,7 @@ public abstract class GenericPopGraph<T, N extends Network> extends AbstractGrap
 	 * @param geometry the structure of the population
 	 */
 	@SuppressWarnings("unchecked")
-	public void setGeometry(Geometry geometry) {
+	public void setGeometry(AbstractGeometry geometry) {
 		this.geometry = geometry;
 		// geometry (and network) may be null for ODE or SDE models
 		if (geometry == null)
@@ -212,7 +293,7 @@ public abstract class GenericPopGraph<T, N extends Network> extends AbstractGrap
 	 * 
 	 * @return the structure of the population
 	 */
-	public Geometry getGeometry() {
+	public AbstractGeometry getGeometry() {
 		return geometry;
 	}
 
@@ -271,7 +352,7 @@ public abstract class GenericPopGraph<T, N extends Network> extends AbstractGrap
 	public void update(boolean isNext) {
 		if (!view.isActive() || noGraph || hasMessage)
 			return;
-		if (invalidated || (isNext && geometry.isDynamic)) {
+		if (invalidated || (isNext && geometry.isType(GeometryType.DYNAMIC))) {
 			// defer layouting to allow 3D view to be up and running
 			Scheduler.get().scheduleDeferred(() -> {
 				if (hasStaticLayout()) {
@@ -298,7 +379,8 @@ public abstract class GenericPopGraph<T, N extends Network> extends AbstractGrap
 	 */
 	boolean hasStaticLayout() {
 		return (geometry.isLattice()
-				|| geometry.getType() == Geometry.Type.HIERARCHY && geometry.subgeometry.isLattice());
+				|| geometry.isType(GeometryType.HIERARCHY)
+						&& ((HierarchicalGeometry) geometry).getSubType().isLattice());
 	}
 
 	/**
@@ -309,8 +391,10 @@ public abstract class GenericPopGraph<T, N extends Network> extends AbstractGrap
 	boolean hasAnimatedLayout() {
 		if (!animate)
 			return false;
-		return (geometry.size <= MAX_ANIMATE_LAYOUT_VERTICES_DEFAULT
-				&& (int) (geometry.avgTot * geometry.size) < 2 * MAX_ANIMATE_LAYOUT_LINKS_DEFAULT);
+		GeometryFeatures gFeats = geometry.getFeatures();
+		int nodeCount = geometry.getSize();
+		return (nodeCount <= MAX_ANIMATE_LAYOUT_VERTICES_DEFAULT
+				&& (int) (gFeats.avgTot * nodeCount) < 2 * MAX_ANIMATE_LAYOUT_LINKS_DEFAULT);
 	}
 
 	/**
@@ -356,7 +440,7 @@ public abstract class GenericPopGraph<T, N extends Network> extends AbstractGrap
 	 * @see #hasStaticLayout()
 	 */
 	protected void layoutNetwork() {
-		if (!network.isStatus(Status.HAS_LAYOUT) || geometry.isDynamic)
+		if (!network.isStatus(Status.HAS_LAYOUT) || geometry.isType(GeometryType.DYNAMIC))
 			network.doLayout(this);
 		network.finishLayout();
 		drawNetwork();
@@ -431,7 +515,7 @@ public abstract class GenericPopGraph<T, N extends Network> extends AbstractGrap
 		int node = findNodeAt(event.getX(), event.getY());
 		if (node >= 0 && !view.isRunning()) {
 			// population signals change back to us
-			view.mouseHitNode(module.getID(), node, event.isAltKeyDown());
+			view.mouseHitNode(module.getId(), node, event.isAltKeyDown());
 		}
 	}
 
@@ -482,7 +566,7 @@ public abstract class GenericPopGraph<T, N extends Network> extends AbstractGrap
 		// double tap?
 		if (!view.isRunning())
 			// population signals change back to us
-			view.mouseHitNode(module.getID(), node);
+			view.mouseHitNode(module.getId(), node);
 		event.preventDefault();
 	}
 
@@ -612,7 +696,7 @@ public abstract class GenericPopGraph<T, N extends Network> extends AbstractGrap
 			return;
 		}
 		int debugNode = findNodeAt(x, y);
-		if (debugNode >= 0 && debugNode < geometry.size) {
+		if (debugNode >= 0 && debugNode < geometry.getSize()) {
 			if (debugSubmenu == null) {
 				debugSubmenu = new ContextMenu(menu);
 				debugNodeMenu = new ContextMenuItem("Update node @ -",

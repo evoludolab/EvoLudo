@@ -41,28 +41,30 @@ import org.evoludo.math.ArrayMath;
 import org.evoludo.math.RNGDistribution;
 import org.evoludo.simulator.ColorMap;
 import org.evoludo.simulator.EvoLudo;
-import org.evoludo.simulator.Geometry;
+import org.evoludo.simulator.geometries.AbstractGeometry;
+import org.evoludo.simulator.geometries.GeometryType;
 import org.evoludo.simulator.models.Advection;
 import org.evoludo.simulator.models.ChangeListener;
 import org.evoludo.simulator.models.IBS;
 import org.evoludo.simulator.models.IBSPopulation;
 import org.evoludo.simulator.models.Markers;
-import org.evoludo.simulator.models.MilestoneListener;
+import org.evoludo.simulator.models.LifecycleListener;
 import org.evoludo.simulator.models.Model;
 import org.evoludo.simulator.models.Model.HasDE;
 import org.evoludo.simulator.models.Model.HasIBS;
+import org.evoludo.simulator.models.ModelType;
+import org.evoludo.simulator.models.RunListener;
 import org.evoludo.simulator.models.ODE;
 import org.evoludo.simulator.models.PDE;
 import org.evoludo.simulator.models.RungeKutta;
 import org.evoludo.simulator.models.SDE;
-import org.evoludo.simulator.models.Type;
 import org.evoludo.simulator.views.HasPhase2D;
 import org.evoludo.simulator.views.HasPhase2D.Data2Phase;
+import org.evoludo.util.CLOCategory;
+import org.evoludo.util.CLODelegate;
 import org.evoludo.util.CLOParser;
 import org.evoludo.util.CLOProvider;
 import org.evoludo.util.CLOption;
-import org.evoludo.util.CLOption.CLODelegate;
-import org.evoludo.util.CLOption.Category;
 
 /**
  * Parent class of all EvoLudo modules.
@@ -71,7 +73,8 @@ import org.evoludo.util.CLOption.Category;
  * 
  * @author Christoph Hauert
  */
-public abstract class Module<T extends Module<T>> implements Features, MilestoneListener, CLOProvider, Runnable {
+public abstract class Module<T extends Module<T>>
+		implements Features, LifecycleListener, RunListener, CLOProvider, Runnable {
 
 	/**
 	 * The name of the species. Mainly used in multi-species modules.
@@ -127,15 +130,15 @@ public abstract class Module<T extends Module<T>> implements Features, Milestone
 	 * {@link #species}. The {@code ID} provides a unique identifier for each
 	 * species.
 	 */
-	final int ID;
+	final int id;
 
 	/**
 	 * Gets unique identifier {@code ID} of species.
 	 * 
 	 * @return the unique identifier of the species.
 	 */
-	public int getID() {
-		return ID;
+	public int getId() {
+		return id;
 	}
 
 	/**
@@ -168,11 +171,11 @@ public abstract class Module<T extends Module<T>> implements Features, Milestone
 		logger = engine.getLogger();
 		T mod = (T) this;
 		if (partner == null) {
-			ID = 0;
+			id = 0;
 			opponent = mod;
 			return;
 		}
-		ID = partner.species.size();
+		id = partner.species.size();
 		species = partner.species;
 		opponent = partner;
 		partner.opponent = mod;
@@ -201,12 +204,12 @@ public abstract class Module<T extends Module<T>> implements Features, Milestone
 				// start naming species (if needed)
 				for (T mod : species) {
 					if (mod.getName().isEmpty())
-						mod.setName("Species-" + mod.ID);
+						mod.setName("Species-" + mod.id);
 				}
 				break;
 			default:
 				if (pop.getName().isEmpty())
-					pop.setName("Species-" + pop.ID);
+					pop.setName("Species-" + pop.id);
 		}
 		return true;
 	}
@@ -226,15 +229,11 @@ public abstract class Module<T extends Module<T>> implements Features, Milestone
 	 * 
 	 * @see EvoLudo#getRNG()
 	 */
-	public Model createModel(Type type) {
+	public Model createModel(ModelType type) {
 		if (model != null && model.getType() == type)
 			return model;
-		// default for ODE is RK5, if available
-		if (type == Type.ODE && this instanceof HasDE.RK5)
-			type = Type.RK5;
-		// default for PDE is PDERD, if available
-		else if (type == Type.PDE && this instanceof HasDE.PDERD)
-			type = Type.PDERD;
+		if (!getModelTypes().contains(type))
+			return null;
 		// return default model for type
 		switch (type) {
 			case IBS:
@@ -244,6 +243,7 @@ public abstract class Module<T extends Module<T>> implements Features, Milestone
 				if (!(this instanceof HasDE.SDE))
 					return null;
 				return new SDE(engine);
+			case ODE: // defaults to RK5
 			case RK5:
 				if (!(this instanceof HasDE.ODE))
 					return null;
@@ -256,6 +256,7 @@ public abstract class Module<T extends Module<T>> implements Features, Milestone
 				if (!(this instanceof HasDE.PDEADV))
 					return null;
 				return new Advection(engine);
+			case PDE: // defaults to PDERD
 			case PDERD:
 				if (!(this instanceof HasDE.PDERD))
 					return null;
@@ -361,7 +362,7 @@ public abstract class Module<T extends Module<T>> implements Features, Milestone
 	 * Load new module and perform basic initializations.
 	 * 
 	 * @see EvoLudo#loadModule(String)
-	 * @see MilestoneListener#moduleLoaded()
+	 * @see LifecycleListener#moduleLoaded()
 	 */
 	public void load() {
 		if (this instanceof Payoffs) {
@@ -372,7 +373,8 @@ public abstract class Module<T extends Module<T>> implements Features, Milestone
 		if (species == null)
 			species = new ArrayList<>();
 		engine.addCLOProvider(this);
-		engine.addMilestoneListener(this);
+		engine.addLifecycleListener(this);
+		engine.addRunListener(this);
 		if (this instanceof ChangeListener)
 			engine.addChangeListener((ChangeListener) this);
 	}
@@ -381,7 +383,7 @@ public abstract class Module<T extends Module<T>> implements Features, Milestone
 	 * Unload module and free all resources.
 	 * 
 	 * @see EvoLudo#unloadModule()
-	 * @see MilestoneListener#moduleUnloaded()
+	 * @see LifecycleListener#moduleUnloaded()
 	 */
 	@SuppressWarnings("unchecked")
 	public void unload() {
@@ -396,12 +398,11 @@ public abstract class Module<T extends Module<T>> implements Features, Milestone
 		// will regenerate the other species.
 		opponent = (T) this;
 		engine.removeCLOProvider(this);
-		engine.removeMilestoneListener(this);
+		engine.removeLifecycleListener(this);
+		engine.removeRunListener(this);
 		if (this instanceof ChangeListener)
 			engine.removeChangeListener((ChangeListener) this);
 		ibspop = null;
-		interaction = null;
-		competition = null;
 		structure = null;
 	}
 
@@ -432,7 +433,7 @@ public abstract class Module<T extends Module<T>> implements Features, Milestone
 	 * untouched and only initializes the traits.
 	 * 
 	 * @see EvoLudo#modelInit()
-	 * @see MilestoneListener#modelDidInit()
+	 * @see RunListener#modelDidInit()
 	 */
 	public void init() {
 	}
@@ -446,7 +447,7 @@ public abstract class Module<T extends Module<T>> implements Features, Milestone
 	 * untouched and only initializes the traits.
 	 * 
 	 * @see EvoLudo#modelReset()
-	 * @see MilestoneListener#modelDidReset()
+	 * @see RunListener#modelDidReset()
 	 */
 	public void reset() {
 	}
@@ -468,32 +469,32 @@ public abstract class Module<T extends Module<T>> implements Features, Milestone
 	 * 
 	 * @return the array of supported Model types
 	 */
-	public Type[] getModelTypes() {
-		ArrayList<Type> types = new ArrayList<>();
+	public List<ModelType> getModelTypes() {
+		ArrayList<ModelType> types = new ArrayList<>();
 		if (this instanceof HasIBS)
-			types.add(Type.IBS);
+			types.add(ModelType.IBS);
 		if (this instanceof HasDE.ODE)
-			types.add(Type.ODE);
+			types.add(ModelType.ODE);
 		if (this instanceof HasDE.RK5)
-			types.add(Type.RK5);
+			types.add(ModelType.RK5);
 		if (this instanceof HasDE.EM)
-			types.add(Type.EM);
+			types.add(ModelType.EM);
 		if (this instanceof HasDE.SDE)
-			types.add(Type.SDE);
+			types.add(ModelType.SDE);
 		if (this instanceof HasDE.PDE)
-			types.add(Type.PDE);
+			types.add(ModelType.PDE);
 		if (this instanceof HasDE.PDERD)
-			types.add(Type.PDERD);
+			types.add(ModelType.PDERD);
 		if (this instanceof HasDE.PDEADV)
-			types.add(Type.PDEADV);
-		return types.toArray(new Type[0]);
+			types.add(ModelType.PDEADV);
+		return types;
 	}
 
 	/**
 	 * The field point to the IBSPopulation that represents this module in
 	 * individual based simulations. {@code null} for all other model types.
 	 */
-	IBSPopulation ibspop;
+	IBSPopulation<?, ?> ibspop;
 
 	/**
 	 * Sets the reference to the IBSPopulation that represents this module in
@@ -501,7 +502,7 @@ public abstract class Module<T extends Module<T>> implements Features, Milestone
 	 * 
 	 * @param ibs the individual based population
 	 */
-	public void setIBSPopulation(IBSPopulation ibs) {
+	public void setIBSPopulation(IBSPopulation<?, ?> ibs) {
 		this.ibspop = ibs;
 	}
 
@@ -511,7 +512,8 @@ public abstract class Module<T extends Module<T>> implements Features, Milestone
 	 * 
 	 * @return the IBSPopulation that represents this module or {@code null}
 	 */
-	public IBSPopulation getIBSPopulation() {
+	@SuppressWarnings("java:S1452") // impossible to specify generic type here
+	public IBSPopulation<?, ?> getIBSPopulation() {
 		return ibspop;
 	}
 
@@ -520,7 +522,8 @@ public abstract class Module<T extends Module<T>> implements Features, Milestone
 	 * 
 	 * @return the custom IBSPopulation or {@code null} to use default.
 	 */
-	public IBSPopulation createIBSPopulation() {
+	@SuppressWarnings("java:S1452") // impossible to specify generic type here
+	public IBSPopulation<?, ?> createIBSPopulation() {
 		return null;
 	}
 
@@ -919,72 +922,15 @@ public abstract class Module<T extends Module<T>> implements Features, Milestone
 	/**
 	 * The geometry of population (interaction and competition graphs are the same)
 	 */
-	protected Geometry structure;
+	protected AbstractGeometry structure;
 
 	/**
 	 * Gets the geometry of the population.
 	 * 
 	 * @return the geometry of the population
 	 */
-	public Geometry getGeometry() {
+	public AbstractGeometry getGeometry() {
 		return structure;
-	}
-
-	/**
-	 * Opportunity to supply {@link Geometry}, in case interaction and competition
-	 * graphs are the same.
-	 * 
-	 * @return the new geometry
-	 */
-	public Geometry createGeometry() {
-		if (structure == null)
-			structure = new Geometry(engine, this, opponent);
-		return structure;
-	}
-
-	/**
-	 * The geometry of interaction structure
-	 */
-	protected Geometry interaction;
-
-	/**
-	 * The geometry of competition structure
-	 */
-	protected Geometry competition;
-
-	/**
-	 * Sets different geometries for interactions and competition.
-	 * 
-	 * @param interaction the geometry for interactions
-	 * @param competition the geometry for competition
-	 * 
-	 * @see Geometry
-	 */
-	public void setGeometries(Geometry interaction, Geometry competition) {
-		this.interaction = interaction;
-		this.competition = competition;
-	}
-
-	/**
-	 * Gets the interaction geometry.
-	 * 
-	 * @return the interaction geometry
-	 * 
-	 * @see Geometry
-	 */
-	public Geometry getInteractionGeometry() {
-		return interaction;
-	}
-
-	/**
-	 * Gets the competition geometry.
-	 * 
-	 * @return the competition geometry
-	 * 
-	 * @see Geometry
-	 */
-	public Geometry getCompetitionGeometry() {
-		return competition;
 	}
 
 	/**
@@ -1025,6 +971,29 @@ public abstract class Module<T extends Module<T>> implements Features, Milestone
 	}
 
 	/**
+	 * Per capita birth rate for ecological population updates.
+	 */
+	protected double birthRate = 1.0;
+
+	/**
+	 * Get the per capita birth rate for ecological population updates.
+	 * 
+	 * @return the birth rate
+	 */
+	public double getBirthRate() {
+		return birthRate;
+	}
+
+	/**
+	 * Set the per capita birth rate for ecological population updates.
+	 * 
+	 * @param birthRate the birth rate
+	 */
+	public void setBirthRate(double birthRate) {
+		this.birthRate = birthRate;
+	}
+
+	/**
 	 * Death rate for ecological population updates.
 	 */
 	protected double deathRate = 1.0;
@@ -1049,6 +1018,54 @@ public abstract class Module<T extends Module<T>> implements Features, Milestone
 	 */
 	public double getDeathRate() {
 		return deathRate;
+	}
+
+	/**
+	 * Competition rates for multi-species ecological population updates. Note,
+	 * rates are positive for competition or predation, and negative for synergistic
+	 * interactions (mutualisms).
+	 */
+	protected double[] competitionRates;
+
+	/**
+	 * Competition rate with kin for ecological population updates. This is a
+	 * shortcut for single species modules and corresponds to the entry in
+	 * {@code competitionRates[ID]}.
+	 */
+	protected double competitionRate = 0.0;
+
+	/**
+	 * Sets the competition rate for ecological population updates.
+	 * 
+	 * @param rate the competition rate
+	 * @return {@code true} if the competition rate changed
+	 */
+	public boolean setCompetitionRates(double[] rates) {
+		if (rates == null || rates.length != species.size()
+				|| Arrays.equals(competitionRates, rates))
+			// invalid or equal, ignore
+			return false;
+		competitionRates = rates;
+		competitionRate = rates[id];
+		return true;
+	}
+
+	/**
+	 * Gets the competition rate for ecological population updates.
+	 * 
+	 * @return the competition rate
+	 */
+	public double[] getCompetitionRates() {
+		return competitionRates;
+	}
+
+	/**
+	 * Gets the competition rate for ecological population updates.
+	 * 
+	 * @return the competition rate
+	 */
+	public double getCompetitionRate() {
+		return competitionRate;
 	}
 
 	/**
@@ -1124,7 +1141,7 @@ public abstract class Module<T extends Module<T>> implements Features, Milestone
 	 * @see IBS#cloGeometryInteraction
 	 * @see IBS#cloGeometryCompetition
 	 */
-	public final CLOption cloGeometry = new CLOption("geometry", "M", Category.Model, null,
+	public final CLOption cloGeometry = new CLOption("geometry", "M", CLOCategory.Model, null,
 			new CLODelegate() {
 
 				/**
@@ -1150,9 +1167,9 @@ public abstract class Module<T extends Module<T>> implements Features, Milestone
 					String[] geomargs = arg.split(CLOParser.SPECIES_DELIMITER);
 					boolean doReset = false;
 					int n = 0;
-					for (T pop : species) {
-						Geometry geom = pop.createGeometry();
-						doReset |= geom.parse(geomargs[n++ % geomargs.length]);
+					for (T mod : species) {
+						mod.structure = AbstractGeometry.create(engine, geomargs[n % geomargs.length]);
+						doReset |= mod.structure.parse();
 					}
 					engine.requiresReset(doReset);
 					return true;
@@ -1167,7 +1184,7 @@ public abstract class Module<T extends Module<T>> implements Features, Milestone
 	/**
 	 * Command line option to set the population size.
 	 */
-	public final CLOption cloNPopulation = new CLOption("popsize", "100", Category.Model, null,
+	public final CLOption cloNPopulation = new CLOption("popsize", "100", CLOCategory.Model, null,
 			new CLODelegate() {
 
 				/**
@@ -1225,9 +1242,70 @@ public abstract class Module<T extends Module<T>> implements Features, Milestone
 			});
 
 	/**
+	 * Command line option to set the birth rate uninfected hosts.
+	 */
+	public final CLOption cloBirthRate = new CLOption("birthrate", "0.0", CLOCategory.Module,
+			"--birthrate <b>  host rate of reproduction", new CLODelegate() {
+
+				/**
+				 * {@inheritDoc}
+				 * <p>
+				 * Parse birth rate for ecological population updates for a single or multiple
+				 * populations/species. {@code arg} can be a single value or an array of
+				 * values. The parser cycles through {@code arg} until all populations/species
+				 * have the birth rate set.
+				 * 
+				 * @param arg birth rate
+				 */
+				@Override
+				public boolean parse(String arg) {
+					double[] rates;
+					// allow vector delimiter as well as species delimiter for multiple species
+					if (arg.contains(CLOParser.SPECIES_DELIMITER))
+						rates = CLOParser.parseVector(arg, CLOParser.SPECIES_DELIMITER);
+					else
+						rates = CLOParser.parseVector(arg);
+					if (rates.length == 0)
+						return false;
+					int n = 0;
+					for (T pop : species) {
+						double rate = rates[n++ % rates.length];
+						// sanity checks
+						if (rate >= 0.0) {
+							pop.setBirthRate(rate);
+							continue;
+						}
+						if (logger.isLoggable(Level.WARNING)) {
+							String sn = pop.getName();
+							logger.warning("birth rate" + (sn.isEmpty() ? "" : " of " + sn)
+									+ " must be non-negative (changed to 0).");
+						}
+						pop.setBirthRate(0.0);
+					}
+					return true;
+				}
+
+				@Override
+				public String getDescription() {
+					String descr = "";
+					int nSpecies = species.size();
+					switch (nSpecies) {
+						case 1:
+							return "--birthrate <b>  per capita rate of reproduction";
+						case 2:
+							descr = "--birthrate <b0[,b1]>  per capita rates of reproduction";
+							break;
+						default:
+							descr = "--birthrate <b0[,...,b" + nSpecies + "]>  per capita rates of reproduction";
+					}
+					return descr;
+				}
+			});
+
+	/**
 	 * Command line option to set death rate for ecological population updates.
 	 */
-	public final CLOption cloDeathRate = new CLOption("deathrate", "0.0", Category.Module, null,
+	public final CLOption cloDeathRate = new CLOption("deathrate", "0.0", CLOCategory.Module, null,
 			new CLODelegate() {
 
 				/**
@@ -1278,9 +1356,6 @@ public abstract class Module<T extends Module<T>> implements Features, Milestone
 						case 2:
 							descr = "--deathrate <d0[,d1]>  rates of dying";
 							break;
-						case 3:
-							descr = "--deathrate <d0[,d1,d2]>  rates of dying";
-							break;
 						default:
 							descr = "--deathrate <d0[,...,d" + nSpecies + "]>  rates of dying";
 					}
@@ -1289,9 +1364,77 @@ public abstract class Module<T extends Module<T>> implements Features, Milestone
 			});
 
 	/**
+	 * Command line option to set the competition rate for ecological population
+	 * updates.
+	 */
+	public final CLOption cloCompRate = new CLOption("comprate", "0.0", CLOCategory.Module, null,
+			new CLODelegate() {
+
+				/**
+				 * {@inheritDoc}
+				 * <p>
+				 * Parse competition rate for ecological population updates for a single or
+				 * multiple populations/species. {@code arg} can be a single value, an array, or
+				 * a matrix. The parser cycles through {@code arg} until all populations/species
+				 * have their competition rates set, where the entry {@code [i][j]} captures the
+				 * rates of competition/predation/synergies on species {@code i} exerted by
+				 * species {@code j}.
+				 * 
+				 * @param arg the (matrix of) competition rate(s)
+				 */
+				@Override
+				public boolean parse(String arg) {
+					double[][] cMat = CLOParser.parseMatrix(arg);
+					int nSpecies = species.size();
+					if (cMat.length == 0 || cMat[0].length != nSpecies) {
+						// if only single value provided, expand to constant matrix
+						if (cMat.length != 1 || cMat[0].length != 1)
+							return false;
+						double val = cMat[0][0];
+						cMat = new double[1][nSpecies];
+						Arrays.fill(cMat[0], val);
+					}
+					int n = 0;
+					for (T pop : species) {
+						double[] cVec = cMat[n++ % cMat.length];
+						// sanity checks
+						if (cVec[pop.getId()] >= 0.0) {
+							pop.setCompetitionRates(cVec);
+							continue;
+						}
+						if (logger.isLoggable(Level.WARNING)) {
+							String sn = pop.getName();
+							logger.warning("competition rate" + (sn.isEmpty() ? "" : " of " + sn + " with kin ")
+									+ " must be non-negative.");
+						}
+						return false;
+					}
+					return true;
+				}
+
+				@Override
+				public String getDescription() {
+					String descr = "";
+					int nSpecies = species.size();
+					switch (nSpecies) {
+						case 1:
+							return "--comprate <d>  rate of competition";
+						case 2:
+							descr = "--comprate <d00[,d01[;d10,d11]]>  rates of competition";
+							break;
+						default:
+							descr = "--comprate <d00[,...,d0" + (nSpecies - 1) + "[;d10,...,d1" + (nSpecies - 1) +
+									";...;d" + (nSpecies - 1) + "0,...,d" + (nSpecies - 1) + (nSpecies - 1) +
+									"]>  rates of competition";
+					}
+					return descr;
+				}
+			});
+
+	/**
 	 * Command line option to set the size of interaction groups.
 	 */
-	public final CLOption cloNGroup = new CLOption("groupsize", "2", Category.Module,
+	public final CLOption cloNGroup = new CLOption("groupsize", "2", CLOCategory.Module,
 			"--groupsize <n>  size of interaction groups",
 			new CLODelegate() {
 
@@ -1327,7 +1470,7 @@ public abstract class Module<T extends Module<T>> implements Features, Milestone
 	 * capability needs to add cloTrai to the set of available options. By default
 	 * all traits are activated.
 	 */
-	public final CLOption cloTraitDisable = new CLOption("disable", "none", Category.Module,
+	public final CLOption cloTraitDisable = new CLOption("disable", null, CLOCategory.Module,
 			"--disable <d1[" + CLOParser.VECTOR_DELIMITER + "d2...]>  indices of disabled traits.",
 			new CLODelegate() {
 
@@ -1348,7 +1491,7 @@ public abstract class Module<T extends Module<T>> implements Features, Milestone
 					// activate all traits
 					for (T pop : species)
 						pop.setActiveTraits(null);
-					if (!cloTraitDisable.isSet())
+					if (arg == null)
 						return true;
 					String[] disabledtraits = arg.split(CLOParser.SPECIES_DELIMITER);
 					int n = 0;
@@ -1372,7 +1515,7 @@ public abstract class Module<T extends Module<T>> implements Features, Milestone
 	/**
 	 * Command line option to set the color of traits.
 	 */
-	public final CLOption cloTraitColors = new CLOption("colors", "default", Category.GUI, null,
+	public final CLOption cloTraitColors = new CLOption("colors", null, CLOCategory.GUI, null,
 			new CLODelegate() {
 
 				/**
@@ -1406,7 +1549,7 @@ public abstract class Module<T extends Module<T>> implements Features, Milestone
 				@Override
 				public boolean parse(String arg) {
 					// default colors are set in load()
-					if (!cloTraitColors.isSet())
+					if (arg == null)
 						return true;
 					String[] colorsets = arg.split(CLOParser.SPECIES_DELIMITER);
 					if (colorsets == null)
@@ -1472,7 +1615,7 @@ public abstract class Module<T extends Module<T>> implements Features, Milestone
 	/**
 	 * Command line option to assign trait names.
 	 */
-	public final CLOption cloTraitNames = new CLOption("traitnames", "default", Category.Module, null,
+	public final CLOption cloTraitNames = new CLOption("traitnames", null, CLOCategory.Module, null,
 			new CLODelegate() {
 
 				/**
@@ -1490,7 +1633,7 @@ public abstract class Module<T extends Module<T>> implements Features, Milestone
 				@Override
 				public boolean parse(String arg) {
 					// default trait names are set in load()
-					if (!cloTraitNames.isSet())
+					if (arg == null)
 						return true;
 					String[] namespecies = arg.split(CLOParser.SPECIES_DELIMITER);
 					int n = 0;
@@ -1536,11 +1679,11 @@ public abstract class Module<T extends Module<T>> implements Features, Milestone
 	 * <strong>Note:</strong> option not automatically added. Modules that supports
 	 * multiple traits should load it in {@link #collectCLO(CLOParser)}.
 	 */
-	public final CLOption cloPhase2DAxes = new CLOption("phase2daxes", "-default", Category.Module, null,
+	public final CLOption cloPhase2DAxes = new CLOption("phase2daxes", null, CLOCategory.Module, null,
 			new CLODelegate() {
 				@Override
 				public boolean parse(String arg) {
-					if (!cloPhase2DAxes.isSet())
+					if (arg == null)
 						return true;
 					int[][] phase2daxes = CLOParser.parseIntMatrix(arg);
 					if (phase2daxes.length != 2)
@@ -1621,7 +1764,9 @@ public abstract class Module<T extends Module<T>> implements Features, Milestone
 			}
 		}
 		if (anyVacant) {
+			parser.addCLO(cloBirthRate);
 			parser.addCLO(cloDeathRate);
+			parser.addCLO(cloCompRate);
 		}
 		// add option to disable traits if >=3 traits, except >=2 traits for
 		// continuous modules with no vacancies (cannot disable vacancies)
@@ -1639,10 +1784,10 @@ public abstract class Module<T extends Module<T>> implements Features, Milestone
 		}
 		// geometry option only acceptable for IBS and PDE models
 		if (model instanceof IBS || model instanceof PDE) {
-			cloGeometry.addKeys(Geometry.Type.values());
+			cloGeometry.addKeys(GeometryType.values());
 			// by default remove DYNAMIC and SQUARE_NEUMANN_2ND geometries
-			cloGeometry.removeKey(Geometry.Type.DYNAMIC);
-			cloGeometry.removeKey(Geometry.Type.SQUARE_NEUMANN_2ND);
+			cloGeometry.removeKey(GeometryType.DYNAMIC);
+			cloGeometry.removeKey(GeometryType.SQUARE_NEUMANN_2ND);
 			parser.addCLO(cloGeometry);
 		}
 	}

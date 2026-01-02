@@ -40,10 +40,10 @@ import org.evoludo.simulator.EvoLudoJRE;
 import org.evoludo.simulator.models.ChangeListener;
 import org.evoludo.simulator.models.DModel;
 import org.evoludo.simulator.modules.CDL;
+import org.evoludo.util.CLODelegate;
 import org.evoludo.util.CLOParser;
 import org.evoludo.util.CLOption;
-import org.evoludo.util.CLOption.CLODelegate;
-import org.evoludo.util.CLOption.Category;
+import org.evoludo.util.CLOCategory;
 import org.evoludo.util.Formatter;
 
 /**
@@ -197,7 +197,7 @@ public class simCDL extends CDL implements ChangeListener {
 						}
 						// if timeStop was reached, ODE, SDE or simulations may not yet have been
 						// absorbed in particular if interior fixed point is attractor
-						model.getMeanTraits(getID(), state);
+						model.getMeanTraits(getId(), state);
 						int winIdx = ArrayMath.maxIndex(state);
 						if (state[winIdx] > 0.999)
 							// homogeneous state
@@ -272,7 +272,7 @@ public class simCDL extends CDL implements ChangeListener {
 				}
 				if (model.hasConverged()) {
 					// model converged (ODE only with mu>0) - mean is current state and sdev is zero
-					model.getMeanTraits(getID(), mean);
+					model.getMeanTraits(getId(), mean);
 					Arrays.fill(variance, 0.0);
 				}
 				StringBuilder sb = new StringBuilder();
@@ -296,13 +296,19 @@ public class simCDL extends CDL implements ChangeListener {
 		}
 	}
 
-	/**
-	 * Temporary variables for fixation probabilities and absorption times.
-	 */
+	/** Temporary running mean for fixation probabilities. */
 	double[] mean;
+
+	/** Temporary running variance for fixation probabilities. */
 	double[] variance;
+
+	/** Temporary state buffer for sampling. */
 	double[] state;
+
+	/** Mean of recorded means (used for statistics). */
 	double[] meanmean;
+
+	/** Variance of recorded means. */
 	double[] meanvar;
 
 	/**
@@ -350,7 +356,7 @@ public class simCDL extends CDL implements ChangeListener {
 	protected void updateStatistics(double time) {
 		if (prevsample >= time)
 			return;
-		model.getMeanTraits(getID(), state);
+		model.getMeanTraits(getId(), state);
 		// calculate weighted mean and sdev - see wikipedia
 		double w = time - prevsample;
 		double wn = w / (time - model.getTimeRelax());
@@ -385,7 +391,7 @@ public class simCDL extends CDL implements ChangeListener {
 	/**
 	 * Command line option to set the number of steps for initial frequencies.
 	 */
-	public final CLOption cloNSteps = new CLOption("steps", "0", Category.Simulation,
+	public final CLOption cloNSteps = new CLOption("steps", "0", CLOCategory.Simulation,
 			"--steps         number of steps for initial frequencies", new CLODelegate() {
 				@Override
 				public boolean parse(String arg) {
@@ -398,7 +404,7 @@ public class simCDL extends CDL implements ChangeListener {
 	 * Command line option to set the range and increments for scanning
 	 * non-linearities.
 	 */
-	public final CLOption cloScanNL = new CLOption("scanNL", "-2.5,2.5,0.5", Category.Simulation,
+	public final CLOption cloScanNL = new CLOption("scanNL", "-2.5,2.5,0.5", CLOCategory.Simulation,
 			"--scanNL <start,end,incr>  scan non-linearity of PGG", new CLODelegate() {
 				@Override
 				public boolean parse(String arg) {
@@ -412,11 +418,11 @@ public class simCDL extends CDL implements ChangeListener {
 	/**
 	 * Command line option to show the simulation progress.
 	 */
-	public final CLOption cloProgress = new CLOption("progress", Category.Simulation,
+	public final CLOption cloProgress = new CLOption("progress", CLOCategory.Simulation,
 			"--progress      make noise about progress", new CLODelegate() {
 				@Override
-				public boolean parse(String arg) {
-					progress = cloProgress.isSet();
+				public boolean parse(boolean isSet) {
+					progress = isSet;
 					return true;
 				}
 			});

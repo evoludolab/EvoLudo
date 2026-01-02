@@ -42,11 +42,11 @@ import org.evoludo.simulator.models.ChangeListener.PendingAction;
 import org.evoludo.simulator.modules.Features;
 import org.evoludo.simulator.modules.Module;
 import org.evoludo.simulator.views.HasHistogram;
+import org.evoludo.util.CLODelegate;
 import org.evoludo.util.CLOParser;
 import org.evoludo.util.CLOProvider;
 import org.evoludo.util.CLOption;
-import org.evoludo.util.CLOption.CLODelegate;
-import org.evoludo.util.CLOption.Category;
+import org.evoludo.util.CLOCategory;
 import org.evoludo.util.Formatter;
 import org.evoludo.util.Plist;
 
@@ -316,7 +316,7 @@ public abstract class Model implements CLOProvider {
 		 * Modules that offer individual based simulation models with continuous traits
 		 * and pairwise interactions must implement this interface.
 		 */
-		interface CPairs extends HasIBS, Features.Pairs {
+		interface CPairs extends MCPairs {
 			/**
 			 * Calculate the payoff/score for modules with interactions in pairs and a
 			 * single continuous trait. The focal individual has trait {@code me} and the
@@ -336,12 +336,19 @@ public abstract class Model implements CLOProvider {
 			 * 
 			 * @param me           the trait of the focal individual
 			 * @param groupTraits  the traits of the group members
-			 * @param len          the number of memebrs in the group
+			 * @param len          the number of members in the group
 			 * @param groupPayoffs the array for returning the payoffs/scores for each group
 			 *                     member
 			 * @return the total (accumulated) payoff/score for the focal individual
 			 */
 			public double pairScores(double me, double[] groupTraits, int len, double[] groupPayoffs);
+
+			@Override
+			default double pairScores(double[] me, double[] groupTraits, int len, double[] groupPayoffs) {
+				if (me.length != 1)
+					throw new IllegalArgumentException("single-trait pairScores expects exactly one trait");
+				return pairScores(me[0], groupTraits, len, groupPayoffs);
+			}
 		}
 
 		/**
@@ -404,7 +411,7 @@ public abstract class Model implements CLOProvider {
 			 * 
 			 * @param me           the trait of the focal individual
 			 * @param groupTraits  the traits of the group members
-			 * @param len          the number of memebrs in the group
+			 * @param len          the number of members in the group
 			 * @param groupPayoffs the array for returning the payoffs/scores for each group
 			 *                     member
 			 * @return the total (accumulated) payoff/score for the focal individual
@@ -440,7 +447,7 @@ public abstract class Model implements CLOProvider {
 			 * 
 			 * @param me      the traits of the focal individual
 			 * @param group   the traits of the group members
-			 * @param len     the number of memebrs in the group
+			 * @param len     the number of members in the group
 			 * @param payoffs the array for returning the payoffs/scores for each group
 			 *                member
 			 * @return the payoff/score for the focal individual
@@ -494,35 +501,11 @@ public abstract class Model implements CLOProvider {
 	 * in terms of updates.
 	 * </ol>
 	 * 
-	 * @see #updates
+	 * @see IBS#updates
 	 * @see #permitsTimeReversal()
 	 * @see IBS#pickFocalSpecies()
 	 */
 	protected double time = Double.POSITIVE_INFINITY;
-
-	/**
-	 * Keeps track of the time elapsed, measured in number of updates. One unit of
-	 * time corresponds to one generation or one Monte-Carlo step, such that in a
-	 * population of size <code>N</code> one generation corresponds to
-	 * <code>N</code> updates, which translates to <code>N</code> events (birth,
-	 * death, imitation, etc.). Not all models may use this time measure, but
-	 * it is a common convention in individual-based simulations.
-	 * 
-	 * <strong>Notes:</strong>
-	 * <ol>
-	 * <li><code>updates==0</code> after {@link #reset()} and at the beginning of
-	 * a simulation run.
-	 * <li><code>updates</code> is incremented <em>before</em> the next event is
-	 * processed, to reflect the time at which the event occurs.
-	 * <li>generally differs from 'real time'.
-	 * <li>models may implement only one time measure.
-	 * <li>setting {@code updates = Double.POSITIVE_INFINITY} disables time measured
-	 * in terms of updates.
-	 * </ol>
-	 * 
-	 * @see #time
-	 */
-	protected double updates = Double.POSITIVE_INFINITY;
 
 	/**
 	 * Short-cut to the list of species modules. Convenience field.
@@ -567,7 +550,7 @@ public abstract class Model implements CLOProvider {
 	/**
 	 * Milestone: Load this model and allocate resources (if applicable).
 	 * 
-	 * @see MilestoneListener#modelLoaded()
+	 * @see LifecycleListener#modelLoaded()
 	 */
 	public void load() {
 		rng = engine.getRNG();
@@ -579,9 +562,10 @@ public abstract class Model implements CLOProvider {
 	/**
 	 * Milestone: Unload this model and free resources (if applicable).
 	 * 
-	 * @see MilestoneListener#modelUnloaded()
+	 * @see LifecycleListener#modelUnloaded()
 	 */
 	public void unload() {
+		resetStatisticsSample();
 		rng = null;
 		species = null;
 	}
@@ -595,40 +579,37 @@ public abstract class Model implements CLOProvider {
 	 * category is a change of the population structure.
 	 *
 	 * @return <code>true</code> if reset required
-	 * 
-	 * @see java.util.logging.Logger
 	 */
 	public boolean check() {
-		if (permitsMode(Mode.STATISTICS_SAMPLE)) {
-			fixData = new FixationData();
-			if (getType() == Type.SDE)
-				// the index of the mutant node is meaningless in SDE models
-				// but must be non-negative (indicates an invalid sample)
-				fixData.mutantNode = 0;
-		} else
-			fixData = null;
 		return false;
 	}
 
 	/**
 	 * Milestone: Reset this model
 	 * 
-	 * @see MilestoneListener#modelDidReset()
+	 * @see RunListener#modelDidReset()
 	 */
 	public void reset() {
-		updates = 0.0;
-		time = 0.0;
+		resetState();
 	}
 
 	/**
 	 * Milestone: Initialize this model
 	 * 
-	 * @see MilestoneListener#modelDidInit()
+	 * @see RunListener#modelDidInit()
 	 */
 	public void init() {
-		updates = 0.0;
+		resetState();
+	}
+
+	/**
+	 * Reset the internal state of this model; called by {@link #reset()} and
+	 * {@link #init()}.
+	 */
+	protected void resetState() {
 		time = 0.0;
 		converged = false;
+		connect = false;
 	}
 
 	/**
@@ -641,7 +622,7 @@ public abstract class Model implements CLOProvider {
 
 	/**
 	 * Advance model by one step. The details of what happens during one step
-	 * depends on the models {@link Type} as well as its {@link Mode}.
+	 * depends on the models {@link ModelType} as well as its {@link Mode}.
 	 * 
 	 * @return <code>true</code> if <code>next()</code> can be called again.
 	 *         Typically <code>false</code> is returned if the model requires
@@ -688,10 +669,10 @@ public abstract class Model implements CLOProvider {
 			next();
 			timeStep = rf;
 			isRelaxing = false;
-			if (type == Type.IBS) {
+			if (type == ModelType.IBS) {
 				// reset traits after relaxation in IBS models
 				for (Module<?> mod : species) {
-					IBSPopulation pop = mod.getIBSPopulation();
+					IBSPopulation<?, ?> pop = mod.getIBSPopulation();
 					pop.resetTraits();
 				}
 			}
@@ -734,6 +715,7 @@ public abstract class Model implements CLOProvider {
 	 * @param id the species identifier
 	 * @return the species
 	 */
+	@SuppressWarnings("java:S1452") // impossible to specify generic type here
 	public Module<?> getSpecies(int id) {
 		if (id < 0 || id >= nSpecies)
 			return null;
@@ -766,6 +748,8 @@ public abstract class Model implements CLOProvider {
 	public boolean requestMode(Mode newmode) {
 		if (!permitsMode(newmode))
 			return false;
+		if (this.mode == newmode)
+			return true;
 		PendingAction.CHANGE_MODE.mode = newmode;
 		engine.requestAction(PendingAction.CHANGE_MODE);
 		return true;
@@ -944,14 +928,14 @@ public abstract class Model implements CLOProvider {
 	/**
 	 * The type of the model: IBS, ODE, SDE, or PDE.
 	 */
-	Type type;
+	protected ModelType type;
 
 	/**
 	 * Gets the type of the model.
 	 * 
 	 * @return the type of the model
 	 */
-	public Type getType() {
+	public ModelType getType() {
 		return type;
 	}
 
@@ -1059,32 +1043,27 @@ public abstract class Model implements CLOProvider {
 	 * @return elapsed time as string
 	 */
 	public String getCounter() {
+		if (mode == Mode.DYNAMICS)
+			return "Time: " + Formatter.formatFix(getTime(), 2) + " ";
 		if (mode == Mode.STATISTICS_SAMPLE) {
 			int failed = getNStatisticsFailed();
 			return "Samples: " + getNStatisticsSamples() + (failed > 0 ? " (failed: " + failed + ")" : "");
 		}
-		String counter;
-		if (updates != Double.POSITIVE_INFINITY) {
-			counter = "Updates: " + Formatter.format(updates, 2) + " ";
-			if (time != Double.POSITIVE_INFINITY)
-				counter += "(Time: " + Formatter.format(time, 2) + ")";
-		} else {
-			counter = "Time: " + Formatter.format(time, 2) + " ";
-		}
-		return counter;
+		if (mode == Mode.STATISTICS_UPDATE)
+			return "Samples: " + (int) (getUpdates() / getTimeStep()) + " ";
+		return "";
 	}
 
 	/**
-	 * Gets the elapsed time in model. Time is measured in generations.
+	 * Gets the elapsed time in model. Time is measured in generations. By default,
+	 * non-IBS models do not track updates.
 	 * 
 	 * @return the elapsed time in generations
 	 * 
-	 * @see #updates
+	 * @see IBS#updates
 	 */
 	public double getUpdates() {
-		if (updates == Double.POSITIVE_INFINITY)
-			return time;
-		return updates;
+		return time;
 	}
 
 	/**
@@ -1100,8 +1079,7 @@ public abstract class Model implements CLOProvider {
 	 * @see #time
 	 */
 	public double getTime() {
-		if (time == Double.POSITIVE_INFINITY)
-			return updates;
+		// Default models track time directly; IBS overrides if needed.
 		return time;
 	}
 
@@ -1378,10 +1356,10 @@ public abstract class Model implements CLOProvider {
 	 * able to honour the request. However, some models allow to travel back in
 	 * time. In general, this is only possible for ODE and SDE models and even for
 	 * those it may not be feasible due to details of the dynamics, such as
-	 * dissipative terms in the differential equations. For example, in
-	 * {@link org.evoludo.simulator.modules.CG} the ecological dynamics of the patch
-	 * quality prevents time reversal, i.e. results are numerically unstable due to
-	 * exponential amplification of deviations in dissipative systems.
+	 * dissipative terms in the differential equations. For example, in certain
+	 * ecological modules the patch-quality dynamics prevents time reversal, i.e.
+	 * results are numerically unstable due to exponential amplification of
+	 * deviations in dissipative systems.
 	 *
 	 * @param reversed the request whether time should be reversed.
 	 *
@@ -1469,7 +1447,7 @@ public abstract class Model implements CLOProvider {
 	 * Command line option to set the number of generations between reports for
 	 * {@link EvoLudo#modelNext()}.
 	 */
-	public final CLOption cloTimeStep = new CLOption("timestep", "1", Category.Model,
+	public final CLOption cloTimeStep = new CLOption("timestep", "1", CLOCategory.Model,
 			"--timestep <s>  report frequency in generations", new CLODelegate() {
 				@Override
 				public boolean parse(String arg) {
@@ -1520,7 +1498,7 @@ public abstract class Model implements CLOProvider {
 	 * measurements such as the trait abundances, their fluctuations or the local
 	 * trait configurations in structured populations.
 	 */
-	public final CLOption cloTimeRelax = new CLOption("timerelax", "0", Category.Model,
+	public final CLOption cloTimeRelax = new CLOption("timerelax", "0", CLOCategory.Model,
 			"--timerelax <r>  relaxation time in generations", new CLODelegate() {
 				@Override
 				public boolean parse(String arg) {
@@ -1570,7 +1548,7 @@ public abstract class Model implements CLOProvider {
 	 * Command line option to set the number of generations after which to stop the
 	 * model calculations. Model execution can be resumed afterwards.
 	 */
-	public final CLOption cloTimeStop = new CLOption("timestop", "never", Category.Model,
+	public final CLOption cloTimeStop = new CLOption("timestop", "never", CLOCategory.Model,
 			"--timestop <h>   halt execution after <h> generations", new CLODelegate() {
 				@Override
 				public boolean parse(String arg) {
@@ -1620,11 +1598,11 @@ public abstract class Model implements CLOProvider {
 	 * Command line option to set the number of samples to take for statistical
 	 * measurements.
 	 */
-	public final CLOption cloSamples = new CLOption("samples", "unlimited", Category.Simulation,
+	public final CLOption cloSamples = new CLOption("samples", "-1", CLOCategory.Simulation,
 			"--samples <s>   number of samples for statistics", new CLODelegate() {
 				@Override
 				public boolean parse(String arg) {
-					setNSamples(cloSamples.isSet() ? CLOParser.parseDouble(arg) : -1.0);
+					setNSamples(CLOParser.parseDouble(arg));
 					return true;
 				}
 			});

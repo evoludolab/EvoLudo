@@ -45,8 +45,9 @@ import org.evoludo.graphics.PopListener;
 import org.evoludo.simulator.ColorMap;
 import org.evoludo.simulator.ColorMapJRE;
 import org.evoludo.simulator.EvoLudoLab;
-import org.evoludo.simulator.Geometry;
 import org.evoludo.simulator.Network2D;
+import org.evoludo.simulator.geometries.AbstractGeometry;
+import org.evoludo.simulator.geometries.GeometryType;
 import org.evoludo.simulator.models.CModel;
 import org.evoludo.simulator.models.Model;
 import org.evoludo.simulator.modules.Continuous;
@@ -183,9 +184,8 @@ public class MVCDistr extends MVAbstract implements PopListener {
 		double[] max = module.getTraitMax();
 		Model model = engine.getModel();
 		for (int n = 0; n < nData; n++) {
-			Geometry geometry = new Geometry(engine);
-			geometry.setType(Geometry.Type.LINEAR);
-			geometry.size = HistoGraph.HISTO_BINS;
+			AbstractGeometry geometry = AbstractGeometry.create(engine, GeometryType.LINEAR);
+			geometry.setSize(HistoGraph.HISTO_BINS);
 			PopGraph2D graph = new PopGraph2D(this, geometry, module);
 			bins[n] = new double[HistoGraph.HISTO_BINS];
 			GraphAxis x = graph.getXAxis();

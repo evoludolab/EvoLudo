@@ -35,10 +35,10 @@ import java.util.List;
 import org.evoludo.math.ArrayMath;
 import org.evoludo.math.RNGDistribution;
 import org.evoludo.simulator.EvoLudo;
+import org.evoludo.util.CLODelegate;
 import org.evoludo.util.CLOParser;
 import org.evoludo.util.CLOption;
-import org.evoludo.util.CLOption.CLODelegate;
-import org.evoludo.util.CLOption.Category;
+import org.evoludo.util.CLOCategory;
 
 /**
  * The abstract superclass to implement mutations in IBS models with discrete or
@@ -82,7 +82,25 @@ public abstract class Mutation {
 	/**
 	 * The probability of mutations.
 	 */
-	public double probability;
+	double probability;
+
+	/**
+	 * Get the probability of mutations.
+	 * 
+	 * @return the mutation probability
+	 */
+	public double getProbability() {
+		return probability;
+	}
+
+	/**
+	 * Set the probability of mutations.
+	 * 
+	 * @param probability the mutation probability
+	 */
+	public void setProbability(double probability) {
+		this.probability = probability;
+	}
 
 	/**
 	 * The range of mutations.
@@ -284,7 +302,7 @@ public abstract class Mutation {
 		 * Command line option to set the type of player updates.
 		 */
 		public final CLOption clo = new CLOption("mutation", "0.0",
-				Category.Model,
+				CLOCategory.Model,
 				"--mutation <p> [temperature|random (default)] [<t> [<r>]]]\n" +
 						"             p: mutation probability\n" + //
 						"       process: reproduction vs cosmic rays\n" + //
@@ -496,7 +514,7 @@ public abstract class Mutation {
 		 * Command line option to set the type of player updates.
 		 */
 		public final CLOption clo = new CLOption("mutation", "0.0",
-				Category.Model,
+				CLOCategory.Model,
 				"--mutation <p> [temperature|random (default)] [<t> [<r>]>  with\n" +
 						"             p: mutation probability\n" + //
 						"             r: mutation range (fraction of interval)\n" + //

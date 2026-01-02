@@ -31,7 +31,6 @@
 package org.evoludo.util;
 
 import java.awt.Color;
-import java.io.PrintStream;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -82,16 +81,14 @@ public class CLOParser {
 	protected Logger logger;
 
 	/**
-	 * All output should be printed to <code>output</code> (defaults to
-	 * <code>stdout</code>). This is only relevant for JRE applications (mainly
-	 * simulations) and ignored by GWT.
-	 */
-	protected PrintStream output = System.out;
-
-	/**
 	 * The regular expression to split the command line arguments for parsing.
 	 */
 	public static final String SPLIT_ARG_REGEX = "\\s+|=";
+
+	/**
+	 * The prefix for reporting issues with command line options
+	 */
+	public static final String OPTION_PREFIX = "option --";
 
 	/**
 	 * New command line option parser. Register <code>provider</code> for supplying
@@ -206,62 +203,87 @@ public class CLOParser {
 		// the entries in cloargs start with the name of the option followed by its
 		// argument(s) which can be separated by ' ' or '='
 		int issues = 0;
-		nextclo: for (String clo : cloargs) {
-			String[] args = clo.split(SPLIT_ARG_REGEX);
-			String name = args[0];
-			// find matching option
-			for (CLOption opt : options) {
-				if (!name.equals(opt.getName()))
-					continue;
-				// option found
-				@SuppressWarnings("cast") // the 'unnecessary' cast is necessary for GWT to compile
-				String arg = Formatter.format((String[]) ArrayMath.drop(args, 0), " ");
-				switch (opt.getType()) {
-					case REQUIRED:
-						if (args.length < 1) {
-							issues++;
-							logWarning("option '--" + clo + "' is missing a required argument - ignored.");
-							break;
-						}
-						opt.setArg(arg);
-						break;
-					case OPTIONAL:
-						opt.setArg(arg.isEmpty() ? null : arg);
-						break;
-					default:
-					case NONE:
-						if (arg.isEmpty()) {
-							opt.setArg(null);
-							break;
-						}
-						issues++;
-						logWarning("option '--" + clo + "' does not accept an argument - ignored.");
-						break;
-				}
-				continue nextclo;
+		for (String clo : cloargs) {
+			Integer result = parseCommandLineOption(clo);
+			if (result != null) {
+				issues += result;
 			}
-			issues++;
-			logWarning("option '--" + clo + "' unknown - ignored.");
 		}
-		// apply all options (including default values)
-		// note: options sorted alphabetically; not processed in order provided on
-		// command line
 		for (CLOption option : options) {
-			try {
-				if (!option.parse()) {
-					// parsing failed - try again using default
-					logger.warning("invalid " + option.getName() + " argument (" + option.getArg() + ") - using '"
-							+ option.getDefault() + "'");
-					issues++;
-					option.parseDefault();
-				}
-			} catch (Exception e) {
-				logWarning("option --" + option.getName() + " failed to parse argument '" + option.getArg() + "' ("
-						+ e.getLocalizedMessage() + ").");
+			if (!option.parse()) {
 				issues++;
+				logParseFailure(option);
 			}
 		}
 		return issues;
+	}
+
+	/**
+	 * Parses a single command line option.
+	 * 
+	 * @param clo the command line option string
+	 * @return the number of issues (0, 1, or null if option was found and
+	 *         processed)
+	 */
+	private Integer parseCommandLineOption(String clo) {
+		String[] args = clo.split(SPLIT_ARG_REGEX);
+		String name = args[0];
+
+		for (CLOption opt : options) {
+			if (name.equals(opt.getName())) {
+				return processMatchedOption(opt, args, clo);
+			}
+		}
+
+		logWarning(OPTION_PREFIX + clo + " unknown - ignored.");
+		return 1;
+	}
+
+	/**
+	 * Processes a matched option with its arguments.
+	 * 
+	 * @param opt  the matched option
+	 * @param args the split arguments
+	 * @param clo  the original command line option string
+	 * @return the number of issues (0 or 1)
+	 */
+	private int processMatchedOption(CLOption opt, String[] args, String clo) {
+		@SuppressWarnings("cast") // the 'unnecessary' cast is necessary for GWT to compile
+		String arg = Formatter.format((String[]) ArrayMath.drop(args, 0), " ");
+
+		switch (opt.getType()) {
+			case REQUIRED:
+				if (args.length < 1) {
+					logWarning(OPTION_PREFIX + clo + " is missing a required argument - ignored.");
+					return 1;
+				}
+				//$FALL-THROUGH$
+			case OPTIONAL:
+				opt.setArg(arg);
+				return 0;
+			default:
+			case NONE:
+				opt.setArg("");
+				if (arg.isEmpty())
+					return 0;
+				logWarning(OPTION_PREFIX + clo + " does not accept an argument - ignored.");
+				return 1;
+		}
+	}
+
+	/**
+	 * Logs a parse failure for an option.
+	 * 
+	 * @param opt the option that failed to parse
+	 */
+	private void logParseFailure(CLOption opt) {
+		if (opt.isSet()) {
+			String da = opt.getDefault();
+			logWarning(OPTION_PREFIX + opt.getName() + " failed to parse argument '" + opt.getArg() +
+					(da == null ? "'." : "' - using default '" + da + "'."));
+		} else {
+			logError(OPTION_PREFIX + opt.getName() + " failed to parse default argument '" + opt.getDefault() + "'.");
+		}
 	}
 
 	/**
@@ -311,16 +333,6 @@ public class CLOParser {
 	}
 
 	/**
-	 * Redirect all output to <code>output</code>. The default is to report all
-	 * output to {@code System.out}.
-	 * 
-	 * @param output the new output stream
-	 */
-	public void setOutput(PrintStream output) {
-		this.output = output;
-	}
-
-	/**
 	 * Returns a short description of every command line option in the
 	 * <code>options</code> list, including its default value as well as the current
 	 * setting (if different). This string typically serves as a quick help and
@@ -332,40 +344,84 @@ public class CLOParser {
 	 * @see CLOption#getDescription()
 	 */
 	public String helpCLO(boolean categories) {
-		// collect options of different categories
 		StringBuilder help = new StringBuilder();
-		// find category with highest priority but less than previous priority
-		int priority = (categories ? Integer.MAX_VALUE : Integer.MIN_VALUE);
-		int nextpriority;
-		CLOption.Category nextcat;
-		do {
-			nextpriority = Integer.MIN_VALUE;
-			nextcat = null;
-			for (CLOption option : options) {
-				CLOption.Category cat = option.category;
-				int p = (cat == null ? 0 : cat.priority);
-				if (p >= priority || p <= nextpriority)
-					continue;
-				nextpriority = p;
-				nextcat = cat;
-			}
-			// process options with category cat
-			if (categories && nextcat != null)
-				help.append("\n").append(nextcat.getHeader()).append("\n");
-			// in last round look for options without any category
-			for (CLOption option : options) {
-				if (categories && option.category != nextcat)
-					continue;
-				// option without category found
-				String descr = option.getDescription();
-				if (descr == null)
-					continue; // skip
-				help.append(descr).append("\n");
-			}
-			priority = nextpriority;
-		} while (nextpriority > Integer.MIN_VALUE);
+		if (categories) {
+			appendCategorizedHelp(help);
+		} else {
+			appendUncategorizedHelp(help);
+		}
 		// drop terminating newline
 		return help.deleteCharAt(help.length() - 1).toString();
+	}
+
+	/**
+	 * Appends help text for all options grouped by category.
+	 * 
+	 * @param help the StringBuilder to append to
+	 */
+	private void appendCategorizedHelp(StringBuilder help) {
+		int priority = Integer.MAX_VALUE;
+		int nextpriority;
+		CLOCategory nextcat;
+		do {
+			nextcat = findNextCategory(priority);
+			nextpriority = (nextcat == null ? Integer.MIN_VALUE : nextcat.priority);
+
+			if (nextcat != null) {
+				help.append("\n").append(nextcat.getHeader()).append("\n");
+			}
+			appendOptionsForCategory(help, nextcat);
+			priority = nextpriority;
+		} while (nextpriority > Integer.MIN_VALUE);
+	}
+
+	/**
+	 * Finds the next category with highest priority less than the given priority.
+	 * 
+	 * @param priority the current priority threshold
+	 * @return the next category or null if none found
+	 */
+	private CLOCategory findNextCategory(int priority) {
+		int nextpriority = Integer.MIN_VALUE;
+		CLOCategory nextcat = null;
+		for (CLOption option : options) {
+			CLOCategory cat = option.category;
+			int p = (cat == null ? 0 : cat.priority);
+			if (p >= priority || p <= nextpriority)
+				continue;
+			nextpriority = p;
+			nextcat = cat;
+		}
+		return nextcat;
+	}
+
+	/**
+	 * Appends help text for options in the specified category.
+	 * 
+	 * @param help     the StringBuilder to append to
+	 * @param category the category to filter by (null for uncategorized options)
+	 */
+	private void appendOptionsForCategory(StringBuilder help, CLOCategory category) {
+		for (CLOption option : options) {
+			if (option.category != category)
+				continue;
+			String descr = option.getDescription();
+			if (descr != null)
+				help.append(descr).append("\n");
+		}
+	}
+
+	/**
+	 * Appends help text for all options without category grouping.
+	 * 
+	 * @param help the StringBuilder to append to
+	 */
+	private void appendUncategorizedHelp(StringBuilder help) {
+		for (CLOption option : options) {
+			String descr = option.getDescription();
+			if (descr != null)
+				help.append(descr).append("\n");
+		}
 	}
 
 	/**
@@ -387,7 +443,7 @@ public class CLOParser {
 				// option already in list
 				return;
 			if (opt.getName().equals(name)) {
-				logWarning("option --" + option.getName() + " overridden in subclass\n" + "         using  "
+				logWarning(OPTION_PREFIX + option.getName() + " overridden in subclass\n" + "         using  "
 						+ opt.getDescription() + "\n" + "         instead of " + option.getDescription());
 				return;
 			}
@@ -480,6 +536,16 @@ public class CLOParser {
 	}
 
 	/**
+	 * Helper method for logging errors.
+	 * 
+	 * @param msg the error message
+	 */
+	private void logError(String msg) {
+		if (logger != null)
+			logger.severe(msg);
+	}
+
+	/**
 	 * Helper method for logging warnings.
 	 * 
 	 * @param msg the warning message
@@ -488,11 +554,6 @@ public class CLOParser {
 		if (logger != null)
 			logger.warning(msg);
 	}
-
-	// private void logDebug(String msg) {
-	// if (logger != null)
-	// logger.fine(msg);
-	// }
 
 	// UTILITY methods - for parsing command line arguments
 
@@ -538,6 +599,8 @@ public class CLOParser {
 	 * @return <code>int</code> representation of <code>aDim</code>
 	 */
 	public static int parseDim(String aDim) {
+		if (aDim == null || aDim.isEmpty())
+			return 0;
 		int idx = (aDim.toLowerCase()).indexOf('x');
 		if (idx >= 0) {
 			int size = parseInteger(aDim.substring(0, idx));
@@ -556,7 +619,7 @@ public class CLOParser {
 	 * @see Integer#parseInt(String)
 	 */
 	public static int parseInteger(String anInteger) {
-		if (anInteger == null)
+		if (anInteger == null || anInteger.isEmpty())
 			return 0;
 		return Integer.parseInt(anInteger);
 	}
@@ -571,7 +634,7 @@ public class CLOParser {
 	 * @see Long#parseLong(String)
 	 */
 	public static long parseLong(String aLong) {
-		if (aLong == null)
+		if (aLong == null || aLong.isEmpty())
 			return 0;
 		return Long.parseLong(aLong);
 	}
@@ -616,7 +679,7 @@ public class CLOParser {
 	 * @see Boolean#parseBoolean(String)
 	 */
 	public static boolean[] parseBoolVector(String aVector) {
-		if (aVector == null)
+		if (aVector == null || aVector.isEmpty())
 			return new boolean[0];
 		aVector = aVector.trim();
 		if (aVector.isEmpty())
@@ -660,10 +723,7 @@ public class CLOParser {
 	 * @see Integer#parseInt(String)
 	 */
 	public static int[] parseIntVector(String aVector, String separator) {
-		if (aVector == null)
-			return new int[0];
-		aVector = aVector.trim();
-		if (aVector.isEmpty())
+		if (aVector == null || aVector.isEmpty())
 			return new int[0];
 
 		String[] entries = aVector.split(separator);
@@ -710,10 +770,7 @@ public class CLOParser {
 	 * @see Double#parseDouble(String)
 	 */
 	public static double[] parseVector(String aVector, String separator) {
-		if (aVector == null)
-			return new double[0];
-		aVector = aVector.trim();
-		if (aVector.isEmpty())
+		if (aVector == null || aVector.isEmpty())
 			return new double[0];
 
 		String[] entries = aVector.split(separator);
@@ -743,10 +800,7 @@ public class CLOParser {
 	 * @see #parseVector(String)
 	 */
 	public static int[][] parseIntMatrix(String aMatrix) {
-		if (aMatrix == null)
-			return new int[0][0];
-		aMatrix = aMatrix.trim();
-		if (aMatrix.isEmpty())
+		if (aMatrix == null || aMatrix.isEmpty())
 			return new int[0][0];
 
 		String[] entries = aMatrix.split(MATRIX_DELIMITER);
@@ -774,10 +828,7 @@ public class CLOParser {
 	 * @see #parseVector(String)
 	 */
 	public static double[][] parseMatrix(String aMatrix) {
-		if (aMatrix == null)
-			return new double[0][0];
-		aMatrix = aMatrix.trim();
-		if (aMatrix.isEmpty())
+		if (aMatrix == null || aMatrix.isEmpty())
 			return new double[0][0];
 
 		String[] entries = aMatrix.split(MATRIX_DELIMITER);
@@ -834,15 +885,13 @@ public class CLOParser {
 	 *         empty or a malformed string.
 	 */
 	public static Color parseColor(String aColor) {
-		if (aColor == null)
+		if (aColor == null || aColor.isEmpty())
 			return null;
-		aColor = aColor.trim().toLowerCase();
-		int len = aColor.length();
-		if (len == 0)
-			return null;
+		aColor = aColor.toLowerCase();
 		Color color = COLOR_KEYS.get(aColor);
 		if (color != null)
 			return color;
+		int len = aColor.length();
 		if (aColor.charAt(0) != '(' || aColor.charAt(len - 1) != ')')
 			return null;
 		// try (r, g, b) or (r, g, b, a)

@@ -31,7 +31,6 @@
 package org.evoludo.simulator.views;
 
 import java.awt.Color;
-import java.util.List;
 
 import org.evoludo.graphics.AbstractGraph;
 import org.evoludo.graphics.GenericPopGraph;
@@ -40,51 +39,58 @@ import org.evoludo.math.ArrayMath;
 import org.evoludo.simulator.ColorMap;
 import org.evoludo.simulator.ColorMapCSS;
 import org.evoludo.simulator.EvoLudoGWT;
-import org.evoludo.simulator.Geometry;
 import org.evoludo.simulator.Network;
 import org.evoludo.simulator.Network.Status;
+import org.evoludo.simulator.geometries.AbstractGeometry;
+import org.evoludo.simulator.geometries.GeometryType;
 import org.evoludo.simulator.models.Data;
 import org.evoludo.simulator.models.IBS;
+import org.evoludo.simulator.models.ModelType;
 import org.evoludo.simulator.models.PDE;
-import org.evoludo.simulator.models.Type;
 import org.evoludo.simulator.modules.Features.Payoffs;
 import org.evoludo.simulator.modules.Map2Fitness;
 import org.evoludo.simulator.modules.Module;
 import org.evoludo.util.Formatter;
 
 /**
- * The abstract parent class for views that display the configuration of the
- * current state of the model in 2D or 3D. The visual representation depends on
- * the geometry of the model. Lattice structures have a fixed layout but all
- * other strutures are dynamically generated through a process insipired by the
- * physical arrangement of charged spheres that are connected by springs. The
- * spheres represent members of the population and the springs represent their
- * interaction (or competition) neighbourhood. The size of the sphere scales
- * with the size of the individual's neighbourhood. Moreover, the colour of the
- * spheres reflects the state of the individual, for example their trait or
- * fitness.
+ * Abstract base view for rendering population-related data (traits or fitness)
+ * for EvoLudo models that expose spatial/graph structure (IBS and PDE models).
+ * <p>
+ * GenericPop manages one or more {@link GenericPopGraph} instances, coordinates
+ * layout and painting, reads data from the model (traits or fitness) and
+ * assembles HTML tooltips describing nodes, their neighbourhoods and
+ * metrics. The view supports both 2D and 3D variants (through subclasses such
+ * as {@code Pop2D} or {@code Pop3D} to determine the concrete geometry string
+ * used in the name).
+ * 
+ * <h3>Responsibilities:</h3>
+ * <ul>
+ * <li>Manage lifecycle of graphs (initialisation, invalidation,
+ * destruction).</li>
+ * <li>Query networks for layout readiness and notify the engine when layout
+ * completes.</li>
+ * <li>Pull trait or fitness data from the underlying model and forward it
+ * to graphs for updating and painting.</li>
+ * <li>Assign geometries to graphs based on model/module configuration
+ * (interaction vs competition geometry).</li>
+ * <li>Provide rich HTML tooltips for nodes that include trait names, colors,
+ * payoffs/fitness, neighbour lists, tags, and interaction counts.</li>
+ * <li>Forward mouse node-hit events to IBS models and handle a small set
+ * of view-level keyboard shortcuts (e.g. 's' for shaking network layouts).</li>
+ * </ul>
  *
  * @author Christoph Hauert
  * 
- * @param <T> type of color object: String for 2D and
- *            {@link thothbot.parallax.core.shared.materials.MeshLambertMaterial
- *            MeshLambertMaterial} for 3D
- * @param <N> type of network
- * @param <G> type of graph
+ *         Type parameters:
+ * @param <T> the element type used by the color map / trait representation
+ * @param <N> the concrete {@link Network} type used by graphs
+ * @param <G> the concrete {@link GenericPopGraph} type managed by this view
+ * 
+ * @see Pop2D
+ * @see Pop3D
  */
-public abstract class GenericPop<T, N extends Network, G extends GenericPopGraph<T, N>> extends AbstractView
+public abstract class GenericPop<T, N extends Network<?>, G extends GenericPopGraph<T, N>> extends AbstractView<G>
 		implements TooltipProvider.Index {
-
-	/**
-	 * The list of graphs that display the time series data.
-	 * 
-	 * @evoludo.impl {@code List<G> graphs} is deliberately hiding
-	 *               {@code List<AbstractGraph> graphs} from the superclass because
-	 *               it saves a lot of ugly casting. Note that the two fields point
-	 *               to one and the same object.
-	 */
-	@SuppressWarnings("hiding")
-	protected List<G> graphs;
 
 	/**
 	 * The index of the node that was hit by the mouse.
@@ -94,7 +100,7 @@ public abstract class GenericPop<T, N extends Network, G extends GenericPopGraph
 	/**
 	 * The type of data to display.
 	 */
-	String tag;
+	private final String dim;
 
 	/**
 	 * Construct a new view to display the configuration of the current state of the
@@ -103,20 +109,18 @@ public abstract class GenericPop<T, N extends Network, G extends GenericPopGraph
 	 * @param engine the pacemaker for running the model
 	 * @param type   the type of data to display
 	 */
-	@SuppressWarnings("unchecked")
 	protected GenericPop(EvoLudoGWT engine, Data type) {
 		super(engine, type);
-		graphs = (List<G>) super.graphs;
-		tag = (this instanceof Pop2D) ? "2D" : "3D";
+		dim = (this instanceof Pop2D) ? "2D" : "3D";
 	}
 
 	@Override
 	public String getName() {
 		switch (type) {
 			case TRAIT:
-				return "Traits - " + tag + " Structure";
+				return "Traits - " + dim + " Structure";
 			case FITNESS:
-				return "Fitness - " + tag + " Structure";
+				return "Fitness - " + dim + " Structure";
 			default:
 				return null;
 		}
@@ -133,7 +137,7 @@ public abstract class GenericPop<T, N extends Network, G extends GenericPopGraph
 		super.modelChanged(action);
 		if (action == PendingAction.CHANGE_MODE) {
 			for (G graph : graphs) {
-				if (graph.getGeometry().isUniqueGeometry())
+				if (graph.getGeometry().isUnique())
 					graph.invalidate();
 			}
 		}
@@ -144,13 +148,14 @@ public abstract class GenericPop<T, N extends Network, G extends GenericPopGraph
 		// check if all graphs have layout
 		for (G graph : graphs) {
 			// graph may not have a network (e.g. for ODE/SDE models)
-			Network net = graph.getNetwork();
-			if (net == null)
-				continue;
-			Status status = net.getStatus();
-			if (status.equals(Status.HAS_LAYOUT) || status.equals(Status.NO_LAYOUT))
-				continue;
-			return false;
+			Network<?> net = graph.getNetwork();
+			if (net != null) {
+				Status status = net.getStatus();
+				// if network status is neither HAS_LAYOUT nor NO_LAYOUT then layout is not
+				// ready
+				if (!(status.equals(Status.HAS_LAYOUT) || status.equals(Status.NO_LAYOUT)))
+					return false;
+			}
 		}
 		return true;
 	}
@@ -166,7 +171,7 @@ public abstract class GenericPop<T, N extends Network, G extends GenericPopGraph
 	protected void destroyGraphs() {
 		// super takes care of removing graphs, just deal with networks here
 		for (G graph : graphs) {
-			Network net = graph.getNetwork();
+			Network<?> net = graph.getNetwork();
 			if (net != null)
 				net.cancelLayout();
 			graph.invalidate();
@@ -182,13 +187,13 @@ public abstract class GenericPop<T, N extends Network, G extends GenericPopGraph
 	 *              competition geometry
 	 */
 	void setGraphGeometry(GenericPopGraph<T, N> graph, boolean inter) {
-		Type mt = model.getType();
+		ModelType mt = model.getType();
 		if (mt.isIBS()) {
 			Module<?> module = graph.getModule();
-			Geometry igeom = module.getInteractionGeometry();
-			Geometry cgeom = module.getCompetitionGeometry();
-			Geometry geo = inter ? igeom : cgeom;
-			if (!igeom.interCompSame && Geometry.displayUniqueGeometry(igeom, cgeom))
+			AbstractGeometry igeom = module.getIBSPopulation().getInteractionGeometry();
+			AbstractGeometry cgeom = module.getIBSPopulation().getCompetitionGeometry();
+			AbstractGeometry geo = inter ? igeom : cgeom;
+			if (!igeom.isSingle() && AbstractGeometry.displaySingle(igeom, cgeom))
 				// different geometries but only one graph - pick competition.
 				// note: this is not a proper solution but fits the requirements of
 				// the competition with second nearest neighbours
@@ -213,7 +218,7 @@ public abstract class GenericPop<T, N extends Network, G extends GenericPopGraph
 
 	@Override
 	public void update(boolean force) {
-		Type mt = model.getType();
+		ModelType mt = model.getType();
 		if (mt.isIBS() || mt.isPDE()) {
 			// always read data - some nodes may have changed due to user actions
 			double newtime = model.getUpdates();
@@ -227,11 +232,11 @@ public abstract class GenericPop<T, N extends Network, G extends GenericPopGraph
 					continue;
 				switch (type) {
 					case TRAIT:
-						model.getTraitData(graph.getModule().getID(), graph.getData(), graph.getColorMap());
+						model.getTraitData(graph.getModule().getId(), graph.getData(), graph.getColorMap());
 						break;
 					case FITNESS:
 						// cast should be safe for fitness data
-						model.getFitnessData(graph.getModule().getID(), graph.getData(),
+						model.getFitnessData(graph.getModule().getId(), graph.getData(),
 								(ColorMap.Gradient1D<T>) graph.getColorMap());
 						break;
 					default:
@@ -260,18 +265,18 @@ public abstract class GenericPop<T, N extends Network, G extends GenericPopGraph
 	 * @see Network#shake(org.evoludo.simulator.Network.LayoutListener, double)
 	 */
 	@Override
-	public boolean keyDownHandler(String key) {
+	public boolean onKeyDown(String key) {
 		if ("s".equals(key)) {
 			for (G graph : graphs)
 				graph.getNetwork().shake(graph, 0.05);
 			return true;
 		}
-		return super.keyDownHandler(key);
+		return super.onKeyDown(key);
 	}
 
 	@Override
 	public void mouseHitNode(int id, int node, boolean alt) {
-		Type mt = model.getType();
+		ModelType mt = model.getType();
 		if (mt.isIBS())
 			((IBS) model).mouseHitNode(id, node, alt);
 	}
@@ -280,180 +285,310 @@ public abstract class GenericPop<T, N extends Network, G extends GenericPopGraph
 	public String getTooltipAt(AbstractGraph<?> agraph, int node) {
 		@SuppressWarnings("unchecked")
 		G graph = (G) agraph;
-		Geometry geometry = graph.getGeometry();
-		int nNodes = geometry.size;
+		AbstractGeometry geometry = graph.getGeometry();
+		int nNodes = geometry.getSize();
 		Module<?> module = graph.getModule();
-		int id;
-		StringBuilder tip = new StringBuilder("<table style='border-collapse:collapse;border-spacing:0;'>");
+		StringBuilder tip = new StringBuilder(TABLE_STYLE);
 		if (module.getNSpecies() > 1)
-			tip.append("<tr><td><i>Species:</i></td><td>" + module.getName() + "</td></tr>");
+			tip.append(TABLE_ROW_START)
+					.append("Species")
+					.append(TABLE_CELL_NEXT)
+					.append(module.getName())
+					.append(TABLE_ROW_END);
 
-		Type mt = model.getType();
-		if (mt.isIBS()) {
-			if (node >= nNodes) {
-				// this can only happen for Geometry.LINEAR
-				int idx = node / nNodes;
-				node %= nNodes;
-				double t = idx * model.getTimeStep();
-				tip.append("<tr><td><i>Node:</i></td><td>" + node + "</td></tr>" +
-						"<tr><td><i>Time:</i></td><td>" + Formatter.format(-t, 2) + "</td></tr>");
-				return tip + "</table>";
-				// NOTE: RingBuffer contains color-strings; requires reverse engineering to
-				// determine traits...
-				// RingBuffer.Array<String> buffer = graph.getBuffer();
-				// if( idx>=buffer.size() ) return tip+"</table>";
-				// String[] colors = graph.getBuffer().get(idx);
-				// return tip+"<tr><td
-				// colspan='2'><hr/></td></tr><tr><td><i>Trait:</i></td><td
-				// style='color:"+colors[node]+";'>"+
-				// population.getTraitNameAt(node)+"</td></tr></table>";
-			}
-			IBS ibs = (IBS) model;
-			id = module.getID();
-			tip.append("<tr><td><i>Node:</i></td><td>" + node + "</td></tr>");
-			if (type == Data.TRAIT) {
-				// trait: use color-data to color trait
-				tip.append("<tr><td><i>Trait:</i></td><td><span style='color:" + graph.getCSSColorAt(node) +
-						"; font-size:175%; line-height:0.57;'>&#x25A0;</span> " + model.getTraitNameAt(id, node)
-						+ "</td></tr>");
-			} else {
-				tip.append("<tr><td><i>Trait:</i></td><td>" + model.getTraitNameAt(id, node) + "</td></tr>");
-			}
-			String tag = ibs.getTagNameAt(id, node);
-			if (tag != null)
-				tip.append("<tr><td><i>Tag:</i></td><td>" + tag + "</td></tr>");
-			if (module instanceof Payoffs) {
-				// with payoff-to-fitness report score first, then fitness (see below)
-				boolean noFitMap = module.getMap2Fitness().isMap(Map2Fitness.Map.NONE);
-				String label = (noFitMap ? "Fitness" : "Score");
-				if (type == Data.FITNESS) {
-					// fitness: use color-data to color score/fitness
-					tip.append("<tr><td><i>" + label + ":</i></td><td><span style='color:" + graph.getCSSColorAt(node) +
-							"; font-size:175%; line-height:0.57;'>&#x25A0;</span> " + model.getScoreNameAt(id, node)
-							+ "</td></tr>");
-				} else {
-					tip.append(
-							"<tr><td><i>" + label + ":</i></td><td>" + model.getScoreNameAt(id, node) + "</td></tr>");
-				}
-				if (!noFitMap)
-					tip.append("<tr><td><i>Fitness:</i></td><td>" + model.getFitnessNameAt(id, node) + "</td></tr>");
-				int count = ibs.getInteractionsAt(id, node);
-				if (count >= 0) {
-					if (count == Integer.MAX_VALUE)
-						tip.append("<tr><td><i>Interactions:</i></td><td>all</td></tr>");
-					else
-						tip.append("<tr><td><i>Interactions:</i></td><td>" + count + "</td></tr>");
-				}
-			}
-
-			Geometry intergeom = module.getInteractionGeometry();
-			if (intergeom.isUndirected)
-				tip.append(
-						"<tr><td><i>Neighbors:</i></td><td>" + formatStructureAt(node, intergeom) + "</td></tr>");
-			else
-				// useful for debugging geometry - Geometry.checkConnections should be able to
-				// catch such problems
-				tip.append("<tr><td><i>Links to:</i></td><td>" + formatOutStructureAt(node, intergeom)
-						+ "</td></tr>" +
-						"<tr><td><i>Link here:</i></td><td>" + formatInStructureAt(node, intergeom) + "</td></tr>");
-			if (intergeom.isInterspecies())
-				tip.append(formatTraitsAt(node, intergeom, getOpponentInteractionGraph(graph)));
-
-			Geometry compgeom = module.getCompetitionGeometry();
-			if (!compgeom.interCompSame) {
-				if (compgeom.isUndirected)
-					tip.append("<tr><td><i>Competitors:</i></td><td>" + formatStructureAt(node, compgeom)
-							+ "</td></tr>");
-				else
-					tip.append("<tr><td><i>Competes for:</i></td><td>" + formatOutStructureAt(node, compgeom)
-							+ "</td></tr>" +
-							"<tr><td><i>Compete here:</i></td><td>" + formatInStructureAt(node, compgeom)
-							+ "</td></tr>");
-				if (intergeom.isInterspecies())
-					tip.append(formatTraitsAt(node, compgeom, getOpponentCompetitionGraph(graph)));
-			}
-			return tip.append("</table>").toString();
-		}
-		if (mt.isPDE()) {
-			if (node >= nNodes) {
-				// this can only happen for Geometry.LINEAR
-				int idx = node / nNodes;
-				node %= nNodes;
-				double t = idx * model.getTimeStep();
-				tip.append("<tr><td><i>Node:</i></td><td>" + node + "</td></tr>" +
-						"<tr><td><i>Time:</i></td><td>" + Formatter.format(-t, 2) + "</td></tr>");
-				return tip + "</table>";
-				// NOTE: reverse engineer color data from RingBuffer? - see below
-			}
-			String[] s = module.getTraitNames();
-			Color[] c = module.getTraitColors();
-			id = module.getID();
-			StringBuilder sb = new StringBuilder();
-			sb.append("<tr><td><i>Traits:</i></td><td><span style='color:")
-					.append(ColorMapCSS.Color2Css(c[0]))
-					.append("; font-size:175%; line-height:0.57;'>&#x25A0;</span> ")
-					.append(s[0]);
-			for (int n = 1; n < s.length; n++)
-				sb.append(", <span style='color:")
-						.append(ColorMapCSS.Color2Css(c[n]))
-						.append("; font-size:175%; line-height:0.57;'>&#x25A0;</span> ")
-						.append(s[n]);
-			sb.append("</td></tr>");
-			String names = sb.toString();
-			String density = "";
-			if (type == Data.TRAIT)
-				density = "<tr><td><i>Densities:</i></td><td><span style='color:" + graph.getCSSColorAt(node) +
-						"; font-size:175%; line-height:0.57;'>&#x25A0;</span> " + model.getTraitNameAt(id, node)
-						+ "</td></tr>";
-			else
-				density = "<tr><td><i>Densities:</i></td><td>" + model.getTraitNameAt(id, node) + "</td></tr>";
-			tip.append("<tr><td><i>Node:</i></td><td>" + node + "</td></tr>" + names + density);
-			if (module instanceof Payoffs) {
-				int vac = module.getVacantIdx();
-				double[] fitness = model.getMeanFitnessAt(id, node);
-				// with payoff-to-fitness report score first, then fitness (see below)
-				Map2Fitness map = module.getMap2Fitness();
-				if (!map.isMap(Map2Fitness.Map.NONE)) {
-					// with fitness map - report scores first
-					tip.append("<tr><td><i>Score:</i></td><td>");
-					for (int i = 0; i < fitness.length; i++) {
-						if (i > 0)
-							tip.append(", ");
-						if (i == vac) {
-							tip.append("-");
-							continue;
-						}
-						tip.append(Formatter.formatFix(map.invmap(fitness[i]), 3));
-					}
-					tip.append("</td></tr>");
-				}
-				tip.append("<tr><td><i>Fitness:</i></td><td>");
-				if (type == Data.FITNESS)
-					tip.append("<span style='color:" + graph.getCSSColorAt(node) +
-							"; font-size:175%; line-height:0.57;'>&#x25A0;</span> ");
-				for (int i = 0; i < fitness.length; i++) {
-					if (i > 0)
-						tip.append(", ");
-					if (i == vac) {
-						tip.append("-");
-						continue;
-					}
-					tip.append(Formatter.formatFix(fitness[i], 3));
-				}
-				tip.append(" → " + Formatter.pretty(
-						ArrayMath.dot(model.getMeanTraitAt(id, node), fitness), 3)
-						+ "</td></tr>");
-			}
-			if (geometry.isUndirected)
-				tip.append(
-						"<tr><td><i>Connections:</i></td><td>" + formatStructureAt(node, geometry) + "</td></tr>");
-			else
-				tip.append("<tr><td><i>Links to:</i></td><td>" + formatOutStructureAt(node, geometry) + "</td></tr>"
-						+
-						"<tr><td><i>Link here:</i></td><td>" + formatInStructureAt(node, geometry) + "</td></tr>");
-			return tip.append("</table>").toString();
-		}
+		ModelType mt = model.getType();
+		// Delegate heavy logic to dedicated helpers to reduce cognitive complexity
+		if (mt.isIBS())
+			return tooltipForIBS(node, nNodes, module, graph, tip);
+		if (mt.isPDE())
+			return tooltipForPDE(node, nNodes, geometry, module, graph, tip);
 		return null;
+	}
+
+	/**
+	 * Assemble tooltip for IBS models.
+	 * 
+	 * @param node   node index
+	 * @param nNodes total number of geometry nodes
+	 * @param module module owning the graph
+	 * @param graph  graph providing geometry and color mapping
+	 * @param tip    builder used to accumulate HTML
+	 * @return tooltip HTML string
+	 */
+	private String tooltipForIBS(int node, int nNodes, Module<?> module, G graph,
+			StringBuilder tip) {
+		tip.append(TABLE_ROW_START).append("Node").append(TABLE_CELL_NEXT);
+		if (node >= nNodes) {
+			// linear/time slices handled separately
+			appendLinearTip(node, nNodes, tip);
+			return tip.append(TABLE_END).toString();
+		}
+		IBS ibs = (IBS) model;
+		int id = module.getId();
+
+		// node + trait (+ color if trait view)
+		appendNodeTraitTip(node, id, graph, tip);
+
+		// tag if present
+		String tag = ibs.getTagNameAt(id, node);
+		if (tag != null)
+			tip.append(TABLE_ROW_START)
+					.append("Tag")
+					.append(TABLE_CELL_NEXT)
+					.append(tag)
+					.append(TABLE_ROW_END);
+
+		// payoffs / fitness / interactions
+		appendFitnessTip(node, module, tip);
+
+		// in multi-species modules this points to the other species
+		AbstractGeometry intergeom = module.getIBSPopulation().getInteractionGeometry();
+		appendInterNeighborsAt(node, intergeom, tip);
+		if (intergeom.isInterspecies()) {
+			// in inter-species interactions, show traits of other species
+			G oppInterGraph = getOppInterGraph(graph);
+			if (oppInterGraph != null)
+				appendOppTraitsAt(node, intergeom, oppInterGraph, tip);
+		}
+
+		// competition neighbours and opponent competition traits
+		if (!intergeom.isSingle()) {
+			AbstractGeometry compgeom = module.getIBSPopulation().getCompetitionGeometry();
+			appendCompNeighborsAt(node, compgeom, tip);
+			G oppCompGraph = getOppCompGraph(graph);
+			if (oppCompGraph != null)
+				appendOppTraitsAt(node, compgeom, oppCompGraph, tip);
+		}
+		return tip.append(TABLE_END).toString();
+	}
+
+	/**
+	 * Append tooltip information for linear geometry / time slices.
+	 * 
+	 * @param node   the node index
+	 * @param nNodes the number of nodes per time slice
+	 * @param tip    the StringBuilder to append to
+	 */
+	private void appendLinearTip(int node, int nNodes, StringBuilder tip) {
+		// this can only happen for AbstractGeometry.LINEAR
+		int idx = node / nNodes;
+		node %= nNodes;
+		double t = idx * model.getTimeStep();
+		tip.append(node)
+				.append(TABLE_ROW_END)
+				.append(TABLE_ROW_START)
+				.append("Time")
+				.append(TABLE_CELL_NEXT)
+				.append(Formatter.format(-t, 2))
+				.append(TABLE_ROW_END);
+	}
+
+	/**
+	 * Append node and trait information (with color when appropriate).
+	 * 
+	 * @param node  the node index
+	 * @param id    the module ID
+	 * @param graph the graph
+	 * @param tip   the StringBuilder to append to
+	 */
+	private void appendNodeTraitTip(int node, int id, G graph, StringBuilder tip) {
+		tip.append(node)
+				.append(TABLE_ROW_END)
+				.append(TABLE_ROW_START)
+				.append("Trait");
+		if (type == Data.TRAIT) {
+			// trait: use color-data to color trait
+			tip.append(TABLE_CELL_NEXT_COLOR)
+					.append(graph.getCSSColorAt(node))
+					.append(TABLE_CELL_BULLET);
+		} else {
+			tip.append(TABLE_CELL_NEXT);
+		}
+		tip.append(model.getTraitNameAt(id, node))
+				.append(TABLE_ROW_END);
+	}
+
+	/**
+	 * Append trait and density information for PDE models.
+	 * 
+	 * @param node   the node index
+	 * @param module the module
+	 * @param graph  the graph
+	 * @param tip    the StringBuilder to append to
+	 */
+	private void appendPDETraitTip(int node, Module<?> module, G graph, StringBuilder tip) {
+		String[] s = module.getTraitNames();
+		Color[] c = module.getTraitColors();
+		tip.append(node)
+				.append(TABLE_ROW_END)
+				.append(TABLE_ROW_START)
+				.append("Traits")
+				.append(TABLE_CELL_NEXT_COLOR)
+				.append(ColorMapCSS.Color2Css(c[0]))
+				.append(TABLE_CELL_BULLET)
+				.append(s[0]);
+		for (int n = 1; n < s.length; n++)
+			tip.append(", <span style='color:")
+					.append(ColorMapCSS.Color2Css(c[n]))
+					.append(TABLE_CELL_BULLET)
+					.append(s[n]);
+		tip.append(TABLE_ROW_END)
+				.append(TABLE_ROW_START)
+				.append("Densities");
+		if (type == Data.TRAIT)
+			tip.append(TABLE_CELL_NEXT_COLOR)
+					.append(graph.getCSSColorAt(node))
+					.append(TABLE_CELL_BULLET);
+		else
+			tip.append(TABLE_CELL_NEXT);
+		tip.append(model.getTraitNameAt(module.getId(), node))
+				.append(TABLE_ROW_END);
+	}
+
+	/**
+	 * Append fitness (and payoffs if the module is using payoff-to-fitness
+	 * mappings) as well as interaction count for modules implementing the
+	 * {@code Payoffs} interface.
+	 * 
+	 * @param node   the node index
+	 * @param module the module
+	 * @param tip    the StringBuilder to append to
+	 */
+	private void appendFitnessTip(int node, Module<?> module, StringBuilder tip) {
+		if (!(module instanceof Payoffs))
+			return;
+		int id = module.getId();
+		// with payoff-to-fitness report score first, then fitness (see below)
+		// with fitness map report scores as well
+		if (!module.getMap2Fitness().isMap(Map2Fitness.Map.NONE))
+			// report payoff
+			tip.append(TABLE_ROW_START)
+					.append("Payoff")
+					.append(TABLE_CELL_NEXT)
+					.append(model.getScoreNameAt(id, node))
+					.append(TABLE_ROW_END);
+
+		// report fitness
+		tip.append(TABLE_ROW_START)
+				.append("Fitness")
+				.append(TABLE_CELL_NEXT)
+				.append(model.getFitnessNameAt(id, node))
+				.append(TABLE_ROW_END);
+
+		IBS ibs = (IBS) model;
+		int count = ibs.getInteractionsAt(id, node);
+		if (count >= 0) {
+			tip.append(TABLE_ROW_START)
+					.append("Interactions")
+					.append(TABLE_CELL_NEXT);
+			if (count == Integer.MAX_VALUE)
+				tip.append("all");
+			else
+				tip.append(count);
+			tip.append(TABLE_ROW_END);
+		}
+	}
+
+	/**
+	 * Append fitness and payoff information for PDE models.
+	 * 
+	 * @param node   the node index
+	 * @param module the module
+	 * @param graph  the graph
+	 * @param tip    the StringBuilder to append to
+	 */
+	private void appendPDEFitnessTip(int node, Module<?> module, G graph, StringBuilder tip) {
+		if (!(module instanceof Payoffs))
+			return;
+
+		// with payoff-to-fitness report score first, then fitness (see below)
+		// with fitness map report scores as well
+		int vac = module.getVacantIdx();
+		int id = module.getId();
+		double[] fitness = model.getMeanFitnessAt(id, node);
+		Map2Fitness map = module.getMap2Fitness();
+
+		if (!map.isMap(Map2Fitness.Map.NONE)) {
+			// report payoff
+			tip.append(TABLE_ROW_START)
+					.append("Payoff")
+					.append(TABLE_CELL_NEXT);
+			appendFormattedValues(tip, fitness, vac, map, true);
+			tip.append(TABLE_ROW_END);
+		}
+		// report fitness
+		tip.append(TABLE_ROW_START)
+				.append("Fitness")
+				.append(TABLE_CELL_NEXT);
+		if (type == Data.FITNESS)
+			tip.append("<span style='color:")
+					.append(graph.getCSSColorAt(node)).append(TABLE_CELL_BULLET);
+		appendFormattedValues(tip, fitness, vac, map, false);
+		tip.append(" → ")
+				.append(Formatter.pretty(
+						ArrayMath.dot(model.getMeanTraitAt(id, node), fitness), 3))
+				.append(TABLE_ROW_END);
+	}
+
+	/**
+	 * Append a comma separated list of values (or '-' for vacant index).
+	 * If useInvMap is true, values are converted via map.invmap(...).
+	 * 
+	 * @param tip       the StringBuilder to append to
+	 * @param values    the array of values
+	 * @param vac       the vacant index
+	 * @param map       the Map2Fitness
+	 * @param useInvMap whether to convert values via map.invmap(...)
+	 */
+	private void appendFormattedValues(StringBuilder tip, double[] values, int vac, Map2Fitness map,
+			boolean useInvMap) {
+		for (int i = 0; i < values.length; i++) {
+			if (i > 0)
+				tip.append(", ");
+			if (i == vac) {
+				tip.append("-");
+				continue;
+			}
+			if (useInvMap)
+				tip.append(Formatter.formatFix(map.invmap(values[i]), 3));
+			else
+				tip.append(Formatter.formatFix(values[i], 3));
+		}
+	}
+
+	/**
+	 * Assemble tooltip for PDE models.
+	 * 
+	 * @param node     the node index
+	 * @param nNodes   the total number of nodes
+	 * @param geometry the geometry of the graph
+	 * @param module   the module
+	 * @param graph    the graph
+	 * @param tip      the StringBuilder to append to
+	 * @return tooltip HTML string
+	 */
+	private String tooltipForPDE(int node, int nNodes, AbstractGeometry geometry, Module<?> module, G graph,
+			StringBuilder tip) {
+		tip.append(TABLE_ROW_START).append("Node").append(TABLE_CELL_NEXT);
+
+		if (node >= nNodes) {
+			// linear/time slices handled separately
+			appendLinearTip(node, nNodes, tip);
+			return tip.append(TABLE_END).toString();
+		}
+
+		appendPDETraitTip(node, module, graph, tip);
+		appendPDEFitnessTip(node, module, graph, tip);
+
+		if (geometry.isUndirected())
+			appendNeighbors("Connections", geometry.out[node], geometry.kout[node], tip);
+		else {
+			// useful for debugging geometry - AbstractGeometry.checkConnections should be
+			// able to catch such problems
+			appendNeighbors("Links for", geometry.out[node], geometry.kout[node], tip);
+			appendNeighbors("Link here", geometry.in[node], geometry.kin[node], tip);
+		}
+		return tip.toString();
 	}
 
 	/**
@@ -463,10 +598,10 @@ public abstract class GenericPop<T, N extends Network, G extends GenericPopGraph
 	 * @param graph the graph for which to get the opponent's interaction graph
 	 * @return the interaction graph of the opponent
 	 */
-	private G getOpponentInteractionGraph(G graph) {
+	private G getOppInterGraph(G graph) {
 		Module<?> module = graph.getModule();
 		Module<?> opponent = module.getOpponent();
-		Geometry oppInter = opponent.getInteractionGeometry();
+		AbstractGeometry oppInter = opponent.getIBSPopulation().getInteractionGeometry();
 		for (G oppGraph : graphs) {
 			if (oppGraph == graph)
 				continue;
@@ -474,7 +609,7 @@ public abstract class GenericPop<T, N extends Network, G extends GenericPopGraph
 			// XXX this should work but somehow the pointers are different even though the
 			// objects appear to be the same...
 			// if (oppModule == opponent && oppGraph.getGeometry() == oppInter)
-			if (oppModule == opponent && oppGraph.getGeometry().name == oppInter.name)
+			if (oppModule == opponent && oppGraph.getGeometry().getName().equals(oppInter.getName()))
 				return oppGraph;
 		}
 		return null;
@@ -487,10 +622,10 @@ public abstract class GenericPop<T, N extends Network, G extends GenericPopGraph
 	 * @param graph the graph for which to get the opponent's competition graph
 	 * @return the competition graph of the opponent
 	 */
-	private G getOpponentCompetitionGraph(G graph) {
+	private G getOppCompGraph(G graph) {
 		Module<?> module = graph.getModule();
 		Module<?> opponent = module.getOpponent();
-		Geometry oppComp = opponent.getCompetitionGeometry();
+		AbstractGeometry oppComp = opponent.getIBSPopulation().getCompetitionGeometry();
 		for (G oppGraph : graphs) {
 			if (oppGraph == graph)
 				continue;
@@ -498,106 +633,131 @@ public abstract class GenericPop<T, N extends Network, G extends GenericPopGraph
 			// this should work but somehow the pointers are different even though the
 			// objects appear to be the same...
 			// if (oppModule == opponent && oppGraph.getGeometry() == oppComp)
-			if (oppModule == opponent && oppGraph.getGeometry().name.equals(oppComp.name))
+			if (oppModule == opponent && oppGraph.getGeometry().getName().equals(oppComp.getName()))
 				return oppGraph;
 		}
 		return null;
 	}
 
 	/**
-	 * Return a formatted string of the traits of the opponents at the given
-	 * node. For intra-species interactions and models with identical interaction
-	 * and competition graphs, {@code graph.getGeometry() == geom} holds.
+	 * Append opponent traits at the given node.
 	 * 
-	 * @param node  the index of the node
-	 * @param geom  the geometry of the graph
-	 * @param graph the graph of the opponent
-	 * @return the formatted string
+	 * @param node  the node index
+	 * @param geom  the geometry
+	 * @param graph the opponent's graph
+	 * @param tip   the StringBuilder to append to
+	 * @return the updated StringBuilder
 	 */
-	private String formatTraitsAt(int node, Geometry geom, G graph) {
-		int nNeighs = geom.kout[node];
-		if (geom.getType() == Geometry.Type.MEANFIELD || nNeighs == 0)
-			return "";
-		int[] neigh = geom.out[node];
-		StringBuilder msg = new StringBuilder();
-		msg.append("<tr><td><i style='padding-left:2em'>")
+	private StringBuilder appendOppTraitsAt(int node, AbstractGeometry geom, G graph, StringBuilder tip) {
+		tip.append(TABLE_ROW_START)
 				.append(graph.getGeometry().getName())
-				.append(":</i></td><td>[<span style='color:")
+				.append(TABLE_CELL_NEXT);
+		int nNeighs = geom.kout[node];
+		if (nNeighs == 0)
+			return tip.append("[ - ]")
+					.append(TABLE_ROW_END);
+		int[] neigh = geom.out[node];
+		tip.append("[<span style='color:")
 				.append(graph.getCSSColorAt(neigh[0]))
-				.append("; font-size:175%; line-height:0.57;'>&#x25A0;</span>");
+				.append(TABLE_CELL_BULLET);
 		int disp = Math.min(nNeighs, 10);
 		for (int n = 1; n < disp; n++)
-			msg.append("<span style='color:")
+			tip.append("<span style='color:")
 					.append(graph.getCSSColorAt(neigh[n]))
-					.append("; font-size:175%; line-height:0.57;'>&nbsp;&#x25A0;</span>");
+					.append(TABLE_CELL_BULLET);
 		if (disp < nNeighs)
-			msg.append(" ...");
-		msg.append("]</td></tr>");
-		return msg.toString();
+			tip.append(" ...");
+		tip.append("]")
+				.append(TABLE_ROW_END);
+		return tip;
+	}
+
+	/**
+	 * Append interaction neighbours at the given node.
+	 * 
+	 * @param node the node index
+	 * @param geom the geometry
+	 * @param tip  the StringBuilder to append to
+	 * @return the updated StringBuilder
+	 */
+	private static StringBuilder appendInterNeighborsAt(int node, AbstractGeometry geom, StringBuilder tip) {
+		if (geom.isUndirected()) {
+			// well-mixed is by definition undirected
+			if (geom.getType().equals(GeometryType.WELLMIXED)) {
+				tip.append(TABLE_ROW_START)
+						.append("Neighbours")
+						.append(TABLE_CELL_NEXT)
+						.append("all");
+				tip.append(TABLE_ROW_END);
+			} else
+				appendNeighbors("Neighbours", geom.out[node], geom.kout[node], tip);
+		} else {
+			// useful for debugging geometry - AbstractGeometry.checkConnections should be
+			// able to catch such problems
+			appendNeighbors("Links to", geom.out[node], geom.kout[node], tip);
+			appendNeighbors("Link here", geom.in[node], geom.kin[node], tip);
+		}
+		return tip;
+	}
+
+	/**
+	 * Append competition neighbours at the given node.
+	 * 
+	 * @param node the node index
+	 * @param geom the geometry
+	 * @param tip  the StringBuilder to append to
+	 * @return the updated StringBuilder
+	 */
+	private static StringBuilder appendCompNeighborsAt(int node, AbstractGeometry geom, StringBuilder tip) {
+		if (geom.isUndirected()) {
+			// well-mixed is by definition undirected
+			if (geom.getType().equals(GeometryType.WELLMIXED)) {
+				tip.append(TABLE_ROW_START)
+						.append("Competitors")
+						.append(TABLE_CELL_NEXT)
+						.append("all");
+				tip.append(TABLE_ROW_END);
+			} else
+				appendNeighbors("Competitors", geom.out[node], geom.kout[node], tip);
+		} else {
+			// useful for debugging geometry - AbstractGeometry.checkConnections should be
+			// able to catch such problems
+			appendNeighbors("Competes for", geom.out[node], geom.kout[node], tip);
+			appendNeighbors("Compete here", geom.in[node], geom.kin[node], tip);
+		}
+		return tip;
 	}
 
 	/**
 	 * Return a formatted string of the neighbourhood structure at the given node.
 	 * 
-	 * @param node the index of the node
-	 * @param geom the geometry of the graph
-	 * @return the formatted string
+	 * @param label label describing the neighbour set
+	 * @param links array of neighbour indices
+	 * @param k     number of links
+	 * @param tip   builder to append to
+	 * @return the updated builder
 	 */
-	private static String formatStructureAt(int node, Geometry geom) {
-		return formatStructureAt(geom.out[node], geom.kout[node], geom.getType());
-	}
-
-	/**
-	 * Return a formatted string of the outgoing neighbours on directed graphs at
-	 * the given node.
-	 * 
-	 * @param node the index of the node
-	 * @param geom the geometry of the graph
-	 * @return the formatted string
-	 */
-	private static String formatOutStructureAt(int node, Geometry geom) {
-		return formatStructureAt(geom.out[node], geom.kout[node], geom.getType());
-	}
-
-	/**
-	 * Return a formatted string of the incoming neighbours on directed graphs at
-	 * the given node.
-	 * 
-	 * @param node the index of the node
-	 * @param geom the geometry of the graph
-	 * @return the formatted string
-	 */
-	private static String formatInStructureAt(int node, Geometry geom) {
-		return formatStructureAt(geom.in[node], geom.kin[node], geom.getType());
-	}
-
-	/**
-	 * Return a formatted string of the neighbourhood structure at the given node.
-	 * 
-	 * @param links the array of indices of the neighbours
-	 * @param k     the number of links
-	 * @param type  the type of the geometry
-	 * @return the formatted string
-	 */
-	private static String formatStructureAt(int[] links, int k, Geometry.Type type) {
-		if (type == Geometry.Type.MEANFIELD)
-			return "all";
-		StringBuilder msg;
+	private static StringBuilder appendNeighbors(String label, int[] links, int k, StringBuilder tip) {
+		tip.append(TABLE_ROW_START)
+				.append(label)
+				.append(TABLE_CELL_NEXT);
 		switch (k) {
 			case 0:
-				return "none";
+				tip.append("none");
+				break;
 			case 1:
-				return "1 [" + links[0] + "]";
+				tip.append("1 [" + links[0] + "]");
+				break;
 			default:
-				msg = new StringBuilder();
-				msg.append(k).append(" [").append(links[0]);
+				tip.append(k).append(" [").append(links[0]);
 				int disp = Math.min(k, 10);
 				for (int n = 1; n < disp; n++)
-					msg.append(" ").append(links[n]);
+					tip.append(" ").append(links[n]);
 				if (disp < k)
-					msg.append(" ...");
-				msg.append("]");
+					tip.append(" ...");
+				tip.append("]");
 		}
-		return msg.toString();
+		tip.append(TABLE_ROW_END);
+		return tip;
 	}
 }

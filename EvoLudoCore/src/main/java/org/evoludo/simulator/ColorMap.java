@@ -72,6 +72,12 @@ import org.evoludo.simulator.models.PDE;
 public abstract class ColorMap<T extends Object> {
 
 	/**
+	 * Protected constructor to restrict instantiation to subclasses.
+	 */
+	protected ColorMap() {
+	}
+
+	/**
 	 * Useful constant for converting <code>int</code> representations of color
 	 * channels (<code>0-255</code>) to floating point representations
 	 * (<code>0-1</code>).
@@ -378,6 +384,12 @@ public abstract class ColorMap<T extends Object> {
 	 * @see "Also consult GWT emulation of Color in org.evoludo.emulate.java.awt.Color"
 	 */
 	public abstract static class Gradient<T> extends ColorMap<T> {
+
+		/**
+		 * Protected constructor to restrict instantiation to subclasses.
+		 */
+		protected Gradient() {
+		}
 
 		/**
 		 * Utility method for creating a smooth gradient ranging from color

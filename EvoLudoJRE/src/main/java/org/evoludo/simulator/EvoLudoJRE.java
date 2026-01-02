@@ -54,6 +54,8 @@ import javax.swing.Timer;
 
 import org.evoludo.graphics.Network2DJRE;
 import org.evoludo.math.ArrayMath;
+import org.evoludo.simulator.models.ChangeListener.PendingAction;
+import org.evoludo.simulator.geometries.AbstractGeometry;
 import org.evoludo.simulator.models.FixationData;
 import org.evoludo.simulator.models.IBS;
 import org.evoludo.simulator.models.IBSC;
@@ -69,10 +71,10 @@ import org.evoludo.simulator.models.PDESupervisorJRE;
 import org.evoludo.simulator.modules.Module;
 import org.evoludo.simulator.modules.Traits;
 import org.evoludo.simulator.views.MultiView;
+import org.evoludo.util.CLODelegate;
 import org.evoludo.util.CLOParser;
 import org.evoludo.util.CLOption;
-import org.evoludo.util.CLOption.CLODelegate;
-import org.evoludo.util.CLOption.Category;
+import org.evoludo.util.CLOCategory;
 import org.evoludo.util.Formatter;
 import org.evoludo.util.Plist;
 import org.evoludo.util.PlistParser;
@@ -201,12 +203,12 @@ public class EvoLudoJRE extends EvoLudo implements Runnable {
 	}
 
 	@Override
-	public Network2D createNetwork2D(Geometry geometry) {
+	public Network2D createNetwork2D(AbstractGeometry geometry) {
 		return new Network2DJRE(this, geometry);
 	}
 
 	@Override
-	public Network3D createNetwork3D(Geometry geometry) {
+	public Network3D createNetwork3D(AbstractGeometry geometry) {
 		return null;
 	}
 
@@ -263,7 +265,7 @@ public class EvoLudoJRE extends EvoLudo implements Runnable {
 			}
 			// if delay is more that APP_MIN_DELAY set timer
 			// if not don't bother with timer - run, run, run as fast as you can
-			if (delay > 1)
+			if (getDelay() > 1)
 				timer.start();
 			else
 				poke();
@@ -303,7 +305,7 @@ public class EvoLudoJRE extends EvoLudo implements Runnable {
 				continue;
 			}
 			// wait only if delay is more that APP_MIN_DELAY
-			isWaiting = (delay > 1);
+			isWaiting = (getDelay() > 1);
 		}
 	}
 
@@ -578,12 +580,12 @@ public class EvoLudoJRE extends EvoLudo implements Runnable {
 									output.println("How to best report trait distribution in PDE?");
 									break;
 								}
-								throw new Error("This never happens.");
+								throw new IllegalStateException("This never happens.");
 							case SCORES:
 								if (model instanceof IBS) {
 									boolean isMultispecies = (module.getNSpecies() > 1);
 									for (Module<?> mod : module.getSpecies()) {
-										IBSPopulation pop = mod.getIBSPopulation();
+										IBSPopulation<?, ?> pop = mod.getIBSPopulation();
 										output.println(time + ",\t" + data.getKey()
 												+ (isMultispecies ? "\t" + mod.getName() : "") + ",\t"
 												+ pop.getScores(dataDigits));
@@ -594,12 +596,12 @@ public class EvoLudoJRE extends EvoLudo implements Runnable {
 									output.println("How to best report score distribution in PDE?");
 									break;
 								}
-								throw new Error("This never happens.");
+								throw new IllegalStateException("This never happens.");
 							case FITNESS:
 								if (model instanceof IBS) {
 									boolean isMultispecies = (module.getNSpecies() > 1);
 									for (Module<?> mod : module.getSpecies()) {
-										IBSPopulation pop = mod.getIBSPopulation();
+										IBSPopulation<?, ?> pop = mod.getIBSPopulation();
 										output.println(time + ",\t" + data.getKey()
 												+ (isMultispecies ? "\t" + mod.getName() : "") + ",\t"
 												+ pop.getFitness(dataDigits));
@@ -610,7 +612,7 @@ public class EvoLudoJRE extends EvoLudo implements Runnable {
 									output.println("How to best report fitness distribution in PDE?");
 									break;
 								}
-								throw new Error("This never happens.");
+								throw new IllegalStateException("This never happens.");
 							// case FITHISTOGRAM:
 							// break;
 							// case HISTOGRAM:
@@ -634,7 +636,6 @@ public class EvoLudoJRE extends EvoLudo implements Runnable {
 					// initial state set. now clear seed to obtain reproducible statistics
 					// rather just a single data point repeatedly
 					rng.clearSeed();
-
 				}
 				isRunning = true;
 				while (isRunning) {
@@ -662,7 +663,8 @@ public class EvoLudoJRE extends EvoLudo implements Runnable {
 								fixData.timeRead = true;
 								break;
 							default:
-								throw new Error("Statistics for " + data.getKey() + " not supported!");
+								throw new UnsupportedOperationException(
+										"Statistics for " + data.getKey() + " not supported!");
 						}
 					}
 					isRunning = (samples < nSamples);
@@ -726,14 +728,15 @@ public class EvoLudoJRE extends EvoLudo implements Runnable {
 							printTimeStat(fixTotTime, "# overall:\t", tail);
 							break;
 						default:
-							throw new Error("Statistics for " + data.getKey() + " not supported!");
+							throw new UnsupportedOperationException(
+									"Statistics for " + data.getKey() + " not supported!");
 					}
 				}
 				break;
 			case STATISTICS_UPDATE:
-				throw new Error("Mode " + Mode.STATISTICS_UPDATE + " not implemented.");
+				throw new UnsupportedOperationException("Mode " + Mode.STATISTICS_UPDATE + " not implemented.");
 			default:
-				throw new Error("Mode not recognized.");
+				throw new UnsupportedOperationException("Mode not recognized.");
 		}
 		writeFooter();
 		exit(0);
@@ -1022,7 +1025,6 @@ public class EvoLudoJRE extends EvoLudo implements Runnable {
 	 */
 	public void setOutput(PrintStream output) {
 		this.output = (output == null ? System.out : output);
-		parser.setOutput(this.output);
 	}
 
 	@Override
@@ -1033,7 +1035,7 @@ public class EvoLudoJRE extends EvoLudo implements Runnable {
 				// Mathematica or MATLAB
 				"! New Record" + "\n# " + activeModule.getTitle() + "\n# " + getVersion() + "\n# today:                "
 						+ (new Date().toString()));
-		output.println("# arguments:            " + parser.getCLO());
+		output.println("# arguments:            " + cloController.getParserCLO());
 		output.println("# data:");
 		output.flush();
 	}
@@ -1173,21 +1175,21 @@ public class EvoLudoJRE extends EvoLudo implements Runnable {
 	 * @return <code>true</code> if <code>name</code> is an option.
 	 */
 	public boolean providesCLO(String name) {
-		return parser.providesCLO(name);
+		return cloController.providesCLO(name);
 	}
 
 	/**
 	 * Command line option to redirect output to file (output overwrites potentially
 	 * existing file).
 	 */
-	public final CLOption cloOutput = new CLOption("output", "stdout", Category.Simulation,
+	public final CLOption cloOutput = new CLOption("output", null, CLOCategory.Simulation,
 			"--output <f>    redirect output to file", new CLODelegate() {
 				@Override
 				public boolean parse(String arg) {
 					// --append option takes precedence; ignore --output setting
 					if (cloAppend.isSet())
 						return true;
-					if (!cloOutput.isSet()) {
+					if (arg == null) {
 						setOutput(null);
 						return true;
 					}
@@ -1212,12 +1214,12 @@ public class EvoLudoJRE extends EvoLudo implements Runnable {
 	 * Command line option to redirect output to file (appends output to potentially
 	 * existing file).
 	 */
-	public final CLOption cloAppend = new CLOption("append", "stdout", Category.Simulation,
+	public final CLOption cloAppend = new CLOption("append", null, CLOCategory.Simulation,
 			"--append <f>    append output to file", new CLODelegate() {
 				@Override
 				public boolean parse(String arg) {
 					// --append option takes precedence; ignore --output setting
-					if (!cloAppend.isSet()) {
+					if (arg == null) {
 						if (cloOutput.isSet())
 							return true;
 						// if neither --append nor --output are set use default stdout
@@ -1247,7 +1249,7 @@ public class EvoLudoJRE extends EvoLudo implements Runnable {
 	 * when requesting to save the end state of a simulation run with
 	 * {@code --export}, see {@link #cloExport}.
 	 */
-	public final CLOption cloRestore = new CLOption("restore", "norestore", Category.Simulation,
+	public final CLOption cloRestore = new CLOption("restore", "norestore", CLOCategory.Simulation,
 			"--restore <filename>  restore saved state from file", new CLODelegate() {
 				@Override
 				public boolean parse(String arg) {
@@ -1262,28 +1264,14 @@ public class EvoLudoJRE extends EvoLudo implements Runnable {
 	 * execution, see {@link #cloRestore}.
 	 */
 	public final CLOption cloExport = new CLOption("export", "evoludo-%d.plist", CLOption.Argument.OPTIONAL,
-			Category.Simulation,
+			CLOCategory.Simulation,
 			"--export [<filename>]  export final state of simulation (%d for generation)", new CLODelegate() {
 				@Override
-				public boolean parse(String arg) {
-					if (!cloExport.isSet()) {
+				public boolean parse(String arg, boolean isSet) {
+					if (isSet)
+						exportname = arg;
+					else
 						exportname = null;
-						return true;
-					}
-					exportname = arg;
-					if (!cloExport.isDefault())
-						return true;
-					// arg is default; prefer --append or --output file name (with extension plist
-					// added or substituted)
-					if (cloAppend.isSet()) {
-						exportname = cloAppend.getArg();
-						return true;
-					}
-					if (cloOutput.isSet()) {
-						exportname = cloOutput.getArg();
-						return true;
-					}
-					// use default
 					return true;
 				}
 			});
@@ -1318,13 +1306,13 @@ public class EvoLudoJRE extends EvoLudo implements Runnable {
 	/**
 	 * Command line option to set the data reported by simulations.
 	 */
-	public final CLOption cloData = new CLOption("data", "none", Category.Simulation,
+	public final CLOption cloData = new CLOption("data", null, CLOCategory.Simulation,
 			"--data <d[,d1,...]>  type of data to report", new CLODelegate() {
 				@Override
 				public boolean parse(String arg) {
-					if (cloData.isDefault() || cloData.getDefault().equals(arg)) {
+					if (arg == null || arg.isEmpty())
 						return true; // no default
-					}
+
 					boolean success = true;
 					String[] dataOutput = arg.split(CLOParser.VECTOR_DELIMITER);
 					dataTypes = new ArrayList<>();
@@ -1373,7 +1361,7 @@ public class EvoLudoJRE extends EvoLudo implements Runnable {
 	/**
 	 * Command line option to set the data reported by simulations.
 	 */
-	public final CLOption cloDigits = new CLOption("digits", "4", Category.Simulation,
+	public final CLOption cloDigits = new CLOption("digits", "4", CLOCategory.Simulation,
 			"--digits <d>    precision of data output", new CLODelegate() {
 				@Override
 				public boolean parse(String arg) {
@@ -1543,8 +1531,15 @@ public class EvoLudoJRE extends EvoLudo implements Runnable {
 
 	@Override
 	public void exportState() {
-		if (exportname == null)
-			return;
+		if (cloExport.isSet() && exportname.equals(cloExport.getDefault())) {
+			// arg is default; prefer --append or --output file name (with extension plist
+			// added or substituted)
+			if (cloAppend.isSet()) {
+				exportname = cloAppend.getArg();
+			} else if (cloOutput.isSet()) {
+				exportname = cloOutput.getArg();
+			}
+		}
 		exportState(exportname);
 	}
 

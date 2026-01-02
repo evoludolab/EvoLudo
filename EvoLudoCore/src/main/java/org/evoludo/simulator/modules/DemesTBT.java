@@ -31,17 +31,20 @@
 package org.evoludo.simulator.modules;
 
 import java.util.Arrays;
+import java.util.List;
 
 import org.evoludo.math.RNGDistribution;
 import org.evoludo.simulator.EvoLudo;
-import org.evoludo.simulator.Geometry;
+import org.evoludo.simulator.geometries.AbstractGeometry;
+import org.evoludo.simulator.geometries.GeometryType;
+import org.evoludo.simulator.geometries.HierarchicalGeometry;
 import org.evoludo.simulator.models.ChangeListener;
 import org.evoludo.simulator.models.IBS.MigrationType;
 import org.evoludo.simulator.models.IBSD;
 import org.evoludo.simulator.models.IBSD.Init;
 import org.evoludo.simulator.models.IBSDPopulation;
-import org.evoludo.simulator.models.MilestoneListener;
-import org.evoludo.simulator.models.Type;
+import org.evoludo.simulator.models.ModelType;
+import org.evoludo.simulator.models.RunListener;
 import org.evoludo.util.CLOParser;
 import org.evoludo.util.CLOption;
 import org.evoludo.util.Formatter;
@@ -78,8 +81,9 @@ public class DemesTBT extends TBT {
 	 * Currently only IBS models are supported even though super supports more.
 	 */
 	@Override
-	public Type[] getModelTypes() {
-		return new Type[] { Type.IBS };
+
+	public List<ModelType> getModelTypes() {
+		return Arrays.asList(ModelType.IBS);
 	}
 
 	@Override
@@ -112,7 +116,7 @@ public class DemesTBT extends TBT {
 		parser.removeCLO(new String[] { "geominter", "geomcomp" });
 
 		cloGeometry.clearKeys();
-		cloGeometry.addKey(Geometry.Type.HIERARCHY);
+		cloGeometry.addKey(GeometryType.HIERARCHY);
 		cloGeometry.setDefault("H1"); // equivalent to well-mixed
 
 		// PLAYER_UPDATE_BEST_REPLY requires avgScores which is not (yet? how?)
@@ -158,7 +162,7 @@ public class DemesTBT extends TBT {
 	 * Custom implemenation for individual based simulations in deme structured
 	 * populations.
 	 */
-	public class IBSPop extends TBT.IBSPop implements MilestoneListener, ChangeListener {
+	public class IBSPop extends TBT.IBSPop implements RunListener, ChangeListener {
 
 		/**
 		 * The distribution for migration events.
@@ -201,24 +205,26 @@ public class DemesTBT extends TBT {
 			// are disabled but we may still want to optimize migration.
 			// TODO this is a bit of a hack, should add another optimization key for
 			// migrations
-			optimizeMigration = ((IBSD) engine.getModel()).optimizeHomo;
+			optimizeMigration = optimizeHomo;
 			boolean doReset = super.check();
 			nTraits = module.getNTraits();
-			if (!(interaction.getType() == Geometry.Type.MEANFIELD || (interaction.getType() == Geometry.Type.HIERARCHY
-					&& interaction.subgeometry == Geometry.Type.MEANFIELD && interaction.hierarchy.length == 2))) {
+			if (!(interaction.isType(GeometryType.WELLMIXED) || (interaction.isType(GeometryType.HIERARCHY)
+					&& ((HierarchicalGeometry) interaction).isSubtype(GeometryType.WELLMIXED)
+					&& ((HierarchicalGeometry) interaction).getHierarchyLevels().length == 2))) {
 				// the only acceptable geometries are well-mixed and hierarchical structures
 				// with two levels of well-mixed demes
 				logger.severe("invalid geometry - forcing well-mixed population (single deme)!");
-				interaction.setType(Geometry.Type.MEANFIELD);
+				interaction = AbstractGeometry.create(engine, GeometryType.WELLMIXED);
 				doReset = true;
 			}
 			nDemes = 1;
 			sizeDemes = nPopulation;
 			if (pure == null || pure.length != nTraits)
 				pure = new double[nTraits];
-			if (interaction.getType() == Geometry.Type.HIERARCHY) {
-				nDemes = interaction.hierarchy[0];
-				sizeDemes = interaction.hierarchy[1];
+			if (interaction.isType(GeometryType.HIERARCHY)) {
+				int[] hierarchy = ((HierarchicalGeometry) interaction).getHierarchyLevels();
+				nDemes = hierarchy[0];
+				sizeDemes = hierarchy[1];
 			}
 			if (demeTypeCount == null || demeTypeCount.length != nDemes)
 				demeTypeCount = new int[nDemes][nTraits];
@@ -229,7 +235,7 @@ public class DemesTBT extends TBT {
 			}
 			if (nDemes > 1 && !adjustScores) {
 				logger.severe("invalid sampling - forcing well-mixed population (single deme)!");
-				interaction.setType(Geometry.Type.MEANFIELD);
+				interaction = AbstractGeometry.create(engine, GeometryType.WELLMIXED);
 				doReset = true;
 			}
 			if (optimizeMigration) {
@@ -380,7 +386,7 @@ public class DemesTBT extends TBT {
 				}
 			}
 			// last resort
-			throw new Error("Dispersal failed... (" + hit + ")");
+			throw new IllegalStateException("Dispersal failed... (" + hit + ")");
 		}
 
 		@Override
@@ -470,7 +476,7 @@ public class DemesTBT extends TBT {
 		@Override
 		public void updateScores() {
 			if (adjustScores) {
-				updateMixedMeanScores();
+				updateMixedScores();
 				return;
 			}
 			// original procedure
@@ -491,7 +497,7 @@ public class DemesTBT extends TBT {
 				return;
 			}
 			commitTraitAt(me);
-			updateMixedMeanScores();
+			updateMixedScores();
 		}
 	}
 }

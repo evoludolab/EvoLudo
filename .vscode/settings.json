@@ -1,7 +1,9 @@
 {
+    "editor.wordWrap": "bounded",
+    "editor.wordWrapColumn": 120,
     "java.configuration.updateBuildConfiguration": "automatic",
     "java.compile.nullAnalysis.mode": "automatic",
-    "java.jdt.ls.vmargs": "-XX:+UseParallelGC -XX:GCTimeRatio=4 -XX:AdaptiveSizePolicyWeight=90 -Dsun.zip.disableMemoryMapping=true -Xmx2G -Xms100m -Xlog:disable",
+    "java.jdt.ls.vmargs": "-XX:+UseParallelGC -XX:GCTimeRatio=4 -XX:AdaptiveSizePolicyWeight=90 -Dsun.zip.disableMemoryMapping=true -Xmx8G -Xms100m -Xlog:disable",
     "java.debug.settings.onBuildFailureProceed": true,
     "java.import.maven.enabled": true,
     "java.import.gradle.enabled": false,
@@ -12,12 +14,17 @@
             "path": "/Library/Java/JavaVirtualMachines/temurin-17.jdk/Contents/Home"
         },
         {
-            "name": "JavaSE-21", 
+            "name": "JavaSE-21",
             "path": "/Library/Java/JavaVirtualMachines/temurin-21.jdk/Contents/Home"
         }
     ],
-   "[java]": {
+    "[java]": {
         "editor.defaultFormatter": "redhat.java",
-        "editor.formatOnSave": true
+        "editor.formatOnSave": true,
+        "editor.wordWrapColumn": 120
+    },
+    "[latex]": {
+        "editor.wordWrap": "bounded",
+        "editor.wordWrapColumn": 120
     }
 }

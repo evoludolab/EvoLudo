@@ -30,20 +30,23 @@
 
 package org.evoludo.simulator.models;
 
+import java.util.logging.Level;
+
 import org.evoludo.math.RNGDistribution;
 import org.evoludo.simulator.ColorMap;
 import org.evoludo.simulator.EvoLudo;
-import org.evoludo.simulator.Geometry;
+import org.evoludo.simulator.geometries.AbstractGeometry;
+import org.evoludo.simulator.geometries.GeometryType;
 import org.evoludo.simulator.modules.Features.Payoffs;
 import org.evoludo.simulator.modules.Map2Fitness;
 import org.evoludo.simulator.modules.Module;
 import org.evoludo.simulator.modules.Mutation;
 import org.evoludo.simulator.modules.SpeciesUpdate;
 import org.evoludo.simulator.views.HasHistogram;
+import org.evoludo.util.CLOCategory;
+import org.evoludo.util.CLODelegate;
 import org.evoludo.util.CLOParser;
 import org.evoludo.util.CLOption;
-import org.evoludo.util.CLOption.CLODelegate;
-import org.evoludo.util.CLOption.Category;
 import org.evoludo.util.Formatter;
 import org.evoludo.util.Plist;
 
@@ -56,12 +59,41 @@ import org.evoludo.util.Plist;
  */
 public abstract class IBS extends Model {
 
+	/**
+	 * Keeps track of the time elapsed, measured in number of updates. One unit of
+	 * time corresponds to one generation or one Monte-Carlo step, such that in a
+	 * population of size <code>N</code> one generation corresponds to
+	 * <code>N</code> updates, which translates to <code>N</code> events (birth,
+	 * death, imitation, etc.).
+	 * <p>
+	 * <strong>Notes:</strong>
+	 * <ol>
+	 * <li><code>updates==0</code> after {@link #reset()} and at the beginning of
+	 * a simulation run.
+	 * <li><code>updates</code> is incremented <em>before</em> the next event is
+	 * processed, to reflect the time at which the event occurs.
+	 * <li>generally differs from 'real time'.
+	 * <li>models may implement only one time measure.
+	 * <li>setting {@code updates = Double.POSITIVE_INFINITY} disables time measured
+	 * in terms of updates.
+	 * </ol>
+	 * 
+	 * @see Model#time
+	 */
+	protected double updates;
+
+	/**
+	 * Total population size across all species. Convenience field for
+	 * computing per-capita quantities.
+	 */
+	protected int nTotal;
+
 	@Override
 	public boolean permitsSampleStatistics() {
 		if (species == null)
 			return false;
 		for (Module<?> mod : species) {
-			if (mod.getMutation().probability > 0.0 || !(mod instanceof HasHistogram.StatisticsProbability
+			if (mod.getMutation().getProbability() > 0.0 || !(mod instanceof HasHistogram.StatisticsProbability
 					|| mod instanceof HasHistogram.StatisticsTime))
 				return false;
 		}
@@ -89,35 +121,10 @@ public abstract class IBS extends Model {
 	protected RNGDistribution ephrng;
 
 	/**
-	 * Geometric (exponential) waiting time distribution for optimizations of
-	 * homogeneous populations.
-	 * 
-	 * @see IBSD#cloOptimize
-	 */
-	protected RNGDistribution.Geometric distrMutation;
-
-	/**
 	 * Short-cut to {@code species.get(0).getIBSPopulation()} for single species
 	 * models; {@code null} in multi-species models. Convenience field.
 	 */
-	protected IBSPopulation population;
-
-	/**
-	 * <code>true</code> if optimizations for homogeneous populations requested.
-	 * <p>
-	 * <strong>Note:</strong>
-	 * <ul>
-	 * <li>optimizations can be requested with the command line option
-	 * <code>--optimize</code>, see {@link IBSD#cloOptimize}.</li>
-	 * <li>currently restricted to discrete traits where homogeneous population
-	 * states can be skipped by deterministically introducing new mutant after an
-	 * geometrically (exponentially) distributed waiting time (see
-	 * {@link IBSD}).</li>
-	 * <li>requires small mutation rates.</li>
-	 * <li>does not work for variable population sizes.</li>
-	 * </ul>
-	 */
-	public boolean optimizeHomo = false;
+	protected IBSPopulation<?, ?> population;
 
 	/**
 	 * Flag to indicate whether the population updates are synchronous. In
@@ -137,7 +144,7 @@ public abstract class IBS extends Model {
 	 */
 	protected IBS(EvoLudo engine) {
 		super(engine);
-		type = Type.IBS;
+		type = ModelType.IBS;
 	}
 
 	/**
@@ -155,26 +162,12 @@ public abstract class IBS extends Model {
 	public void load() {
 		super.load();
 		for (Module<?> mod : species) {
-			IBSPopulation pop = mod.createIBSPopulation();
-			if (pop == null) {
-				if (mod instanceof org.evoludo.simulator.modules.Discrete) {
-					pop = new IBSDPopulation(engine, (org.evoludo.simulator.modules.Discrete) mod);
-				} else if (mod instanceof org.evoludo.simulator.modules.Continuous) {
-					// continuous module, check trait number
-					if (mod.getNTraits() > 1)
-						pop = new IBSMCPopulation(engine, (org.evoludo.simulator.modules.Continuous) mod);
-					else
-						pop = new IBSCPopulation(engine, (org.evoludo.simulator.modules.Continuous) mod);
-				} else {
-					engine.fatal("unknown module type '" + mod + "'... fix me!");
-					// fatal does not return control
-				}
-			}
+			IBSPopulation<?, ?> pop = createIBSPopulation(mod);
 			mod.setIBSPopulation(pop);
 		}
 		// now that all populations are instantiated, we can assign opponents
 		for (Module<?> mod : species) {
-			IBSPopulation pop = mod.getIBSPopulation();
+			IBSPopulation<?, ?> pop = mod.getIBSPopulation();
 			// set opponents
 			pop.setOpponentPop(mod.getOpponent().getIBSPopulation());
 		}
@@ -186,6 +179,31 @@ public abstract class IBS extends Model {
 		if (isMultispecies)
 			speciesUpdate = new SpeciesUpdate(main);
 		statisticsSettings = new Statistics(this);
+	}
+
+	/**
+	 * Factory method to create an {@link IBSPopulation} instance for the provided
+	 * module type.
+	 * 
+	 * @param mod module requesting a population implementation
+	 * @return instantiated population
+	 */
+	private IBSPopulation<?, ?> createIBSPopulation(Module<?> mod) {
+		IBSPopulation<?, ?> pop = mod.createIBSPopulation();
+		if (pop != null)
+			return pop;
+		if (mod instanceof org.evoludo.simulator.modules.Discrete)
+			return new IBSDPopulation(engine, (org.evoludo.simulator.modules.Discrete) mod);
+		if (mod instanceof org.evoludo.simulator.modules.Continuous) {
+			// continuous module, check trait number
+			if (mod.getNTraits() > 1)
+				return new IBSMCPopulation(engine, (org.evoludo.simulator.modules.Continuous) mod);
+			else
+				return new IBSCPopulation(engine, (org.evoludo.simulator.modules.Continuous) mod);
+		}
+		engine.fatal("unknown module type '" + mod + "'... fix me!");
+		// fatal does not return control
+		return null;
 	}
 
 	@Override
@@ -205,41 +223,33 @@ public abstract class IBS extends Model {
 	@Override
 	public boolean check() {
 		boolean doReset = super.check();
-		boolean allSync = true;
-		boolean allAsync = true;
-		boolean noneUnique = true;
-		boolean allPosFitness = true;
+		boolean anyUnique = false;
+		isSynchronous = false;
+		nTotal = 0;
 		for (Module<?> mod : species) {
-			IBSPopulation pop = mod.getIBSPopulation();
+			IBSPopulation<?, ?> pop = mod.getIBSPopulation();
 			doReset |= pop.check();
-			boolean sync = pop.getPopulationUpdate().isSynchronous();
-			allSync &= sync;
-			allAsync &= !sync;
-			if (mod instanceof Payoffs && mod.getMap2Fitness().map(((Payoffs) mod).getMinPayoff()) <= 0.0) {
-				// check if all payoffs are positive
-				allPosFitness = false;
-			}
-			if (!noneUnique)
+			nTotal += mod.getNPopulation();
+			isSynchronous |= pop.getPopulationUpdate().isSynchronous();
+			if (anyUnique)
 				continue;
-			Geometry geom = pop.getInteractionGeometry();
-			if (geom != null) {
-				noneUnique &= !geom.isUniqueGeometry();
-				if (geom.interCompSame)
-					continue;
+			AbstractGeometry geom = pop.interaction;
+			anyUnique |= geom.isUnique();
+			if (!geom.isSingle()) {
+				geom = pop.competition;
+				anyUnique |= geom.isUnique();
 			}
-			geom = pop.getCompetitionGeometry();
-			if (geom != null)
-				noneUnique &= !geom.isUniqueGeometry();
 		}
-		isSynchronous = !allAsync;
-		if (isSynchronous && !allSync) {
-			logger.warning("cannot (yet) mix synchronous and asynchronous population updates - forcing '"
-					+ PopulationUpdate.Type.SYNC + "'");
-			for (Module<?> mod : species)
-				mod.getIBSPopulation().getPopulationUpdate().setType(PopulationUpdate.Type.SYNC);
-			doReset = true;
+		// make sure all populations use same update scheme
+		for (Module<?> mod : species) {
+			PopulationUpdate pu = mod.getIBSPopulation().getPopulationUpdate();
+			if (pu.isSynchronous() != isSynchronous) {
+				pu.setType(PopulationUpdate.Type.SYNC);
+				logger.warning("forcing " + PopulationUpdate.Type.SYNC + " for population " + mod.getName() + ".");
+				doReset = true;
+			}
 		}
-		if (isMultispecies && !allPosFitness && speciesUpdate.getType() == SpeciesUpdate.Type.FITNESS) {
+		if (isMultispecies && speciesUpdate.getType() == SpeciesUpdate.Type.FITNESS && !positiveMinFitness()) {
 			// fitness based picking of focal species requires positive fitness
 			logger.warning("multispecies models with '" + SpeciesUpdate.Type.FITNESS
 					+ "' require positive minimum fitness - switching to '"
@@ -249,13 +259,13 @@ public abstract class IBS extends Model {
 		// update converged flag to account for changes that preclude convergence
 		if (!doReset) {
 			for (Module<?> mod : species) {
-				IBSPopulation pop = mod.getIBSPopulation();
+				IBSPopulation<?, ?> pop = mod.getIBSPopulation();
 				converged &= pop.checkConvergence();
 			}
 		}
 		// if no geometries are unique no need to reset model for statistics (init is
 		// sufficient)
-		if (noneUnique)
+		if (!anyUnique)
 			statisticsSettings.resetInterval = 0;
 		return doReset;
 	}
@@ -263,35 +273,42 @@ public abstract class IBS extends Model {
 	@Override
 	public void reset() {
 		super.reset();
-		// with optimization, homogeneous populations do not wait for next mutation
-		// currently only relevant for discrete traits, see IBSD
-		if (optimizeHomo) {
-			// NOTE: optimizeHomo == false if no mutations or isMultispecies == true
-			double pMutation = species.get(0).getMutation().probability;
-			if (distrMutation == null)
-				distrMutation = new RNGDistribution.Geometric(rng.getRNG(), pMutation);
-			else
-				distrMutation.setProbability(pMutation);
-		}
 		// if any population uses ephemeral payoffs a dummy random number
 		// generator is needed for the display
 		for (Module<?> mod : species) {
-			IBSPopulation pop = mod.getIBSPopulation();
+			IBSPopulation<?, ?> pop = mod.getIBSPopulation();
 			if (pop.getPlayerScoring().equals(ScoringType.EPHEMERAL)) {
 				ephrng = rng.clone();
 				break;
 			}
 		}
-		nextSpeciesIdx = -1;
+		// start with first species when taking turns
+		nextSpeciesIdx = (speciesUpdate != null && speciesUpdate.getType() == SpeciesUpdate.Type.TURNS ? -1 : 0);
 		for (Module<?> mod : species) {
-			IBSPopulation pop = mod.getIBSPopulation();
+			IBSPopulation<?, ?> pop = mod.getIBSPopulation();
 			pop.reset();
 		}
 	}
 
 	@Override
+	public boolean setMode(Mode mode) {
+		if (mode == Mode.STATISTICS_SAMPLE && fixData == null)
+			fixData = new FixationData();
+		else
+			fixData = null;
+		return super.setMode(mode);
+	}
+
+	@Override
 	public void init() {
 		init(false);
+	}
+
+	@Override
+	protected void resetState() {
+		super.resetState();
+		updates = 0.0;
+		time = (positiveMinFitness() ? 0.0 : Double.POSITIVE_INFINITY);
 	}
 
 	/**
@@ -306,19 +323,6 @@ public abstract class IBS extends Model {
 	 */
 	public void init(boolean soft) {
 		super.init();
-		// realtime meaningless if not all populations have positive minimum fitness
-		for (Module<?> mod : species) {
-			if (mod instanceof Payoffs) {
-				Map2Fitness map2fit = mod.getMap2Fitness();
-				if (map2fit.map(((Payoffs) mod).getMinPayoff()) <= 0.0) {
-					time = Double.POSITIVE_INFINITY;
-					break;
-				}
-				continue;
-			}
-			time = Double.POSITIVE_INFINITY;
-			break;
-		}
 		connect = false;
 		if (soft) {
 			// signal change to engine without destroying state
@@ -328,16 +332,50 @@ public abstract class IBS extends Model {
 		}
 		// initialize all populations
 		for (Module<?> mod : species) {
-			IBSPopulation pop = mod.getIBSPopulation();
+			IBSPopulation<?, ?> pop = mod.getIBSPopulation();
 			pop.init();
 		}
 		// check for convergence separately because initialization may want to
 		// relax the configuration, which could result in convergence
 		converged = true;
 		for (Module<?> mod : species) {
-			IBSPopulation pop = mod.getIBSPopulation();
+			IBSPopulation<?, ?> pop = mod.getIBSPopulation();
 			converged &= pop.checkConvergence();
 		}
+	}
+
+	/**
+	 * Checks whether all species have positive minimum fitness.
+	 * 
+	 * @return {@code true} if all species have positive minimum fitness
+	 */
+	private boolean positiveMinFitness() {
+		for (Module<?> mod : species) {
+			if (!(mod instanceof Payoffs)
+					|| mod.getMap2Fitness().map(((Payoffs) mod).getMinPayoff()) <= 0.0)
+				return false;
+		}
+		return true;
+	}
+
+	@Override
+	public double getUpdates() {
+		return updates;
+	}
+
+	@Override
+	public double getTime() {
+		return time;
+	}
+
+	@Override
+	public String getCounter() {
+		if (mode != Mode.DYNAMICS)
+			return super.getCounter();
+		String upd = "Updates: " + Formatter.format(getUpdates(), 2);
+		if (time < Double.POSITIVE_INFINITY)
+			return super.getCounter() + " (" + upd + ")";
+		return upd;
 	}
 
 	@Override
@@ -346,13 +384,13 @@ public abstract class IBS extends Model {
 		// inter-species interactions
 		for (Module<?> mod : species) {
 			if (mod instanceof Payoffs) {
-				IBSPopulation pop = mod.getIBSPopulation();
+				IBSPopulation<?, ?> pop = mod.getIBSPopulation();
 				pop.resetScores();
 			}
 		}
 		for (Module<?> mod : species) {
 			if (mod instanceof Payoffs) {
-				IBSPopulation pop = mod.getIBSPopulation();
+				IBSPopulation<?, ?> pop = mod.getIBSPopulation();
 				pop.updateScores();
 			}
 		}
@@ -373,42 +411,11 @@ public abstract class IBS extends Model {
 			}
 			initStatisticsSample();
 			update();
-			// debugCheck("next (new sample)");
 			return true;
 		}
 		// convergence only signaled without mutations
-		if (converged && !optimizeHomo) {
+		if (converged) {
 			return false;
-		}
-		// this implies single species
-		// (otherwise optimizeHomo == false and population == null)
-		if (optimizeHomo && population.isMonomorphic()) {
-			engine.fireModelRunning();
-			// optimize waiting time in homogeneous states by advancing time and
-			// deterministically introduce new mutant (currently single species only)
-			// optimizeHomo also requires that mutations are rare (otherwise this
-			// optimization is pointless); more specifically mutation rates
-			// <0.1/nPopulation such that mutations occur less than every 10
-			// generations and hence scores can be assumed to be homogeneous when
-			// the mutant arises.
-			Module<?> module = population.getModule();
-			double realunit = 1.0 / population.getSpeciesUpdateRate();
-			int nPop = module.getNPopulation();
-			double unit = 1.0 / nPop;
-			// skip time to next event
-			int dt = distrMutation.next();
-			// XXX this can easily skip past requested stops - ignore?
-			updates += dt * unit;
-			time += RNGDistribution.Exponential.next(rng.getRNG(), dt * realunit);
-			population.resetTraits();
-			update();
-			// communicate update
-			engine.fireModelChanged();
-			time += realunit;
-			updates += unit;
-			// introduce mutation uniformly at random
-			population.mutateAt(random0n(nPop));
-			return true;
 		}
 		double nextHalt = getNextHalt();
 		// continue if milestone reached in previous step, i.e. deltat < 1e-8
@@ -428,13 +435,13 @@ public abstract class IBS extends Model {
 		// multi-species modules with different population sizes or different
 		// update rates.
 		double minIncr = 1.0 / species.get(0).getNPopulation();
-		return (Math.abs(nextHalt - updates) >= minIncr);
+		return (updates > nextHalt || Math.abs(nextHalt - updates) >= minIncr);
 	}
 
 	/**
 	 * Pointer to focal species for debugging.
 	 */
-	IBSPopulation debugFocalSpecies;
+	IBSPopulation<?, ?> debugFocalSpecies;
 
 	/**
 	 * Advances the IBS model by a step of size {@code stepDt}. The actual time
@@ -458,152 +465,214 @@ public abstract class IBS extends Model {
 	 * @see org.evoludo.simulator.modules.Discrete#cloMonoStop
 	 */
 	public boolean ibsStep(double stepDt) {
-		// synchronous population updates
-		if (isSynchronous) {
-			int nPopTot = 0;
-			double scoreTot = 0.0;
-			double popFrac = 1.0;
-			// reset traits (colors)
-			for (Module<?> mod : species) {
-				IBSPopulation pop = mod.getIBSPopulation();
-				pop.resetTraits();
-				popFrac *= pop.getSyncFraction();
-				nPopTot += pop.getPopulationSize();
-				scoreTot += pop.getTotalFitness();
-			}
-			// nUpdates measured in generations
-			int nUpdates = Math.max(1, (int) Math.floor(stepDt));
-			for (int f = 0; f < nUpdates; f++) {
-				// advance time and real time (if possible)
-				time = (scoreTot <= 1e-8 ? Double.POSITIVE_INFINITY : time + nPopTot * popFrac / scoreTot);
-				updates += popFrac;
-				// update populations
-				for (Module<?> mod : species) {
-					IBSPopulation pop = mod.getIBSPopulation();
-					pop.prepareTraits();
-					pop.step();
-					pop.isConsistent();
-				}
-				// commit traits and reset scores
-				for (Module<?> mod : species) {
-					IBSPopulation pop = mod.getIBSPopulation();
-					pop.commitTraits(); // also check homogeneity
-					// TODO: review migration - should be an independent event, independent of
-					// population update
-					// NOTE: should time advance? e.g. based on number of mutants
-					pop.doSyncMigration(); // do migration
-					// all scores must be reset before we can re-calculate them
-					pop.resetScores();
-				}
-				// calculate new scores (requires that all traits are committed and reset)
-				converged = true;
-				for (Module<?> mod : species) {
-					IBSPopulation pop = mod.getIBSPopulation();
-					pop.updateScores();
-					converged &= pop.checkConvergence();
-					scoreTot += pop.getTotalFitness();
-				}
-				if (converged)
-					return false;
-			}
-			return true;
-		}
+		return isSynchronous ? ibsStepSync(stepDt) : ibsStepAsync(stepDt);
+	}
 
-		// asynchronous population update - update one individual at a time
-		double nTot = 0.0;
-		double totRate = 0.0;
-		// reset traits (colors)
-		for (Module<?> mod : species) {
-			IBSPopulation pop = mod.getIBSPopulation();
-			pop.resetTraits();
-			// NOTE: generation time increments based on maximum population sizes; otherwise
-			// notion of generations gets confusing; for ecological settings realtime might
-			// be more relevant.
-			nTot += mod.getNPopulation();
-			totRate += pop.getSpeciesUpdateRate();
+	/**
+	 * Advances the IBS model by a step of size {@code stepDt}. This corresponds to
+	 * {@code nTotal * stepDt} individual updates, where {@code nTotal} is the total
+	 * population size across all species. The actual number of updates may be less
+	 * than {@code stepDt} if the simulation has converged.
+	 * 
+	 * @param stepDt the time increment requested for advancing the IBS model
+	 * @return <code>true</code> if <code>ibsStep(double)</code> can be called
+	 *         again.
+	 */
+	private boolean ibsStepSync(double stepDt) {
+		// reset traits and collect totals based on current populations
+		double totRate = resetTraits();
+		double gincr = 1.0 / nTotal;
+		// nUpdates measured in generations
+		int nUpdates = Math.max(1, (int) Math.floor(stepDt));
+		for (int f = 0; f < nUpdates; f++) {
+			// update populations
+			int dt = 0;
+			for (Module<?> mod : species) {
+				IBSPopulation<?, ?> pop = mod.getIBSPopulation();
+				pop.prepareTraits();
+				dt += pop.step();
+				pop.isConsistent();
+			}
+			// advance time and real time (if possible)
+			updates += dt * gincr;
+			if (time < Double.POSITIVE_INFINITY)
+				time += RNGDistribution.Exponential.next(rng.getRNG(), dt / totRate);
+			// commit traits and reset scores
+			for (Module<?> mod : species) {
+				IBSPopulation<?, ?> pop = mod.getIBSPopulation();
+				pop.commitTraits(); // also check homogeneity
+				// TODO: review migration - should be an independent event, independent of
+				// population update
+				// NOTE: should time advance? e.g. based on number of mutants
+				pop.doSyncMigration(); // do migration
+				// all scores must be reset before we can re-calculate them
+				pop.resetScores();
+			}
+			// calculate new scores (requires that all traits are committed and reset)
+			totRate = updateScores();
+			if (converged)
+				return false;
 		}
+		return true;
+	}
+
+	/**
+	 * Advances the IBS model by a step of size {@code stepDt}. This corresponds to
+	 * {@code nTotal * stepDt} individual updates, where {@code nTotal} is the total
+	 * population size across all species. The actual number of updates may be less
+	 * than
+	 * {@code stepDt} if the simulation has converged.
+	 * 
+	 * @param stepDt the time increment requested for advancing the IBS model
+	 * @return <code>true</code> if <code>ibsStep(double)</code> can be called
+	 *         again.
+	 */
+	private boolean ibsStepAsync(double stepDt) {
+		// reset traits and collect totals based on current populations
+		double totRate = resetTraits();
 		// gincr is a constant because based on total maximum population sizes
-		double gincr = 1.0 / nTot;
+		double gincr = 1.0 / nTotal;
 		// process at least one update.
 		// NOTE: nUpdates can exceed Integer.MAX_VALUE (notably for large populations
-		// and
-		// long relaxation times). switching to long is not an option because of GWT!
-		double dUpdates = Math.max(1.0, Math.ceil(stepDt / gincr - 1e-8));
+		// and long relaxation times). using long is not an option because of GWT!
+		double dUpdates = Math.max(1.0, Math.ceil(stepDt * nTotal - 1e-8));
 		double stepDone = 0.0;
 		double gStart = updates;
-		updates: while (dUpdates >= 1.0) {
-			double stepSize;
+		while (dUpdates >= 1.0) {
 			int nUpdates = Math.min((int) dUpdates, 1000000000); // 1e9 about half of Integer.MAX_VALUE (2.1e9)
-			for (int n = 0; n < nUpdates; n++) {
-				// update event
-				int dt = 0;
-				debugFocalSpecies = pickFocalSpecies();
-				switch (pickEvent(debugFocalSpecies)) {
-					// standard replication event
-					case REPLICATION:
-						dt = debugFocalSpecies.step();
-						break;
-					// uniform mutation event (temperature based mutations are part of replication
-					// events)
-					case MUTATION:
-						dt = debugFocalSpecies.mutate();
-						break;
-					// uniform migration events (temperature based migrations are part of
-					// replication events)
-					// case MIGRATION:
-					// dt = debugFocalSpecies.migrate();
-					// break;
-					default:
-						engine.fatal("unknown event type...");
-				}
-				// advance time and real time (if possible)
-				if (dt == 0) {
-					// if no time elapsed, nothing happened
-					n--;
-					continue;
-				}
-				if (debugFocalSpecies.getPopulationUpdate().getType() == PopulationUpdate.Type.ONCE) {
-					updates++;
-					n += debugFocalSpecies.getModule().getNPopulation();
-				} else {
-					updates += gincr;
-				}
-				converged = true;
-				if (dt > 0 && time < Double.POSITIVE_INFINITY)
-					time += RNGDistribution.Exponential.next(rng.getRNG(), dt / totRate);
-				totRate = 0.0;
-				for (Module<?> mod : species) {
-					IBSPopulation pop = mod.getIBSPopulation();
-					pop.isConsistent();
-					converged &= pop.checkConvergence();
-					totRate += pop.getSpeciesUpdateRate();
-				}
-				if (converged) {
-					stepSize = n * gincr;
-					stepDone += Math.abs(stepSize);
-					updates = gStart + Math.abs(stepDone);
-					break updates;
-				}
-			}
-			stepSize = nUpdates * gincr;
+			int processed = processEvents(nUpdates, gincr, totRate);
+			double stepSize = processed * gincr;
 			stepDone += Math.abs(stepSize);
 			updates = gStart + Math.abs(stepDone);
 			dUpdates = (stepDt - stepDone) / gincr;
+			if (converged)
+				break;
 		}
+		resetScores();
+		return !converged;
+	}
+
+	/**
+	 * Resets the traits for all populations and returns the total update rate
+	 * across all species.
+	 * 
+	 * @return the total update rate across all species
+	 */
+	private double resetTraits() {
+		double totRate = 0.0;
 		for (Module<?> mod : species) {
-			IBSPopulation pop = mod.getIBSPopulation();
+			IBSPopulation<?, ?> pop = mod.getIBSPopulation();
+			pop.resetTraits();
+			totRate += pop.getSpeciesUpdateRate();
+		}
+		return totRate;
+	}
+
+	/**
+	 * Resets the scores for all populations that use ephemeral payoffs.
+	 */
+	private void resetScores() {
+		for (Module<?> mod : species) {
+			IBSPopulation<?, ?> pop = mod.getIBSPopulation();
 			if (!pop.playerScoring.equals(ScoringType.EPHEMERAL))
 				continue;
-			// recalculate scores of entire population for display
-			// these scores are just an example and are not used for
-			// any calculations; use independent random number generator!
 			RNGDistribution freeze = rng;
 			rng = ephrng;
 			pop.resetScores();
 			pop.updateScores();
 			rng = freeze;
 		}
-		return !converged;
+	}
+
+	/**
+	 * For <em>asynchronous</em> updates, updates the scores for all populations,
+	 * checks convergence across all species and returns the total update rate.
+	 * 
+	 * @return the total update rate across all species
+	 */
+	private double checkConvergence() {
+		converged = true;
+		double totRate = 0.0;
+		for (Module<?> mod : species) {
+			IBSPopulation<?, ?> pop = mod.getIBSPopulation();
+			pop.isConsistent();
+			converged &= pop.checkConvergence();
+			totRate += pop.getSpeciesUpdateRate();
+		}
+		return totRate;
+	}
+
+	/**
+	 * For <em>synchronous</em> updates, updates the scores for all populations,
+	 * checks convergence across all species and returns the total update rate.
+	 * 
+	 * @return the total update rate across all species
+	 */
+	private double updateScores() {
+		converged = true;
+		double totRate = 0.0;
+		for (Module<?> mod : species) {
+			IBSPopulation<?, ?> pop = mod.getIBSPopulation();
+			pop.updateScores();
+			converged &= pop.checkConvergence();
+			totRate += pop.getSpeciesUpdateRate();
+		}
+		return totRate;
+	}
+
+	/**
+	 * Processes up to {@code nUpdates} events, updating time and updates
+	 * appropriately.
+	 * 
+	 * @param nUpdates the maximum number of updates to process
+	 * @param gincr    the growth increment
+	 * @param totRate  the total update rate
+	 * @return the number of processed updates
+	 */
+	private int processEvents(int nUpdates, double gincr, double totRate) {
+		int n = 0;
+		while (n < nUpdates) {
+			// update event
+			int dt = processEvent();
+			// advance time and real time (if possible)
+			if (dt > 0) {
+				// if no time elapsed, nothing happened
+				if (debugFocalSpecies.getPopulationUpdate().getType() == PopulationUpdate.Type.ONCE) {
+					updates += dt;
+					n += debugFocalSpecies.getPopulationSize();
+				} else {
+					updates += dt * gincr;
+					n += dt;
+				}
+				if (time < Double.POSITIVE_INFINITY)
+					time += RNGDistribution.Exponential.next(rng.getRNG(), dt / totRate);
+				totRate = checkConvergence();
+			} else if (dt < 0) {
+				// indicates extinction of a species
+				checkConvergence();
+			}
+			if (converged)
+				return n;
+		}
+		return nUpdates;
+	}
+
+	/**
+	 * Processes a single event.
+	 * 
+	 * @return the time increment associated with the event
+	 */
+	private int processEvent() {
+		debugFocalSpecies = pickFocalSpecies();
+		switch (pickEvent(debugFocalSpecies)) {
+			case REPLICATION:
+				return debugFocalSpecies.step();
+			case MUTATION:
+				return debugFocalSpecies.mutate();
+			default:
+				engine.fatal("unknown event type...");
+				return 0; // unreachable
+		}
 	}
 
 	@Override
@@ -626,7 +695,8 @@ public abstract class IBS extends Model {
 	 * 
 	 * @return the {@code IBSPopulation}
 	 */
-	IBSPopulation getIBSPopulation(int id) {
+	@SuppressWarnings("java:S1452") // impossible to specify generic type here
+	IBSPopulation<?, ?> getIBSPopulation(int id) {
 		return getSpecies(id).getIBSPopulation();
 	}
 
@@ -659,7 +729,7 @@ public abstract class IBS extends Model {
 		if (isMultispecies) {
 			StringBuilder sb = new StringBuilder();
 			for (Module<?> mod : species) {
-				IBSPopulation pop = mod.getIBSPopulation();
+				IBSPopulation<?, ?> pop = mod.getIBSPopulation();
 				if (sb.length() > 0) {
 					sb.append("<br/><i>");
 				} else {
@@ -694,7 +764,7 @@ public abstract class IBS extends Model {
 			int skip = 0;
 			double[] tmp = new double[mean.length];
 			for (Module<?> mod : species) {
-				IBSPopulation pop = mod.getIBSPopulation();
+				IBSPopulation<?, ?> pop = mod.getIBSPopulation();
 				pop.getMeanTraits(tmp);
 				System.arraycopy(tmp, 0, mean, skip, pop.nTraits);
 				skip += pop.nTraits;
@@ -726,7 +796,7 @@ public abstract class IBS extends Model {
 			int skip = 0;
 			double[] tmp = new double[mean.length];
 			for (Module<?> mod : species) {
-				IBSPopulation pop = mod.getIBSPopulation();
+				IBSPopulation<?, ?> pop = mod.getIBSPopulation();
 				pop.getMeanFitness(tmp);
 				int nt = mod.getNTraits();
 				System.arraycopy(tmp, 0, mean, skip, nt);
@@ -806,7 +876,7 @@ public abstract class IBS extends Model {
 	 * @return <code>false</code> if no actions taken
 	 */
 	public boolean mouseHitNode(int id, int hit, boolean alt) {
-		IBSPopulation pop = getIBSPopulation(id);
+		IBSPopulation<?, ?> pop = getIBSPopulation(id);
 		if (!pop.mouseHitNode(hit, alt)) {
 			// nothing changed
 			return false;
@@ -841,7 +911,8 @@ public abstract class IBS extends Model {
 	 * 
 	 * @see SpeciesUpdate.Type
 	 */
-	public IBSPopulation pickFocalSpecies() {
+	@SuppressWarnings("java:S1452") // impossible to specify generic type here
+	public IBSPopulation<?, ?> pickFocalSpecies() {
 		if (!isMultispecies)
 			return population;
 		double[] rates = new double[nSpecies];
@@ -850,7 +921,7 @@ public abstract class IBS extends Model {
 		switch (speciesUpdate.getType()) {
 			case FITNESS:
 				for (Module<?> mod : species) {
-					IBSPopulation pop = mod.getIBSPopulation();
+					IBSPopulation<?, ?> pop = mod.getIBSPopulation();
 					double rate = pop.getTotalFitness();
 					rates[idx++] = rate;
 					total += rate;
@@ -858,7 +929,7 @@ public abstract class IBS extends Model {
 				return pickFocalSpecies(rates, total);
 			case SIZE:
 				for (Module<?> mod : species) {
-					IBSPopulation pop = mod.getIBSPopulation();
+					IBSPopulation<?, ?> pop = mod.getIBSPopulation();
 					double rate = pop.getPopulationSize();
 					rates[idx++] = rate;
 					total += rate;
@@ -866,7 +937,7 @@ public abstract class IBS extends Model {
 				return pickFocalSpecies(rates, total);
 			case RATE:
 				for (Module<?> mod : species) {
-					IBSPopulation pop = mod.getIBSPopulation();
+					IBSPopulation<?, ?> pop = mod.getIBSPopulation();
 					double rate = pop.getSpeciesUpdateRate();
 					rates[idx++] = rate;
 					total += rate;
@@ -878,7 +949,7 @@ public abstract class IBS extends Model {
 				return pickFocalSpecies(random0n(nSpecies));
 			// case SYNC:
 			default:
-				throw new Error("unknown species update type!");
+				throw new UnsupportedOperationException("Unknown species update type!");
 		}
 	}
 
@@ -890,7 +961,7 @@ public abstract class IBS extends Model {
 	 * @param total the sum of the rates
 	 * @return the focal population or <code>null</code> if all populations extinct
 	 */
-	private IBSPopulation pickFocalSpecies(double[] rates, double total) {
+	private IBSPopulation<?, ?> pickFocalSpecies(double[] rates, double total) {
 		if (!isMultispecies)
 			return population;
 		double pick = random01() * total;
@@ -917,13 +988,13 @@ public abstract class IBS extends Model {
 	 * @param skip the number of species to skip
 	 * @return the focal population or <code>null</code> all populations extinct
 	 */
-	private IBSPopulation pickFocalSpecies(int skip) {
+	private IBSPopulation<?, ?> pickFocalSpecies(int skip) {
 		if (!isMultispecies)
 			return population;
 		int speciesIdx = nextSpeciesIdx + skip;
 		for (int i = 0; i < nSpecies; i++) {
 			nextSpeciesIdx = (speciesIdx + i) % nSpecies;
-			IBSPopulation pop = species.get(nextSpeciesIdx).getIBSPopulation();
+			IBSPopulation<?, ?> pop = species.get(nextSpeciesIdx).getIBSPopulation();
 			if (pop.getPopulationSize() > 0)
 				return pop;
 		}
@@ -936,9 +1007,9 @@ public abstract class IBS extends Model {
 	 * @param pop the focal population
 	 * @return the next event
 	 */
-	protected Event pickEvent(IBSPopulation pop) {
+	protected Event pickEvent(IBSPopulation<?, ?> pop) {
 		Mutation mu = pop.module.getMutation();
-		if (mu.temperature || mu.probability <= 0.0 || random01() > mu.probability)
+		if (mu.temperature || mu.getProbability() <= 0.0 || random01() > mu.getProbability())
 			return Event.REPLICATION;
 		return Event.MUTATION;
 	}
@@ -972,7 +1043,7 @@ public abstract class IBS extends Model {
 	 * @see Map2Fitness#setSelection(double)
 	 */
 	public final CLOption cloAccumulatedScores = new CLOption("accuscores", "noaccu", CLOption.Argument.NONE,
-			Category.Model,
+			CLOCategory.Model,
 			"--accuscores    accumulate scores (instead of averaging)",
 			new CLODelegate() {
 
@@ -986,11 +1057,11 @@ public abstract class IBS extends Model {
 				 * @param arg ignored
 				 */
 				@Override
-				public boolean parse(String arg) {
+				public boolean parse(boolean isSet) {
 					// default is to average scores
 					for (Module<?> mod : species) {
-						IBSPopulation pop = mod.getIBSPopulation();
-						pop.setPlayerScoreAveraged(!cloAccumulatedScores.isSet());
+						IBSPopulation<?, ?> pop = mod.getIBSPopulation();
+						pop.setPlayerScoreAveraged(!isSet);
 					}
 					return true;
 				}
@@ -1002,7 +1073,7 @@ public abstract class IBS extends Model {
 	 * @see ScoringType
 	 */
 	public final CLOption cloScoringType = new CLOption("resetscores", ScoringType.RESET_ALWAYS.getKey(),
-			CLOption.Argument.REQUIRED, Category.Model,
+			CLOption.Argument.REQUIRED, CLOCategory.Model,
 			"--resetscores <t>  type for resetting scores t:",
 			new CLODelegate() {
 
@@ -1022,7 +1093,7 @@ public abstract class IBS extends Model {
 							: arg.split(CLOParser.VECTOR_DELIMITER);
 					int n = 0;
 					for (Module<?> mod : species) {
-						IBSPopulation pop = mod.getIBSPopulation();
+						IBSPopulation<?, ?> pop = mod.getIBSPopulation();
 						String rest = playerresets[n++ % playerresets.length];
 						ScoringType st = (ScoringType) cloScoringType.match(rest);
 						if (st == null)
@@ -1038,7 +1109,7 @@ public abstract class IBS extends Model {
 	 * or a random subsample.
 	 */
 	public final CLOption cloInteractions = new CLOption("interactions", IBSGroup.SamplingType.ALL.getKey(),
-			Category.Model,
+			CLOCategory.Model,
 			"--interactions <t [n]> select interaction type t:",
 			new CLODelegate() {
 
@@ -1059,7 +1130,7 @@ public abstract class IBS extends Model {
 							: arg.split(CLOParser.VECTOR_DELIMITER);
 					int n = 0;
 					for (Module<?> mod : species) {
-						IBSPopulation pop = mod.getIBSPopulation();
+						IBSPopulation<?, ?> pop = mod.getIBSPopulation();
 						String intertype = interactiontypes[n++ % interactiontypes.length];
 						IBSGroup.SamplingType intt = (IBSGroup.SamplingType) cloInteractions.match(intertype);
 						IBSGroup group = pop.getInterGroup();
@@ -1082,7 +1153,7 @@ public abstract class IBS extends Model {
 	 * the neighbours of a player for updating their trait.
 	 */
 	public final CLOption cloReferences = new CLOption("references", IBSGroup.SamplingType.RANDOM.getKey() + " 1",
-			Category.Model,
+			CLOCategory.Model,
 			"--references <t [n]> select reference type t:",
 			new CLODelegate() {
 
@@ -1104,7 +1175,7 @@ public abstract class IBS extends Model {
 							: arg.split(CLOParser.VECTOR_DELIMITER);
 					int n = 0;
 					for (Module<?> mod : species) {
-						IBSPopulation pop = mod.getIBSPopulation();
+						IBSPopulation<?, ?> pop = mod.getIBSPopulation();
 						String reftype = referencetypes[n++ % referencetypes.length];
 						IBSGroup.SamplingType reft = (IBSGroup.SamplingType) cloReferences.match(reftype);
 						IBSGroup group = pop.getCompGroup();
@@ -1125,7 +1196,7 @@ public abstract class IBS extends Model {
 	/**
 	 * Command line option to set the migration types and probabilities of players.
 	 */
-	public final CLOption cloMigration = new CLOption("migration", "none", Category.Model,
+	public final CLOption cloMigration = new CLOption("migration", "none", CLOCategory.Model,
 			"--migration <tp>  migration (t type, p probability)",
 			new CLODelegate() {
 
@@ -1147,26 +1218,27 @@ public abstract class IBS extends Model {
 							: arg.split(CLOParser.VECTOR_DELIMITER);
 					int n = 0;
 					for (Module<?> mod : species) {
-						IBSPopulation pop = mod.getIBSPopulation();
+						IBSPopulation<?, ?> pop = mod.getIBSPopulation();
 						String migt = migrationtypes[n++ % migrationtypes.length];
 						MigrationType mt = (MigrationType) cloMigration.match(migt);
-						if (mt == null)
-							return false;
-						pop.setMigrationType(mt);
-						if (pop.getMigrationType() == MigrationType.NONE) {
-							pop.setMigrationProb(0.0);
-							continue;
-						}
-						String keyarg = CLOption.stripKey(mt, arg);
-						if (keyarg.length() > 0) {
-							pop.setMigrationProb(CLOParser.parseDouble(keyarg));
-							double mig = pop.getMigrationProb();
-							if (mig < 1e-8) {
-								logger.warning((isMultispecies ? mod.getName() + ": " : "")
-										+ "migration rate too small (" + Formatter.formatSci(mig, 4)
-										+ ") - reverting to no migration");
-								pop.setMigrationType(MigrationType.NONE);
+						if (mt != null) {
+							pop.setMigrationType(mt);
+							if (mt == MigrationType.NONE) {
 								pop.setMigrationProb(0.0);
+							} else {
+								String keyarg = CLOption.stripKey(mt, arg);
+								if (!keyarg.isEmpty()) {
+									pop.setMigrationProb(CLOParser.parseDouble(keyarg));
+									double mig = pop.getMigrationProb();
+									if (mig < 1e-8) {
+										if (logger.isLoggable(Level.WARNING))
+											logger.warning((isMultispecies ? mod.getName() + ": " : "")
+													+ "migration rate too small (" + Formatter.formatSci(mig, 4)
+													+ ") - reverting to no migration");
+										pop.setMigrationType(MigrationType.NONE);
+										pop.setMigrationProb(0.0);
+									}
+								}
 							}
 							continue;
 						}
@@ -1180,11 +1252,11 @@ public abstract class IBS extends Model {
 	 * Command line option to set the interaction geometry. This overrides the
 	 * {@link Module#cloGeometry} settings.
 	 * 
-	 * @see Geometry.Type
+	 * @see GeometryType
 	 * @see #cloGeometryCompetition
 	 * @see Module#cloGeometry
 	 */
-	public final CLOption cloGeometryInteraction = new CLOption("geominter", "M", Category.Model,
+	public final CLOption cloGeometryInteraction = new CLOption("geominter", null, CLOCategory.Model,
 			"--geominter <>  interaction geometry (see --geometry)",
 			new CLODelegate() {
 
@@ -1203,18 +1275,18 @@ public abstract class IBS extends Model {
 				public boolean parse(String arg) {
 					// only act if option has been explicitly specified - otherwise cloGeometry will
 					// take care of this
-					if (!cloGeometryInteraction.isSet())
-						return true;
-					String[] geomargs = arg.split(CLOParser.SPECIES_DELIMITER);
-					boolean doReset = false;
-					int n = 0;
-					for (Module<?> mod : species) {
-						IBSPopulation pop = mod.getIBSPopulation();
-						// creates new interaction geometry if null or equal to getGeometry()
-						Geometry geom = pop.createInteractionGeometry();
-						doReset |= geom.parse(geomargs[n++ % geomargs.length]);
+					if (arg != null) {
+						String[] geomargs = arg.split(CLOParser.SPECIES_DELIMITER);
+						boolean doReset = false;
+						int n = 0;
+						for (Module<?> mod : species) {
+							// creates new interaction geometry
+							IBSPopulation<?, ?> ibs = mod.getIBSPopulation();
+							ibs.interaction = AbstractGeometry.create(engine, geomargs[n % geomargs.length]);
+							doReset |= ibs.interaction.parse();
+						}
+						engine.requiresReset(doReset);
 					}
-					engine.requiresReset(doReset);
 					return true;
 				}
 			});
@@ -1223,11 +1295,11 @@ public abstract class IBS extends Model {
 	 * Command line option to set the competition geometry. This overrides the
 	 * {@link Module#cloGeometry} settings.
 	 * 
-	 * @see Geometry.Type
+	 * @see GeometryType
 	 * @see #cloGeometryInteraction
 	 * @see Module#cloGeometry
 	 */
-	public final CLOption cloGeometryCompetition = new CLOption("geomcomp", "M", Category.Model,
+	public final CLOption cloGeometryCompetition = new CLOption("geomcomp", null, CLOCategory.Model,
 			"--geomcomp <>   competition geometry (see --geometry)",
 			new CLODelegate() {
 
@@ -1246,18 +1318,18 @@ public abstract class IBS extends Model {
 				public boolean parse(String arg) {
 					// only act if option has been explicitly specified - otherwise cloGeometry will
 					// take care of this
-					if (!cloGeometryCompetition.isSet())
-						return true;
-					String[] geomargs = arg.split(CLOParser.SPECIES_DELIMITER);
-					boolean doReset = false;
-					int n = 0;
-					for (Module<?> mod : species) {
-						IBSPopulation pop = mod.getIBSPopulation();
-						// creates new competition geometry if null or equal to getGeometry()
-						Geometry geom = pop.createCompetitionGeometry();
-						doReset |= geom.parse(geomargs[n++ % geomargs.length]);
+					if (arg != null) {
+						String[] geomargs = arg.split(CLOParser.SPECIES_DELIMITER);
+						boolean doReset = false;
+						int n = 0;
+						for (Module<?> mod : species) {
+							// creates new competition geometry
+							IBSPopulation<?, ?> ibs = mod.getIBSPopulation();
+							ibs.competition = AbstractGeometry.create(engine, geomargs[n % geomargs.length]);
+							doReset |= ibs.competition.parse();
+						}
+						engine.requiresReset(doReset);
 					}
-					engine.requiresReset(doReset);
 					return true;
 				}
 			});
@@ -1268,7 +1340,7 @@ public abstract class IBS extends Model {
 	 * directed links (where undirected links count as two directed links), which
 	 * potentially breaks undirected ones.
 	 */
-	public final CLOption cloGeometryRewire = new CLOption("rewire", "0", Category.Model,
+	public final CLOption cloGeometryRewire = new CLOption("rewire", "0", CLOCategory.Model,
 			"--rewire <i[,c]>  rewire fraction of links (interaction/competition)",
 			new CLODelegate() {
 
@@ -1289,7 +1361,7 @@ public abstract class IBS extends Model {
 					String[] rewireargs = arg.split(CLOParser.SPECIES_DELIMITER);
 					int n = 0;
 					for (Module<?> mod : species) {
-						IBSPopulation pop = mod.getIBSPopulation();
+						IBSPopulation<?, ?> pop = mod.getIBSPopulation();
 						double[] rewire = CLOParser.parseVector(rewireargs[n++ % rewireargs.length]);
 						pop.setRewire(rewire);
 					}
@@ -1302,7 +1374,7 @@ public abstract class IBS extends Model {
 	 * undirected only undirected links are added and if graph is directed only
 	 * directed links are added.
 	 */
-	public final CLOption cloGeometryAddwire = new CLOption("addwire", "0", Category.Model,
+	public final CLOption cloGeometryAddwire = new CLOption("addwire", "0", CLOCategory.Model,
 			"--addwire <i[,c]>  add fraction of links (interaction/competition)",
 			new CLODelegate() {
 
@@ -1323,7 +1395,7 @@ public abstract class IBS extends Model {
 					String[] addargs = arg.split(CLOParser.SPECIES_DELIMITER);
 					int n = 0;
 					for (Module<?> mod : species) {
-						IBSPopulation pop = mod.getIBSPopulation();
+						IBSPopulation<?, ?> pop = mod.getIBSPopulation();
 						double[] add = CLOParser.parseVector(addargs[n++ % addargs.length]);
 						pop.setAddwire(add);
 					}
@@ -1335,7 +1407,7 @@ public abstract class IBS extends Model {
 	 * Command line option to enable consistency checks.
 	 */
 	public final CLOption cloConsistency = new CLOption("consistency", "noconsistency", CLOption.Argument.NONE,
-			Category.Model,
+			CLOCategory.Model,
 			"--consistency   check consistency of scores etc.", new CLODelegate() {
 
 				/**
@@ -1346,10 +1418,10 @@ public abstract class IBS extends Model {
 				 * @param arg the ignored argument
 				 */
 				@Override
-				public boolean parse(String arg) {
+				public boolean parse(boolean isSet) {
 					for (Module<?> mod : species) {
-						IBSPopulation pop = mod.getIBSPopulation();
-						pop.setConsistencyCheck(cloConsistency.isSet());
+						IBSPopulation<?, ?> pop = mod.getIBSPopulation();
+						pop.setConsistencyCheck(isSet);
 					}
 					return true;
 				}
@@ -1393,7 +1465,7 @@ public abstract class IBS extends Model {
 			cloReferences.clearKeys();
 			cloReferences.addKeys(IBSGroup.SamplingType.values());
 		}
-		IBSPopulation ibs = species.get(0).getIBSPopulation();
+		IBSPopulation<?, ?> ibs = species.get(0).getIBSPopulation();
 		PopulationUpdate pup = ibs.getPopulationUpdate();
 		// ToDo: further updates to implement or make standard
 		pup.clo.clearKeys();
@@ -1442,7 +1514,7 @@ public abstract class IBS extends Model {
 	 * <dd>Determine payoffs/fitness calculated only for updating</dd>
 	 * </dl>
 	 */
-	public static enum ScoringType implements CLOption.Key {
+	public enum ScoringType implements CLOption.Key {
 
 		/**
 		 * Reset when <em>changing</em> trait (only after updating from reference model
@@ -1646,7 +1718,7 @@ public abstract class IBS extends Model {
 		/**
 		 * Command line option to customize statistics settings.
 		 */
-		public final CLOption clo = new CLOption("statistics", "reset 1", Category.Simulation,
+		public final CLOption clo = new CLOption("statistics", "reset 1", CLOCategory.Simulation,
 				null, new CLODelegate() {
 					@Override
 					public boolean parse(String arg) {
@@ -1665,8 +1737,7 @@ public abstract class IBS extends Model {
 
 					@Override
 					public String getDescription() {
-						String descr = "--statistics <s>  settings:\n" + clo.getDescriptionKey();
-						return descr;
+						return "--statistics <s>  settings:\n" + clo.getDescriptionKey();
 					}
 				});
 
@@ -1732,9 +1803,10 @@ public abstract class IBS extends Model {
 		plist.append(Plist.encodeKey("Generation", updates));
 		boolean isMultiSpecies = (species.size() > 1);
 		for (Module<?> mod : species) {
-			IBSPopulation pop = mod.getIBSPopulation();
+			IBSPopulation<?, ?> pop = mod.getIBSPopulation();
 			if (isMultiSpecies)
-				plist.append("<key>" + mod.getName() + "</key>\n" + "<dict>\n");
+				plist.append("<key>").append(mod.getName()).append("</key>\n")
+						.append("<dict>\n");
 			pop.encodeGeometry(plist);
 			pop.encodeTraits(plist);
 			pop.encodeFitness(plist);
@@ -1749,48 +1821,59 @@ public abstract class IBS extends Model {
 		super.restoreState(plist);
 		updates = (Double) plist.get("Generation");
 		connect = false;
-		boolean success = true;
 		if (species.size() > 1) {
+			boolean success = true;
 			for (Module<?> mod : species) {
-				IBSPopulation pop = mod.getIBSPopulation();
-				String name = mod.getName();
-				Plist pplist = (Plist) plist.get(name);
-				if (!pop.restoreGeometry(pplist)) {
-					logger.warning("restore geometry failed (" + name + ").");
-					success = false;
-				}
-				if (!pop.restoreInteractions(pplist)) {
-					logger.warning("restore interactions in " + type + "-model failed (" + name + ").");
-					success = false;
-				}
-				if (!pop.restoreTraits(pplist)) {
-					logger.warning("restore traits in " + type + "-model failed (" + name + ").");
-					success = false;
-				}
-				if (!pop.restoreFitness(pplist)) {
-					logger.warning("restore fitness in " + type + "-model failed (" + name + ").");
-					success = false;
-				}
+				success |= restorePopulationState((Plist) plist.get(mod.getName()), mod.getIBSPopulation(),
+						mod.getName());
 			}
 			return success;
 		}
-		if (!population.restoreGeometry(plist)) {
-			logger.warning("restore geometry failed.");
+		// single species
+		return restorePopulationState(plist, population, null);
+	}
+
+	/**
+	 * Restore the state of population {@code pop} from plist {@code plist}.
+	 * 
+	 * @param plist the plist with the population state
+	 * @param pop   the population to restore
+	 * @param name  the name of the population (for logging)
+	 * @return {@code true} if the restoration was successful, {@code false}
+	 *         otherwise
+	 */
+	private boolean restorePopulationState(Plist plist, IBSPopulation<?, ?> pop, String name) {
+		boolean success = true;
+		if (!pop.restoreGeometry(plist)) {
+			logRestoreWarning("geometry", name);
 			success = false;
 		}
-		if (!population.restoreInteractions(plist)) {
-			logger.warning("restore interactions in " + type + "-model failed.");
+		if (!pop.restoreInteractions(plist)) {
+			logRestoreWarning("interactions", name);
 			success = false;
 		}
-		if (!population.restoreTraits(plist)) {
-			logger.warning("restore traits in " + type + "-model failed.");
+		if (!pop.restoreTraits(plist)) {
+			logRestoreWarning("traits", name);
 			success = false;
 		}
-		if (!population.restoreFitness(plist)) {
-			logger.warning("restore fitness in " + type + "-model failed.");
+		if (!pop.restoreFitness(plist)) {
+			logRestoreWarning("fitness", name);
 			success = false;
 		}
 		return success;
+	}
+
+	/**
+	 * Log warning message for failed restoration of {@code what} in population
+	 * {@code name}.
+	 * 
+	 * @param what the name of the population attribute that failed to restore
+	 * @param name the name of the population (for logging)
+	 */
+	private void logRestoreWarning(String what, String name) {
+		if (logger.isLoggable(Level.WARNING))
+			logger.warning("restore " + what + " in " + type.getKey() + "-model failed"
+					+ (name != null ? " (" + name + ")." : "."));
 	}
 
 	/**

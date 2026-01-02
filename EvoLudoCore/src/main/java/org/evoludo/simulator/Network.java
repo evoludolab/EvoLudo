@@ -37,18 +37,24 @@ import java.util.Iterator;
 import org.evoludo.geom.Node;
 import org.evoludo.math.ArrayMath;
 import org.evoludo.math.RNGDistribution;
+import org.evoludo.simulator.geometries.AbstractGeometry;
+import org.evoludo.simulator.geometries.GeometryFeatures;
+import org.evoludo.simulator.geometries.GeometryType;
+import org.evoludo.simulator.geometries.HierarchicalGeometry;
 
 /**
  * Abstract graphical representation for generic population geometries. A
  * network corresponds to a (possibly ephemeral) collection and configuration of
  * nodes. Implementations are available in 2D and 3D.
  * 
+ * @param <N> the node type managed by the network
+ * 
  * @author Christoph Hauert
  * 
  * @see Network2D
  * @see Network3D
  */
-public abstract class Network extends AbstractList<Node> implements Iterator<Node> {
+public abstract class Network<N extends Node> extends AbstractList<N> implements Iterator<N> {
 
 	/**
 	 * Interface for GUI elements that are interested in receiving updates regarding
@@ -141,7 +147,7 @@ public abstract class Network extends AbstractList<Node> implements Iterator<Nod
 
 	/**
 	 * The number of nodes in the network. Convenience variable. This must remain in
-	 * sync with {@code geometry.size} and {@code nodes.length}.
+	 * sync with {@code geometry.getSize()} and {@code nodes.length}.
 	 */
 	protected int nNodes = 0;
 
@@ -162,12 +168,12 @@ public abstract class Network extends AbstractList<Node> implements Iterator<Nod
 	/**
 	 * The array with all nodes of this network.
 	 */
-	protected Node[] nodes = null;
+	protected N[] nodes = null;
 
 	/**
 	 * The structure of the population.
 	 */
-	protected Geometry geometry;
+	protected AbstractGeometry geometry;
 
 	/**
 	 * The timestamp of the last time the layouting process has completed.
@@ -245,7 +251,7 @@ public abstract class Network extends AbstractList<Node> implements Iterator<Nod
 	 * @param engine   the pacemaker for running the model
 	 * @param geometry the structure of the population
 	 */
-	protected Network(EvoLudo engine, Geometry geometry) {
+	protected Network(EvoLudo engine, AbstractGeometry geometry) {
 		this.engine = engine;
 		this.geometry = geometry;
 		this.status = (geometry.isLattice() ? Status.NO_LAYOUT : Status.NEEDS_LAYOUT);
@@ -275,10 +281,10 @@ public abstract class Network extends AbstractList<Node> implements Iterator<Nod
 		if (snapTimeout > 0)
 			layoutTimeout = snapTimeout;
 
-		nNodes = geometry.size;
-		Geometry.Type type = geometry.getType();
-		if (type == Geometry.Type.HIERARCHY)
-			type = geometry.subgeometry;
+		nNodes = geometry.getSize();
+		GeometryType type = geometry.getType();
+		if (type == GeometryType.HIERARCHY)
+			type = ((HierarchicalGeometry) geometry).getSubType();
 		// geometries that have special/fixed layout
 		switch (type) {
 			case CUBE:
@@ -287,18 +293,18 @@ public abstract class Network extends AbstractList<Node> implements Iterator<Nod
 			case SQUARE_MOORE:
 			case SQUARE:
 			case LINEAR:
-			case HONEYCOMB:
+			case HEXAGONAL:
 			case TRIANGULAR:
 				setStatus(Status.NO_LAYOUT);
 				nLinks = 0;
 				break;
-			case MEANFIELD:
+			case WELLMIXED:
 				nLinks = 0;
 				setStatus(Status.NEEDS_LAYOUT);
 				break;
 			default:
 				nLinks = ArrayMath.norm(geometry.kout);
-				if (geometry.isUndirected)
+				if (geometry.isUndirected())
 					nLinks /= 2;
 				setStatus(Status.NEEDS_LAYOUT);
 		}
@@ -323,7 +329,7 @@ public abstract class Network extends AbstractList<Node> implements Iterator<Nod
 		isRunning = true;
 		prevPotential = 0.0;
 		prevAdjust = 1.0;
-		nNodes = geometry.size;
+		nNodes = geometry.getSize();
 		norm = 1.0 / (nNodes * nNodes);
 		listener.layoutUpdate(0.0);
 		boolean needsLayout = status.equals(Status.NEEDS_LAYOUT);
@@ -331,31 +337,29 @@ public abstract class Network extends AbstractList<Node> implements Iterator<Nod
 		double unitradius = Math.pow(0.8 / nNodes, 0.25);
 		double pnorm = 0.0;
 		double nnorm = 0.0;
-		if (geometry.minTot != geometry.maxTot) {
-			pnorm = 2.0 / (geometry.maxTot - geometry.avgTot); // maximal node size is 2+1 times the average
-			nnorm = 0.5 / (geometry.avgTot - geometry.minTot); // minimal node size is 0.5 of average
+		GeometryFeatures gFeats = geometry.getFeatures();
+		if (gFeats.minTot != gFeats.maxTot) {
+			pnorm = 2.0 / (gFeats.maxTot - gFeats.avgTot); // maximal node size is 2+1 times the average
+			nnorm = 0.5 / (gFeats.avgTot - gFeats.minTot); // minimal node size is 0.5 of average
 		}
 
 		// make sure min/max/avg are up to date
-		if (needsLayout) {
-			if (geometry.isDynamic)
-				geometry.evaluate();
+		if (needsLayout)
 			initNodes(pnorm, nnorm, unitradius);
-		}
 		nLinks = ArrayMath.norm(geometry.kout);
-		if (geometry.isUndirected)
+		if (geometry.isUndirected())
 			nLinks /= 2;
 		// check geometries and limit number of links to draw
 		switch (geometry.getType()) {
 			case HIERARCHY:
 				// don't draw links for well-mixed hierarchical structures
-				if (geometry.subgeometry.equals(Geometry.Type.MEANFIELD))
+				if (((HierarchicalGeometry) geometry).isSubtype(GeometryType.WELLMIXED))
 					fLinks = 0.0;
 				// should not get here for subgeometry SQUARE
 				break;
 			case COMPLETE:
 				// skip drawing links for complete graphs exceeding 100 nodes
-				if (geometry.size > 100)
+				if (geometry.getSize() > 100)
 					fLinks = 0.0;
 				break;
 			default:
@@ -474,7 +478,7 @@ public abstract class Network extends AbstractList<Node> implements Iterator<Nod
 	 * 
 	 * @return the backing geometry
 	 */
-	public Geometry getGeometry() {
+	public AbstractGeometry getGeometry() {
 		return geometry;
 	}
 
@@ -494,7 +498,7 @@ public abstract class Network extends AbstractList<Node> implements Iterator<Nod
 		if (status.equals(Status.NO_LAYOUT) || status.equals(Status.HAS_MESSAGE))
 			return; // nothing to shake (lattice)
 		double scaledquake = quake * radius;
-		for (Node node : nodes)
+		for (N node : nodes)
 			node.shake(scaledquake);
 		setStatus(Status.ADJUST_LAYOUT);
 		doLayout(ll);
@@ -509,7 +513,7 @@ public abstract class Network extends AbstractList<Node> implements Iterator<Nod
 	public void scaleRadiusTo(double newradius) {
 		double scale = newradius / this.radius;
 		this.radius = newradius;
-		for (Node node : nodes)
+		for (N node : nodes)
 			node.scaleR(scale);
 	}
 
@@ -548,7 +552,7 @@ public abstract class Network extends AbstractList<Node> implements Iterator<Nod
 	 * @return the status of the layouting process
 	 */
 	public Status getStatus() {
-		if (geometry.getType() == Geometry.Type.DYNAMIC && status == Status.HAS_LAYOUT
+		if (geometry.isType(GeometryType.DYNAMIC) && status == Status.HAS_LAYOUT
 				&& Math.abs(engine.getModel().getUpdates() - timestamp) > 1e-8)
 			status = Status.ADJUST_LAYOUT;
 		return status;
@@ -606,8 +610,8 @@ public abstract class Network extends AbstractList<Node> implements Iterator<Nod
 	}
 
 	@Override
-	public Node set(int index, Node element) {
-		Node old = nodes[index];
+	public N set(int index, N element) {
+		N old = nodes[index];
 		nodes[index] = element;
 		return old;
 	}
@@ -641,7 +645,7 @@ public abstract class Network extends AbstractList<Node> implements Iterator<Nod
 	}
 
 	@Override
-	public Node next() {
+	public N next() {
 		if (!hasNext()) {
 			throw new java.util.NoSuchElementException();
 		}
@@ -649,8 +653,8 @@ public abstract class Network extends AbstractList<Node> implements Iterator<Nod
 	}
 
 	@Override
-	public Iterator<Node> iterator() {
-		return new Iterator<Node>() {
+	public Iterator<N> iterator() {
+		return new Iterator<N>() {
 
 			/**
 			 * Counter for the iterator over all nodes.
@@ -663,7 +667,7 @@ public abstract class Network extends AbstractList<Node> implements Iterator<Nod
 			}
 
 			@Override
-			public Node next() {
+			public N next() {
 				if (!hasNext()) {
 					throw new java.util.NoSuchElementException();
 				}
@@ -678,7 +682,7 @@ public abstract class Network extends AbstractList<Node> implements Iterator<Nod
 			return true;
 		if (obj == null || getClass() != obj.getClass())
 			return false;
-		Network other = (Network) obj;
+		Network<?> other = (Network<?>) obj;
 		// Compare relevant fields for equality
 		if (nNodes != other.nNodes)
 			return false;
@@ -697,8 +701,7 @@ public abstract class Network extends AbstractList<Node> implements Iterator<Nod
 		final int prime = 31;
 		int result = Integer.hashCode(nNodes);
 		result = prime * result + Integer.hashCode(nLinks);
-		long temp = Double.doubleToLongBits(radius);
-		result = prime * result + (int) (temp ^ (temp >>> 32));
+		result = 31 * result + Double.hashCode(radius);
 		result = prime * result + (geometry != null ? geometry.hashCode() : 0);
 		result = prime * result + Arrays.hashCode(nodes);
 		return result;

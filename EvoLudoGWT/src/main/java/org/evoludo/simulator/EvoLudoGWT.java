@@ -34,24 +34,23 @@ import org.evoludo.EvoLudoWeb;
 import org.evoludo.graphics.Network2DGWT;
 import org.evoludo.graphics.Network3DGWT;
 import org.evoludo.math.ArrayMath;
+import org.evoludo.simulator.geometries.AbstractGeometry;
 import org.evoludo.simulator.models.ChangeListener.PendingAction;
-import org.evoludo.simulator.models.Mode;
+import org.evoludo.simulator.models.ModelType;
 import org.evoludo.simulator.models.PDE;
 import org.evoludo.simulator.models.PDESupervisor;
 import org.evoludo.simulator.models.PDESupervisorGWT;
-import org.evoludo.simulator.models.Type;
 import org.evoludo.simulator.views.AbstractView;
 import org.evoludo.ui.ContextMenu;
 import org.evoludo.ui.ContextMenuCheckBoxItem;
+import org.evoludo.util.CLOCategory;
+import org.evoludo.util.CLODelegate;
 import org.evoludo.util.CLOParser;
 import org.evoludo.util.CLOption;
-import org.evoludo.util.CLOption.CLODelegate;
-import org.evoludo.util.CLOption.Category;
 import org.evoludo.util.NativeJS;
 
 import com.google.gwt.core.client.Duration;
 import com.google.gwt.core.client.Scheduler;
-import com.google.gwt.dom.client.Document;
 import com.google.gwt.dom.client.Element;
 import com.google.gwt.user.client.Timer;
 
@@ -61,36 +60,6 @@ import com.google.gwt.user.client.Timer;
  * @author Christoph Hauert
  */
 public class EvoLudoGWT extends EvoLudo {
-
-	/**
-	 * <code>true</code> if container document is HTML
-	 */
-	public static boolean isHTML = true;
-
-	/**
-	 * <code>true</code> if part of an ePub
-	 */
-	public static boolean isEPub = false;
-
-	/**
-	 * <code>true</code> if standalone EvoLudo lab in ePub
-	 */
-	public static boolean ePubStandalone = false;
-
-	/**
-	 * <code>true</code> if ePub has mouse device
-	 */
-	public static boolean ePubHasMouse = false;
-
-	/**
-	 * <code>true</code> if ePub has touch device
-	 */
-	public static boolean ePubHasTouch = false;
-
-	/**
-	 * <code>true</code> if ePub has keyboard device
-	 */
-	public static boolean ePubHasKeys = false;
 
 	/**
 	 * Create timer to measure execution times since instantiation.
@@ -109,7 +78,7 @@ public class EvoLudoGWT extends EvoLudo {
 	 */
 	public EvoLudoGWT(EvoLudoWeb gui) {
 		this.gui = gui;
-		detectGUIFeatures();
+		isGWT = true;
 	}
 
 	/**
@@ -187,10 +156,8 @@ public class EvoLudoGWT extends EvoLudo {
 			case DYNAMICS:
 				// start with an update not the delay
 				if (modelNext())
-					timer.scheduleRepeating(delay);
+					timer.scheduleRepeating(getDelay());
 				break;
-			default:
-				throw new Error("next(): unknown mode...");
 		}
 	}
 
@@ -218,7 +185,7 @@ public class EvoLudoGWT extends EvoLudo {
 				scheduleStep();
 				break;
 			default:
-				throw new Error("next(): unknown mode...");
+				throw new UnsupportedOperationException("Unknown mode: " + activeModel.getMode());
 		}
 	}
 
@@ -229,13 +196,17 @@ public class EvoLudoGWT extends EvoLudo {
 		Scheduler.get().scheduleIncremental(() -> {
 			// in unfortunate cases even a single sample can take exceedingly long
 			// times. stop/init/reset need to be able to interrupt.
-			if (pendingAction != PendingAction.NONE) {
+			// make sure active model has not been unloaded in the meantime
+			if (activeModel == null || pendingAction != PendingAction.NONE) {
 				processPendingAction();
 				return false;
 			}
 			if (activeModel.next())
-				return true;
-			return fireModelSample(activeModel.getFixationData().mutantNode >= 0);
+				return true; // continue sampling
+			// sample completed
+			boolean failed = (activeModel.getFixationData().mutantNode < 0);
+			// continue if running multiple samples or sampling failed
+			return fireModelSample(!failed) || failed;
 		});
 	}
 
@@ -264,15 +235,6 @@ public class EvoLudoGWT extends EvoLudo {
 			// take snapshot
 			gui.snapshotReady();
 		}
-	}
-
-	@Override
-	void processPendingAction() {
-		boolean updateGUI = (pendingAction == PendingAction.STOP
-				&& activeModel.getMode() == Mode.STATISTICS_SAMPLE);
-		super.processPendingAction();
-		if (updateGUI)
-			gui.modelStopped();
 	}
 
 	/**
@@ -327,12 +289,12 @@ public class EvoLudoGWT extends EvoLudo {
 	}
 
 	@Override
-	public Network2D createNetwork2D(Geometry geometry) {
+	public Network2D createNetwork2D(AbstractGeometry geometry) {
 		return new Network2DGWT(this, geometry);
 	}
 
 	@Override
-	public Network3D createNetwork3D(Geometry geometry) {
+	public Network3D createNetwork3D(AbstractGeometry geometry) {
 		return new Network3DGWT(this, geometry);
 	}
 
@@ -351,27 +313,6 @@ public class EvoLudoGWT extends EvoLudo {
 		super.setDelay(delay);
 		if (isRunning)
 			timer.scheduleRepeating(delay);
-	}
-
-	/**
-	 * Use JSNI helper methods to query and detect features of the execution
-	 * environment.
-	 *
-	 * @see NativeJS#ePubReaderHasFeature(String)
-	 */
-	public static void detectGUIFeatures() {
-		isGWT = true;
-		hasTouch = NativeJS.hasTouch();
-		isHTML = NativeJS.isHTML();
-		isEPub = (NativeJS.getEPubReader() != null);
-		// IMPORTANT: ibooks (desktop) returns ePubReader for standalone pages as well,
-		// i.e. isEPub is true
-		// however, ibooks (ios) does not report as an ePubReader for standalone pages,
-		// i.e. isEPub is false
-		ePubStandalone = (Document.get().getElementById("evoludo-standalone") != null);
-		ePubHasKeys = NativeJS.ePubReaderHasFeature("keyboard-events");
-		ePubHasMouse = NativeJS.ePubReaderHasFeature("mouse-events");
-		ePubHasTouch = NativeJS.ePubReaderHasFeature("touch-events");
 	}
 
 	/**
@@ -396,7 +337,7 @@ public class EvoLudoGWT extends EvoLudo {
 	 * @param menu the context menu where entries can be added
 	 */
 	public void populateContextMenu(ContextMenu menu) {
-		Type mt = activeModel.getType();
+		ModelType mt = activeModel.getType();
 		if (mt.isODE() || mt.isSDE()) {
 			// add time reverse context menu
 			if (timeReverseMenu == null) {
@@ -420,8 +361,8 @@ public class EvoLudoGWT extends EvoLudo {
 			menu.add(symDiffMenu);
 			PDE pde = (PDE) activeModel;
 			symDiffMenu.setChecked(pde.isSymmetric());
-			Geometry space = pde.getGeometry();
-			symDiffMenu.setEnabled(space.isRegular || space.isLattice());
+			AbstractGeometry space = pde.getGeometry();
+			symDiffMenu.setEnabled(space.isRegular() || space.isLattice());
 		}
 		// process fullscreen context menu
 		if (NativeJS.isFullscreenSupported()) {
@@ -511,50 +452,6 @@ public class EvoLudoGWT extends EvoLudo {
 	// }
 
 	/**
-	 * Command line option to mimic ePub modes and to disable device capabilities.
-	 * <p>
-	 * <strong>Note:</strong> for development/debugging only; should be disabled in
-	 * production
-	 */
-	public final CLOption cloEmulate = new CLOption("emulate", "auto", Category.GUI,
-			"--emulate <f1[,f2[...]]> list of GUI features to emulate:\n"
-					+ "          epub: enable ePub mode\n"
-					+ "    standalone: standalone ePub mode\n"
-					+ "        nokeys: disable key events (if available)\n"
-					+ "       nomouse: disable mouse events (if available)\n"
-					+ "       notouch: disable touch events (if available)",
-			new CLODelegate() {
-				@Override
-				public boolean parse(String arg) {
-					// set/reset defaults
-					detectGUIFeatures();
-					if (!cloEmulate.isSet())
-						return true;
-					// simulate ePub mode
-					if (arg.contains("epub"))
-						isEPub = true;
-					// simulate standalone lab in ePub
-					if (arg.contains("standalone")) {
-						ePubStandalone = true;
-						isEPub = true;
-						ePubHasKeys = NativeJS.hasKeys();
-						ePubHasMouse = NativeJS.hasMouse();
-						ePubHasTouch = NativeJS.hasTouch();
-					}
-					// disable keys (if available)
-					if (ePubHasKeys && arg.contains("nokeys"))
-						ePubHasKeys = false;
-					// disable mouse (if available)
-					if (ePubHasMouse && arg.contains("nomouse"))
-						ePubHasMouse = false;
-					// disable touch (if available)
-					if (ePubHasTouch && arg.contains("notouch"))
-						ePubHasTouch = false;
-					return true;
-				}
-			});
-
-	/**
 	 * Command line option to request that the EvoLudo model signals the completion
 	 * of of the layouting procedure for taking snapshots, e.g. with
 	 * <code>capture-website</code>.
@@ -562,22 +459,22 @@ public class EvoLudoGWT extends EvoLudo {
 	 * @see <a href="https://github.com/sindresorhus/capture-website-cli"> Github:
 	 *      capture-website-cli</a>
 	 */
-	public final CLOption cloSnap = new CLOption("snap", "20", CLOption.Argument.OPTIONAL, Category.GUI,
+	public final CLOption cloSnap = new CLOption("snap", "20", CLOption.Argument.OPTIONAL, CLOCategory.GUI,
 			"--snap [<s>]    snapshot utility, timeout <s> secs;\n"
 					+ "                (add '<div id=\"snapshot-ready\"></div>' to <body>\n"
 					+ "                when ready for snapshot, see capture-website docs)",
 			new CLODelegate() {
 				@Override
-				public boolean parse(String arg) {
-					snapLayoutTimeout = Math.max(1, CLOParser.parseInteger(arg)) * 1000;
+				public boolean parse(String arg, boolean isSet) {
+					if (isSet)
+						snapLayoutTimeout = Math.max(1, CLOParser.parseInteger(arg)) * 1000;
 					return true;
 				}
 			});
 
 	@Override
 	public void collectCLO(CLOParser prsr) {
-		parser.addCLO(cloEmulate);
-		parser.addCLO(cloSnap);
+		prsr.addCLO(cloSnap);
 		super.collectCLO(prsr);
 	}
 }

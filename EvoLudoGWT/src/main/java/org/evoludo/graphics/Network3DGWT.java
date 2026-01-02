@@ -35,8 +35,8 @@ import java.util.ArrayList;
 import org.evoludo.geom.Node3D;
 import org.evoludo.simulator.ColorMap3D;
 import org.evoludo.simulator.EvoLudo;
-import org.evoludo.simulator.Geometry;
 import org.evoludo.simulator.Network3D;
+import org.evoludo.simulator.geometries.AbstractGeometry;
 
 import com.google.gwt.core.client.Duration;
 import com.google.gwt.core.client.Scheduler;
@@ -74,7 +74,7 @@ public class Network3DGWT extends Network3D {
 	 * @param engine   the pacemaker for running the model
 	 * @param geometry the structure of the population
 	 */
-	public Network3DGWT(EvoLudo engine, Geometry geometry) {
+	public Network3DGWT(EvoLudo engine, AbstractGeometry geometry) {
 		super(engine, geometry);
 	}
 
@@ -129,7 +129,7 @@ public class Network3DGWT extends Network3D {
 		}
 		ArrayList<Vector3> lines;
 		ArrayList<Color> colors = null;
-		if (geometry.isUndirected) {
+		if (geometry.isUndirected()) {
 			// draw undirected links
 			if (fLinks >= 1.0) {
 				// draw all links

@@ -868,6 +868,12 @@ public class ContextMenu extends FlowPanel
 	public class TouchTimer extends Timer {
 
 		/**
+		 * Create a timer helper for deferred touch handling.
+		 */
+		public TouchTimer() {
+		}
+
+		/**
 		 * Horizontal position of touch event scheduled to trigger context menu
 		 * (relative to browser window).
 		 */

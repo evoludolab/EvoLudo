@@ -37,16 +37,16 @@ import org.evoludo.simulator.models.Model;
 import org.evoludo.simulator.models.Model.HasDE;
 import org.evoludo.simulator.models.Model.HasIBS;
 import org.evoludo.simulator.models.SDEN;
-import org.evoludo.simulator.models.Type;
+import org.evoludo.simulator.models.ModelType;
 import org.evoludo.simulator.modules.Features.Payoffs;
 import org.evoludo.simulator.views.HasHistogram;
 import org.evoludo.simulator.views.HasMean;
 import org.evoludo.simulator.views.HasPop2D;
 import org.evoludo.simulator.views.HasPop3D;
+import org.evoludo.util.CLODelegate;
 import org.evoludo.util.CLOParser;
 import org.evoludo.util.CLOption;
-import org.evoludo.util.CLOption.CLODelegate;
-import org.evoludo.util.CLOption.Category;
+import org.evoludo.util.CLOCategory;
 import org.evoludo.util.Formatter;
 
 /**
@@ -242,7 +242,7 @@ public class Traits extends Discrete implements Payoffs,
 	/*
 	 * command line parsing stuff
 	 */
-	public final CLOption cloTraits = new CLOption("traits", "2", Category.Module,
+	public final CLOption cloTraits = new CLOption("traits", "2", CLOCategory.Module,
 			"--traits <t>    number of traits", new CLODelegate() {
 				@Override
 				public boolean parse(String arg) {
@@ -251,7 +251,7 @@ public class Traits extends Discrete implements Payoffs,
 				}
 			});
 
-	public final CLOption cloPayoff = new CLOption("paymatrix", "const", Category.Module,
+	public final CLOption cloPayoff = new CLOption("paymatrix", "const", CLOCategory.Module,
 			"--paymatrix <a11,a12,...,a1n;...;an1,an2,...,ann>  nxn payoff matrix", new CLODelegate() {
 				@Override
 				public boolean parse(String arg) {
@@ -285,7 +285,7 @@ public class Traits extends Discrete implements Payoffs,
 	}
 
 	@Override
-	public Model createModel(Type type) {
+	public Model createModel(ModelType type) {
 		if (!type.isSDE())
 			return super.createModel(type);
 		if (model != null && model.getType().isSDE())

@@ -73,7 +73,7 @@ public class RungeKutta extends ODE {
 	 */
 	public RungeKutta(EvoLudo engine) {
 		super(engine);
-		type = Type.RK5;
+		type = ModelType.RK5;
 	}
 
 	@Override
@@ -135,17 +135,6 @@ public class RungeKutta extends ODE {
 		}
 		return doReset;
 	}
-
-	// @Override
-	// public void collectCLO(CLOParser parser) {
-	// ODERungeKutta does not provide any additional command line options
-	// - setAutoDt: adaptive time steps are currently the default and cannot be
-	// changed
-	// (except in the java GUI). command line option could be added but seems of
-	// limited value.
-	// if autoDt is false this defaults to the simple Euler integrator, which may
-	// not be desirable.
-	// }
 
 	/**
 	 * The safety margin for adjusting time steps. Magic number from Numerical

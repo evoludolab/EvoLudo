@@ -36,7 +36,7 @@ import java.util.Arrays;
 import org.evoludo.math.ArrayMath;
 import org.evoludo.simulator.ColorMap;
 import org.evoludo.simulator.EvoLudo;
-import org.evoludo.simulator.Geometry;
+import org.evoludo.simulator.geometries.GeometryType;
 import org.evoludo.simulator.models.IBSD;
 import org.evoludo.simulator.models.IBSD.Init;
 import org.evoludo.simulator.models.IBSDPopulation;
@@ -47,10 +47,10 @@ import org.evoludo.simulator.views.HasHistogram;
 import org.evoludo.simulator.views.HasMean;
 import org.evoludo.simulator.views.HasPop2D;
 import org.evoludo.simulator.views.HasPop3D;
+import org.evoludo.util.CLOCategory;
+import org.evoludo.util.CLODelegate;
 import org.evoludo.util.CLOParser;
 import org.evoludo.util.CLOption;
-import org.evoludo.util.CLOption.CLODelegate;
-import org.evoludo.util.CLOption.Category;
 import org.evoludo.util.Formatter;
 
 /**
@@ -157,7 +157,8 @@ public class TBT extends Discrete implements Payoffs,
 	@Override
 	public String getTraitName(int idx) {
 		String idxname = super.getTraitName(idx % nTraits);
-		if (competition == null || competition.getType() != Geometry.Type.SQUARE_NEUMANN_2ND)
+		if (!model.getType().isIBS()
+				|| !getIBSPopulation().getCompetitionGeometry().isType(GeometryType.SQUARE_NEUMANN_2ND))
 			return idxname;
 		if (idx >= nTraits)
 			return idxname + " (2nd)";
@@ -168,7 +169,8 @@ public class TBT extends Discrete implements Payoffs,
 	public Color[] getMeanColors() {
 		Color[] colors = super.getMeanColors();
 		// not all models entertain competition geometries, e.g. ODE/SDE
-		if (competition == null || competition.getType() != Geometry.Type.SQUARE_NEUMANN_2ND)
+		if (!model.getType().isIBS()
+				|| !getIBSPopulation().getCompetitionGeometry().isType(GeometryType.SQUARE_NEUMANN_2ND))
 			return colors;
 		Color[] color2nd = new Color[2 * nTraits];
 		for (int n = 0; n < nTraits; n++) {
@@ -215,7 +217,7 @@ public class TBT extends Discrete implements Payoffs,
 						+ traitCount[DEFECT] * payoffs[DEFECT][DEFECT];
 
 			default: // should not end here
-				throw new Error("Unknown trait (" + me + ")");
+				throw new UnsupportedOperationException("Unknown trait (" + me + ")");
 		}
 	}
 
@@ -283,7 +285,7 @@ public class TBT extends Discrete implements Payoffs,
 	 * Command line option to set the {@code 2×2} payoff matrix for
 	 * interactions between cooperators and defectors.
 	 */
-	public final CLOption cloPayoffs = new CLOption("paymatrix", "3,0;5,1", Category.Module,
+	public final CLOption cloPayoffs = new CLOption("paymatrix", "3,0;5,1", CLOCategory.Module,
 			"--paymatrix <a,b;c,d>  2x2 payoff matrix", new CLODelegate() {
 
 				/**
@@ -322,7 +324,7 @@ public class TBT extends Discrete implements Payoffs,
 			clo.addKey(Init.Type.KALEIDOSCOPE);
 		}
 		// handling of 2nd neighbours in von Neumann lattice implemented
-		cloGeometry.addKey(Geometry.Type.SQUARE_NEUMANN_2ND);
+		cloGeometry.addKey(GeometryType.SQUARE_NEUMANN_2ND);
 	}
 
 	@Override
@@ -333,7 +335,7 @@ public class TBT extends Discrete implements Payoffs,
 	/**
 	 * The extension for IBS simulations specific to populations engaging in
 	 * {@code 2×2} games. This extension implements customizations for
-	 * {@code Geometry.Type.SQUARE_NEUMANN_2ND} as well as specific initial
+	 * {@code GeometryType.SQUARE_NEUMANN_2ND} as well as specific initial
 	 * conditions that give rise to fascinating evolutionary kaleidoscopes for
 	 * deterministic updating.
 	 */
@@ -351,13 +353,13 @@ public class TBT extends Discrete implements Payoffs,
 
 		/**
 		 * The trait frequencies for the two sublattices for
-		 * {@code Geometry.Type.SQUARE_NEUMANN_2ND}.
+		 * {@code GeometryType.SQUARE_NEUMANN_2ND}.
 		 */
 		double[] tsTraits;
 
 		/**
 		 * The trait fitnesses for the two sublattices for
-		 * {@code Geometry.Type.SQUARE_NEUMANN_2ND}.
+		 * {@code GeometryType.SQUARE_NEUMANN_2ND}.
 		 */
 		double[] tsFits;
 
@@ -374,7 +376,7 @@ public class TBT extends Discrete implements Payoffs,
 		@Override
 		public boolean check() {
 			boolean doReset = super.check();
-			if (competition.getType() != Geometry.Type.SQUARE_NEUMANN_2ND) {
+			if (!competition.isType(GeometryType.SQUARE_NEUMANN_2ND)) {
 				tsTraits = null;
 				tsFits = null;
 			} else {
@@ -388,7 +390,7 @@ public class TBT extends Discrete implements Payoffs,
 
 		@Override
 		public String getTraitNameAt(int idx) {
-			if (competition.getType() != Geometry.Type.SQUARE_NEUMANN_2ND)
+			if (!competition.isType(GeometryType.SQUARE_NEUMANN_2ND))
 				return super.getTraitNameAt(idx);
 			int side = (int) Math.sqrt(nPopulation);
 			int trait = getTraitAt(idx);
@@ -399,7 +401,7 @@ public class TBT extends Discrete implements Payoffs,
 
 		@Override
 		public int getNMean() {
-			if (competition.getType() != Geometry.Type.SQUARE_NEUMANN_2ND)
+			if (!competition.isType(GeometryType.SQUARE_NEUMANN_2ND))
 				return super.getNMean();
 			return 2 * nTraits;
 		}
@@ -408,7 +410,7 @@ public class TBT extends Discrete implements Payoffs,
 		public double[] getMeanTraits(double[] mean) {
 			// SQUARE_NEUMANN_2ND geometry for competition results in two disjoint
 			// sublattices; report trait frequencies in each sublattice separately
-			if (competition.getType() != Geometry.Type.SQUARE_NEUMANN_2ND) {
+			if (!competition.isType(GeometryType.SQUARE_NEUMANN_2ND)) {
 				return super.getMeanTraits(mean);
 			}
 
@@ -439,7 +441,7 @@ public class TBT extends Discrete implements Payoffs,
 		public double[] getMeanFitness(double[] mean) {
 			// SQUARE_NEUMANN_2ND geometry for competition results in two disjoint
 			// sublattices; report trait frequencies in each sublattice separately
-			if (competition.getType() != Geometry.Type.SQUARE_NEUMANN_2ND) {
+			if (!competition.isType(GeometryType.SQUARE_NEUMANN_2ND)) {
 				return super.getMeanFitness(mean);
 			}
 
@@ -471,7 +473,7 @@ public class TBT extends Discrete implements Payoffs,
 
 		@Override
 		public String getStatus() {
-			if (competition.getType() != Geometry.Type.SQUARE_NEUMANN_2ND)
+			if (!competition.isType(GeometryType.SQUARE_NEUMANN_2ND))
 				return super.getStatus();
 
 			getMeanTraits(tsTraits);
@@ -499,72 +501,19 @@ public class TBT extends Discrete implements Payoffs,
 			initMono(TBT.COOPERATE);
 			switch (interaction.getType()) {
 				case CUBE:
-					int l;
-					int mz;
-					if (nPopulation == 25000) {
-						l = 50;
-						mz = 5; // 10/2
-					} else {
-						l = (int) (Math.pow(nPopulation, 1.0 / 3.0) + 0.5);
-						mz = l / 2;
-					}
-					int l2 = l * l;
-					int m = l / 2;
-					double[] args = init.getArgs();
-					int type = ((args != null && args.length > 0) ? (int) args[0] : 0);
-					switch (type) {
-						default:
-						case 0:
-							if (l % 2 == 1) {
-								// odd dimensions (this excludes NOVA, hence mz=m)
-								// place single TBT.DEFECT in center
-								mid = m * (l2 + l + 1);
-								traitsCount[TBT.COOPERATE]--;
-								setTraitAt(mid, TBT.DEFECT);
-								traitsCount[TBT.DEFECT]++;
-							} else {
-								// even dimensions - place 2x2x2 cube of TBT.DEFECTors in center
-								for (int z = mz - 1; z <= mz; z++)
-									for (int y = m - 1; y <= m; y++)
-										for (int x = m - 1; x <= m; x++)
-											setTraitAt(z * l2 + y * l + x, TBT.DEFECT);
-								traitsCount[TBT.COOPERATE] -= 2 * 2 * 2;
-								traitsCount[TBT.DEFECT] += 2 * 2 * 2;
-							}
-							break;
-						case 1:
-							if (l % 2 == 1) {
-								// odd dimensions - place 3x3x3 cube of cooperators in center
-								for (int z = mz - 1; z <= mz + 1; z++)
-									for (int y = m - 1; y <= m + 1; y++)
-										for (int x = m - 1; x <= m + 1; x++)
-											setTraitAt(z * l2 + y * l + x, TBT.COOPERATE);
-								traitsCount[TBT.DEFECT] -= 3 * 3 * 3;
-								traitsCount[TBT.COOPERATE] += 3 * 3 * 3;
-							} else {
-								// even dimensions - place 4x4x4 cube of cooperators in center
-								for (int z = mz - 2; z <= mz + 1; z++)
-									for (int y = m - 2; y <= m + 1; y++)
-										for (int x = m - 2; x <= m + 1; x++)
-											setTraitAt(z * l2 + y * l + x, TBT.COOPERATE);
-								traitsCount[TBT.DEFECT] -= 4 * 4 * 4;
-								traitsCount[TBT.COOPERATE] += 4 * 4 * 4;
-							}
-							break;
-					}
+					initCubeKaleidoscope();
 					break;
 
 				case SQUARE_NEUMANN:
 				case SQUARE_NEUMANN_2ND:
 				case SQUARE_MOORE:
 				case SQUARE:
-				case HONEYCOMB:
+				case HEXAGONAL:
 				case TRIANGULAR:
-					l = (int) Math.sqrt(nPopulation);
-					m = l / 2;
+					int l = (int) Math.sqrt(nPopulation);
+					int m = l / 2;
 					mid = m * (l + 1);
 					// $FALL-THROUGH$
-
 				case LINEAR:
 					if (mid < 0)
 						mid = nPopulation / 2;
@@ -575,8 +524,94 @@ public class TBT extends Discrete implements Payoffs,
 
 				default:
 					// should never get here - check made sure of it.
-					throw new Error("geometry incompatible with kaleidoscopes!");
+					throw new UnsupportedOperationException("geometry incompatible with kaleidoscopes!");
 			}
+		}
+
+		/**
+		 * Initialize kaleidoscope on cubic lattice.
+		 */
+		private void initCubeKaleidoscope() {
+			int l;
+			int lz;
+			if (nPopulation == 25000) {
+				l = 50;
+				lz = 10;
+			} else {
+				l = (int) (Math.pow(nPopulation, 1.0 / 3.0) + 0.5);
+				lz = l;
+			}
+			double[] args = init.getArgs();
+			int type = ((args != null && args.length > 0) ? (int) args[0] : 0);
+			switch (type) {
+				default:
+				case 0:
+					initCubeKaleidoscopeDinC(l, lz);
+					return;
+				case 1:
+					initCubeKaleidoscopeCinD(l, lz);
+					return;
+			}
+		}
+
+		/**
+		 * Initialize kaleidoscope on cubic lattice with defectors in center. If the
+		 * population size is {@code 25'000} then the NOVA settings are used (a cube
+		 * with dimensions {@code 50×50×10}).
+		 * 
+		 * @param l  the linear dimension of the cube
+		 * @param lz the linear dimension of the z-dimension
+		 */
+		private void initCubeKaleidoscopeDinC(int l, int lz) {
+			int m = l / 2;
+			int mz = lz / 2;
+			if (l % 2 == 1) {
+				// odd dimensions (this excludes NOVA, hence mz=m)
+				// place single TBT.DEFECT in center
+				int mid = m * ((l + 1) * l + 1);
+				traitsCount[TBT.COOPERATE]--;
+				setTraitAt(mid, TBT.DEFECT);
+				traitsCount[TBT.DEFECT]++;
+				return;
+			}
+			// even dimensions - place 2x2x2 cube of TBT.DEFECTors in center
+			for (int z = mz - 1; z <= mz; z++)
+				for (int y = m - 1; y <= m; y++)
+					for (int x = m - 1; x <= m; x++)
+						setTraitAt((z * l + y) * l + x, TBT.DEFECT);
+			traitsCount[TBT.COOPERATE] -= 2 * 2 * 2;
+			traitsCount[TBT.DEFECT] += 2 * 2 * 2;
+		}
+
+		/**
+		 * Initialize kaleidoscope on cubic lattice with cooperators in center. If the
+		 * population size is {@code 25'000} then the NOVA settings are used (a cube
+		 * with dimensions {@code 50×50×10}).
+		 * 
+		 * @param l  the linear dimension of the cube
+		 * @param lz the linear dimension of the cube in the z-dimension
+		 */
+		@SuppressWarnings("java:S3776") // nested for-loops clearer than refactoring
+		private void initCubeKaleidoscopeCinD(int l, int lz) {
+			int m = l / 2;
+			int mz = lz / 2;
+			if (l % 2 == 1) {
+				// odd dimensions - place 3x3x3 cube of cooperators in center
+				for (int z = mz - 1; z <= mz + 1; z++)
+					for (int y = m - 1; y <= m + 1; y++)
+						for (int x = m - 1; x <= m + 1; x++)
+							setTraitAt((z * l + y) * l + x, TBT.COOPERATE);
+				traitsCount[TBT.DEFECT] -= 3 * 3 * 3;
+				traitsCount[TBT.COOPERATE] += 3 * 3 * 3;
+				return;
+			}
+			// even dimensions - place 4x4x4 cube of cooperators in center
+			for (int z = mz - 2; z <= mz + 1; z++)
+				for (int y = m - 2; y <= m + 1; y++)
+					for (int x = m - 2; x <= m + 1; x++)
+						setTraitAt((z * l + y) * l + x, TBT.COOPERATE);
+			traitsCount[TBT.DEFECT] -= 4 * 4 * 4;
+			traitsCount[TBT.COOPERATE] += 4 * 4 * 4;
 		}
 	}
 }

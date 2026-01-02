@@ -7,12 +7,16 @@ TASKS:
 - javadoc for EvoLudoJRE module
 
 BUGS:
+- PopGraph2D/3D: fitness views don't work for multi-species with fitness map set (just payoffs are ok)
+- clear status line when clicking apply
+- Distribution, RingBuffer: resizing issues when changing size of view (loses most recent instead of oldest entries)
 - JRE and GWT do not return the same results with identical parameters even though they should... see exercise 13.19
 - switching directly from 3D fitness view to 3D strategy view shows up empty; resizing lab or switching to another view and back to 3d strategy view restores content (reduce calls to allocateGraphs).
 - 3D views ignore the linewidth setting for drawing the network (try updating to parallax 2.0?)
 - aspect ratios of active 3D views in multiple labs on same page interfere (low priority, highly unlikely scenario)
 
 TODO:
+- implement DEs for single type with vacancies
 - improve reported score for progress of network layouting
 - move generation of degree histograms to Geometry
 - resolve issues with geometries in GenericPop.getOpponentInteraction/CompetitionGraph()

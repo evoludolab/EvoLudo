@@ -115,4 +115,18 @@ public enum Data {
 		return (this == STATISTICS_FIXATION_PROBABILITY || this == STATISTICS_FIXATION_TIME
 				|| this == STATISTICS_STATIONARY);
 	}
+
+	/**
+	 * Returns the appropriate mode for the model based on the data type.
+	 * 
+	 * @return the mode associated with the data type
+	 */
+	public Mode getMode() {
+		if (this == STATISTICS_FIXATION_PROBABILITY || this == STATISTICS_FIXATION_TIME)
+			return Mode.STATISTICS_SAMPLE;
+		if (this == STATISTICS_STATIONARY)
+			return Mode.STATISTICS_UPDATE;
+		// by default return dynamics mode
+		return Mode.DYNAMICS;
+	}
 }

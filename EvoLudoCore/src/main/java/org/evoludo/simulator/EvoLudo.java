@@ -30,30 +30,25 @@
 
 package org.evoludo.simulator;
 
-import java.awt.Color;
-import java.util.Collection;
-import java.util.Date;
+import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.Set;
+import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-import org.evoludo.math.ArrayMath;
 import org.evoludo.math.MersenneTwister;
 import org.evoludo.math.RNGDistribution;
+import org.evoludo.simulator.geometries.AbstractGeometry;
 import org.evoludo.simulator.models.ChangeListener;
 import org.evoludo.simulator.models.ChangeListener.PendingAction;
 import org.evoludo.simulator.models.IBSPopulation;
-import org.evoludo.simulator.models.MilestoneListener;
-import org.evoludo.simulator.models.Mode;
+import org.evoludo.simulator.models.LifecycleListener;
 import org.evoludo.simulator.models.Model;
-import org.evoludo.simulator.models.Model.HasDE;
+import org.evoludo.simulator.models.ModelType;
 import org.evoludo.simulator.models.PDE;
 import org.evoludo.simulator.models.PDESupervisor;
+import org.evoludo.simulator.models.RunListener;
 import org.evoludo.simulator.models.SampleListener;
-import org.evoludo.simulator.models.Type;
 import org.evoludo.simulator.modules.ATBT;
 import org.evoludo.simulator.modules.CDL;
 import org.evoludo.simulator.modules.CDLP;
@@ -78,10 +73,6 @@ import org.evoludo.simulator.views.HasS3;
 import org.evoludo.util.CLOParser;
 import org.evoludo.util.CLOProvider;
 import org.evoludo.util.CLOption;
-import org.evoludo.util.CLOption.CLODelegate;
-import org.evoludo.util.CLOption.Category;
-import org.evoludo.util.CLOption.Key;
-import org.evoludo.util.Formatter;
 import org.evoludo.util.Plist;
 
 /**
@@ -95,14 +86,6 @@ import org.evoludo.util.Plist;
  * input/output routines.
  * 
  * @author Christoph Hauert
- * 
- * 
- * 
- * 
- * 
- * 
- * 
- * 
  */
 public abstract class EvoLudo
 		implements CLOProvider, MersenneTwister.Chronometer {
@@ -140,16 +123,7 @@ public abstract class EvoLudo
 	 * <code>true</code> when running as GWT application; <code>false</code> for JRE
 	 * applications.
 	 */
-	public static boolean isGWT = false;
-
-	/**
-	 * The flag to indicate whether the current device/program supports touch events
-	 * <p>
-	 * <strong>Note:</strong> cannot be <code>static</code> or <code>final</code> to
-	 * allow disabling touch events for debugging (see
-	 * {@link org.evoludo.simulator.EvoLudoGWT#cloEmulate EvoLudoGWT.cloEmulate}).
-	 */
-	public static boolean hasTouch = false;
+	static boolean isGWT = false;
 
 	/**
 	 * The loggers of each EvoLudo lab instance need to have unique names to keep
@@ -253,7 +227,7 @@ public abstract class EvoLudo
 	 * @param geometry the geometry backing the 2D network
 	 * @return new instance of a 2D network
 	 */
-	public abstract Network2D createNetwork2D(Geometry geometry);
+	public abstract Network2D createNetwork2D(AbstractGeometry geometry);
 
 	/**
 	 * Generate 3D network. This is the factory method to provide different
@@ -268,7 +242,7 @@ public abstract class EvoLudo
 	 * @param geometry the geometry backing the 3D network
 	 * @return new instance of a 3D network
 	 */
-	public abstract Network3D createNetwork3D(Geometry geometry);
+	public abstract Network3D createNetwork3D(AbstractGeometry geometry);
 
 	/**
 	 * The active model
@@ -278,33 +252,12 @@ public abstract class EvoLudo
 	/**
 	 * Set model type and loads the corresponding frameworks for individual based
 	 * simulations or numerical integration of ODE/SDE/PDE models. Notifies all
-	 * registered {@link MilestoneListener}'s of any changes.
+	 * registered {@link LifecycleListener}s of any changes.
 	 *
 	 * @param type the type of {@link Model} to load
 	 */
-	public void loadModel(Type type) {
-		if (activeModel != null && activeModel.getType() == type) {
-			// model already loaded
-			return;
-		}
-		Model newModel = activeModule.createModel(type);
-		if (newModel == null) {
-			if (logger.isLoggable(Level.WARNING)) {
-				String msg = "model type '" + type + "' not supported.";
-				if (activeModel == null)
-					logger.warning(msg);
-				else
-					logger.warning(msg + " keeping '" + activeModel.getType() + "'.");
-			}
-			return;
-		}
-		// unload previous model first
-		unloadModel();
-		activeModel = newModel;
-		addCLOProvider(activeModel);
-		activeModule.setModel(activeModel);
-		activeModel.load();
-		fireModelLoaded();
+	public void loadModel(ModelType type) {
+		lifecycleController.loadModel(type);
 	}
 
 	/**
@@ -322,7 +275,7 @@ public abstract class EvoLudo
 	 * population size (see {@link IBSPopulation#nPopulation}) requires a reset to
 	 * (re)generate population geometries and initialize traits.
 	 */
-	private boolean resetRequested = true;
+	protected boolean resetRequested = true;
 
 	/**
 	 * Request reset the active model, e.g. after change of parameters.
@@ -334,51 +287,84 @@ public abstract class EvoLudo
 	}
 
 	/**
-	 * The flag to indicate whether the module reqiuires a full reparsing of the
-	 * command line options.
-	 */
-	private boolean reparseCLO = false;
-
-	/**
 	 * Request full reparsing of the command line options. This is necessary if the
 	 * command line options have changed in a fundamental way, for example if the
 	 * number of traits in a module has changed.
 	 */
 	public void requestParseCLO() {
-		reparseCLO = true;
+		cloController.requestParseCLO();
 	}
 
 	/**
-	 * List of engine listeners that get notified when the state of the population
-	 * changed, for example after population reset or completed an update step.
+	 * Controller for command line option parsing.
 	 */
-	protected Set<MilestoneListener> milestoneListeners = new HashSet<>();
+	protected final CLOController cloController = new CLOController(this);
 
 	/**
-	 * Add a milestone listener to the list of listeners that get notified when the
-	 * model reaches milestones.
-	 * 
-	 * @param newListener the new milestone listener
+	 * Command-line option controlling the RNG seed.
 	 */
-	public void addMilestoneListener(MilestoneListener newListener) {
-		milestoneListeners.add(newListener);
+	public final CLOption cloSeed = cloController.cloSeed;
+
+	/**
+	 * Command-line option controlling the number of model runs.
+	 */
+	public final CLOption cloRun = cloController.cloRun;
+
+	/**
+	 * Controller for lifecycle listeners.
+	 */
+	protected final LifecycleController lifecycleController = new LifecycleController(this);
+
+	/**
+	 * Controller for run listeners.
+	 */
+	protected final RunController runController = new RunController(this);
+
+	/**
+	 * Add a lifecycle listener to the list of listeners that get notified when the
+	 * model reaches lifecycle milestones.
+	 * 
+	 * @param newListener the new lifecycle listener
+	 */
+	public void addLifecycleListener(LifecycleListener newListener) {
+		lifecycleController.addListener(newListener);
 	}
 
 	/**
-	 * Remove the milestone listener from the list of listeners that get notified
-	 * when the model reaches milestones.
+	 * Remove the lifecycle listener from the list of listeners that get notified
+	 * when the model reaches lifecycle milestones.
 	 * 
-	 * @param obsoleteListener the listener to remove from list of milestone
+	 * @param obsoleteListener the listener to remove from list of lifecycle
 	 *                         listeners
 	 */
-	public void removeMilestoneListener(MilestoneListener obsoleteListener) {
-		milestoneListeners.remove(obsoleteListener);
+	public void removeLifecycleListener(LifecycleListener obsoleteListener) {
+		lifecycleController.removeListener(obsoleteListener);
+	}
+
+	/**
+	 * Add a run listener to the list of listeners that get notified about model run
+	 * state changes.
+	 * 
+	 * @param newListener the new run listener
+	 */
+	public void addRunListener(RunListener newListener) {
+		runController.addListener(newListener);
+	}
+
+	/**
+	 * Remove the run listener from the list of listeners that get notified when the
+	 * model run state changes.
+	 * 
+	 * @param obsoleteListener the listener to remove from list of run listeners
+	 */
+	public void removeRunListener(RunListener obsoleteListener) {
+		runController.removeListener(obsoleteListener);
 	}
 
 	/**
 	 * List of change listeners that get notified when the model changes.
 	 */
-	protected Set<ChangeListener> changeListeners = new HashSet<>();
+	protected List<ChangeListener> changeListeners = new ArrayList<>();
 
 	/**
 	 * Add a change listener to the list of listeners that get notified when the
@@ -387,7 +373,8 @@ public abstract class EvoLudo
 	 * @param newListener the new change listener
 	 */
 	public void addChangeListener(ChangeListener newListener) {
-		changeListeners.add(newListener);
+		if (!changeListeners.contains(newListener))
+			changeListeners.add(0, newListener);
 	}
 
 	/**
@@ -404,7 +391,7 @@ public abstract class EvoLudo
 	/**
 	 * List of change listeners that get notified when the model changes.
 	 */
-	protected Set<SampleListener> sampleListeners = new HashSet<>();
+	protected List<SampleListener> sampleListeners = new ArrayList<>();
 
 	/**
 	 * Add a change listener to the list of listeners that get notified when the
@@ -413,7 +400,8 @@ public abstract class EvoLudo
 	 * @param newListener the new change listener
 	 */
 	public void addSampleListener(SampleListener newListener) {
-		sampleListeners.add(newListener);
+		if (!sampleListeners.contains(newListener))
+			sampleListeners.add(0, newListener);
 	}
 
 	/**
@@ -429,27 +417,20 @@ public abstract class EvoLudo
 
 	/**
 	 * Unload model framework. Notifies all registered
-	 * {@link MilestoneListener}'s.
+	 * {@link LifecycleListener}s.
 	 */
 	public void unloadModel() {
-		unloadModel(false);
+		lifecycleController.unloadModel();
 	}
 
 	/**
 	 * Unload model framework and, if requested, notifies all registered
-	 * {@link MilestoneListener}'s.
+	 * {@link LifecycleListener}s.
 	 * 
 	 * @param quiet set to {@code true} to skip notifying listeners
 	 */
 	public void unloadModel(boolean quiet) {
-		if (activeModel == null)
-			return;
-		// remove CLO parsers that are no longer needed
-		removeCLOProvider(activeModel);
-		activeModel.unload();
-		if (!quiet)
-			fireModelUnloaded();
-		activeModel = null;
+		lifecycleController.unloadModel(quiet);
 	}
 
 	/**
@@ -469,9 +450,9 @@ public abstract class EvoLudo
 		boolean doReset = false;
 		for (Module<?> mod : activeModule.getSpecies())
 			doReset |= mod.check();
-		Type type = activeModel.getType();
+		ModelType type = activeModel.getType();
 		doReset |= activeModel.check();
-		Type newtype = activeModel.getType();
+		ModelType newtype = activeModel.getType();
 		if (newtype != type) {
 			// model type changed; update model type in clo and parse again
 			String[] splitclo = getSplitCLO();
@@ -493,7 +474,7 @@ public abstract class EvoLudo
 	 * Reset all populations and notify all listeners.
 	 */
 	public final void modelReset() {
-		modelReset(false);
+		runController.modelReset();
 	}
 
 	/**
@@ -504,30 +485,14 @@ public abstract class EvoLudo
 	 * @param quiet set to {@code true} to skip notifying listeners
 	 */
 	public final void modelReset(boolean quiet) {
-		if (activeModel == null)
-			return;
-		// reset random number generator if seed was specified
-		if (rng.isSeedSet())
-			rng.reset();
-		// check consistency of parameters in models
-		modelCheck();
-		for (Module<?> mod : activeModule.getSpecies())
-			mod.reset();
-		activeModel.reset();
-		resetRequested = false;
-		modelInit(true);
-		if (!quiet) {
-			// notify of reset
-			activeModel.resetStatisticsSample();
-			fireModelReset();
-		}
+		runController.modelReset(quiet);
 	}
 
 	/**
 	 * Initialize all populations and notify all listeners.
 	 */
 	public final void modelInit() {
-		modelInit(false);
+		runController.modelInit();
 	}
 
 	/**
@@ -538,74 +503,7 @@ public abstract class EvoLudo
 	 * @param quiet set to {@code true} to skip notifying listeners
 	 */
 	public final void modelInit(boolean quiet) {
-		for (Module<?> mod : activeModule.getSpecies())
-			mod.init();
-		activeModel.init();
-		activeModel.update();
-		resetCPUSample();
-		modelRelax(quiet);
-		if (!quiet) {
-			// notify of init
-			fireModelInit();
-		}
-	}
-
-	/**
-	 * Starting time of CPU sampling (negative if not sampling).
-	 */
-	double cpu;
-
-	/**
-	 * Mean time of CPU sampling.
-	 */
-	double cpuMean;
-
-	/**
-	 * Variance of time of CPU sampling.
-	 */
-	double cpuVar;
-
-	/**
-	 * Number of CPU time samples
-	 */
-	int cpuSamples;
-
-	/**
-	 * Resets sampling of CPU time.
-	 */
-	protected void resetCPUSample() {
-		cpu = -1.0;
-		cpuMean = cpuVar = 0.0;
-		cpuSamples = 0;
-	}
-
-	/**
-	 * Starts sampling CPU time.
-	 */
-	protected void startCPUSample() {
-		if (cpu < 0.0)
-			cpu = elapsedTimeMsec();
-	}
-
-	/**
-	 * Finish sampling CPU time.
-	 */
-	protected void endCPUSample() {
-		if (logger.isLoggable(Level.FINE)) {
-			double time = elapsedTimeMsec() - cpu;
-			cpuSamples++;
-			double incr = time - cpuMean;
-			cpuMean += incr / cpuSamples;
-			double incr2 = time - cpuMean;
-			cpuVar += incr * incr2;
-			cpu = -1.0;
-			// note: unloading a running simulation clears activeModel
-			if (activeModel == null)
-				return;
-			logger.fine("CPU time: " + time + " @ " + Formatter.format(activeModel.getUpdates(), 3) + ", mean  "
-					+ Formatter.formatFix(cpuMean, 2) + " +/- "
-					+ Formatter.formatFix(Math.sqrt(cpuVar / (cpuSamples - 1)), 2));
-		}
+		runController.modelInit(quiet);
 	}
 
 	/**
@@ -617,7 +515,7 @@ public abstract class EvoLudo
 	 * @see Model#relax()
 	 */
 	public final boolean modelRelax() {
-		return modelRelax(false);
+		return runController.modelRelax();
 	}
 
 	/**
@@ -630,16 +528,7 @@ public abstract class EvoLudo
 	 * @see Model#relax()
 	 */
 	public final boolean modelRelax(boolean quiet) {
-		if (activeModel.getTimeRelax() < 1.0)
-			return activeModel.hasConverged();
-		boolean converged = activeModel.relax();
-		if (!quiet) {
-			if (converged)
-				fireModelStopped();
-			else
-				fireModelRelaxed();
-		}
-		return converged;
+		return runController.modelRelax(quiet);
 	}
 
 	/**
@@ -650,15 +539,7 @@ public abstract class EvoLudo
 	 *         can be called again.
 	 */
 	public final boolean modelNext() {
-		startCPUSample();
-		// make sure model has not been unloaded
-		if (activeModel == null)
-			return false;
-		if (activeModel.useScheduling()) {
-			activeModel.next();
-			return true;
-		}
-		return modelNextDone(activeModel.next());
+		return runController.modelNext();
 	}
 
 	/**
@@ -672,17 +553,7 @@ public abstract class EvoLudo
 	 *         can be called again.
 	 */
 	public final boolean modelNextDone(boolean cont) {
-		if (doPrev) {
-			doPrev = false;
-			activeModel.setTimeReversed(!activeModel.isTimeReversed());
-		}
-		endCPUSample();
-		if (!cont) {
-			fireModelStopped();
-			return false;
-		}
-		fireModelChanged();
-		return true;
+		return runController.modelNextDone(cont);
 	}
 
 	/**
@@ -714,7 +585,7 @@ public abstract class EvoLudo
 	 * @return command line options
 	 */
 	public String getCLO() {
-		return clo;
+		return cloController.getCLO();
 	}
 
 	/**
@@ -724,12 +595,7 @@ public abstract class EvoLudo
 	 * @return array command line options and arguments
 	 */
 	public String[] getSplitCLO() {
-		// strip all whitespace at start and end
-		String[] args = clo.trim().split("\\s+--");
-		// strip '--' from first argument
-		if (args[0].startsWith("--"))
-			args[0] = args[0].substring(2);
-		return args;
+		return cloController.getSplitCLO();
 	}
 
 	/**
@@ -738,17 +604,37 @@ public abstract class EvoLudo
 	 * @param clo the new command line option string
 	 */
 	public void setCLO(String clo) {
-		if (clo == null)
-			clo = "";
-		this.clo = clo.trim();
+		cloController.setCLO(clo);
 	}
+
+	/**
+	 * Minimum delay between subsequent updates for speed slider
+	 * {@link org.evoludo.ui.Slider}
+	 */
+	public static final double DELAY_MIN = 1.0;
+
+	/**
+	 * Maximum delay between subsequent updates for speed slider
+	 * {@link org.evoludo.ui.Slider}
+	 */
+	public static final double DELAY_MAX = 10000.0;
+
+	/**
+	 * Initial delay between subsequent updates for speed slider
+	 * {@link org.evoludo.ui.Slider}
+	 */
+	public static final double DELAY_INIT = 100.0;
+	/**
+	 * Delay decrement for speed slider {@link org.evoludo.ui.Slider}
+	 */
+	protected static final double DELAY_INCR = 1.2;
 
 	/**
 	 * The flag to indicate whether running of the model is suspended. For example
 	 * while parameters are being applied. If the changes do not require a reset of
 	 * the model the calculations are resumed after new parameters are applied. Also
 	 * used when command line options are set to immediately start running after
-	 * loading (see {@link #cloRun}).
+	 * loading (see {@link CLOController#cloRun}).
 	 */
 	protected boolean isSuspended = false;
 
@@ -775,40 +661,12 @@ public abstract class EvoLudo
 	}
 
 	/**
-	 * Minimum delay between subsequent updates for speed slider
-	 * {@link org.evoludo.ui.Slider}
-	 */
-	public static final double DELAY_MIN = 1.0;
-
-	/**
-	 * Maximum delay between subsequent updates for speed slider
-	 * {@link org.evoludo.ui.Slider}
-	 */
-	public static final double DELAY_MAX = 10000.0;
-
-	/**
-	 * Initial delay between subsequent updates for speed slider
-	 * {@link org.evoludo.ui.Slider}
-	 */
-	public static final double DELAY_INIT = 100.0;
-
-	/**
-	 * Delay decrement for speed slider {@link org.evoludo.ui.Slider}
-	 */
-	private static final double DELAY_INCR = 1.2;
-
-	/**
-	 * Delay between subsequent updates in milliseconds when model is running.
-	 */
-	protected int delay = (int) DELAY_INIT;
-
-	/**
 	 * Set delay between subsequent updates.
 	 *
 	 * @param delay in milliseconds
 	 */
 	public void setDelay(int delay) {
-		this.delay = Math.min(Math.max(delay, (int) DELAY_MIN), (int) DELAY_MAX);
+		runController.setDelay(delay);
 	}
 
 	/**
@@ -817,27 +675,21 @@ public abstract class EvoLudo
 	 * @return the delay in milliseconds
 	 */
 	public int getDelay() {
-		return delay;
+		return runController.getDelay();
 	}
 
 	/**
 	 * Increase delay between subsequent updates by fixed factor.
 	 */
 	public void increaseDelay() {
-		int newdelay = delay;
-		newdelay = (int) (newdelay * DELAY_INCR);
-		if (newdelay == delay)
-			newdelay++;
-		setDelay(Math.min(newdelay, (int) DELAY_MAX));
+		runController.increaseDelay();
 	}
 
 	/**
 	 * Decrease delay between subsequent updates by fixed factor.
 	 */
 	public void decreaseDelay() {
-		int newdelay = delay;
-		newdelay = (int) (newdelay / DELAY_INCR);
-		setDelay(Math.max(newdelay, (int) DELAY_MIN));
+		runController.decreaseDelay();
 	}
 
 	/**
@@ -852,27 +704,7 @@ public abstract class EvoLudo
 	 *         present; true otherwise
 	 */
 	public boolean loadModule(String newModuleKey) {
-		Module<?> newModule = modules.get(newModuleKey);
-		if (newModule == null) {
-			if (activeModule == null)
-				return false;
-			if (logger.isLoggable(Level.WARNING))
-				logger.warning("module '" + newModuleKey + "' not found - keeping '" + activeModule.getKey() + "'.");
-			return true;
-		}
-		// check if newModule is different
-		if (activeModule != null) {
-			if (activeModule == newModule) {
-				return true;
-			}
-			unloadModule();
-		}
-		activeModule = newModule;
-		if (rng.isSeedSet())
-			rng.reset();
-		activeModule.load();
-		fireModuleLoaded();
-		return true;
+		return lifecycleController.loadModule(newModuleKey);
 	}
 
 	/**
@@ -884,17 +716,7 @@ public abstract class EvoLudo
 	 * GWT application.
 	 */
 	public void unloadModule() {
-		unloadModel(true);
-		if (activeModule != null) {
-			for (Iterator<? extends Module<?>> it = activeModule.getSpecies().iterator(); it.hasNext();) {
-				Module<?> mod = it.next();
-				mod.unload();
-				if (mod != activeModule)
-					it.remove();
-			}
-			activeModule = null;
-		}
-		fireModuleUnloaded();
+		lifecycleController.unloadModule();
 	}
 
 	/**
@@ -912,6 +734,15 @@ public abstract class EvoLudo
 	}
 
 	/**
+	 * Access the module command line option.
+	 * 
+	 * @return the module option
+	 */
+	public CLOption getCloModuleOption() {
+		return cloController.cloModule;
+	}
+
+	/**
 	 * Add <code>module</code> to lookup table of modules using the module's key. If
 	 * a GUI is present, add GUI as a listener of <code>module</code> to get
 	 * notified about state changes.
@@ -921,7 +752,7 @@ public abstract class EvoLudo
 	public void addModule(Module<?> module) {
 		String key = module.getKey();
 		modules.put(key, module);
-		cloModule.addKey(key, module.getTitle());
+		cloController.addModuleKey(key, module.getTitle());
 	}
 
 	/**
@@ -957,8 +788,7 @@ public abstract class EvoLudo
 	 * Requests halting of a running {@link Model} on the next opportunity.
 	 */
 	public void stop() {
-		if (isRunning)
-			requestAction(PendingAction.STOP);
+		runController.stop();
 	}
 
 	/**
@@ -977,36 +807,15 @@ public abstract class EvoLudo
 	 * is completed to prevent unexpected side effects.
 	 */
 	public void startStop() {
-		if (isRunning) {
-			requestAction(PendingAction.STOP);
-			return;
-		}
-		if (activeModel.getMode() == Mode.STATISTICS_SAMPLE) {
-			fireModelRunning();
-			next();
-		} else {
-			isSuspended = true;
-			run();
-		}
+		runController.startStop();
 	}
-
-	/**
-	 * Flag to indicate if a backstep is in progress.
-	 */
-	private boolean doPrev = false;
 
 	/**
 	 * Attempts to backtrack a single step of the EvoLudo model. Called when
 	 * pressing the 'Prev' button, the 'p' or 'left-arrow' key.
 	 */
 	public void prev() {
-		// requires that model permits time reversal and not in statistics mode
-		if (!activeModel.permitsTimeReversal() || activeModel.getMode() != Mode.DYNAMICS)
-			return;
-		activeModel.setTimeReversed(!activeModel.isTimeReversed());
-		doPrev = true;
-		// next may return immediately - must reverse time again in modelNextDone()!
-		next();
+		runController.prev();
 	}
 
 	/**
@@ -1014,13 +823,7 @@ public abstract class EvoLudo
 	 * the 'Debug' button or 'D' key.
 	 */
 	public void debug() {
-		if (!activeModel.permitsDebugStep())
-			return;
-		// temporarily change to finer logging level for debugging
-		Level logLevel = logger.getLevel();
-		logger.setLevel(Level.ALL);
-		activeModel.debugStep();
-		logger.setLevel(logLevel);
+		runController.debug();
 	}
 
 	/**
@@ -1046,7 +849,7 @@ public abstract class EvoLudo
 	 * @param action the action requested
 	 */
 	public synchronized void requestAction(PendingAction action) {
-		requestAction(action, !isRunning);
+		runController.requestAction(action);
 	}
 
 	/**
@@ -1058,95 +861,71 @@ public abstract class EvoLudo
 	 * @param now    <code>true</code> to processes action immediately
 	 */
 	public synchronized void requestAction(PendingAction action, boolean now) {
-		if (pendingAction != PendingAction.STOP)
-			pendingAction = action;
-		// if now process request immediately
-		if (now) {
-			processPendingAction();
-		}
+		runController.requestAction(action, now);
 	}
 
 	/**
 	 * Called whenever a new module has finished loading. Notifies all registered
-	 * {@link MilestoneListener}s.
+	 * {@link LifecycleListener}s.
 	 */
 	public synchronized void fireModuleLoaded() {
 		pendingAction = PendingAction.NONE;
-		for (MilestoneListener i : milestoneListeners)
-			i.moduleLoaded();
-		String authors = activeModule.getAuthors();
-		logger.info("Module loaded: " + activeModule.getTitle() + (authors == null ? "" : " by " + authors));
+		lifecycleController.fireModuleLoaded();
 	}
 
 	/**
 	 * Called whenever the current module has finished unloading. Notifies all
-	 * registered {@link MilestoneListener}s.
+	 * registered {@link LifecycleListener}s.
 	 */
 	public synchronized void fireModuleUnloaded() {
-		for (MilestoneListener i : milestoneListeners)
-			i.moduleUnloaded();
-		if (activeModule != null)
-			logger.info("Module '" + activeModule.getTitle() + "' unloaded");
+		lifecycleController.fireModuleUnloaded();
 		activeModule = null;
 	}
 
 	/**
 	 * Called after the state of the model has been restored either through
 	 * drag'n'drop with the GWT GUI or through the <code>--restore</code> command
-	 * line argument. Notifies all registered {@link MilestoneListener}s.
+	 * line argument. Notifies all registered {@link LifecycleListener}s.
 	 *
 	 * @see #restoreFromFile()
 	 * @see #restoreState(Plist)
 	 */
 	public synchronized void fireModuleRestored() {
-		for (MilestoneListener i : milestoneListeners)
-			i.moduleRestored();
-		logger.info("Module restored");
+		lifecycleController.fireModuleRestored();
 	}
 
 	/**
 	 * Called whenever a new model has finished loading. Notifies all registered
-	 * {@link MilestoneListener}s.
+	 * {@link LifecycleListener}s.
 	 */
 	public synchronized void fireModelLoaded() {
 		pendingAction = PendingAction.NONE;
-		for (MilestoneListener i : milestoneListeners)
-			i.modelLoaded();
-		logger.info("Model '" + activeModel.getType() + "' loaded");
+		lifecycleController.fireModelLoaded();
 	}
 
 	/**
 	 * Called whenever a new model has finished loading. Notifies all registered
-	 * {@link MilestoneListener}s.
+	 * {@link LifecycleListener}s.
 	 */
 	public synchronized void fireModelUnloaded() {
 		pendingAction = PendingAction.NONE;
-		for (MilestoneListener i : milestoneListeners)
-			i.modelUnloaded();
-		if (activeModel != null)
-			logger.info("Model '" + activeModel.getType() + "' unloaded");
+		lifecycleController.fireModelUnloaded();
 	}
 
 	/**
 	 * Called whenever the model starts its calculations. Fires only when starting
-	 * to run. Notifies all registered {@link MilestoneListener}s.
+	 * to run. Notifies all registered {@link RunListener}s.
 	 */
 	public synchronized void fireModelRunning() {
-		if (isRunning)
-			return;
-		isRunning = true;
-		isSuspended = false;
-		for (MilestoneListener i : milestoneListeners)
-			i.modelRunning();
-		logger.info("Model running");
+		runController.fireModelRunning();
 	}
 
 	/**
 	 * Called whenever the state of the model has changed. For example, to
 	 * trigger the update of the state displayed in the GUI. Processes pending
-	 * actions and notifies all registered {@code Model.MilestoneListener}s.
+	 * actions and notifies all registered {@code RunListener}s.
 	 * 
-	 * @see MilestoneListener
+	 * @see RunListener
 	 * @see PendingAction
 	 */
 	public synchronized void fireModelChanged() {
@@ -1162,9 +941,17 @@ public abstract class EvoLudo
 	}
 
 	/**
+	 * Helper to process pending actions. Delegates to {@link RunController} but
+	 * exposed for subclasses that need to hook additional behavior.
+	 */
+	void processPendingAction() {
+		runController.processPendingAction();
+	}
+
+	/**
 	 * Called after the population has reached an absorbing state (or has converged
 	 * to an equilibrium state). Notifies all registered
-	 * {@link MilestoneListener}s.
+	 * {@link RunListener}s.
 	 * 
 	 * @param success <code>true</code> if sample completed successfully
 	 * @return <code>true</code> to continue with next sample
@@ -1181,119 +968,51 @@ public abstract class EvoLudo
 			fireModelStopped();
 			return false;
 		}
-		return true;
+		return isRunning;
 	}
 
 	/**
 	 * Called whenever the settings of the model have changed. For example, to
 	 * trigger the range of values or markers in the GUI. Notifies all registered
-	 * {@link MilestoneListener}s.
+	 * {@link RunListener}s.
 	 * 
-	 * @see MilestoneListener
+	 * @see RunListener
 	 */
 	public synchronized void fireSettingsChanged() {
-		for (MilestoneListener i : milestoneListeners)
-			i.modelSettings();
-	}
-
-	/**
-	 * Helper method for handling model changed events and processes pending
-	 * actions.
-	 * 
-	 * @see MilestoneListener
-	 * @see PendingAction
-	 */
-	void processPendingAction() {
-		PendingAction action = pendingAction;
-		pendingAction = PendingAction.NONE;
-		switch (action) {
-			case CHANGE_MODE:
-				Mode mode = action.getMode();
-				if (activeModel.setMode(mode)) {
-					// mode changed
-					if (mode == Mode.STATISTICS_SAMPLE) {
-						// do not notify listeners, preserve statistics
-						modelReset(true);
-					} else {
-						// stop running
-						isRunning = false;
-					}
-				} else {
-					// mode unchanged
-					if (!isRunning || mode == Mode.STATISTICS_SAMPLE)
-						break;
-				}
-				//$FALL-THROUGH$
-			case NONE:
-				for (ChangeListener i : changeListeners)
-					i.modelChanged(action);
-				break;
-			case STOP: // stop requested (as opposed to simulations that stopped)
-				isRunning = false;
-				fireModelStopped();
-				break;
-			case INIT:
-				modelInit();
-				break;
-			case RESET:
-				modelReset();
-				break;
-			case SHUTDOWN:
-				unloadModule();
-				break;
-			default:
-		}
+		runController.fireSettingsChanged();
 	}
 
 	/**
 	 * Called after the model has been re-initialized. Notifies all registered
-	 * {@link MilestoneListener}s.
+	 * {@link RunListener}s.
 	 */
 	public synchronized void fireModelInit() {
-		if (activeModel.getMode() == Mode.DYNAMICS || !isRunning) {
-			isRunning = false;
-			for (MilestoneListener i : milestoneListeners)
-				i.modelDidInit();
-			logger.info("Model init");
-		}
+		runController.fireModelInit();
 	}
 
 	/**
 	 * Called after the model has been reset. Notifies all registered
-	 * {@link MilestoneListener}s.
+	 * {@link RunListener}s.
 	 */
 	public synchronized void fireModelReset() {
-		isRunning = false;
-		if (activeModel == null)
-			return;
-		for (MilestoneListener i : milestoneListeners)
-			i.modelDidReset();
-		logger.info("Model reset");
+		runController.fireModelReset();
 	}
 
 	/**
 	 * Called after the model completed its relaxation. Notifies all registered
-	 * {@link MilestoneListener}s.
+	 * {@link RunListener}s.
 	 */
 	public synchronized void fireModelRelaxed() {
-		for (MilestoneListener i : milestoneListeners)
-			i.modelRelaxed();
-		logger.info("Model relaxed");
+		runController.fireModelRelaxed();
 	}
 
 	/**
 	 * Called after the population has reached an absorbing state (or has converged
 	 * to an equilibrium state). Notifies all registered
-	 * {@link MilestoneListener}s.
+	 * {@link RunListener}s.
 	 */
 	public synchronized void fireModelStopped() {
-		// model may already have been unloaded
-		if (activeModel == null)
-			return;
-		isRunning = false;
-		for (MilestoneListener i : milestoneListeners)
-			i.modelStopped();
-		logger.info("Model stopped");
+		runController.fireModelStopped();
 	}
 
 	/**
@@ -1335,16 +1054,18 @@ public abstract class EvoLudo
 	public static final String COPYRIGHT = "© Christoph Hauert";
 
 	/**
+	 * Responsible for encoding/restoring state and handling version reporting.
+	 */
+	protected final StateEncoder stateEncoder = new StateEncoder(this);
+
+	/**
 	 * Return version string of current model. Version must include reference to git
 	 * commit to ensure reproducibility of results.
 	 *
 	 * @return the version string
 	 */
 	public String getVersion() {
-		String git = getGit();
-		if ("unknown".equals(git))
-			return COPYRIGHT;
-		return "EvoLudo: " + git + " " + COPYRIGHT;
+		return stateEncoder.getVersion();
 	}
 
 	/**
@@ -1415,21 +1136,7 @@ public abstract class EvoLudo
 	 * @return encoded state
 	 */
 	public String encodeState() {
-		StringBuilder plist = new StringBuilder("<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n"
-				+ "<!DOCTYPE plist PUBLIC \"-//Apple//DTD PLIST 1.0//EN\" \"http://www.apple.com/DTDs/PropertyList-1.0.dtd\">\n"
-				+ "<plist version=\"1.0\">\n" + "<dict>\n");
-		plist.append(Plist.encodeKey("Export date", new Date().toString()));
-		plist.append(Plist.encodeKey("Title", activeModule.getTitle()));
-		plist.append(Plist.encodeKey("Version", getVersion()));
-		String java = getJavaVersion();
-		if (java != null)
-			plist.append(Plist.encodeKey("JavaVersion", java));
-		plist.append(Plist.encodeKey("CLO", parser.getCLO()));
-		activeModel.encodeState(plist);
-		// the mersenne twister state is pretty long (and uninteresting) keep at end
-		plist.append("<key>RNG state</key>\n" + "<dict>\n" + (rng.getRNG().encodeState()) + "</dict>\n");
-		plist.append("</dict>\n" + "</plist>");
-		return plist.toString();
+		return stateEncoder.encodeState();
 	}
 
 	/**
@@ -1460,50 +1167,8 @@ public abstract class EvoLudo
 	 * @return {@code true} on successfully restoring state
 	 */
 	public boolean restoreState(Plist plist) {
-		if (plist == null) {
-			logger.severe("restore state failed (state empty).");
-			return false;
-		}
-		// retrieve version
-		String version = (String) plist.get("Version");
-		if (version == null) {
-			logger.severe("restore state failed (version missing).");
-			return false;
-		}
-		// version check
-		int versionstart = version.indexOf(' ') + 1;
-		String restoreGit = version.substring(versionstart, version.indexOf(' ', versionstart));
-		String myVersion = getVersion();
-		versionstart = myVersion.indexOf(' ') + 1;
-		String myGit = myVersion.substring(versionstart, myVersion.indexOf(' ', versionstart));
-		if (!myGit.equals(restoreGit))
-			// versions differ - may or may not be a problem...
-			// note: dirty states always count as being different
-			logger.warning(
-					"state generated by version " + restoreGit + " but this is " + myGit + " - proceed with caution.");
-
-		// restore RNG generator, population structure and state
-		Plist rngstate = (Plist) plist.get("RNG state");
-		boolean success = true;
-		if (!rng.getRNG().restoreState(rngstate)) {
-			logger.warning("restore RNG failed.");
-			success = false;
-		}
-		success &= activeModel.restoreState(plist);
-		if (success) {
-			logger.info("Restore succeeded.");
-			fireModuleRestored();
-		} else {
-			logger.warning("restore failed - resetting model.");
-			modelReset();
-		}
-		return success;
+		return stateEncoder.restoreState(plist);
 	}
-
-	/**
-	 * The parser for command line options.
-	 */
-	protected CLOParser parser;
 
 	/**
 	 * Register <code>clo</code> as a provider of command line options. Initialize
@@ -1512,11 +1177,7 @@ public abstract class EvoLudo
 	 * @param provider the option provider to add
 	 */
 	public void addCLOProvider(CLOProvider provider) {
-		if (provider == null)
-			return;
-		if (parser == null)
-			parser = new CLOParser(this);
-		parser.addCLOProvider(provider);
+		cloController.addCLOProvider(provider);
 	}
 
 	/**
@@ -1525,9 +1186,7 @@ public abstract class EvoLudo
 	 * @param provider the option provider to remove
 	 */
 	public void removeCLOProvider(CLOProvider provider) {
-		if (parser == null || provider == null)
-			return;
-		parser.removeCLOProvider(provider);
+		cloController.removeCLOProvider(provider);
 	}
 
 	/**
@@ -1551,124 +1210,7 @@ public abstract class EvoLudo
 	 *      EvoLudoGWT#preprocessCLO(String[])
 	 */
 	protected String[] preprocessCLO(String[] cloarray) {
-		// first, deal with --help option
-		boolean helpRequested = false;
-		String helpName = cloHelp.getName();
-		for (int i = 0; i < cloarray.length; i++) {
-			String param = cloarray[i];
-			if (param.startsWith(helpName)) {
-				helpRequested = true;
-				break;
-			}
-		}
-		// now deal with --module option
-		String moduleParam = cloModule.getName();
-		CLOption.Key moduleKey = null;
-		String moduleName = "";
-		for (int i = 0; i < cloarray.length; i++) {
-			String param = cloarray[i];
-			if (param.startsWith(moduleParam)) {
-				String[] moduleArgs = param.split("[\\s+,=]");
-				if (moduleArgs == null || moduleArgs.length < 2) {
-					if (!helpRequested)
-						logger.severe("module key missing");
-					return helpCLO;
-				}
-				moduleName = moduleArgs[1];
-				moduleKey = cloModule.match(moduleName);
-				// exact match required
-				if (moduleKey != null && !moduleKey.getKey().equals(moduleName))
-					moduleKey = null;
-				// module parameter found; no need to continue
-				cloarray = ArrayMath.drop(cloarray, i);
-				break;
-			}
-		}
-		if (moduleKey == null || !loadModule(moduleKey.getKey())) {
-			if (!helpRequested)
-				logger.severe("Use --module to load a module or --help for more information.");
-			return helpCLO;
-		}
-		// second, determine feasible --model options for given module
-		cloModel.clearKeys();
-		Type[] mt = activeModule.getModelTypes();
-		cloModel.addKeys(mt);
-		// third, deal with --model option
-		String modelName = cloModel.getName();
-		// if IBS is not an option, pick first available model as default (which one
-		// remains unspecified)
-		Collection<Key> keys = cloModel.getKeys();
-		if (keys.isEmpty()) {
-			if (!helpRequested)
-				logger.severe("No model found!");
-			return helpCLO;
-		}
-		Type defaulttype = (Type) cloModel.match(cloModel.getDefault());
-		Type type = null;
-		for (int i = 0; i < cloarray.length; i++) {
-			String param = cloarray[i];
-			if (param.startsWith(modelName)) {
-				String newModel = CLOption.stripKey(modelName, param).trim();
-				// remove model option
-				cloarray = ArrayMath.drop(cloarray, i);
-				if (newModel.isEmpty()) {
-					type = defaulttype;
-					logger.warning("model key missing - use default type " + type.getKey() + ".");
-					// model key found; no need to continue
-					break;
-				}
-				type = Type.parse(newModel);
-				if (type == null || !keys.contains(type)) {
-					if (activeModel != null) {
-						type = activeModel.getType();
-						logger.warning(
-								"invalid model type " + newModel + " - keep current type " + type.getKey() + ".");
-					} else {
-						type = defaulttype;
-						logger.warning("invalid model type " + newModel + " - use default type " + type.getKey() + ".");
-					}
-				}
-				// model key found; no need to continue
-				break;
-			}
-		}
-		if (type == null) {
-			type = defaulttype;
-			if (keys.size() > 1 && !defaulttype.getKey().equals(cloModel.getDefault()))
-				// display warning if multiple models available (suppress if defaults match)
-				logger.warning("model type unspecified - use default type " + type.getKey() + ".");
-		}
-		// NOTE: currently models cannot be mix'n'matched between species
-		loadModel(type);
-		if (activeModel == null) {
-			if (!helpRequested)
-				logger.severe("model type '" + type.getKey() + "' not supported!");
-			return helpCLO;
-		}
-		// check if cloOptions contain --verbose
-		String verboseName = cloVerbose.getName();
-		for (int i = 0; i < cloarray.length; i++) {
-			String param = cloarray[i];
-			if (param.startsWith(verboseName)) {
-				String verbosity = CLOption.stripKey(verboseName, param).trim();
-				if (verbosity.isEmpty()) {
-					logger.warning("verbose level missing - ignored.");
-					// remove verbose option
-					cloarray = ArrayMath.drop(cloarray, i);
-					// verbosity key found; no need to continue
-					break;
-				}
-				// parse --verbose first to set logging level already for processing of command
-				// line arguments; gets processed again with all others but no harm in it
-				cloVerbose.setArg(verbosity);
-				cloVerbose.parse();
-				// verbosity key found; no need to continue
-				break;
-			}
-		}
-		if (helpRequested)
-			return helpCLO;
-		return cloarray;
+		return cloController.preprocessCLO(cloarray);
 	}
 
 	/**
@@ -1679,7 +1221,7 @@ public abstract class EvoLudo
 	 * @see #parseCLO(String[])
 	 */
 	public int parseCLO() {
-		return parseCLO(getSplitCLO());
+		return cloController.parseCLO();
 	}
 
 	/**
@@ -1692,25 +1234,7 @@ public abstract class EvoLudo
 	 * @see CLOParser#parseCLO(String[])
 	 */
 	protected int parseCLO(String[] cloarray) {
-		if (parser == null)
-			parser = new CLOParser(this);
-		parser.setLogger(logger);
-		cloarray = preprocessCLO(cloarray);
-		parser.initCLO();
-		// preprocessing removed (and possibly altered) --module and --model options
-		// add current settings back to cloarray
-		if (activeModule != null)
-			cloarray = ArrayMath.append(cloarray, cloModule.getName() + " " + activeModule.getKey());
-		if (activeModel != null)
-			cloarray = ArrayMath.append(cloarray, cloModel.getName() + " " + activeModel.getType().getKey());
-		int issues = parser.parseCLO(cloarray);
-		if (reparseCLO) {
-			// start again from scratch
-			reparseCLO = false;
-			parser.initCLO();
-			return parser.parseCLO(cloarray);
-		}
-		return issues;
+		return cloController.parseCLO(cloarray);
 	}
 
 	/**
@@ -1719,44 +1243,7 @@ public abstract class EvoLudo
 	 * @return the help string
 	 */
 	public String getCLOHelp() {
-		// list trait indices and names
-		String globalMsg = "List of command line options";
-		if (activeModule != null) {
-			globalMsg += " for module '" + activeModule.getKey() + "'";
-			if (activeModel != null) {
-				globalMsg += " and model '" + activeModel.getType().getKey() + "'";
-				Category.Model.setHeader("Options for model '" + activeModel.getType().getKey() + "'");
-			} else
-				globalMsg += " (select model for more options)";
-			globalMsg += "\n\nGlobal options:";
-
-			int idx = 0;
-			StringBuilder sb = new StringBuilder();
-			for (Module<?> mod : activeModule.getSpecies()) {
-				String name = mod.getName();
-				int namelen = name.length();
-				if (namelen > 0)
-					sb.append("\n       Species: ")
-							.append(name);
-				int nt = mod.getNTraits();
-				for (int n = 0; n < nt; n++) {
-					sb.append("\n             ")
-							.append(idx + n)
-							.append(": ")
-							.append(mod.getTraitName(n));
-					if (mod instanceof HasDE && ((HasDE) mod).getDependent() == n) {
-						sb.append(" (dependent)");
-					}
-				}
-				idx += nt;
-			}
-			String moduleMsg = sb.toString();
-			Category.Module.setHeader("Options for module '" + activeModule.getKey() //
-					+ "' with trait indices and names:" + moduleMsg);
-		} else
-			globalMsg += " (select module and model for more info):";
-		Category.Global.setHeader(globalMsg);
-		return parser.helpCLO(true);
+		return cloController.getCLOHelp();
 	}
 
 	/**
@@ -1765,350 +1252,15 @@ public abstract class EvoLudo
 	public abstract void showHelp();
 
 	/**
-	 * Command line option to set module.
-	 */
-	public final CLOption cloModule = new CLOption("module", null, Category.Global,
-			"--module <m>    select module from:", new CLODelegate() {
-				@Override
-				public boolean parse(String arg) {
-					// option gets special treatment
-					return true;
-				}
-			});
-
-	/**
-	 * Command line option to set the type of model (see {@link Type}).
-	 */
-	public final CLOption cloModel = new CLOption("model", Type.IBS.getKey(), Category.Module,
-			"--model <m>     model type", new CLODelegate() {
-				@Override
-				public boolean parse(String arg) {
-					// option gets special treatment
-					return true;
-				}
-			});
-
-	/**
-	 * Command line option to set seed of random number generator.
-	 */
-	public final CLOption cloSeed = new CLOption("seed", "no seed", CLOption.Argument.OPTIONAL, Category.Model,
-			"--seed [<s>]    set random seed (0)", new CLODelegate() {
-				@Override
-				public boolean parse(String arg) {
-					if (cloSeed.isSet())
-						rng.setSeed(cloSeed.isDefault() ? 0L : Long.parseLong(arg));
-					else
-						rng.clearSeed();
-					return true;
-				}
-			});
-
-	/**
-	 * Command line option to request that the EvoLudo model immediately starts
-	 * running after loading.
-	 */
-	public final CLOption cloRun = new CLOption("run", Category.GUI,
-			"--run           simulations run after launch", new CLODelegate() {
-				@Override
-				public boolean parse(String arg) {
-					// by default do not interfere - i.e. leave simulations running if possible
-					if (cloRun.isSet())
-						setSuspended(true);
-					return true;
-				}
-			});
-
-	/**
-	 * Command line option to set the delay between subsequent updates.
-	 */
-	public final CLOption cloDelay = new CLOption("delay", "" + DELAY_INIT, Category.GUI,
-			"--delay <d>     delay between updates (d: delay in msec)", new CLODelegate() {
-				@Override
-				public boolean parse(String arg) {
-					setDelay(Integer.parseInt(arg));
-					return true;
-				}
-			});
-
-	/**
-	 * Command line option to set the color for trajectories. For example, this
-	 * affects the display in {@link org.evoludo.simulator.views.S3} or
-	 * {@link org.evoludo.simulator.views.Phase2D}.
-	 */
-	public final CLOption cloTrajectoryColor = new CLOption("trajcolor", "black", Category.GUI,
-			"--trajcolor <c>  color for trajectories\n"
-					+ "           <c>: color name or '(r,g,b[,a])' with r,g,b,a in [0-255]",
-			new CLODelegate() {
-				@Override
-				public boolean parse(String arg) {
-					Color color = CLOParser.parseColor(arg);
-					if (color == null)
-						return false;
-					activeModule.setTrajectoryColor(color);
-					return true;
-				}
-			});
-
-	/**
-	 * Command line option to set color scheme for coloring continuous traits.
-	 * 
-	 * @see ColorModelType
-	 */
-	public final CLOption cloTraitColorScheme = new CLOption("traitcolorscheme", "traits", Category.GUI,
-			"--traitcolorscheme <m>  color scheme for traits:", //
-			new CLODelegate() {
-				@Override
-				public boolean parse(String arg) {
-					setColorModelType((ColorModelType) cloTraitColorScheme.match(arg));
-					return true;
-				}
-			});
-
-	/**
-	 * Command line option to perform test of random number generator on launch.
-	 * This takes approximately 10-20 seconds. The test reports (1) whether the
-	 * generated sequence of random numbers is consistent with the reference
-	 * implementation of {@link MersenneTwister} and (2) the performance of
-	 * MersenneTwister compared to {@link java.util.Random}.
-	 */
-	public final CLOption cloRNG = new CLOption("testRNG", Category.Global,
-			"--testRNG       test random number generator", new CLODelegate() {
-				@Override
-				public boolean parse(String arg) {
-					if (cloRNG.isSet()) {
-						// test of RNG requested
-						logger.info("Testing MersenneTwister...");
-						int start = elapsedTimeMsec();
-						MersenneTwister.testCorrectness(logger);
-						MersenneTwister.testSpeed(logger, EvoLudo.this, 10000000);
-						int lap = elapsedTimeMsec();
-						logger.info("MersenneTwister tests done: " + ((lap - start) / 1000.0) + " sec.");
-						MersenneTwister mt = rng.getRNG();
-						RNGDistribution.Uniform.test(mt, logger, EvoLudo.this);
-						RNGDistribution.Exponential.test(mt, logger, EvoLudo.this);
-						RNGDistribution.Normal.test(mt, logger, EvoLudo.this);
-						RNGDistribution.Geometric.test(mt, logger, EvoLudo.this);
-						RNGDistribution.Binomial.test(mt, logger, EvoLudo.this);
-					}
-					return true;
-				}
-			});
-
-	/**
-	 * Command line option to set verbosity level of logging.
-	 */
-	public final CLOption cloVerbose = new CLOption("verbose", "info", Category.Global,
-			"--verbose <l>   level of verbosity with l one of\n" //
-					+ "                all, debug/finest, finer, fine, config,\n" //
-					+ "                info, warning, error, or none",
-			new CLODelegate() {
-				@Override
-				public boolean parse(String arg) {
-					String larg = arg.toLowerCase();
-					if ("all".startsWith(larg)) {
-						logger.setLevel(Level.ALL);
-						return true;
-					}
-					if ("debug".startsWith(larg)) {
-						logger.setLevel(Level.FINEST);
-						return true;
-					}
-					if ("finest".startsWith(larg)) {
-						logger.setLevel(Level.FINEST);
-						return true;
-					}
-					if ("finer".startsWith(larg)) {
-						logger.setLevel(Level.FINER);
-						return true;
-					}
-					if ("fine".startsWith(larg)) {
-						logger.setLevel(Level.FINE);
-						return true;
-					}
-					if ("debug".startsWith(larg)) {
-						logger.setLevel(Level.CONFIG);
-						return true;
-					}
-					if ("warning".startsWith(larg)) {
-						logger.setLevel(Level.WARNING);
-						return true;
-					}
-					if ("error".startsWith(larg) || "severe".startsWith(larg)) {
-						logger.setLevel(Level.SEVERE);
-						return true;
-					}
-					if ("none".startsWith(larg) || "off".startsWith(larg)) {
-						logger.setLevel(Level.OFF);
-						return true;
-					}
-					if ("info".startsWith(larg)) {
-						logger.setLevel(Level.INFO);
-						return true;
-					}
-					return false;
-				}
-			});
-
-	/**
-	 * Command line option to print help message for available command line options.
-	 */
-	public final CLOption cloHelp = new CLOption("help", Category.Global,
-			"--help          print this help screen", new CLODelegate() {
-				@Override
-				public boolean parse(String arg) {
-					if (cloHelp.isSet()) {
-						showHelp();
-					}
-					return true;
-				}
-			});
-
-	/**
-	 * Replacement command line option for serious parsing failures to display help
-	 * screen.
-	 */
-	public final String[] helpCLO = new String[] { cloHelp.getName() };
-
-	/**
 	 * {@inheritDoc}
 	 * <p>
 	 * <strong>Note:</strong> In contrast to other providers of command line
-	 * options, the EvoLudo class maintains a reference to the parser
-	 * (<code>prsr</code> and <code>parser</code> must be identical).
+	 * options, the EvoLudo class delegates collection to the controller which
+	 * maintains the shared parser.
 	 */
 	@Override
 	public void collectCLO(CLOParser prsr) {
-		parser.addCLO(cloHelp);
-		parser.addCLO(cloVerbose);
-		if (!EvoLudo.isGWT)
-			// default verbosity if running as java application is warning
-			cloVerbose.setDefault("warning");
-		parser.addCLO(cloModule);
-		parser.addCLO(cloModel);
-		parser.addCLO(cloSeed);
-		parser.addCLO(cloRun);
-		parser.addCLO(cloDelay);
-		parser.addCLO(cloRNG);
-		// option for trait color schemes only makes sense for modules with multiple
-		// continuous traits that have 2D/3D visualizations
-		if (activeModel instanceof org.evoludo.simulator.models.CModel //
-				&& activeModule.getNTraits() > 1 //
-				&& (activeModule instanceof HasPop2D || activeModule instanceof HasPop3D)) {
-			parser.addCLO(cloTraitColorScheme);
-			cloTraitColorScheme.addKeys(ColorModelType.values());
-		}
-
-		// trajectory color settings used by phase plane and simplex plots
-		if (activeModule instanceof HasS3 || activeModule instanceof HasPhase2D)
-			parser.addCLO(cloTrajectoryColor);
-	}
-
-	/**
-	 * The coloring method type.
-	 */
-	protected ColorModelType colorModelType = ColorModelType.DEFAULT;
-
-	/**
-	 * Coloring methods for multiple continuous traits. Enum on steroids. Currently
-	 * available coloring types are:
-	 * <dl>
-	 * <dt>traits
-	 * <dd>Each trait refers to a color channel. At most three traits for
-	 * <span style="color:red;">red</span>, <span style="color:green;">green</span>,
-	 * and <span style="color:blue;">blue</span> components. The brightness of the
-	 * color indicates the value of the continuous trait. This is the default.
-	 * <dt>distance
-	 * <dd>Color the traits according to their (Euclidian) distance from the origin
-	 * (heat map ranging from black and grey to yellow and red).
-	 * <dt>DEFAULT
-	 * <dd>Default coloring type. Not user selectable.
-	 * </dl>
-	 * 
-	 * @see #cloTraitColorScheme
-	 */
-	public enum ColorModelType implements CLOption.Key {
-
-		/**
-		 * Each trait refers to a color channel. At most three traits for
-		 * <span style="color:red;">red</span>, <span style="color:green;">green</span>,
-		 * and <span style="color:blue;">blue</span> components.
-		 */
-		TRAITS("traits", "each trait (&le;3) refers to color channel"), //
-
-		/**
-		 * Color the traits according to their (Euclidian) distance from the origin.
-		 */
-		DISTANCE("distance", "distance of traits from origin"), //
-
-		/**
-		 * Default coloring type. Not user selectable.
-		 */
-		DEFAULT("-default", "default coloring scheme");
-
-		/**
-		 * The name of the color model type.
-		 */
-		private final String key;
-
-		/**
-		 * Brief description of the color model type for help display.
-		 * 
-		 * @see EvoLudo#getCLOHelp()
-		 */
-		private final String title;
-
-		/**
-		 * Create a new color model type.
-		 * 
-		 * @param key   the name of the color model
-		 * @param title the title of the color model
-		 * 
-		 * @see #cloTraitColorScheme
-		 */
-		ColorModelType(String key, String title) {
-			this.key = key;
-			this.title = title;
-		}
-
-		@Override
-		public String getKey() {
-			return key;
-		}
-
-		@Override
-		public String getTitle() {
-			return title;
-		}
-
-		@Override
-		public String toString() {
-			return key + ": " + title;
-		}
-	}
-
-	/**
-	 * Get the type of color model for translating continuous traits into colors.
-	 * 
-	 * @return the type of color model
-	 * 
-	 * @see #cloTraitColorScheme
-	 */
-	public ColorModelType getColorModelType() {
-		return colorModelType;
-	}
-
-	/**
-	 * Set the type of the color model for translating continuous traits into
-	 * colors.
-	 * 
-	 * @param colorModelType the new type of color model
-	 * 
-	 * @see #cloTraitColorScheme
-	 */
-	public void setColorModelType(ColorModelType colorModelType) {
-		if (colorModelType == null)
-			return;
-		this.colorModelType = colorModelType;
+		cloController.collectCLO(prsr);
 	}
 
 	/**
@@ -2141,11 +1293,13 @@ public abstract class EvoLudo
 		addModule(new Moran(this));
 		addModule(new TBT(this));
 		addModule(new ATBT(this));
+		addModule(new DemesTBT(this));
 		addModule(new RSP(this));
 		addModule(new CDL(this));
 		addModule(new CDLP(this));
 		addModule(new CDLPQ(this));
 		addModule(new Centipede(this));
+		addModule(new EcoPGG(this));
 		addModule(new CSD(this));
 		addModule(new CLabour(this));
 		addModule(new EcoMoran(this));

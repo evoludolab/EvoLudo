@@ -30,15 +30,15 @@
 
 package org.evoludo.simulator.models;
 
-import java.util.logging.Level;
-
 import org.evoludo.math.ArrayMath;
 import org.evoludo.simulator.EvoLudo;
+import org.evoludo.simulator.geometries.AbstractGeometry;
+import org.evoludo.simulator.geometries.GeometryType;
 import org.evoludo.simulator.modules.Module;
+import org.evoludo.util.CLOCategory;
+import org.evoludo.util.CLODelegate;
 import org.evoludo.util.CLOParser;
 import org.evoludo.util.CLOption;
-import org.evoludo.util.CLOption.CLODelegate;
-import org.evoludo.util.CLOption.Category;
 import org.evoludo.util.Formatter;
 
 /**
@@ -103,15 +103,17 @@ public class IBSD extends IBS implements DModel {
 		// - mutant or temperature initialization
 		// - no vacant sites or monostop (otherwise extinction is the only absorbing
 		// state)
+		// - for well-mixed populations any frequency is acceptable
 		for (Module<?> mod : species) {
-			Init.Type itype = ((IBSDPopulation) mod.getIBSPopulation()).getInit().type;
-			if ((itype.equals(Init.Type.MUTANT) ||
-					itype.equals(Init.Type.TEMPERATURE)) &&
-					(mod.getVacantIdx() < 0
-							|| (mod.getVacantIdx() >= 0
-									&& ((org.evoludo.simulator.modules.Discrete) mod).getMonoStop())))
-				continue;
-			return false;
+			IBSDPopulation dpop = (IBSDPopulation) mod.getIBSPopulation();
+			AbstractGeometry inter = dpop.interaction;
+			boolean isWM = inter.isType(GeometryType.WELLMIXED)
+					&& (inter.isSingle()
+							|| dpop.competition.isType(GeometryType.WELLMIXED));
+			Init.Type itype = dpop.getInit().type;
+			if (!isWM && !(itype.equals(Init.Type.MUTANT) ||
+					itype.equals(Init.Type.TEMPERATURE)))
+				return false;
 		}
 		return true;
 	}
@@ -120,36 +122,6 @@ public class IBSD extends IBS implements DModel {
 	public void unload() {
 		super.unload();
 		cloOptimize.clearKeys();
-	}
-
-	@Override
-	public boolean check() {
-		boolean doReset = super.check();
-		// NOTE: optimizeHomo is disabled for multi-species (see cloOptimize)
-		if (optimizeHomo) {
-			if (population.populationUpdate.getType() == PopulationUpdate.Type.ECOLOGY) {
-				optimizeHomo = false;
-				logger.warning(
-						"optimizations for homogeneous states disabled (incompatible with variable population sizes).");
-				doReset = true;
-			}
-			Module<?> module = population.getModule();
-			double pMutation = module.getMutation().probability;
-			if (pMutation <= 0.0) {
-				optimizeHomo = false;
-				logger.warning("optimizations for homogeneous states disabled (small mutations required).");
-				doReset = true;
-			}
-			int nPop = module.getNPopulation();
-			if (pMutation < 0.0 || pMutation > 0.1 * nPop) {
-				if (logger.isLoggable(Level.WARNING))
-					logger.warning(
-							"optimizations for homogeneous states not recommended (mutations in [0, " + (0.1 / nPop)
-									+ ") recommended, now " + Formatter.format(pMutation, 4) + ", proceeding)");
-				doReset = true;
-			}
-		}
-		return doReset;
 	}
 
 	/**
@@ -273,7 +245,7 @@ public class IBSD extends IBS implements DModel {
 		 * 
 		 * @see Type
 		 */
-		public final CLOption clo = new CLOption("init", Init.Type.UNIFORM.getKey(), Category.Model, null,
+		public final CLOption clo = new CLOption("init", Init.Type.UNIFORM.getKey(), CLOCategory.Model, null,
 				new CLODelegate() {
 					@Override
 					public boolean parse(String arg) {
@@ -520,7 +492,7 @@ public class IBSD extends IBS implements DModel {
 	/**
 	 * Command line option to request optimizations.
 	 */
-	public final CLOption cloOptimize = new CLOption("optimize", "none", Category.Model,
+	public final CLOption cloOptimize = new CLOption("optimize", "none", CLOCategory.Model,
 			"--optimize <t1[,t2,...]>  enable optimizations:", new CLODelegate() {
 
 				/**
@@ -539,11 +511,6 @@ public class IBSD extends IBS implements DModel {
 				@Override
 				public boolean parse(String arg) {
 					// reset all optimizations
-					optimizeHomo = false;
-					for (Module<?> mod : species) {
-						IBSDPopulation dpop = (IBSDPopulation) mod.getIBSPopulation();
-						dpop.optimizeMoran = false;
-					}
 					// process requested optimizations
 					String[] optis = arg.split(CLOParser.VECTOR_DELIMITER);
 					for (int n = 0; n < optis.length; n++) {
@@ -554,10 +521,12 @@ public class IBSD extends IBS implements DModel {
 								// skip homogeneous populations (single species only)
 								if (isMultispecies) {
 									logger.warning("homogeneous optimizations require single species - disabled.");
-									optimizeHomo = false;
 									continue;
 								}
-								optimizeHomo = true;
+								for (Module<?> mod : species) {
+									IBSDPopulation dpop = (IBSDPopulation) mod.getIBSPopulation();
+									dpop.optimizeHomo = true;
+								}
 								break;
 							case MORAN:
 								for (Module<?> mod : species) {
@@ -566,13 +535,12 @@ public class IBSD extends IBS implements DModel {
 								}
 								break;
 							case NONE:
-								optimizeHomo = false;
+							default: // no optimizations
 								for (Module<?> mod : species) {
 									IBSDPopulation dpop = (IBSDPopulation) mod.getIBSPopulation();
 									dpop.optimizeMoran = false;
+									dpop.optimizeHomo = false;
 								}
-								break;
-							default:
 								break;
 						}
 					}

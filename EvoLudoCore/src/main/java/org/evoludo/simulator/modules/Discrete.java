@@ -36,11 +36,11 @@ import java.util.Collections;
 import org.evoludo.simulator.EvoLudo;
 import org.evoludo.simulator.models.IBSD;
 import org.evoludo.simulator.models.Model;
-import org.evoludo.simulator.models.Type;
+import org.evoludo.simulator.models.ModelType;
+import org.evoludo.util.CLODelegate;
 import org.evoludo.util.CLOParser;
 import org.evoludo.util.CLOption;
-import org.evoludo.util.CLOption.CLODelegate;
-import org.evoludo.util.CLOption.Category;
+import org.evoludo.util.CLOCategory;
 
 /**
  * Parent class of all EvoLudo modules with discrete sets of traits.
@@ -96,7 +96,7 @@ public abstract class Discrete extends Module<Discrete> {
 	}
 
 	@Override
-	public Model createModel(Type type) {
+	public Model createModel(ModelType type) {
 		Model mod = super.createModel(type);
 		if (mod != null)
 			return mod;
@@ -190,7 +190,7 @@ public abstract class Discrete extends Module<Discrete> {
 	 * Command line option to request that models stop execution when reaching
 	 * monomorphic population states.
 	 */
-	public final CLOption cloMonoStop = new CLOption("monostop", "nostop", CLOption.Argument.NONE, Category.Model,
+	public final CLOption cloMonoStop = new CLOption("monostop", CLOCategory.Model,
 			"--monostop      stop once population become monomorphic",
 			new CLODelegate() {
 
@@ -200,14 +200,14 @@ public abstract class Discrete extends Module<Discrete> {
 				 * If option is provided, models are requested to stop execution once a
 				 * monomorphic state is reached.
 				 * 
-				 * @param arg no argument required
+				 * @param isSet {@code true} if option is provided
 				 */
 				@Override
-				public boolean parse(String arg) {
+				public boolean parse(boolean isSet) {
 					// default is to continue with monomorphic populations (unless it's an absorbing
 					// state)
 					for (Discrete dpop : species)
-						dpop.setMonoStop(cloMonoStop.isSet());
+						dpop.setMonoStop(isSet);
 					return true;
 				}
 			});

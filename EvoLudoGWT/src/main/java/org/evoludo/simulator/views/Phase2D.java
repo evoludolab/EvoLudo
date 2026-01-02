@@ -32,7 +32,7 @@ package org.evoludo.simulator.views;
 
 import java.util.List;
 
-import org.evoludo.graphics.AbstractGraph.GraphStyle;
+import org.evoludo.graphics.GraphStyle;
 import org.evoludo.graphics.ParaGraph;
 import org.evoludo.math.ArrayMath;
 import org.evoludo.simulator.ColorMapCSS;
@@ -50,22 +50,95 @@ import com.google.gwt.core.client.Scheduler;
 import com.google.gwt.user.client.Command;
 
 /**
- * The view to display time series of data as a trajectory in a 2D phase plane.
- * 
+ * Phase2D is a view that renders the model's mean trait trajectory in a
+ * two‑dimensional phase plane. It wraps a single ParaGraph instance to display
+ * a continuous trajectory over time and provides interactive controls to
+ * configure which traits appear on the horizontal (X) and vertical (Y) axes.
+ *
+ * <h3>Responsibilities</h3>
+ * <ul>
+ * <li>Obtain the current model state (mean traits) and forward it to the
+ * {@code ParaGraph} for plotting as a time‑stamped trajectory point.</li>
+ * <li>Manage a Data2Phase mapping object that transforms the model's state
+ * vector into X/Y coordinates (the map may be supplied by the module or created
+ * by the graph and propagated back to the module).</li>
+ * <li>Configure graph appearance (axis labels, percent/density formatting,
+ * colors, markers) according to module and model settings (e.g., density vs.
+ * frequency).</li>
+ * <li>Provide a context menu for selecting which trait(s) are summed into each
+ * axis, including support for multi‑trait axes, species headers for
+ * multispecies modules, and handling of "vacant" trait indices or reduced
+ * entries for density models.</li>
+ * <li>Support export of visualizations and trajectory data (SVG, PNG and CSV
+ * trajectories).</li>
+ * <li>Handle initialization and reset semantics for both continuous and
+ * discrete models (forwarding initial trait values to the underlying module
+ * where required).</li>
+ * </ul>
+ *
+ * <h3>Key behavioral notes</h3>
+ * <ul>
+ * <li>Only a single ParaGraph is allocated and used by this view; the protected
+ * {@code graph} field is a convenient reference to that single graph.</li>
+ * <li>When {@link #reset(boolean)} is called the view ensures the ParaGraph
+ * receives: markers from the module, the chosen {@code Data2Phase} map, axis
+ * labels and percent/density flags, and the configured trajectory color. A hard
+ * reset will clear the graph.</li>
+ * <li>The {@code Data2Phase} map determines which trait indices contribute to
+ * each axis and whether axes are fixed. If the map does not provide axis
+ * labels, the view synthesizes labels from trait names (and species names when
+ * appropriate).</li>
+ * <li>Trait labeling logic handles multispecies modules by prepending species
+ * names where useful, and by collapsing or omitting names in the common cases
+ * of single trait species or species with a trait + vacant index pair.</li>
+ * <li>Context menu construction skips trait selection when axes are fixed. For
+ * configurable axes it computes the compact list of menu entries (accounting
+ * for density models that omit vacant indices), optionally inserts disabled
+ * species header items, and builds checkbox items representing each selectable
+ * trait. Selection state is synchronized back to the {@code Data2Phase}
+ * map.</li>
+ * <li>Trait toggling is implemented by an inner {@code TraitCommand} which
+ * updates the map's trait lists (adding, replacing, or removing indices as
+ * appropriate), enforces at least one selected trait per axis, and updates the
+ * menu checked states.</li>
+ * <li>{@link #update(boolean)} only adds a new point to the ParaGraph when the
+ * model's update counter has changed; it forwards the current mean traits and
+ * repaints the graph.</li>
+ * <li>{@link #setInitialState(double[])} forwards initial trait values to the
+ * module for discrete models; when successful it triggers model initialization
+ * through the engine.</li>
+ * </ul>
+ *
+ * <h3>Integration notes</h3>
+ * <ul>
+ * <li>The view interacts with an {@code EvoLudoGWT} engine to obtain the
+ * current Module and the associated model (for retrieving mean traits, update
+ * counts and settings).</li>
+ * <li>The module may be multi‑species; the view queries the module for species
+ * modules, trait counts, trait names and vacant indices to construct menus and
+ * labels.</li>
+ * <li>The ParaGraph and Data2Phase types are central collaborators: the graph
+ * is the visual component that draws trajectories and axes, while the map
+ * encapsulates projection and axis configuration logic.</li>
+ * </ul>
+ *
+ * <h3>Export support</h3>
+ * The view advertises three export types: SVG, PNG and CSV of the trajectory
+ * data.
+ *
+ * <h3>Usage</h3>
+ * Place the view into the application's UI container; call {@code reset(hard)}
+ * after model or module changes to synchronize graph settings, and rely on the
+ * engine's pacemaker to drive periodic {@code update} calls to append
+ * trajectory points.
+ *
  * @author Christoph Hauert
+ *
+ * @see ParaGraph
+ * @see Data2Phase
+ * @see EvoLudoGWT
  */
-public class Phase2D extends AbstractView {
-
-	/**
-	 * The list of graphs that display the trajectories in 2D phase planes.
-	 * 
-	 * @evoludo.impl {@code List<ParaGraph> graphs} is deliberately hiding
-	 *               {@code List<AbstractGraph> graphs} from the superclass because
-	 *               it saves a lot of ugly casting. Note that the two fields point
-	 *               to one and the same object.
-	 */
-	@SuppressWarnings("hiding")
-	protected List<ParaGraph> graphs;
+public class Phase2D extends AbstractView<ParaGraph> {
 
 	/**
 	 * The graph that displays the trajectory in a 2D phase plane.
@@ -92,10 +165,8 @@ public class Phase2D extends AbstractView {
 	 * 
 	 * @param engine the pacemaker for running the model
 	 */
-	@SuppressWarnings("unchecked")
 	public Phase2D(EvoLudoGWT engine) {
 		super(engine, Data.UNDEFINED);
-		graphs = (List<ParaGraph>) super.graphs;
 	}
 
 	@Override
@@ -104,31 +175,33 @@ public class Phase2D extends AbstractView {
 	}
 
 	@Override
-	protected void allocateGraphs() {
+	protected boolean allocateGraphs() {
 		GraphStyle style;
 		int nStates = model.getNMean();
 		if (state == null || state.length != nStates)
 			state = new double[nStates];
 		Module<?> module = engine.getModule();
-		if (graphs.size() != 1) {
-			graph = new ParaGraph(this, module);
-			wrapper.add(graph);
-			graphs.add(graph);
-			style = graph.getStyle();
-			style.showLabel = true;
-			style.showXTicks = true;
-			style.showXTickLabels = true;
-			style.showXLevels = false;
-			style.showYTicks = true;
-			style.showYTickLabels = true;
-			style.showYLevels = false;
-			// arrange graphs vertically (currently only one)
-			gRows = 1;
-			gCols = 1;
-			int width = 100 / gCols;
-			int height = 100 / gRows;
-			graph.setSize(width + "%", height + "%");
-		}
+		if (graphs.size() == 1)
+			return false;
+		destroyGraphs();
+		graph = new ParaGraph(this, module);
+		wrapper.add(graph);
+		graphs.add(graph);
+		style = graph.getStyle();
+		style.showLabel = true;
+		style.showXTicks = true;
+		style.showXTickLabels = true;
+		style.showXLevels = false;
+		style.showYTicks = true;
+		style.showYTickLabels = true;
+		style.showYLevels = false;
+		// arrange graphs vertically (currently only one)
+		gRows = 1;
+		gCols = 1;
+		int width = 100 / gCols;
+		int height = 100 / gRows;
+		graph.setSize(width + "%", height + "%");
+		return true;
 	}
 
 	@Override
@@ -269,90 +342,127 @@ public class Phase2D extends AbstractView {
 
 	@Override
 	public void populateContextMenu(ContextMenu menu) {
-		if (!map.hasFixedAxes()) {
-			// add context menu for configuring the phase plane axes
-			Module<?> module = engine.getModule();
-			List<? extends Module<?>> species = module.getSpecies();
-			int nSpecies = species.size();
-			boolean isMultispecies = nSpecies > 1;
-			// no menu entries if single species and less than 3 traits
-			if (!isMultispecies && module.getNTraits() < 3) {
-				traitXMenu = traitYMenu = null;
-				traitXItems = traitYItems = null;
-				return;
-			}
-			// in multi-species models the menu includes species names
-			int totTraits = 0;
-			boolean isDensity = model.isDensity();
-			for (Module<?> mod : species) {
-				int vidx = mod.getVacantIdx();
-				int nt = mod.getNTraits();
-				if (isDensity && nt == 1 || (nt == 2 && vidx >= 0))
-					totTraits++;
-				else
-					totTraits += nt;
-			}
-			if (traitXMenu == null || traitXItems == null || traitXItems.length != totTraits ||
-					traitYMenu == null || traitYItems == null || traitYItems.length != totTraits) {
-				traitXMenu = new ContextMenu(menu);
-				traitXItems = new ContextMenuCheckBoxItem[totTraits];
-				traitYMenu = new ContextMenu(menu);
-				traitYItems = new ContextMenuCheckBoxItem[totTraits];
-				int idx = 0;
-				for (Module<?> mod : species) {
-					int vidx = mod.getVacantIdx();
-					int nt = mod.getNTraits();
-					if (isMultispecies && !(nt == 1 || (nt == 2 && vidx >= 0))) {
-						// add separator unless it's the first species
-						// or species with single trait or trait plus vacant
-						if (idx > 0) {
-							traitXMenu.addSeparator();
-							traitYMenu.addSeparator();
-						}
-						// add species name as disabled menu entry
-						ContextMenuItem speciesName = new ContextMenuItem(mod.getName(),
-								(Scheduler.ScheduledCommand) null);
-						speciesName.getElement().getStyle()
-								.setFontWeight(com.google.gwt.dom.client.Style.FontWeight.BOLD);
-						speciesName.setEnabled(false);
-						traitXMenu.add(speciesName);
-						// cannot add same item to two menus...
-						speciesName = new ContextMenuItem(mod.getName(),
-								(Scheduler.ScheduledCommand) null);
-						speciesName.getElement().getStyle()
-								.setFontWeight(com.google.gwt.dom.client.Style.FontWeight.BOLD);
-						speciesName.setEnabled(false);
-						traitYMenu.add(speciesName);
-					}
-					for (int n = 0; n < nt; n++) {
-						if (isDensity && n == vidx)
-							continue;
-						ContextMenuCheckBoxItem traitXItem = new ContextMenuCheckBoxItem(mod.getTraitName(n), //
-								new TraitCommand(n, TraitCommand.X_AXIS));
-						traitXMenu.add(traitXItem);
-						ContextMenuCheckBoxItem traitYItem = new ContextMenuCheckBoxItem(mod.getTraitName(n), //
-								new TraitCommand(n, TraitCommand.Y_AXIS));
-						traitYMenu.add(traitYItem);
-						traitXItems[idx] = traitXItem;
-						traitYItems[idx] = traitYItem;
-						idx++;
-					}
-				}
-				for (int n : map.getTraitsX())
-					traitXItems[n].setChecked(true);
-				for (int n : map.getTraitsY())
-					traitYItems[n].setChecked(true);
-			}
-			menu.addSeparator();
-			menu.add("X-axis trait...", traitXMenu);
-			menu.add("Y-axis trait...", traitYMenu);
+		if (map.hasFixedAxes()) {
+			super.populateContextMenu(menu);
+			return;
 		}
+		// add context menu for configuring the phase plane axes
+		Module<?> module = engine.getModule();
+		List<? extends Module<?>> species = module.getSpecies();
+		int nSpecies = species.size();
+		boolean isMultispecies = nSpecies > 1;
+		// no menu entries if single species and less than 3 traits
+		if (!isMultispecies && module.getNTraits() < 3) {
+			traitXMenu = traitYMenu = null;
+			traitXItems = traitYItems = null;
+			super.populateContextMenu(menu);
+			return;
+		}
+		buildTraitMenus(menu, species, isMultispecies);
+		menu.addSeparator();
+		menu.add("X-axis trait...", traitXMenu);
+		menu.add("Y-axis trait...", traitYMenu);
 		super.populateContextMenu(menu);
+	}
+
+	/**
+	 * Build or update trait selection sub-menus for the X and Y axes.
+	 * 
+	 * @param parent         the parent context menu
+	 * @param species        the list of species modules
+	 * @param isMultispecies whether multiple species are present
+	 */
+	private void buildTraitMenus(ContextMenu parent, List<? extends Module<?>> species, boolean isMultispecies) {
+		int totTraits = computeTotalTraits(species, model.isDensity());
+		if (traitXMenu == null || traitXItems == null || traitXItems.length != totTraits ||
+				traitYMenu == null || traitYItems == null || traitYItems.length != totTraits) {
+			traitXMenu = new ContextMenu(parent);
+			traitYMenu = new ContextMenu(parent);
+			traitXItems = new ContextMenuCheckBoxItem[totTraits];
+			traitYItems = new ContextMenuCheckBoxItem[totTraits];
+			populateTraitItems(species, isMultispecies);
+			// restore checked state from map
+			for (int n : map.getTraitsX())
+				traitXItems[n].setChecked(true);
+			for (int n : map.getTraitsY())
+				traitYItems[n].setChecked(true);
+		}
+	}
+
+	/**
+	 * Compute total number of trait entries that will appear in the trait menus.
+	 * 
+	 * @param species   the list of species modules
+	 * @param isDensity whether the model is a density model
+	 * @return the total number of trait entries
+	 */
+	private int computeTotalTraits(List<? extends Module<?>> species, boolean isDensity) {
+		int totTraits = 0;
+		for (Module<?> mod : species) {
+			int vidx = mod.getVacantIdx();
+			int nt = mod.getNTraits();
+			if (isDensity && nt == 1 || (nt == 2 && vidx >= 0))
+				totTraits++;
+			else
+				totTraits += nt;
+		}
+		return totTraits;
+	}
+
+	/**
+	 * Populate the trait menu items and optional species headers.
+	 * 
+	 * @param species        the list of species modules
+	 * @param isMultispecies whether multiple species are present
+	 */
+	private void populateTraitItems(List<? extends Module<?>> species, boolean isMultispecies) {
+		int idx = 0;
+		for (Module<?> mod : species) {
+			int vidx = mod.getVacantIdx();
+			int nt = mod.getNTraits();
+			if (isMultispecies && !(nt == 1 || (nt == 2 && vidx >= 0))) {
+				// add separator unless it's the first species
+				// or species with single trait or trait plus vacant
+				if (idx > 0) {
+					traitXMenu.addSeparator();
+					traitYMenu.addSeparator();
+				}
+				addDisabledSpeciesName(mod, traitXMenu);
+				addDisabledSpeciesName(mod, traitYMenu);
+			}
+			for (int n = 0; n < nt; n++) {
+				if (model.isDensity() && n == vidx)
+					continue;
+				ContextMenuCheckBoxItem traitXItem = new ContextMenuCheckBoxItem(mod.getTraitName(n),
+						new TraitCommand(n, TraitCommand.X_AXIS));
+				traitXMenu.add(traitXItem);
+				ContextMenuCheckBoxItem traitYItem = new ContextMenuCheckBoxItem(mod.getTraitName(n),
+						new TraitCommand(n, TraitCommand.Y_AXIS));
+				traitYMenu.add(traitYItem);
+				traitXItems[idx] = traitXItem;
+				traitYItems[idx] = traitYItem;
+				idx++;
+			}
+		}
+	}
+
+	/**
+	 * Add a disabled menu entry used as species header.
+	 * 
+	 * @param mod  the species module
+	 * @param menu the context menu to populate
+	 */
+	private void addDisabledSpeciesName(Module<?> mod, ContextMenu menu) {
+		ContextMenuItem speciesName = new ContextMenuItem(mod.getName(), (Scheduler.ScheduledCommand) null);
+		speciesName.getElement().getStyle()
+				.setFontWeight(com.google.gwt.dom.client.Style.FontWeight.BOLD);
+		speciesName.setEnabled(false);
+		menu.add(speciesName);
 	}
 
 	@Override
 	protected ExportType[] exportTypes() {
-		return new ExportType[] { ExportType.SVG, ExportType.PNG, ExportType.TRAJ_DATA };
+		return new ExportType[] { ExportType.SVG, ExportType.PNG, ExportType.CSV_TRAJ };
 	}
 
 	/**

@@ -36,10 +36,10 @@ import java.util.List;
 import org.evoludo.math.ArrayMath;
 import org.evoludo.simulator.models.Model.HasDE;
 import org.evoludo.simulator.modules.Module;
+import org.evoludo.util.CLODelegate;
 import org.evoludo.util.CLOParser;
 import org.evoludo.util.CLOption;
-import org.evoludo.util.CLOption.CLODelegate;
-import org.evoludo.util.CLOption.Category;
+import org.evoludo.util.CLOCategory;
 
 /**
  * The class to manage customised markers for graphs.
@@ -119,7 +119,7 @@ public class Markers {
 	 * Command line option to mark points on graphs (ParaGraph, S3Graph, LineGraph
 	 * and HistoGraph). Very convenient to indicate fixed points
 	 */
-	public final CLOption clo = new CLOption("points", "-none", Category.GUI, null,
+	public final CLOption clo = new CLOption("points", null, CLOCategory.GUI, null,
 			new CLODelegate() {
 
 				/**
@@ -139,7 +139,7 @@ public class Markers {
 				 */
 				@Override
 				public boolean parse(String arg) {
-					if (!clo.isSet())
+					if (arg == null)
 						return true;
 					String[] myMarkers = arg.split(CLOParser.MATRIX_DELIMITER);
 					if (markerList != null)

@@ -42,14 +42,14 @@ import org.evoludo.simulator.models.IBSD.Init;
 import org.evoludo.simulator.models.IBSDPopulation;
 import org.evoludo.simulator.models.Model;
 import org.evoludo.simulator.models.RungeKutta;
-import org.evoludo.simulator.models.Type;
+import org.evoludo.simulator.models.ModelType;
 import org.evoludo.simulator.views.BasicTooltipProvider;
 import org.evoludo.simulator.views.HasPhase2D;
 import org.evoludo.simulator.views.HasS3;
+import org.evoludo.util.CLODelegate;
 import org.evoludo.util.CLOParser;
 import org.evoludo.util.CLOption;
-import org.evoludo.util.CLOption.CLODelegate;
-import org.evoludo.util.CLOption.Category;
+import org.evoludo.util.CLOCategory;
 import org.evoludo.util.Formatter;
 
 /**
@@ -210,7 +210,7 @@ public class ATBT extends TBT implements HasS3, HasPhase2D {
 				return ArrayMath.dot(payoffs[DEFECT_POOR], state);
 
 			default: // should not end here
-				throw new Error("Unknown trait (" + me + ")");
+				throw new UnsupportedOperationException("Unknown trait (" + me + ")");
 		}
 	}
 
@@ -432,6 +432,12 @@ public class ATBT extends TBT implements HasS3, HasPhase2D {
 	 */
 	public class ATBTMap implements Data2Phase, BasicTooltipProvider {
 
+		/**
+		 * Create the 2D projection helper using the surrounding module settings.
+		 */
+		public ATBTMap() {
+		}
+
 		@Override
 		public boolean data2Phase(double[] data, Point2D point) {
 			// NOTE: data[0] is time!
@@ -480,7 +486,7 @@ public class ATBT extends TBT implements HasS3, HasPhase2D {
 	 * {@code 4×4} payoff matrix for arbitrary interactions between four
 	 * traits.
 	 */
-	public final CLOption cloPayoffs4x4 = new CLOption("paymatrix", "1,0;1.65,0", Category.Module,
+	public final CLOption cloPayoffs4x4 = new CLOption("paymatrix", "1,0;1.65,0", CLOCategory.Module,
 			"--paymatrix <a,b;c,d>   2x2 (or 4x4) payoff matrix", new CLODelegate() {
 
 				/**
@@ -512,7 +518,7 @@ public class ATBT extends TBT implements HasS3, HasPhase2D {
 	 * Command line option to set the environmental values of the two different
 	 * patch types.
 	 */
-	public final CLOption cloEnvironment = new CLOption("environment", "0,0", Category.Module,
+	public final CLOption cloEnvironment = new CLOption("environment", "0,0", CLOCategory.Module,
 			"--environment <g[,b]>   payoff on rich (poor) patches", new CLODelegate() {
 
 				/**
@@ -534,7 +540,7 @@ public class ATBT extends TBT implements HasS3, HasPhase2D {
 	 * Command line option to set the origin of asymmetries to differences in
 	 * genotype or in the environment.
 	 */
-	public final CLOption cloAsymmetry = new CLOption("asymmetry", "e", CLOption.Argument.NONE, Category.Module,
+	public final CLOption cloAsymmetry = new CLOption("asymmetry", "e", CLOption.Argument.NONE, CLOCategory.Module,
 			"--asymmetry <a>    type of asymmetry\n" //
 					+ "             g:    genetic (inherited) asymmetries\n" //
 					+ "             e:    environmental (default)",
@@ -549,7 +555,7 @@ public class ATBT extends TBT implements HasS3, HasPhase2D {
 	/**
 	 * Command line option to set the feedback between traits and patch quality.
 	 */
-	public final CLOption cloFeedback = new CLOption("feedback", "0,0,0,0", Category.Module,
+	public final CLOption cloFeedback = new CLOption("feedback", "0,0,0,0", CLOCategory.Module,
 			"--feedback <Cp→r,Dr→p[,Cr→p,Dp→r]>   feedback traits ⟷ patches\n"
 					+ "             p→r:  restoration for trait C and D\n"
 					+ "             r→p:  degradation for trait C and D",
@@ -599,7 +605,7 @@ public class ATBT extends TBT implements HasS3, HasPhase2D {
 	}
 
 	@Override
-	public Model createModel(Type type) {
+	public Model createModel(ModelType type) {
 		if (!type.isODE())
 			return super.createModel(type);
 		if (model != null && model.getType().isODE())

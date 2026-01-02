@@ -30,9 +30,7 @@
 
 package org.evoludo.simulator.views;
 
-import java.util.List;
-
-import org.evoludo.graphics.AbstractGraph.GraphStyle;
+import org.evoludo.graphics.GraphStyle;
 import org.evoludo.graphics.S3Graph;
 import org.evoludo.simulator.ColorMapCSS;
 import org.evoludo.simulator.EvoLudoGWT;
@@ -49,18 +47,7 @@ import org.evoludo.simulator.modules.Module;
  *
  * @author Christoph Hauert
  */
-public class S3 extends AbstractView {
-
-	/**
-	 * The list of graphs that display the trajectories in 2D phase planes.
-	 * 
-	 * @evoludo.impl {@code List<S3Graph> graphs} is deliberately hiding
-	 *               {@code List<AbstractGraph> graphs} from the superclass because
-	 *               it saves a lot of ugly casting. Note that the two fields point
-	 *               to one and the same object.
-	 */
-	@SuppressWarnings("hiding")
-	protected List<S3Graph> graphs;
+public class S3 extends AbstractView<S3Graph> {
 
 	/**
 	 * The current state of the model. The end point of the current trajectory.
@@ -73,10 +60,8 @@ public class S3 extends AbstractView {
 	 * 
 	 * @param engine the pacemaker for running the model
 	 */
-	@SuppressWarnings("unchecked")
 	public S3(EvoLudoGWT engine) {
 		super(engine, Data.TRAIT);
-		graphs = (List<S3Graph>) super.graphs;
 	}
 
 	@Override
@@ -85,58 +70,71 @@ public class S3 extends AbstractView {
 	}
 
 	@Override
-	protected void allocateGraphs() {
+	protected boolean allocateGraphs() {
 		Module<?> module = engine.getModule();
 		int nRoles = module.getNRoles();
-		if (graphs.size() != nRoles) {
-			destroyGraphs();
-			int[] order = new int[3];
-			for (int role = 0; role < nRoles; role++) {
-				S3Graph graph = new S3Graph(this, module, role);
-				wrapper.add(graph);
-				graphs.add(graph);
-				GraphStyle style = graph.getStyle();
-				style.showLabel = true;
-				style.showXTicks = true;
-				style.showXTickLabels = true;
-				style.showXLevels = true;
-				style.showXLabel = true;
-				style.showYTicks = style.showXTicks;
-				style.showYTickLabels = false;
-				style.showYLabel = false;
-				style.showYLevels = false;
-				// set map for converting data to S3 coordinates
-				S3Map map = ((HasS3) module).getS3Map(role);
-				if (map == null)
-					map = new S3Map(); // no roles by default
-				map.setNames(module.getTraitNames());
-				map.setColors(module.getTraitColors());
-				graph.setMap(map);
-				style.label = map.getLabel();
-				// show first three active traits
-				boolean[] active = module.getActiveTraits();
-				int idx = 0;
-				for (int n = 0; n < active.length; n++) {
-					if (!active[n])
-						continue;
-					order[idx++] = n;
-					if (idx == 3)
-						break;
-				}
-				if (idx != 3)
-					// less than 3 active traits
-					graph.displayMessage("Simplex S3 view requires at least 3 active traits!");
-				else
-					map.setOrder(order);
-			}
-			// arrange graphs horizontally
-			gRows = 1;
-			gCols = nRoles;
-			int width = 100 / gCols;
-			int height = 100 / gRows;
-			for (S3Graph graph : graphs)
-				graph.setSize(width + "%", height + "%");
+		if (graphs.size() == nRoles)
+			return false;
+		destroyGraphs();
+		for (int role = 0; role < nRoles; role++) {
+			S3Graph graph = createS3Graph(module, role);
+			wrapper.add(graph);
+			graphs.add(graph);
 		}
+		// arrange graphs horizontally
+		gRows = 1;
+		gCols = nRoles;
+		int width = 100 / gCols;
+		int height = 100 / gRows;
+		for (S3Graph graph : graphs)
+			graph.setSize(width + "%", height + "%");
+		return true;
+	}
+
+	/**
+	 * Helper method to create and configure an S3Graph for a given role.
+	 * 
+	 * @param module module supplying the data
+	 * @param role   role index (strategy) to visualize
+	 * @return configured graph instance
+	 */
+	private S3Graph createS3Graph(Module<?> module, int role) {
+		S3Graph graph = new S3Graph(this, module, role);
+		GraphStyle style = graph.getStyle();
+		style.showLabel = true;
+		style.showXTicks = true;
+		style.showXTickLabels = true;
+		style.showXLevels = true;
+		style.showXLabel = true;
+		style.showYTicks = style.showXTicks;
+		style.showYTickLabels = false;
+		style.showYLabel = false;
+		style.showYLevels = false;
+		// set map for converting data to S3 coordinates
+		S3Map map = ((HasS3) module).getS3Map(role);
+		if (map == null)
+			map = new S3Map(); // no roles by default
+		map.setNames(module.getTraitNames());
+		map.setColors(module.getTraitColors());
+		graph.setMap(map);
+		style.label = map.getLabel();
+		// show first three active traits
+		boolean[] active = module.getActiveTraits();
+		int[] order = new int[3];
+		int idx = 0;
+		for (int n = 0; n < active.length; n++) {
+			if (active[n]) {
+				order[idx++] = n;
+				if (idx == 3)
+					break;
+			}
+		}
+		if (idx != 3)
+			// less than 3 active traits
+			graph.displayMessage("Simplex S3 view requires at least 3 active traits!");
+		else
+			map.setOrder(order);
+		return graph;
 	}
 
 	@Override
@@ -167,7 +165,7 @@ public class S3 extends AbstractView {
 	public void modelDidInit() {
 		super.modelDidInit();
 		for (S3Graph graph : graphs) {
-			model.getMeanTraits(graph.getModule().getID(), state);
+			model.getMeanTraits(graph.getModule().getId(), state);
 			graph.addData(Double.NaN, state, true);
 			graph.paint(true);
 		}
@@ -179,7 +177,7 @@ public class S3 extends AbstractView {
 		boolean isNext = (Math.abs(timestamp - newtime) > 1e-8);
 		for (S3Graph graph : graphs) {
 			if (isNext) {
-				model.getMeanTraits(graph.getModule().getID(), state);
+				model.getMeanTraits(graph.getModule().getId(), state);
 				graph.addData(newtime, state, force);
 			}
 			graph.paint(force);
@@ -202,6 +200,6 @@ public class S3 extends AbstractView {
 
 	@Override
 	protected ExportType[] exportTypes() {
-		return new ExportType[] { ExportType.SVG, ExportType.PNG, ExportType.TRAJ_DATA };
+		return new ExportType[] { ExportType.SVG, ExportType.PNG, ExportType.CSV_TRAJ };
 	}
 }

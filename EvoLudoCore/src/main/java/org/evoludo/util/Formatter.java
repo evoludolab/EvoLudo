@@ -513,9 +513,9 @@ public class Formatter {
 			return "";
 		digits = Math.max(Math.min(digits, MAX_DIGITS), 0);
 		StringBuilder sb = new StringBuilder();
-		sb.append(prettyFormat(aVector[0], digits, "⋅10<sup>", "</sup>"));
+		sb.append(pretty(aVector[0], digits));
 		for (int i = 1; i < len; i++)
-			sb.append(VECTOR_DELIMITER).append(prettyFormat(aVector[i], digits, "⋅10<sup>", "</sup>"));
+			sb.append(VECTOR_DELIMITER).append(pretty(aVector[i], digits));
 		return sb.toString();
 	}
 

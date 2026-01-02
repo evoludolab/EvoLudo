@@ -34,10 +34,10 @@ import java.awt.Color;
 
 import org.evoludo.math.Combinatorics;
 import org.evoludo.simulator.EvoLudo;
+import org.evoludo.util.CLODelegate;
 import org.evoludo.util.CLOParser;
 import org.evoludo.util.CLOption;
-import org.evoludo.util.CLOption.CLODelegate;
-import org.evoludo.util.CLOption.Category;
+import org.evoludo.util.CLOCategory;
 
 /**
  * Cooperation in voluntary (non-linear) public goods interactions with peer and
@@ -153,7 +153,7 @@ public class CDLPQ extends CDLP {
 				return mypayoff + v * traitScore[SANCTIONING];
 
 			default: // should not end here
-				throw new Error("Unknown trait (" + me + ")");
+				throw new UnsupportedOperationException("Unknown trait (" + me + ")");
 		}
 	}
 
@@ -318,7 +318,7 @@ public class CDLPQ extends CDLP {
 	/**
 	 * Command line option to set the fine of pool punishment for non-contributors.
 	 */
-	public final CLOption cloPoolPunish = new CLOption("poolpunish", "1", Category.Module,
+	public final CLOption cloPoolPunish = new CLOption("poolpunish", "1", CLOCategory.Module,
 			"--poolpunish    pool punishment", new CLODelegate() {
 
 				/**
@@ -338,7 +338,7 @@ public class CDLPQ extends CDLP {
 	/**
 	 * Command line option to set the cost of pool punishment.
 	 */
-	public final CLOption cloCostPoolPunish = new CLOption("costpoolpunish", "0.3", Category.Module,
+	public final CLOption cloCostPoolPunish = new CLOption("costpoolpunish", "0.3", CLOCategory.Module,
 			"--costpoolpunish  cost of pool punishment", new CLODelegate() {
 
 				/**

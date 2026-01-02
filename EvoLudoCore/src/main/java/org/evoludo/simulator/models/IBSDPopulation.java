@@ -30,22 +30,20 @@
 
 package org.evoludo.simulator.models;
 
-import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.List;
-import java.util.logging.Level;
 
 import org.evoludo.math.ArrayMath;
 import org.evoludo.math.Combinatorics;
 import org.evoludo.simulator.ColorMap;
 import org.evoludo.simulator.EvoLudo;
-import org.evoludo.simulator.Geometry;
+import org.evoludo.simulator.geometries.AbstractGeometry;
+import org.evoludo.simulator.geometries.GeometryType;
+import org.evoludo.simulator.geometries.HierarchicalGeometry;
 import org.evoludo.simulator.models.IBS.ScoringType;
 import org.evoludo.simulator.models.IBSD.Init;
 import org.evoludo.simulator.models.Model.HasIBS;
 import org.evoludo.simulator.modules.Discrete;
-import org.evoludo.simulator.modules.Mutation;
 import org.evoludo.util.Formatter;
 import org.evoludo.util.Plist;
 
@@ -58,18 +56,7 @@ import org.evoludo.util.Plist;
  * 
  * @see IBSPopulation
  */
-public class IBSDPopulation extends IBSPopulation {
-
-	/**
-	 * The discrete module associated with this model.
-	 * <p>
-	 * <strong>Note:</strong> This deliberately hides {@link IBSPopulation#module}.
-	 * The two variables point to the same object but this setup avoids unnecessary
-	 * casts because only {@link Discrete} modules generate
-	 * {@code IBSDPopulation}(s).
-	 */
-	@SuppressWarnings("hiding")
-	protected Discrete module;
+public class IBSDPopulation extends IBSPopulation<Discrete, IBSDPopulation> {
 
 	/**
 	 * For pairwise interaction modules {@code module==pairmodule} holds and
@@ -88,19 +75,6 @@ public class IBSDPopulation extends IBSPopulation {
 	 * @see HasIBS.DGroups
 	 */
 	protected HasIBS.DGroups groupmodule;
-
-	/**
-	 * The interaction partner/opponent of this population
-	 * {@code opponent.getModule()==getModule().getOpponent()}. In intra-species
-	 * interactions {@code opponent==this}. Convenience field.
-	 * <p>
-	 * <strong>Note:</strong> This deliberately hides
-	 * {@link IBSPopulation#opponent}. The two variables point to the same object
-	 * but this setup avoids unnecessary casts because only {@link Discrete} modules
-	 * generate {@code IBSDPopulation}(s).
-	 */
-	@SuppressWarnings("hiding")
-	protected IBSDPopulation opponent;
 
 	/**
 	 * The flag to indicate whether optimizations of Moran processes are requested.
@@ -122,11 +96,6 @@ public class IBSDPopulation extends IBSPopulation {
 	protected boolean optimizeMoran = false;
 
 	/**
-	 * The mutation parameters.
-	 */
-	protected Mutation.Discrete mutation;
-
-	/**
 	 * Creates a population of individuals with discrete traits for IBS simulations.
 	 * 
 	 * @param engine the pacemaker for running the model
@@ -134,10 +103,6 @@ public class IBSDPopulation extends IBSPopulation {
 	 */
 	public IBSDPopulation(EvoLudo engine, Discrete module) {
 		super(engine, module);
-		// important: cannot deal with casting shadowed opponent here because for
-		// multi-species modules all species need to be loaded first.
-		opponent = this;
-		this.module = module;
 		mutation = module.getMutation();
 		if (module instanceof HasIBS.DPairs)
 			pairmodule = (HasIBS.DPairs) module;
@@ -147,9 +112,11 @@ public class IBSDPopulation extends IBSPopulation {
 	}
 
 	@Override
-	public void setOpponentPop(IBSPopulation opponent) {
+	public void setOpponentPop(IBSPopulation<?, ?> opponent) {
+		if (!(opponent instanceof IBSDPopulation)) {
+			throw new IllegalArgumentException("opponent must be IBSDPopulation");
+		}
 		super.setOpponentPop(opponent);
-		this.opponent = (IBSDPopulation) super.opponent;
 	}
 
 	/**
@@ -185,9 +152,9 @@ public class IBSDPopulation extends IBSPopulation {
 
 	@Override
 	public int getPopulationSize() {
-		if (VACANT < 0)
+		if (vacantIdx < 0)
 			return nPopulation;
-		return nPopulation - traitsCount[VACANT];
+		return nPopulation - traitsCount[vacantIdx];
 	}
 
 	/**
@@ -213,7 +180,8 @@ public class IBSDPopulation extends IBSPopulation {
 	public synchronized void reset() {
 		super.reset();
 		if (optimizeMoran && populationUpdate.isMoran()) {
-			int nLinks = (int) (competition.avgOut * nPopulation + 0.5);
+			double avgOut = competition.getFeatures().avgOut;
+			int nLinks = (int) (avgOut * nPopulation + 0.5);
 			if (activeLinks == null || activeLinks.length != nLinks) {
 				activeLinks = new Link[nLinks];
 				for (int n = 0; n < nLinks; n++)
@@ -249,65 +217,69 @@ public class IBSDPopulation extends IBSPopulation {
 		}
 		// for two traits, we need to consider only the nodes of the rarer type but
 		// both in- as well as out-links
-		if (nTraits == 2) {
-			int rareType = (traitsCount[1] < traitsCount[0] ? 1 : 0);
+		if (nTraits == 2)
+			optimizeMoran2Traits();
+		else
+			optimizeMoranNTraits();
+	}
 
-			// create list of active links
-			// birth-death: keep track of all nodes that have different downstream neighbors
-			int nact = 0;
-			double totscore = 0.0;
-			for (int n = 0; n < nPopulation; n++) {
-				int type = getTraitAt(n);
-				if (type != rareType)
-					continue;
-				// check out-neighbors
-				int[] neighs = competition.out[n];
-				int no = competition.kout[n];
-				for (int i = 0; i < no; i++) {
-					int aneigh = neighs[i];
-					if (getTraitAt(aneigh) == type)
-						continue;
-					activeLinks[nact].source = n;
-					activeLinks[nact].destination = aneigh;
-					double ascore = getFitnessAt(n) / no;
-					activeLinks[nact].fitness = ascore;
-					totscore += ascore;
-					nact++;
-				}
-				// check in-neighbors
-				neighs = competition.in[n];
-				int ni = competition.kin[n];
-				for (int i = 0; i < ni; i++) {
-					int aneigh = neighs[i];
-					if (getTraitAt(aneigh) == type)
-						continue;
-					activeLinks[nact].source = aneigh;
-					activeLinks[nact].destination = n;
-					double ascore = getFitnessAt(aneigh) / (competition.kout[aneigh]);
-					activeLinks[nact].fitness = ascore;
-					totscore += ascore;
-					nact++;
-				}
-			}
-			if (nact == 0)
-				return; // nothing to do!
-
-			double hit = random01() * totscore;
-			for (int i = 0; i < nact; i++) {
-				hit -= activeLinks[i].fitness;
-				if (hit <= 0.0) {
-					debugModel = activeLinks[i].destination;
-					debugFocal = activeLinks[i].source;
-					maybeMutateMoran(debugFocal, debugModel);
-					break;
-				}
-			}
-			return;
-		}
-
-		// default, more than two traits - check all nodes
+	/**
+	 * Optimized Moran process for two traits: a significant speed boost is achieved
+	 * when restricting events along links that potentially result in an actual
+	 * change
+	 * of the population composition, i.e. by focussing on those links that connect
+	 * individuals of different traits. This destroys the time scale.
+	 */
+	public void optimizeMoran2Traits() {
+		int rareType = (traitsCount[1] < traitsCount[0] ? 1 : 0);
 		// create list of active links
 		// birth-death: keep track of all nodes that have different downstream neighbors
+		int nact = 0;
+		double totscore = 0.0;
+		for (int n = 0; n < nPopulation; n++) {
+			int type = getTraitAt(n);
+			if (type != rareType)
+				continue;
+			// check out-neighbors
+			int[] neighs = competition.out[n];
+			int no = competition.kout[n];
+			for (int i = 0; i < no; i++) {
+				int aneigh = neighs[i];
+				if (getTraitAt(aneigh) == type)
+					continue;
+				activeLinks[nact].source = n;
+				activeLinks[nact].destination = aneigh;
+				double ascore = getFitnessAt(n) / no;
+				activeLinks[nact].fitness = ascore;
+				totscore += ascore;
+				nact++;
+			}
+			// check in-neighbors
+			neighs = competition.in[n];
+			int ni = competition.kin[n];
+			for (int i = 0; i < ni; i++) {
+				int aneigh = neighs[i];
+				if (getTraitAt(aneigh) == type)
+					continue;
+				activeLinks[nact].source = aneigh;
+				activeLinks[nact].destination = n;
+				double ascore = getFitnessAt(aneigh) / (competition.kout[aneigh]);
+				activeLinks[nact].fitness = ascore;
+				totscore += ascore;
+				nact++;
+			}
+		}
+		pickLinkMoran(totscore, nact);
+	}
+
+	/**
+	 * Optimized Moran process for more than two traits: a significant speed boost
+	 * is
+	 * achieved when restricting events along links that potentially result in an
+	 * actual change of the population composition, i.e. by focussing on those links
+	 * that connect individuals of different traits. This destroys the time scale.
+	 */
+	public void optimizeMoranNTraits() {
 		int nact = 0;
 		double totscore = 0.0;
 		for (int n = 0; n < nPopulation; n++) {
@@ -326,6 +298,17 @@ public class IBSDPopulation extends IBSPopulation {
 				nact++;
 			}
 		}
+		pickLinkMoran(totscore, nact);
+	}
+
+	/**
+	 * Select a reproduction event along one of the active links according to the
+	 * accumulated scores.
+	 * 
+	 * @param totscore sum of fitness values over all active links
+	 * @param nact     number of active links stored in {@link #activeLinks}
+	 */
+	private void pickLinkMoran(double totscore, int nact) {
 		if (nact == 0)
 			return; // nothing to do!
 
@@ -460,33 +443,37 @@ public class IBSDPopulation extends IBSPopulation {
 		debugFocal = me;
 		debugModel = -1;
 		int nPop = getPopulationSize();
-		double deathRate = module.getDeathRate();
-		// must use maxFitness to ensure probabilities (at the possible
-		// expense of no event happening)
-		double maxRate = deathRate + maxFitness;
-		double randomTestVal = random01() * maxRate; // time rescaling
-		if (randomTestVal < deathRate) {
+		double rDeath = module.getDeathRate() + module.getCompetitionRate();
+		double rBirth = module.getBirthRate();
+		// notes:
+		// 1) maxFitness == 0 if module does not implement Payoffs
+		// 2) must use maxFitness to ensure probabilities are in [0,1]
+		// at the expense of no event happening
+		// 3) can become highly inefficient if few individuals have much larger fitness
+		// 4) cannot subtract minFitness to improve efficiency since fitness is relative
+		// to other rates (birth, death and competition)
+		double randomTestVal = random01() * (rDeath + rBirth + maxFitness); // time rescaling
+		if (randomTestVal < rDeath) {
 			// vacate focal site
-			traitsNext[me] = VACANT + nTraits; // more efficient than setNextTraitAt(me, VACANT)
+			traitsNext[me] = vacantIdx + nTraits; // more efficient than setNextTraitAt(me, VACANT)
 			updateScoreAt(me, true);
 			if (nPop == 1) {
 				// population went extinct, no more events possible
 				return -1;
 			}
 		} else {
-			randomTestVal -= deathRate;
-			if (randomTestVal < getFitnessAt(me)) {
+			randomTestVal -= rDeath;
+			if (randomTestVal < rBirth + getFitnessAt(me)) {
 				// fill neighbor site if vacant
 				debugModel = pickNeighborSiteAt(me);
 				if (isVacantAt(debugModel)) {
 					maybeMutateMoran(me, debugModel);
-				} 
-				else {
+				} else {
 					return 0; // nothing happened, no time elapsed
 				}
-			} else
-				// nothing happened, no time elapsed
-				return 0;
+			}
+			// nothing happened, no time elapsed
+			return 0;
 		}
 		return 1;
 	}
@@ -562,7 +549,7 @@ public class IBSDPopulation extends IBSPopulation {
 	public void updateScoreAt(int index, double newscore, int incr) {
 		int type = getTraitAt(index);
 		// since site at index has not changed, nothing needs to be done if it is vacant
-		if (type == VACANT)
+		if (type == vacantIdx)
 			return;
 		accuTypeScores[type] -= getScoreAt(index);
 		super.updateScoreAt(index, newscore, incr);
@@ -573,7 +560,7 @@ public class IBSDPopulation extends IBSPopulation {
 	public void setScoreAt(int index, double newscore, int inter) {
 		super.setScoreAt(index, newscore, inter);
 		int type = getTraitAt(index);
-		if (type == VACANT)
+		if (type == vacantIdx)
 			return;
 		accuTypeScores[type] += getScoreAt(index);
 	}
@@ -659,8 +646,8 @@ public class IBSDPopulation extends IBSPopulation {
 
 		super.resetScores();
 		Arrays.fill(accuTypeScores, 0.0);
-		if (VACANT >= 0)
-			accuTypeScores[VACANT] = Double.NaN;
+		if (vacantIdx >= 0)
+			accuTypeScores[vacantIdx] = Double.NaN;
 	}
 
 	/**
@@ -675,7 +662,7 @@ public class IBSDPopulation extends IBSPopulation {
 		if (module.isStatic()) {
 			sumFitness = 0.0;
 			for (int n = 0; n < nTraits; n++) {
-				if (n == VACANT) {
+				if (n == vacantIdx) {
 					accuTypeScores[n] = Double.NaN;
 					continue;
 				}
@@ -690,9 +677,9 @@ public class IBSDPopulation extends IBSPopulation {
 		// populations as long as demes are well-mixed (although lookup tables are
 		// possible but not (yet) implemented.
 		if (hasLookupTable || //
-				(adjustScores && interaction.getType() == Geometry.Type.HIERARCHY //
-						&& interaction.subgeometry == Geometry.Type.MEANFIELD)) {
-			updateMixedMeanScores();
+				(adjustScores && interaction.isType(GeometryType.HIERARCHY) //
+						&& ((HierarchicalGeometry) interaction).isSubtype(GeometryType.WELLMIXED))) {
+			updateMixedScores();
 			return;
 		}
 		// original procedure
@@ -703,7 +690,7 @@ public class IBSDPopulation extends IBSPopulation {
 	 * {@inheritDoc}
 	 * <p>
 	 * <strong>Note:</strong> Takes composition of entire population into account
-	 * for {@code Geometry.Type#MEANFIELD} but only the reference neighborhood in
+	 * for {@code GeometryType#MEANFIELD} but only the reference neighborhood in
 	 * structured populations.
 	 */
 	@Override
@@ -715,91 +702,15 @@ public class IBSDPopulation extends IBSPopulation {
 		// mytype and active refer to focal species, while interaction partners
 		// to opponent species
 		int mytype = getTraitAt(me);
-		if (module.isStatic()) {
-			// constant selection: simply choose active trait with highest payoff
-			double max = typeScores[mytype];
-			int newtype = mytype;
-			for (int n = 0; n < nTraits; n++) {
-				if (!active[n])
-					continue;
-				// note: if my payoff and highest payoff are tied, keep type
-				if (typeScores[n] > max) {
-					max = typeScores[n];
-					newtype = n;
-				}
-			}
-			if (newtype != mytype) {
-				traitsNext[me] = newtype + nTraits;
-				return true;
-			}
-			return false;
-		}
+		if (module.isStatic())
+			return staticBR(me);
 
 		// frequency dependent selection: determine active trait with highest payoff
-		if (competition.getType() == Geometry.Type.MEANFIELD) {
-			// well-mixed
-			System.arraycopy(opponent.traitsCount, 0, tmpCount, 0, nTraits);
-			if (interaction.isInterspecies()) {
-				// inter-species: focal individual not part of opponents but include it's
-				// counterpart in opponent population
-				if (module.isPairwise())
-					pairmodule.mixedScores(tmpCount, tmpTraitScore);
-				else
-					groupmodule.mixedScores(tmpCount, module.getNGroup(), tmpTraitScore);
-			} else {
-				// intra-species: remove focal individual and evaluate performance
-				// of all active traits
-				tmpCount[mytype]--;
-				for (int n = 0; n < nTraits; n++) {
-					if (!active[n]) {
-						tmpTraitScore[n] = -Double.MAX_VALUE;
-						continue;
-					}
-					// add candidate trait to the mix
-					tmpCount[n]++;
-					if (module.isPairwise())
-						pairmodule.mixedScores(tmpCount, tmpScore);
-					else
-						groupmodule.mixedScores(tmpCount, module.getNGroup(), tmpScore);
-					tmpTraitScore[n] = tmpScore[n];
-					tmpCount[n]--;
-				}
-			}
-		} else {
-			// structured
-			if (interaction.isInterspecies()) {
-				// inter-species: focal individual not part of opponents but include it's
-				// counterpart in opponent population
-				size = stripVacancies(group, size, tmpTraits, tmpGroup);
-				countTraits(tmpCount, tmpTraits, 0, size);
-				// RESOLUTION: instead if mytype is not VACANT add it to trait count
-				if (mytype != VACANT)
-					tmpCount[mytype]++;
-				if (module.isPairwise())
-					pairmodule.mixedScores(tmpCount, tmpTraitScore);
-				else
-					groupmodule.mixedScores(tmpCount, module.getNGroup(), tmpTraitScore);
-			} else {
-				// intra-species: evaluate performance of focal individual for all active
-				// traits
-				size = stripVacancies(group, size, tmpTraits, tmpGroup);
-				countTraits(tmpCount, tmpTraits, 0, size);
-				for (int n = 0; n < nTraits; n++) {
-					if (!active[n]) {
-						tmpTraitScore[n] = -Double.MAX_VALUE;
-						continue;
-					}
-					// add candidate trait to the mix
-					tmpCount[n]++;
-					if (module.isPairwise())
-						pairmodule.mixedScores(tmpCount, tmpScore);
-					else
-						groupmodule.mixedScores(tmpCount, module.getNGroup(), tmpScore);
-					tmpTraitScore[n] = tmpScore[n];
-					tmpCount[n]--;
-				}
-			}
-		}
+		if (competition.isType(GeometryType.WELLMIXED))
+			wellMixedBR(me);
+		else
+			structuredBR(group, size);
+
 		double max = tmpTraitScore[mytype];
 		int newtype = mytype;
 		for (int n = 0; n < nTraits; n++) {
@@ -816,6 +727,87 @@ public class IBSDPopulation extends IBSPopulation {
 			return true;
 		}
 		return false;
+	}
+
+	/**
+	 * Best response update for static (i.e. constant selection) scenarios.
+	 * 
+	 * @param me the index of the focal individual
+	 * @return {@code true} if the trait changed
+	 */
+	private boolean staticBR(int me) {
+		// constant selection: simply choose active trait with highest payoff
+		int mytype = getTraitAt(me);
+		double max = typeScores[mytype];
+		int newtype = mytype;
+		for (int n = 0; n < nTraits; n++) {
+			if (!active[n] || n == vacantIdx)
+				continue;
+			// note: if my payoff and highest payoff are tied, keep type
+			if (typeScores[n] > max) {
+				max = typeScores[n];
+				newtype = n;
+			}
+		}
+		if (newtype != mytype) {
+			traitsNext[me] = newtype + nTraits;
+			return true;
+		}
+		return false;
+	}
+
+	/**
+	 * Best response update for well-mixed populations.
+	 * 
+	 * @param me the index of the focal individual
+	 */
+	private void wellMixedBR(int me) {
+		System.arraycopy(opponent.traitsCount, 0, tmpCount, 0, nTraits);
+		if (!interaction.isInterspecies()) {
+			// intra-species: remove focal individual
+			// inter-species: focal individual not part of opponent population
+			int mytype = getTraitAt(me);
+			tmpCount[mytype]--;
+		}
+		for (int n = 0; n < nTraits; n++) {
+			if (!active[n] || n == vacantIdx) {
+				tmpTraitScore[n] = -Double.MAX_VALUE;
+				continue;
+			}
+			// add candidate trait to the mix
+			tmpCount[n]++;
+			if (module.isPairwise())
+				pairmodule.mixedScores(tmpCount, tmpScore);
+			else
+				groupmodule.mixedScores(tmpCount, module.getNGroup(), tmpScore);
+			tmpTraitScore[n] = tmpScore[n];
+			tmpCount[n]--;
+		}
+	}
+
+	/**
+	 * Best response update for structured populations.
+	 * 
+	 * @param group the group of individuals involved in the interaction
+	 * @param size  the size of the group
+	 */
+	private void structuredBR(int[] group, int size) {
+		size = stripVacancies(group, size, tmpTraits, tmpGroup);
+		countTraits(tmpCount, tmpTraits, 0, size);
+		for (int n = 0; n < nTraits; n++) {
+			if (!active[n] || n == vacantIdx) {
+				tmpTraitScore[n] = -Double.MAX_VALUE;
+				continue;
+			}
+			// add candidate trait to the mix
+			tmpCount[n]++;
+			if (module.isPairwise())
+				pairmodule.mixedScores(tmpCount, tmpScore);
+			else
+				groupmodule.mixedScores(tmpCount, module.getNGroup(), tmpScore);
+			tmpTraitScore[n] = tmpScore[n];
+			tmpCount[n]--;
+		}
 	}
 
 	/**
@@ -898,8 +890,8 @@ public class IBSDPopulation extends IBSPopulation {
 	 * Eliminate vacant sites from the assembled group.
 	 * <p>
 	 * <strong>Important:</strong> {@code group.group} is untouchable! It may be a
-	 * reference to {@code Geometry.out[group.focal]} and hence any changes would
-	 * actually alter the geometry!
+	 * reference to {@code AbstractGeometry.out[group.focal]} and hence any changes
+	 * would actually alter the geometry!
 	 *
 	 * @param group   the group which potentially includes references to vacant
 	 *                sites
@@ -908,7 +900,7 @@ public class IBSDPopulation extends IBSPopulation {
 	 */
 	protected void stripGroupVacancies(IBSGroup group, int[] gTraits, int[] gIdxs) {
 		group.nSampled = stripVacancies(group.group, group.nSampled, gTraits, gIdxs);
-		if (VACANT < 0)
+		if (vacantIdx < 0)
 			return;
 		group.group = gIdxs;
 	}
@@ -924,7 +916,7 @@ public class IBSDPopulation extends IBSPopulation {
 	 */
 	protected int stripVacancies(int[] groupidx, int groupsize, int[] gTraits, int[] gIdxs) {
 		// minor efficiency gain without VACANT
-		if (VACANT < 0) {
+		if (vacantIdx < 0) {
 			for (int i = 0; i < groupsize; i++)
 				gTraits[i] = opponent.getTraitAt(groupidx[i]);
 			return groupsize;
@@ -934,7 +926,7 @@ public class IBSDPopulation extends IBSPopulation {
 		for (int i = 0; i < groupsize; i++) {
 			int gi = groupidx[i];
 			int type = opponent.getTraitAt(gi);
-			if (type == VACANT)
+			if (type == vacantIdx)
 				continue;
 			gTraits[gSize] = type;
 			gIdxs[gSize++] = gi;
@@ -946,7 +938,7 @@ public class IBSDPopulation extends IBSPopulation {
 	public void playPairGameAt(IBSGroup group) {
 		int me = group.focal;
 		int myType = getTraitAt(me);
-		if (myType == VACANT)
+		if (myType == vacantIdx)
 			return;
 		stripGroupVacancies(group, tmpTraits, tmpGroup);
 		double myScore;
@@ -1013,7 +1005,7 @@ public class IBSDPopulation extends IBSPopulation {
 		for (int n = 0; n < nOut; n++)
 			tmpCount[opponent.getTraitAt(out[n])]++;
 		int u2 = 2;
-		if (!interaction.isUndirected) {
+		if (!interaction.isUndirected()) {
 			// directed graph, count in-neighbors
 			u2 = 1;
 			nIn = interaction.kin[me];
@@ -1022,101 +1014,130 @@ public class IBSDPopulation extends IBSPopulation {
 			for (int n = 0; n < nIn; n++)
 				tmpCount[opponent.getTraitAt(in[n])]++;
 		}
-		int nInter = nIn + nOut - (VACANT < 0 ? 0 : tmpCount[VACANT]);
+		int nInter = nIn + nOut - (vacantIdx < 0 ? 0 : tmpCount[vacantIdx]);
 		// my type has changed otherwise we wouldn't get here
 		// old/newScore are the total accumulated scores
 		double oldScore = u2 * pairmodule.pairScores(oldType, tmpCount, tmpScore);
 		double newScore = u2 * pairmodule.pairScores(newType, tmpCount, tmpTraitScore);
-		if (newType == VACANT) {
-			double myScore = scores[me];
-			accuTypeScores[oldType] -= myScore;
-			scores[me] = 0.0;
-			interactions[me] = 0;
-			updateEffScoreRange(me, myScore, 0.0);
-			sumFitness -= fitness[me];
-			fitness[me] = 0.0;
-			// neighbors lost one interaction partner - adjust (outgoing) opponent's score
-			for (int n = 0; n < nOut; n++) {
-				int you = out[n];
+		if (newType == vacantIdx) {
+			// focal individual became vacant
+			adjustVacantScoreAt(me, oldType, out, nOut, in, nIn, u2);
+			return;
+		}
+		if (oldType == vacantIdx) {
+			// focal individual became occupied
+			updateScoreAt(me, newScore, u2 * nInter);
+			adjustOccupiedScoreAt(out, nOut, in, nIn, u2);
+			return;
+		}
+		// interaction count remains the same but old/newScore are accumulated
+		if (playerScoreAveraged && nInter > 0) {
+			double iInter = 1.0 / (u2 * nInter);
+			newScore *= iInter;
+			oldScore *= iInter;
+		}
+		// adjust score of focal player
+		adjustScoreAt(me, oldScore, newScore);
+		accuTypeScores[oldType] -= oldScore;
+		accuTypeScores[newType] += oldScore;
+		// adjust (outgoing) opponent's score
+		adjustNeighborScores(out, nOut, u2);
+		// same as !interaction.isUndirected() because in != null implies directed graph
+		// (see above)
+		if (in != null) {
+			// adjust (incoming) opponent's score
+			adjustNeighborScores(in, nIn, 1);
+		}
+	}
+
+	/**
+	 * Adjust the score of a focal individual that became vacant.
+	 * 
+	 * @param me      the index of the focal individual
+	 * @param oldType the trait type of the focal individual before becoming vacant
+	 * @param out     the indices of outgoing neighbors
+	 * @param nOut    the number of outgoing neighbors
+	 * @param in      the indices of incoming neighbors
+	 * @param nIn     the number of incoming neighbors
+	 * @param u2      a scaling factor (2 for undirected, 1 for directed graphs)
+	 */
+	void adjustVacantScoreAt(int me, int oldType, int[] out, int nOut, int[] in, int nIn, int u2) {
+		double myScore = scores[me];
+		accuTypeScores[oldType] -= myScore;
+		scores[me] = 0.0;
+		interactions[me] = 0;
+		updateEffScoreRange(me, myScore, 0.0);
+		sumFitness -= fitness[me];
+		fitness[me] = 0.0;
+		// neighbors lost one interaction partner - adjust (outgoing) opponent's score
+		for (int n = 0; n < nOut; n++) {
+			int you = out[n];
+			int type = opponent.getTraitAt(you);
+			opponent.removeScoreAt(you, u2 * (tmpScore[type] - tmpTraitScore[type]), u2);
+		}
+		// same as !interaction.isUndirected() because in != null implies directed graph
+		// (see above)
+		if (in != null) {
+			for (int n = 0; n < nIn; n++) {
+				int you = in[n];
 				int type = opponent.getTraitAt(you);
-				opponent.removeScoreAt(you, u2 * (tmpScore[type] - tmpTraitScore[type]), u2);
+				// adjust (incoming) opponent's score
+				opponent.removeScoreAt(you, tmpScore[type] - tmpTraitScore[type], 1);
 			}
-			// same as !interaction.isUndirected because in != null implies directed graph
-			// (see above)
-			if (in != null) {
-				for (int n = 0; n < nIn; n++) {
-					int you = in[n];
-					int type = opponent.getTraitAt(you);
-					// adjust (incoming) opponent's score
-					opponent.removeScoreAt(you, tmpScore[type] - tmpTraitScore[type], 1);
-				}
+		}
+	}
+
+	/**
+	 * Adjust the score of the neighbours of a focal individual that became
+	 * occupied.
+	 * 
+	 * @param out  the indices of outgoing neighbors
+	 * @param nOut the number of outgoing neighbors
+	 * @param in   the indices of incoming neighbors
+	 * @param nIn  the number of incoming neighbors
+	 * @param u2   a scaling factor (2 for undirected, 1 for directed graphs)
+	 */
+	void adjustOccupiedScoreAt(int[] out, int nOut, int[] in, int nIn, int u2) {
+		// neighbors gained one interaction partner - adjust (outgoing) opponent's score
+		for (int n = 0; n < nOut; n++) {
+			int you = out[n];
+			int type = opponent.getTraitAt(you);
+			opponent.updateScoreAt(you, u2 * (tmpTraitScore[type] - tmpScore[type]), u2);
+		}
+		// same as !interaction.isUndirected() because in != null implies directed graph
+		// (see above)
+		if (in != null) {
+			for (int n = 0; n < nIn; n++) {
+				int you = in[n];
+				int type = opponent.getTraitAt(you);
+				// adjust (incoming) opponent's score
+				opponent.updateScoreAt(you, tmpTraitScore[type] - tmpScore[type], 1);
 			}
-		} else {
-			if (oldType == VACANT) {
-				updateScoreAt(me, newScore, u2 * nInter);
-				// neighbors gained one interaction partner - adjust (outgoing) opponent's score
-				for (int n = 0; n < nOut; n++) {
-					int you = out[n];
-					int type = opponent.getTraitAt(you);
-					opponent.updateScoreAt(you, u2 * (tmpTraitScore[type] - tmpScore[type]), u2);
-				}
-				// same as !interaction.isUndirected because in != null implies directed graph
-				// (see above)
-				if (in != null) {
-					for (int n = 0; n < nIn; n++) {
-						int you = in[n];
-						int type = opponent.getTraitAt(you);
-						// adjust (incoming) opponent's score
-						opponent.updateScoreAt(you, tmpTraitScore[type] - tmpScore[type], 1);
-					}
-				}
-			} else {
-				// interaction count remains the same but old/newScore are accumulated
-				if (playerScoreAveraged && nInter > 0) {
-					double iInter = 1.0 / (u2 * nInter);
-					newScore *= iInter;
-					oldScore *= iInter;
-				}
-				// adjust score of focal player
-				adjustScoreAt(me, oldScore, newScore);
-				accuTypeScores[oldType] -= oldScore;
-				accuTypeScores[newType] += oldScore;
-				// adjust (outgoing) opponent's score
-				for (int n = 0; n < nOut; n++) {
-					int you = out[n];
-					int type = opponent.getTraitAt(you);
-					if (type == VACANT)
-						continue;
-					newScore = tmpTraitScore[type];
-					oldScore = tmpScore[type];
-					if (playerScoreAveraged) {
-						double iInter = 1.0 / interactions[you];
-						newScore *= iInter;
-						oldScore *= iInter;
-					}
-					opponent.adjustScoreAt(you, u2 * (newScore - oldScore));
-				}
-				// same as !interaction.isUndirected because in != null implies directed graph
-				// (see above)
-				if (in != null) {
-					// adjust (incoming) opponent's score
-					for (int n = 0; n < nIn; n++) {
-						int you = in[n];
-						int type = opponent.getTraitAt(you);
-						if (type == VACANT)
-							continue;
-						newScore = tmpTraitScore[type];
-						oldScore = tmpScore[type];
-						if (playerScoreAveraged) {
-							double iInter = 1.0 / interactions[you];
-							newScore *= iInter;
-							oldScore *= iInter;
-						}
-						// u2 = 1 for directed structures
-						opponent.adjustScoreAt(you, newScore - oldScore);
-					}
-				}
+		}
+	}
+
+	/**
+	 * Adjust the scores of neighboring individuals after a focal individual changed
+	 * its trait.
+	 * 
+	 * @param neighbors  the indices of neighboring individuals
+	 * @param nNeighbors the number of neighboring individuals
+	 * @param u2         a scaling factor (2 for undirected, 1 for directed graphs)
+	 */
+	void adjustNeighborScores(int[] neighbors, int nNeighbors, int u2) {
+		for (int n = 0; n < nNeighbors; n++) {
+			int you = neighbors[n];
+			int type = opponent.getTraitAt(you);
+			if (type == vacantIdx)
+				continue;
+			double newScore = tmpTraitScore[type];
+			double oldScore = tmpScore[type];
+			if (playerScoreAveraged) {
+				double iInter = 1.0 / interactions[you];
+				newScore *= iInter;
+				oldScore *= iInter;
 			}
+			opponent.adjustScoreAt(you, u2 * (newScore - oldScore));
 		}
 	}
 
@@ -1124,23 +1145,13 @@ public class IBSDPopulation extends IBSPopulation {
 	public void playGroupGameAt(IBSGroup group) {
 		int me = group.focal;
 		int myType = getTraitAt(me);
-		if (myType == VACANT)
+		if (myType == vacantIdx)
 			return;
 		stripGroupVacancies(group, tmpTraits, tmpGroup);
 		countTraits(tmpCount, tmpTraits, 0, group.nSampled);
-		// for ephemeral scores calculate score of focal only
-		boolean ephemeralScores = playerScoring.equals(ScoringType.EPHEMERAL);
 		if (group.nSampled <= 0) {
-			// isolated individual (note the bookkeeping above is overkill and can be
-			// optimized)
-			tmpCount[myType]++;
-			groupmodule.groupScores(tmpCount, tmpTraitScore);
-			if (ephemeralScores) {
-				resetScoreAt(me);
-				setScoreAt(me, tmpTraitScore[myType], 0);
-				return;
-			}
-			updateScoreAt(me, tmpTraitScore[myType], 0);
+			// isolated individual (surrounded by vacant sites) - reset score
+			playNoGameAt(me, myType);
 			return;
 		}
 
@@ -1149,60 +1160,105 @@ public class IBSDPopulation extends IBSPopulation {
 				// interact with all neighbors
 				int nGroup = module.getNGroup();
 				if (nGroup < group.nSampled + 1) {
-					// interact with part of group sequentially
-					double myScore = 0.0;
-					Arrays.fill(smallScores, 0, group.nSampled, 0.0);
-					for (int n = 0; n < group.nSampled; n++) {
-						Arrays.fill(tmpCount, 0);
-						for (int i = 0; i < nGroup - 1; i++)
-							tmpCount[tmpTraits[(n + i) % group.nSampled]]++;
-						tmpCount[myType]++;
-						groupmodule.groupScores(tmpCount, tmpTraitScore);
-						myScore += tmpTraitScore[myType];
-						if (ephemeralScores)
-							continue;
-						for (int i = 0; i < nGroup - 1; i++) {
-							int idx = (n + i) % group.nSampled;
-							smallScores[idx] += tmpTraitScore[tmpTraits[idx]];
-						}
-					}
-					if (ephemeralScores) {
-						resetScoreAt(me);
-						setScoreAt(me, myScore / group.nSampled, group.nSampled);
-						return;
-					}
-					updateScoreAt(me, myScore, group.nSampled);
-					for (int i = 0; i < group.nSampled; i++)
-						opponent.updateScoreAt(group.group[i], smallScores[i], nGroup - 1);
+					playGroupSequentiallyAt(me, myType, group, nGroup);
 					return;
 				}
 				// interact with full group (random graphs or all neighbors)
-
-				//$FALL-THROUGH$
+				// $FALL-THROUGH$
 			case RANDOM:
 				// interact with sampled neighbors
-				tmpCount[myType]++;
-				groupmodule.groupScores(tmpCount, tmpTraitScore);
-				if (ephemeralScores) {
-					resetScoreAt(me);
-					setScoreAt(me, tmpTraitScore[myType], 1);
-					return;
-				}
-				updateScoreAt(me, tmpTraitScore[myType]);
-				for (int i = 0; i < group.nSampled; i++)
-					opponent.updateScoreAt(group.group[i], tmpTraitScore[tmpTraits[i]]);
+				playGroupOnceAt(me, myType, group);
 				return;
 
 			default:
-				throw new Error("Unknown interaction type (" + interGroup.getSampling() + ")");
+				throw new UnsupportedOperationException("Unknown interaction type (" + interGroup.getSampling() + ")");
 		}
+	}
+
+	/**
+	 * No game is played because the focal individual is isolated or all neighbors
+	 * are vacant.
+	 * 
+	 * @param me     the index of the focal individual
+	 * @param myType the trait type of the focal individual
+	 */
+	void playNoGameAt(int me, int myType) {
+		// isolated individual (note the bookkeeping above is overkill and can be
+		// optimized)
+		tmpCount[myType]++;
+		groupmodule.groupScores(tmpCount, tmpTraitScore);
+		if (playerScoring.equals(ScoringType.EPHEMERAL)) {
+			resetScoreAt(me);
+			setScoreAt(me, tmpTraitScore[myType], 0);
+			return;
+		}
+		updateScoreAt(me, tmpTraitScore[myType], 0);
+	}
+
+	/**
+	 * Focal individual plays game sequentially with parts of the group.
+	 * 
+	 * @param me     the index of the focal individual
+	 * @param myType the trait type of the focal individual
+	 * @param group  the group involved in the game
+	 * @param nGroup the size of the group
+	 */
+	void playGroupSequentiallyAt(int me, int myType, IBSGroup group, int nGroup) {
+		// interact with part of group sequentially
+		double myScore = 0.0;
+		Arrays.fill(smallScores, 0, group.nSampled, 0.0);
+		// for ephemeral scores calculate score of focal only
+		boolean ephemeralScores = playerScoring.equals(ScoringType.EPHEMERAL);
+		for (int n = 0; n < group.nSampled; n++) {
+			Arrays.fill(tmpCount, 0);
+			for (int i = 0; i < nGroup - 1; i++)
+				tmpCount[tmpTraits[(n + i) % group.nSampled]]++;
+			tmpCount[myType]++;
+			groupmodule.groupScores(tmpCount, tmpTraitScore);
+			myScore += tmpTraitScore[myType];
+			if (ephemeralScores)
+				continue;
+			for (int i = 0; i < nGroup - 1; i++) {
+				int idx = (n + i) % group.nSampled;
+				smallScores[idx] += tmpTraitScore[tmpTraits[idx]];
+			}
+		}
+		if (ephemeralScores) {
+			resetScoreAt(me);
+			setScoreAt(me, myScore / group.nSampled, group.nSampled);
+			return;
+		}
+		updateScoreAt(me, myScore, group.nSampled);
+		for (int i = 0; i < group.nSampled; i++)
+			opponent.updateScoreAt(group.group[i], smallScores[i], nGroup - 1);
+	}
+
+	/**
+	 * Focal individual plays game once with the entire group.
+	 * 
+	 * @param me     the index of the focal individual
+	 * @param myType the trait type of the focal individual
+	 * @param group  the group involved in the game
+	 */
+	void playGroupOnceAt(int me, int myType, IBSGroup group) {
+		tmpCount[myType]++;
+		groupmodule.groupScores(tmpCount, tmpTraitScore);
+		// for ephemeral scores calculate score of focal only
+		if (playerScoring.equals(ScoringType.EPHEMERAL)) {
+			resetScoreAt(me);
+			setScoreAt(me, tmpTraitScore[myType], 1);
+			return;
+		}
+		updateScoreAt(me, tmpTraitScore[myType]);
+		for (int i = 0; i < group.nSampled; i++)
+			opponent.updateScoreAt(group.group[i], tmpTraitScore[tmpTraits[i]]);
 	}
 
 	@Override
 	public void yalpGroupGameAt(IBSGroup group) {
 		int me = group.focal;
 		int newtype = traitsNext[me] % nTraits;
-		if (newtype == VACANT || group.nSampled <= 0) {
+		if (newtype == vacantIdx || group.nSampled <= 0) {
 			// isolated individual or vacant site - reset score
 			resetScoreAt(me);
 			return;
@@ -1260,9 +1316,9 @@ public class IBSDPopulation extends IBSPopulation {
 		}
 		// check if original procedure works
 		if (module.isStatic() || //
-				(interaction.getType() != Geometry.Type.MEANFIELD && //
-						interaction.getType() != Geometry.Type.HIERARCHY && //
-						interaction.subgeometry != Geometry.Type.MEANFIELD)) {
+				(!interaction.isType(GeometryType.WELLMIXED)
+						&& (!interaction.isType(GeometryType.HIERARCHY) ||
+								!((HierarchicalGeometry) interaction).isSubtype(GeometryType.WELLMIXED)))) {
 			super.adjustGameScoresAt(me);
 			return;
 		}
@@ -1271,108 +1327,135 @@ public class IBSDPopulation extends IBSPopulation {
 		// adjusting game scores also requires that interactions are with all (other)
 		// members of the population
 		commitTraitAt(me);
-		if (interaction.isInterspecies()) {
-			if (opponent.getInteractionGeometry().getType() == Geometry.Type.MEANFIELD) {
-				// competition is well-mixed as well - adjust lookup table
-				updateMixedMeanScores();
+		adjustOpponentScoresAt(me);
+		// update opponent population in response to change of strategy of 'me'
+		updateMixedScores();
+	}
+
+	/**
+	 * Adjust scores in the opponent population when a trait change happens in an
+	 * inter-species well-mixed setting.
+	 * 
+	 * @param me focal individual whose trait changed
+	 */
+	void adjustOpponentScoresAt(int me) {
+		if (!interaction.isInterspecies())
+			return; // no adjustment needed for intra-species interactions
+
+		if (opponent.interaction.isType(GeometryType.WELLMIXED)) {
+			// competition is well-mixed as well - adjust lookup table
+			opponent.updateMixedScores();
+		} else {
+			// XXX combinations of structured and unstructured populations require more
+			// attention
+			int newtrait = getTraitAt(me);
+			if (newtrait == vacantIdx) {
+				resetScoreAt(me);
 			} else {
-				// XXX combinations of structured and unstructured populations require more
-				// attention
-				int newtrait = getTraitAt(me);
-				if (newtrait == VACANT) {
-					resetScoreAt(me);
-				} else {
-					// update score of 'me' based on opponent population
-					// store scores for each type in traitScores (including 0.0 for VACANT)
-					int nGroup = module.getNGroup();
-					if (module.isPairwise())
-						pairmodule.mixedScores(opponent.traitsCount, tmpTraitScore);
-					else
-						groupmodule.mixedScores(opponent.traitsCount, nGroup, tmpTraitScore);
-					setScoreAt(me, tmpTraitScore[newtrait], nGroup * opponent.getPopulationSize());
-				}
+				// update score of 'me' based on opponent population
+				// store scores for each type in traitScores (including 0.0 for VACANT)
+				int nGroup = module.getNGroup();
+				if (module.isPairwise())
+					pairmodule.mixedScores(opponent.traitsCount, tmpTraitScore);
+				else
+					groupmodule.mixedScores(opponent.traitsCount, nGroup, tmpTraitScore);
+				setScoreAt(me, tmpTraitScore[newtrait], nGroup * opponent.getPopulationSize());
 			}
 		}
-		// update opponent population in response to change of strategy of 'me'
-		opponent.updateMixedMeanScores();
 	}
 
 	/**
 	 * Calculate scores in well-mixed populations as well as hierarchical structures
 	 * with well-mixed units.
 	 */
-	protected void updateMixedMeanScores() {
+	protected void updateMixedScores() {
 		// note that in well-mixed populations the distinction between accumulated and
 		// averaged payoffs is impossible (unless interactions are not with all other
 		// members) the following is strictly based on averaged payoffs as it is
 		// difficult to determine the number of interactions in the case of accumulated
 		// payoffs
 		switch (interaction.getType()) {
-			case HIERARCHY:
-				// XXX needs more attention for inter-species interactions
-				int unitSize = interaction.hierarchy[interaction.hierarchy.length - 1];
-				for (int unitStart = 0; unitStart < nPopulation; unitStart += unitSize) {
-					// count traits in unit
-					countTraits(tmpCount, traits, unitStart, unitSize);
-					// calculate scores in unit (return in traitScores)
-					if (module.isPairwise())
-						pairmodule.mixedScores(tmpCount, tmpTraitScore);
-					else
-						groupmodule.mixedScores(tmpCount, module.getNGroup(), tmpTraitScore);
-					int uInter = nMixedInter;
-					if (VACANT >= 0)
-						uInter -= tmpCount[VACANT];
-					for (int n = unitStart; n < unitStart + unitSize; n++) {
-						int type = getTraitAt(n);
-						setScoreAt(n, tmpTraitScore[type], type == VACANT ? 0 : uInter);
-					}
-				}
-				setMaxEffScoreIdx();
+			case WELLMIXED:
+				updateMixedMeanfield();
 				break;
 
-			case MEANFIELD:
-				// store scores for each type in typeScores
-				if (module.isPairwise())
-					pairmodule.mixedScores(opponent.traitsCount, typeScores);
-				else
-					groupmodule.mixedScores(opponent.traitsCount, module.getNGroup(), typeScores);
-				double mxScore = -Double.MAX_VALUE;
-				int mxTrait = -Integer.MAX_VALUE;
-				sumFitness = 0.0;
-				for (int n = 0; n < nTraits; n++) {
-					if (n == VACANT) {
-						typeScores[n] = 0.0;
-						accuTypeScores[n] = Double.NaN;
-					}
-					int count = traitsCount[n];
-					if (count == 0) {
-						typeScores[n] = 0.0;
-						accuTypeScores[n] = 0.0;
-						typeFitness[n] = map2fit.map(0.0);
-						continue;
-					}
-					double score = typeScores[n];
-					if (score > mxScore) {
-						mxScore = score;
-						mxTrait = n;
-					}
-					accuTypeScores[n] = count * score;
-					double fit = map2fit.map(score);
-					typeFitness[n] = fit;
-					sumFitness += count * fit;
-				}
-				int idx = -1;
-				if (maxEffScoreIdx >= 0) {
-					while (getTraitAt(++idx) != mxTrait) {
-						// loop until found
-					}
-					maxEffScoreIdx = idx;
-				}
+			case HIERARCHY:
+				updateMixedHierarchy();
 				break;
 
 			default:
-				throw new Error("updateMixedMeanScores: invalid interaction geometry");
+				throw new UnsupportedOperationException("Invalid interaction geometry: " + interaction.getType());
 		}
+	}
+
+	/**
+	 * Calculate scores in well-mixed populations.
+	 */
+	void updateMixedMeanfield() {
+		// store scores for each type in typeScores
+		if (module.isPairwise())
+			pairmodule.mixedScores(opponent.traitsCount, typeScores);
+		else
+			groupmodule.mixedScores(opponent.traitsCount, module.getNGroup(), typeScores);
+		double mxScore = -Double.MAX_VALUE;
+		int mxTrait = -Integer.MAX_VALUE;
+		sumFitness = 0.0;
+		for (int n = 0; n < nTraits; n++) {
+			if (n == vacantIdx) {
+				typeScores[n] = 0.0;
+				accuTypeScores[n] = Double.NaN;
+			}
+			int count = traitsCount[n];
+			if (count == 0) {
+				typeScores[n] = 0.0;
+				accuTypeScores[n] = 0.0;
+				typeFitness[n] = map2fit.map(0.0);
+				continue;
+			}
+			double score = typeScores[n];
+			if (score > mxScore) {
+				mxScore = score;
+				mxTrait = n;
+			}
+			accuTypeScores[n] = count * score;
+			double fit = map2fit.map(score);
+			typeFitness[n] = fit;
+			sumFitness += count * fit;
+		}
+		int idx = -1;
+		if (maxEffScoreIdx >= 0) {
+			while (getTraitAt(++idx) != mxTrait) {
+				// loop until found
+			}
+			maxEffScoreIdx = idx;
+		}
+	}
+
+	/**
+	 * Calculate scores in hierarchical structures with well-mixed units.
+	 */
+	void updateMixedHierarchy() {
+		// XXX needs more attention for inter-species interactions
+		HierarchicalGeometry hgeom = (HierarchicalGeometry) interaction;
+		int[] hierarchy = hgeom.getHierarchyLevels();
+		int unitSize = hierarchy[hierarchy.length - 1];
+		for (int unitStart = 0; unitStart < nPopulation; unitStart += unitSize) {
+			// count traits in unit
+			countTraits(tmpCount, traits, unitStart, unitSize);
+			// calculate scores in unit (return in traitScores)
+			if (module.isPairwise())
+				pairmodule.mixedScores(tmpCount, tmpTraitScore);
+			else
+				groupmodule.mixedScores(tmpCount, module.getNGroup(), tmpTraitScore);
+			int uInter = nMixedInter;
+			if (vacantIdx >= 0)
+				uInter -= tmpCount[vacantIdx];
+			for (int n = unitStart; n < unitStart + unitSize; n++) {
+				int type = getTraitAt(n);
+				setScoreAt(n, tmpTraitScore[type], type == vacantIdx ? 0 : uInter);
+			}
+		}
+		setMaxEffScoreIdx();
 	}
 
 	/**
@@ -1446,10 +1529,24 @@ public class IBSDPopulation extends IBSPopulation {
 
 	@Override
 	public void isConsistent() {
-		if (!isConsistent)
+		if (nIssues != 0)
 			return;
-		// assume innocence until found guilty
-		boolean passed = true;
+		if (vacantIdx < 0)
+			return;
+		int nPop = 0;
+		for (int n = 0; n < nPopulation; n++) {
+			if (getTraitAt(n) == vacantIdx)
+				continue;
+			nPop++;
+		}
+		if (getPopulationSize() != nPop)
+			logAccountingIssue("sum of trait types is ", nPop, getPopulationSize(), "");
+		super.isConsistent();
+	}
+
+	@Override
+	protected void checkConsistentFitness() {
+		super.checkConsistentFitness();
 		double checkScores = 0.0;
 		double[] checkAccuTypeScores = new double[nTraits];
 		int[] checkTraitCount = new int[nTraits];
@@ -1461,44 +1558,21 @@ public class IBSDPopulation extends IBSPopulation {
 			checkScores += scoren;
 			checkAccuTypeScores[traitn] += scoren;
 		}
-		int accTrait = 0;
 		double accScores = 0.0;
 		for (int n = 0; n < nTraits; n++) {
-			if (checkTraitCount[n] != traitsCount[n]) {
-				if (logger.isLoggable(Level.WARNING))
-					logger.warning("accounting issue: trait count of " + module.getTraitName(n) + " is "
-							+ checkTraitCount[n] + " but traitCount[" + n + "]="
-							+ traitsCount[n]);
-				passed = false;
-			}
-			if (Math.abs(checkAccuTypeScores[n] - accuTypeScores[n]) > 1e-8) {
-				if (logger.isLoggable(Level.WARNING))
-					logger.warning("accounting issue: accumulated scores of trait " + module.getTraitName(n) + " is "
-							+ checkAccuTypeScores[n] + " but accuTypeScores[" + n + "]=" + accuTypeScores[n]);
-				passed = false;
-			}
-			accTrait += traitsCount[n];
-			if (n == VACANT)
+			if (checkTraitCount[n] != traitsCount[n])
+				logAccountingIssue("trait count of " + module.getTraitName(n) + " is ", checkTraitCount[n],
+						traitsCount[n], "");
+			if (Math.abs(checkAccuTypeScores[n] - accuTypeScores[n]) > 1e-8)
+				logAccountingIssue("accumulated scores of trait " + module.getTraitName(n) + " are ",
+						checkAccuTypeScores[n], accuTypeScores[n], "");
+			if (n == vacantIdx)
 				continue;
 			accScores += accuTypeScores[n];
 		}
-		if (nPopulation != accTrait) {
-			if (logger.isLoggable(Level.WARNING))
-				logger.warning(
-						"accounting issue: sum of trait types is " + accTrait + " but nPopulation=" + nPopulation);
-			passed = false;
-		}
-		if (Math.abs(checkScores - accScores) > 1e-8) {
-			if (logger.isLoggable(Level.WARNING))
-				logger.warning("accounting issue: sum of scores is " + checkScores + " but accuTypeScores add up to "
-						+ accScores + " (" + Formatter.format(accuTypeScores, 8) + ")");
-			passed = false;
-		}
-		// do not yet set isConsistent to false because this prevents the test in super
-		// to run
-		super.isConsistent();
-		// super may have already set isConsistent to false; add our assesement
-		isConsistent &= passed;
+		if (Math.abs(checkScores - accScores) > 1e-8)
+			logAccountingIssue("sum of trait scores is ", checkScores, accScores,
+					" (" + Formatter.format(accuTypeScores, 8) + ")");
 	}
 
 	@Override
@@ -1509,7 +1583,7 @@ public class IBSDPopulation extends IBSPopulation {
 			return true;
 		// monomorphic
 		for (int n = 0; n < nTraits; n++) {
-			if (n == VACANT)
+			if (n == vacantIdx)
 				continue;
 			if (traitsCount[n] == popSize)
 				return true;
@@ -1519,29 +1593,31 @@ public class IBSDPopulation extends IBSPopulation {
 
 	@Override
 	public boolean checkConvergence() {
-		// with vacant sites the only absorbing state is extinction
-		// alternatively, mutation rates do not matter hence super needs not be
-		// consulted
 		if (getPopulationSize() == 0)
+			// extinction trumps everything
 			return true;
-		boolean absorbed = isMonomorphic() && (mutation.probability <= 0.0);
-		// has absorbed if monomorphic and no vacant sites or if stop requested on
-		// monomorphic states
-		return (absorbed && (VACANT < 0 || module.getMonoStop()));
+		// death rate zero and no vacant sites
+		if (!super.checkConvergence())
+			return false;
+		// monomorphic, no mutations and no optimizations for homogeneous states
+		// monomporhic stop requested or death rate zero and no vacant sites available
+		return (module.getMonoStop()
+				|| vacantIdx < 0 // no vacant sites
+				|| (module.getDeathRate() <= 0.0 && traitsCount[vacantIdx] == 0));
 	}
 
 	@Override
 	public boolean isVacantAt(int index) {
-		if (VACANT < 0)
+		if (vacantIdx < 0)
 			return false;
-		return getTraitAt(index) == VACANT;
+		return getTraitAt(index) == vacantIdx;
 	}
 
 	@Override
 	public boolean becomesVacantAt(int index) {
-		if (VACANT < 0)
+		if (vacantIdx < 0)
 			return false;
-		return traitsNext[index] % nTraits == VACANT;
+		return traitsNext[index] % nTraits == vacantIdx;
 	}
 
 	@Override
@@ -1568,14 +1644,14 @@ public class IBSDPopulation extends IBSPopulation {
 		// for accumulated payoffs this makes only sense with adjustScores, without
 		// VACANT and for regular interaction geometries otherwise individuals may
 		// have different scores even in homogeneous populations
-		if (!playerScoreAveraged && (VACANT >= 0 || !interaction.isRegular))
+		if (!playerScoreAveraged && (vacantIdx >= 0 || !interaction.isRegular()))
 			return Double.NaN;
 		// averaged scores or regular interaction geometries without vacant sites
 		double mono = module.getMonoPayoff(type % nTraits);
 		if (playerScoreAveraged)
 			return mono;
 		// max/min doesn't matter; graph must be regular for accumulated scores
-		return processScore(mono, interaction.maxOut);
+		return processScore(mono, interaction.getFeatures().maxOut);
 	}
 
 	@Override
@@ -1597,10 +1673,10 @@ public class IBSDPopulation extends IBSPopulation {
 		int bin;
 		for (int n = 0; n < nPopulation; n++) {
 			int pane = getTraitAt(n);
-			if (pane == VACANT)
+			if (pane == vacantIdx)
 				continue;
 			// this should never hold as VACANT should be the last 'trait'
-			if (VACANT >= 0 && pane > VACANT)
+			if (vacantIdx >= 0 && pane > vacantIdx)
 				pane--;
 			bin = (int) ((getScoreAt(n) - min) * map);
 			// XXX accumulated payoffs are a problem - should rescale x-axis; at least
@@ -1610,7 +1686,7 @@ public class IBSDPopulation extends IBSPopulation {
 		}
 		double norm = 1.0 / nPopulation;
 		for (int n = 0; n < nTraits; n++) {
-			if (n == VACANT)
+			if (n == vacantIdx)
 				continue;
 			ArrayMath.multiply(bins[idx++], norm);
 		}
@@ -1664,7 +1740,7 @@ public class IBSDPopulation extends IBSPopulation {
 	public double[] getMeanFitness(double[] mean) {
 		double sum = 0.0;
 		for (int n = 0; n < nTraits; n++) {
-			if (n == VACANT)
+			if (n == vacantIdx)
 				continue;
 			sum += accuTypeScores[n];
 			// this returns NaN if no traits of type n present
@@ -1715,29 +1791,28 @@ public class IBSDPopulation extends IBSPopulation {
 		boolean doReset = super.check();
 
 		active = module.getActiveTraits();
-		if (optimizeMoran) {
-			// optimized Moran type processes are incompatible with mutations!
-			if (!populationUpdate.isMoran()) {
-				optimizeMoran = false;
-				logger.warning("optimizations require Moran-type updates - disabled.");
-				doReset = true;
-			} else if (mutation.probability > 0.0) {
-				optimizeMoran = false;
-				logger.warning("optimized Moran-type updates are incompatible with mutations - disabled.");
-				doReset = true;
-			} else // no need to report both warnings
-					// optimized Moran type processes are incompatible with well mixed populations!
-			if (interaction.getType() == Geometry.Type.MEANFIELD ||
-					(interaction.getType() == Geometry.Type.HIERARCHY &&
-							interaction.subgeometry == Geometry.Type.MEANFIELD)) {
-				optimizeMoran = false;
-				logger.warning("optimized Moran-type updates are incompatible with mean-field geometry - disabled.");
-				doReset = true;
-			}
-		}
 
-		int nGroup = module.getNGroup();
-		if (interaction.getType() == Geometry.Type.MEANFIELD && !playerScoreAveraged && nGroup > 2) {
+		// start allocating memory
+		if (traits == null || traits.length != nPopulation) {
+			traits = new int[nPopulation];
+			traitsNext = new int[nPopulation];
+		}
+		if (accuTypeScores == null || accuTypeScores.length != nTraits) {
+			accuTypeScores = new double[nTraits];
+			traitsCount = new int[nTraits];
+			initCount = new int[nTraits];
+			tmpCount = new int[nTraits];
+			tmpTraitScore = new double[nTraits];
+			// best-response may require temporary memory - this is peanuts
+			tmpScore = new double[nTraits];
+		}
+		return doReset;
+	}
+
+	@Override
+	boolean checkInteractions(int nGroup) {
+		boolean doReset = super.checkInteractions(nGroup);
+		if (interaction.isType(GeometryType.WELLMIXED) && !playerScoreAveraged && nGroup > 2) {
 			// check if interaction count exceeds integer range
 			try {
 				int nPop = opponent.getModule().getNPopulation();
@@ -1750,41 +1825,32 @@ public class IBSDPopulation extends IBSPopulation {
 				setPlayerScoreAveraged(true);
 			}
 		}
+		return doReset;
+	}
 
-		// // note: if imitate population update is selected, scores cannot be adjusted
-		// for well-mixed populations....
-		// if( populationUpdateType==POPULATION_UPDATE_ASYNC_IMITATE &&
-		// (interaction.geometry==Geometry.MEANFIELD ||
-		// (interaction.geometry==Geometry.HIERARCHY &&
-		// interaction.subgeometry==Geometry.MEANFIELD)) &&
-		// interactionGroup.samplingType==Group.SAMPLING_ALL ) {
-		// setInteractionType(Group.SAMPLING_COUNT);
-		// logger.warning("using random sampling of interaction partners for imitation
-		// update in well-mixed populations!");
-		// // change of sampling may affect whether scores can be adjusted but reset
-		// takes care of this
-		// doReset = true;
-		// }
-		// // if imitation becomes obsolete the above check can be removed
-
-		// start allocating memory
-		if (traits == null || traits.length != nPopulation)
-			traits = new int[nPopulation];
-		if (traitsNext == null || traitsNext.length != nPopulation)
-			traitsNext = new int[nPopulation];
-		if (tmpCount == null || tmpCount.length != nTraits)
-			tmpCount = new int[nTraits];
-		if (tmpTraitScore == null || tmpTraitScore.length != nTraits)
-			tmpTraitScore = new double[nTraits];
-		if (accuTypeScores == null || accuTypeScores.length != nTraits)
-			accuTypeScores = new double[nTraits];
-		if (initCount == null || initCount.length != nTraits)
-			initCount = new int[nTraits];
-		if (traitsCount == null || traitsCount.length != nTraits)
-			traitsCount = new int[nTraits];
-		// best-response may require temporary memory - this is peanuts, just reserve it
-		if (tmpScore == null || tmpScore.length != nTraits)
-			tmpScore = new double[nTraits];
+	@Override
+	boolean checkOptimizations() {
+		boolean doReset = super.checkOptimizations();
+		if (!optimizeMoran)
+			return doReset;
+		// optimized Moran type processes are incompatible with mutations!
+		if (!populationUpdate.isMoran()) {
+			optimizeMoran = false;
+			logger.warning("optimizations require Moran-type updates - disabled.");
+			doReset = true;
+		} else if (mutation.getProbability() > 0.0) {
+			optimizeMoran = false;
+			logger.warning("optimized Moran-type updates are incompatible with mutations - disabled.");
+			doReset = true;
+		} else // no need to report both warnings
+				// optimized Moran type processes are incompatible with well mixed populations!
+		if (interaction.isType(GeometryType.WELLMIXED) ||
+				(interaction.isType(GeometryType.HIERARCHY) &&
+						((HierarchicalGeometry) interaction).isSubtype(GeometryType.WELLMIXED))) {
+			optimizeMoran = false;
+			logger.warning("optimized Moran-type updates are incompatible with mean-field geometry - disabled.");
+			doReset = true;
+		}
 		return doReset;
 	}
 
@@ -1948,7 +2014,7 @@ public class IBSDPopulation extends IBSPopulation {
 		// initArgs contains the index of the monomorphic trait
 		int monoType = (int) init.args[0];
 		double monoFreq = 1.0;
-		if (VACANT >= 0) {
+		if (vacantIdx >= 0) {
 			// if present the second argument indicates the frequency of vacant sites
 			// if not use estimate for carrying capacity
 			monoFreq = (init.args.length > 1 ? Math.max(0.0, 1.0 - init.args[1])
@@ -1975,11 +2041,11 @@ public class IBSDPopulation extends IBSPopulation {
 	private double estimateVacantFrequency(int type) {
 		double d = module.getDeathRate();
 		double fit = map2fit.map(module.getMonoPayoff(type % nTraits));
-		Geometry geometry = module.getGeometry();
-		if (geometry.getType() == Geometry.Type.MEANFIELD)
+		AbstractGeometry geometry = module.getGeometry();
+		if (geometry.isType(GeometryType.WELLMIXED))
 			// carrying capacity is 1.0 - d / fit
 			return d / fit;
-		double k1 = geometry.avgOut - 1.0;
+		double k1 = geometry.getFeatures().avgOut - 1.0;
 		// carrying capacity on a k-regular graph is 1.0 - (k - 1) * d / (fit * (k - 1)
 		// - d)
 		return Math.min(Math.max(k1 * d / (fit * k1 - d), 0.0), 1.0);
@@ -2020,10 +2086,10 @@ public class IBSDPopulation extends IBSPopulation {
 				nMono++;
 				continue;
 			}
-			setTraitAt(n, VACANT);
+			setTraitAt(n, vacantIdx);
 		}
 		traitsCount[monoType] = nMono;
-		traitsCount[VACANT] = nPopulation - nMono;
+		traitsCount[vacantIdx] = nPopulation - nMono;
 		// check if population exists
 		if (nMono == 0)
 			return;
@@ -2057,34 +2123,10 @@ public class IBSDPopulation extends IBSPopulation {
 		else
 			residentType = (mutantType + 1) % nTraits;
 		int loc;
-		if (VACANT >= 0) {
-			// if present the third argument indicates the frequency of vacant sites
-			// if not use estimate for carrying capacity
-			double monoFreq = (init.args.length > 2 ? Math.max(0.0, 1.0 - init.args[2])
-					: 1.0 - estimateVacantFrequency(residentType));
-			if (residentType == VACANT && monoFreq < 1.0 - 1e-8) {
-				// problem encountered
-				init.type = Init.Type.UNIFORM;
-				logger.warning("review " + init.clo.getName() + //
-						" settings! - using '" + init.type.getKey() + "'.");
-				initUniform();
+		if (vacantIdx >= 0) {
+			loc = initWithVacant(residentType);
+			if (loc < 0)
 				return -1;
-			}
-			// initialize monomorphic resident population at carrying capacity
-			// relax resident population to equilibrium configuration if requested
-			initMono(residentType, monoFreq);
-			// check if resident population went extinct or a single survivor
-			// check if resident population went extinct or only a single survivor
-			if (traitsCount[VACANT] >= nPopulation)
-				return -1;
-			// change trait of random resident to a mutant
-			int idx = random0n(getPopulationSize());
-			loc = -1;
-			while (idx >= 0) {
-				if (isVacantAt(++loc))
-					continue;
-				idx--;
-			}
 		} else {
 			initMono(residentType, 1.0);
 			// change trait of random resident to a mutant
@@ -2093,6 +2135,44 @@ public class IBSDPopulation extends IBSPopulation {
 		setTraitAt(loc, mutantType);
 		traitsCount[residentType]--;
 		traitsCount[mutantType]++;
+		return loc;
+	}
+
+	/**
+	 * Initialize monomorphic resident population with vacant sites and return
+	 * location of a random resident to be changed to a mutant.
+	 * 
+	 * @param residentType the resident trait
+	 * @return the location of the mutant
+	 */
+	int initWithVacant(int residentType) {
+		// if present the third argument indicates the frequency of vacant sites
+		// if not use estimate for carrying capacity
+		double monoFreq = (init.args.length > 2 ? Math.max(0.0, 1.0 - init.args[2])
+				: 1.0 - estimateVacantFrequency(residentType));
+		if (residentType == vacantIdx && monoFreq < 1.0 - 1e-8) {
+			// problem encountered
+			init.type = Init.Type.UNIFORM;
+			logger.warning("review " + init.clo.getName() + //
+					" settings! - using '" + init.type.getKey() + "'.");
+			initUniform();
+			return -1;
+		}
+		// initialize monomorphic resident population at carrying capacity
+		// relax resident population to equilibrium configuration if requested
+		initMono(residentType, monoFreq);
+		// check if resident population went extinct or a single survivor
+		// check if resident population went extinct or only a single survivor
+		if (traitsCount[vacantIdx] >= nPopulation - 1)
+			return -1;
+		// change trait of random resident to a mutant
+		int idx = random0n(getPopulationSize());
+		int loc = -1;
+		while (idx >= 0) {
+			if (isVacantAt(++loc))
+				continue;
+			idx--;
+		}
 		return loc;
 	}
 
@@ -2107,7 +2187,7 @@ public class IBSDPopulation extends IBSPopulation {
 	 */
 	protected int initTemperature() {
 		int mutant = initMutant();
-		if (interaction.isRegular || mutant < 0)
+		if (interaction.isRegular() || mutant < 0)
 			return mutant;
 		int mutantType = getTraitAt(mutant);
 		int residentType = (int) init.args[1];
@@ -2115,7 +2195,7 @@ public class IBSDPopulation extends IBSPopulation {
 		setTraitAt(mutant, residentType);
 		// pick parent uniformly at random (everyone has the same fitness)
 		int parent;
-		if (VACANT < 0)
+		if (vacantIdx < 0)
 			parent = random0n(nPopulation);
 		else {
 			int idx = random0n(getPopulationSize());
@@ -2134,7 +2214,7 @@ public class IBSDPopulation extends IBSPopulation {
 			return -1;
 		int idx = competition.out[parent][random0n(nneighs)];
 		if (isVacantAt(idx)) {
-			traitsCount[VACANT]--;
+			traitsCount[vacantIdx]--;
 			// number of residents unchanged, initMono decreased it
 			traitsCount[residentType % nTraits]++;
 		}
@@ -2164,6 +2244,8 @@ public class IBSDPopulation extends IBSPopulation {
 	 * @see IBSD.Init.Type#KALEIDOSCOPE
 	 */
 	protected void initKaleidoscope() {
+		logger.warning("init 'kaleidoscope': not implemented - using 'uniform'.");
+		initUniform();
 	}
 
 	/**
@@ -2176,60 +2258,61 @@ public class IBSDPopulation extends IBSPopulation {
 	protected void initStripes() {
 		// only makes sense for 2D lattices at this point. if not, defaults to uniform
 		// random initialization (the only other inittype that doesn't require --init).
-		Geometry.Type type = interaction.getType();
-		if (interaction.interCompSame && (type == Geometry.Type.SQUARE ||
-				type == Geometry.Type.SQUARE_NEUMANN ||
-				type == Geometry.Type.SQUARE_MOORE ||
-				type == Geometry.Type.LINEAR)) {
-			Arrays.fill(traitsCount, 0);
-			int nActive = module.getNActive();
-			int[] nact = new int[nActive];
-			int idx = 0;
-			for (int n = 0; n < nTraits; n++) {
-				if (!active[n])
-					continue;
-				nact[idx++] = n;
-			}
-			// note: shift first strip by half a width to avoid having a boundary at the
-			// edge. also prevents losing one trait interface with fixed boundary
-			// conditions. procedure tested for 2, 3, 4, 5 traits
-			int nStripes = nActive + 2 * sum(2, nActive - 2);
-			int size = (interaction.getType() == Geometry.Type.LINEAR ? nPopulation
-					: (int) Math.sqrt(nPopulation));
-			int width = size / nStripes;
-			// make first strip wider
-			int width2 = (size - (nStripes - 1) * width) / 2;
-			fillStripe(0, width2, 0);
-			int offset = (nStripes - 1) * width + width2;
-			fillStripe(offset, size - offset, 0);
-			traitsCount[0] += width * size;
-			offset = width2;
-			// first all individual traits
-			for (int n = 1; n < nActive; n++) {
-				fillStripe(offset, width, nact[n]);
-				offset += width;
-			}
-			// second all trait pairs
-			int nPasses = Math.max(nActive - 2, 1);
-			int incr = 2;
-			while (incr <= nPasses) {
-				int trait1 = 0;
-				int trait2 = incr;
-				while (trait2 < nActive) {
-					fillStripe(offset, width, nact[trait1++]);
-					offset += width;
-					fillStripe(offset, width, nact[trait2++]);
-					offset += width;
-				}
-				incr++;
-			}
-			Arrays.fill(traitsCount, 0);
-			for (int n = 0; n < nPopulation; n++)
-				traitsCount[getTraitAt(n)]++;
+		GeometryType type = interaction.getType();
+		if (!interaction.isSingle()
+				|| !(type == GeometryType.SQUARE
+						|| type == GeometryType.SQUARE_NEUMANN
+						|| type == GeometryType.SQUARE_MOORE
+						|| type == GeometryType.LINEAR)) {
+			logger.warning("init 'stripes': 2D lattice structures required - using 'uniform'.");
+			initUniform();
 			return;
 		}
-		logger.warning("init 'stripes': 2D lattice structures required - using 'uniform'.");
-		initUniform();
+		Arrays.fill(traitsCount, 0);
+		int nActive = module.getNActive();
+		int[] nact = new int[nActive];
+		int idx = 0;
+		for (int n = 0; n < nTraits; n++) {
+			if (!active[n])
+				continue;
+			nact[idx++] = n;
+		}
+		// note: shift first strip by half a width to avoid having a boundary at the
+		// edge. also prevents losing one trait interface with fixed boundary
+		// conditions. procedure tested for 2, 3, 4, 5 traits
+		int nStripes = nActive + 2 * sum(2, nActive - 2);
+		int size = (interaction.isType(GeometryType.LINEAR) ? nPopulation
+				: (int) Math.sqrt(nPopulation));
+		int width = size / nStripes;
+		// make first strip wider
+		int width2 = (size - (nStripes - 1) * width) / 2;
+		fillStripe(0, width2, 0);
+		int offset = (nStripes - 1) * width + width2;
+		fillStripe(offset, size - offset, 0);
+		traitsCount[0] += width * size;
+		offset = width2;
+		// first all individual traits
+		for (int n = 1; n < nActive; n++) {
+			fillStripe(offset, width, nact[n]);
+			offset += width;
+		}
+		// second all trait pairs
+		int nPasses = Math.max(nActive - 2, 1);
+		int incr = 2;
+		while (incr <= nPasses) {
+			int trait1 = 0;
+			int trait2 = incr;
+			while (trait2 < nActive) {
+				fillStripe(offset, width, nact[trait1++]);
+				offset += width;
+				fillStripe(offset, width, nact[trait2++]);
+				offset += width;
+			}
+			incr++;
+		}
+		Arrays.fill(traitsCount, 0);
+		for (int n = 0; n < nPopulation; n++)
+			traitsCount[getTraitAt(n)]++;
 	}
 
 	/**
@@ -2347,13 +2430,13 @@ public class IBSDPopulation extends IBSPopulation {
 			Arrays.fill(accuTypeScores, 0.0);
 			for (int n = 0; n < nPopulation; n++) {
 				int type = getTraitAt(n);
-				if (type == VACANT)
+				if (type == vacantIdx)
 					continue;
 				accuTypeScores[type] += getScoreAt(n);
 			}
 		}
-		if (VACANT >= 0)
-			accuTypeScores[VACANT] = Double.NaN;
+		if (vacantIdx >= 0)
+			accuTypeScores[vacantIdx] = Double.NaN;
 		return true;
 	}
 

@@ -32,6 +32,9 @@ package org.evoludo.simulator;
 
 import org.evoludo.geom.Node3D;
 import org.evoludo.geom.Vector3D;
+import org.evoludo.simulator.geometries.AbstractGeometry;
+import org.evoludo.simulator.geometries.GeometryFeatures;
+import org.evoludo.simulator.geometries.GeometryType;
 
 /**
  * Graphical representation of generic population geometries in 3D. A network
@@ -39,15 +42,7 @@ import org.evoludo.geom.Vector3D;
  *
  * @author Christoph Hauert
  */
-public abstract class Network3D extends Network {
-
-	/**
-	 * The array with all nodes of this network. This deliberately overrides
-	 * {@code super.nodes}. The two arrays are identical but saves a ton of
-	 * unnecesary casts.
-	 */
-	@SuppressWarnings("hiding")
-	protected Node3D[] nodes = null;
+public abstract class Network3D extends Network<Node3D> {
 
 	/**
 	 * Create a new network in 3D for the given engine and geometry.
@@ -55,7 +50,7 @@ public abstract class Network3D extends Network {
 	 * @param engine   the pacemaker for running the model
 	 * @param geometry the structure of the population
 	 */
-	protected Network3D(EvoLudo engine, Geometry geometry) {
+	protected Network3D(EvoLudo engine, AbstractGeometry geometry) {
 		// network is shared between different graphs - cannot set listener here!
 		super(engine, geometry);
 		accuracy = 1e-5;
@@ -65,11 +60,12 @@ public abstract class Network3D extends Network {
 	public void initNodes(double pnorm, double nnorm, double unitradius) {
 		if (nodes == null || nodes.length != nNodes) {
 			nodes = new Node3D[nNodes];
-			super.nodes = this.nodes;
 			for (int k = 0; k < nNodes; k++)
 				nodes[k] = new Node3D();
 		}
 
+		GeometryFeatures gFeats = geometry.getFeatures();
+		double avgTot = gFeats.avgTot;
 		double dangle = Math.PI * (3.0 - Math.sqrt(5.0));
 		double angle = 0.0;
 		double dz = 2.0 / nNodes;
@@ -80,14 +76,14 @@ public abstract class Network3D extends Network {
 		// central hub is always node zero).
 		int kin = geometry.kin[0];
 		int kout = geometry.kout[0];
-		double diff = kout + kin - geometry.avgTot;
+		double diff = kout + kin - avgTot;
 		double myr = unitradius * (1.0 + diff * (diff > 0.0 ? pnorm : nnorm));
 		nodes[0].set(0.0, 0.0, 0.0, myr);
 		for (int k = 1; k < nNodes; k++) {
 			double r = (Math.sqrt(1.0 - z * z) + 0.1 * (rng.random01() - 0.5)) * UNIVERSE_RADIUS;
 			kin = geometry.kin[k];
 			kout = geometry.kout[k];
-			diff = kout + kin - geometry.avgTot;
+			diff = kout + kin - avgTot;
 			myr = unitradius * (1.0 + diff * (diff > 0.0 ? pnorm : nnorm));
 			nodes[k].set(r * Math.sin(angle), r * Math.cos(angle), z * UNIVERSE_RADIUS, myr);
 			z -= dz;
@@ -138,7 +134,7 @@ public abstract class Network3D extends Network {
 	public double relax(int nodeidx, double dt) {
 		double energy = repulsion(nodeidx);
 		energy += attraction(nodeidx);
-		repulsion.scale(1.0 / geometry.size);
+		repulsion.scale(1.0 / geometry.getSize());
 		repulsion.add(attraction);
 		// final double delta = repulsion.length();
 		// // empirical constant - choose as big as possible to speed things up but
@@ -197,7 +193,7 @@ public abstract class Network3D extends Network {
 			// dist="+(dist*IR)+", ("+(distadj*IR)+"), potential="+potential);
 			attraction.add(vec);
 		}
-		if (geometry.isUndirected) {
+		if (geometry.isUndirected()) {
 			if (nOut == 0)
 				return 0.0;
 			attraction.scale(1.0 / nOut);
@@ -240,9 +236,11 @@ public abstract class Network3D extends Network {
 		for (Node3D node : nodes)
 			com.shift(node);
 		com.scale(-1.0 / nNodes);
-		if (geometry.isDynamic) {
+		if (geometry.isType(GeometryType.DYNAMIC)) {
 			// need to set radius as well in dynamic networks
-			int krange = geometry.maxTot - geometry.minTot;
+			GeometryFeatures gFeats = geometry.getFeatures();
+			int minTot = gFeats.minTot;
+			int krange = gFeats.maxTot - minTot;
 			double invRange = krange > 0 ? 1.0 / krange : 1.0;
 			double unitradius = Math.max(1.0, Math.sqrt(0.6 / nNodes) * UNIVERSE_RADIUS) * 1.2;
 			for (int k = 0; k < nNodes; k++) {
@@ -250,7 +248,7 @@ public abstract class Network3D extends Network {
 				node.shift(com);
 				int kin = geometry.kin[k];
 				int kout = geometry.kout[k];
-				node.setR(unitradius * (0.5 + 2.5 * (kout + kin - geometry.minTot) * invRange));
+				node.setR(unitradius * (0.5 + 2.5 * (kout + kin - minTot) * invRange));
 			}
 		} else {
 			for (Node3D node : nodes) {

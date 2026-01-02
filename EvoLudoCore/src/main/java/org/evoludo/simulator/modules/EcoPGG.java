@@ -45,10 +45,10 @@ import org.evoludo.simulator.views.HasPhase2D;
 import org.evoludo.simulator.views.HasPop2D;
 import org.evoludo.simulator.views.HasPop3D;
 import org.evoludo.simulator.views.HasS3;
+import org.evoludo.util.CLODelegate;
 import org.evoludo.util.CLOParser;
 import org.evoludo.util.CLOption;
-import org.evoludo.util.CLOption.CLODelegate;
-import org.evoludo.util.CLOption.Category;
+import org.evoludo.util.CLOCategory;
 import org.evoludo.util.Formatter;
 
 /**
@@ -246,7 +246,7 @@ public class EcoPGG extends Discrete implements Payoffs,
 						traitCount[VACANT] * payLoneDefect;
 
 			default: // should not end here
-				throw new Error("Unknown strategy (" + me + ")");
+				throw new UnsupportedOperationException("Unknown strategy (" + me + ")");
 		}
 	}
 
@@ -350,10 +350,16 @@ public class EcoPGG extends Discrete implements Payoffs,
 	}
 
 	/**
-	 * The map for translating the data of the ecological public goods game models
-	 * into 2D phase plane representation.
+	 * Map translating ecological public goods data to a 2D phase plane and tooltip
+	 * content.
 	 */
 	public class EcoPGGMap implements Data2Phase, BasicTooltipProvider {
+
+		/**
+		 * Create the 2D projection helper using the surrounding module settings.
+		 */
+		public EcoPGGMap() {
+		}
 
 		@Override
 		public boolean data2Phase(double[] data, Point2D point) {
@@ -398,7 +404,7 @@ public class EcoPGG extends Discrete implements Payoffs,
 	 * Command line option to set the multiplication factor for public good
 	 * interactions.
 	 */
-	public final CLOption cloInterest = new CLOption("interest", "3", Category.Module,
+	public final CLOption cloInterest = new CLOption("interest", "3", CLOCategory.Module,
 			"--interest <r>  multiplication factor of public good", new CLODelegate() {
 
 				/**
@@ -419,7 +425,7 @@ public class EcoPGG extends Discrete implements Payoffs,
 	 * Command line option to set the cost of cooperation, i.e. contributions to the
 	 * public good.
 	 */
-	public final CLOption cloCost = new CLOption("cost", "1", Category.Module,
+	public final CLOption cloCost = new CLOption("cost", "1", CLOCategory.Module,
 			"--cost <c>      cost of cooperation", new CLODelegate() {
 
 				/**
@@ -440,7 +446,7 @@ public class EcoPGG extends Discrete implements Payoffs,
 	 * Command line option to set the payoff to cooperators that failed to find any
 	 * interaction partners.
 	 */
-	public final CLOption cloLoneCooperator = new CLOption("lonecooperator", "0", Category.Module,
+	public final CLOption cloLoneCooperator = new CLOption("lonecooperator", "0", CLOCategory.Module,
 			"--lonecooperator <l>  payoff of lone cooperator", new CLODelegate() {
 
 				/**
@@ -460,7 +466,7 @@ public class EcoPGG extends Discrete implements Payoffs,
 	 * Command line option to set the payoff to defectors that failed to find any
 	 * interaction partners.
 	 */
-	public final CLOption cloLoneDefector = new CLOption("lonedefector", "0", Category.Module,
+	public final CLOption cloLoneDefector = new CLOption("lonedefector", "0", CLOCategory.Module,
 			"--lonedefector <l>  payoff of lone defector", new CLODelegate() {
 
 				/**

@@ -57,8 +57,7 @@ public class IBSCPopulation extends IBSMCPopulation {
 	 * 
 	 * @see HasIBS.CPairs
 	 */
-	@SuppressWarnings("hiding")
-	protected HasIBS.CPairs pairmodule;
+	final HasIBS.CPairs cpairmodule;
 
 	/**
 	 * For group interaction modules {@code module==groupmodule} holds and
@@ -67,29 +66,7 @@ public class IBSCPopulation extends IBSMCPopulation {
 	 * 
 	 * @see HasIBS.CGroups
 	 */
-	@SuppressWarnings("hiding")
-	protected HasIBS.CGroups groupmodule;
-
-	/**
-	 * The interaction partner/opponent of this population
-	 * {@code opponent.getModule()==getModule().getOpponent()}. In intra-species
-	 * interactions {@code opponent==this}. Convenience field.
-	 * <p>
-	 * <strong>Note:</strong> This deliberately hides
-	 * {@link IBSPopulation#opponent}. The two variables point to the same object
-	 * but this setup avoids unnecessary casts because only
-	 * {@link org.evoludo.simulator.modules.Discrete Discrete} modules
-	 * generate {@code IBSDPopulation}(s).
-	 */
-	@SuppressWarnings("hiding")
-	IBSCPopulation opponent;
-
-	/**
-	 * Temporary storage for the traits of the focal individual. This deliberately
-	 * hides the array of the same name in {@code IBSMCPopulation}.
-	 */
-	@SuppressWarnings("hiding")
-	double myTrait;
+	final HasIBS.CGroups cgroupmodule;
 
 	/**
 	 * Creates a population of individuals with a single continuous trait for IBS
@@ -100,17 +77,18 @@ public class IBSCPopulation extends IBSMCPopulation {
 	 */
 	public IBSCPopulation(EvoLudo engine, Continuous module) {
 		super(engine, module);
-		opponent = this;
-		if (module instanceof HasIBS.CPairs)
-			pairmodule = (HasIBS.CPairs) module;
-		if (module instanceof HasIBS.CGroups)
-			groupmodule = (HasIBS.CGroups) module;
+		if (!(pairmodule instanceof HasIBS.CPairs))
+			throw new IllegalArgumentException("module must implement HasIBS.CPairs");
+		cpairmodule = (HasIBS.CPairs) pairmodule;
+		cgroupmodule = (module instanceof HasIBS.CGroups) ? (HasIBS.CGroups) module : null;
 	}
 
 	@Override
-	public void setOpponentPop(IBSPopulation opponent) {
+	public void setOpponentPop(IBSPopulation<?, ?> opponent) {
+		if (!(opponent instanceof IBSCPopulation)) {
+			throw new IllegalArgumentException("opponent must be IBSCPopulation");
+		}
 		super.setOpponentPop(opponent);
-		this.opponent = (IBSCPopulation) super.opponent;
 	}
 
 	@Override
@@ -129,6 +107,13 @@ public class IBSCPopulation extends IBSMCPopulation {
 		traitsNext[b] = traits[a];
 	}
 
+	/**
+	 * {@inheritDoc}
+	 * <p>
+	 * Continuous modules with multiple traits never get here.
+	 * 
+	 * @see IBSMCPopulation#playPairGameAt(IBSGroup)
+	 */
 	@Override
 	public void playPairGameAt(IBSGroup group) {
 		int me = group.focal;
@@ -146,7 +131,7 @@ public class IBSCPopulation extends IBSMCPopulation {
 		double[] opptraits = opponent.traits;
 		for (int i = 0; i < group.nSampled; i++)
 			tmpGroup[i] = opptraits[group.group[i]];
-		double myScore = pairmodule.pairScores(traits[me], tmpGroup, group.nSampled, groupScores);
+		double myScore = cpairmodule.pairScores(traits[me], tmpGroup, group.nSampled, groupScores);
 		if (ephemeralScores) {
 			// no need to update scores of everyone else
 			resetScoreAt(me);
@@ -158,6 +143,13 @@ public class IBSCPopulation extends IBSMCPopulation {
 			opponent.updateScoreAt(group.group[i], groupScores[i]);
 	}
 
+	/**
+	 * {@inheritDoc}
+	 * <p>
+	 * Continuous modules with multiple traits never get here.
+	 * 
+	 * @see IBSMCPopulation#adjustPairGameScoresAt(int)
+	 */
 	@Override
 	public void adjustPairGameScoresAt(int me) {
 		// gather players
@@ -169,7 +161,7 @@ public class IBSCPopulation extends IBSMCPopulation {
 		for (int n = 0; n < nOut; n++)
 			tmpGroup[n] = opptraits[out[n]];
 		int u2 = 2;
-		if (!interaction.isUndirected) {
+		if (!interaction.isUndirected()) {
 			// directed graph, count in-neighbors
 			u2 = 1;
 			nIn = interaction.kin[me];
@@ -178,8 +170,8 @@ public class IBSCPopulation extends IBSMCPopulation {
 				tmpGroup[nOut + n] = opptraits[in[n]];
 		}
 		int nInter = nOut + nIn;
-		double oldScore = pairmodule.pairScores(traits[me], tmpGroup, nInter, oldScores);
-		double newScore = pairmodule.pairScores(traitsNext[me], tmpGroup, nInter, groupScores);
+		double oldScore = cpairmodule.pairScores(traits[me], tmpGroup, nInter, oldScores);
+		double newScore = cpairmodule.pairScores(traitsNext[me], tmpGroup, nInter, groupScores);
 		commitTraitAt(me);
 		if (playerScoreAveraged) {
 			double iInter = 1.0 / nInter;
@@ -194,7 +186,7 @@ public class IBSCPopulation extends IBSMCPopulation {
 				diff = u2 * diff / interactions[you];
 			opponent.adjustScoreAt(you, diff);
 		}
-		// same as !interaction.isUndirected because in != null implies directed graph
+		// same as !interaction.isUndirected() because in != null implies directed graph
 		// (see above)
 		if (in != null) {
 			for (int n = 0; n < nIn; n++) {
@@ -207,6 +199,13 @@ public class IBSCPopulation extends IBSMCPopulation {
 		}
 	}
 
+	/**
+	 * {@inheritDoc}
+	 * <p>
+	 * Continuous modules with multiple traits never get here.
+	 * 
+	 * @see IBSMCPopulation#playGroupGameAt(IBSGroup)
+	 */
 	@Override
 	public void playGroupGameAt(IBSGroup group) {
 		int size = group.nSampled;
@@ -218,35 +217,14 @@ public class IBSCPopulation extends IBSMCPopulation {
 		for (int i = 0; i < size; i++)
 			tmpGroup[i] = opptraits[group.group[i]];
 		int me = group.focal;
-		myTrait = traits[me];
-		// for ephemeral scores calculate score of focal only
-		boolean ephemeralScores = playerScoring.equals(ScoringType.EPHEMERAL);
 
 		switch (group.samplingType) {
 			// interact with all neighbors - interact repeatedly if nGroup<groupSize+1
 			case ALL:
+				// interact with all neighbors
 				int nGroup = module.getNGroup();
 				if (nGroup < group.nSampled + 1) {
-					// interact with part of group sequentially
-					double myScore = 0.0;
-					Arrays.fill(smallScores, 0, group.nSampled, 0.0);
-					for (int n = 0; n < group.nSampled; n++) {
-						for (int i = 0; i < nGroup - 1; i++)
-							smallTrait[i] = tmpGroup[(n + i) % group.nSampled];
-						myScore += groupmodule.groupScores(myTrait, smallTrait, nGroup - 1, groupScores);
-						if (ephemeralScores)
-							continue;
-						for (int i = 0; i < nGroup - 1; i++)
-							smallScores[(n + i) % group.nSampled] += groupScores[i];
-					}
-					if (ephemeralScores) {
-						resetScoreAt(me);
-						setScoreAt(me, myScore / group.nSampled, group.nSampled);
-						return;
-					}
-					updateScoreAt(me, myScore, group.nSampled);
-					for (int i = 0; i < group.nSampled; i++)
-						opponent.updateScoreAt(group.group[i], smallScores[i], nGroup - 1);
+					playGroupSequentiallyAt(me, group, nGroup);
 					return;
 				}
 				// interact with full group (random graphs, all neighbors)
@@ -254,29 +232,68 @@ public class IBSCPopulation extends IBSMCPopulation {
 				//$FALL-THROUGH$
 			case RANDOM:
 				// interact with sampled neighbors
-				double myScore = groupmodule.groupScores(myTrait, tmpGroup, group.nSampled, groupScores);
-				if (ephemeralScores) {
-					resetScoreAt(me);
-					setScoreAt(me, myScore, 1);
-					return;
-				}
-				updateScoreAt(me, myScore);
-				for (int i = 0; i < group.nSampled; i++)
-					opponent.updateScoreAt(group.group[i], groupScores[i]);
+				playGroupOnceAt(me, group);
 				return;
 
 			default:
-				throw new Error("Unknown interaction type (" + interGroup.getSampling() + ")");
+				throw new UnsupportedOperationException("Unknown interaction type (" + interGroup.getSampling() + ")");
 		}
 	}
 
+	@Override
+	void playGroupSequentiallyAt(int me, IBSGroup group, int nGroup) {
+		// interact with part of group sequentially
+		double myScore = 0.0;
+		Arrays.fill(smallScores, 0, group.nSampled, 0.0);
+		// for ephemeral scores calculate score of focal only
+		boolean ephemeralScores = playerScoring.equals(ScoringType.EPHEMERAL);
+		for (int n = 0; n < group.nSampled; n++) {
+			for (int i = 0; i < nGroup - 1; i++)
+				smallTrait[i] = tmpGroup[(n + i) % group.nSampled];
+			myScore += cgroupmodule.groupScores(traits[me], smallTrait, nGroup - 1, groupScores);
+			if (ephemeralScores)
+				continue;
+			for (int i = 0; i < nGroup - 1; i++)
+				smallScores[(n + i) % group.nSampled] += groupScores[i];
+		}
+		if (ephemeralScores) {
+			resetScoreAt(me);
+			setScoreAt(me, myScore / group.nSampled, group.nSampled);
+			return;
+		}
+		updateScoreAt(me, myScore, group.nSampled);
+		for (int i = 0; i < group.nSampled; i++)
+			opponent.updateScoreAt(group.group[i], smallScores[i], nGroup - 1);
+	}
+
+	@Override
+	void playGroupOnceAt(int me, IBSGroup group) {
+		// interact with full group (random graphs)
+		double myScore = cgroupmodule.groupScores(traits[me], tmpGroup, group.nSampled, groupScores);
+		if (playerScoring.equals(ScoringType.EPHEMERAL)) {
+			resetScoreAt(me);
+			setScoreAt(me, myScore, 1);
+			return;
+		}
+		updateScoreAt(me, myScore);
+		for (int i = 0; i < group.nSampled; i++)
+			opponent.updateScoreAt(group.group[i], groupScores[i]);
+	}
+
+	/**
+	 * {@inheritDoc}
+	 * <p>
+	 * Continuous modules with multiple traits never get here.
+	 * 
+	 * @see IBSMCPopulation#yalpGroupGameAt(IBSGroup)
+	 */
 	@Override
 	public void yalpGroupGameAt(IBSGroup group) {
 		if (group.nSampled <= 0)
 			return;
 
 		double myScore;
-		myTrait = traits[group.focal];
+		double myTrait = traits[group.focal];
 		double[] opptraits = opponent.traits;
 		for (int i = 0; i < group.nSampled; i++)
 			tmpGroup[i] = opptraits[group.group[i]];
@@ -288,7 +305,7 @@ public class IBSCPopulation extends IBSMCPopulation {
 			for (int n = 0; n < group.nSampled; n++) {
 				for (int i = 0; i < nGroup - 1; i++)
 					smallTrait[i] = tmpGroup[(n + i) % group.nSampled];
-				myScore += groupmodule.groupScores(myTrait, smallTrait, nGroup - 1, groupScores);
+				myScore += cgroupmodule.groupScores(myTrait, smallTrait, nGroup - 1, groupScores);
 				for (int i = 0; i < nGroup - 1; i++)
 					smallScores[(n + i) % group.nSampled] += groupScores[i];
 			}
@@ -298,7 +315,7 @@ public class IBSCPopulation extends IBSMCPopulation {
 			return;
 		}
 		// interact with full group (random graphs)
-		myScore = groupmodule.groupScores(myTrait, tmpGroup, group.nSampled, groupScores);
+		myScore = cgroupmodule.groupScores(myTrait, tmpGroup, group.nSampled, groupScores);
 		removeScoreAt(group.focal, myScore);
 
 		for (int i = 0; i < group.nSampled; i++)

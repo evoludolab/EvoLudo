@@ -36,8 +36,8 @@ import java.util.Arrays;
 import org.evoludo.math.ArrayMath;
 import org.evoludo.simulator.ColorMap;
 import org.evoludo.simulator.EvoLudo;
-import org.evoludo.simulator.Geometry;
-import org.evoludo.simulator.Geometry.Type;
+import org.evoludo.simulator.geometries.GeometryFeatures;
+import org.evoludo.simulator.geometries.GeometryType;
 import org.evoludo.simulator.models.IBSDPopulation;
 import org.evoludo.simulator.models.IBSGroup;
 import org.evoludo.simulator.models.Model.HasIBS;
@@ -46,10 +46,10 @@ import org.evoludo.simulator.views.HasHistogram;
 import org.evoludo.simulator.views.HasMean;
 import org.evoludo.simulator.views.HasPop2D;
 import org.evoludo.simulator.views.HasPop3D;
+import org.evoludo.util.CLOCategory;
+import org.evoludo.util.CLODelegate;
 import org.evoludo.util.CLOParser;
 import org.evoludo.util.CLOption;
-import org.evoludo.util.CLOption.CLODelegate;
-import org.evoludo.util.CLOption.Category;
 import org.evoludo.util.Formatter;
 
 /**
@@ -166,29 +166,12 @@ public class NetGames extends Discrete implements Payoffs,
 
 	@Override
 	public double getMinPayoff() {
-		// interaction may still be undefined
-		if (interaction == null)
-			return -1.0;
-		interaction.evaluate();
-		double min = interaction.minIn - interaction.maxOut * ratio;
-		double max = interaction.maxIn - interaction.minOut * ratio;
-		if (Math.abs(max - min) < 1e-10)
-			return -1.0;
-		return min;
-
+		return getIBSPopulation().getMinScore();
 	}
 
 	@Override
 	public double getMaxPayoff() {
-		// interaction may still be undefined
-		if (interaction == null)
-			return 1.0;
-		interaction.evaluate();
-		double min = interaction.minIn - interaction.maxOut * ratio;
-		double max = interaction.maxIn - interaction.minOut * ratio;
-		if (Math.abs(max - min) < 1e-10)
-			return 1.0;
-		return max;
+		return getIBSPopulation().getMaxScore();
 	}
 
 	// @Override
@@ -333,7 +316,7 @@ public class NetGames extends Discrete implements Payoffs,
 	/**
 	 * Command line option to set the cost-to-benefit ratio of cooperation.
 	 */
-	public final CLOption cloRatio = new CLOption("ratio", "1", Category.Module,
+	public final CLOption cloRatio = new CLOption("ratio", "1", CLOCategory.Module,
 			"--ratio <r>     cost-to-benefit ratio of cooperative act", new CLODelegate() {
 
 				/**
@@ -353,7 +336,7 @@ public class NetGames extends Discrete implements Payoffs,
 	/**
 	 * Command line option to set the cost-to-benefit ratio of cooperation.
 	 */
-	public final CLOption cloSelection = new CLOption("selection", "1", Category.Module,
+	public final CLOption cloSelection = new CLOption("selection", "1", CLOCategory.Module,
 			"--selection <s>  selection strength", new CLODelegate() {
 
 				/**
@@ -370,25 +353,11 @@ public class NetGames extends Discrete implements Payoffs,
 				}
 			});
 
-	// public final CLOption cloSample = new CLOption("sample", Category.GUI,
-	// "0.01",
-	// "--sampling <s> probability for sampling random member of population",
-	// new CLOSetter() {
-	// @Override
-	// public void parse(String arg) {
-	// setRandomSampleProb(CLOParser.parseDouble(arg));
-	// }
-	// @Override
-	// public void report() {
-	// output.println("# sampling: "+ChHFormatter.format(getRandomSampleProb(), 6));
-	// }
-	// });
-
 	/**
 	 * Command line option to set the colors for altruists, fair players, and
 	 * egoists.
 	 */
-	public final CLOption cloColors = new CLOption("colors", "green;yellow;red", Category.GUI,
+	public final CLOption cloColors = new CLOption("colors", "green;yellow;red", CLOCategory.GUI,
 			"--colors <a[;f[;e]]>  colors for altruists, fair and egoists\n"
 					+ "                <a:f:e>: color name or '(r,g,b[,a])' tuplet (r,g,b,a in 0-255)",
 			new CLODelegate() {
@@ -445,8 +414,8 @@ public class NetGames extends Discrete implements Payoffs,
 				"mutation", "fitnessmap" });
 
 		cloGeometry.clearKeys();
-		cloGeometry.addKey(Type.DYNAMIC);
-		cloGeometry.setDefault(Type.DYNAMIC.getKey());
+		cloGeometry.addKey(GeometryType.DYNAMIC);
+		cloGeometry.setDefault(GeometryType.DYNAMIC.getKey());
 		// parse default (and only option) for geometry
 		cloGeometry.parse();
 
@@ -689,9 +658,9 @@ public class NetGames extends Discrete implements Payoffs,
 
 		@Override
 		public double[] getMeanTraits(double[] mean) {
-			interaction.evaluate();
-			mean[0] = interaction.avgTot; // avg. activity
-			mean[1] = interaction.avgOut; // avg. cooperativity
+			GeometryFeatures gFeats = interaction.getFeatures();
+			mean[0] = gFeats.avgTot; // avg. activity
+			mean[1] = gFeats.avgOut; // avg. cooperativity
 			return mean;
 		}
 
@@ -773,55 +742,88 @@ public class NetGames extends Discrete implements Payoffs,
 			ArrayMath.multiply(bins[1], 1.0 / nPopulation);
 		}
 
+		// @Override
+		// public boolean parseGeometry(AbstractGeometry geom, String arg) {
+		// if (arg.equals("*")) {
+		// geom.setType(Type.DYNAMIC);
+		// return true;
+		// }
+		// return false;
+		// }
+
+		// @Override
+		// public boolean checkGeometry(AbstractGeometry geom) {
+		// return geom.isType(Type.DYNAMIC);
+		// }
+
+		// @Override
+		// public boolean generateGeometry(AbstractGeometry geom) {
+		// if (geom.getType() != Type.DYNAMIC)
+		// throw new UnsupportedOperationException("Unknown geometry (" + geom.getType()
+		// + ")");
+		// geom.isRewired = false;
+		// geom.isUndirected = false;
+		// geom.isRegular = false;
+		// geom.setType(GeometryType.DYNAMIC);
+		// geom.setSingle(true);
+		// geom.alloc();
+		// return true;
+		// }
+
 		@Override
-		public boolean parseGeometry(Geometry geom, String arg) {
-			if (arg.equals("*")) {
-				geom.setType(Type.DYNAMIC);
-				return true;
-			}
-			return false;
+		public double getMinScore() {
+			// interaction may still be undefined
+			if (interaction == null)
+				return -1.0;
+			GeometryFeatures gFeats = interaction.getFeatures();
+			double min = gFeats.minIn - gFeats.maxOut * ratio;
+			double max = gFeats.maxIn - gFeats.minOut * ratio;
+			if (Math.abs(max - min) < 1e-10)
+				return -1.0;
+			return min;
 		}
 
 		@Override
-		public boolean checkGeometry(Geometry geom) {
-			return geom.getType() == Type.DYNAMIC;
-		}
-
-		@Override
-		public boolean generateGeometry(Geometry geom) {
-			if (geom.getType() != Type.DYNAMIC)
-				throw new Error("NetGames: Unknown geometry (" + geom.getType() + ")");
-			geom.isRewired = false;
-			geom.isUndirected = false;
-			geom.isRegular = false;
-			geom.isDynamic = true;
-			geom.interCompSame = true;
-			geom.alloc();
-			return true;
+		public double getMaxScore() {
+			// interaction may still be undefined
+			if (interaction == null)
+				return 1.0;
+			GeometryFeatures gFeats = interaction.getFeatures();
+			double min = gFeats.minIn - gFeats.maxOut * ratio;
+			double max = gFeats.maxIn - gFeats.minOut * ratio;
+			if (Math.abs(max - min) < 1e-10)
+				return 1.0;
+			return max;
 		}
 
 		@Override
 		public void resetScores() {
+			// updateFitnessMean always recalcuates scores from scratch
 		}
 
 		@Override
 		public void updateScores() {
+			// updateFitnessMean always recalcuates scores from scratch
 		}
 
 		@Override
 		public void resetTraits() {
+			// traits are unused and, instead, encoded in the network structure
 		}
 
 		@Override
 		public void prepareTraits() {
+			// traits are unused and, instead, encoded in the network structure
 		}
 
 		@Override
 		public void commitTraits() {
+			// traits are unused and, instead, encoded in the network structure
 		}
 
 		@Override
 		public void commitTraitAt(int index) {
+			// traits are unused and, instead, encoded in the network structure
 		}
 
 		@Override
@@ -836,22 +838,27 @@ public class NetGames extends Discrete implements Payoffs,
 
 		@Override
 		public void swapTraits(int a, int b) {
+			// traits are unused and, instead, encoded in the network structure
 		}
 
 		@Override
 		public void playPairGameAt(IBSGroup group) {
+			// each connection represent an act of cooperation, no other games played
 		}
 
 		@Override
 		public void playGroupGameAt(IBSGroup group) {
+			// each connection represent an act of cooperation, no other games played
 		}
 
 		@Override
 		public void playGameSyncAt(int idx) {
+			// each connection represent an act of cooperation, no other games played
 		}
 
 		@Override
 		public void yalpGroupGameAt(IBSGroup groupd) {
+			// each connection represent an act of cooperation, no other games played
 		}
 
 		@Override

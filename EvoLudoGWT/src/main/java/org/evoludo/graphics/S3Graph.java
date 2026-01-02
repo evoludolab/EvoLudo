@@ -58,16 +58,111 @@ import com.google.gwt.user.client.ui.Widget;
 
 /**
  * Graph for the simplex \(S_3\). The graph is used to visualize the evolution
- * of three traits. The traits are projected onto the three corners of the
- * simplex. The graph provides a context menu to set and/or swap the order of
- * the traits.
- * <p>
- * The graph is backed by a {@link RingBuffer} to store the trajectory. The
- * buffer is updated by calling {@link #addData(double, double[], boolean)}. It
- * is interactive and allows the user to zoom and shift the view. The user can
- * set the initial state by double-clicking on the graph. The graph can be
- * exported in PNG or SVG graphics formats or the trajectory data as CSV.
+ * of three traits by projecting them onto the corners of the simplex. The view
+ * renders parametric trajectories stored in a {@link RingBuffer}, exposes zoom
+ * and shift interactions, supports swapping trait assignments via a context
+ * menu, and allows exporting to PNG/SVG or CSV.
  *
+ * <h3>Responsibilities</h3>
+ * <ul>
+ * <li>Render a simplex (equilateral-triangle style) frame, subdivided levels,
+ * tick marks and colored corner labels according to a given {@link S3Map}.</li>
+ * <li>Store and draw a time-ordered trajectory of composition vectors in a
+ * ring buffer; the buffer entries include time as the first element
+ * (internal format: [time, comp0, comp1, comp2, ...]).</li>
+ * <li>Efficiently sample and append incoming data using a pixel-distance based
+ * threshold to avoid storing nearly identical consecutive points.</li>
+ * <li>Draw start/end markers and arbitrary custom markers; export the stored
+ * trajectory in a human-readable CSV-like format.</li>
+ * <li>Provide user interaction support: double-click and single-touch to set
+ * an initial composition, context menus to clear history, swap corner
+ * ordering, or remap corners to traits, tooltip support, zooming and
+ * shifting behavior provided by the hosting view.</li>
+ * </ul>
+ *
+ * <h3>Important behavior notes</h3>
+ * <ul>
+ * <li>A {@link S3Map} must be supplied (via {@link #setMap(S3Map)}) to convert
+ * between data vectors and simplex/cartesian coordinates. The map also
+ * supplies the corner names and color ordering used for labels and export.</li>
+ * <li>Incoming data points are added through
+ * {@code addData(time, data, force)}.
+ * The data array passed to this method is expected to be the composition
+ * vector (without time) and will be prepended with the provided {@code time}
+ * before storing. If {@code time} is NaN special handling is applied
+ * (replace or append depending on the last stored time).</li>
+ * <li>When a new sample has the same time (within numerical tolerance) as the
+ * last stored sample the last sample is replaced and the initial-state
+ * (start point) tracking is updated accordingly.</li>
+ * <li>Buffer sampling threshold is computed in screen pixels (see
+ * {@link #calcBounds(int,int)}); points closer than the threshold
+ * (squared) are not stored unless {@code force} is true.</li>
+ * <li>Coordinate conversions for mouse/touch interactions map screen
+ * coordinates to scaled simplex coordinates in [0,1] (see
+ * {@link #scaledX(double)} / {@link #scaledY(double)}). A hit test
+ * {@link #inside(double,double)} ensures interactions occur only when the
+ * pointer is inside the simplex triangle.</li>
+ * </ul>
+ *
+ * <h3>Rendering details</h3>
+ * <ul>
+ * <li>Painting occurs in {@link #paint(boolean)} and delegates to
+ * {@link #paintS3(boolean)} which sets up scaling, translation and zooming
+ * transforms before drawing.</li>
+ * <li>Trajectory drawing uses the configured stroke styles and optionally
+ * draws start (green) and end (red) markers; custom markers may be filled
+ * or stroked depending on their metadata.</li>
+ * <li>The simplex frame supports showing subdivision levels, tick marks and
+ * corner labels. The triangle aspect ratio is constrained so the simplex
+ * appears equilateral (see {@code SQRT_2}).</li>
+ * </ul>
+ *
+ * <h3>Context menu and UI interactions</h3>
+ * <ul>
+ * <li>Right-click (context menu) entries include: Clear history, Swap order
+ * of traits along the closest edge, and a submenu to set which trait is
+ * assigned to the closest corner when the module exposes more than three
+ * traits.</li>
+ * <li>Double-click and touch events call the host view's
+ * {@code setInitialState}
+ * with the composition corresponding to the clicked location.</li>
+ * <li>Tooltips are provided through an optional {@link TooltipProvider}
+ * (the S3Map is set as the tooltip provider by {@link #setMap(S3Map)} when
+ * available).</li>
+ * </ul>
+ *
+ * <h3>Public API highlights</h3>
+ * <ul>
+ * <li>Constructor: {@link #S3Graph(S3, Module, int)} — create widget bound to
+ * the provided view and module and associated with a role index.</li>
+ * <li>{@link #setMap(S3Map)} and {@link #getMap()} — configure the conversion
+ * and label/color semantics for the simplex corners.</li>
+ * <li>{@link #addData(double, double[], boolean)} — append or replace
+ * entries in the internal trajectory buffer (time is stored as first
+ * element).</li>
+ * <li>{@link #reset()} — reset state and buffers; {@link #export(MyContext2d)}
+ * — render into a provided canvas context (used for exporting images or
+ * printing).</li>
+ * <li>{@link #exportTrajectory(StringBuilder)} — append a text representation
+ * of the stored trajectory (time and the three corner values in the current map
+ * ordering).</li>
+ * </ul>
+ *
+ * <h3>Notes and assumptions</h3>
+ * <ul>
+ * <li>The class assumes three displayed components for the simplex layout,
+ * but uses the provided {@link S3Map#getOrder()} and {@link S3Map#getNames()}
+ * to support modules with more than three underlying traits (allowing the
+ * user to choose which traits are shown at the corners).</li>
+ * <li>The widget depends on host-provided styling flags (contained in
+ * {@code style})
+ * to decide which visual elements to draw (ticks, labels, levels, frame,
+ * marker sizes, colors, etc.).</li>
+ * <li>All coordinates conversion and painting apply scaling/zoom transforms;
+ * callers should trigger {@link #paint(boolean)} when view parameters or
+ * data change.</li>
+ * </ul>
+ * 
  * @author Christoph Hauert
  */
 @SuppressWarnings("java:S110")
@@ -192,11 +287,11 @@ public class S3Graph extends AbstractGraph<double[]> implements Zooming, Shiftin
 		double lastt = last[0];
 		if (Math.abs(t - lastt) < 1e-8) {
 			buffer.replace(prependTime2Data(t, data));
-			System.arraycopy(last, 1, init, 1, last.length - 1);
+			System.arraycopy(last, 0, init, 0, last.length);
 			return;
 		}
 		if (Double.isNaN(t)) {
-			handleNaNTime(t, data, lastt);
+			handleNaNTime(data, lastt);
 			return;
 		}
 		if (force || distSq(data, last) > bufferThreshold) {
@@ -216,7 +311,7 @@ public class S3Graph extends AbstractGraph<double[]> implements Zooming, Shiftin
 		int len = data.length;
 		if (init == null || init.length != len + 1)
 			init = new double[len + 1]; // add time
-		System.arraycopy(buffer.last(), 0, init, 0, len);
+		System.arraycopy(buffer.last(), 0, init, 0, len + 1);
 	}
 
 	/**
@@ -225,15 +320,15 @@ public class S3Graph extends AbstractGraph<double[]> implements Zooming, Shiftin
 	 * data, otherwise the new data is appended to the buffer. The initial state is
 	 * updated accordingly.
 	 * 
-	 * @param t     the time of the data
 	 * @param data  the data to add
 	 * @param lastt the time of the last data point in the buffer
 	 */
-	private void handleNaNTime(double t, double[] data, double lastt) {
+	private void handleNaNTime(double[] data, double lastt) {
+		double[] add = prependTime2Data(Double.NaN, data);
 		if (Double.isNaN(lastt))
-			buffer.replace(prependTime2Data(t, data));
+			buffer.replace(add);
 		else
-			buffer.append(prependTime2Data(t, data));
+			buffer.append(add);
 		System.arraycopy(buffer.last(), 0, init, 0, data.length);
 	}
 
@@ -278,10 +373,27 @@ public class S3Graph extends AbstractGraph<double[]> implements Zooming, Shiftin
 		g.translate(bounds.getX() - viewCorner.getX(), bounds.getY() - viewCorner.getY());
 		g.scale(zoomFactor, zoomFactor);
 
-		Point2D prevPt = new Point2D();
-		Point2D currPt = new Point2D();
 		double w = bounds.getWidth();
 		double h = bounds.getHeight();
+
+		drawTrajectory(w, h);
+		drawFrame(3);
+		if (withMarkers)
+			drawStartEndMarkers(w, h);
+		drawCustomMarkers(w, h);
+
+		g.restore();
+	}
+
+	/**
+	 * Draw the trajectory stored in the buffer.
+	 * 
+	 * @param w graph width
+	 * @param h graph height
+	 */
+	private void drawTrajectory(double w, double h) {
+		Point2D prevPt = new Point2D();
+		Point2D currPt = new Point2D();
 		String tC = style.trajColor;
 		g.setStrokeStyle(tC);
 		// increase line width for trajectories with transparency
@@ -305,34 +417,51 @@ public class S3Graph extends AbstractGraph<double[]> implements Zooming, Shiftin
 				prevPt = swap;
 			}
 		}
-		drawFrame(3);
-		if (withMarkers) {
-			g.setFillStyle(style.startColor);
-			map.data2S3(init, prevPt);
-			fillCircle(prevPt.scale(w, h), style.markerSize);
-			if (!buffer.isEmpty()) {
-				g.setFillStyle(style.endColor);
-				map.data2S3(buffer.last(), currPt);
+	}
+
+	/**
+	 * Draw start and end markers for the trajectory.
+	 * 
+	 * @param w graph width
+	 * @param h graph height
+	 */
+	private void drawStartEndMarkers(double w, double h) {
+		Point2D prevPt = new Point2D();
+		Point2D currPt = new Point2D();
+		g.setFillStyle(style.startColor);
+		map.data2S3(init, prevPt);
+		fillCircle(prevPt.scale(w, h), style.markerSize);
+		if (!buffer.isEmpty()) {
+			g.setFillStyle(style.endColor);
+			map.data2S3(buffer.last(), currPt);
+			fillCircle(currPt.scale(w, h), style.markerSize);
+		}
+	}
+
+	/**
+	 * Draw any additional markers stored in {@code markers}.
+	 * 
+	 * @param w graph width
+	 * @param h graph height
+	 */
+	private void drawCustomMarkers(double w, double h) {
+		if (markers == null)
+			return;
+		Point2D currPt = new Point2D();
+		int n = 0;
+		int nMarkers = markers.size();
+		for (double[] mark : markers) {
+			map.data2S3(mark, currPt);
+			String mcolor = markerColors[n++ % nMarkers];
+			if (mark[0] > 0.0) {
+				g.setFillStyle(mcolor);
 				fillCircle(currPt.scale(w, h), style.markerSize);
+			} else {
+				g.setLineWidth(style.lineWidth);
+				g.setStrokeStyle(mcolor);
+				strokeCircle(currPt.scale(w, h), style.markerSize);
 			}
 		}
-		if (markers != null) {
-			int n = 0;
-			int nMarkers = markers.size();
-			for (double[] mark : markers) {
-				map.data2S3(mark, currPt);
-				String mcolor = markerColors[n++ % nMarkers];
-				if (mark[0] > 0.0) {
-					g.setFillStyle(mcolor);
-					fillCircle(currPt.scale(w, h), style.markerSize);
-				} else {
-					g.setLineWidth(style.lineWidth);
-					g.setStrokeStyle(mcolor);
-					strokeCircle(currPt.scale(w, h), style.markerSize);
-				}
-			}
-		}
-		g.restore();
 	}
 
 	@Override
@@ -364,9 +493,11 @@ public class S3Graph extends AbstractGraph<double[]> implements Zooming, Shiftin
 		super.calcBounds(width, height);
 		String font = g.getFont();
 		if (style.showXTicks) {
-			int tlen = style.tickLength;
-			int tlen2 = (int) (style.tickLength * 0.5);
-			bounds.adjust(tlen, tlen2, -tlen - tlen, -tlen - tlen2);
+			int dx = style.tickLength;
+			int dy = dx / 2;
+			int dw = -2 * dx;
+			int dh = dx - dy;
+			bounds.adjust(dx, dy, dw, dh);
 		}
 		if (style.showXTickLabels) {
 			setFont(style.ticksLabelFont);
@@ -382,7 +513,9 @@ public class S3Graph extends AbstractGraph<double[]> implements Zooming, Shiftin
 							g.measureText(map.getName(HasS3.CORNER_TOP)).getWidth()))
 					* 0.5 + 0.5);
 			int yshift = 20;
-			bounds.adjust(xshift, yshift, -xshift - xshift, -yshift - yshift);
+			int dw = -2 * xshift;
+			int dh = -2 * yshift;
+			bounds.adjust(xshift, yshift, dw, dh);
 		}
 		// constrain aspect ratio
 		double w = bounds.getWidth();
@@ -426,103 +559,146 @@ public class S3Graph extends AbstractGraph<double[]> implements Zooming, Shiftin
 	public void drawFrame(int sLevels) {
 		double w = bounds.getWidth();
 		double h = bounds.getHeight();
-		if (style.showFrame) {
-			g.setLineWidth(style.frameWidth);
-			g.setStrokeStyle(style.frameColor);
-			stroke(outline);
-		}
-		if (style.showXLevels) {
-			g.setLineWidth(style.frameWidth);
-			g.setStrokeStyle(style.levelColor);
-			Point2D start = new Point2D();
-			Point2D end = new Point2D();
-			double iLevels = 1.0 / sLevels;
-			double x = iLevels;
-			for (int l = 1; l < sLevels; l++) {
-				map.data2S3(x, 1.0 - x, 0.0, start);
-				map.data2S3(0.0, 1.0 - x, x, end);
-				strokeLine(start.scale(w, h), end.scale(w, h));
-				map.data2S3(0.0, x, 1.0 - x, start);
-				map.data2S3(x, 0.0, 1.0 - x, end);
-				strokeLine(start.scale(w, h), end.scale(w, h));
-				map.data2S3(1.0 - x, 0.0, x, start);
-				map.data2S3(1.0 - x, x, 0.0, end);
-				strokeLine(start.scale(w, h), end.scale(w, h));
-				x += iLevels;
-			}
-		}
-		if (style.showXTicks) {
-			g.setStrokeStyle(style.frameColor);
-			g.setFillStyle(style.frameColor);
-			setFont(style.ticksLabelFont);
-			double len = Math.sqrt(h * h + w * w / 4);
-			double ty = w / (len + len) * (style.tickLength + 1);
-			double tx = h / len * (style.tickLength + 1);
-			double iLevels = 1.0 / sLevels;
-			double x = 0.0;
-			String tick;
-			Point2D loc = new Point2D();
-			for (int l = 0; l <= sLevels; l++) {
-				if (style.percentX)
-					tick = Formatter.formatPercent(1.0 - x, 0);
-				else
-					tick = Formatter.format(1.0 - x, 2);
-				map.data2S3(x, 1.0 - x, 0.0, loc);
-				loc.scale(w, h);
-				double lx = loc.getX();
-				double ly = loc.getY();
-				strokeLine(lx, ly, lx, ly + style.tickLength);
-				if (style.showXTickLabels)
-					// center tick labels with ticks
-					g.fillText(tick, lx - g.measureText(tick).getWidth() * 0.5, ly + style.tickLength + 12.5);
-				map.data2S3(0.0, x, 1.0 - x, loc);
-				loc.scale(w, h);
-				lx = loc.getX();
-				ly = loc.getY();
-				loc.shift(tx, -ty);
-				strokeLine(lx, ly, loc.getX(), loc.getY());
-				if (style.showXTickLabels)
-					g.fillText(tick, loc.getX() + 6, loc.getY() + 3);
-				map.data2S3(1.0 - x, 0.0, x, loc);
-				loc.scale(w, h);
-				lx = loc.getX();
-				ly = loc.getY();
-				loc.shift(-tx, -ty);
-				strokeLine(lx, ly, loc.getX(), loc.getY());
-				if (style.showXTickLabels)
-					g.fillText(tick, loc.getX() - (g.measureText(tick).getWidth() + 6), loc.getY() + 3);
-				x += iLevels;
-			}
-		}
-		if (style.showLabel) {
-			double yshift = 14.5;
-			if (style.showXTicks)
-				yshift += style.tickLength;
-			if (style.showXTickLabels)
-				yshift += 12.5;
-			setFont(style.labelFont);
-			int[] order = map.getOrder();
-			g.setFillStyle(colors[order[0]]);
-			Point2D loc = new Point2D();
-			map.data2S3(1.0, 0.0, 0.0, loc);
-			loc.scale(w, h);
-			String label = map.getName(HasS3.CORNER_LEFT);
-			g.fillText(label, loc.getX() - g.measureText(label).getWidth() * 0.5, loc.getY() + yshift);
-			g.setFillStyle(colors[order[1]]);
-			map.data2S3(0.0, 1.0, 0.0, loc);
-			loc.scale(w, h);
-			label = map.getName(HasS3.CORNER_RIGHT);
-			g.fillText(label, loc.getX() - g.measureText(label).getWidth() * 0.5, loc.getY() + yshift);
-			g.setFillStyle(colors[order[2]]);
-			map.data2S3(0.0, 0.0, 1.0, loc);
-			loc.scale(w, h);
-			label = map.getName(HasS3.CORNER_TOP);
-			g.fillText(label, loc.getX() - g.measureText(label).getWidth() * 0.5, loc.getY() - 14.5);
-		}
+
+		drawOutline();
+		if (style.showXLevels)
+			drawS3Levels(sLevels, w, h);
+		if (style.showXTicks)
+			drawS3Ticks(sLevels, w, h);
+		if (style.showLabel)
+			drawCornerLabels(w, h);
 		if (style.label != null) {
 			g.setFillStyle(style.labelColor);
 			g.fillText(style.label, -10.0, -32.0);
 		}
+	}
+
+	/**
+	 * Draw the outline of the simplex.
+	 */
+	private void drawOutline() {
+		if (!style.showFrame)
+			return;
+		g.setLineWidth(style.frameWidth);
+		g.setStrokeStyle(style.frameColor);
+		stroke(outline);
+	}
+
+	/**
+	 * Draw the subdivision levels of the simplex.
+	 * 
+	 * @param levels the number of sublevels
+	 * @param width  the width of the simplex
+	 * @param height the height of the simplex
+	 */
+	private void drawS3Levels(int levels, double width, double height) {
+		g.setLineWidth(style.frameWidth);
+		g.setStrokeStyle(style.levelColor);
+		Point2D start = new Point2D();
+		Point2D end = new Point2D();
+		double iLevels = 1.0 / levels;
+		double x = iLevels;
+		for (int l = 1; l < levels; l++) {
+			map.data2S3(x, 1.0 - x, 0.0, start);
+			map.data2S3(0.0, 1.0 - x, x, end);
+			strokeLine(start.scale(width, height), end.scale(width, height));
+			map.data2S3(0.0, x, 1.0 - x, start);
+			map.data2S3(x, 0.0, 1.0 - x, end);
+			strokeLine(start.scale(width, height), end.scale(width, height));
+			map.data2S3(1.0 - x, 0.0, x, start);
+			map.data2S3(1.0 - x, x, 0.0, end);
+			strokeLine(start.scale(width, height), end.scale(width, height));
+			x += iLevels;
+		}
+	}
+
+	/**
+	 * Draw the ticks along the boundaries of the simplex.
+	 * 
+	 * @param levels the number of sublevels
+	 * @param width  the width of the simplex
+	 * @param height the height of the simplex
+	 */
+	private void drawS3Ticks(int levels, double width, double height) {
+		g.setStrokeStyle(style.frameColor);
+		g.setFillStyle(style.frameColor);
+		setFont(style.ticksLabelFont);
+		double len = Math.sqrt(height * height + width * width / 4);
+		double ty = width / (len + len) * (style.tickLength + 1);
+		double tx = height / len * (style.tickLength + 1);
+		double iLevels = 1.0 / levels;
+		double x = 0.0;
+		String tick;
+		Point2D loc = new Point2D();
+		for (int l = 0; l <= levels; l++) {
+			if (style.percentX)
+				tick = Formatter.formatPercent(1.0 - x, 0);
+			else
+				tick = Formatter.format(1.0 - x, 2);
+
+			map.data2S3(x, 1.0 - x, 0.0, loc);
+			loc.scale(width, height);
+			double lx = loc.getX();
+			double ly = loc.getY();
+			strokeLine(lx, ly, lx, ly + style.tickLength);
+			if (style.showXTickLabels)
+				// center tick labels with ticks
+				g.fillText(tick, lx - g.measureText(tick).getWidth() * 0.5, ly + style.tickLength + 12.5);
+
+			map.data2S3(0.0, x, 1.0 - x, loc);
+			loc.scale(width, height);
+			lx = loc.getX();
+			ly = loc.getY();
+			loc.shift(tx, -ty);
+			strokeLine(lx, ly, loc.getX(), loc.getY());
+			if (style.showXTickLabels)
+				g.fillText(tick, loc.getX() + 6, loc.getY() + 3);
+
+			map.data2S3(1.0 - x, 0.0, x, loc);
+			loc.scale(width, height);
+			lx = loc.getX();
+			ly = loc.getY();
+			loc.shift(-tx, -ty);
+			strokeLine(lx, ly, loc.getX(), loc.getY());
+			if (style.showXTickLabels)
+				g.fillText(tick, loc.getX() - (g.measureText(tick).getWidth() + 6), loc.getY() + 3);
+
+			x += iLevels;
+		}
+	}
+
+	/**
+	 * Draw the corner labels of the simplex in their respective colours.
+	 * 
+	 * @param width  the width of the simplex
+	 * @param height the height of the simplex
+	 */
+	private void drawCornerLabels(double width, double height) {
+		double yshift = 14.5;
+		if (style.showXTicks)
+			yshift += style.tickLength;
+		if (style.showXTickLabels)
+			yshift += 12.5;
+		setFont(style.labelFont);
+		int[] order = map.getOrder();
+		g.setFillStyle(colors[order[0]]);
+		Point2D loc = new Point2D();
+		map.data2S3(1.0, 0.0, 0.0, loc);
+		loc.scale(width, height);
+		String label = map.getName(HasS3.CORNER_LEFT);
+		g.fillText(label, loc.getX() - g.measureText(label).getWidth() * 0.5, loc.getY() + yshift);
+
+		g.setFillStyle(colors[order[1]]);
+		map.data2S3(0.0, 1.0, 0.0, loc);
+		loc.scale(width, height);
+		label = map.getName(HasS3.CORNER_RIGHT);
+		g.fillText(label, loc.getX() - g.measureText(label).getWidth() * 0.5, loc.getY() + yshift);
+
+		g.setFillStyle(colors[order[2]]);
+		map.data2S3(0.0, 0.0, 1.0, loc);
+		loc.scale(width, height);
+		label = map.getName(HasS3.CORNER_TOP);
+		g.fillText(label, loc.getX() - g.measureText(label).getWidth() * 0.5, loc.getY() - 14.5);
 	}
 
 	@Override
@@ -630,11 +806,6 @@ public class S3Graph extends AbstractGraph<double[]> implements Zooming, Shiftin
 	 */
 	private ContextMenu setTraitMenu;
 
-	/**
-	 * The index of the corner closest to the mouse pointer.
-	 */
-	private int cornerIdx = -1;
-
 	@Override
 	public void populateContextMenuAt(ContextMenu menu, int x, int y) {
 		addClearMenu(menu);
@@ -741,6 +912,7 @@ public class S3Graph extends AbstractGraph<double[]> implements Zooming, Shiftin
 			return;
 		int[] order = map.getOrder();
 		String[] names = map.getNames();
+		int cornerIdx = closestCorner(x, y);
 		if (setTraitMenu == null) {
 			setTraitMenu = new ContextMenu(menu);
 			for (String name : names)
@@ -758,7 +930,6 @@ public class S3Graph extends AbstractGraph<double[]> implements Zooming, Shiftin
 					paint(true);
 				}));
 		}
-		cornerIdx = closestCorner(x, y);
 		menu.add("Set trait '" + names[order[cornerIdx]] + "' to ...", setTraitMenu);
 		for (Widget item : setTraitMenu)
 			((ContextMenuItem) item).setEnabled(true);

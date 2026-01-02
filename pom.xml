@@ -35,14 +35,20 @@
     <evoludo.server>localhost</evoludo.server>
     <evoludo.startup>TestEvoLudo.html</evoludo.startup>
     <evoludo.jettyPort>8888</evoludo.jettyPort>
+    <evoludo.webappDirectory>${project.basedir}/EvoLudoGWT/src/main/webapp</evoludo.webappDirectory>
+    <evoludo.jetty.extraClasspath></evoludo.jetty.extraClasspath>
     <evoludo.commit default-value="unknown">${git.commit.id.describe}</evoludo.commit>
     <evoludo.build default-value="">${git.build.time}</evoludo.build>
     <evoludo.engineModule default-value="EvoLudoCore"></evoludo.engineModule>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
-    <!-- <javadoc.exe>/Library/Java/JavaVirtualMachines/jdk-11.0.2.jdk/Contents/Home/bin/javadoc</javadoc.exe> -->
+    <!--
+    <javadoc.exe>/Library/Java/JavaVirtualMachines/jdk-11.0.2.jdk/Contents/Home/bin/javadoc</javadoc.exe> -->
     <gwt.style>OBFUSCATED</gwt.style>
-    
+    <gwt.optimize>9</gwt.optimize>
+    <gwt.style.devmode>PRETTY</gwt.style.devmode>
+    <gwt.optimize.devmode>0</gwt.optimize.devmode>
+
     <!-- Java version properties -->
     <java.version.lts>21</java.version.lts>
     <java.version.gwt>11</java.version.gwt>
@@ -77,22 +83,6 @@
 
   <build>
     <plugins>
-      <!-- display active profiles for debuggin maven -->
-      <!-- <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-help-plugin</artifactId>
-        <version>3.1.0</version>
-        <executions>
-          <execution>
-            <id>show-profiles</id>
-            <phase>compile</phase>
-            <goals>
-              <goal>active-profiles</goal>
-            </goals>
-          </execution>
-        </executions>
-      </plugin> -->
-
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-compiler-plugin</artifactId>
@@ -106,26 +96,6 @@
           <gitDescribe>
             <dirty>X</dirty>
           </gitDescribe>
-        </configuration>
-      </plugin>
-
-      <plugin>
-        <groupId>net.ltgt.gwt.maven</groupId>
-        <artifactId>gwt-maven-plugin</artifactId>
-        <inherited>false</inherited>
-        <configuration>
-          <devmodeArgs>
-            <arg>-bindAddress</arg>
-            <arg>${evoludo.server}</arg>
-            <arg>-startupUrl</arg>
-            <arg>${evoludo.startup}</arg>
-            <arg>-port</arg>
-            <arg>${evoludo.jettyPort}</arg>
-          </devmodeArgs>
-          <style>PRETTY</style>
-          <launcherDir>${basedir}/EvoLudoGWT/target/EvoLudoGWT-${project.version}</launcherDir>
-          <devmodeWorkDir>${basedir}/EvoLudoGWT/target/gwt/devmode/work</devmodeWorkDir>
-          <warDir>${basedir}/EvoLudoGWT/target/EvoLudoGWT-${project.version}</warDir>
         </configuration>
       </plugin>
 
@@ -255,7 +225,8 @@
             <compilerArgs>
               <arg>-Xlint:all</arg>
               <arg>-Xlint:-serial</arg>
-              <arg>-Xlint:-fallthrough</arg> <!-- IDE's are better at handling fall-through's with annotations -->
+              <!-- IDE's are better at handling fall-through's with annotations -->
+              <arg>-Xlint:-fallthrough</arg>
             </compilerArgs>
             <showDeprecation>true</showDeprecation>
             <showWarnings>true</showWarnings>
@@ -283,11 +254,27 @@
         <plugin>
           <groupId>net.ltgt.gwt.maven</groupId>
           <artifactId>gwt-maven-plugin</artifactId>
-          <version>1.0.1</version>
+          <version>1.2.0</version>
           <extensions>true</extensions>
           <configuration>
             <sourceLevel>${java.version.gwt}</sourceLevel>
             <failOnError>true</failOnError>
+            <!-- Centralized devmode configuration for all modules using GWT -->
+            <devmodeArgs>
+              <arg>-bindAddress</arg>
+              <arg>${evoludo.server}</arg>
+              <arg>-startupUrl</arg>
+              <arg>${evoludo.startup}</arg>
+              <arg>-port</arg>
+              <arg>${evoludo.jettyPort}</arg>
+              <arg>-style</arg>
+              <arg>${gwt.style.devmode}</arg>
+            </devmodeArgs>
+            <launcherDir>
+              ${maven.multiModuleProjectDirectory}/EvoLudoGWT/target/EvoLudoGWT-${project.version}</launcherDir>
+            <devmodeWorkDir>${maven.multiModuleProjectDirectory}/EvoLudoGWT/target/gwt/devmode/work</devmodeWorkDir>
+            <warDir>
+              ${maven.multiModuleProjectDirectory}/EvoLudoGWT/target/EvoLudoGWT-${project.version}</warDir>
           </configuration>
         </plugin>
 
@@ -337,6 +324,8 @@
       </activation>
       <properties>
         <evoludo.engineModule>EvoLudoCorePrivate</evoludo.engineModule>
+        <evoludo.jetty.extraClasspath>${project.basedir}/EvoLudoCorePrivate/target/classes/</evoludo.jetty.extraClasspath>
+        <evoludo.webappDirectory>${project.basedir}/EvoLudoGWTPrivate/src/main/webapp</evoludo.webappDirectory>
       </properties>
       <modules>
         <module>EvoLudoCorePrivate</module>
@@ -370,7 +359,7 @@
                 <webApp>
                   <resourceBases>
                     <resourceBase>${basedir}/src/main/webapp</resourceBase>
-                    <resourceBase>${basedir}/../target/gwt/launcherDir/</resourceBase>
+                    <resourceBase>${basedir}/EvoLudoGWT/target/gwt/launcherDir/</resourceBase>
                   </resourceBases>
                 </webApp>
               </configuration>
@@ -383,7 +372,9 @@
     <profile>
       <id>public</id>
       <activation>
-        <activeByDefault>true</activeByDefault>
+        <file>
+          <missing>EvoLudoCorePrivate/pom.xml</missing>
+        </file>
       </activation>
       <modules>
         <module>EvoLudoCore</module>

@@ -34,7 +34,7 @@ import java.awt.Color;
 
 import org.evoludo.math.ArrayMath;
 import org.evoludo.simulator.EvoLudo;
-import org.evoludo.simulator.Geometry;
+import org.evoludo.simulator.geometries.GeometryType;
 import org.evoludo.simulator.models.IBSD;
 import org.evoludo.simulator.models.IBSD.Init;
 import org.evoludo.simulator.models.IBSDPopulation;
@@ -46,10 +46,10 @@ import org.evoludo.simulator.views.HasMean;
 import org.evoludo.simulator.views.HasPop2D;
 import org.evoludo.simulator.views.HasPop3D;
 import org.evoludo.simulator.views.HasS3;
+import org.evoludo.util.CLOCategory;
+import org.evoludo.util.CLODelegate;
 import org.evoludo.util.CLOParser;
 import org.evoludo.util.CLOption;
-import org.evoludo.util.CLOption.CLODelegate;
-import org.evoludo.util.CLOption.Category;
 
 /**
  * Cyclical dynamics of the rock-scissors-paper game. A game that children,
@@ -165,7 +165,7 @@ public class RSP extends Discrete implements Payoffs,
 						+ traitCount[PAPER] * payoff[PAPER][PAPER];
 
 			default: // should not end here
-				throw new Error("Unknown trait (" + me + ")");
+				throw new UnsupportedOperationException("Unknown trait (" + me + ")");
 		}
 	}
 
@@ -214,7 +214,7 @@ public class RSP extends Discrete implements Payoffs,
 	/**
 	 * Command line option to set the payoff matrix.
 	 */
-	public final CLOption cloPayoff = new CLOption("paymatrix", "0,1,-1;-1,0,1;1,-1,0", Category.Module,
+	public final CLOption cloPayoff = new CLOption("paymatrix", "0,1,-1;-1,0,1;1,-1,0", CLOCategory.Module,
 			"--paymatrix <a11,a12,a13;a21,a22,a23;a31,a32,a33>\n" + //
 					"                3x3 payoff matrix",
 			new CLODelegate() {
@@ -282,8 +282,8 @@ public class RSP extends Discrete implements Payoffs,
 		@Override
 		protected void initKaleidoscope() {
 			// kaleidoscopes only available for some geometries
-			if (!(interaction.getType() == Geometry.Type.SQUARE || interaction.getType() == Geometry.Type.SQUARE_MOORE
-					|| interaction.getType() == Geometry.Type.SQUARE_NEUMANN)) {
+			if (!(interaction.isType(GeometryType.SQUARE) || interaction.isType(GeometryType.SQUARE_MOORE)
+					|| interaction.isType(GeometryType.SQUARE_NEUMANN))) {
 				logger.warning("kaleidoscopes require square lattices - using uniform initialization.");
 				initUniform();
 				return;
@@ -311,13 +311,13 @@ public class RSP extends Discrete implements Payoffs,
 					traitsCount[RSP.SCISSORS] += 5 * 20;
 					traitsCount[RSP.PAPER] += 5 * 20;
 					break;
-				case HONEYCOMB:
+				case HEXAGONAL:
 					break;
 				case TRIANGULAR:
 					break;
 				default:
 					// should never get here - check made sure of it.
-					throw new Error("geometry incompatible with kaleidoscopes!");
+					throw new UnsupportedOperationException("geometry incompatible with kaleidoscopes!");
 			}
 		}
 	}

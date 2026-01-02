@@ -34,6 +34,9 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.List;
+
+import org.evoludo.simulator.models.ModelType;
 
 /**
  * Command line option and argument.
@@ -41,52 +44,6 @@ import java.util.HashMap;
  * @author Christoph Hauert
  */
 public class CLOption implements Comparable<CLOption> {
-
-	/**
-	 * Interface to process command line arguments
-	 */
-	public interface CLODelegate {
-
-		/**
-		 * Parse string <code>arg</code> and set configurable parameters that correspond
-		 * to this command line option.
-		 * <p>
-		 * <strong>Note:</strong> returning <code>false</code> triggers a warning about
-		 * which command line option failed to correctly parse. If the parser can
-		 * rectify the issue on the spot this is also acceptable. In that case the
-		 * method should return <code>true</code> and possibly log the fact that
-		 * parameters have been adjusted.
-		 * </p>
-		 * 
-		 * @param arg the argument for parsing by command line option
-		 * @return <code>true</code> if parsing successful
-		 */
-		public boolean parse(String arg);
-
-		/**
-		 * If settings for option are not known upon initialization, an up-to-date
-		 * description is requested when needed (e.g. if help is requested, typically
-		 * using <code>--help</code> options).
-		 * <p>
-		 * <strong>Note:</strong> the description string may contain any UTF-8
-		 * characters as well as HTML character entities. If necessary they will be
-		 * escaped and converted to UTF-8 for display in XML documents.
-		 *
-		 * @return description of command line option.
-		 */
-		public default String getDescription() {
-			return null;
-		}
-
-		/**
-		 * Optional: position of key in the list of arguments. Used in help display.
-		 * 
-		 * @return the position of the key
-		 */
-		public default int getKeyPos() {
-			return 0;
-		}
-	}
 
 	/**
 	 * Types of command line options:
@@ -202,111 +159,6 @@ public class CLOption implements Comparable<CLOption> {
 	}
 
 	/**
-	 * Handle different categories of options. This is mostly used to provide a more
-	 * readable and useful help screen for options organized in categories.
-	 */
-	public static class Category {
-
-		/**
-		 * The brief category description. Section header in help screen.
-		 * <p>
-		 * <strong>Note:</strong> the description string may contain any UTF-8
-		 * characters as well as HTML character entities. If necessary they will be
-		 * escaped and converted to UTF-8 for display in XML documents.
-		 */
-		String header;
-
-		/**
-		 * The priority of this category. Higher priorities are printed first.
-		 */
-		int priority;
-
-		/**
-		 * Create a new category with the header {@code header}. The priority is set to
-		 * {@code 0}.
-		 * 
-		 * @param header the header of the category
-		 */
-		public Category(String header) {
-			this(header, 0);
-		}
-
-		/**
-		 * Create a new category with {@code header} and {@code priority}.
-		 * 
-		 * @param header   the header of the category
-		 * @param priority the priority of the category
-		 */
-		public Category(String header, int priority) {
-			this.header = header;
-			this.priority = priority;
-		}
-
-		/**
-		 * Get the priority of this category. Parameters are grouped by priority in help
-		 * display.
-		 * 
-		 * @return the priority
-		 */
-		public int getPriority() {
-			return priority;
-		}
-
-		/**
-		 * Set the header of category for help display.
-		 * 
-		 * @param header the header
-		 */
-		public void setHeader(String header) {
-			this.header = header;
-		}
-
-		/**
-		 * Get the header of category for help display.
-		 * 
-		 * @return the header
-		 */
-		public String getHeader() {
-			return header;
-		}
-
-		/**
-		 * The category for global options.
-		 */
-		public static final Category Global = new Category("Global options:", 50);
-
-		/**
-		 * The category for user interface specific options.
-		 */
-		public static final CLOption.Category GUI = new CLOption.Category("User interface specific options:", 10);
-
-		/**
-		 * The category for simulation specific options.
-		 */
-		public static final CLOption.Category Simulation = new CLOption.Category("Simulation specific options:", 20);
-
-		/**
-		 * The category for model specific options.
-		 */
-		public static final CLOption.Category Model = new CLOption.Category("Model specific options:", 30);
-
-		/**
-		 * The category for module specific options.
-		 */
-		public static final CLOption.Category Module = new CLOption.Category("Module specific options:", 40);
-	}
-
-	/**
-	 * Counter to assign every option a unique identifier.
-	 */
-	private static int uniqueID = 0;
-
-	/**
-	 * Unique identifier of command line option (currently unused).
-	 */
-	final int ID;
-
-	/**
 	 * The name of the command line option (required).
 	 */
 	final String name;
@@ -319,7 +171,7 @@ public class CLOption implements Comparable<CLOption> {
 	/**
 	 * The category of the command line option. Used to structure the help screen.
 	 */
-	final Category category;
+	final CLOCategory category;
 
 	/**
 	 * the short description of the command line option. May include newline's
@@ -348,14 +200,9 @@ public class CLOption implements Comparable<CLOption> {
 
 	/**
 	 * The flag to indicate if keys were inherited from another option. If
-	 * <code>true</code> the keys will not be printed as part of the description.
+	 * {@code true} the keys will not be printed as part of the description.
 	 */
 	boolean inheritedKeys = false;
-
-	/**
-	 * <code>true</code> if option was set on command line.
-	 */
-	boolean isSet = false;
 
 	/**
 	 * The delegate for parsing arguments, reporting settings and retrieving
@@ -399,7 +246,7 @@ public class CLOption implements Comparable<CLOption> {
 	 * @param category the category of option
 	 * @param delegate delegate for processing command line argument
 	 */
-	public CLOption(String name, Category category, CLODelegate delegate) {
+	public CLOption(String name, CLOCategory category, CLODelegate delegate) {
 		this(name, null, Argument.NONE, category, null, delegate);
 	}
 
@@ -446,7 +293,7 @@ public class CLOption implements Comparable<CLOption> {
 	 * @param description short description of command line option
 	 * @param delegate    delegate for processing command line argument
 	 */
-	public CLOption(String name, Category category, String description, CLODelegate delegate) {
+	public CLOption(String name, CLOCategory category, String description, CLODelegate delegate) {
 		this(name, null, Argument.NONE, category, description, delegate);
 	}
 
@@ -498,7 +345,7 @@ public class CLOption implements Comparable<CLOption> {
 	 * @param description short description of command line option
 	 * @param delegate    delegate for processing command line argument
 	 */
-	public CLOption(String name, String defaultArg, Category category, String description, CLODelegate delegate) {
+	public CLOption(String name, String defaultArg, CLOCategory category, String description, CLODelegate delegate) {
 		this(name, defaultArg, Argument.REQUIRED, category, description, delegate);
 	}
 
@@ -546,7 +393,7 @@ public class CLOption implements Comparable<CLOption> {
 	 * @param category   the category of option
 	 * @param delegate   delegate for processing command line argument
 	 */
-	public CLOption(String name, String defaultArg, Argument type, Category category, CLODelegate delegate) {
+	public CLOption(String name, String defaultArg, Argument type, CLOCategory category, CLODelegate delegate) {
 		this(name, defaultArg, type, category, null, delegate);
 	}
 
@@ -600,15 +447,16 @@ public class CLOption implements Comparable<CLOption> {
 	 * @param description short description of command line option
 	 * @param delegate    delegate for processing command line argument
 	 */
-	public CLOption(String name, String defaultArg, Argument type, Category category, String description,
+	public CLOption(String name, String defaultArg, Argument type, CLOCategory category, String description,
 			CLODelegate delegate) {
-		this.ID = uniqueID++;
 		this.name = name;
 		this.type = type;
 		this.defaultArg = defaultArg;
 		this.description = description;
-		this.delegate = delegate;
 		this.category = category;
+		this.delegate = delegate;
+		if (delegate == null)
+			throw new IllegalArgumentException("CLOption: delegate must not be null");
 	}
 
 	/**
@@ -641,7 +489,6 @@ public class CLOption implements Comparable<CLOption> {
 		if (arg != null)
 			arg = arg.trim();
 		optionArg = arg;
-		isSet = true;
 	}
 
 	/**
@@ -649,24 +496,44 @@ public class CLOption implements Comparable<CLOption> {
 	 * this option was not specified on command line, the default argument is passed
 	 * to the delegate.
 	 * 
-	 * @return <code>true</code> on successful parsing of argument
+	 * @return {@code true} on successful parsing of argument
 	 */
 	public boolean parse() {
-		if (delegate == null)
-			return false;
-		return delegate.parse(getArg());
+		boolean isSet = isSet();
+		switch (type) {
+			case NONE:
+				return delegate.parse(isSet);
+			case OPTIONAL:
+				return parse(true);
+			case REQUIRED:
+				return parse(false);
+			default:
+				return false;
+		}
 	}
 
 	/**
-	 * Parses the default argument for this option. Typically called if
-	 * {@link #parse()} failed.
+	 * Delegate parsing helper that handles optional vs required arguments.
 	 * 
-	 * @return <code>true</code> on successful parsing of default argument
+	 * @param isOptional {@code true} if the option argument is optional
+	 * @return {@code true} if parsing succeeds
 	 */
-	public boolean parseDefault() {
-		if (delegate == null)
-			return false;
-		return delegate.parse(getDefault());
+	private boolean parse(boolean isOptional) {
+		try {
+			if (isOptional)
+				return delegate.parse(getArg(), isSet());
+			if (delegate.parse(getArg()))
+				return true;
+			return delegate.parse(getDefault());
+		} catch (Exception e) {
+			try {
+				if (isOptional)
+					return delegate.parse(getDefault(), isSet());
+				return delegate.parse(getDefault());
+			} catch (Exception ex) {
+				return false;
+			}
+		}
 	}
 
 	/**
@@ -681,6 +548,26 @@ public class CLOption implements Comparable<CLOption> {
 	 * @see #addKey(String, String)
 	 */
 	public void addKeys(Key[] chain) {
+		for (Key key : chain) {
+			String keyname = key.getKey();
+			if (keyname.length() > 1 && keyname.startsWith("-"))
+				continue;
+			addKey(key);
+		}
+	}
+
+	/**
+	 * Add all {@link Key}s in the collection {@code chain} to this option. Note,
+	 * this ignores keys starting with '-', except if '-' is the key. If needed,
+	 * those keys can still be added by calling {@code addKey(Key)} or
+	 * {@code #addKey(String, String)}.
+	 * 
+	 * @param chain the array of {@link Key}s to be added
+	 * 
+	 * @see #addKey(Key)
+	 * @see #addKey(String, String)
+	 */
+	public void addKeys(Collection<? extends Key> chain) {
 		for (Key key : chain) {
 			String keyname = key.getKey();
 			if (keyname.length() > 1 && keyname.startsWith("-"))
@@ -738,7 +625,7 @@ public class CLOption implements Comparable<CLOption> {
 	 * Returns the key that best matches <code>name</code>. If several keys are
 	 * equally good matches the first match is returned. If <code>name</code>
 	 * perfectly matches one key, i.e. <code>name.startsWith(key.getName())</code>
-	 * is <code>true</code>, then a better match must match at least one more
+	 * is {@code true}, then a better match must match at least one more
 	 * character of <code>name</code>.
 	 * 
 	 * @param keyname the name of the key to match
@@ -752,7 +639,7 @@ public class CLOption implements Comparable<CLOption> {
 	 * Returns the key that best matches <code>name</code> with at least {@code min}
 	 * characters matching. If several keys are equally good matches the first match
 	 * is returned. If <code>name</code> perfectly matches one key, i.e.
-	 * <code>name.startsWith(key.getName())</code> is <code>true</code>, then a
+	 * <code>name.startsWith(key.getName())</code> is {@code true}, then a
 	 * better match must match at least one more character of <code>name</code>.
 	 * 
 	 * @param keyname the name of the key to match
@@ -766,14 +653,12 @@ public class CLOption implements Comparable<CLOption> {
 		Key match = null;
 		for (Key key : keys.values()) {
 			int diff = differAt(keyname, key.getKey());
-			if (diff < min)
-				continue;
-			if (diff >= best && diff == key.getKey().length()) {
+			if (diff < min) {
+				// not enough matching characters; skip this key
+			} else if (diff >= best && diff == key.getKey().length()) {
 				best = diff + 0.5;
 				match = key;
-				continue;
-			}
-			if (diff > best) {
+			} else if (diff > best) {
 				best = diff;
 				match = key;
 			}
@@ -817,7 +702,7 @@ public class CLOption implements Comparable<CLOption> {
 	 * Check if <code>key</code> is a valid key for this option.
 	 * 
 	 * @param key the key to check
-	 * @return <code>true</code> if <code>key</code> is a valid key
+	 * @return {@code true} if <code>key</code> is a valid key
 	 */
 	public boolean isValidKey(Key key) {
 		return isValidKey(key.getKey());
@@ -830,7 +715,7 @@ public class CLOption implements Comparable<CLOption> {
 	 * well as appending options.
 	 * 
 	 * @param aKey the name of the key to check
-	 * @return <code>true</code> if the name <code>aKey</code> is valid
+	 * @return {@code true} if the name <code>aKey</code> is valid
 	 * 
 	 * @see #differAt(String, String)
 	 */
@@ -955,7 +840,6 @@ public class CLOption implements Comparable<CLOption> {
 	 */
 	public void reset() {
 		optionArg = null;
-		isSet = false;
 		// custom description has not yet been retrieved
 		if (description == null)
 			return;
@@ -990,28 +874,19 @@ public class CLOption implements Comparable<CLOption> {
 	 * @return the argument
 	 */
 	public String getArg() {
-		if (optionArg == null)
+		if (optionArg == null || optionArg.isEmpty())
 			return defaultArg;
 		return optionArg;
-	}
-
-	/**
-	 * Check if no argument was set.
-	 * 
-	 * @return <code>true</code> if no argument set.
-	 */
-	public boolean isDefault() {
-		return (optionArg == null);
 	}
 
 	/**
 	 * Check if option was set on command line (regardless of whether an argument
 	 * was provided).
 	 * 
-	 * @return <code>true</code> if option set
+	 * @return {@code true} if option set
 	 */
 	public boolean isSet() {
-		return isSet;
+		return (optionArg != null);
 	}
 
 	/**
@@ -1026,52 +901,118 @@ public class CLOption implements Comparable<CLOption> {
 	 * @return description of option and arguments.
 	 */
 	public String getDescription() {
-		String myDescr;
-		if (description == null) {
+		if (description == null && delegate != null) {
 			// description is delegate's responsibility - including keys (if applicable)
-			myDescr = delegate.getDescription();
-		} else {
-			String descr = getDescriptionKey();
-			myDescr = description;
-			if (!descr.isEmpty())
-				myDescr += "\n" + descr;
+			return delegate.getDescription();
 		}
-		if (type == Argument.NONE)
-			return myDescr + "\n      (current: " + (isSet() ? "" : "not ") + "set)";
-		String arg = getArg();
-		if (!isSet() || isDefault() || arg.equals(defaultArg))
-			return myDescr + (defaultArg != null ? "\n      (default: " + defaultArg + ")" : "");
-		if (keys != null) {
-			Key prev = null;
-			String[] args = arg.split(CLOParser.SPECIES_DELIMITER);
-			String argkeys = "";
-			for (int n = 0; n < args.length; n++) {
-				String[] argsn = args[n].split("\\s+|=|,");
-				int keypos = delegate.getKeyPos();
-				if (keypos < argsn.length) {
-					// key provided
-					Key key = match(argsn[keypos]);
-					if (key == null && prev != null)
-						key = prev;
-					if (key == null) {
-						argkeys += "INVALID '" + args[n].trim() + "'";
-						break;
-					}
-					String[] lead = Arrays.copyOfRange(argsn, 0, keypos);
-					String[] tail = Arrays.copyOfRange(argsn, keypos + 1, argsn.length);
-					argkeys += (lead.length > 0 ? String.join(",", lead) + " " : "") +
-							key.getKey() +
-							(tail.length > 0 ? " " + String.join(",", tail) : "") +
-							(n == args.length - 1 ? "" : CLOParser.SPECIES_DELIMITER);
-					prev = key;
-				} else {
-					argkeys += String.join(",", argsn) +
-							(n == args.length - 1 ? "" : CLOParser.SPECIES_DELIMITER);
+		StringBuilder myDescr = buildBaseDescription();
+		String currentArg = optionArg;
+		if (keys != null)
+			currentArg = buildArgKeys();
+		buildCurrent(myDescr, currentArg);
+		return myDescr.toString();
+
+	}
+
+	/**
+	 * Append the current and default argument description to the provided builder.
+	 * 
+	 * @param sb         builder to append to
+	 * @param currentArg textual representation of the current argument
+	 * @return the supplied builder for chaining
+	 */
+	private StringBuilder buildCurrent(StringBuilder sb, String currentArg) {
+		sb.append("\n      (");
+		if (type == Argument.NONE) {
+			sb.append("current: ").append(isSet() ? "" : "not ").append("set)");
+			return sb;
+		}
+		if (currentArg != null) {
+			sb.append("current: ").append(currentArg);
+			if (defaultArg != null)
+				sb.append(" ");
+		}
+		if (defaultArg != null) {
+			sb.append("default: ").append(defaultArg);
+		}
+		sb.append(")");
+		return sb;
+	}
+
+	/**
+	 * Build the base description string, using either the stored description or
+	 * asking the delegate and appending key descriptions if applicable.
+	 * 
+	 * @return builder containing the base description text
+	 */
+	private StringBuilder buildBaseDescription() {
+		StringBuilder myDescr = new StringBuilder(description);
+		String descr = getDescriptionKey();
+		if (!descr.isEmpty()) {
+			myDescr.append("\n").append(descr);
+		}
+		return myDescr;
+	}
+
+	/**
+	 * Construct the user-facing representation of the argument when keys are
+	 * defined; mirrors previous loop logic but extracted to reduce complexity.
+	 * 
+	 * @return textual representation of the key-based arguments
+	 */
+	private String buildArgKeys() {
+		// for multi-species modules, remember previous key
+		Key prev = null;
+		String[] args = getArg().split(CLOParser.SPECIES_DELIMITER);
+		StringBuilder sb = new StringBuilder();
+		for (int n = 0; n < args.length; n++) {
+			String[] argsn = args[n].split("\\s+|=|,");
+			int keypos = delegate.getKeyPos();
+
+			if (keypos < 0 || keypos >= argsn.length) {
+				// no valid key position available, append as-is and continue.
+				sb.append(String.join(",", argsn));
+				if (n != args.length - 1)
+					sb.append(CLOParser.SPECIES_DELIMITER);
+			} else {
+				Key key = match(argsn[keypos]);
+				if (key == null) {
+					key = prev;
 				}
+				if (key == null) {
+					sb.append("INVALID '").append(args[n].trim()).append("'");
+					break;
+				}
+				prev = buildKey(sb, key, argsn, keypos);
 			}
-			return myDescr + "\n      (current: " + argkeys + " default: " + defaultArg + ")";
 		}
-		return myDescr + "\n      (current: " + arg + " default: " + defaultArg + ")";
+		return sb.toString();
+	}
+
+	/**
+	 * Append the resolved key value and remaining arguments to the builder.
+	 * 
+	 * @param sb   builder to append to
+	 * @param key  resolved key
+	 * @param args tokenized argument list
+	 * @param pos  position of the key token within {@code args}
+	 * @return the key that was appended (for chaining)
+	 */
+	private Key buildKey(StringBuilder sb, Key key, String[] args, int pos) {
+		String[] lead = Arrays.copyOfRange(args, 0, pos);
+		String[] tail = Arrays.copyOfRange(args, pos + 1, args.length);
+
+		if (lead.length > 0) {
+			sb.append(String.join(",", lead)).append(" ");
+		}
+		sb.append(key.getKey());
+		if (tail.length > 0) {
+			sb.append(" ").append(String.join(",", tail));
+		}
+
+		if (pos != args.length - 1)
+			sb.append(CLOParser.SPECIES_DELIMITER);
+		return key;
 	}
 
 	/**

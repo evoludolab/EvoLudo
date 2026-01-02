@@ -54,9 +54,9 @@ public interface CModel {
 	/**
 	 * Calculates and returns minimum score in monomorphic population. This depends
 	 * on the payoff accounting (averaged versus accumulated) as well as the
-	 * {@link org.evoludo.simulator.Geometry Geometry}. Since modules are agnostic
-	 * of runtime details, the request is simply forwarded to the current
-	 * {@link Model} together with the species ID for multi-species modules.
+	 * population structure. Since modules are agnostic of runtime details, the
+	 * request is simply forwarded to the current {@link Model} together with the
+	 * species ID for multi-species modules.
 	 * 
 	 * @param id the id of the population for multi-species models
 	 * @return the minimum monomorphic score
@@ -66,9 +66,9 @@ public interface CModel {
 	/**
 	 * Calculates and returns maximum score in monomorphic population. This depends
 	 * on the payoff accounting (averaged versus accumulated) as well as the
-	 * {@link org.evoludo.simulator.Geometry Geometry}. Since modules are agnostic
-	 * of runtime details, the request is simply forwarded to the current
-	 * {@link Model} together with the species ID for multi-species modules.
+	 * population structure. Since modules are agnostic of runtime details, the
+	 * request is simply forwarded to the current {@link Model} together with the
+	 * species ID for multi-species modules.
 	 * 
 	 * @param id the id of the population for multi-species models
 	 * @return the maximum monomorphic score
@@ -103,7 +103,7 @@ public interface CModel {
 	 * @param trait1 the index of the first trait (horizontal axis)
 	 * @param trait2 the index of the second trait (vertical axis)
 	 * 
-	 * @see org.evoludo.simulator.Geometry#initGeometrySquare()
+	 * @see org.evoludo.simulator.geometries.SquareGeometry
 	 */
 	public void get2DTraitHistogramData(int id, double[] bins, int trait1, int trait2);
 }

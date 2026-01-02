@@ -36,12 +36,12 @@ import java.util.List;
 import org.evoludo.math.ArrayMath;
 import org.evoludo.simulator.ColorMap;
 import org.evoludo.simulator.EvoLudo;
-import org.evoludo.simulator.Geometry;
+import org.evoludo.simulator.geometries.GeometryType;
+import org.evoludo.simulator.geometries.HierarchicalGeometry;
 import org.evoludo.simulator.models.IBS.ScoringType;
 import org.evoludo.simulator.models.IBSC.Init;
 import org.evoludo.simulator.models.Model.HasIBS;
 import org.evoludo.simulator.modules.Continuous;
-import org.evoludo.simulator.modules.Mutation;
 import org.evoludo.util.Formatter;
 import org.evoludo.util.Plist;
 
@@ -58,18 +58,7 @@ import org.evoludo.util.Plist;
  * @see IBSPopulation
  * @see IBSCPopulation
  */
-public class IBSMCPopulation extends IBSPopulation {
-
-	/**
-	 * The continuous module associated with this model.
-	 * <p>
-	 * <strong>Note:</strong> This deliberately hides {@link IBSPopulation#module}.
-	 * The two variables point to the same object but this setup avoids unnecessary
-	 * casts because only {@link Continuous} modules generate
-	 * {@code IBSCPopulation}(s).
-	 */
-	@SuppressWarnings("hiding")
-	protected Continuous module;
+public class IBSMCPopulation extends IBSPopulation<Continuous, IBSMCPopulation> {
 
 	/**
 	 * For pairwise interaction modules {@code module==pairmodule} holds and
@@ -90,25 +79,6 @@ public class IBSMCPopulation extends IBSPopulation {
 	protected HasIBS.MCGroups groupmodule;
 
 	/**
-	 * The interaction partner/opponent of this population
-	 * {@code opponent.getModule()==getModule().getOpponent()}. In intra-species
-	 * interactions {@code opponent==this}. Convenience field.
-	 * <p>
-	 * <strong>Note:</strong> This deliberately hides
-	 * {@link IBSPopulation#opponent}. The two variables point to the same object
-	 * but this setup avoids unnecessary casts because only
-	 * {@link org.evoludo.simulator.modules.Discrete Discrete} modules
-	 * generate {@code IBSDPopulation}(s).
-	 */
-	@SuppressWarnings("hiding")
-	IBSMCPopulation opponent;
-
-	/**
-	 * The mutation parameters.
-	 */
-	protected Mutation.Continuous mutation;
-
-	/**
 	 * Creates a population of individuals with multiple continuous traits for IBS
 	 * simulations.
 	 * 
@@ -117,13 +87,7 @@ public class IBSMCPopulation extends IBSPopulation {
 	 */
 	public IBSMCPopulation(EvoLudo engine, Continuous module) {
 		super(engine, module);
-		// deal with module cast - pairmodule and groupmodule have to wait because
-		// nGroup requires parsing of command line options (see check())
-		// important: cannot deal with casting shadowed opponent here because for
-		// mutli-species modules all species need to be loaded first.
-		this.module = module;
 		mutation = module.getMutation();
-		opponent = this;
 		if (module instanceof HasIBS.MCPairs)
 			pairmodule = (HasIBS.MCPairs) module;
 		if (module instanceof HasIBS.MCGroups)
@@ -132,9 +96,11 @@ public class IBSMCPopulation extends IBSPopulation {
 	}
 
 	@Override
-	public void setOpponentPop(IBSPopulation opponent) {
+	public void setOpponentPop(IBSPopulation<?, ?> opponent) {
+		if (!(opponent instanceof IBSMCPopulation)) {
+			throw new IllegalArgumentException("opponent must be IBSMCPopulation");
+		}
 		super.setOpponentPop(opponent);
-		this.opponent = (IBSMCPopulation) super.opponent;
 	}
 
 	@Override
@@ -226,12 +192,11 @@ public class IBSMCPopulation extends IBSPopulation {
 	}
 
 	/**
-	 * Get trait {@code d} of individual with index {@code idx}.
+	 * Set trait {@code d} of the individual with index {@code idx}.
 	 * 
 	 * @param idx   the index of the individual
 	 * @param d     the trait index
-	 * @param trait the trait of the individual
-	 * @return the trait of the individual
+	 * @param trait the new trait value
 	 */
 	public void setTraitAt(int idx, int d, double trait) {
 		traits[idx * nTraits + d] = trait;
@@ -281,34 +246,34 @@ public class IBSMCPopulation extends IBSPopulation {
 	/**
 	 * The array for temporarily storing traits during updates.
 	 */
-	protected double[] traitsNext;
+	double[] traitsNext;
 
 	/**
 	 * Temporary storage for traits of individuals in group interactions.
 	 */
-	protected double[] tmpGroup;
+	double[] tmpGroup;
 
 	/**
 	 * Temporary storage for traits of individuals in small sub-group interactions.
 	 */
-	protected double[] smallTrait;
+	double[] smallTrait;
 
 	/**
 	 * Temporary storage for the traits of the focal individual.
 	 */
-	protected double[] myTrait;
+	double[] myTraits;
 
 	/**
 	 * Temporary storage for the traits of the focal individual before
 	 * the update. Used for adjusting scores.
 	 */
-	protected double[] oldTrait;
+	double[] oldTraits;
 
 	/**
 	 * Temporary storage for the scores of each participant prior to group
 	 * interactions.
 	 */
-	protected double[] oldScores;
+	double[] oldScores;
 
 	@Override
 	public void updateFromModelAt(int index, int modelPlayer) {
@@ -426,7 +391,7 @@ public class IBSMCPopulation extends IBSPopulation {
 		int oppntraits = opponent.nTraits;
 		for (int i = 0; i < group.nSampled; i++)
 			System.arraycopy(opptraits, group.group[i] * oppntraits, tmpGroup, i * oppntraits, oppntraits);
-		System.arraycopy(traits, group.focal * nTraits, myTrait, 0, nTraits);
+		System.arraycopy(traits, group.focal * nTraits, myTraits, 0, nTraits);
 	}
 
 	@Override
@@ -442,9 +407,9 @@ public class IBSMCPopulation extends IBSPopulation {
 			default:
 				// if resetting scores after every update, scores can be adjusted
 				// when interacting all neighbours but not in well-mixed populations
-				if (interaction.getType() == Geometry.Type.MEANFIELD || //
-						(interaction.getType() == Geometry.Type.HIERARCHY && //
-								interaction.subgeometry == Geometry.Type.MEANFIELD))
+				if (interaction.isType(GeometryType.WELLMIXED) || //
+						(interaction.isType(GeometryType.HIERARCHY) && //
+								((HierarchicalGeometry) interaction).isSubtype(GeometryType.WELLMIXED)))
 					return false;
 				return interGroup.isSampling(IBSGroup.SamplingType.ALL);
 		}
@@ -466,6 +431,13 @@ public class IBSMCPopulation extends IBSPopulation {
 		updateFitnessAt(index);
 	}
 
+	/**
+	 * {@inheritDoc}
+	 * <p>
+	 * Continuous modules with a single trait never get here.
+	 * 
+	 * @see IBSCPopulation#playPairGameAt(IBSGroup)
+	 */
 	@Override
 	public void playPairGameAt(IBSGroup group) {
 		int me = group.focal;
@@ -482,7 +454,7 @@ public class IBSMCPopulation extends IBSPopulation {
 			return;
 		}
 		gatherPlayers(group);
-		double myScore = pairmodule.pairScores(myTrait, tmpGroup, group.nSampled,
+		double myScore = pairmodule.pairScores(myTraits, tmpGroup, group.nSampled,
 				groupScores);
 		if (ephemeralScores) {
 			// no need to update scores of everyone else
@@ -495,6 +467,13 @@ public class IBSMCPopulation extends IBSPopulation {
 			opponent.updateScoreAt(group.group[i], groupScores[i]);
 	}
 
+	/**
+	 * {@inheritDoc}
+	 * <p>
+	 * Continuous modules with a single trait never get here.
+	 * 
+	 * @see IBSCPopulation#adjustPairGameScoresAt(int)
+	 */
 	@Override
 	public void adjustPairGameScoresAt(int me) {
 		// gather players
@@ -507,7 +486,7 @@ public class IBSMCPopulation extends IBSPopulation {
 		for (int n = 0; n < nOut; n++)
 			System.arraycopy(opptraits, out[n] * oppntraits, tmpGroup, n * oppntraits, oppntraits);
 		int u2 = 2;
-		if (!interaction.isUndirected) {
+		if (!interaction.isUndirected()) {
 			// directed graph, count in-neighbors
 			u2 = 1;
 			nIn = interaction.kin[me];
@@ -517,10 +496,10 @@ public class IBSMCPopulation extends IBSPopulation {
 		}
 		int nInter = nOut + nIn;
 		int offset = me * nTraits;
-		System.arraycopy(traits, offset, oldTrait, 0, nTraits);
-		System.arraycopy(traitsNext, offset, myTrait, 0, nTraits);
-		double oldScore = pairmodule.pairScores(oldTrait, tmpGroup, nInter, oldScores);
-		double newScore = pairmodule.pairScores(myTrait, tmpGroup, nInter, groupScores);
+		System.arraycopy(traits, offset, oldTraits, 0, nTraits);
+		System.arraycopy(traitsNext, offset, myTraits, 0, nTraits);
+		double oldScore = pairmodule.pairScores(oldTraits, tmpGroup, nInter, oldScores);
+		double newScore = pairmodule.pairScores(myTraits, tmpGroup, nInter, groupScores);
 		commitTraitAt(me);
 		if (playerScoreAveraged) {
 			double iInter = 1.0 / nInter;
@@ -535,7 +514,7 @@ public class IBSMCPopulation extends IBSPopulation {
 				diff = u2 * diff / interactions[you];
 			opponent.adjustScoreAt(you, diff);
 		}
-		// same as !interaction.isUndirected because in != null implies directed graph
+		// same as !interaction.isUndirected() because in != null implies directed graph
 		// (see above)
 		if (in != null) {
 			for (int n = 0; n < nIn; n++) {
@@ -548,17 +527,19 @@ public class IBSMCPopulation extends IBSPopulation {
 		}
 	}
 
+	/**
+	 * {@inheritDoc}
+	 * <p>
+	 * Continuous modules with a single trait never get here.
+	 * 
+	 * @see IBSCPopulation#playGroupGameAt(IBSGroup)
+	 */
 	@Override
 	public void playGroupGameAt(IBSGroup group) {
 		int me = group.focal;
-		// for ephemeral scores calculate score of focal only
-		boolean ephemeralScores = playerScoring.equals(ScoringType.EPHEMERAL);
 		if (group.nSampled <= 0) {
-			if (ephemeralScores) {
-				resetScoreAt(me);
-				return;
-			}
-			updateScoreAt(me, 0.0);
+			// isolated individual
+			playNoGameAt(me);
 			return;
 		}
 		gatherPlayers(group);
@@ -568,50 +549,95 @@ public class IBSMCPopulation extends IBSPopulation {
 				// interact with all neighbors
 				int nGroup = module.getNGroup();
 				if (nGroup < group.nSampled + 1) {
-					// interact with part of group sequentially
-					double myScore = 0.0;
-					Arrays.fill(smallScores, 0, group.nSampled, 0.0);
-					for (int n = 0; n < group.nSampled; n++) {
-						for (int i = 0; i < nGroup - 1; i++)
-							System.arraycopy(tmpGroup, ((n + i) % group.nSampled) * nTraits, smallTrait, i * nTraits,
-									nTraits);
-						myScore += groupmodule.groupScores(myTrait, smallTrait, nGroup - 1, groupScores);
-						if (ephemeralScores)
-							continue;
-						for (int i = 0; i < nGroup - 1; i++)
-							smallScores[(n + i) % group.nSampled] += groupScores[i];
-					}
-					if (ephemeralScores) {
-						resetScoreAt(me);
-						setScoreAt(me, myScore / group.nSampled, group.nSampled);
-						return;
-					}
-					updateScoreAt(me, myScore, group.nSampled);
-					for (int i = 0; i < group.nSampled; i++)
-						opponent.updateScoreAt(group.group[i], smallScores[i], nGroup - 1);
+					playGroupSequentiallyAt(me, group, nGroup);
 					return;
 				}
 				// interact with full group (random graphs, all neighbors)
-
-				//$FALL-THROUGH$
+				// $FALL-THROUGH$
 			case RANDOM:
 				// interact with sampled neighbors
-				double myScore = groupmodule.groupScores(myTrait, tmpGroup, group.nSampled, groupScores);
-				if (ephemeralScores) {
-					resetScoreAt(me);
-					setScoreAt(me, myScore, 1);
-					return;
-				}
-				updateScoreAt(me, myScore);
-				for (int i = 0; i < group.nSampled; i++)
-					opponent.updateScoreAt(group.group[i], groupScores[i]);
+				playGroupOnceAt(me, group);
 				return;
 
 			default:
-				throw new Error("Unknown interaction type (" + interGroup.getSampling() + ")");
+				throw new UnsupportedOperationException("Unknown interaction type (" + interGroup.getSampling() + ")");
 		}
 	}
 
+	/**
+	 * Handle the case where a focal player has no opponents and should not play a
+	 * game.
+	 * 
+	 * @param me focal player index
+	 */
+	void playNoGameAt(int me) {
+		if (playerScoring.equals(ScoringType.EPHEMERAL)) {
+			resetScoreAt(me);
+			return;
+		}
+		updateScoreAt(me, 0.0);
+	}
+
+	/**
+	 * Evaluate sequential group interactions when not enough opponents are
+	 * available simultaneously.
+	 * 
+	 * @param me     focal player index
+	 * @param group  sampled opponent group
+	 * @param nGroup number of players participating in each interaction
+	 */
+	void playGroupSequentiallyAt(int me, IBSGroup group, int nGroup) {
+		// interact with part of group sequentially
+		double myScore = 0.0;
+		Arrays.fill(smallScores, 0, group.nSampled, 0.0);
+		// for ephemeral scores calculate score of focal only
+		boolean ephemeralScores = playerScoring.equals(ScoringType.EPHEMERAL);
+		for (int n = 0; n < group.nSampled; n++) {
+			for (int i = 0; i < nGroup - 1; i++)
+				System.arraycopy(tmpGroup, ((n + i) % group.nSampled) * nTraits, smallTrait, i * nTraits,
+						nTraits);
+			myScore += groupmodule.groupScores(myTraits, smallTrait, nGroup - 1, groupScores);
+			if (ephemeralScores)
+				continue;
+			for (int i = 0; i < nGroup - 1; i++)
+				smallScores[(n + i) % group.nSampled] += groupScores[i];
+		}
+		if (ephemeralScores) {
+			resetScoreAt(me);
+			setScoreAt(me, myScore / group.nSampled, group.nSampled);
+			return;
+		}
+		updateScoreAt(me, myScore, group.nSampled);
+		for (int i = 0; i < group.nSampled; i++)
+			opponent.updateScoreAt(group.group[i], smallScores[i], nGroup - 1);
+	}
+
+	/**
+	 * Evaluate a single group interaction with the sampled opponents.
+	 * 
+	 * @param me    focal player index
+	 * @param group sampled opponent group
+	 */
+	void playGroupOnceAt(int me, IBSGroup group) {
+		double myScore = groupmodule.groupScores(myTraits, tmpGroup, group.nSampled, groupScores);
+		// for ephemeral scores calculate score of focal only
+		if (playerScoring.equals(ScoringType.EPHEMERAL)) {
+			resetScoreAt(me);
+			setScoreAt(me, myScore, 1);
+			return;
+		}
+		updateScoreAt(me, myScore);
+		for (int i = 0; i < group.nSampled; i++)
+			opponent.updateScoreAt(group.group[i], groupScores[i]);
+	}
+
+	/**
+	 * {@inheritDoc}
+	 * <p>
+	 * Continuous modules with a single trait never get here.
+	 * 
+	 * @see IBSCPopulation#yalpGroupGameAt(IBSGroup)
+	 */
 	@Override
 	public void yalpGroupGameAt(IBSGroup group) {
 		double myScore;
@@ -625,7 +651,7 @@ public class IBSMCPopulation extends IBSPopulation {
 				for (int i = 0; i < nGroup - 1; i++)
 					System.arraycopy(tmpGroup, ((n + i) % group.nSampled) * nTraits, smallTrait, i * nTraits,
 							nTraits);
-				myScore += groupmodule.groupScores(myTrait, smallTrait, nGroup - 1, groupScores);
+				myScore += groupmodule.groupScores(myTraits, smallTrait, nGroup - 1, groupScores);
 				for (int i = 0; i < nGroup - 1; i++)
 					smallScores[(n + i) % group.nSampled] += groupScores[i];
 			}
@@ -635,7 +661,7 @@ public class IBSMCPopulation extends IBSPopulation {
 			return;
 		}
 		// interact with full group (random graphs)
-		myScore = groupmodule.groupScores(myTrait, tmpGroup, group.nSampled, groupScores);
+		myScore = groupmodule.groupScores(myTraits, tmpGroup, group.nSampled, groupScores);
 		removeScoreAt(group.focal, myScore);
 		for (int i = 0; i < group.nSampled; i++)
 			opponent.removeScoreAt(group.group[i], groupScores[i]);
@@ -708,8 +734,6 @@ public class IBSMCPopulation extends IBSPopulation {
 	 * @param bins   the linear array to store the 2D histogram
 	 * @param trait1 the index of the first trait
 	 * @param trait2 the index of the second trait
-	 *
-	 * @see org.evoludo.simulator.Geometry#initGeometrySquare()
 	 */
 	public void get2DTraitHistogramData(double[] bins, int trait1, int trait2) {
 		// clear bins
@@ -940,7 +964,7 @@ public class IBSMCPopulation extends IBSPopulation {
 		traitRangeMax = module.getTraitMax();
 
 		// check interaction geometry
-		if (interaction.getType() == Geometry.Type.MEANFIELD && interGroup.isSampling(IBSGroup.SamplingType.ALL)) {
+		if (interaction.isType(GeometryType.WELLMIXED) && interGroup.isSampling(IBSGroup.SamplingType.ALL)) {
 			// interacting with everyone in mean-field simulations is not feasible - except
 			// for discrete traits
 			logger.warning(
@@ -960,8 +984,8 @@ public class IBSMCPopulation extends IBSPopulation {
 			traits = new double[nPopulation * nTraits];
 		if (traitsNext == null || traitsNext.length != nPopulation * nTraits)
 			traitsNext = new double[nPopulation * nTraits];
-		if (myTrait == null || myTrait.length != nTraits)
-			myTrait = new double[nTraits];
+		if (myTraits == null || myTraits.length != nTraits)
+			myTraits = new double[nTraits];
 
 		return doReset;
 	}
@@ -996,43 +1020,73 @@ public class IBSMCPopulation extends IBSPopulation {
 	@Override
 	public void init() {
 		super.init();
-		int mutidx = -1;
+		switch (init.type) {
+			default:
+			case UNIFORM:
+				initUniform();
+				break;
+			case MONO:
+				initMono();
+				break;
+			case GAUSSIAN:
+				initGaussian();
+				break;
+			case MUTANT:
+				initMutant();
+				break;
+		}
+	}
+
+	/**
+	 * Initialize each trait uniformly at random in its allowed range.
+	 */
+	void initUniform() {
 		for (int s = 0; s < nTraits; s++) {
-			switch (init.type) {
-				default:
-				case UNIFORM:
-					for (int n = s; n < nPopulation * nTraits; n += nTraits)
-						traits[n] = random01();
-					break;
+			for (int n = s; n < nPopulation * nTraits; n += nTraits)
+				traits[n] = random01();
+		}
+	}
 
-				case MONO:
-					// initArgs contains monomorphic trait
-					double mono = Math.min(Math.max(init.args[s][0], traitRangeMin[s]), traitRangeMax[s]);
-					double scaledmono = (mono - traitRangeMin[s]) / (traitRangeMax[s] - traitRangeMin[s]);
-					for (int n = s; n < nPopulation * nTraits; n += nTraits)
-						traits[n] = scaledmono;
-					break;
+	/**
+	 * Initialize all individuals with the same (monomorphic) trait value.
+	 */
+	void initMono() {
+		for (int s = 0; s < nTraits; s++) {
+			// initArgs contains monomorphic trait
+			double mono = Math.min(Math.max(init.args[s][0], traitRangeMin[s]), traitRangeMax[s]);
+			double scaledmono = (mono - traitRangeMin[s]) / (traitRangeMax[s] - traitRangeMin[s]);
+			for (int n = s; n < nPopulation * nTraits; n += nTraits)
+				traits[n] = scaledmono;
+		}
+	}
 
-				case GAUSSIAN:
-					double mean = Math.min(Math.max(init.args[s][0], traitRangeMin[s]), traitRangeMax[s]);
-					double sdev = Math.min(Math.max(init.args[s][1], traitRangeMin[s]), traitRangeMax[s]);
-					double scaledmean = (mean - traitRangeMin[s]) / (traitRangeMax[s] - traitRangeMin[s]);
-					double scaledsdev = sdev / (traitRangeMax[s] - traitRangeMin[s]);
-					for (int n = s; n < nPopulation * nTraits; n += nTraits)
-						traits[n] = Math.min(1.0, Math.max(0.0, randomGaussian(scaledmean, scaledsdev)));
-					break;
+	/**
+	 * Initialize traits by sampling from a (possibly truncated) Gaussian
+	 * distribution per trait.
+	 */
+	void initGaussian() {
+		for (int s = 0; s < nTraits; s++) {
+			double mean = Math.min(Math.max(init.args[s][0], traitRangeMin[s]), traitRangeMax[s]);
+			double sdev = Math.min(Math.max(init.args[s][1], traitRangeMin[s]), traitRangeMax[s]);
+			double scaledmean = (mean - traitRangeMin[s]) / (traitRangeMax[s] - traitRangeMin[s]);
+			double scaledsdev = sdev / (traitRangeMax[s] - traitRangeMin[s]);
+			for (int n = s; n < nPopulation * nTraits; n += nTraits)
+				traits[n] = Math.min(1.0, Math.max(0.0, randomGaussian(scaledmean, scaledsdev)));
+		}
+	}
 
-				case MUTANT:
-					double resident = Math.min(Math.max(init.args[s][0], traitRangeMin[s]), traitRangeMax[s]);
-					double scaledresident = (resident - traitRangeMin[s]) / (traitRangeMax[s] - traitRangeMin[s]);
-					for (int n = s; n < nPopulation * nTraits; n += nTraits)
-						traits[n] = scaledresident;
-					if (mutidx < 0)
-						mutidx = random0n(nPopulation);
-					double mut = Math.min(Math.max(init.args[s][1], traitRangeMin[s]), traitRangeMax[s]);
-					traits[mutidx] = (mut - traitRangeMin[s]) / (traitRangeMax[s] - traitRangeMin[s]);
-					break;
-			}
+	/**
+	 * Initialize a monomorphic resident population with a single mutant.
+	 */
+	void initMutant() {
+		int mutidx = random0n(nPopulation);
+		for (int s = 0; s < nTraits; s++) {
+			double resident = Math.min(Math.max(init.args[s][0], traitRangeMin[s]), traitRangeMax[s]);
+			double scaledresident = (resident - traitRangeMin[s]) / (traitRangeMax[s] - traitRangeMin[s]);
+			for (int n = s; n < nPopulation * nTraits; n += nTraits)
+				traits[n] = scaledresident;
+			double mut = Math.min(Math.max(init.args[s][1], traitRangeMin[s]), traitRangeMax[s]);
+			traits[mutidx] = (mut - traitRangeMin[s]) / (traitRangeMax[s] - traitRangeMin[s]);
 		}
 	}
 
@@ -1048,12 +1102,12 @@ public class IBSMCPopulation extends IBSPopulation {
 		if (meantrait == null || meantrait.length != 2 * nTraits)
 			meantrait = new double[2 * nTraits];
 		if (adjustScores) {
-			if (oldTrait == null || oldTrait.length != nTraits)
-				oldTrait = new double[nTraits];
+			if (oldTraits == null || oldTraits.length != nTraits)
+				oldTraits = new double[nTraits];
 			if (oldScores == null || oldScores.length != maxGroup)
 				oldScores = new double[maxGroup];
 		} else {
-			oldTrait = null;
+			oldTraits = null;
 			oldScores = null;
 		}
 	}

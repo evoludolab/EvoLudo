@@ -48,7 +48,9 @@ import org.evoludo.graphics.HistoGraphListener;
 import org.evoludo.math.ArrayMath;
 import org.evoludo.math.Combinatorics;
 import org.evoludo.simulator.EvoLudoLab;
-import org.evoludo.simulator.Geometry;
+import org.evoludo.simulator.geometries.AbstractGeometry;
+import org.evoludo.simulator.geometries.GeometryFeatures;
+import org.evoludo.simulator.geometries.GeometryType;
 
 public class MVDegree extends MVAbstract implements HistoGraphListener {
 
@@ -96,7 +98,7 @@ public class MVDegree extends MVAbstract implements HistoGraphListener {
 
 	@Override
 	public void reset(boolean clear) {
-		Geometry geometry;
+		AbstractGeometry geometry;
 		switch (engine.getModel().getType()) {
 			case ODE:
 			case SDE:
@@ -107,13 +109,13 @@ public class MVDegree extends MVAbstract implements HistoGraphListener {
 				break;
 			case IBS:
 			default:
-				geometry = module.getInteractionGeometry();
+				geometry = module.getIBSPopulation().getInteractionGeometry();
 				break;
 		}
-		isStatic = !geometry.isDynamic;
+		isStatic = !geometry.isType(GeometryType.DYNAMIC);
 		if (graphs.isEmpty())
 			addGraph(K_OUT);
-		if (isDirected == geometry.isUndirected) {
+		if (isDirected == geometry.isUndirected()) {
 			// graph changed from directed to undirected or vice versa
 			if (isDirected) {
 				// was directed: 3 views present - disable two
@@ -133,7 +135,7 @@ public class MVDegree extends MVAbstract implements HistoGraphListener {
 				for (int n = 0; n < 3; n++)
 					graphs.get(n).setSize(0, 0);
 			}
-			isDirected = !geometry.isUndirected;
+			isDirected = !geometry.isUndirected();
 			clear = true;
 		}
 		// NOTE: reset triggers a call to getData - above ensures that everything is
@@ -320,22 +322,25 @@ public class MVDegree extends MVAbstract implements HistoGraphListener {
 		boolean changed = false;
 		// System.out.println("MVDegree - getData: tag="+tag);
 		if (data.timestamp < 0.0 || (now - data.timestamp > 1e-10 && !isStatic)) {
-			Geometry geometry = module.getInteractionGeometry();
-			if (geometry == null)
+			AbstractGeometry geometry;
+			if (engine.getModel().getType().isIBS())
+				geometry = module.getIBSPopulation().getInteractionGeometry();
+			else
 				geometry = module.getGeometry();
+			GeometryFeatures features = geometry.getFeatures();
 
 			switch (tag) {
 				// case K_OUT:
 				default:
-					changed = process(data, geometry.kout, geometry.maxOut);
+					changed = process(data, geometry.kout, features.maxOut);
 					break;
 
 				case K_IN:
-					changed = process(data, geometry.kin, geometry.maxIn);
+					changed = process(data, geometry.kin, features.maxIn);
 					break;
 
 				case K_TOT:
-					int kmax = kmax(geometry.maxTot);
+					int kmax = kmax(features.maxTot);
 					int b = Math.min(kmax, MAX_BINS);
 					if (kmax <= 100)
 						b++;

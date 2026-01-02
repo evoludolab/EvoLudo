@@ -60,7 +60,8 @@
         <artifactId>git-commit-id-maven-plugin</artifactId>
         <configuration>
           <generateGitPropertiesFile>true</generateGitPropertiesFile>
-          <generateGitPropertiesFilename>${project.basedir}/src/main/java/org/evoludo/simulator/Git.properties</generateGitPropertiesFilename>
+          <generateGitPropertiesFilename>
+            ${project.basedir}/src/main/java/org/evoludo/simulator/Git.properties</generateGitPropertiesFilename>
           <gitDescribe>
             <dirty>*</dirty>
           </gitDescribe>
@@ -111,9 +112,27 @@
           <moduleName>org.evoludo.EvoLudoWeb</moduleName>
           <relocateSuperSource>true</relocateSuperSource>
           <style>${gwt.style}</style>
-          <!-- no longer needed after merging EvoLudoGWT and EvoLudoGWTDev modules -->
-          <!-- <skipModule>true</skipModule> -->
+          <compilerArgs>
+            <arg>-optimize</arg>
+            <arg>${gwt.optimize}</arg>
+          </compilerArgs>
+          <webappDirectory>${project.build.directory}/${project.build.finalName}</webappDirectory>
         </configuration>
+        <executions>
+          <execution>
+            <id>devmode</id>
+            <goals>
+              <goal>devmode</goal>
+            </goals>
+            <configuration>
+              <style>${gwt.style.devmode}</style>
+              <compilerArgs>
+                <arg>-optimize</arg>
+                <arg>${gwt.optimize.devmode}</arg>
+              </compilerArgs>
+            </configuration>
+          </execution>
+        </executions>
       </plugin>
 
       <plugin>
@@ -122,21 +141,36 @@
         <configuration>
           <scanIntervalSeconds>1</scanIntervalSeconds>
           <webApp>
+            <extraClasspath>${evoludo.jetty.extraClasspath}</extraClasspath>
             <extraClasspath>${basedir}/../EvoLudoCore/target/classes/</extraClasspath>
             <extraClasspath>${basedir}/../EvoLudoGWT/target/classes/</extraClasspath>
-            <extraClasspath>${basedir}/../EvoLudoCorePrivate/target/classes/</extraClasspath>
           </webApp>
           <contextXml>${basedir}/src/main/jettyconf/context.xml</contextXml>
         </configuration>
       </plugin>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-resources-plugin</artifactId>
+        <executions>
+          <execution>
+            <id>copy-webapp-resources</id>
+            <phase>process-resources</phase>
+            <goals>
+              <goal>copy-resources</goal>
+            </goals>
+            <configuration>
+              <outputDirectory>${project.build.directory}/${project.build.finalName}</outputDirectory>
+              <resources>
+                <resource>
+                  <directory>${evoludo.webappDirectory}</directory>
+                  <filtering>true</filtering>
+                </resource>
+              </resources>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
     </plugins>
-    <resources>
-      <resource>
-        <filtering>true</filtering>
-        <directory>${project.basedir}/src/main/webapp</directory>
-        <targetPath>${project.build.directory}/EvoLudoGWT-${project.version}</targetPath>
-      </resource>
-    </resources>
   </build>
 
   <profiles>
@@ -147,6 +181,9 @@
           <exists>../EvoLudoCorePrivate/pom.xml</exists>
         </file>
       </activation>
+      <properties>
+        <evoludo.webappDirectory>${project.basedir}/../EvoLudoGWTPrivate/src/main/webapp</evoludo.webappDirectory>
+      </properties>
       <dependencies>
         <dependency>
           <groupId>${project.groupId}</groupId>
@@ -169,14 +206,19 @@
           <artifactId>EvoLudoCore</artifactId>
           <version>${project.version}</version>
           <classifier>sources</classifier>
-          </dependency>
+        </dependency>
       </dependencies>
     </profile>
     <profile>
       <id>public</id>
       <activation>
-        <activeByDefault>true</activeByDefault>
+        <file>
+          <missing>../EvoLudoCorePrivate/pom.xml</missing>
+        </file>
       </activation>
+      <properties>
+        <evoludo.webappDirectory>${project.basedir}/src/main/webapp</evoludo.webappDirectory>
+      </properties>
       <dependencies>
         <dependency>
           <groupId>${project.groupId}</groupId>
@@ -188,7 +230,7 @@
           <artifactId>EvoLudoCore</artifactId>
           <version>${project.version}</version>
           <classifier>sources</classifier>
-          </dependency>
+        </dependency>
       </dependencies>
     </profile>
   </profiles>

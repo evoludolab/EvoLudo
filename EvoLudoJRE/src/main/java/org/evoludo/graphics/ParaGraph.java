@@ -71,7 +71,7 @@ public class ParaGraph extends AbstractGraph {
 	// 100531 this is adapted from S3Graph - check if needed!
 	@Override
 	public void reinit() {
-		int id = module.getID();
+		int id = module.getId();
 		colors = controller.getColors(id);
 		frame.setLabels(names, colors, id);
 		// note: this is a bit overkill... but seems necessary to deal with labels...
@@ -85,7 +85,7 @@ public class ParaGraph extends AbstractGraph {
 
 	@Override
 	public void reset(boolean clear) {
-		int id = module.getID();
+		int id = module.getId();
 		nStates = controller.getNData(id);
 		data.init(nStates);
 		data.isLocal = isLocalDynamics;
@@ -103,7 +103,7 @@ public class ParaGraph extends AbstractGraph {
 	@Override
 	protected void prepare() {
 		data.next();
-		((StateGraphListener) controller).getData(data, module.getID());
+		((StateGraphListener) controller).getData(data, module.getId());
 	}
 
 	@Override
@@ -153,7 +153,7 @@ public class ParaGraph extends AbstractGraph {
 
 		l.setLocation((double) (loc.x - canvas.x) / (double) canvas.width,
 				(double) (loc.y - canvas.y) / (double) canvas.height);
-		return ((StateGraphListener) controller).getToolTipText(l, module.getID());
+		return ((StateGraphListener) controller).getToolTipText(l, module.getId());
 	}
 
 	@Override

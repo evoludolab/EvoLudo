@@ -45,10 +45,10 @@ import org.evoludo.simulator.models.ChangeListener;
 import org.evoludo.simulator.models.IBSDPopulation;
 import org.evoludo.simulator.modules.CDLPQ;
 import org.evoludo.simulator.views.MVPop2D;
+import org.evoludo.util.CLODelegate;
 import org.evoludo.util.CLOParser;
 import org.evoludo.util.CLOption;
-import org.evoludo.util.CLOption.CLODelegate;
-import org.evoludo.util.CLOption.Category;
+import org.evoludo.util.CLOCategory;
 import org.evoludo.util.Formatter;
 
 /**
@@ -159,11 +159,13 @@ public class simCDLPQ extends CDLPQ implements ChangeListener {
 		engine.exportState();
 	}
 
-	/**
-	 * Temporary variables for fixation probabilities and absorption times.
-	 */
+	/** Temporary running mean for fixation probabilities. */
 	double[] mean;
+
+	/** Temporary running variance for fixation probabilities. */
 	double[] variance;
+
+	/** Temporary state buffer for sampling. */
 	double[] state;
 
 	/**
@@ -211,7 +213,7 @@ public class simCDLPQ extends CDLPQ implements ChangeListener {
 	protected void updateStatistics(double time) {
 		if (prevsample >= time)
 			return;
-		model.getMeanTraits(getID(), state);
+		model.getMeanTraits(getId(), state);
 		// calculate weighted mean and sdev - see wikipedia
 		double w = time - prevsample;
 		double wn = w / (time);
@@ -226,7 +228,7 @@ public class simCDLPQ extends CDLPQ implements ChangeListener {
 	/**
 	 * Command line option to set the interval for taking snapshots.
 	 */
-	public final CLOption cloSnapInterval = new CLOption("snapinterval", "1000", Category.Simulation,
+	public final CLOption cloSnapInterval = new CLOption("snapinterval", "1000", CLOCategory.Simulation,
 			"--snapinterval <n>  save snapshot every n generations", new CLODelegate() {
 				@Override
 				public boolean parse(String arg) {

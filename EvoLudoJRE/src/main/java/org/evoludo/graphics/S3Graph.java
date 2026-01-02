@@ -129,7 +129,7 @@ public class S3Graph extends AbstractGraph {
 
 	@Override
 	public void reinit() {
-		int id = module.getID();
+		int id = module.getId();
 		colors = controller.getColors(id);
 		frame.setLabels(names, colors, active, id);
 		// note: this is a bit overkill... but seems necessary do deal with labels...
@@ -145,7 +145,7 @@ public class S3Graph extends AbstractGraph {
 
 	@Override
 	public void reset(boolean clear) {
-		int id = module.getID();
+		int id = module.getId();
 		nStates = controller.getNData(id);
 		data.init(nStates);
 		names = controller.getNames(id);
@@ -175,7 +175,7 @@ public class S3Graph extends AbstractGraph {
 		if (hasMessage())
 			return; // no need to fetch data
 		data.next();
-		((StateGraphListener) controller).getData(data, module.getID());
+		((StateGraphListener) controller).getData(data, module.getId());
 	}
 
 	private final Point2D p = new Point2D();

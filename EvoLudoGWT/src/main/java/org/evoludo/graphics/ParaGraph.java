@@ -36,11 +36,9 @@ import org.evoludo.geom.Point2D;
 import org.evoludo.graphics.AbstractGraph.HasTrajectory;
 import org.evoludo.graphics.AbstractGraph.Shifting;
 import org.evoludo.graphics.AbstractGraph.Zooming;
-import org.evoludo.math.ArrayMath;
 import org.evoludo.math.Functions;
 import org.evoludo.simulator.modules.Module;
 import org.evoludo.simulator.views.BasicTooltipProvider;
-import org.evoludo.simulator.views.HasPhase2D;
 import org.evoludo.simulator.views.Phase2D;
 import org.evoludo.simulator.views.HasPhase2D.Data2Phase;
 import org.evoludo.ui.ContextMenu;
@@ -58,18 +56,89 @@ import com.google.gwt.event.dom.client.DoubleClickHandler;
 import com.google.gwt.event.dom.client.TouchStartEvent;
 
 /**
- * Parametric graph for displaying trajectories in phase plane. The graph is
- * used to display trajectories in phase space, i.e. the state of a system as a
- * function of time.
- * <p>
- * The graph is backed by a {@link RingBuffer} to store the trajectory. The
- * buffer is updated by calling {@link #addData(double, double[], boolean)}. It
- * is interactive and allows the user to zoom and shift the view. The user can
- * set the initial state by double-clicking on the graph. The graph can be
- * exported in PNG or SVG graphics formats or the trajectory data as CSV.
- * <p>
- * The graph provides fine grained configurations for mapping the data to the
- * phase plane, for tooltips, for markers as well as for the style of the graph.
+ * ParaGraph is a specialized 2D parametric/phase-plane graph component for
+ * visualizing trajectories produced by a simulation module. Each data sample is
+ * expected to be a {@code double[]} whose first element is the time and the
+ * remaining elements represent the state vector. ParaGraph maps those state
+ * vectors into phase-plane coordinates via a {@link Data2Phase} mapper and
+ * draws the resulting parametric curve onto a canvas.
+ *
+ * <h3>Key responsibilities:</h3>
+ * <ul>
+ * <li>Maintain a bounded history of parametric data points in a
+ * {@code RingBuffer<double[]>}, where each stored array has the time prepended
+ * as the first element.</li>
+ * <li>Coalesce incoming samples to conserve memory: samples are appended only
+ * when the estimated distance (in phase plane units) to the previous stored
+ * point exceeds a configurable threshold (derived from a minimum pixel
+ * spacing), unless explicitly forced.</li>
+ * <li>Handle special time values (NaN) and duplicate times: duplicate times
+ * replace the last sample; NaN times mark new trajectory segments and update
+ * the recorded initial state accordingly.</li>
+ * <li>Map simulation state &lt;-&gt; phase coordinates using a {@link Data2Phase}
+ * instance. If the mapper implements {@link BasicTooltipProvider} it will be
+ * used as the tooltip provider for parametric tooltips.</li>
+ * <li>Render the trajectory with optional start/end markers and custom markers.
+ * The drawing code takes into account current axis ranges, scaling, translation
+ * and zooming.</li>
+ * <li>Provide interactive features:
+ * <ul>
+ * <li>Double-click or single-touch on the phase plane to convert the clicked
+ * phase coordinates back into a simulation initial state and set it on the
+ * view.</li>
+ * <li>Context menu actions to clear the canvas and toggle autoscaling of
+ * axes.</li>
+ * <li>Tooltip support for coordinates via a configured tooltip provider.</li>
+ * </ul>
+ * </li>
+ * <li>Autoscale axes to fit the visible data when enabled. Autoscaling computes
+ * min/max ranges from the mapper over the current buffer and rounds to sensible
+ * tick-friendly bounds. Percent scales are clamped to [0,1] when
+ * configured.</li>
+ * <li>Export trajectory data to a text format (time, x, y) using the configured
+ * mapper and a {@link Formatter} for numeric formatting.</li>
+ * </ul>
+ *
+ * <h3>Rendering details:</h3>
+ * <ul>
+ * <li>Painting is scheduled with
+ * {@link com.google.gwt.core.client.Scheduler#scheduleDeferred} to avoid
+ * redundant immediate repaints; a {@code paintScheduled} flag prevents
+ * oversubscription of repaint requests.</li>
+ * <li>Canvas transform sequence: global scale, translation for view corner and
+ * bounds, additional zoom factor, and Y-axis flip to map mathematical
+ * coordinates to canvas pixel coordinates.</li>
+ * <li>Line width is increased slightly when using semi-transparent trajectory
+ * colors to improve visibility.</li>
+ * </ul>
+ *
+ * <h3>Buffering and sampling:</h3>
+ * <ul>
+ * <li>{@code bufferThreshold} is computed in {@code calcBounds} from
+ * {@code MIN_PIXELS} and the current scale and axis ranges. It represents the
+ * squared minimal distance (in data units) required between successive stored
+ * samples and prevents storing points closer than a few screen pixels.</li>
+ * <li>Initial trajectory starting point is stored in {@code init} and updated
+ * whenever the buffer begins a new segment (empty buffer) or when a NaN time
+ * indicates a new starting point.</li>
+ * </ul>
+ *
+ * <h3>Usage notes:</h3>
+ * <ul>
+ * <li>Call {@link #setMap(Data2Phase)} to provide a domain-specific mapping
+ * between model state and phase-plane coordinates. A default {@code TraitMap}
+ * is created lazily if none is set.</li>
+ * <li>Use {@link #addData(double, double[], boolean)} to append samples from
+ * the simulation. The method clones and prepends the time to the provided array
+ * before storing it in the buffer.</li>
+ * <li>Enable or disable autoscaling via the context menu or
+ * {@link #autoscale()}.</li>
+ * </ul>
+ *
+ * @see Data2Phase
+ * @see AbstractGraph
+ * @see Phase2D
+ * @see Formatter
  * 
  * @author Christoph Hauert
  */
@@ -137,7 +206,7 @@ public class ParaGraph extends AbstractGraph<double[]> implements Zooming, Shift
 	 */
 	public Data2Phase getMap() {
 		if (map == null)
-			setMap(new TraitMap());
+			setMap(new TraitMap(this));
 		return map;
 	}
 
@@ -268,77 +337,123 @@ public class ParaGraph extends AbstractGraph<double[]> implements Zooming, Shift
 
 		Point2D nextPt = new Point2D();
 		Point2D currPt = new Point2D();
+
+		// Paint trajectory (may also update autoscale ranges)
 		String tC = style.trajColor;
 		g.setStrokeStyle(tC);
 		// increase line width for trajectories with transparency
 		g.setLineWidth((tC.startsWith("rgba") ? 1.25 * style.lineWidth : style.lineWidth));
-		Iterator<double[]> i = buffer.iterator();
-		if (i.hasNext()) {
-			double[] current = i.next();
-			double ct = current[0];
-			// current is last point added to buffer
-			map.data2Phase(current, currPt);
-			// update axes range if necessary
-			if (doAutoscale) {
-				style.xMin = Functions.roundDown(Math.min(style.xMin, map.getMinX(buffer)));
-				style.xMax = Functions.roundUp(Math.max(style.xMax, map.getMaxX(buffer)));
-				if (style.percentX) {
-					style.xMin = Math.max(style.xMin, 0.0);
-					style.xMax = Math.min(style.xMax, 1.0);
-				}
-				style.yMin = Functions.roundDown(Math.min(style.yMin, map.getMinY(buffer)));
-				style.yMax = Functions.roundUp(Math.max(style.yMax, map.getMaxY(buffer)));
-				if (style.percentX) {
-					style.yMin = Math.max(style.yMin, 0.0);
-					style.yMax = Math.min(style.yMax, 1.0);
-				}
-			}
-			while (i.hasNext()) {
-				double[] prev = i.next();
-				double pt = prev[0];
-				map.data2Phase(prev, nextPt);
-				if (!Double.isNaN(ct))
-					strokeLine((nextPt.getX() - style.xMin) * xScale, (nextPt.getY() - style.yMin) * yScale, //
-							(currPt.getX() - style.xMin) * xScale, (currPt.getY() - style.yMin) * yScale);
-				ct = pt;
-				Point2D swap = currPt;
-				currPt = nextPt;
-				nextPt = swap;
-			}
-		}
-		if (withMarkers) {
-			// mark start and end points of trajectory
-			map.data2Phase(init, currPt);
-			g.setFillStyle(style.startColor);
-			fillCircle((currPt.getX() - style.xMin) * xScale, (currPt.getY() - style.yMin) * yScale, style.markerSize);
-			if (!buffer.isEmpty()) {
-				map.data2Phase(buffer.last(), currPt);
-				g.setFillStyle(style.endColor);
-				fillCircle((currPt.getX() - style.xMin) * xScale, (currPt.getY() - style.yMin) * yScale,
-						style.markerSize);
-			}
-		}
-		if (markers != null) {
-			int n = 0;
-			int nMarkers = markers.size();
-			for (double[] mark : markers) {
-				map.data2Phase(mark, currPt);
-				String mcolor = markerColors[n++ % nMarkers];
-				if (mark[0] > 0.0) {
-					g.setFillStyle(mcolor);
-					fillCircle((currPt.getX() - style.xMin) * xScale, (currPt.getY() - style.yMin) * yScale,
-							style.markerSize);
-				} else {
-					g.setLineWidth(style.lineWidth);
-					g.setStrokeStyle(mcolor);
-					strokeCircle((currPt.getX() - style.xMin) * xScale, (currPt.getY() - style.yMin) * yScale,
-							style.markerSize);
-				}
-			}
-		}
+		drawTrajectory(currPt, nextPt, xScale, yScale);
+
+		// Paint markers if requested
+		if (withMarkers)
+			drawStartEndMarkers(currPt, xScale, yScale);
+
+		// Paint custom markers if present
+		if (markers != null)
+			drawCustomMarkers(currPt, xScale, yScale);
+
 		g.restore();
 		drawFrame(4, 4);
 		g.restore();
+	}
+
+	/**
+	 * Draw the trajectory stored in the buffer.
+	 * 
+	 * @param currPt the storage for the current point
+	 * @param nextPt the storage for the next point
+	 * @param xScale the x-axis scale
+	 * @param yScale the y-axis scale
+	 */
+	private void drawTrajectory(Point2D currPt, Point2D nextPt, double xScale, double yScale) {
+		Iterator<double[]> i = buffer.iterator();
+		if (!i.hasNext())
+			return;
+
+		double[] current = i.next();
+		double ct = current[0];
+		// current is last point added to buffer
+		map.data2Phase(current, currPt);
+
+		// update axes range if necessary
+		if (doAutoscale) {
+			style.xMin = Functions.roundDown(Math.min(style.xMin, map.getMinX(buffer)));
+			style.xMax = Functions.roundUp(Math.max(style.xMax, map.getMaxX(buffer)));
+			if (style.percentX) {
+				style.xMin = Math.max(style.xMin, 0.0);
+				style.xMax = Math.min(style.xMax, 1.0);
+			}
+			style.yMin = Functions.roundDown(Math.min(style.yMin, map.getMinY(buffer)));
+			style.yMax = Functions.roundUp(Math.max(style.yMax, map.getMaxY(buffer)));
+			if (style.percentX) {
+				style.yMin = Math.max(style.yMin, 0.0);
+				style.yMax = Math.min(style.yMax, 1.0);
+			}
+		}
+
+		while (i.hasNext()) {
+			double[] prev = i.next();
+			double pt = prev[0];
+			map.data2Phase(prev, nextPt);
+			if (!Double.isNaN(ct)) {
+				strokeLine((nextPt.getX() - style.xMin) * xScale, (nextPt.getY() - style.yMin) * yScale, //
+						(currPt.getX() - style.xMin) * xScale, (currPt.getY() - style.yMin) * yScale);
+			}
+			ct = pt;
+			Point2D swap = currPt;
+			currPt = nextPt;
+			nextPt = swap;
+		}
+	}
+
+	/**
+	 * Draw start and end markers for the trajectory.
+	 * 
+	 * @param aPt    the storage for a point
+	 * @param xScale the x-axis scale
+	 * @param yScale the y-axis scale
+	 */
+	private void drawStartEndMarkers(Point2D aPt, double xScale, double yScale) {
+		// mark start point
+		map.data2Phase(init, aPt);
+		g.setFillStyle(style.startColor);
+		fillCircle((aPt.getX() - style.xMin) * xScale, (aPt.getY() - style.yMin) * yScale, style.markerSize);
+
+		// mark end point if available
+		if (!buffer.isEmpty()) {
+			map.data2Phase(buffer.last(), aPt);
+			g.setFillStyle(style.endColor);
+			fillCircle((aPt.getX() - style.xMin) * xScale,
+					(aPt.getY() - style.yMin) * yScale,
+					style.markerSize);
+		}
+	}
+
+	/**
+	 * Draw custom markers stored in {@link #markers}.
+	 * 
+	 * @param pt     temporary storage for points
+	 * @param xScale the x-axis scale
+	 * @param yScale the y-axis scale
+	 */
+	private void drawCustomMarkers(Point2D pt, double xScale, double yScale) {
+		int n = 0;
+		int nMarkers = markers.size();
+		for (double[] mark : markers) {
+			map.data2Phase(mark, pt);
+			String mcolor = markerColors[n++ % nMarkers];
+			if (mark[0] > 0.0) {
+				g.setFillStyle(mcolor);
+				fillCircle((pt.getX() - style.xMin) * xScale, (pt.getY() - style.yMin) * yScale,
+						style.markerSize);
+			} else {
+				g.setLineWidth(style.lineWidth);
+				g.setStrokeStyle(mcolor);
+				strokeCircle((pt.getX() - style.xMin) * xScale, (pt.getY() - style.yMin) * yScale,
+						style.markerSize);
+			}
+		}
 	}
 
 	/**
@@ -540,211 +655,6 @@ public class ParaGraph extends AbstractGraph<double[]> implements Zooming, Shift
 					.append(", ")
 					.append(Formatter.format(point.getY(), 8))
 					.append("\n");
-		}
-	}
-
-	/**
-	 * Default mapping of data to the phase plane or phase plane projections.
-	 * Projections can be the sum of several dynamical variables. Custom
-	 * implementations of the {@code Data2Phase} interface can be provided by
-	 * modules that implement the {@code HasPhase2D} interface.
-	 * 
-	 * @see HasPhase2D#getPhase2DMap()
-	 */
-	public class TraitMap implements Data2Phase, BasicTooltipProvider {
-
-		/**
-		 * Flag indicating whether the axes are fixed. The default is fixed axes.
-		 */
-		boolean hasFixedAxes = false;
-
-		/**
-		 * The array of trait indices that are mapped to the <code>x</code>-axis.
-		 */
-		protected int[] stateX = new int[] { 0 };
-
-		/**
-		 * The array of trait indices that are mapped to the <code>y</code>-axis.
-		 */
-		protected int[] stateY = new int[] { 1 };
-
-		/**
-		 * The minimum value of the <code>x</code>-axis.
-		 */
-		protected double minX;
-
-		/**
-		 * The maximum value of the <code>x</code>-axis.
-		 */
-		protected double maxX;
-
-		/**
-		 * The minimum value of the <code>y</code>-axis.
-		 */
-		protected double minY;
-
-		/**
-		 * The maximum value of the <code>y</code>-axis.
-		 */
-		protected double maxY;
-
-		@Override
-		public void reset() {
-			minX = Double.POSITIVE_INFINITY;
-			maxX = Double.NEGATIVE_INFINITY;
-			minY = Double.POSITIVE_INFINITY;
-			maxY = Double.NEGATIVE_INFINITY;
-		}
-
-		@Override
-		public void setTraits(int[] x, int[] y) {
-			stateX = ArrayMath.clone(x);
-			stateY = ArrayMath.clone(y);
-		}
-
-		@Override
-		public int[] getTraitsX() {
-			return stateX;
-		}
-
-		@Override
-		public int[] getTraitsY() {
-			return stateY;
-		}
-
-		@Override
-		public boolean hasMultitrait() {
-			return true;
-		}
-
-		@Override
-		public boolean hasFixedAxes() {
-			return hasFixedAxes;
-		}
-
-		@Override
-		public void setFixedAxes(boolean hasFixedAxes) {
-			this.hasFixedAxes = hasFixedAxes;
-		}
-
-		@Override
-		public boolean data2Phase(double[] data, Point2D point) {
-			// NOTE: data[0] is time
-			double x = data[stateX[0] + 1];
-			int nx = stateX.length;
-			if (nx > 1) {
-				for (int n = 1; n < nx; n++)
-					x += data[stateX[n] + 1];
-			}
-			minX = Math.min(minX, x);
-			maxX = Math.max(maxX, x);
-			double y = data[stateY[0] + 1];
-			int ny = stateY.length;
-			if (ny > 1) {
-				for (int n = 1; n < ny; n++)
-					y += data[stateY[n] + 1];
-			}
-			minY = Math.min(minY, y);
-			maxY = Math.max(maxY, y);
-			point.set(x, y);
-			return true;
-		}
-
-		@Override
-		public boolean phase2Data(Point2D point, double[] data) {
-			// point is in user coordinates
-			// data is the last/most recent state in buffer (excluding time!)
-			if (stateX.length != 1 || stateY.length != 1)
-				return false;
-			// conversion only possible if each phase plane axis represents a single
-			// dynamical variable, i.e. no aggregates
-			data[stateX[0]] = point.getX();
-			data[stateY[0]] = point.getY();
-			return true;
-		}
-
-		@Override
-		public double getMinX(RingBuffer<double[]> buffer) {
-			if (!Double.isFinite(minX))
-				minX = findMin(buffer, stateX);
-			return minX;
-		}
-
-		@Override
-		public double getMaxX(RingBuffer<double[]> buffer) {
-			if (!Double.isFinite(maxX))
-				maxX = findMax(buffer, stateX);
-			return maxX;
-		}
-
-		@Override
-		public double getMinY(RingBuffer<double[]> buffer) {
-			if (!Double.isFinite(minY))
-				minY = findMin(buffer, stateY);
-			return minY;
-		}
-
-		@Override
-		public double getMaxY(RingBuffer<double[]> buffer) {
-			if (!Double.isFinite(maxY))
-				maxY = findMax(buffer, stateY);
-			return maxY;
-		}
-
-		/**
-		 * Find the minimum value of the data in the buffer accross all the indices in
-		 * <code>idxs</code>.
-		 * 
-		 * @param buffer the buffer with data points
-		 * @param idxs   the array of indices
-		 * @return the minimum value
-		 */
-		private double findMin(RingBuffer<double[]> buffer, int[] idxs) {
-			double min = Double.POSITIVE_INFINITY;
-			for (double[] data : buffer) {
-				double d = data[idxs[0] + 1];
-				int nd = idxs.length;
-				if (nd > 1) {
-					for (int n = 1; n < nd; n++)
-						d += data[idxs[n] + 1];
-				}
-				min = Math.min(min, d);
-			}
-			return min;
-		}
-
-		/**
-		 * Find the maximum value of the data in the buffer accross all the indices in
-		 * <code>idxs</code>.
-		 * 
-		 * @param buffer the buffer with data points
-		 * @param idxs   the array of indices
-		 * @return the maximum value
-		 */
-		private double findMax(RingBuffer<double[]> buffer, int[] idxs) {
-			double max = Double.NEGATIVE_INFINITY;
-			for (double[] data : buffer) {
-				double d = data[idxs[0] + 1];
-				int nd = idxs.length;
-				if (nd > 1) {
-					for (int n = 1; n < nd; n++)
-						d += data[idxs[n] + 1];
-				}
-				max = Math.max(max, d);
-			}
-			return max;
-		}
-
-		@Override
-		public String getTooltipAt(double x, double y) {
-			String tip = "<table><tr><td style='text-align:right'><i>" + style.xLabel //
-					+ ":</i></td><td>" + (style.percentX ? Formatter.formatPercent(x, 2) : Formatter.format(x, 2))
-					+ "</td></tr>";
-			tip += "<tr><td style='text-align:right'><i>" + style.yLabel //
-					+ ":</i></td><td>" + (style.percentY ? Formatter.formatPercent(y, 2) : Formatter.format(y, 2))
-					+ "</td></tr>";
-			tip += "</table>";
-			return tip;
 		}
 	}
 }

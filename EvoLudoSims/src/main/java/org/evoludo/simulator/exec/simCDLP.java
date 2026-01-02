@@ -41,10 +41,10 @@ import org.evoludo.simulator.models.DModel;
 import org.evoludo.simulator.models.IBS;
 import org.evoludo.simulator.models.IBSDPopulation;
 import org.evoludo.simulator.modules.CDLP;
+import org.evoludo.util.CLODelegate;
 import org.evoludo.util.CLOParser;
 import org.evoludo.util.CLOption;
-import org.evoludo.util.CLOption.CLODelegate;
-import org.evoludo.util.CLOption.Category;
+import org.evoludo.util.CLOCategory;
 import org.evoludo.util.Formatter;
 
 /**
@@ -126,7 +126,8 @@ public class simCDLP extends CDLP implements ChangeListener {
 		int[][] fix = null;
 		int lastfix = -1;
 
-		if (mutation.probability > 0.0) {
+		double pMutation = mutation.getProbability();
+		if (pMutation > 0.0) {
 			fix = new int[nTraits][nTraits];
 			if (threshold < 0 || threshold > nPopulation)
 				threshold = nPopulation;
@@ -141,7 +142,7 @@ public class simCDLP extends CDLP implements ChangeListener {
 
 		// do statistics starting from random initial configurations and determine the
 		// probablility to end in each of the four corners
-		if (mutation.probability < 1e-10) {
+		if (pMutation < 1e-10) {
 			double[] dinit = new double[nTraits];
 			// form random initial configuration of population - restrict to interior
 			int[] types = new int[] { COOPERATE, DEFECT, LONER, PUNISH };
@@ -334,11 +335,13 @@ public class simCDLP extends CDLP implements ChangeListener {
 		engine.exportState();
 	}
 
-	/**
-	 * Temporary variables for fixation probabilities and absorption times.
-	 */
+	/** Temporary running mean for fixation probabilities. */
 	double[] mean;
+
+	/** Temporary running variance for fixation probabilities. */
 	double[] variance;
+
+	/** Temporary state buffer for sampling. */
 	double[] state;
 
 	/**
@@ -386,7 +389,7 @@ public class simCDLP extends CDLP implements ChangeListener {
 	protected void updateStatistics(double time) {
 		if (prevsample >= time)
 			return;
-		model.getMeanTraits(getID(), state);
+		model.getMeanTraits(getId(), state);
 		// calculate weighted mean and sdev - see wikipedia
 		double w = time - prevsample;
 		double wn = w / (time);
@@ -463,7 +466,7 @@ public class simCDLP extends CDLP implements ChangeListener {
 	/**
 	 * Command line option to set the threshold for corner states.
 	 */
-	public final CLOption cloThreshold = new CLOption("threshold", "-1", Category.Simulation,
+	public final CLOption cloThreshold = new CLOption("threshold", "-1", CLOCategory.Simulation,
 			"--threshold <t>  threshold for corner count", new CLODelegate() {
 				@Override
 				public boolean parse(String arg) {
@@ -476,11 +479,11 @@ public class simCDLP extends CDLP implements ChangeListener {
 	 * Command line option to determine the basin of attraction of punishers and
 	 * cooperators.
 	 */
-	public final CLOption cloBasin = new CLOption("basin", Category.Simulation,
+	public final CLOption cloBasin = new CLOption("basin", CLOCategory.Simulation,
 			"--basin         basin of attraction - punisher vs. cooperation", new CLODelegate() {
 				@Override
-				public boolean parse(String arg) {
-					doBasin = cloBasin.isSet();
+				public boolean parse(boolean isSet) {
+					doBasin = isSet;
 					return true;
 				}
 			});
@@ -489,7 +492,7 @@ public class simCDLP extends CDLP implements ChangeListener {
 	 * Command line option to determine the time to reach the threshold of
 	 * punishers.
 	 */
-	public final CLOption cloTime2Punish = new CLOption("time2pun", "-1", Category.Simulation,
+	public final CLOption cloTime2Punish = new CLOption("time2pun", "-1", CLOCategory.Simulation,
 			"--time2pun <s>  time to reach threshold of punishers, s number of samples", new CLODelegate() {
 				@Override
 				public boolean parse(String arg) {
@@ -501,11 +504,11 @@ public class simCDLP extends CDLP implements ChangeListener {
 	/**
 	 * Command line option to generate a histogram of states visited.
 	 */
-	public final CLOption cloHistogram = new CLOption("histogram", Category.Simulation,
+	public final CLOption cloHistogram = new CLOption("histogram", CLOCategory.Simulation,
 			"--histogram     generate histogram of states visited", new CLODelegate() {
 				@Override
-				public boolean parse(String arg) {
-					doLocation = cloHistogram.isSet();
+				public boolean parse(boolean isSet) {
+					doLocation = isSet;
 					return true;
 				}
 			});

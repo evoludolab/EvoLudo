@@ -39,16 +39,17 @@ import org.evoludo.math.Functions;
 import org.evoludo.simulator.ColorMap;
 import org.evoludo.simulator.EvoLudo;
 import org.evoludo.simulator.models.Model.HasDE;
+import org.evoludo.simulator.models.ODEInitialize.InitType;
 import org.evoludo.simulator.modules.Features;
 import org.evoludo.simulator.modules.Features.Payoffs;
 import org.evoludo.simulator.modules.Map2Fitness;
 import org.evoludo.simulator.modules.Module;
 import org.evoludo.simulator.modules.Mutation;
 import org.evoludo.simulator.modules.PlayerUpdate;
+import org.evoludo.util.CLODelegate;
 import org.evoludo.util.CLOParser;
 import org.evoludo.util.CLOption;
-import org.evoludo.util.CLOption.CLODelegate;
-import org.evoludo.util.CLOption.Category;
+import org.evoludo.util.CLOCategory;
 import org.evoludo.util.Formatter;
 import org.evoludo.util.Plist;
 
@@ -63,6 +64,11 @@ import org.evoludo.util.Plist;
  * @author Christoph Hauert
  */
 public class ODE extends Model implements DModel {
+
+	/**
+	 * Helper responsible for parsing and initializing ODE state vectors.
+	 */
+	private final ODEInitialize initializer;
 
 	/**
 	 * Discretization of time increment for continuous time models. This is the
@@ -326,7 +332,8 @@ public class ODE extends Model implements DModel {
 	 */
 	public ODE(EvoLudo engine) {
 		super(engine);
-		type = Type.EM;
+		type = ModelType.EM;
+		initializer = new ODEInitialize(this);
 	}
 
 	@Override
@@ -360,67 +367,98 @@ public class ODE extends Model implements DModel {
 	public boolean check() {
 		boolean doReset = super.check();
 		dstate = null;
-		double minFit = Double.MAX_VALUE;
+		doReset |= evaluateSpecies();
+		names = getMeanNames();
+
+		// check if dynamics mode changed (cannot mix and match density and frequency
+		// based dynamics)
+		doReset |= updateDynamicsMode();
+		return doReset;
+	}
+
+	/**
+	 * Validate modules and derive aggregate state vector dimensions and scaling
+	 * factors.
+	 * 
+	 * @return {@code true} if a reset is required due to module changes
+	 */
+	private boolean evaluateSpecies() {
 		invFitRange = null;
 		idxSpecies = new int[nSpecies + 1];
 		nDim = 0;
-		int idx = 0;
+		boolean doReset = false;
 		boolean hasPayoffs = false;
+		double minFit = Double.MAX_VALUE;
+		int idx = 0;
+
 		for (Module<?> mod : species) {
 			doReset |= mod.check();
 			int nTraits = mod.getNTraits();
 			idxSpecies[idx] = nDim;
 			if (mod instanceof Payoffs) {
-				hasPayoffs = true;
-				if (invFitRange == null || invFitRange.length != nSpecies) {
+				if (!hasPayoffs) {
 					invFitRange = new double[nSpecies];
 					Arrays.fill(invFitRange, 1.0);
 				}
+				hasPayoffs = true;
 				Map2Fitness map2fit = mod.getMap2Fitness();
 				Payoffs pmod = (Payoffs) mod;
-				minFit = map2fit.map(pmod.getMinPayoff());
-				double maxFit = map2fit.map(pmod.getMaxPayoff());
-				if (maxFit > minFit)
-					invFitRange[idx] = 1.0 / (maxFit - minFit);
+				double mappedMin = map2fit.map(pmod.getMinPayoff());
+				double mappedMax = map2fit.map(pmod.getMaxPayoff());
+				minFit = Math.min(minFit, mappedMin);
+				if (mappedMax > mappedMin)
+					invFitRange[idx] = 1.0 / (mappedMax - mappedMin);
 			}
 			idx++;
 			nDim += nTraits;
 		}
 		idxSpecies[nSpecies] = nDim;
-		if (yt == null || yt.length != nDim) {
-			yt = new double[nDim];
-			dyt = new double[nDim];
-			yout = new double[nDim];
-			if (hasPayoffs)
-				ft = new double[nDim];
-		}
-		names = getMeanNames();
-		connect = false;
-		converged = false;
-
-		if (isAdjustedDynamics && minFit <= 0.0) {
+		if (hasPayoffs && isAdjustedDynamics && minFit <= 0.0) {
 			// fitness is not guaranteed to be positive
 			logger.warning(getClass().getSimpleName()
 					+ " - fitness >0 must hold for adjusted dynamics (revert to standard dynamics).");
 			isAdjustedDynamics = false;
 		}
+		allocArrays(hasPayoffs);
+		return doReset;
+	}
 
-		// check if dynamics mode changed (cannot mix and match density and frequency
-		// based dynamics)
+	/**
+	 * Allocate working arrays for the current dimensionality and payoff mode.
+	 * 
+	 * @param hasPayoffs {@code true} if at least one module provides payoffs
+	 */
+	private void allocArrays(boolean hasPayoffs) {
+		if (yt == null || yt.length != nDim) {
+			yt = new double[nDim];
+			dyt = new double[nDim];
+			yout = new double[nDim];
+		}
+		if (hasPayoffs && (ft == null || ft.length != nDim))
+			ft = new double[nDim];
+	}
+
+	/**
+	 * Determine whether the current setup should use density- or frequency-based
+	 * dynamics and refresh dependent indices accordingly.
+	 * 
+	 * @return {@code true} if the mode changed and a reset is required
+	 */
+	private boolean updateDynamicsMode() {
 		InitType init = initType[0];
 		boolean isDensityNow = (init == InitType.DENSITY || init == InitType.UNITY);
-		doReset |= (isDensity != isDensityNow);
+		boolean modeChanged = (isDensity != isDensityNow);
 		isDensity = isDensityNow;
 		if (isDensity) {
 			Arrays.fill(dependents, -1);
 		} else {
-			idx = 0;
+			int idx = 0;
 			for (Module<?> mod : species) {
 				dependents[idx] = ((HasDE) mod).getDependent();
 				idx++;
 			}
 		}
-		return doReset;
+		return modeChanged;
 	}
 
 	@Override
@@ -450,6 +488,10 @@ public class ODE extends Model implements DModel {
 
 	@Override
 	public void init() {
+		super.init();
+		dtTry = dt;
+		if (type.isPDE())
+			return; // PDE models handle initialization themselves
 		init(true);
 	}
 
@@ -690,9 +732,9 @@ public class ODE extends Model implements DModel {
 					logger.warning(getClass().getSimpleName()
 							+ ": aborted, step size too small, dt=" + Formatter.formatSci(dtTaken, 5));
 				converged = true;
-				break;
+			} else {
+				converged = checkConvergence(d2);
 			}
-			converged = checkConvergence(d2);
 			if (converged)
 				break;
 		}
@@ -867,6 +909,19 @@ public class ODE extends Model implements DModel {
 	 */
 	protected void getDerivatives(double t, double[] state, double[] fitness, double[] change) {
 		dstate = state;
+		computeFitness(state, fitness);
+		applyUpdates(state, fitness, change);
+		dstate = null;
+		postProcessChanges(state, fitness, change);
+	}
+
+	/**
+	 * Compute fitness values for all species based on the current state.
+	 * 
+	 * @param state   array of frequencies/densities denoting the state population
+	 * @param fitness array to return the fitness values of types in population
+	 */
+	private void computeFitness(double[] state, double[] fitness) {
 		int index = 0;
 		for (Module<?> mod : species) {
 			int nGroup = mod.getNGroup();
@@ -874,54 +929,67 @@ public class ODE extends Model implements DModel {
 			int skip = idxSpecies[index];
 			if (mod.isStatic()) {
 				System.arraycopy(staticfit, skip, fitness, skip, nTraits);
-			} else {
-				if (nGroup == 2)
-					((HasDE.DPairs) mod).avgScores(state, fitness);
-				else
-					((HasDE.DGroups) mod).avgScores(state, nGroup, fitness);
-				Map2Fitness map2fit = mod.getMap2Fitness();
-				for (int n = skip; n < skip + nTraits; n++)
-					fitness[n] = map2fit.map(fitness[n]);
+				return;
 			}
+			if (nGroup == 2)
+				((HasDE.DPairs) mod).avgScores(state, fitness);
+			else
+				((HasDE.DGroups) mod).avgScores(state, nGroup, fitness);
+			Map2Fitness map2fit = mod.getMap2Fitness();
+			for (int n = skip; n < skip + nTraits; n++)
+				fitness[n] = map2fit.map(fitness[n]);
+			index++;
+		}
+	}
+
+	/**
+	 * Apply update dynamics (ecological or player-update) to all species.
+	 * 
+	 * @param state   array of frequencies/densities denoting the state population
+	 * @param fitness array of fitness values of types in population
+	 * @param change  array to return the rate of change of each type in the
+	 *                population
+	 */
+	private void applyUpdates(double[] state, double[] fitness, double[] change) {
+		int index = 0;
+		for (Module<?> mod : species) {
+			int nGroup = mod.getNGroup();
+			int nTraits = mod.getNTraits();
+			int skip = idxSpecies[index];
+
 			if (mod.getVacantIdx() >= 0) {
 				updateEcology(mod, state, fitness, nGroup, index, change);
-				continue;
+				return;
 			}
 
 			double totDelta;
 			PlayerUpdate.Type put = mod.getPlayerUpdate().getType();
 			switch (put) {
-				case THERMAL: // fermi update
+				case THERMAL:
 					totDelta = updateThermal(mod, state, fitness, nGroup, index, change);
 					break;
-
-				case IMITATE: // same as IMITATE_BETTER in continuum limit
+				case IMITATE:
 					totDelta = updateImitate(mod, state, fitness, nGroup, index, change);
 					break;
-
-				case IMITATE_BETTER: // replicator update
+				case IMITATE_BETTER:
 					totDelta = updateImitateBetter(mod, state, fitness, nGroup, index, change);
 					break;
-
-				case BEST: // imitate the better
-				case BEST_RANDOM: // same as BEST in continuum limit
+				case BEST:
+				case BEST_RANDOM:
 					totDelta = updateBest(mod, state, fitness, nGroup, index, change);
 					break;
-
-				case BEST_RESPONSE: // best-response update
+				case BEST_RESPONSE:
 					totDelta = updateBestResponse(mod, state, fitness, nGroup, index, change);
 					break;
-
-				case PROPORTIONAL: // proportional update
+				case PROPORTIONAL:
 					totDelta = updateProportional(mod, state, fitness, nGroup, index, change);
 					break;
-
 				default:
-					throw new Error("Unknown update method for players (" + put + ")");
+					throw new IllegalArgumentException("Unknown update method for players (" + put + ")");
 			}
-			// with frequencies totDelta is zero (in theory)
+
+			// with frequencies totDelta is zero (in theory); correct numerical drift
 			if (!isDensity && Math.abs(totDelta) > accuracy) {
-				// shift changes to sum up to zero
 				boolean[] active = mod.getActiveTraits();
 				totDelta /= mod.getNActive();
 				for (int n = 0; n < nTraits; n++)
@@ -930,8 +998,17 @@ public class ODE extends Model implements DModel {
 			}
 			index++;
 		}
-		dstate = null;
-		index = 0;
+	}
+
+	/**
+	 * Apply adjusted dynamics scaling and mutation for all species.
+	 * 
+	 * @param state   array of frequencies/densities denoting the state population
+	 * @param fitness array of fitness values of types in population
+	 * @param change  array of rate of change of each type in the population
+	 */
+	private void postProcessChanges(double[] state, double[] fitness, double[] change) {
+		int index = 0;
 		int from = 0;
 		for (Module<?> pop : species) {
 			int dim = pop.getNTraits();
@@ -940,7 +1017,8 @@ public class ODE extends Model implements DModel {
 				double fbar = 0.0;
 				for (int i = from; i < to; i++)
 					fbar += state[i] * fitness[i];
-				double ifbar = 1.0 / fbar;
+				// fbar>0 guaranteed through check() (if not, isAdjustedDynamics is false)
+				double ifbar = 1.0 / fbar; // NOSONAR
 				for (int i = from; i < to; i++)
 					change[i] *= ifbar;
 			}
@@ -1315,33 +1393,22 @@ public class ODE extends Model implements DModel {
 		int nTraits = mod.getNTraits();
 		int skip = idxSpecies[index];
 		int end = skip + nTraits;
+		boolean[] active = mod.getActiveTraits();
+
+		// first pass: reset change, determine min and max fitness among active traits
 		double min = Double.MAX_VALUE;
 		double max = -Double.MAX_VALUE;
-		int nMax = 0;
-		boolean[] active = mod.getActiveTraits();
 		for (int i = skip; i < end; i++) {
-			change[i] = 0.0; // reset
-			if (active != null && !active[i - skip])
-				continue;
-			double fiti = fitness[i];
-			if (min > fiti)
-				min = fiti;
-			// if difference is tiny, consider them equal
-			if (Math.abs(fiti - max) < 1e-6) {
-				change[i] = 1.0;
-				max = Math.max(fiti, max); // just to avoid any drift
-				nMax++;
-				continue;
-			}
-			if (fiti > max) {
-				// new max found - clear reply
-				for (int j = skip; j < i; j++)
-					change[j] = 0.0;
-				change[i] = 1.0;
-				max = fiti;
-				nMax = 1;
+			change[i] = 0.0;
+			if (active == null || active[i - skip]) {
+				double fiti = fitness[i];
+				if (fiti < min)
+					min = fiti;
+				if (fiti > max)
+					max = fiti;
 			}
 		}
+
 		double diff = max - min;
 		// note:
 		// - the threshold to signal convergence in terms of payoff range is
@@ -1350,14 +1417,15 @@ public class ODE extends Model implements DModel {
 		// - the second condition already triggers early on whenever approaching
 		// points where another trait becomes the best response.
 		if (diff < 1e-3 && diff * dtTry < accuracy) {
-			System.arraycopy(state, skip, change, skip, nTraits);
-		} else {
-			if (nMax > 1) {
-				double norm = 1.0 / nMax; // sonarcube doesn't know 1>0...
-				for (int i = skip; i < end; i++)
-					change[i] *= norm;
-			}
+			for (int n = skip; n < end; n++)
+				change[n] = 0.0;
+			return 0.0;
 		}
+
+		// second pass: mark all best responses
+		processBR(max, active, fitness, skip, end, change);
+
+		// apply dynamics: move towards best response profile
 		double err = 0.0;
 		for (int n = skip; n < end; n++) {
 			double dyn = change[n] - state[n];
@@ -1365,6 +1433,34 @@ public class ODE extends Model implements DModel {
 			err += dyn;
 		}
 		return err;
+	}
+
+	/**
+	 * Process best responses for active traits with given fitness values (within
+	 * tolerance).
+	 * 
+	 * @param max     the maximum fitness
+	 * @param active  the active traits
+	 * @param fitness the fitness values
+	 * @param start   the start index
+	 * @param end     the end index
+	 * @param change  the change array
+	 */
+	private void processBR(double max, boolean[] active, double[] fitness, int start, int end, double[] change) {
+		int nMax = 0;
+		for (int i = start; i < end; i++) {
+			if ((active == null || active[i - start]) && Math.abs(fitness[i] - max) < 1e-6) {
+				change[i] = 1.0;
+				nMax++;
+			}
+		}
+		// normalize in case of multiple best responses
+		if (nMax > 1) {
+			// sonarcube doesn't know 1>0...
+			double norm = 1.0 / nMax; // NOSONAR
+			for (int i = start; i < end; i++)
+				change[i] *= norm;
+		}
 	}
 
 	@Override
@@ -1393,29 +1489,37 @@ public class ODE extends Model implements DModel {
 			int to = from + pop.getNTraits();
 			// omit status for vacant trait in density models
 			int vacant = isDensity ? from + pop.getVacantIdx() : -1;
-			StringBuilder psb = new StringBuilder();
-			for (int i = from; i < to; i++) {
-				if (i == vacant)
-					continue;
-				if (psb.length() > 0) {
-					psb.append(", ");
-				}
-				psb.append(names[i]).append(": ")
-						.append(isDensity ? Formatter.format(state[i], 1)
-								: Formatter.formatPercent(state[i], 1));
-			}
-			from = to;
 			if (isMultispecies) {
-				if (sb.length() > 0) {
-					sb.append("<br/><i");
-				} else {
-					sb.append("<i");
-				}
-				sb.append(">").append(pop.getName()).append(":</i> ");
+				if (sb.length() > 0)
+					sb.append("<br/>");
+				sb.append("<i>").append(pop.getName()).append(":</i> ");
 			}
-			sb.append(psb.toString());
+			buildModelStatus(sb, state, from, to, vacant);
+			from = to;
 		}
 		return sb.toString();
+	}
+
+	/**
+	 * Build a comma separated status string for one population.
+	 * 
+	 * @param sb     the string builder to append to
+	 * @param state  the current state of the model
+	 * @param from   the start index of the population in the state array
+	 * @param to     the end index of the population in the state array
+	 * @param vacant the index of the vacant trait to omit (or -1 if none)
+	 */
+	private void buildModelStatus(StringBuilder sb, double[] state, int from, int to, int vacant) {
+		for (int i = from; i < to; i++) {
+			if (i == vacant)
+				continue;
+			if (sb.length() > 0) {
+				sb.append(", ");
+			}
+			sb.append(names[i]).append(": ")
+					.append(isDensity ? Formatter.format(state[i], 1)
+							: Formatter.formatPercent(state[i], 1));
+		}
 	}
 
 	/**
@@ -1487,136 +1591,8 @@ public class ODE extends Model implements DModel {
 	 * 
 	 */
 	private void init(boolean doRandom) {
-		time = 0.0;
-		dtTry = dt;
-		connect = false;
-		converged = false;
-		// PDE models have their own initialization types
-		if (type.isPDE())
-			return;
-		int idx = -1;
-		// y0 is initialized except for species with random initial frequencies
-		if (doRandom) {
-			for (Module<?> pop : species) {
-				if (!initType[++idx].equals(InitType.RANDOM))
-					continue;
-				int dim = pop.getNTraits();
-				int from = idxSpecies[idx];
-				for (int n = 0; n < dim; n++)
-					y0[from + n] = rng.random01();
-			}
-		}
-		System.arraycopy(y0, 0, yt, 0, nDim);
+		initializer.init(doRandom);
 		normalizeState(yt);
-	}
-
-	/**
-	 * Types of initial configurations. Currently this model supports the following
-	 * density distributions:
-	 * <dl>
-	 * <dt>DENSITY
-	 * <dd>Initial densities as specified in {@link #cloInit} (density modules).
-	 * <dt>FREQUENCY
-	 * <dd>Initial frequencies as specified in {@link #cloInit} (frequency
-	 * modules).
-	 * <dt>UNIFORM
-	 * <dd>Uniform frequencies of traits (default; in density modules all densities
-	 * are set to zero).
-	 * <dt>RANDOM
-	 * <dd>Random initial trait frequencies. <br>
-	 * <strong>Note:</strong> Not available for density based models.
-	 * </dl>
-	 * 
-	 * @see #cloInit
-	 * @see #parse(String)
-	 * @see PDE.InitType
-	 * @see PDE#parse(String)
-	 */
-	public enum InitType implements CLOption.Key {
-
-		/**
-		 * Set initial densities as specified. In models that support both density and
-		 * frequency based dynamics, this selects the density based dynamics.
-		 * 
-		 * @see HasDE.DualDynamics
-		 */
-		DENSITY("density", "initial trait densities <d1,...,dn>"),
-
-		/**
-		 * Set initial frequencies as specified. In models that support both density and
-		 * frequency based dynamics, this selects the frequency based dynamics.
-		 * 
-		 * @see HasDE.DualDynamics
-		 */
-		FREQUENCY("frequency", "initial trait frequencies <f1,...,fn>"),
-
-		/**
-		 * Uniform initial frequencies of traits. Not available in density based models.
-		 */
-		UNIFORM("uniform", "uniform initial frequencies"),
-
-		/**
-		 * Random initial trait frequencies. Not available for density based models.
-		 */
-		RANDOM("random", "random initial frequencies"),
-
-		/**
-		 * Uniform initial trait densities of one. In models that support both density
-		 * and frequency based dynamics, this selects the density based dynamics.
-		 * 
-		 * @see HasDE.DualDynamics
-		 */
-		UNITY("unity", "unit densities"),
-
-		/**
-		 * Single mutant in homogeneous resident.
-		 * <p>
-		 * <strong>Note:</strong> Only available for SDE models. Not available for
-		 * density based models.
-		 * 
-		 * @see SDE
-		 */
-		MUTANT("mutant", "single mutant");
-
-		/**
-		 * Key of initialization type. Used when parsing command line options.
-		 * 
-		 * @see #parse(String)
-		 */
-		String key;
-
-		/**
-		 * Brief description of initialization type for help display.
-		 * 
-		 * @see EvoLudo#getCLOHelp()
-		 */
-		String title;
-
-		/**
-		 * Instantiate new initialization type.
-		 * 
-		 * @param key   identifier for parsing of command line option
-		 * @param title summary of geometry
-		 */
-		InitType(String key, String title) {
-			this.key = key;
-			this.title = title;
-		}
-
-		@Override
-		public String getKey() {
-			return key;
-		}
-
-		@Override
-		public String getTitle() {
-			return title;
-		}
-
-		@Override
-		public String toString() {
-			return key;
-		}
 	}
 
 	/**
@@ -1625,7 +1601,7 @@ public class ODE extends Model implements DModel {
 	 * <p>
 	 * <strong>Note:</strong> Not possible to perform parsing in {@code CLODelegate}
 	 * of {@link #cloInit} because PDE model provide their own
-	 * {@link PDE.InitType}s.
+	 * {@link PDEInitialize.Type}s.
 	 * 
 	 * @param arg the arguments to parse
 	 * @return {@code true} if parsing successful
@@ -1633,71 +1609,7 @@ public class ODE extends Model implements DModel {
 	 * @see InitType
 	 */
 	public boolean parse(String arg) {
-		// nDim and idxSpecies not yet initialized
-		int dim = 0;
-		for (Module<?> pop : species)
-			dim += pop.getNTraits();
-		if (y0 == null || y0.length != dim)
-			y0 = new double[dim];
-		Arrays.fill(y0, 0.0);
-		String[] inittypes = arg.split(CLOParser.SPECIES_DELIMITER);
-		int idx = 0;
-		int start = 0;
-		boolean parseOk = true;
-		species: for (Module<?> pop : species) {
-			String inittype = inittypes[idx % inittypes.length];
-			double[] initargs = null;
-			String[] typeargs = inittype.split(CLOParser.SPLIT_ARG_REGEX);
-			InitType itype = (InitType) cloInit.match(inittype);
-			// if matching of inittype failed assume it was omitted; use previous type
-			if (itype == null) {
-				// if no previous match, give up
-				if (idx == 0) {
-					parseOk = false;
-					break;
-				}
-				itype = initType[idx - 1];
-				initargs = CLOParser.parseVector(typeargs[0]);
-			} else if (typeargs.length > 1)
-				initargs = CLOParser.parseVector(typeargs[1]);
-			int nTraits = pop.getNTraits();
-			switch (itype) {
-				case MUTANT:
-					// SDE models only (no vacant sites)
-					// initargs contains the index of the resident and mutant traits
-					int mutantType = (int) initargs[0];
-					int len = initargs.length;
-					int residentType;
-					if (len > 1)
-						residentType = (int) initargs[1];
-					else
-						residentType = (mutantType + 1) % nTraits;
-					// set all initial frequencies to zero
-					Arrays.fill(y0, start, start + nTraits, 0.0);
-					y0[mutantType] = 1.0 / pop.getNPopulation();
-					y0[residentType] = 1.0 - y0[mutantType];
-					break;
-				case DENSITY:
-				case FREQUENCY:
-					if (initargs.length != nTraits) {
-						parseOk = false;
-						break species;
-					}
-					System.arraycopy(initargs, 0, y0, start, nTraits);
-					break;
-				case RANDOM:
-				case UNIFORM:
-				case UNITY:
-				default:
-					// uniform distribution is the default. for densities set all to zero.
-					Arrays.fill(y0, start, start + nTraits, 1.0);
-					break;
-			}
-			initType[idx] = itype;
-			idx++;
-			start += nTraits;
-		}
-		return parseOk;
+		return initializer.parse(arg);
 	}
 
 	/**
@@ -1710,7 +1622,7 @@ public class ODE extends Model implements DModel {
 	 * @see #dt
 	 * @see #setDt(double)
 	 */
-	public final CLOption cloDEdt = new CLOption("dt", "0.1", Category.Model,
+	public final CLOption cloDEdt = new CLOption("dt", "0.1", CLOCategory.Model,
 			"--dt <t>        time increment for ODE/PDE/SDE integration", new CLODelegate() {
 				@Override
 				public boolean parse(String arg) {
@@ -1726,15 +1638,27 @@ public class ODE extends Model implements DModel {
 	 * configurations.
 	 * 
 	 * @see InitType
-	 * @see PDE.InitType
+	 * @see PDEInitialize.Type
 	 */
-	public final CLOption cloInit = new CLOption("init", InitType.UNIFORM.getKey(), Category.Model,
-			"--init <t>      type of initial configuration", new CLODelegate() {
+	public final CLOption cloInit = new CLOption("init", InitType.UNIFORM.getKey(), CLOCategory.Model,
+			null, new CLODelegate() {
 				@Override
 				public boolean parse(String arg) {
 					// parsing must be 'outsourced' to ODE class to enable
 					// PDE models to override it and do their own initialization.
 					return ODE.this.parse(arg);
+				}
+
+				@Override
+				public String getDescription() {
+					String descr = "--init <t>      type of initial configuration:\n" + cloInit.getDescriptionKey()
+							+ "\n                with r, m indices of resident, mutant traits";
+					boolean noVacant = false;
+					for (Module<?> mod : species)
+						noVacant |= mod.getVacantIdx() < 0;
+					if (noVacant)
+						return descr.replace("[,v]", "");
+					return descr + "\n                and v frequency of vacant sites";
 				}
 			});
 
@@ -1745,12 +1669,12 @@ public class ODE extends Model implements DModel {
 	 * @see #isAdjustedDynamics
 	 * @see #setAdjustedDynamics(boolean)
 	 */
-	public final CLOption cloAdjustedDynamics = new CLOption("adjusted", "standard", CLOption.Argument.NONE,
-			Category.Model,
-			"--adjusted      adjusted replicator dynamics", new CLODelegate() {
+	public final CLOption cloAdjustedDynamics = new CLOption("adjusted", CLOCategory.Model,
+			"--adjusted      adjusted replicator dynamics",
+			new CLODelegate() {
 				@Override
-				public boolean parse(String arg) {
-					setAdjustedDynamics(cloAdjustedDynamics.isSet());
+				public boolean parse(boolean isSet) {
+					setAdjustedDynamics(isSet);
 					return true;
 				}
 			});
@@ -1764,9 +1688,8 @@ public class ODE extends Model implements DModel {
 	 * @see #hasConverged()
 	 * @see #isMonomorphic()
 	 */
-	public final CLOption cloDEAccuracy = new CLOption("accuracy", "0.0001", Category.Model,
-			"--accuracy <a>  accuracy for convergence, y(t+dt)-y(t)<a dt",
-			new CLODelegate() {
+	public final CLOption cloDEAccuracy = new CLOption("accuracy", "0.0001", CLOCategory.Model,
+			"--accuracy <a>  accuracy for convergence, y(t+dt)-y(t)<a dt", new CLODelegate() {
 				@Override
 				public boolean parse(String arg) {
 					setAccuracy(CLOParser.parseDouble(arg));
@@ -1778,11 +1701,11 @@ public class ODE extends Model implements DModel {
 	 * Command line option to set the number of generations between reports for
 	 * {@link EvoLudo#modelNext()}.
 	 */
-	public final CLOption cloTimeReversed = new CLOption("timereversed", "forward", Category.Model,
+	public final CLOption cloTimeReversed = new CLOption("timereversed", CLOCategory.Model,
 			"--timereversed  reverse time", new CLODelegate() {
 				@Override
-				public boolean parse(String arg) {
-					setTimeReversed(cloTimeReversed.isSet());
+				public boolean parse(boolean isSet) {
+					setTimeReversed(isSet);
 					return true;
 				}
 			});
@@ -1885,7 +1808,9 @@ public class ODE extends Model implements DModel {
 	 * @param plist the string builder for the encoded state
 	 */
 	void encodeFitness(StringBuilder plist) {
-		plist.append(Plist.encodeKey("Fitness", ft));
+		// the fitness array is null if modules do not implement the Payoffs interface
+		if (ft != null)
+			plist.append(Plist.encodeKey("Fitness", ft));
 	}
 
 	/**

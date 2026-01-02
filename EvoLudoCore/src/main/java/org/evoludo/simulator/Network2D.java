@@ -34,6 +34,9 @@ import org.evoludo.geom.Node2D;
 import org.evoludo.geom.Path2D;
 import org.evoludo.geom.Point2D;
 import org.evoludo.geom.Vector2D;
+import org.evoludo.simulator.geometries.AbstractGeometry;
+import org.evoludo.simulator.geometries.GeometryFeatures;
+import org.evoludo.simulator.geometries.GeometryType;
 
 /**
  * Graphical representation of generic population geometries in 2D. A network
@@ -41,7 +44,7 @@ import org.evoludo.geom.Vector2D;
  *
  * @author Christoph Hauert
  */
-public abstract class Network2D extends Network {
+public abstract class Network2D extends Network<Node2D> {
 
 	/**
 	 * The links in this network.
@@ -49,20 +52,12 @@ public abstract class Network2D extends Network {
 	protected Path2D links = new Path2D();
 
 	/**
-	 * The array with all nodes of this network. This deliberately overrides
-	 * {@code super.nodes}. The two arrays are identical but saves a ton of
-	 * unnecesary casts.
-	 */
-	@SuppressWarnings("hiding")
-	protected Node2D[] nodes = null;
-
-	/**
 	 * Create a new network in 2D for the given engine and geometry.
 	 * 
 	 * @param engine   the pacemaker for running the model
 	 * @param geometry the structure of the population
 	 */
-	protected Network2D(EvoLudo engine, Geometry geometry) {
+	protected Network2D(EvoLudo engine, AbstractGeometry geometry) {
 		// network is shared between different graphs - cannot set listener here!
 		super(engine, geometry);
 		accuracy = 1e-4;
@@ -81,13 +76,13 @@ public abstract class Network2D extends Network {
 	public void initNodes(double pnorm, double nnorm, double unitradius) {
 		if (nodes == null || nodes.length != nNodes) {
 			nodes = new Node2D[nNodes];
-			super.nodes = this.nodes;
 			for (int k = 0; k < nNodes; k++)
 				nodes[k] = new Node2D();
 		}
+		GeometryFeatures gFeats = geometry.getFeatures();
 		int kin = geometry.kin[0];
 		int kout = geometry.kout[0];
-		double diff = kout + kin - geometry.avgTot;
+		double diff = kout + kin - gFeats.avgTot;
 		double myr = unitradius * (1.0 + diff * (diff > 0.0 ? pnorm : nnorm));
 		nodes[0].set(0.0, 0.0, myr);
 		double scaledquake = 0.05 * radius;
@@ -97,7 +92,7 @@ public abstract class Network2D extends Network {
 			kin = geometry.kin[k];
 			kout = geometry.kout[k];
 			Node2D node = nodes[k];
-			diff = kout + kin - geometry.avgTot;
+			diff = kout + kin - gFeats.avgTot;
 			myr = unitradius * (1.0 + diff * (diff > 0.0 ? pnorm : nnorm));
 			double perturb = scaledquake * (rng.random01() - 0.5);
 			node.set(Math.sin(angle) + perturb, Math.cos(angle) + perturb, myr);
@@ -149,7 +144,7 @@ public abstract class Network2D extends Network {
 		energy += attraction(nodeidx);
 		// save current position and energies
 		// lastPos.set(pos);
-		repulsion.scale(1.0 / geometry.size);
+		repulsion.scale(1.0 / geometry.getSize());
 		repulsion.add(attraction);
 		// double delta = Math.min(repulsion.length(), R*0.01);
 		double delta = Math.min(dt / repulsion.length(), dt);
@@ -229,7 +224,7 @@ public abstract class Network2D extends Network {
 			npot += vec.length2() * IR2;
 			attraction.add(vec);
 		}
-		if (geometry.isUndirected) {
+		if (geometry.isUndirected()) {
 			if (nOut == 0)
 				return 0.0;
 			attraction.scale(1.0 / nOut);
@@ -261,7 +256,7 @@ public abstract class Network2D extends Network {
 
 	@Override
 	public void finishLayout() {
-		if (geometry.isDynamic) {
+		if (geometry.isType(GeometryType.DYNAMIC)) {
 			// on dynamic networks radius needs to be set as well
 			// the radius of the nodes is scaled by their degree
 			int kin;
@@ -269,15 +264,17 @@ public abstract class Network2D extends Network {
 			double unitradius = Math.pow(0.8 / nNodes, 0.25);
 			double pnorm = 0.0;
 			double nnorm = 0.0;
-			if (geometry.minTot != geometry.maxTot) {
-				pnorm = 2.0 / (geometry.maxTot - geometry.avgTot); // maximal node size is 2+1 times the average
-				nnorm = 0.5 / (geometry.avgTot - geometry.minTot); // minimal node size is 0.5 of average
+			GeometryFeatures gFeats = geometry.getFeatures();
+			double avgTot = gFeats.avgTot;
+			if (gFeats.minTot != gFeats.maxTot) {
+				pnorm = 2.0 / (gFeats.maxTot - avgTot); // maximal node size is 2+1 times the average
+				nnorm = 0.5 / (avgTot - gFeats.minTot); // minimal node size is 0.5 of average
 			}
 			for (int k = 0; k < nNodes; k++) {
 				Node2D node = nodes[k];
 				kin = geometry.kin[k];
 				kout = geometry.kout[k];
-				double diff = kout + kin - geometry.avgTot;
+				double diff = kout + kin - avgTot;
 				double myr = unitradius * (1.0 + diff * (diff > 0.0 ? pnorm : nnorm));
 				node.setR(myr);
 			}
@@ -313,7 +310,7 @@ public abstract class Network2D extends Network {
 			engine.getLogger().warning("Too many links to draw - skipping!");
 			return;
 		}
-		if (geometry.isUndirected) {
+		if (geometry.isUndirected()) {
 			if (fLinks >= 1.0) {
 				// draw all links
 				for (int n = 0; n < nNodes; n++) {

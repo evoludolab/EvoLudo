@@ -30,7 +30,7 @@
 
 package org.evoludo;
 
-import java.util.HashMap;
+import java.util.List;
 import java.util.logging.Handler;
 import java.util.logging.Level;
 import java.util.logging.LogRecord;
@@ -38,45 +38,25 @@ import java.util.logging.Logger;
 
 import org.evoludo.geom.Rectangle2D;
 import org.evoludo.simulator.EvoLudo;
-import org.evoludo.simulator.EvoLudo.Directive;
 import org.evoludo.simulator.EvoLudoGWT;
 import org.evoludo.simulator.EvoLudoTrigger;
 import org.evoludo.simulator.Resources;
-import org.evoludo.simulator.models.ChangeListener;
-import org.evoludo.simulator.models.Data;
-import org.evoludo.simulator.models.MilestoneListener;
 import org.evoludo.simulator.models.Mode;
 import org.evoludo.simulator.models.Model;
-import org.evoludo.simulator.models.SampleListener;
-import org.evoludo.simulator.models.Type;
+import org.evoludo.simulator.models.ChangeListener.PendingAction;
 import org.evoludo.simulator.modules.Module;
+import org.evoludo.simulator.ui.SettingsController;
+import org.evoludo.simulator.ui.FSController;
+import org.evoludo.simulator.ui.KeyHandler;
+import org.evoludo.simulator.ui.ViewController;
+import org.evoludo.simulator.ui.WebListener;
 import org.evoludo.simulator.views.AbstractView;
 import org.evoludo.simulator.views.Console;
-import org.evoludo.simulator.views.Distribution;
-import org.evoludo.simulator.views.HasDistribution;
-import org.evoludo.simulator.views.HasHistogram;
-import org.evoludo.simulator.views.HasMean;
-import org.evoludo.simulator.views.HasPhase2D;
-import org.evoludo.simulator.views.HasPop2D;
-import org.evoludo.simulator.views.HasPop3D;
-import org.evoludo.simulator.views.HasS3;
-import org.evoludo.simulator.views.Histogram;
-import org.evoludo.simulator.views.Mean;
-import org.evoludo.simulator.views.Phase2D;
-import org.evoludo.simulator.views.Pop2D;
-import org.evoludo.simulator.views.Pop3D;
-import org.evoludo.simulator.views.S3;
 import org.evoludo.ui.ContextMenu;
-import org.evoludo.ui.FullscreenChangeEvent;
-import org.evoludo.ui.FullscreenChangeHandler;
-import org.evoludo.ui.HasFullscreenChangeHandlers;
 import org.evoludo.ui.InputEvent;
 import org.evoludo.ui.Slider;
 import org.evoludo.util.CLOParser;
 import org.evoludo.util.CLOProvider;
-import org.evoludo.util.CLOption;
-import org.evoludo.util.CLOption.CLODelegate;
-import org.evoludo.util.CLOption.Category;
 import org.evoludo.util.NativeJS;
 import org.evoludo.util.Plist;
 import org.evoludo.util.PlistParser;
@@ -94,12 +74,9 @@ import com.google.gwt.dom.client.DivElement;
 import com.google.gwt.dom.client.Document;
 import com.google.gwt.dom.client.Element;
 import com.google.gwt.dom.client.NodeList;
-import com.google.gwt.dom.client.Style;
-import com.google.gwt.dom.client.Style.Unit;
 import com.google.gwt.event.dom.client.ChangeEvent;
 import com.google.gwt.event.dom.client.ClickEvent;
 import com.google.gwt.event.dom.client.DragEnterEvent;
-import com.google.gwt.event.dom.client.DragEnterHandler;
 import com.google.gwt.event.dom.client.DragLeaveEvent;
 import com.google.gwt.event.dom.client.DragLeaveHandler;
 import com.google.gwt.event.dom.client.DragOverEvent;
@@ -128,15 +105,138 @@ import com.google.gwt.user.client.ui.RootPanel;
 import com.google.gwt.user.client.ui.Widget;
 
 /**
- * Entry point classes define <code>onModuleLoad()</code>.
+ * <h2>EvoLudoWeb</h2>
+ *
  * <p>
- * EvoLudoWeb is the main class for EvoLudo's web interface. It is instantiated
- * either through GWT's module loading mechanism or through trigger buttons.
+ * Top-level GUI controller for an EvoLudo laboratory instance running in a GWT
+ * environment (browser or ePub). This class implements the primary user
+ * interface and coordinates between the GWT widgets, the EvoLudo engine
+ * (EvoLudoGWT), and a collection of AbstractView implementations that render
+ * model data. It provides lifecycle integration with GWT (EntryPoint,
+ * onModuleLoad/onLoad/onUnload), runtime control of the engine (start/stop,
+ * init/reset, step/debug), management of command-line options (CLO), keyboard
+ * and drag-and-drop handlers, export/import of state, as well as ePub-specific
+ * accommodations.
+ * </p>
+ *
+ * <h3>Responsibilities</h3>
+ * <ul>
+ * <li>Create and bind the GUI widgets declared in the accompanying UiBinder
+ * template.</li>
+ * <li>Instantiate and configure the EvoLudoGWT engine and its logger and
+ * Console view.</li>
+ * <li>Parse and apply command-line options (CLO) to load modules and models,
+ * configure views, and restore saved state.</li>
+ * <li>Maintain and update a dynamic list of active data views for the
+ * running model, showing only the appropriate views for module/model
+ * features (2D/3D populations, histograms, statistics, console).</li>
+ * <li>Provide keyboard shortcuts and a JS-friendly key listener mechanism
+ * (via JSNI) that reliably receives global key events even if GWT's
+ * default handlers lose focus.</li>
+ * <li>Support drag-and-drop of saved state files, including integrating
+ * optional JavaScript zip handling when needed.</li>
+ * <li>Handle fullscreen events and resizing, and provide a snapshot-ready
+ * signal for automated site capture.</li>
+ * <li>Adjust behavior for ePub contexts (inline flow vs standalone page),
+ * disabling editing, console, and drag-and-drop where necessary.</li>
+ * <li>Expose helper JS entry points to create/insert labs or triggers from
+ * external JavaScript (createEvoLudoLab, insertEvoLudoLab,
+ * insertEPubEvoLudoLab, createEvoLudoTrigger).</li>
+ * </ul>
+ *
+ * <h3>Lifecycle</h3>
  * <p>
- * <strong>ePub notes:</strong>
+ * - onModuleLoad(): scans the DOM for marker elements (evoludo-simulation and
+ * evoludo-trigger-html) and replaces them with interactive labs or trigger
+ * buttons. <br>
+ * - onLoad(): called when the widget is attached; sets up the engine, logger,
+ * console, fullscreen element, and applies any CLO present. <br>
+ * - onUnload(): attempts to gracefully shut down the engine, clear the console
+ * and remove global listeners. Care is taken to avoid throwing exceptions
+ * during unload to keep GWT module reloads stable.
+ * </p>
+ *
+ * <h3>Command-Line Options (CLO)</h3>
+ * <p>
+ * The class supplies and consumes CLO options that control initial view and
+ * GUI size/fullscreen. It provides an editable CLO field in the UI (unless
+ * disabled for ePubs), an Apply button (or Standalone link in ePubs), and a
+ * Default button to revert to initial settings. The applyCLO() flow:
+ * parse CLO, update engine/module/model, load and size views, restore state if
+ * present, and activate/resume execution according to parsed flags (e.g. --run,
+ * --snap, --samples).
+ * </p>
+ *
+ * <h3>Views and Display</h3>
+ * <p>
+ * EvoLudoWeb keeps a DeckLayoutPanel (evoludoDeck) that displays exactly one
+ * view at a time, while {@link ViewController} manages the available views and
+ * selection state. Views are created or reused based on module capabilities and
+ * model type. Views are responsible for rendering, while EvoLudoWeb
+ * orchestrates loading, sizing, activation, deactivation, and disposal. The
+ * Console view is treated specially and may be omitted in restricted ePub
+ * modes.
+ * </p>
+ *
+ * <h3>Input Handling and Shortcuts</h3>
+ * <p>
+ * Global keyboard handling is implemented through {@link KeyHandler} to
+ * provide reliable shortcuts that control the engine and UI. The controller
+ * distinguishes between repeating actions (handled on key down) and
+ * non-repeating actions (handled on key up) while JSNI routines install
+ * window-level listeners that delegate to the controller. Touch interaction
+ * variants are supported for critical controls (Start/Stop, Init/Reset,
+ * Settings).
+ * </p>
+ *
+ * <h3>Drag-and-Drop and State Restore</h3>
+ * <p>
+ * The widget supports drag-and-drop of saved state files. It verifies data
+ * transfer validity and, when necessary, injects a JavaScript ZIP handler to
+ * decompress archives. Restored state is parsed into a Plist, applied to the
+ * engine, and the GUI reconfigured to reflect the restored model and settings.
+ * </p>
+ *
+ * <h3>Logging</h3>
+ * <p>
+ * Logging is routed through the engine's Logger. EvoLudoWeb installs a custom
+ * EvoLogHandler that mirrors important messages to the on-screen Console and
+ * to the status line (for warnings/errors). Help text and preformatted blocks
+ * are handled carefully to preserve formatting and safe encoding for XML/XHTML
+ * contexts and ePubs.
+ * </p>
+ *
+ * <h3>Concurrency and Threading</h3>
+ * <p>
+ * GWT executes UI work on the browser main thread. EvoLudoWeb schedules
+ * deferred actions via the Scheduler where appropriate and ensures that model
+ * state changes (start/stop/reset) are requested via the engine's request APIs.
+ * No internal multithreading beyond browser event callbacks is used.
+ * </p>
+ *
+ * <h3>Extension Points</h3>
+ * <ul>
+ * <li>Views: Implement AbstractView to add new visualizations. EvoLudoWeb will
+ * discover and include them based on module interfaces and model type.</li>
+ * <li>CLO Providers: EvoLudoWeb implements CLOProvider to contribute GUI
+ * related options and to react when the engine parses command-line
+ * arguments.</li>
+ * <li>FullscreenChangeHandler: the class listens for fullscreen changes to
+ * apply styling and sizing changes.</li>
+ * </ul>
+ *
+ * <h3>ePub Behaviour</h3>
+ * <p>
+ * EvoLudoWeb adapts to ePub readers: inline labs in an ePub may have editing,
+ * drag-and-drop, and console functionality disabled to accommodate reader
+ * restrictions. If the lab is on a standalone ePub page, full interactivity is
+ * allowed. Special workarounds are applied for known platform quirks (e.g.
+ * Apple Books/touch event handler injection).
+ * </p>
+ * <strong>Generic reader notes:</strong>
  * <ol>
- * <li>buttons do not work in ePub's and hence
- * trigger-'buttons' must be provided as anchor elements.</li>
+ * <li>button elements do not work in ePub's and hence trigger-'buttons' must
+ * be provided as anchor elements.</li>
  * </ol>
  * <p>
  * <strong>Apple Books:</strong>
@@ -205,10 +305,35 @@ import com.google.gwt.user.client.ui.Widget;
  * corresponding text location impossible (somehow a marker should be set to
  * allow using the back button).</li>
  * </ol>
+ * 
+ * <h3>Usage</h3>
+ * <ol>
+ * <li>Place a &lt;div class="evoludo-simulation"&gt; in the HTML with an
+ * optional
+ * data-clo attribute or supply &quot;clo&quot; in the URL. The module will
+ * instantiate EvoLudoWeb for each such element during onModuleLoad().</li>
+ * <li>Alternatively, call the exported JavaScript helpers to create or insert
+ * labs dynamically.</li>
+ * <li>Interact with the lab through the provided GUI or keyboard shortcuts.
+ * Use Apply/Default to manage parameters and use Export/drag-and-drop to
+ * save/restore state.</li>
+ * </ol>
+ *
+ * <p>
+ * <strong>Implementation notes:</strong> this class is designed to be a
+ * single, self-contained controller per DOM container element. It expects to
+ * run within the GWT environment and to co-operate with EvoLudoGWT, the
+ * Model/Module abstraction, and various AbstractView subclasses. It uses JSNI
+ * for some browser integration and therefore relies on the presence of the
+ * window object and typical browser DOM APIs.
+ * </p>
+ *
+ * @see EvoLudoGWT
+ * @see AbstractView
+ * @see Console
  */
 public class EvoLudoWeb extends Composite
-		implements HasFullscreenChangeHandlers, FullscreenChangeHandler, MilestoneListener, ChangeListener,
-		SampleListener, CLOProvider, EntryPoint {
+		implements CLOProvider, EntryPoint {
 
 	/**
 	 * GWT magic to define GUI elements (see {@literal EvoLudoWeb.ui.xml}).
@@ -227,15 +352,19 @@ public class EvoLudoWeb extends Composite
 	protected double updatetime = -1.0;
 
 	/**
-	 * Reference to running engine in ePubs (to conserve resources only one lab can
-	 * be running at a time)
+	 * Controller for ePub specific behaviour and emulation.
 	 */
-	public static EvoLudoWeb runningEPub;
+	private SettingsController settingsController;
 
 	/**
 	 * Controller. Manages the interface with the outside world.
 	 */
 	EvoLudoGWT engine;
+
+	/**
+	 * Helper that centralizes keyboard handling.
+	 */
+	private final KeyHandler keyController = new KeyHandler(this);
 
 	/**
 	 * Logger for keeping track of and reporting events and issues.
@@ -259,41 +388,19 @@ public class EvoLudoWeb extends Composite
 	HandlerRegistration dragLeaveHandler;
 
 	/**
-	 * The reference to the fullscreen event handler.
-	 */
-	HandlerRegistration fullscreenHandler;
-
-	/**
-	 * The reference to the fullscreen widget.
-	 */
-	Widget fullscreenWidget;
-
-	/**
 	 * ID of element in DOM that contains the EvoLudo lab.
 	 */
 	String elementID = "EvoLudoWeb";
 
 	/**
-	 * Default set of parameters as specified for the initial invocation.
+	 * Controller managing all data views and the {@link #evoludoDeck}.
 	 */
-	private String defaultCLO;
+	private ViewController viewController;
 
 	/**
-	 * Look-up table for active views. This is the selection shown in
-	 * {@link #evoludoViews}.
+	 * Controller managing Lifecycle, Run, Sample, and Change events.
 	 */
-	HashMap<String, AbstractView> activeViews = new HashMap<>();
-
-	/**
-	 * By default the first data view is shown. In general this shows the strategies
-	 * in the (structured) population in 2D.
-	 */
-	private String initialView = "1";
-
-	/**
-	 * Currently visible view
-	 */
-	AbstractView activeView;
+	WebListener webListener;
 
 	/**
 	 * The transparent backdrop of popup EvoLudo labs is stored here to reuse.
@@ -305,6 +412,11 @@ public class EvoLudoWeb extends Composite
 	 * feature detection get reported.
 	 */
 	Console viewConsole;
+
+	/**
+	 * Controller handling fullscreen and --size option.
+	 */
+	private FSController fsController;
 
 	/**
 	 * Early initializations.
@@ -328,7 +440,6 @@ public class EvoLudoWeb extends Composite
 	 */
 	private EvoLudoWeb() {
 		super();
-		isWebGLSupported = false;
 	}
 
 	/**
@@ -372,12 +483,8 @@ public class EvoLudoWeb extends Composite
 		if (Canvas.createIfSupported() == null) {
 			Label canvasError = new Label("ERROR: no HTML5 canvas available!\ntry another browser!");
 			evoludoDeck.add(canvasError);
-			isWebGLSupported = false;
 			return;
 		}
-		// canvas is supported, now check if WebGL is supported as well
-		isWebGLSupported = NativeJS.isWebGLSupported();
-
 		// set command line options
 		evoludoCLO.getElement().setAttribute("contenteditable", "true");
 		evoludoCLO.setText(clo != null ? clo : "");
@@ -389,9 +496,6 @@ public class EvoLudoWeb extends Composite
 		// note: the {}-place holders interfere with UiBinder...
 		evoludoSlider.setTitle("Set delay between updates ({max} - {min}msec); now at {value}msec");
 
-		// add full screen change handler
-		if (NativeJS.isFullscreenSupported())
-			fullscreenHandler = addFullscreenChangeHandler(this);
 	}
 
 	/**
@@ -435,6 +539,11 @@ public class EvoLudoWeb extends Composite
 	}
 
 	/**
+	 * Attribute name for command line options in DOM elements.
+	 */
+	static final String DOM_DATA_CLO = "data-clo";
+
+	/**
 	 * Add an EvoLudo lab to the DOM element with the given ID. If the ID is
 	 * {@code null} or empty,
 	 * a unique ID is generated. If {@code clo} is {@code null} or empty, the
@@ -451,7 +560,7 @@ public class EvoLudoWeb extends Composite
 			id = HTMLPanel.createUniqueId();
 		labElement.setId(id);
 		if (clo != null && !clo.isEmpty())
-			labElement.setAttribute("data-clo", clo);
+			labElement.setAttribute(DOM_DATA_CLO, clo);
 		EvoLudoWeb lab = new EvoLudoWeb(id, clo);
 		panel.add(lab);
 	}
@@ -512,26 +621,28 @@ public class EvoLudoWeb extends Composite
 	@Override
 	public void onLoad() {
 		super.onLoad();
+		settingsController = new SettingsController(evoludoCLO, evoludoApply, evoludoDefault,
+				evoludoHelp, evoludoSettings);
 		setupEngine();
 		setupLogger(engine);
 		setupConsole(logger);
+		logFeatures();
+		viewController = new ViewController(engine, evoludoDeck, evoludoViews, viewConsole, this::updateGUI);
+		webListener = new WebListener(this, engine, keyController);
 
 		// now evoludoPanel is attached and we can set the grandparent as the
 		// fullscreen element
-		fullscreenWidget = evoludoPanel.getParent().getParent();
-		engine.setFullscreenElement(fullscreenWidget.getElement());
+		fsController = new FSController(engine, (evoludoPanel.getParent().getParent()));
 
 		String clo = engine.getCLO();
 		// clo may have been set from the URL or as an HTML attribute
 		if (clo == null || clo.isEmpty()) {
 			RootPanel root = RootPanel.get(elementID);
 			if (root != null)
-				clo = root.getElement().getAttribute("data-clo").trim();
+				clo = root.getElement().getAttribute(DOM_DATA_CLO).trim();
 		}
 		engine.setCLO(clo);
 		applyCLO();
-		// save initial set of parameters as default
-		defaultCLO = clo;
 	}
 
 	/**
@@ -543,10 +654,28 @@ public class EvoLudoWeb extends Composite
 		engine = new EvoLudoGWT(this);
 		engine.loadModules();
 		engine.addCLOProvider(this);
-		engine.addMilestoneListener(this);
-		engine.addSampleListener(this);
-		engine.addChangeListener(this);
 		engine.setCLO(evoludoCLO.getText().trim());
+	}
+
+	/**
+	 * Reset the current view selection to the default entry.
+	 */
+	public void resetViewSelection() {
+		viewController.resetSelection();
+	}
+
+	/**
+	 * Clear the command line option field in the GUI.
+	 */
+	public void clearCommandLineOptions() {
+		evoludoCLO.setText("");
+	}
+
+	/**
+	 * Restore the default log threshold (display all severities).
+	 */
+	public void resetStatusThreshold() {
+		displayStatusThresholdLevel = Level.ALL.intValue();
 	}
 
 	/**
@@ -562,9 +691,9 @@ public class EvoLudoWeb extends Composite
 		// note: log handler needs to know whether this is an ePub (regardless of any
 		// feature declarations with --gui) to make sure log is properly XML encoded (if
 		// needed).
-		boolean isEPub = NativeJS.getEPubReader() != null;
 		ConsoleLogHandler logHandler = new ConsoleLogHandler();
-		logHandler.setFormatter(new XMLLogFormatter(true, isEPub || !EvoLudoGWT.isHTML));
+		logHandler.setFormatter(new XMLLogFormatter(true,
+				(NativeJS.getEPubReader() != null) || NativeJS.isHTML()));
 		logger.addHandler(logHandler);
 	}
 
@@ -581,7 +710,6 @@ public class EvoLudoWeb extends Composite
 		logger.addHandler(logEvoHandler);
 		logger.setLevel(Level.INFO);
 		logger.info(engine.getVersion());
-		logFeatures();
 	}
 
 	/**
@@ -607,110 +735,16 @@ public class EvoLudoWeb extends Composite
 		engine.setCLO(null);
 		engine.requestAction(PendingAction.SHUTDOWN, true);
 		viewConsole.clearLog();
+		webListener.unload();
 		super.onUnload();
-	}
-
-	@Override
-	public void moduleLoaded() {
-		// assume that some kind of keys are always present, i.e. always add listener
-		// for e.g. 'Alt' but key shortcuts only if not ePub
-		addKeyListener(this);
-		if (popup != null)
-			keyListener = this;
-	}
-
-	@Override
-	public void moduleUnloaded() {
-		activeView = null;
-		evoludoViews.setSelectedIndex(-1);
-		removeKeyListener(this);
-		if (keyListener == this)
-			keyListener = null;
-		// clear settings
-		evoludoCLO.setText("");
-	}
-
-	@Override
-	public void moduleRestored() {
-		displayStatusThresholdLevel = Level.ALL.intValue();
-		displayStatus("State successfully restored.");
-	}
-
-	@Override
-	public void modelUnloaded() {
-		activeView = null;
-		evoludoViews.setSelectedIndex(-1);
-	}
-
-	@Override
-	public void modelRunning() {
-		if (EvoLudoGWT.isEPub) {
-			if (runningEPub != null)
-				throw new IllegalStateException("Another ePub lab is already running!");
-			runningEPub = this;
-		}
-		displayStatusThresholdLevel = Level.ALL.intValue();
-		updateGUI();
-	}
-
-	@Override
-	public void modelChanged(PendingAction action) {
-		switch (action) {
-			case CHANGE_MODE:
-				// reset threshold for status messages after mode change
-				displayStatusThresholdLevel = Level.ALL.intValue();
-				//$FALL-THROUGH$
-			case NONE:
-				updateStatus();
-				updateCounter();
-				break;
-			default:
-				// includes SHUTDOWN, RESET, INIT, STOP, MODE
-		}
-		if (!engine.isRunning())
-			updateGUI();
-	}
-
-	@Override
-	public void modelSample(boolean success) {
-		if (success)
-			updateStatus();
-		updateCounter();
-	}
-
-	@Override
-	public void modelStopped() {
-		if (EvoLudoGWT.isEPub) {
-			if (runningEPub == null)
-				throw new IllegalStateException("Running ePub lab not found!");
-			if (runningEPub == this)
-				runningEPub = null;
-		}
-		updateGUI();
-	}
-
-	@Override
-	public void modelDidInit() {
-		updateGUI();
-	}
-
-	@Override
-	public void modelDidReset() {
-		updateGUI();
-		// show version after reset but do not overwrite warnings and errors`
-		displayStatus(engine.getVersion(), Level.INFO.intValue() + 1);
-		if (snapmarker != null)
-			Document.get().getBody().removeChild(snapmarker);
-		// reset threshold for status messages after reset
-		displayStatusThresholdLevel = Level.ALL.intValue();
 	}
 
 	/**
 	 * Update GUI for running/stopped model.
 	 */
-	private void updateGUI() {
+	public void updateGUI() {
 		boolean stopped = !engine.isRunning();
-		evoludoStartStop.setText(stopped ? "Start" : "Stop");
+		evoludoStartStop.setText(stopped ? BUTTON_START : BUTTON_STOP);
 		evoludoStep.setEnabled(stopped);
 		evoludoInitReset.setEnabled(stopped);
 		evoludoApply.setEnabled(stopped);
@@ -731,10 +765,13 @@ public class EvoLudoWeb extends Composite
 	/**
 	 * Helper method to update status of GUI.
 	 */
-	private void updateStatus() {
+	public void updateStatus() {
 		Model model = engine.getModel();
 		// do not force retrieving status if engine is running
-		String s = activeView.getStatus(!engine.isRunning());
+		AbstractView<?> view = viewController.getActiveView();
+		if (view == null)
+			return;
+		String s = view.getStatus(!engine.isRunning());
 		if (s == null)
 			s = model.getStatus();
 		displayStatus(s);
@@ -744,7 +781,7 @@ public class EvoLudoWeb extends Composite
 	/**
 	 * Helper method to update counter of GUI.
 	 */
-	private void updateCounter() {
+	public void updateCounter() {
 		evoludoTime.setText(engine.getModel().getCounter());
 	}
 
@@ -793,7 +830,7 @@ public class EvoLudoWeb extends Composite
 	 */
 	@UiHandler("evoludoViews")
 	public void onViewChange(ChangeEvent event) {
-		changeViewTo(activeViews.get(evoludoViews.getSelectedItemText()));
+		changeViewTo(viewController.getViewByName(evoludoViews.getSelectedItemText()));
 		evoludoViews.setFocus(false);
 	}
 
@@ -801,11 +838,11 @@ public class EvoLudoWeb extends Composite
 	 * Change view of EvoLudo model data. This helper method is called when the user
 	 * selects a new view with the popup list {@link #evoludoViews} or when a
 	 * particular view is requested through command line options (see
-	 * {@link #cloView}).
+	 * {@link ViewController#getCloView()}).
 	 * 
 	 * @param newView new view of model data to display
 	 */
-	protected void changeViewTo(AbstractView newView) {
+	protected void changeViewTo(AbstractView<?> newView) {
 		changeViewTo(newView, false);
 	}
 
@@ -813,7 +850,8 @@ public class EvoLudoWeb extends Composite
 	 * Change view of EvoLudo model data. This helper method is called when the user
 	 * selects a new view with the popup list {@link #evoludoViews} or when a
 	 * particular view is requested through command line options (see
-	 * {@link #cloView}). The view is re-activated if {@code force} is {@code true}
+	 * {@link ViewController#getCloView()}). The view is re-activated if
+	 * {@code force} is {@code true}
 	 * and activation is skipped if the view didn't change and {@code force} is
 	 * {@code false}.
 	 *
@@ -821,26 +859,46 @@ public class EvoLudoWeb extends Composite
 	 * @param force   if {@code true} the view is re-activated even if it didn't
 	 *                change
 	 */
-	protected void changeViewTo(AbstractView newView, boolean force) {
-		if (!force && newView == activeView)
-			return;
+	protected void changeViewTo(AbstractView<?> newView, boolean force) {
+		viewController.changeViewTo(newView, force);
+	}
 
-		if (activeView != null)
-			activeView.deactivate();
-		// initially activeView would otherwise be null, which causes troubles if mouse
-		// is on canvas triggering events...
-		activeView = newView;
-		evoludoDeck.showWidget(activeView);
-		// set selected item in view selector
-		int activeIdx = evoludoDeck.getWidgetIndex(activeView);
-		evoludoViews.setSelectedIndex(activeIdx);
-		// save index of view if not console
-		if (activeIdx != activeViews.size() - 1)
-			viewIdx = activeIdx;
-		// adding a new widget can cause a flurry of activities; wait until they subside
-		// before activation
-		Scheduler.get().scheduleDeferred(() -> activeView.activate());
-		updateGUI();
+	/**
+	 * Return the list of all active views.
+	 * 
+	 * @return the list of all active views (console included)
+	 */
+	@SuppressWarnings("java:S1452") // views have unknown generic parameters
+	public List<AbstractView<?>> getActiveViews() {
+		return viewController.getActiveViews();
+	}
+
+	/**
+	 * Return the currently active view.
+	 * 
+	 * @return the active view.
+	 */
+	@SuppressWarnings("java:S1452") // views have unknown generic parameters
+	public AbstractView<?> getActiveView() {
+		return viewController.getActiveView();
+	}
+
+	/**
+	 * Return the index of the currently active view in the list of active views.
+	 * 
+	 * @return the index of the active view inside the deck or {@code -1}.
+	 */
+	public int getActiveViewIndex() {
+		return viewController.getActiveViewIndex();
+	}
+
+	/**
+	 * Switches to the provided view.
+	 *
+	 * @param view the new view to display
+	 */
+	public void changeView(AbstractView<?> view) {
+		changeViewTo(view);
 	}
 
 	/**
@@ -882,6 +940,56 @@ public class EvoLudoWeb extends Composite
 		engine.setDelay((int) evoludoSlider.getValue());
 		evoludoSlider.setValue(engine.getDelay());
 	}
+
+	/**
+	 * Label of button to show/hide parameter settings.
+	 */
+	static final String BUTTON_SETTINGS = "Settings";
+
+	/**
+	 * Label of button to start model.
+	 */
+	static final String BUTTON_START = "Start";
+
+	/**
+	 * Label of button to stop model.
+	 */
+	static final String BUTTON_STOP = "Stop";
+
+	/**
+	 * Label of button to initialize model.
+	 */
+	static final String BUTTON_INIT = "Init";
+
+	/**
+	 * Label of button to reset model.
+	 */
+	static final String BUTTON_RESET = "Reset";
+
+	/**
+	 * Label of button to advance model by one step.
+	 */
+	static final String BUTTON_STEP = "Step";
+
+	/**
+	 * Label of button to advance model by single microscopic step.
+	 */
+	static final String BUTTON_DEBUG = "Debug";
+
+	/**
+	 * Label of button to collect one statistics sample.
+	 */
+	static final String BUTTON_SAMPLE = "Sample";
+
+	/**
+	 * Label of button to reverse on step.
+	 */
+	static final String BUTTON_PREV = "Previous";
+
+	/**
+	 * Label of button to show help.
+	 */
+	static final String BUTTON_HELP = "Help";
 
 	/**
 	 * 'Settings' button
@@ -930,13 +1038,95 @@ public class EvoLudoWeb extends Composite
 	 * Helper method to toggle the visibility of {@link #evoludoCLOPanel} to view or
 	 * modify the parameter settings.
 	 */
-	void toggleSettings() {
+	public void toggleSettings() {
 		// toggle visibility of field for command line parameters
 		evoludoCLOPanel.setVisible(!evoludoCLOPanel.isVisible());
 		Scheduler.get().scheduleDeferred(() -> {
 			evoludoLayout.onResize();
 			NativeJS.focusOn(evoludoCLO.getElement());
 		});
+	}
+
+	/**
+	 * Obtain the DOM element that backs the CLO label for direct manipulation.
+	 * 
+	 * @return the DOM element that backs the CLO label
+	 */
+	public Element getCLOElement() {
+		return evoludoCLO.getElement();
+	}
+
+	/**
+	 * Applies the text currently in the CLO field to the engine.
+	 */
+	public void applyCLOFromField() {
+		engine.setCLO(evoludoCLO.getText().replace((char) 160, ' '));
+		applyCLO();
+	}
+
+	/**
+	 * Check if this lab is displayed as standalone page in ePub.
+	 * 
+	 * @return {@code true} if a standalone
+	 */
+	public boolean isEPubStandalone() {
+		return settingsController.isStandalone();
+	}
+
+	/**
+	 * Check if this lab is running inside an ePub reader.
+	 * 
+	 * @return {@code true} when running inside an ePub reader.
+	 */
+	public boolean isEPub() {
+		return settingsController.isEPub();
+	}
+
+	/**
+	 * Check if the CLO settings panel is visible in the GUI.
+	 * 
+	 * @return {@code true} if settings panel visible
+	 */
+	public boolean isCLOPanelVisible() {
+		return evoludoCLOPanel.isVisible();
+	}
+
+	/**
+	 * Closes the overlay containing this EvoLudo lab, if any.
+	 * 
+	 * @return {@code true} if lab was closed
+	 */
+	public boolean closePopup() {
+		if (popup != null && popup.isAttached()) {
+			popup.close();
+			return true;
+		}
+		return false;
+	}
+
+	/**
+	 * Check if this lab owns a popup overlay.
+	 * 
+	 * @return {@code true} if lab shown on overlay
+	 */
+	public boolean hasPopup() {
+		return popup != null;
+	}
+
+	/**
+	 * Return the engine that controls the EvoLudo modules.
+	 * 
+	 * @return the engine
+	 */
+	public EvoLudoGWT getEngine() {
+		return engine;
+	}
+
+	/**
+	 * Syncs the delay slider with the engine's current delay.
+	 */
+	public void syncDelaySlider() {
+		evoludoSlider.setValue(engine.getDelay());
 	}
 
 	/**
@@ -951,9 +1141,6 @@ public class EvoLudoWeb extends Composite
 	 * to <code>Init</code> after it is released.
 	 *
 	 * @param event the ClickEvent that was fired
-	 * 
-	 * @see #keyDownHandler(String)
-	 * @see #keyUpHandler(String)
 	 */
 	@UiHandler("evoludoInitReset")
 	public void onInitResetClick(ClickEvent event) {
@@ -970,10 +1157,20 @@ public class EvoLudoWeb extends Composite
 		@Override
 		public void run() {
 			// show alt-button labels
-			isAltDown = true;
-			updateKeys();
+			keyController.showAltModeFromTouch();
 		}
 	};
+
+	/**
+	 * Schedule showing alternate/context buttons after a long touch and prevent
+	 * default handling.
+	 *
+	 * @param event the touch event (must not be {@code null})
+	 */
+	private void scheduleAltButtons(TouchStartEvent event) {
+		showAltTouchTimer.schedule(ContextMenu.LONG_TOUCH_TIME);
+		event.preventDefault();
+	}
 
 	/**
 	 * Touch of <code>Init</code> button started. Set timer for switching to
@@ -984,8 +1181,7 @@ public class EvoLudoWeb extends Composite
 	 */
 	@UiHandler("evoludoInitReset")
 	public void onInitResetTouchStart(TouchStartEvent event) {
-		showAltTouchTimer.schedule(ContextMenu.LONG_TOUCH_TIME);
-		event.preventDefault();
+		scheduleAltButtons(event);
 	}
 
 	/**
@@ -998,19 +1194,18 @@ public class EvoLudoWeb extends Composite
 	public void onInitResetTouchEnd(TouchEndEvent event) {
 		showAltTouchTimer.cancel();
 		initReset();
-		isAltDown = false;
-		updateKeys();
+		keyController.hideAltModeFromTouch();
 	}
 
 	/**
 	 * Initialize or reset EvoLudo model. If model is running wait until next update
 	 * is completed to prevent unexpected side effects.
 	 */
-	protected void initReset() {
+	public void initReset() {
 		String action = evoludoInitReset.getText();
 		displayStatus(action + " pending. Waiting for engine to stop...");
 		displayStatusThresholdLevel = Level.ALL.intValue();
-		engine.requestAction(action.equals("Reset") ? PendingAction.RESET : PendingAction.INIT);
+		engine.requestAction(action.equals(BUTTON_RESET) ? PendingAction.RESET : PendingAction.INIT);
 	}
 
 	/**
@@ -1027,7 +1222,10 @@ public class EvoLudoWeb extends Composite
 	 */
 	@UiHandler("evoludoStartStop")
 	public void onStartStopClick(ClickEvent event) {
-		engine.startStop();
+		if (engine.isRunning() || SettingsController.isReady())
+			engine.startStop();
+		else
+			logger.warning("another EvoLudo instance is already running!");
 	}
 
 	/**
@@ -1078,8 +1276,7 @@ public class EvoLudoWeb extends Composite
 	 */
 	@UiHandler("evoludoStep")
 	public void onStepTouchStart(TouchStartEvent event) {
-		showAltTouchTimer.schedule(ContextMenu.LONG_TOUCH_TIME);
-		event.preventDefault();
+		scheduleAltButtons(event);
 	}
 
 	/**
@@ -1092,8 +1289,7 @@ public class EvoLudoWeb extends Composite
 	public void onStepTouchEnd(TouchEndEvent event) {
 		showAltTouchTimer.cancel();
 		prevNextDebug();
-		isAltDown = false;
-		updateKeys();
+		keyController.hideAltModeFromTouch();
 	}
 
 	/**
@@ -1111,14 +1307,14 @@ public class EvoLudoWeb extends Composite
 	private void prevNextDebug() {
 		String label = evoludoStep.getText();
 		switch (label) {
-			case "Sample":
-			case "Step":
+			case BUTTON_SAMPLE:
+			case BUTTON_STEP:
 				engine.next();
 				return;
-			case "Prev":
+			case BUTTON_PREV:
 				engine.prev();
 				return;
-			case "Debug":
+			case BUTTON_DEBUG:
 				engine.debug();
 				return;
 			default:
@@ -1155,7 +1351,7 @@ public class EvoLudoWeb extends Composite
 	 */
 	@UiHandler("evoludoApply")
 	public void onApplyClick(ClickEvent event) {
-		if (evoludoApply.getText().equals("Apply")) {
+		if (evoludoApply.getText().equals(SettingsController.BUTTON_APPLY)) {
 			engine.setCLO(evoludoCLO.getText().replace((char) 160, ' '));
 			applyCLO();
 			return;
@@ -1180,6 +1376,12 @@ public class EvoLudoWeb extends Composite
 	class GUIState {
 
 		/**
+		 * Create an empty GUI state snapshot.
+		 */
+		GUIState() {
+		}
+
+		/**
 		 * The active module.
 		 */
 		Module<?> module;
@@ -1197,12 +1399,7 @@ public class EvoLudoWeb extends Composite
 		/**
 		 * The active view.
 		 */
-		AbstractView view;
-
-		/**
-		 * The arguments for theactive view.
-		 */
-		String args;
+		AbstractView<?> view;
 
 		/**
 		 * The flag to indicate whether to resume execution of the model.
@@ -1236,66 +1433,18 @@ public class EvoLudoWeb extends Composite
 		engine.setSuspended(false);
 		guiState.model = engine.getModel();
 		guiState.module = engine.getModule();
+		guiState.view = viewController.getActiveView();
 		// parseCLO() does the heavy lifting and configures the GUI
-		guiState.issues = engine.parseCLO(new Directive() {
-			@Override
-			public void execute() {
-				configGUI();
-			}
-		});
-		updateViews();
-		// process (emulated) ePub restrictions - adds console if possible
-		processEPubSettings();
-		guiState.view = activeView;
-		if (cloView.isSet()) {
-			// the initialView specification (name or index) may be followed by a space and
-			// a comma-separated list of view specific options
-			String[] iv = initialView.split(" ", 2);
-			// try to interpret first argument as name
-			String name = iv[0].replace('_', ' ').trim();
-			AbstractView newView = null;
-			for (AbstractView view : activeViews.values()) {
-				if (view.getName().equals(name)) {
-					newView = view;
-					break;
-				}
-			}
-			if (newView == null) {
-				// try to interpret first argument as index
-				int idx = 0;
-				AbstractView[] av = activeViews.values().toArray(new AbstractView[0]);
-				try {
-					idx = CLOParser.parseInteger(iv[0]);
-				} catch (NumberFormatException e) {
-					// the argument is not a number, ignore and pick first view
-					logger.warning("failed to set view '" + iv[0] + "' - using default.");
-				}
-				// Ensure idx is within bounds [1, av.length]
-				if (idx < 1)
-					idx = 1;
-				if (idx > av.length)
-					idx = av.length;
-				newView = av[idx - 1];
-			}
-			guiState.view = newView;
-			guiState.args = iv.length > 1 ? iv[1].trim() : null;
-		}
-		if (guiState.view == null
-				|| (guiState.view != null && !activeViews.containsValue(guiState.view))) {
-			// initial load and view not set (or not found)
-			guiState.view = activeViews.values().toArray(new AbstractView[0])[0];
-		}
-		if (guiState.view != activeView && activeView != null)
-			activeView.deactivate();
-		activeView = guiState.view;
-		evoludoDeck.showWidget(activeView);
-		// set selected item in view selector
-		evoludoViews.setSelectedIndex(evoludoDeck.getWidgetIndex(activeView));
+		guiState.issues = engine.parseCLO(this::configGUI);
+		// clearing evoludoDeck calls onUnload on all views - keep them for now
+		// to allow recycling if module/model did not change; rely on presence of
+		// console to trigger configGUI() when ready
+		viewController.prepareForCLO();
 		if (guiState.issues > 1) {
 			// single issue is already displayed in status line
 			displayStatus("Multiple parsing problems (" + guiState.issues + ") - check log for details.",
 					Level.WARNING.intValue() + 1);
-			cloSize.parse();
+			fsController.parseSize();
 		}
 		evoludoSlider.setValue(engine.getDelay());
 		revertCLO();
@@ -1309,80 +1458,140 @@ public class EvoLudoWeb extends Composite
 		// reset is required if module and/or model changed
 		Module<?> newModule = engine.getModule();
 		Model newModel = engine.getModel();
-		if (newModule == null || newModule != guiState.module || newModel != guiState.model) {
+		boolean moduleChanged = (newModule == null || newModule != guiState.module || newModel != guiState.model);
+		if (moduleChanged) {
 			engine.modelReset(true);
 			loadViews();
 			// notify of reset (reset above was quiet because views may not have
 			// been ready for notification)
 			engine.fireModelReset();
 		} else {
-			if (!engine.paramsDidChange())
+			boolean didReset = engine.paramsDidChange();
+			loadViews();
+			if (didReset) {
+				// need to notify updated set of views
+				engine.fireModelReset();
 				// do not resume execution if reset was required (unless --run was specified)
 				guiState.resume = false;
-			loadViews();
+			}
 			// resume running if no reset was necessary or --run was provided
 			engine.setSuspended(guiState.resume || engine.isSuspended());
 		}
+		guiState.view = viewController.resolveInitialView(logger);
+		if (moduleChanged && !viewController.isInitialViewSet()
+				&& guiState.view == viewController.getConsoleView())
+			guiState.view = null;
+		if (guiState.view == null || !viewController.containsView(guiState.view)) {
+			// initial load and view not set (or not found)
+			// pick first available view (at least the console has to be in the list)
+			guiState.view = viewController.getFirstView();
+		}
+		if (guiState.view != null)
+			changeViewTo(guiState.view, true);
 		if (guiState.plist != null) {
 			Plist state = guiState.plist;
 			guiState.plist = null;
 			displayStatus("Restoring state...");
 			engine.restoreState(state);
+			updateCounter();
 		}
-		activeView.parse(guiState.args);
-		// view needs to be activated to set the mode of the model
-		if (engine.cloSnap.isSet()) {
-			// --snap set
-			Model activeModel = engine.getModel();
-			double tStop = activeModel.getTimeStop();
-			double nSamples = activeModel.getNSamples();
-			switch (activeView.getMode()) {
-				case DYNAMICS:
-				case STATISTICS_UPDATE:
-					double deltat = (tStop - activeModel.getTime()) * (activeModel.isTimeReversed() ? -1.0 : 1.0);
-					if (Double.isFinite(tStop) && deltat > 0.0) {
-						// run to specified time
-						if (Math.abs(deltat) < activeModel.getTimeStep())
-							activeModel.setTimeStep(deltat);
-						// start running - even without --run
-						engine.setSuspended(true);
-					}
-					if (nSamples > 0.0)
-						logger.warning("--samples found: wrong mode for statistics, use --view option.");
-					break;
-				case STATISTICS_SAMPLE:
-					// run to specified sample count
-					if (nSamples > activeModel.getNStatisticsSamples()) {
-						// start running - even without --run
-						engine.setSuspended(true);
-					}
-					if (Double.isFinite(tStop))
-						logger.warning("--timestop found: wrong mode for dynamics, use --view option.");
-					break;
-				default:
-			}
+		AbstractView<?> currentView = viewController.getActiveView();
+		if (currentView != null) {
+			currentView.parse();
+			// view needs to be activated to set the mode of the model
+			currentView.activate();
 		}
-		activeView.activate();
-		if (activeView.hasLayout() && engine.isSuspended())
+		processCLOSnap();
+		if (currentView != null && currentView.hasLayout() && engine.isSuspended())
 			engine.run();
+	}
+
+	/**
+	 * Process the command line options for snap execution,
+	 * {@link EvoLudoGWT#cloSnap}, and start the model accordingly.
+	 */
+	private void processCLOSnap() {
+		if (!engine.cloSnap.isSet())
+			return;
+		// --snap set
+		Model activeModel = engine.getModel();
+		switch (activeModel.getMode()) {
+			case DYNAMICS:
+			case STATISTICS_UPDATE:
+				snapDynamics(activeModel);
+				break;
+			case STATISTICS_SAMPLE:
+				snapSamples(activeModel);
+				break;
+			default:
+		}
+	}
+
+	/**
+	 * Helper method to process snap for dynamics mode.
+	 * 
+	 * @param activeModel the active model
+	 */
+	private void snapDynamics(Model activeModel) {
+		double tStop = activeModel.getTimeStop();
+		double nSamples = activeModel.getNSamples();
+		double deltat = (tStop - activeModel.getTime()) * (activeModel.isTimeReversed() ? -1.0 : 1.0);
+		if (Double.isFinite(tStop) && deltat > 0.0) {
+			// run to specified time
+			if (Math.abs(deltat) < activeModel.getTimeStep())
+				activeModel.setTimeStep(deltat);
+			// start running - even without --run
+			engine.setSuspended(true);
+		}
+		if (nSamples > 0.0)
+			logger.warning("--samples found: wrong mode for statistics, use --view option.");
+	}
+
+	/**
+	 * Helper method to process snap for statistics sample mode.
+	 * 
+	 * @param activeModel the active model
+	 */
+	private void snapSamples(Model activeModel) {
+		double tStop = activeModel.getTimeStop();
+		double nSamples = activeModel.getNSamples();
+		// run to specified sample count
+		if (nSamples > activeModel.getNStatisticsSamples()) {
+			// start running - even without --run
+			engine.setSuspended(true);
+		}
+		if (Double.isFinite(tStop))
+			logger.warning("--timestop found: wrong mode for dynamics, use --view option.");
 	}
 
 	/**
 	 * Helper method to update the views after the command line options have been
 	 * applied. Ensures that all views are loaded, the correct sizes applied and the
 	 * content reset.
+	 * <p>
+	 * <strong>Note:</strong> many views need to know their size to adjust, for
+	 * exmple, buffer sizes or data storage for statistics. However, only views that
+	 * have been added to the DOM have valid sizes. For this reason the dimensions
+	 * of the active view are passed to all other views.
 	 */
 	private void loadViews() {
-		// set of available views may have changed (e.g. statistics)
-		int width = activeView.getOffsetWidth();
-		int height = activeView.getOffsetHeight();
-		for (AbstractView view : activeViews.values()) {
+		viewController.refreshViews();
+		AbstractView<?> anchorView = viewController.getActiveView();
+		if (anchorView == null)
+			anchorView = viewController.getFirstView();
+		if (anchorView == null)
+			return;
+		int width = anchorView.getOffsetWidth();
+		int height = anchorView.getOffsetHeight();
+		for (AbstractView<?> view : viewController.getActiveViews()) {
 			boolean loaded = view.load();
-			view.setBounds(width, height);
+			if (view != anchorView)
+				view.setBounds(width, height);
 			if (loaded)
 				view.reset(false);
 		}
 		evoludoLayout.onResize();
+		updateDropHandlers();
 	}
 
 	/**
@@ -1409,12 +1618,16 @@ public class EvoLudoWeb extends Composite
 	@UiHandler("evoludoDefault")
 	public void onDefaultClick(ClickEvent event) {
 		Scheduler.get().scheduleDeferred(() -> {
-			if (defaultCLO == null) {
+			String clo = null;
+			RootPanel root = RootPanel.get(elementID);
+			if (root != null)
+				clo = root.getElement().getAttribute(DOM_DATA_CLO).trim();
+			if (clo == null || clo.isEmpty()) {
 				revertCLO();
 				return;
 			}
-			evoludoCLO.setText(defaultCLO);
-			engine.setCLO(defaultCLO);
+			evoludoCLO.setText(clo);
+			engine.setCLO(clo);
 			applyCLO();
 		});
 	}
@@ -1439,11 +1652,21 @@ public class EvoLudoWeb extends Composite
 	}
 
 	/**
+	 * Opening tag of pre-formatted text.
+	 */
+	static final String TAG_PRE_OPEN = "<pre>";
+
+	/**
+	 * Closing tag of pre-formatted text.
+	 */
+	static final String TAG_PRE_CLOSE = "</pre>";
+
+	/**
 	 * Show help in the console, {@link #viewConsole}.
 	 */
 	public void showHelp() {
 		guiState.view = viewConsole;
-		logger.info("<pre>EvoLudo (GWT):\n" + engine.getCLOHelp() + "</pre>");
+		logger.info(TAG_PRE_OPEN + "EvoLudo (GWT):\n" + engine.getCLOHelp() + TAG_PRE_CLOSE);
 		// no view may be available if things went wrong from the start...
 		if (evoludoDeck.getWidgetCount() == 0) {
 			evoludoDeck.add(viewConsole);
@@ -1491,10 +1714,9 @@ public class EvoLudoWeb extends Composite
 		// level. other messages should be ignored until after init/reset has completed
 		// note: <= retains first rather than last message of particular level; this is
 		// bad in most cases in particular for info messages
-		// if (level <= displayStatusThresholdLevel)
-		// note: debugging touch events on ipad can be painful; uncomment the following
-		// to make the last message of the highest severity stick to allow minimal
-		// reporting...
+		// note: debugging touch events on ipad can be painful; change '<' to '<=' in
+		// the following to make the last message of the highest severity stick to allow
+		// minimal reporting...
 		if (level < displayStatusThresholdLevel)
 			return;
 		if (level >= Level.SEVERE.intValue()) {
@@ -1556,11 +1778,7 @@ public class EvoLudoWeb extends Composite
 			return;
 		}
 		// load decompressor, just in case
-		if (!hasZipJs) {
-			// script (hopefully) needs to be injected only once
-			ScriptInjector.fromString(Resources.INSTANCE.zip().getText()).inject();
-			hasZipJs = true;
-		}
+		loadZipJs();
 		NativeJS.handleDnD(data, this);
 		evoludoOverlay.setVisible(false);
 		displayStatus("Processing drag'n'drop...");
@@ -1574,10 +1792,12 @@ public class EvoLudoWeb extends Composite
 	 */
 	public void restoreFromString(String filename, String content) {
 		Plist parsed = PlistParser.parse(content);
-		if (parsed == null) {
-			logger.severe("failed to parse contents of file '" + filename + "'.");
+		if (parsed == null || !parsed.containsKey("CLO")) {
+			if (logger.isLoggable(Level.SEVERE))
+				logger.severe("failed to parse contents of file '" + filename + "'.");
 			return;
 		}
+		engine.unloadModule();
 		engine.setCLO((String) (parsed.get("CLO")));
 		guiState.plist = parsed;
 		applyCLO();
@@ -1590,363 +1810,46 @@ public class EvoLudoWeb extends Composite
 	private static boolean hasZipJs = false;
 
 	/**
-	 * The index of the currently active view in the {@code activeViews} list (and
-	 * the {@link #evoludoDeck} widget).
+	 * Ensures ZIP JavaScript is loaded exactly once across all instances.
+	 * Thread-safe and idempotent.
 	 */
-	private int viewIdx = 0;
-
-	/**
-	 * Process {@code keyup} events to allow for <em>non-repeating</em> keyboard
-	 * shortcuts. Use for events where repeating does not make sense, such as
-	 * stopping a model or changing views. For repeating events, such as advancing
-	 * the model by a single step, see {@link #keyDownHandler(String)}. The set of
-	 * keys handled by {@code keyUpHandler} and {@code keyDownHandler} should be
-	 * disjoint.
-	 * 
-	 * <h3>Implementation Notes:</h3>
-	 * <ul>
-	 * <li>{@code keyup} events are ignored if:
-	 * <ol>
-	 * <li>this EvoLudo model is not visible.
-	 * <li>the command line options field {@link #evoludoCLO} has the focus. With
-	 * the exception of {@code Shift-Enter} to apply the new settings to the model.
-	 * <li>in an ePub, except when on a standalone page.
-	 * </ol>
-	 * <li>{@code keyup} events do not propagate further ({@code stopPropagation()}
-	 * is always called).
-	 * <li>returning {@code true} also prevents default behaviour (calls
-	 * {@code preventDefault()}).
-	 * </ul>
-	 * {@code keyup} events are ignored if:
-	 * <ul>
-	 * <li>this EvoLudo model is not visible.
-	 * <li>the command line options field {@link #evoludoCLO} has the focus. With
-	 * the
-	 * exception of {@code Shift-Enter}, which applies the new settings to the
-	 * model.
-	 * <li>when shown in an ePub, except when on a standalone page.
-	 * <li>{@code keydown} event does not propagate further.
-	 * <li>returning {@code true} also prevents default behaviour.
-	 * </ul>
-	 * <p>
-	 * Global shortcuts provided for the following keys:
-	 * <dl>
-	 * <dt>{@code Alt}</dt>
-	 * <dd>Toggles the mode for some buttons. For example to switch between
-	 * {@code Init} and {@code Reset}.</dd>
-	 * <dt>{@code Shift}</dt>
-	 * <dd>Toggles the mode for some keys, see {@code Enter} below for an
-	 * example.</dd>
-	 * <dt>{@code 0}</dt>
-	 * <dd>Toggles the visibility of the field to view and modify parameter
-	 * settings.</dd>
-	 * <dt>{@code 1-9}</dt>
-	 * <dd>Quick view selector. Switches to data view with the selected index if it
-	 * exists. {@code 1} is the first view etc.</dd>
-	 * <dt>{@code Enter, Space}</dt>
-	 * <dd>Starts (or stops) the current model. Note, {@code Shift-Enter} applies
-	 * the new parameter settings if the field is visible and has the keyboard
-	 * focus. Same as pressing the {@code Apply}-button.</dd>
-	 * <dt>{@code Escape}</dt>
-	 * <dd>Implements several functions depending on context:
-	 * <ol>
-	 * <li>Ignored in ePub.
-	 * <li>Closes current EvoLudo simulation if running in a {@link EvoLudoTrigger}
-	 * popup panel.
-	 * <li>Stops any running model.
-	 * <li>Initializes a model that is not running. Note, resets the model if
-	 * {@code Alt} is pressed.
-	 * </ol>
-	 * </dd>
-	 * <dt>{@code Backspace, Delete}</dt>
-	 * <dd>Stops running models and initializes (resets if {@code Alt} is pressed)
-	 * stopped models.</dd>
-	 * <dt>{@code E}</dt>
-	 * <dd>Export the current state of the model (as a modified {@code plist}).
-	 * Ignored if model is running and in ePubs.</dd>
-	 * <dt>{@code H}</dt>
-	 * <dd>Show the help screen with brief descriptions of all parameters in the
-	 * console view.</dd>
-	 * </dl>
-	 *
-	 * @param key the string value of the released key
-	 * @return {@code true} if key has been handled
-	 * 
-	 * @see #keyDownHandler(String)
-	 * @see <a href=
-	 *      "https://developer.mozilla.org/en-US/docs/Web/API/KeyboardEvent/key/Key_Values">Mozilla
-	 *      Key Values</a>
-	 * @see AbstractView#keyUpHandler(String) AbstractView.keyUpHandler(String) and
-	 *      implementing classes for further keys that may be handled by the current
-	 *      view
-	 */
-	public boolean keyUpHandler(String key) {
-		// check if lab is visible
-		if (!isShowing())
-			return false;
-		// process modifiers
-		if (key.equals("Alt")) {
-			// alt-key does not count as handled
-			isAltDown = false;
-			updateKeys();
+	private static void loadZipJs() {
+		if (!hasZipJs) {
+			ScriptInjector.fromString(Resources.INSTANCE.zip().getText()).inject();
+			hasZipJs = true;
 		}
-		if (key.equals("Shift"))
-			// shift-key does not count as handled
-			isShiftDown = false;
-		if (EvoLudoGWT.isEPub && !EvoLudoGWT.ePubStandalone)
-			// in ePub text flow only "Alt" key is acceptable and does not count as handled
-			return false;
-		boolean cloActive = NativeJS.isElementActive(evoludoCLO.getElement());
-		if (cloActive) {
-			// focus is on command line options ignore keypress
-			// except Shift-Enter, which applies the new settings
-			if (isShiftDown && key.equals("Enter")) {
-				engine.setCLO(evoludoCLO.getText().replace((char) 160, ' '));
-				applyCLO();
-				return true;
-			}
-			// escape closes the settings field
-			if (!key.equals("Escape"))
-				return false;
-		}
-		// activeView may wish to handle key
-		if (activeView.keyUpHandler(key))
-			return true;
-		switch (key) {
-			case "0":
-				// toggle settings
-				toggleSettings();
-				break;
-			case "1":
-			case "2":
-			case "3":
-			case "4":
-			case "5":
-			case "6":
-			case "7":
-			case "8":
-			case "9":
-				// quick view selector
-				AbstractView[] allviews = activeViews.values().toArray(new AbstractView[0]);
-				int idx = CLOParser.parseInteger(key);
-				if (idx <= allviews.length)
-					changeViewTo(allviews[idx - 1]);
-				break;
-			case "c":
-				// toggle console
-				allviews = activeViews.values().toArray(new AbstractView[0]);
-				if (evoludoDeck.getWidgetIndex(activeView) == allviews.length - 1)
-					// console is active, switch to previous view
-					changeViewTo(allviews[viewIdx]);
-				else
-					// switch to console
-					changeViewTo(allviews[allviews.length - 1]);
-				break;
-			case "Enter":
-			case " ":
-				// start/stop simulation
-				engine.startStop();
-				break;
-			case "Escape":
-				// ignore "Escape" for ePubs
-				if (EvoLudoGWT.isEPub)
-					return false;
-				// stop running simulation
-				if (engine.isRunning()) {
-					engine.stop();
-					break;
-				}
-				if (evoludoCLOPanel.isVisible()) {
-					toggleSettings();
-					break;
-				}
-				// NOTE: non-printing keys (such as modifiers, delete, or escape) do not fire
-				// 'keypress' event! only 'keydown' and 'keyup'.
-				// - close overlay (if showing)
-				// - stop simulations (if running)
-				// - init/reset (if not running)
-				if (popup != null && popup.isAttached()) {
-					popup.close();
-					break;
-				}
-				//$FALL-THROUGH$
-			case "Backspace":
-			case "Delete":
-				// stop running simulation; init/reset if not running
-				if (engine.isRunning())
-					engine.stop();
-				else
-					initReset();
-				break;
-			case "E":
-				// export state (suppress in ePub's)
-				if (EvoLudoGWT.isEPub || engine.isRunning())
-					return false;
-				engine.exportState();
-				break;
-			case "F":
-				// toggle fullscreen (if supported)
-				if (!NativeJS.isFullscreenSupported())
-					return false;
-				engine.setFullscreen(!NativeJS.isFullscreen());
-				break;
-			case "H":
-				// show help panel
-				showHelp();
-				break;
-			default:
-				return false;
-		}
-		return true;
 	}
-
-	/**
-	 * Process {@code keydown} events to allow for <em>repeating</em> keyboard
-	 * shortcuts. Use for events where repeating does make sense, such as advancing
-	 * a model by a single step or changing the speed of the model execution by
-	 * adjusting the delay between subsequent updates. For non-repeating events,
-	 * such starting or stopping the model or changing the view, see
-	 * {@link #keyUpHandler(String)}. The set of keys handled by
-	 * {@code keyUpHandler} and {@code keyDownHandler} should be disjoint.
-	 * 
-	 * <h3>Implementation Notes:</h3>
-	 * <ul>
-	 * <li>{@code keydown} events are ignored if:
-	 * <ol>
-	 * <li>this EvoLudo model is not visible.
-	 * <li>in an ePub, except when on a standalone page.
-	 * </ol>
-	 * <li>{@code keydown} events do not propagate further
-	 * ({@code stopPropagation()} is always called).
-	 * <li>returning {@code true} also prevents default behaviour (calls
-	 * {@code preventDefault()}).
-	 * </ul>
-	 * <p>
-	 * Global shortcuts provided for the following keys:
-	 * <dl>
-	 * <dt>{@code Alt}</dt>
-	 * <dd>Toggles the mode for some buttons. For example to switch between
-	 * {@code Init} and {@code Reset}.</dd>
-	 * <dt>{@code Shift}</dt>
-	 * <dd>Toggles the mode for some keys, see {@code Enter} below for an
-	 * example.</dd>
-	 * <dt>{@code ArrowRight, n}</dt>
-	 * <dd>Advance the model by a single step. Same as pressing the
-	 * {@code Step}-button.</dd>
-	 * <dt>{@code +, =}</dt>
-	 * <dd>Increase the speed of the model execution. Decrease the delay between
-	 * updates. Moves the speed-slider to the right.</dd>
-	 * <dt>{@code -}</dt>
-	 * <dd>Decrease the speed of the model execution. Increase the delay between
-	 * updates. Moves the speed-slider to the right.</dd>
-	 * </dl>
-	 *
-	 * @param key the string value of the pressed key
-	 * @return {@code true} if key has been handled
-	 * 
-	 * @see <a href=
-	 *      "https://developer.mozilla.org/en-US/docs/Web/API/KeyboardEvent/key/Key_Values">Mozilla
-	 *      Key Values</a>
-	 * @see AbstractView#keyDownHandler(String) AbstractView.keyDownHandler(String)
-	 *      and implementing classes for further keys that may be handled by the
-	 *      current view
-	 */
-	public boolean keyDownHandler(String key) {
-		// check if lab is visible
-		if (!isShowing())
-			return false;
-		if (key.equals("Alt")) {
-			// alt-key does not count as handled
-			isAltDown = true;
-			updateKeys();
-		}
-		if (key.equals("Shift"))
-			// shift-key does not count as handled
-			isShiftDown = true;
-		boolean cloActive = NativeJS.isElementActive(evoludoCLO.getElement());
-		if (cloActive)
-			// focus is on command line options ignore keypress
-			return false;
-		// activeView may wish to handle key
-		if (activeView.keyDownHandler(key))
-			return true;
-		// activeView did not handle key
-		switch (key) {
-			case "ArrowRight":
-			case "n":
-				// advance single step
-				engine.next();
-				break;
-			case "ArrowLeft":
-			case "p":
-				// backtrack single step (if model allows it)
-				engine.prev();
-				break;
-			case "D":
-				// perform single, verbose debug step
-				engine.debug();
-				break;
-			case "+":
-			case "=":
-				// increase speed
-				engine.decreaseDelay();
-				evoludoSlider.setValue(engine.getDelay());
-				break;
-			case "-":
-				// decrease speed
-				engine.increaseDelay();
-				evoludoSlider.setValue(engine.getDelay());
-				break;
-			// prevent side effects for special keys
-			case "Enter":
-				// case " ": // spacebar
-				return true;
-			default:
-				return false;
-		}
-		return true;
-	}
-
-	/**
-	 * The helper variable to indicate whether the Shift key is pressed.
-	 */
-	private boolean isShiftDown = false;
-
-	/**
-	 * The helper variable to indicate whether the Alt key is pressed.
-	 */
-	private boolean isAltDown = false;
 
 	/**
 	 * The Alt-key toggles the button labels for controlling the EvoLudo lab.
 	 */
-	private void updateKeys() {
+	public void updateKeys() {
 		Model model = engine.getModel();
 		boolean statistics = (model != null && model.getMode() == Mode.STATISTICS_SAMPLE);
 		// only 'reset' in statistics mode
 		if (statistics) {
-			evoludoInitReset.setText("Reset");
+			evoludoInitReset.setText(BUTTON_RESET);
 			evoludoInitReset.setTitle("Reset statistics");
-			evoludoStep.setText("Sample");
+			evoludoStep.setText(BUTTON_SAMPLE);
 			evoludoStep.setTitle("Calculate single sample");
 			return;
 		}
-		if (isAltDown) {
-			evoludoInitReset.setText("Reset");
+		if (keyController.isAltDown()) {
+			evoludoInitReset.setText(BUTTON_RESET);
 			evoludoInitReset.setTitle("Initialize population and regenerate structure");
 			if (engine.getModel().permitsTimeReversal()) {
-				evoludoStep.setText("Previous");
+				evoludoStep.setText(BUTTON_PREV);
 				evoludoStep.setTitle("Backtrack single simulation step");
 			}
 			if (engine.getModel().permitsDebugStep()) {
-				evoludoStep.setText("Debug");
+				evoludoStep.setText(BUTTON_DEBUG);
 				evoludoStep.setTitle("Single update event");
 			}
 			return;
 		}
-		evoludoInitReset.setText("Init");
+		evoludoInitReset.setText(BUTTON_INIT);
 		evoludoInitReset.setTitle("Initialize population (preserve structure)");
-		evoludoStep.setText("Step");
+		evoludoStep.setText(BUTTON_STEP);
 		evoludoStep.setTitle("Advance single simulation step");
 	}
 
@@ -1969,7 +1872,10 @@ public class EvoLudoWeb extends Composite
 	public void snapshotReady() {
 		if (snapmarker != null)
 			return;
-		activeView.update(true);
+		AbstractView<?> view = viewController.getActiveView();
+		if (view == null)
+			return;
+		view.update(true);
 		// make sure GUI is in stopped state before taking the snapshot
 		updateGUI();
 		// add div to DOM to signal completion of layout for capture-website
@@ -1979,263 +1885,21 @@ public class EvoLudoWeb extends Composite
 	}
 
 	/**
-	 * Each EvoLudo model may entertain its own selection of views to visualize its
-	 * data. Re-use currently active views if possible otherwise instantiate
-	 * suitable views based on the features of the current model. Update the view
-	 * selector accordingly.
-	 * <p>
-	 * <strong>Note:</strong> the console view is dealt with elsewhere (see
-	 * {@link #processEPubSettings}).
+	 * Remove the temporary DOM marker indicating that a snapshot is ready.
 	 */
-	protected void updateViews() {
-		HashMap<String, AbstractView> oldViews = activeViews;
-		activeViews = new HashMap<>();
-		evoludoDeck.clear();
-		Module<?> module = engine.getModule();
-		if (module == null) {
-			// no module loaded; show console only
-			addView(viewConsole, oldViews);
+	public void clearSnapshotMarker() {
+		if (snapmarker == null)
 			return;
-		}
-		// strategies related views
-		Model model = engine.getModel();
-		boolean isODESDE = false;
-		if (model != null) {
-			Type mt = model.getType();
-			isODESDE = mt.isODE() || mt.isSDE();
-		}
-		if (module instanceof HasPop2D.Traits && !isODESDE)
-			addView(new Pop2D(engine, Data.TRAIT), oldViews);
-		if (isWebGLSupported && module instanceof HasPop3D.Traits && !isODESDE)
-			addView(new Pop3D(engine, Data.TRAIT), oldViews);
-		if (module instanceof HasPhase2D)
-			addView(new Phase2D(engine), oldViews);
-		if (module instanceof HasMean.Traits)
-			addView(new Mean(engine, Data.TRAIT), oldViews);
-		if (module instanceof HasS3)
-			addView(new S3(engine), oldViews);
-		if (module instanceof HasHistogram.Strategy)
-			addView(new Histogram(engine, Data.TRAIT), oldViews);
-		if (module instanceof HasDistribution.Strategy)
-			addView(new Distribution(engine, Data.TRAIT), oldViews);
-		// fitness related views
-		if (module instanceof HasPop2D.Fitness && !isODESDE)
-			addView(new Pop2D(engine, Data.FITNESS), oldViews);
-		if (isWebGLSupported && module instanceof HasPop3D.Fitness && !isODESDE)
-			addView(new Pop3D(engine, Data.FITNESS), oldViews);
-		if (module instanceof HasMean.Fitness)
-			addView(new Mean(engine, Data.FITNESS), oldViews);
-		if (module instanceof HasHistogram.Fitness)
-			addView(new Histogram(engine, Data.FITNESS), oldViews);
-		// structure related views
-		if (module instanceof HasHistogram.Degree && !isODESDE)
-			addView(new Histogram(engine, Data.DEGREE), oldViews);
-		// statistics related views
-		if (model != null && model.permitsMode(Mode.STATISTICS_SAMPLE)) {
-			// sample statistics available
-			if (module instanceof HasHistogram.StatisticsProbability)
-				addView(new Histogram(engine, Data.STATISTICS_FIXATION_PROBABILITY), oldViews);
-			if (module instanceof HasHistogram.StatisticsTime)
-				addView(new Histogram(engine, Data.STATISTICS_FIXATION_TIME), oldViews);
-		} else {
-			if (activeView != null && activeView.getMode() == Mode.STATISTICS_SAMPLE)
-				logger.warning("sampling statistics not supported for current settings!");
-		}
-		if (model != null && model.permitsMode(Mode.STATISTICS_UPDATE)) {
-			// update statistics available
-			if (module instanceof HasHistogram.StatisticsStationary)
-				addView(new Histogram(engine, Data.STATISTICS_STATIONARY), oldViews);
-		}
-		// miscellaneous views
-		// note: console may be removed for (simulated) ePub modes
-		addView(viewConsole, oldViews);
-		// unload views that are no longer available
-		for (AbstractView view : oldViews.values())
-			view.dispose();
-		oldViews.clear();
-		// update view selector
-		evoludoViews.clear();
-		for (AbstractView view : activeViews.values())
-			evoludoViews.addItem(view.getName());
+		Document.get().getBody().removeChild(snapmarker);
+		snapmarker = null;
 	}
-
-	/**
-	 * Convenience method to add <code>view</code> to list of active views
-	 * <code>activeViews</code>. If a view with the same name already exists in
-	 * <code>oldViews</code> it is reused.
-	 *
-	 * @param view     to add to active list
-	 * @param oldViews list of current views
-	 */
-	private void addView(AbstractView view, HashMap<String, AbstractView> oldViews) {
-		String name = view.getName();
-		if (oldViews.containsKey(name))
-			view = oldViews.remove(name);
-		activeViews.put(view.getName(), view);
-		evoludoDeck.add(view);
-	}
-
-	/**
-	 * Command line option to set the data view displayed in the GUI.
-	 */
-	public final CLOption cloView = new CLOption("view", "1", Category.GUI, null, new CLODelegate() {
-		/**
-		 * {@inheritDoc}
-		 * <p>
-		 * Set the initial view of the lab to {@code arg}. The view can be specified as
-		 * an index referring to the list of available data views or as the title of the
-		 * data view with spaces replaced by underscores, '_'.
-		 */
-		@Override
-		public boolean parse(String arg) {
-			initialView = arg;
-			return true;
-		}
-
-		@Override
-		public String getDescription() {
-			String descr = "--view <v>      select view (v: index or title)";
-			int idx = 1;
-			for (AbstractView view : activeViews.values()) {
-				String keycode = "              " + (idx++) + ": ";
-				int len = keycode.length();
-				descr += "\n" + keycode.substring(len - 16, len) + view.getName();
-			}
-			return descr;
-		}
-	});
-
-	/**
-	 * Command line option to set the size of the GUI or enter fullscreen.
-	 */
-	public final CLOption cloSize = new CLOption("size", "530,620", Category.GUI,
-			"--size <w,h|fullscreen>  size of GUI, w: width, h: height", new CLODelegate() {
-				/**
-				 * {@inheritDoc}
-				 * <p>
-				 * Set the initial size of the lab to {@code arg}.
-				 */
-				@Override
-				public boolean parse(String arg) {
-					if (arg.startsWith("full")) {
-						if (NativeJS.isFullscreenSupported()) {
-							engine.setFullscreen(true);
-							return true;
-						}
-						arg = cloSize.getDefault();
-					}
-					double[] dim = CLOParser.parseVector(arg);
-					if (dim.length != 2)
-						return false;
-					// note: why do we need to set the initial size on the grandparent?
-					fullscreenWidget.setSize((int) dim[0] + "px", (int) dim[1] + "px");
-					return true;
-				}
-			});
 
 	@Override
 	public void collectCLO(CLOParser parser) {
-		// prepare command line options
-		parser.addCLO(cloView);
-		parser.addCLO(cloSize);
+		parser.addCLO(settingsController.getCloEmulate());
+		parser.addCLO(viewController.getCloView());
+		parser.addCLO(fsController.getCloSize());
 	}
-
-	@Override
-	public HandlerRegistration addFullscreenChangeHandler(FullscreenChangeHandler handler) {
-		String eventname = NativeJS.fullscreenChangeEventName();
-		NativeJS.addFullscreenChangeHandler(eventname, handler);
-		return new HandlerRegistration() {
-			@Override
-			public void removeHandler() {
-				NativeJS.removeFullscreenChangeHandler(eventname, handler);
-			}
-		};
-	}
-
-	// note: works in Safari and Chrome; some weird scaling issues remain with
-	// Firefox for Chrome it is important to use {@code onfullscreenchange} and not
-	// {@code onwebkitfullscreenchange}! the two do not seem to be identical
-	@Override
-	public void onFullscreenChange(FullscreenChangeEvent event) {
-		if (NativeJS.isFullscreen())
-			NativeJS.getFullscreenElement().addClassName("fullscreen");
-		else
-			evoludoPanel.getParent().getParent().getElement().removeClassName("fullscreen");
-	}
-
-	/**
-	 * JSNI method: add global key event listeners for 'keydown', 'keyup', and
-	 * 'keypress' events. All listeners are stored in the map
-	 * <code>window.EvoLudoUtils.keyListeners</code>, which links listener functions
-	 * to their respective controllers. The key handlers exposed through GWT appear
-	 * to be more restricted and often lose focus. This somewhat brute force
-	 * approach result in a much better GUI experience.
-	 *
-	 * @param evoludo GUI controller that handles the key events
-	 */
-	private final native void addKeyListener(EvoLudoWeb evoludo) /*-{
-		// store key listener helpers in $wnd.EvoLudoUtils
-		if (!$wnd.EvoLudoUtils) {
-			$wnd.EvoLudoUtils = new Object();
-			$wnd.EvoLudoUtils.keyListeners = new Map();
-		}
-		var id = evoludo.@org.evoludo.EvoLudoWeb::elementID;
-		// check if key listeners already added
-		if (!$wnd.EvoLudoUtils.keyListeners.get('keydown-' + id)) {
-			$wnd.EvoLudoUtils.keyListeners
-					.set(
-							'keydown-' + id,
-							function(event) {
-								// console.log("event "+event.type+", key "+event.key+", code "+event.code);
-								if (evoludo.@org.evoludo.EvoLudoWeb::keyDownHandler(Ljava/lang/String;)(event.key)) {
-									event.preventDefault();
-								}
-								event.stopPropagation();
-							});
-			$wnd.EvoLudoUtils.keyListeners
-					.set(
-							'keyup-' + id,
-							function(event) {
-								// console.log("event "+event.type+", key "+event.key+", code "+event.code);
-								if (evoludo.@org.evoludo.EvoLudoWeb::keyUpHandler(Ljava/lang/String;)(event.key)) {
-									event.preventDefault();
-								}
-								event.stopPropagation();
-							});
-		}
-		$wnd.addEventListener('keydown', $wnd.EvoLudoUtils.keyListeners
-				.get('keydown-' + id), true);
-		$wnd.addEventListener('keyup', $wnd.EvoLudoUtils.keyListeners
-				.get('keyup-' + id), true);
-	}-*/;
-
-	/**
-	 * JSNI method: remove all key event listeners that were registered for
-	 * <code>evoludo</code>.
-	 *
-	 * @param evoludo GUI controller that handles the key events
-	 */
-	private final native void removeKeyListener(EvoLudoWeb evoludo) /*-{
-		if (!$wnd.EvoLudoUtils)
-			return;
-		var id = evoludo.@org.evoludo.EvoLudoWeb::elementID;
-		var key = $wnd.EvoLudoUtils.keyListeners.get('keydown-' + id);
-		if (key)
-			$wnd.removeEventListener('keydown', key, true);
-		key = $wnd.EvoLudoUtils.keyListeners.get('keyup-' + id);
-		if (key)
-			$wnd.removeEventListener('keyup', key, true);
-		key = $wnd.EvoLudoUtils.keyListeners.get('keypress-' + id);
-		if (key)
-			$wnd.removeEventListener('keypress', key, true);
-	}-*/;
-
-	/**
-	 * Popup EvoLudo models (see {@link EvoLudoTrigger}) should attract all keyboard
-	 * events. This is achieved by setting <code>keyListener</code> to the popup
-	 * model.
-	 */
-	private static EvoLudoWeb keyListener = null;
 
 	/**
 	 * Expose method for creating EvoLudo labs (EvoLudoWeb objects) to javascript
@@ -2261,8 +1925,6 @@ public class EvoLudoWeb extends Composite
 	 */
 	public static void insertEvoLudoLab(Element placeholder, String clo) {
 		Element wrap = placeholder.getParentElement();
-		int width = placeholder.getOffsetWidth();
-		int height = placeholder.getOffsetHeight();
 		String id = wrap.getAttribute("id");
 		if (id == null || id.isEmpty()) {
 			id = HTMLPanel.createUniqueId();
@@ -2272,12 +1934,6 @@ public class EvoLudoWeb extends Composite
 		wrap.removeAllChildren();
 		wrap.addClassName("evoludo-simulation");
 		EvoLudoWeb lab = new EvoLudoWeb(id, clo);
-		Style wstyle = wrap.getStyle();
-		// adopt size of placeholder - needs to account for padding of
-		// .evoludo-simulation - how?
-		// XXX padding of .evoludo-simulation hardcoded
-		wstyle.setWidth(width - 2 * 8, Unit.PX);
-		wstyle.setHeight(height - 2 * 8, Unit.PX);
 		root.add(lab);
 	}
 
@@ -2293,21 +1949,18 @@ public class EvoLudoWeb extends Composite
 	 * iBooks when requesting full screen.</li>
 	 * <li>If two EvoLudo models are simultaneously visible it is undefined which
 	 * lab receives the 'keypress'</li>
-	 * <li>Popup EvoLudo models acquire all key events (through the static
-	 * {@link #keyListener}), regardless of whether other models are displayed
-	 * underneath.</li>
+	 * <li>Popup EvoLudo models acquire all key events by activating their
+	 * {@link org.evoludo.simulator.ui.KeyHandler}.</li>
 	 * </ol>
 	 *
 	 * @return <code>true</code> if lab is visible on screen
 	 */
 	public boolean isShowing() {
 		// skip test in ePubs - always evaluates to true...
-		if (EvoLudoGWT.isEPub)
+		if (settingsController.isEPub())
 			return true;
-		if (keyListener != null)
-			// with key listener no further test necessary; return true if we are the
-			// listener.
-			return keyListener == this;
+		if (keyController.isActive())
+			return true;
 		// this works in browser but not in iBooks; Window always returns the entire
 		// document (0, 0, fullwidth, fullheight)
 		Rectangle2D view = new Rectangle2D(Window.getScrollLeft(), Window.getScrollTop(), Window.getClientWidth(),
@@ -2396,96 +2049,59 @@ public class EvoLudoWeb extends Composite
 	 * are disabled (or enabled otherwise).
 	 */
 	protected void processEPubSettings() {
-		// ePubs (iBook) prevents scrolling; disable console
-		if (!EvoLudoGWT.isEPub || EvoLudoGWT.ePubStandalone) {
-			// make sure console is present; if necessary add and load it
-			if (activeViews.put(viewConsole.getName(), viewConsole) == null) {
-				viewConsole.load();
-				evoludoViews.addItem(viewConsole.getName());
-			}
-		} else {
-			// make sure console is absent; if necessary remove and unload it
-			if (activeViews.remove(viewConsole.getName()) != null) {
-				viewConsole.unload();
-				// console is likely the last view in the list, hence start checking at end
-				for (int n = evoludoViews.getItemCount() - 1; n >= 0; n--) {
-					if (evoludoViews.getItemText(n).equals(viewConsole.getName())) {
-						evoludoViews.removeItem(n);
-						break;
-					}
-				}
-			}
-		}
+		// TODO: check/resolve problem with console in ePubs - should be ok
+		// if content properly XML encoded...
 		// nonlinear content in Apple Books (i.e. all interactive labs) do not report
 		// as ePubs on iOS (at least for iPad) but as expected on macOS. On both
 		// platforms TextFields are disabled through shadow DOM.
-		boolean editCLO = !EvoLudoGWT.isEPub || EvoLudoGWT.ePubStandalone;
-		// evoludoCLO.setEnabled(editCLO);
-		// evoludoCLO.setReadOnly(!editCLO);
-		evoludoCLO.setTitle(editCLO ? "Specify simulation parameters"
-				: "Current simulation parameters (open standalone lab to modify)");
-		evoludoApply.setText(editCLO ? "Apply" : "Standalone");
-		evoludoApply.setTitle(editCLO ? "Apply parameters" : "Open standalone lab");
-		evoludoDefault.setEnabled(editCLO);
-		evoludoHelp.setEnabled(editCLO);
-		evoludoSettings.setTitle(editCLO ? "Change simulation parameters" : "Review simulation parameters");
-		logEvoHandler.setLevel(editCLO ? logger.getLevel() : Level.OFF);
+		boolean editCLO = settingsController.applyUiToggles(this::updateDropHandlers);
+		if (logEvoHandler != null)
+			logEvoHandler.setLevel(editCLO ? logger.getLevel() : Level.OFF);
+	}
 
-		// add drop handler to read parameters
-		if (editCLO) {
-			if (dragEnterHandler == null)
-				dragEnterHandler = addDomHandler(new DragEnterHandler() {
-					@Override
-					public void onDragEnter(DragEnterEvent event) {
-						if (engine.isRunning()) {
-							evoludoOverlay.setVisible(false);
-							displayStatus("Stop lab for drag'n'drop restore.", Level.WARNING.intValue());
-							return;
-						}
-						// event.getDataTransfer() does not list files (only that files are dragged)
-						// cannot check whether the drag'n'drop looks promising
-						evoludoOverlay.setVisible(true);
-					}
-				}, DragEnterEvent.getType());
-			if (dragLeaveHandler == null)
-				dragLeaveHandler = addDomHandler(new DragLeaveHandler() {
-					@Override
-					public void onDragLeave(DragLeaveEvent event) {
-						if (!evoludoOverlay.isVisible() && displayStatusThresholdLevel <= Level.WARNING.intValue())
-							displayStatusThresholdLevel = Level.ALL.intValue();
-					}
-				}, DragLeaveEvent.getType());
-		}
+	/**
+	 * Update drag-and-drop handlers after UI toggles changed the layout.
+	 */
+	private void updateDropHandlers() {
+		if (dragEnterHandler == null)
+			dragEnterHandler = addDomHandler((DragEnterEvent event) -> {
+				if (engine.isRunning()) {
+					evoludoOverlay.setVisible(false);
+					displayStatus("Stop lab for drag'n'drop restore.", Level.WARNING.intValue());
+					return;
+				}
+				evoludoOverlay.setVisible(true);
+			}, DragEnterEvent.getType());
+		if (dragLeaveHandler == null)
+			dragLeaveHandler = addDomHandler((DragLeaveHandler) (event -> {
+				if (!evoludoOverlay.isVisible() && displayStatusThresholdLevel <= Level.WARNING.intValue())
+					displayStatusThresholdLevel = Level.ALL.intValue();
+			}), DragLeaveEvent.getType());
 	}
 
 	/**
 	 * Log GWT features and GUI specifics.
 	 */
 	void logFeatures() {
-		logger.info("GWT Version: " + GWT.getVersion());
-		String epub = "";
+		if (!logger.isLoggable(Level.INFO))
+			return;
+		StringBuilder sb = new StringBuilder("GUI Version: ");
+		sb.append(GWT.getVersion());
+		sb.append("\nGUI features: ");
+		sb.append(NativeJS.isWebGLSupported() ? "WebGL " : "");
+		sb.append(NativeJS.isHTML() ? "HTML " : "XML ");
+		sb.append(NativeJS.hasKeys() ? "keyboard " : "");
+		sb.append(NativeJS.hasMouse() ? "mouse " : "");
+		sb.append(NativeJS.hasTouch() ? "touch " : "");
 		if (NativeJS.isEPub()) {
-			epub = "ePub (";
-			epub += (EvoLudoGWT.ePubHasKeys ? "keyboard " : "");
-			epub += (EvoLudoGWT.ePubHasMouse ? "mouse " : "");
-			epub += (EvoLudoGWT.ePubHasTouch ? "touch " : "");
-			epub = epub.trim();
-			epub += ")";
+			sb.append("ePub (");
+			sb.append(settingsController.hasKeys() ? "keyboard " : "");
+			sb.append(settingsController.hasMouse() ? "mouse " : "");
+			sb.append(settingsController.hasTouch() ? "touch " : "");
+			sb.append(")");
 		}
-		logger.info("GUI features: " + //
-				(NativeJS.isWebGLSupported() ? "WebGL " : "") + //
-				(NativeJS.isHTML() ? "HTML " : "XML ") + //
-				(NativeJS.hasKeys() ? "keyboard " : "") + //
-				(NativeJS.hasMouse() ? "mouse " : "") + //
-				(NativeJS.hasTouch() ? "touch " : "") + //
-				epub);
+		logger.info(sb.toString());
 	}
-
-	/**
-	 * Indicator whether display system supports WebGL to display population
-	 * structures in 3D.
-	 */
-	private final boolean isWebGLSupported;
 
 	/**
 	 * Custom handler for logging system. Redirects notifications to EvoLudo console
@@ -2520,26 +2136,43 @@ public class EvoLudoWeb extends Composite
 		 * provided.
 		 */
 		@Override
-		public void publish(LogRecord record) {
-			int level = record.getLevel().intValue();
+		public void publish(LogRecord rec) {
+			Level rl = rec.getLevel();
+			int level = rl.intValue();
 			if (level >= Level.WARNING.intValue()) {
-				EvoLudoWeb.this.displayStatus(record.getMessage(), level);
+				EvoLudoWeb.this.displayStatus(rec.getMessage(), level);
 			}
 			if (console == null)
 				return;
-			String log = record.getMessage();
-			// do some minimal formatting for console
-			boolean preformatted = false;
-			if (log.startsWith("<pre>")) {
-				// remove tags - assumes entire message is wrapped
-				log = log.replaceAll("<.*pre>", "");
-				preformatted = true;
+
+			String lograw = rec.getMessage();
+			int preBegin = lograw.indexOf(TAG_PRE_OPEN);
+			if (preBegin < 0) {
+				// no <pre> tag found - simple encoding
+				console.log(rl, XMLCoder.encode(lograw));
+				return;
 			}
-			log = XMLCoder.encode(log);
-			// add formatting for console
-			if (preformatted)
-				log = "<pre>" + log + "</pre>";
-			console.log(record.getLevel(), log);
+			StringBuilder log = new StringBuilder();
+			int preEnd = 0;
+			int start = preBegin;
+			// encode all text inside <pre>...</pre> tags
+			do {
+				preBegin += TAG_PRE_OPEN.length();
+				// preformatted component found, preserve formatting
+				preEnd = lograw.indexOf(TAG_PRE_CLOSE);
+				if (preEnd < 0)
+					preEnd = lograw.length();
+				String pre = lograw.substring(preBegin, preEnd);
+				log.append(lograw.substring(start, preBegin))
+						.append(XMLCoder.encode(pre));
+				String tail = lograw.substring(preEnd);
+				if (!tail.startsWith(TAG_PRE_CLOSE))
+					// append </pre> if missing
+					log.append(TAG_PRE_CLOSE);
+				log.append(tail);
+				start = preEnd + TAG_PRE_CLOSE.length();
+			} while ((preBegin = lograw.indexOf(TAG_PRE_OPEN, start)) >= 0);
+			console.log(rl, log.toString());
 		}
 
 		/**

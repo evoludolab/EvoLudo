@@ -34,10 +34,10 @@ import java.awt.Color;
 
 import org.evoludo.math.Combinatorics;
 import org.evoludo.simulator.EvoLudo;
+import org.evoludo.util.CLODelegate;
 import org.evoludo.util.CLOParser;
 import org.evoludo.util.CLOption;
-import org.evoludo.util.CLOption.CLODelegate;
-import org.evoludo.util.CLOption.Category;
+import org.evoludo.util.CLOCategory;
 
 /**
  * Cooperation in voluntary (non-linear) public goods interactions with peer
@@ -200,7 +200,7 @@ public class CDLP extends CDL {
 						- (traitCount[LONER] * leniencyLoner + traitCount[DEFECT]) * costPeerPunish;
 
 			default: // should not end here
-				throw new Error("Unknown trait (" + me + ")");
+				throw new UnsupportedOperationException("Unknown trait (" + me + ")");
 		}
 	}
 
@@ -431,7 +431,7 @@ public class CDLP extends CDL {
 	 * cooperators, provided the composition of the interaction group reveals them
 	 * as second-order free riders.
 	 */
-	public final CLOption cloLeniencyCooperators = new CLOption("leniencycoop", "0", Category.Module,
+	public final CLOption cloLeniencyCooperators = new CLOption("leniencycoop", "0", CLOCategory.Module,
 			"--leniencycoop <l>  leniency for punishing cooperators", new CLODelegate() {
 
 				/**
@@ -451,7 +451,7 @@ public class CDLP extends CDL {
 	/**
 	 * Command line option to set the leniency of peer punishers towards loners.
 	 */
-	public final CLOption cloLeniencyLoners = new CLOption("leniencyloner", "0", Category.Module,
+	public final CLOption cloLeniencyLoners = new CLOption("leniencyloner", "0", CLOCategory.Module,
 			"--leniencyloner <l>  leniency for punishing loners", new CLODelegate() {
 
 				/**
@@ -471,7 +471,7 @@ public class CDLP extends CDL {
 	/**
 	 * Command line option to set the fine of peer punishment for non-contributors.
 	 */
-	public final CLOption cloPunishment = new CLOption("punishment", "1", Category.Module,
+	public final CLOption cloPunishment = new CLOption("punishment", "1", CLOCategory.Module,
 			"--punishment <p>  punishment/fine", new CLODelegate() {
 
 				/**
@@ -491,7 +491,7 @@ public class CDLP extends CDL {
 	/**
 	 * Command line option to set the cost of peer punishment.
 	 */
-	public final CLOption cloCostPunish = new CLOption("costpunish", "0.3", Category.Module,
+	public final CLOption cloCostPunish = new CLOption("costpunish", "0.3", CLOCategory.Module,
 			"--costpunish <c>  cost of punishment", new CLODelegate() {
 
 				/**

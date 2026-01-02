@@ -31,9 +31,9 @@ package org.evoludo.simulator.modules;
 
 import org.evoludo.simulator.EvoLudo;
 import org.evoludo.simulator.models.PopulationUpdate;
+import org.evoludo.util.CLODelegate;
 import org.evoludo.util.CLOption;
-import org.evoludo.util.CLOption.CLODelegate;
-import org.evoludo.util.CLOption.Category;
+import org.evoludo.util.CLOCategory;
 
 /**
  * The implementation of population updates. Population updates are used to
@@ -119,7 +119,7 @@ public class SpeciesUpdate {
 	 * 
 	 * @see PopulationUpdate.Type
 	 */
-	public final CLOption clo = new CLOption("speciesupdate", SpeciesUpdate.Type.RATE.getKey(), Category.Module,
+	public final CLOption clo = new CLOption("speciesupdate", SpeciesUpdate.Type.RATE.getKey(), CLOCategory.Module,
 			"--speciesupdate <t>  species update type:",
 			new CLODelegate() {
 

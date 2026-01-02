@@ -83,7 +83,7 @@ public class PDESupervisor {
 	 * Reset supervisor and update settings.
 	 */
 	public void reset() {
-		nUnits = charge.getGeometry().size;
+		nUnits = charge.getGeometry().getSize();
 	}
 
 	/**
@@ -92,6 +92,17 @@ public class PDESupervisor {
 	public synchronized void update() {
 		react();
 		charge.setDensity();
+	}
+
+	/**
+	 * Indicates whether scheduling is used to advance the PDE model. Subclasses may
+	 * override this method to indicate whether scheduling is used to avoid blocking
+	 * the GUI.
+	 * 
+	 * @return <code>true</code> if scheduling is used; <code>false</code> otherwise
+	 */
+	public boolean useScheduling() {
+		return false;
 	}
 
 	/**

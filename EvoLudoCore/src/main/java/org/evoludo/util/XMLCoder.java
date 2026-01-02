@@ -140,7 +140,8 @@ public class XMLCoder {
 					decoded.replace(start, end + 1, Character.toString((char) code));
 					start++;
 				} catch (NumberFormatException e) {
-					// invalid numeric reference, skip and pray - or replace with something harmless?
+					// invalid numeric reference, skip and pray - or replace with something
+					// harmless?
 					start = end + 1;
 				}
 			} else {
@@ -162,8 +163,8 @@ public class XMLCoder {
 		// Special characters for XML - encode
 		XMLEncode.put('\u0026', "&amp;");
 		XMLEncode.put('\'', "&apos;");
-		XMLEncode.put('\u003C', "&lt;");
-		XMLEncode.put('\u003E', "&gt;");
+		XMLEncode.put('<', "&lt;");
+		XMLEncode.put('>', "&gt;");
 		XMLEncode.put('\u0022', "&quot;");
 		// Special characters for XML - decode
 		XMLDecode.put("&amp;", '&');

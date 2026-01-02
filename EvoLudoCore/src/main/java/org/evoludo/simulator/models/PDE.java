@@ -33,18 +33,21 @@ package org.evoludo.simulator.models;
 import java.util.Arrays;
 import java.util.Comparator;
 import java.util.List;
+import java.util.logging.Level;
 
 import org.evoludo.math.ArrayMath;
 import org.evoludo.simulator.ColorMap;
 import org.evoludo.simulator.EvoLudo;
-import org.evoludo.simulator.Geometry;
+import org.evoludo.simulator.geometries.AbstractGeometry;
+import org.evoludo.simulator.geometries.GeometryFeatures;
+import org.evoludo.simulator.geometries.GeometryType;
 import org.evoludo.simulator.modules.Features.Payoffs;
 import org.evoludo.simulator.modules.Map2Fitness;
 import org.evoludo.simulator.modules.Module;
+import org.evoludo.util.CLOCategory;
+import org.evoludo.util.CLODelegate;
 import org.evoludo.util.CLOParser;
 import org.evoludo.util.CLOption;
-import org.evoludo.util.CLOption.CLODelegate;
-import org.evoludo.util.CLOption.Category;
 import org.evoludo.util.Formatter;
 import org.evoludo.util.Plist;
 
@@ -77,9 +80,9 @@ public class PDE extends ODE {
 	protected PDESupervisor supervisor;
 
 	/**
-	 * Geometry representing the spatial dimensions of this PDE.
+	 * AbstractGeometry representing the spatial dimensions of this PDE.
 	 */
-	protected Geometry space;
+	protected AbstractGeometry space;
 
 	/**
 	 * Density distribution of traits as a 2D array. The first entry refers to the
@@ -120,6 +123,11 @@ public class PDE extends ODE {
 	double[] background;
 
 	/**
+	 * Helper responsible for parsing and applying PDE initialization options.
+	 */
+	private final PDEInitialize initializer;
+
+	/**
 	 * Type of initial configuration for each species.
 	 * <p>
 	 * <strong>Note:</strong> this variable is deliberately hiding a field from
@@ -131,7 +139,7 @@ public class PDE extends ODE {
 	 * @see #cloInit
 	 */
 	@SuppressWarnings("hiding")
-	protected InitType initType;
+	protected PDEInitialize.Type initType;
 
 	/**
 	 * Discretization of space as the total number of spatial units. For example,
@@ -287,15 +295,16 @@ public class PDE extends ODE {
 	 */
 	public PDE(EvoLudo engine) {
 		super(engine);
-		type = Type.PDERD;
+		type = ModelType.PDERD;
+		initializer = new PDEInitialize(this);
 	}
 
 	/**
 	 * Gets the geometry representing the spatial structure of this PDE.
-	 * 
+	 *
 	 * @return the geometry of the PDE
 	 */
-	public Geometry getGeometry() {
+	public AbstractGeometry getGeometry() {
 		return space;
 	}
 
@@ -305,7 +314,6 @@ public class PDE extends ODE {
 		if (supervisor == null)
 			supervisor = engine.hirePDESupervisor(this);
 		module = engine.getModule();
-		space = module.createGeometry();
 		sorting = (o1, o2) -> (int) Math.signum(o1[0] - o2[0]);
 	}
 
@@ -327,18 +335,27 @@ public class PDE extends ODE {
 		boolean doReset = false;
 		if (species.size() > 1) {
 			logger.warning("PDE model for inter-species interactions not (yet?) implemented - reverting to ODE.");
-			engine.loadModel(Type.ODE);
+			engine.loadModel(ModelType.ODE);
 			return true;
 		}
-		if (space.getType() == Geometry.Type.MEANFIELD || space.getType() == Geometry.Type.COMPLETE) {
+		space = module.getGeometry();
+		if (space.isType(GeometryType.WELLMIXED) || space.isType(GeometryType.COMPLETE)) {
 			logger.warning("unstructured population - reverting to ODE.");
-			engine.loadModel(Type.ODE);
+			engine.loadModel(ModelType.ODE);
 			return true;
 		}
 		doReset |= space.setSize(discretization);
 		doReset |= space.check();
 		if (doReset)
 			space.init();
+		// some initialization types make only sense on lattices
+		if (!space.isLattice() && (initType == PDEInitialize.Type.CIRCLE || initType == PDEInitialize.Type.SQUARE
+				|| initType == PDEInitialize.Type.GAUSSIAN
+				|| initType == PDEInitialize.Type.RING)) {
+			logger.warning("initialization type " + initType.getKey()
+					+ " requires lattice geometries - reverting to UNIFORM.");
+			initType = PDEInitialize.Type.UNIFORM;
+		}
 		// need to init space first
 		doReset |= super.check();
 		// shortcut since this is only single species - at least for now
@@ -360,20 +377,20 @@ public class PDE extends ODE {
 	@Override
 	public void reset() {
 		super.reset();
-		if (space.getType() == Geometry.Type.MEANFIELD)
+		if (space.isType(GeometryType.WELLMIXED))
 			return;
-		space.init();
 
-		if (density == null || density.length != space.size || density[0].length != nDim) {
-			density = new double[space.size][nDim];
-			next = new double[space.size][nDim];
+		int nodeCount = space.getSize();
+		if (density == null || density.length != nodeCount || density[0].length != nDim) {
+			density = new double[nodeCount][nDim];
+			next = new double[nodeCount][nDim];
 			minDensity = new double[nDim];
 			maxDensity = new double[nDim];
 			meanDensity = new double[nDim];
 		}
 		if (module instanceof Payoffs
-				&& (fitness == null || fitness.length != space.size || fitness[0].length != nDim)) {
-			fitness = new double[space.size][nDim];
+				&& (fitness == null || fitness.length != nodeCount || fitness[0].length != nDim)) {
+			fitness = new double[nodeCount][nDim];
 			minFitness = new double[nDim];
 			maxFitness = new double[nDim];
 			meanFitness = new double[nDim];
@@ -403,7 +420,7 @@ public class PDE extends ODE {
 
 	@Override
 	public boolean useScheduling() {
-		return EvoLudo.isGWT;
+		return supervisor.useScheduling();
 	}
 
 	/**
@@ -501,7 +518,7 @@ public class PDE extends ODE {
 	 * Normalizes the mean fitnesses after the reaction step is complete.
 	 */
 	public synchronized void normalizeMeanFitness() {
-		ArrayMath.multiply(meanFitness, 1.0 / space.size);
+		ArrayMath.multiply(meanFitness, 1.0 / space.getSize());
 	}
 
 	/**
@@ -537,38 +554,67 @@ public class PDE extends ODE {
 		double[] maxDens = new double[nDim];
 		Arrays.fill(maxDens, -Double.MAX_VALUE);
 		double[] meanDens = new double[nDim];
-		int[][] in = space.in;
 
 		if (isSymmetric) {
-			double[][] sort = new double[space.maxIn][];
-			for (int n = start; n < end; n++) {
-				int[] neighs = in[n];
-				int nIn = space.kin[n];
-				double[] sn = next[n]; // current state of focal site sn
-				double[] s = density[n]; // next state
-				ArrayMath.multiply(sn, -space.kout[n], s); // s = -k*sn
-				// sort neighbours
-				for (int i = 0; i < nIn; i++)
-					sort[i] = next[neighs[i]];
-				// sorting must maintain integrity of densities at neighbouring sites
-				// (sorting based on first element is enough - only equality in the first
-				// density but not the others could still result in an eventual break of
-				// symmetry due to rounding error.)
-				Arrays.sort(sort, 0, nIn, sorting);
-				// loop over neighbours
-				for (int i = 0; i < nIn; i++)
-					ArrayMath.add(s, sort[i]); // s += si
-				ArrayMath.multiply(s, alpha); // s *= alpha
-				ArrayMath.add(s, sn); // s += sn
-				if (dependent >= 0)
-					s[dependent] = Math.max(0.0, 1.0 + s[dependent] - ArrayMath.norm(s));
-				// update extrema and mean density
-				minmaxmean(s, minDens, maxDens, meanDens);
-			}
-			updateDensity(minDens, maxDens, meanDens);
-			return;
+			diffuseSymmetric(start, end, minDens, maxDens, meanDens);
+		} else {
+			diffuseStandard(start, end, minDens, maxDens, meanDens);
 		}
+		updateDensity(minDens, maxDens, meanDens);
+	}
 
+	/**
+	 * Symmetric diffusion for the provided index range; extracts work from the
+	 * original diffuse method to reduce its cognitive complexity.
+	 * 
+	 * @param start    the index of the first cell (including)
+	 * @param end      the index of the last cell (excluding)
+	 * @param minDens  the array to store the minimum densities
+	 * @param maxDens  the array to store the maximum densities
+	 * @param meanDens the array to store the mean densities
+	 */
+	private void diffuseSymmetric(int start, int end, double[] minDens, double[] maxDens, double[] meanDens) {
+		int[][] in = space.in;
+		GeometryFeatures features = space.getFeatures();
+		double[][] sort = new double[features.maxIn][];
+		for (int n = start; n < end; n++) {
+			int[] neighs = in[n];
+			int nIn = space.kin[n];
+			double[] sn = next[n]; // current state of focal site sn
+			double[] s = density[n]; // next state
+			ArrayMath.multiply(sn, -space.kout[n], s); // s = -k*sn
+			// sort neighbours
+			for (int i = 0; i < nIn; i++)
+				sort[i] = next[neighs[i]];
+			// sorting must maintain integrity of densities at neighbouring sites
+			// (sorting based on first element is enough - only equality in the first
+			// density but not the others could still result in an eventual break of
+			// symmetry due to rounding error.)
+			Arrays.sort(sort, 0, nIn, sorting);
+			// loop over neighbours
+			for (int i = 0; i < nIn; i++)
+				ArrayMath.add(s, sort[i]); // s += si
+			ArrayMath.multiply(s, alpha); // s *= alpha
+			ArrayMath.add(s, sn); // s += sn
+			if (dependent >= 0)
+				s[dependent] = Math.max(0.0, 1.0 + s[dependent] - ArrayMath.norm(s));
+			// update extrema and mean density
+			minmaxmean(s, minDens, maxDens, meanDens);
+		}
+	}
+
+	/**
+	 * Standard (non-symmetric) diffusion for the provided index range; extracts
+	 * work from the original diffuse method to reduce its cognitive complexity.
+	 * 
+	 * @param start    the index of the first cell (including)
+	 * @param end      the index of the last cell (excluding)
+	 * @param minDens  the array to store the minimum densities
+	 * @param maxDens  the array to store the maximum densities
+	 * @param meanDens the array to store the mean densities
+	 */
+	private void diffuseStandard(int start, int end, double[] minDens, double[] maxDens, double[] meanDens) {
+		int[][] in = space.in;
 		for (int n = start; n < end; n++) {
 			int[] neighs = in[n];
 			int nIn = space.kin[n];
@@ -584,7 +630,6 @@ public class PDE extends ODE {
 			// update extrema and mean density // min_s:
 			minmaxmean(s, minDens, maxDens, meanDens);
 		}
-		updateDensity(minDens, maxDens, meanDens);
 	}
 
 	/**
@@ -601,7 +646,8 @@ public class PDE extends ODE {
 	 */
 	public synchronized void setDensity() {
 		resetDensity();
-		for (int n = 0; n < space.size; n++)
+		int nodeCount = space.getSize();
+		for (int n = 0; n < nodeCount; n++)
 			minmaxmean(density[n], minDensity, maxDensity, meanDensity);
 		normalizeMeanDensity();
 	}
@@ -626,7 +672,7 @@ public class PDE extends ODE {
 	 * Normalizes the mean density after the diffusion step is complete.
 	 */
 	public synchronized void normalizeMeanDensity() {
-		ArrayMath.multiply(meanDensity, 1.0 / space.size);
+		ArrayMath.multiply(meanDensity, 1.0 / space.getSize());
 	}
 
 	@Override
@@ -854,7 +900,7 @@ public class PDE extends ODE {
 	 * Sets whether symmetries should be preserved. Not all models may be able to
 	 * honour the request. For example {@link PDE} is only able to preserve
 	 * symmetries in the diffusion step if the
-	 * {@link Geometry#isLattice()} returns <code>true</code>.
+	 * {@link AbstractGeometry#isLattice()} returns <code>true</code>.
 	 *
 	 * @param symmetric the request to preserve symmetry
 	 */
@@ -968,356 +1014,7 @@ public class PDE extends ODE {
 	@Override
 	public void init() {
 		super.init();
-		InitType itype = initType;
-		// some initialization types make only sense on lattices
-		if (!space.isLattice() && (itype == InitType.CIRCLE || itype == InitType.SQUARE || itype == InitType.GAUSSIAN
-				|| itype == InitType.RING)) {
-			itype = InitType.UNIFORM;
-		}
-
-		boolean isCircular = false;
-		switch (itype) {
-			default:
-			case UNIFORM:
-				for (int n = 0; n < space.size; n++)
-					System.arraycopy(y0, 0, density[n], 0, nDim);
-				break;
-
-			case PERTURBATION:
-				for (int n = 0; n < space.size; n++)
-					System.arraycopy(background, 0, density[n], 0, nDim);
-				switch (space.getType()) {
-					case CUBE:
-						int l = (int) (Math.pow(space.size, 1.0 / 3.0) + 0.5);
-						System.arraycopy(y0, 0, density[(l * l + l + 1) * l / 2], 0, nDim);
-						break;
-					case SQUARE_NEUMANN:
-					case SQUARE_MOORE:
-					case SQUARE:
-					case TRIANGULAR:
-					case HONEYCOMB:
-						l = (int) (Math.sqrt(space.size) + 0.5);
-						System.arraycopy(y0, 0, density[(l + 1) * l / 2], 0, nDim);
-						break;
-					default: // for anything else
-						System.arraycopy(y0, 0, density[space.size / 2], 0, nDim);
-				}
-				break;
-
-			case RANDOM:
-				for (int n = 0; n < space.size; n++) {
-					double[] ds = density[n]; // ds is only a short-cut - data written to density[]
-					for (int i = 0; i < nDim; i++)
-						ds[i] = rng.random01() * y0[i];
-					if (!isDensity)
-						ArrayMath.normalize(ds);
-				}
-				break;
-
-			case CIRCLE:
-				isCircular = true;
-				//$FALL-THROUGH$
-
-			case SQUARE:
-				for (int n = 0; n < space.size; n++)
-					System.arraycopy(background, 0, density[n], 0, nDim);
-				switch (space.getType()) {
-					case CUBE:
-						int l = 50;
-						int m = 25;
-						int mz = 5;
-						if (space.size != 25000) { // not NOVA
-							l = (int) (Math.pow(space.size, 1.0 / 3.0) + 0.5);
-							m = l / 2;
-							mz = m;
-						}
-						int l2 = l * l;
-						int dd = Math.max(1, l / 5);
-						int r = nDim / 2;
-						double r2 = (dd * dd) * 0.25;
-						for (int z = -r; z <= r; z++)
-							for (int y = -r; y <= r; y++)
-								for (int x = -r; x <= r; x++) {
-									if (isCircular && x * x + y * y + z * z >= r2)
-										continue;
-									System.arraycopy(y0, 0, density[(mz + z) * l2 + (m + y) * l + m + x], 0, nDim);
-								}
-						break;
-					case LINEAR:
-						dd = Math.max(2, space.size / 10);
-						dd -= space.size % 2 - dd % 2;
-						m = (space.size - dd) / 2;
-						for (int n = m; n < m + dd; n++)
-							System.arraycopy(y0, 0, density[n], 0, nDim);
-						break;
-					default: // for square, triangular and hexagonal lattices
-						l = (int) Math.floor(Math.sqrt(space.size) + 0.5);
-						m = l / 2;
-						dd = Math.max(1, l / 5);
-						r = dd / 2;
-						r2 = (dd * dd) * 0.25;
-						for (int y = -r; y <= r; y++)
-							for (int x = -r; x <= r; x++) {
-								if (isCircular && x * x + y * y >= r2)
-									continue;
-								System.arraycopy(y0, 0, density[(m + y) * l + m + x], 0, nDim);
-							}
-				}
-				break;
-
-			case GAUSSIAN:
-				switch (space.getType()) {
-					case CUBE:
-						int l = 50;
-						int lz = 10;
-						if (space.size != 25000) { // not NOVA
-							l = (int) (Math.pow(space.size, 1.0 / 3.0) + 0.5);
-							lz = l;
-						}
-						double m = (l - 1) * 0.5;
-						double mz = (lz - 1) * 0.5;
-						int l2 = l * l;
-						double norm = 1.0 / l;
-						for (int z = 0; z < lz; z++) {
-							double z2 = (z - mz) * (z - mz);
-							for (int y = 0; y < l; y++) {
-								double y2 = (y - m) * (y - m);
-								for (int x = 0; x < l; x++)
-									scaleDensity(density[z * l2 + y * l + x],
-											Math.exp(-((x - m) * (x - m) + y2 + z2) * norm));
-							}
-						}
-						break;
-					case LINEAR:
-						l = space.size;
-						m = l * 0.5;
-						norm = 1.0 / l;
-						for (int x = 0; x < l; x++)
-							scaleDensity(density[x], Math.exp(-(x - m) * (x - m) * norm));
-						break;
-					default: // for square, triangular and hexagonal lattices
-						l = (int) Math.floor(Math.sqrt(space.size) + 0.5);
-						m = (l - 1) * 0.5;
-						norm = 1.0 / l;
-						for (int y = 0; y < l; y++) {
-							double y2 = (y - m) * (y - m);
-							for (int x = 0; x < l; x++)
-								scaleDensity(density[y * l + x],
-										Math.exp(-((x - m) * (x - m) + y2) * norm));
-						}
-				}
-				break;
-
-			case RING:
-				switch (space.getType()) {
-					case CUBE:
-						int l = 50;
-						int lz = 10;
-						if (space.size != 25000) { // not NOVA
-							l = (int) (Math.pow(space.size, 1.0 / 3.0) + 0.5);
-							lz = l;
-						}
-						double m = (l - 1) * 0.5;
-						double mz = (lz - 1) * 0.5;
-						int l2 = l * l;
-						double m3 = m * 0.333;
-						double norm = 1.0 / l;
-						for (int z = 0; z < lz; z++) {
-							double z2 = (z - mz) * (z - mz);
-							for (int y = 0; y < l; y++) {
-								double y2 = (y - m) * (y - m);
-								for (int x = 0; x < l; x++) {
-									double r = Math.pow((x - m) * (x - m) + y2 + z2, 1.0 / 3.0);
-									scaleDensity(density[z * l2 + y * l + x],
-											Math.exp(-(r - m3) * (r - m3) * norm));
-								}
-							}
-						}
-						break;
-					case LINEAR:
-						l = space.size;
-						m = (l - 1) * 0.5;
-						m3 = m * 0.333;
-						norm = 1.0 / l;
-						for (int x = 0; x < l; x++) {
-							double r = Math.abs(x - m);
-							scaleDensity(density[x],
-									Math.exp(-(r - m3) * (r - m3) * norm));
-						}
-						break;
-					default: // for square, triangular and hexagonal lattices
-						l = (int) Math.floor(Math.sqrt(space.size) + 0.5);
-						m = (l - 1) * 0.5;
-						m3 = m * 0.333;
-						norm = 1.0 / l;
-						for (int y = 0; y < l; y++) {
-							double y2 = (y - m) * (y - m);
-							for (int x = 0; x < l; x++) {
-								double r = Math.sqrt((x - m) * (x - m) + y2);
-								scaleDensity(density[y * l + x],
-										Math.exp(-(r - m3) * (r - m3) * norm));
-							}
-						}
-				}
-				break;
-		}
-		// // gradient
-		// int l = (int)Math.floor(Math.sqrt(space.size)+0.5);
-		// for( int i=0; i<l; i++ ) {
-		// int skip = i*l;
-		// for( int j=0; j<l; j++ ) {
-		// double[] loc = density[skip+j];
-		// loc[0] = (double)i/(double)(l-1);
-		// loc[1] = (double)j/(double)(l-1);
-		// loc[2] = 0.0;
-		// }
-		// }
-	}
-
-	/**
-	 * Helper method to scale the density vector {@code d} by the scalar factor
-	 * {@code scale}. The scalar must lie in \((0, 1)\) such that the initial
-	 * densities/frequencies represent the maximum.
-	 * 
-	 * @param d     the density vector to scale
-	 * @param scale the scaling factor
-	 */
-	private void scaleDensity(double[] d, double scale) {
-		for (int n = 0; n < nDim; n++)
-			d[n] = (1.0 - scale) * background[n] + scale * y0[n];
-		if (dependent >= 0) {
-			d[dependent] = Math.max(0.0, 1.0 + d[dependent] - ArrayMath.norm(d));
-			ArrayMath.normalize(d);
-		}
-	}
-
-	/**
-	 * Types of initial configurations. Currently this model supports the following
-	 * density distributions:
-	 * <dl>
-	 * <dt>UNIFORM
-	 * <dd>Uniform/homogeneous distribution of trait densities given by
-	 * {@link ODE#y0}.
-	 * <dt>RANDOM
-	 * <dd>Random trait densities, uniformly distributed between zero and the
-	 * densities given by {@link ODE#y0}.
-	 * <dt>SQUARE
-	 * <dd>Square in the center with uniform densities given by {@link ODE#y0}.
-	 * <dt>CIRCLE
-	 * <dd>Circle in the center with uniform densities given by {@link ODE#y0}.
-	 * <dt>DISTURBANCE
-	 * <dd>Spatially homogeneous distribution given by {@link ODE#y0} with a
-	 * perturbation in the center cell with densities {@code 1.2*y0}, or, for
-	 * frequency
-	 * based models with inverted and normalized frequencies.
-	 * <dt>GAUSSIAN
-	 * <dd>Gaussian density distribution in the center. In 2D lattices this
-	 * generates a sombrero-like distribution. Maximum density is given by
-	 * {@link ODE#y0}.
-	 * <dt>GAUSSIAN_RING
-	 * <dd>Ring distribution in the center with Gaussian distributed densities along
-	 * the radius. In 2D lattices this generates a donut-like distribution. Maximum
-	 * density is given by {@link ODE#y0}.
-	 * <dt>DEFAULT
-	 * <dd>Default initialization (UNIFORM)
-	 * </dl>
-	 * 
-	 * @see #parse(String)
-	 * @see ODE#cloInit
-	 */
-	public enum InitType implements CLOption.Key {
-
-		/**
-		 * Uniform/homogeneous distribution of trait densities {@code <d1,...dn>}.
-		 */
-		UNIFORM("uniform", "uniform densities <d1,...,dn>"),
-
-		/**
-		 * Random trait frequencies.
-		 */
-		RANDOM("random", "random densities"),
-
-		/**
-		 * Square in the center with uniform trait densities {@code <d1,...dn>}. This
-		 * requires a lattice geometry. In modules with empty space the background
-		 * defaults to empty, otherwise the background densities <em>must</em> be
-		 * specified as {@code <b1,...bn>}.
-		 */
-		SQUARE("square", "square in center <d1,...,dn[;b1,...,bn]>"),
-
-		/**
-		 * Circle in the center with uniform densities {@code <d1,...dn>}. This requires
-		 * a lattice geometry. In modules with empty space the background defaults to
-		 * empty, otherwise the background densities <em>must</em> be specified as
-		 * {@code <b1,...bn>}.
-		 */
-		CIRCLE("circle", "circle in center <d1,...,dn[;b1,...,bn]>"),
-
-		/**
-		 * Perturbation of a spatially homogeneous distribution with densities
-		 * {@code <d1,...dn>}. In modules with empty space the background defaults to
-		 * empty, otherwise the background densities <em>must</em> be specified as
-		 * {@code <b1,...bn>}.
-		 */
-		PERTURBATION("perturbation", "perturbation in center <d1,...,dn[;b1,...,bn]>"),
-
-		/**
-		 * Gaussian density distribution in the center. This requires a lattice
-		 * geometry. In 2D lattices this generates a sombrero-like distribution. The
-		 * peak density is {@code <d1,...dn>}. In modules with empty space the
-		 * background defaults to empty, otherwise the background densities
-		 * <em>must</em> be specified as {@code <b1,...bn>}.
-		 */
-		GAUSSIAN("sombrero", "sombrero-like distribution <d1,...,dn[;b1,...,bn]>"),
-
-		/**
-		 * Ring distribution in the center with Gaussian distributed densities along the
-		 * radius. This requires a lattice geometry. In 2D lattices this generates a
-		 * donut-like distribution. The peak density is {@code <d1,...dn>}. In modules
-		 * with empty space the background defaults to empty, otherwise the background
-		 * densities <em>must</em> be specified as {@code <b1,...bn>}.
-		 */
-		RING("ring", "donut-like distribution <d1,...,dn[;b1,...,bn]>");
-
-		/**
-		 * Key of initialization type. Used when parsing command line options.
-		 * 
-		 * @see ODE#cloInit
-		 */
-		String key;
-
-		/**
-		 * Brief description of initialization type for help display.
-		 * 
-		 * @see EvoLudo#getCLOHelp()
-		 */
-		String title;
-
-		/**
-		 * Instantiate new initialization type.
-		 * 
-		 * @param key   identifier for parsing of command line option
-		 * @param title summary of geometry
-		 */
-		InitType(String key, String title) {
-			this.key = key;
-			this.title = title;
-		}
-
-		@Override
-		public String getKey() {
-			return key;
-		}
-
-		@Override
-		public String getTitle() {
-			return title;
-		}
-
-		@Override
-		public String toString() {
-			return key;
-		}
+		initializer.init(density);
 	}
 
 	/**
@@ -1326,58 +1023,80 @@ public class PDE extends ODE {
 	 * <p>
 	 * <strong>Note:</strong> Not possible to perform parsing in {@code CLODelegate}
 	 * of {@link #cloInit} because PDE model provide their own
-	 * {@link PDE.InitType}s.
+	 * {@link PDEInitialize.Type}s.
 	 * 
 	 * @param arg the arguments to parse
 	 * @return {@code true} if parsing successful
 	 * 
-	 * @see ODE.InitType
-	 * @see PDE.InitType
+	 * @see ODEInitialize.InitType
+	 * @see PDEInitialize.Type
 	 */
 	@Override
 	public boolean parse(String arg) {
 		// this is just for a single species - as everything else in PDE models
-		initType = (InitType) cloInit.match(arg);
+		initType = (PDEInitialize.Type) cloInit.match(arg);
 		String[] typeargs = arg.split(CLOParser.SPLIT_ARG_REGEX);
-		double[][] init = null;
-		if (typeargs.length > 1)
-			init = CLOParser.parseMatrix(typeargs[1]);
+		double[][] init = (typeargs.length > 1) ? CLOParser.parseMatrix(typeargs[1]) : null;
+
 		int nt = module.getNTraits();
 		if (y0 == null || y0.length != nt) {
 			y0 = new double[nt];
 			background = new double[nt];
 		}
-		if (initType == null
-				|| !initType.equals(InitType.RANDOM) && (init == null || init[0] == null || init[0].length != nt))
+
+		if (!isValidInitForType(init))
 			return false;
+
 		// init can be null for RANDOM initializations
 		if (init == null)
 			Arrays.fill(y0, 1.0);
 		else
 			System.arraycopy(init[0], 0, y0, 0, nt);
+
 		if (dependent >= 0) {
 			// normalize initial state
 			ArrayMath.normalize(y0);
 		}
+
 		// UNIFORM and RANDOM do not need a background
-		if (initType == InitType.UNIFORM || initType == InitType.RANDOM)
+		if (initType == PDEInitialize.Type.UNIFORM || initType == PDEInitialize.Type.RANDOM)
 			return true;
-		if (init.length > 1) {
-			// background specified
+
+		// set background either from init or to default empty state
+		if (init != null && init.length > 1) {
 			System.arraycopy(init[1], 0, background, 0, nt);
 			if (dependent >= 0) {
 				// normalize background
 				ArrayMath.normalize(background);
 			}
-		} else {
-			int vacant = module.getVacantIdx();
-			if (vacant < 0)
-				return false;
-			// set background to empty
-			Arrays.fill(background, 0.0);
-			background[vacant] = 1.0;
+			return true;
 		}
+
+		int vacant = module.getVacantIdx();
+		if (vacant < 0)
+			return false;
+		// set background to empty
+		Arrays.fill(background, 0.0);
+		background[vacant] = 1.0;
 		return true;
+	}
+
+	/**
+	 * Validate that the parsed init matrix is acceptable for the chosen
+	 * initialization type.
+	 * 
+	 * @param init candidate initialization matrix
+	 * @return {@code true} if {@code init} satisfies the requirements of
+	 *         {@link #initType}
+	 */
+	private boolean isValidInitForType(double[][] init) {
+		if (initType == null)
+			return false;
+		// RANDOM may have null init matrix
+		if (initType.equals(PDEInitialize.Type.RANDOM))
+			return true;
+		// other types require a valid first row of length equal to number of traits
+		return (init != null && init[0] != null && init[0].length == module.getNTraits());
 	}
 
 	/**
@@ -1410,13 +1129,15 @@ public class PDE extends ODE {
 		double invdx = calcInvDeltaX();
 		double invdx2 = invdx * invdx;
 		double maxD = ArrayMath.max(diffcoeff) * invdx2;
-		int maxK = Math.max(space.maxOut, space.maxIn);
+		GeometryFeatures features = space.getFeatures();
+		int maxK = Math.max(features.maxOut, features.maxIn);
 		// threshold of 1 is much to aggressive - this means everyone in one site
 		// migrates! this can introduce artifacts!
 		if (dt < 1e-5 || maxK * maxD * dt > 0.5) {
 			double deltat = Math.max(0.5 / (maxD * maxK), Double.MIN_VALUE);
-			logger.warning("PDE time scale adjusted (diffusion): dt=" + Formatter.formatSci(deltat, 4)
-					+ " (was dt=" + Formatter.formatSci(dt, 4) + ").");
+			if (logger.isLoggable(Level.WARNING))
+				logger.warning("PDE time scale adjusted (diffusion): dt=" + Formatter.formatSci(deltat, 4)
+						+ " (was dt=" + Formatter.formatSci(dt, 4) + ").");
 			dt = deltat;
 		}
 		// dynamical dt
@@ -1457,17 +1178,17 @@ public class PDE extends ODE {
 	double calcInvDeltaX() {
 		switch (space.getType()) {
 			case CUBE:
-				return Math.pow(space.size, 1.0 / 3.0) / linext;
+				return Math.pow(space.getSize(), 1.0 / 3.0) / linext;
 			case LINEAR:
-				return space.size / linext;
+				return space.getSize() / linext;
 			case SQUARE_NEUMANN:
 			case SQUARE_NEUMANN_2ND:
 			case SQUARE_MOORE:
 			case SQUARE:
 			case TRIANGULAR:
-			case HONEYCOMB:
+			case HEXAGONAL:
 			default:
-				return Math.sqrt(space.size) / linext;
+				return Math.sqrt(space.getSize()) / linext;
 		}
 	}
 
@@ -1495,7 +1216,7 @@ public class PDE extends ODE {
 	 * 
 	 * @see #setDiscretization(int)
 	 */
-	public final CLOption cloPdeN = new CLOption("pdeN", "5041", Category.Model, // 71x71
+	public final CLOption cloPdeN = new CLOption("pdeN", "5041", CLOCategory.Model, // 71x71
 			// note: XHTML is very fussy about characters... (both variants below simply
 			// kill the help screen)
 			// "--pdeN <N> discretization PDE (√N bins for lattice side)",
@@ -1514,7 +1235,7 @@ public class PDE extends ODE {
 	 * 
 	 * @see #setLinearExtension(double)
 	 */
-	public final CLOption cloPdeL = new CLOption("pdeL", "100", Category.Model,
+	public final CLOption cloPdeL = new CLOption("pdeL", "100", CLOCategory.Model,
 			"--pdeL <L>  linear extension of spatial domain of PDE", new CLODelegate() {
 				@Override
 				public boolean parse(String arg) {
@@ -1526,7 +1247,7 @@ public class PDE extends ODE {
 	/**
 	 * Command line option to set the diffusion coefficients.
 	 */
-	public final CLOption cloPdeDiffusion = new CLOption("pdeD", "1", Category.Model, null,
+	public final CLOption cloPdeDiffusion = new CLOption("pdeD", "1", CLOCategory.Model, null,
 			new CLODelegate() {
 				@Override
 				public boolean parse(String arg) {
@@ -1584,12 +1305,11 @@ public class PDE extends ODE {
 	 * 
 	 * @see #setSymmetric(boolean)
 	 */
-	public final CLOption cloPdeSymmetric = new CLOption("pdeSymmetry", "nosymmetry", CLOption.Argument.NONE,
-			Category.Model,
+	public final CLOption cloPdeSymmetric = new CLOption("pdeSymmetry", CLOCategory.Model,
 			"--pdeSymmetry   request symmetric diffusion of PDE", new CLODelegate() {
 				@Override
-				public boolean parse(String arg) {
-					setSymmetric(cloPdeSymmetric.isSet());
+				public boolean parse(boolean isSet) {
+					setSymmetric(isSet);
 					return true;
 				}
 			});
@@ -1620,8 +1340,8 @@ public class PDE extends ODE {
 		// parser.addCLO(cloPdeColorRange);
 		// ODE loaded its own keys already - clear and reload ours.
 		cloInit.clearKeys();
-		cloInit.addKeys(InitType.values());
-		cloInit.setDefault(InitType.RANDOM.getKey());
+		cloInit.addKeys(PDEInitialize.Type.values());
+		cloInit.setDefault(PDEInitialize.Type.RANDOM.getKey());
 	}
 
 	// public boolean parsePDEColorRange(String colorranges) {
@@ -1674,13 +1394,13 @@ public class PDE extends ODE {
 			for (Module<?> pop : species) {
 				Plist pplist = (Plist) plist.get(pop.getName());
 				if (!restoreGeometry(pplist)) {
-					logger.warning("restore geometry in " + type + "-model failed (" + pop.getName() + ").");
+					logger.warning("restore geometry in " + type.getKey() + "-model failed (" + pop.getName() + ").");
 					success = false;
 				}
 			}
 		} else {
 			if (!restoreGeometry(plist)) {
-				logger.warning("restore geometry in " + type + "-model failed.");
+				logger.warning("restore geometry in " + type.getKey() + "-model failed.");
 				success = false;
 			}
 		}
@@ -1722,9 +1442,10 @@ public class PDE extends ODE {
 	public boolean restoreTraits(Plist plist) {
 		@SuppressWarnings("unchecked")
 		List<List<Double>> state = (List<List<Double>>) plist.get("Density");
-		if (state == null || state.size() != space.size || state.get(0) == null || state.get(0).size() != nDim)
+		int nodeCount = space.getSize();
+		if (state == null || state.size() != nodeCount || state.get(0) == null || state.get(0).size() != nDim)
 			return false;
-		for (int n = 0; n < space.size; n++) {
+		for (int n = 0; n < nodeCount; n++) {
 			List<Double> cell = state.get(n);
 			double[] dcell = density[n];
 			for (int i = 0; i < nDim; i++)
@@ -1735,16 +1456,18 @@ public class PDE extends ODE {
 
 	@Override
 	public void encodeFitness(StringBuilder plist) {
-		plist.append(Plist.encodeKey("Fitness", fitness));
+		if (module instanceof Payoffs)
+			plist.append(Plist.encodeKey("Fitness", fitness));
 	}
 
 	@Override
 	public boolean restoreFitness(Plist plist) {
 		@SuppressWarnings("unchecked")
 		List<List<Double>> fit = (List<List<Double>>) plist.get("Fitness");
-		if (fit == null || fit.size() != space.size || fit.get(0) == null || fit.get(0).size() != nDim)
+		int nodeCount = space.getSize();
+		if (fit == null || fit.size() != nodeCount || fit.get(0) == null || fit.get(0).size() != nDim)
 			return false;
-		for (int n = 0; n < space.size; n++) {
+		for (int n = 0; n < nodeCount; n++) {
 			List<Double> cell = fit.get(n);
 			double[] fcell = fitness[n];
 			for (int i = 0; i < nDim; i++)

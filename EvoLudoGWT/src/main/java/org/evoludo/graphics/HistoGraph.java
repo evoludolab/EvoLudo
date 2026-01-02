@@ -43,14 +43,115 @@ import org.evoludo.ui.ContextMenuCheckBoxItem;
 import org.evoludo.util.Formatter;
 
 /**
- * Histogram graph for displaying data in bins. The data is stored in a 2D array
- * with the first index representing the data row and the second index the bin
- * index. The data can be normalized to the total number of samples or to a
- * specific data row. The graph can be used to display data for different types
- * of modules, such as degree distributions, strategies, fitness values, or
- * fixation probabilities.
- * 
+ * A histogram graph used to render and interact with binned data.
+ *
+ * <p>
+ * HistoGraph renders a histogram from a backing two-dimensional
+ * {@code double[][]} data array. Each HistoGraph instance references a specific
+ * row in that array (the {@code row} index) and therefore multiple HistoGraph
+ * instances may share the same underlying data buffer but operate on different
+ * rows. The number of bins rendered is determined by the length of the
+ * referenced data row.
+ * </p>
+ *
+ * <h2>Data model and normalization</h2>
+ * <ul>
+ * <li>The backing data is a {@code double[][]} provided via
+ * {@link #setData(double[][])}. The graph uses the configured {@code row} to
+ * access its own bin values.</li>
+ * <li>Normalization may be controlled in two mutually exclusive ways:
+ * <ul>
+ * <li>{@link #setNormalized(boolean)} toggles normalization relative to the
+ * graph's sample count ({@link #nSamples}). If enabled, values returned by
+ * {@link #getData(int)} are already normalized.</li>
+ * <li>{@link #setNormalized(int)} sets {@code normIdx}, a separate data row
+ * used to normalize per-bin values (per-bin denominators are read from that
+ * row). When {@code normIdx >= 0} normalization uses the values in the
+ * specified row and the graph will render values as
+ * {@code data[row][i] / data[normIdx][i]}.</li>
+ * </ul>
+ * Note: calling {@link #setNormalized(boolean)} with {@code true} clears a
+ * previously set {@code normIdx} and vice versa — these modes conflict.
+ * </li>
+ * <li>{@link #nSamples} tracks the total number of added samples;
+ * {@link #addData(int)} and {@link #addData(double)} increment this counter
+ * (and update normalization row when {@code normIdx >= 0}).</li>
+ * </ul>
+ *
+ * <h2>Bins, range and dynamic resizing</h2>
+ * <ul>
+ * <li>The graph maps an x-coordinate to a bin via {@link #x2bin(double)} and
+ * maps bin indices back to an x-coordinate (bin center) with
+ * {@link #bin2x(int)}.</li>
+ * <li>Several behaviors assume the number of bins ({@code nBins}) is even:
+ * {@link #doubleMinRange()} and {@link #doubleMaxRange()} fold and shift bin
+ * contents when the numeric x-range must be doubled. These methods require that
+ * {@code nBins} is even; this is a precondition for correct
+ * range-doubling.</li>
+ * <li>{@link #addData(double)} will automatically expand the numeric x-range
+ * when
+ * a value falls outside the current {@code style.xMin..style.xMax} range by
+ * repeatedly calling the range-doubling helpers until the value fits. The
+ * number of bins remains constant during these range changes.</li>
+ * </ul>
+ *
+ * <h2>Rendering and autoscaling</h2>
+ * <ul>
+ * <li>The {@link #paint(boolean)} method draws the histogram bars using the
+ * current {@code style} (colors, frame, axis ranges). If
+ * {@code style.autoscaleY} is enabled the graph will adapt {@code style.yMin}
+ * and {@code style.yMax} automatically based on the observed data values or the
+ * configured normalization row.</li>
+ * <li>When autoscaling normalized data the graph uses a fixed table of
+ * thresholds (see the private {@code autoscale} matrix) to pick a convenient
+ * set of y-levels and step values; when data exceeds 1.0 it rounds up/down to
+ * "nice" boundaries.</li>
+ * <li>Bars are clipped and mapped into pixel space using {@code bounds} and the
+ * current y-range; rendering ensures minimal visible height for very small
+ * values.</li>
+ * </ul>
+ *
+ * <h2>Markers and interactivity</h2>
+ * <ul>
+ * <li>Markers (inner class {@link Marker}) annotate the histogram at an
+ * x-coordinate and are drawn as vertical lines spanning bin boundaries. Markers
+ * can have a color, description and optional dash pattern ({@code linestyle}).
+ * Markers are added with {@link #addMarker(double, String, String)} (or the
+ * overload that accepts a dash pattern) and cleared with
+ * {@link #clearMarkers()}.</li>
+ * <li>When markers are drawn the bin they hit is saved into {@link Marker#bin}
+ * which allows the graph to include marker descriptions in tooltips.</li>
+ * <li>The graph provides tooltip text for a pixel coordinate via
+ * {@link #getTooltipAt(int, int)} and for a bin index via
+ * {@link #getTooltipAt(int)}. Tooltip content varies by the histogram
+ * {@code view.type} (degree, fitness, trait and several statistics types have
+ * specialized tooltip formats).</li>
+ * <li>Context menu support includes a check-box item for toggling autoscaling
+ * of the y-axis; it can be enabled/disabled via
+ * {@link #enableAutoscaleYMenu(boolean)}.</li>
+ * </ul>
+ *
+ * <h2>Usage notes and important constraints</h2>
+ * <ul>
+ * <li>Because the data array may be shared across multiple HistoGraph
+ * instances, callers must take care when manipulating the shared data buffer
+ * concurrently.</li>
+ * <li>The range-doubling implementation assumes an even {@code nBins}. Using an
+ * odd number of bins will break {@link #doubleMinRange()} /
+ * {@link #doubleMaxRange()}.</li>
+ * <li>Most methods guard against a {@code null} data array; however many
+ * operations are no-ops or return default values (e.g. {@code -1} for missing
+ * bins) when no data is set.</li>
+ * </ul>
+ *
  * @author Christoph Hauert
+ * 
+ * @see #setData(double[][])
+ * @see #setNormalized(boolean)
+ * @see #setNormalized(int)
+ * @see #addData(int)
+ * @see #addData(double)
+ * @see #addMarker(double, String, String)
  */
 @SuppressWarnings("java:S110")
 public class HistoGraph extends AbstractGraph<double[]> implements BasicTooltipProvider {
@@ -540,20 +641,6 @@ public class HistoGraph extends AbstractGraph<double[]> implements BasicTooltipP
 	}
 
 	@Override
-	public boolean displayMessage(String msg) {
-		message = msg;
-		if (!super.displayMessage(message))
-			return false;
-		// add frame
-		g.save();
-		g.scale(scale, scale);
-		g.translate(bounds.getX(), bounds.getY());
-		drawFrame(4, 4);
-		g.restore();
-		return true;
-	}
-
-	@Override
 	public void clearMessage() {
 		super.clearMessage();
 		message = null;
@@ -570,69 +657,136 @@ public class HistoGraph extends AbstractGraph<double[]> implements BasicTooltipP
 		g.scale(scale, scale);
 		clearCanvas();
 		g.translate(bounds.getX(), bounds.getY());
-
 		g.setFillStyle(style.graphColor);
+
 		int yLevels = 4;
-		double[] myData = data[row];
 		double[] norm = null;
+		double[] myData = data[row];
 		if (style.autoscaleY) {
-			// Note: autoscaling is pretty slow - could be avoided by checks when adding new
-			// data points; increasing
-			// max is fairly easy; if max gets reduced a global check for new maximum is
-			// required; graph would
-			// need to keep track of bin index that contains the maximum.
-			double yMax = -Double.MAX_VALUE;
-			double yMin = Double.MAX_VALUE;
+			double yMax;
 			if (normIdx >= 0) {
 				norm = data[normIdx];
-				boolean nodata = true;
-				for (int n = 0; n < nBins; n++) {
-					double nnorm = norm[n];
-					if (nnorm < 1e-8)
-						continue;
-					double val = myData[n] / nnorm;
-					yMin = Math.min(yMin, val);
-					yMax = Math.max(yMax, val);
-					nodata = false;
-				}
-				if (nodata) {
-					yMax = 1.0;
-					yMin = 0.0;
-				}
+				double[] bounds = computeNormBounds(myData, norm);
+				yMax = bounds[1];
 			} else {
 				yMax = ArrayMath.max(myData);
-				if (!isNormalized)
+				if (!isNormalized) {
 					yMax /= nSamples;
+				}
 			}
 			if (yMax <= 1.0) {
-				// find maximum - assumes that data is normalized and max<=1!
-				while (yMax > autoscale[autoscaleidx][0])
-					autoscaleidx--;
-				while (yMax < autoscale[autoscaleidx][1])
-					autoscaleidx++;
-				style.yMax = autoscale[autoscaleidx][0];
-				yLevels = (int) autoscale[autoscaleidx][2];
+				// normalized small values: pick a suitable autoscale index
+				yLevels = handleSmallYMax(yMax);
 			} else {
-				// round yMax up to 'nice' boundary
-				if (yMax > style.yMax || yMax < 0.8 * style.yMax)
-					style.yMax = Functions.roundUp(yMax);
-
-				if (normIdx < 0) {
-					yMin = ArrayMath.min(myData);
-					if (!isNormalized)
-						yMin /= nSamples;
-				}
-				if (yMin < style.yMin || yMin > 1.25 * style.yMin)
-					style.yMin = Functions.roundDown(yMin);
+				// larger values: adjust yMax and possibly yMin
+				handleLargeYMax(yMax, myData);
 			}
 		}
 
 		double barwidth = bounds.getWidth() / nBins;
-		double xshift = 0;
 		double h = bounds.getHeight();
 		double map = h / (style.yMax - style.yMin);
-		if (normIdx >= 0) {
-			norm = data[normIdx];
+
+		drawBars(myData, norm, barwidth, h, map);
+
+		drawMarkers();
+		drawFrame(4, yLevels);
+		g.restore();
+		return false;
+	}
+
+	/**
+	 * Handle the case where {@code yMax <= 1.0} by selecting an autoscale index and
+	 * updating {@link GraphStyle#yMax}.
+	 * 
+	 * @param yMax observed maximum bin height
+	 * @return number of y-levels to use
+	 */
+	private int handleSmallYMax(double yMax) {
+		int yLevels = selectAutoscaleIndexForYMax(yMax);
+		style.yMax = autoscale[autoscaleidx][0];
+		return yLevels;
+	}
+
+	/**
+	 * Handle the case where {@code yMax > 1.0} by rounding the maximum up if
+	 * necessary and determining/rounding {@code yMin} when applicable.
+	 * 
+	 * @param yMax   observed maximum bin height
+	 * @param myData histogram counts
+	 */
+	private void handleLargeYMax(double yMax, double[] myData) {
+		if (yMax > style.yMax || yMax < 0.8 * style.yMax) {
+			style.yMax = Functions.roundUp(yMax);
+		}
+
+		double yMin = Double.NaN;
+		// determine yMin only for non-normalized per-bin case
+		if (normIdx < 0) {
+			yMin = ArrayMath.min(myData);
+			if (!isNormalized) {
+				yMin /= nSamples;
+			}
+		}
+		if (!Double.isNaN(yMin) && (yMin < style.yMin || yMin > 1.25 * style.yMin)) {
+			style.yMin = Functions.roundDown(yMin);
+		}
+	}
+
+	/**
+	 * Compute min/max from per-bin normalization row; returns {yMin, yMax}. If no
+	 * valid normalization entries are found returns {0.0, 1.0}.
+	 * 
+	 * @param myData histogram counts
+	 * @param norm   per-bin normalization data
+	 * @return two-element array {yMin, yMax}
+	 */
+	private double[] computeNormBounds(double[] myData, double[] norm) {
+		double yMin = Double.MAX_VALUE;
+		double yMax = -Double.MAX_VALUE;
+		boolean nodata = true;
+		for (int n = 0; n < nBins; n++) {
+			double nnorm = norm[n];
+			if (nnorm < 1e-8)
+				continue;
+			double val = myData[n] / nnorm;
+			yMin = Math.min(yMin, val);
+			yMax = Math.max(yMax, val);
+			nodata = false;
+		}
+		if (nodata) {
+			return new double[] { 0.0, 1.0 };
+		}
+		return new double[] { yMin, yMax };
+	}
+
+	/**
+	 * Adjust {@link #autoscaleidx} to match the given {@code yMax}.
+	 * 
+	 * @param yMax observed maximum bin height
+	 * @return number of y-levels for the selected autoscale row
+	 */
+	private int selectAutoscaleIndexForYMax(double yMax) {
+		while (yMax > autoscale[autoscaleidx][0])
+			autoscaleidx--;
+		while (yMax < autoscale[autoscaleidx][1])
+			autoscaleidx++;
+		return (int) autoscale[autoscaleidx][2];
+	}
+
+	/**
+	 * Draw bars for the histogram using either per-bin normalization row or global
+	 * normalization flag.
+	 * 
+	 * @param myData   histogram values
+	 * @param norm     per-bin normalization data (may be {@code null})
+	 * @param barwidth width of a bar in pixels
+	 * @param h        total graph height
+	 * @param map      conversion factor from value to pixels
+	 */
+	private void drawBars(double[] myData, double[] norm, double barwidth, double h, double map) {
+		double xshift = 0;
+		if (norm != null) {
 			for (int n = 0; n < nBins; n++) {
 				double nnorm = norm[n];
 				double barheight = nnorm < 1e-8 ? 0.0
@@ -641,18 +795,15 @@ public class HistoGraph extends AbstractGraph<double[]> implements BasicTooltipP
 				xshift += barwidth;
 			}
 		} else {
+			double localMap = map;
 			if (!isNormalized)
-				map /= nSamples;
+				localMap = map / nSamples;
 			for (int n = 0; n < nBins; n++) {
-				double barheight = Math.min(Math.max(1.0, map * (myData[n] - style.yMin)), h - 1);
+				double barheight = Math.min(Math.max(1.0, localMap * (myData[n] - style.yMin)), h - 1);
 				fillRect(xshift, h - barheight, barwidth - 1.0, barheight);
 				xshift += barwidth;
 			}
 		}
-		drawMarkers();
-		drawFrame(4, yLevels);
-		g.restore();
-		return false;
 	}
 
 	/**
@@ -707,111 +858,156 @@ public class HistoGraph extends AbstractGraph<double[]> implements BasicTooltipP
 	public String getTooltipAt(int bar) {
 		// note label is null for undirected graph with the same interaction and
 		// competition graphs
-		final String TABLE_STYLE = "<table style='border-collapse:collapse;border-spacing:0;'>";
-		final String TABLE_ROW_END = "</td></tr>";
-		final String TABLE_END = TABLE_ROW_END + "</table>";
-		final String TABLE_ROW_START = "<tr><td><i>";
-		final String TABLE_CELL_NEXT = ":</i></td><td>";
 		StringBuilder tip = new StringBuilder(
 				style.showLabel && style.label != null ? "<b>" + style.label + "</b><br/>" : "");
 		switch (view.getType()) {
 			case DEGREE:
 				if (Math.abs(style.xMax - (nBins - 1)) < 1e-6) {
-					tip.append(TABLE_STYLE);
-					tip.append(TABLE_ROW_START + style.xLabel + TABLE_CELL_NEXT + bar + TABLE_ROW_END);
-					tip.append(TABLE_ROW_START + style.yLabel + TABLE_CELL_NEXT
-							+ Formatter.formatPercent(data[row][bar], 2) + TABLE_END);
+					appendTipDegree(tip, bar);
 					break;
 				}
 				//$FALL-THROUGH$
 			case TRAIT:
 			case FITNESS:
-				tip.append(TABLE_STYLE);
-				tip.append(TABLE_ROW_START + style.xLabel + TABLE_CELL_NEXT + "["
-						+ Formatter.format(style.xMin + bar * (style.xMax - style.xMin) / nBins, 2) +
-						", " + Formatter.format(style.xMin + (bar + 1) * (style.xMax - style.xMin) / nBins, 2)
-						+ ")" + TABLE_ROW_END);
-				tip.append(TABLE_ROW_START + style.yLabel + TABLE_CELL_NEXT + Formatter.formatPercent(data[row][bar], 2)
-						+ TABLE_ROW_END);
-				String note = getNoteAt(bar);
-				if (note != null)
-					tip.append(TABLE_ROW_START + "Note" + TABLE_CELL_NEXT + note + TABLE_ROW_END);
-				tip.append("</table>");
+				appendBinTooltip(tip, bar);
 				break;
 			case STATISTICS_FIXATION_PROBABILITY:
-				tip.append(TABLE_STYLE);
-				tip.append(TABLE_ROW_START + style.xLabel + TABLE_CELL_NEXT);
-				int binSize = (int) ((style.xMax + 1) / nBins);
-				if (binSize == 1)
-					tip.append(bar + TABLE_ROW_END);
-				else {
-					int start = bar * binSize;
-					int end = start + binSize - 1;
-					if (bar == nBins - 1) {
-						// careful with last bin
-						end = Math.max(end, (int) style.xMax);
-					}
-					String separator = (end - start > 1) ? "-" : ",";
-					tip.append("[" + start + separator + end + "]" + TABLE_ROW_END);
-				}
-				int nTraits = data.length - 1;
-				double norm = data[nTraits][bar];
-				tip.append(TABLE_ROW_START + "samples" + TABLE_CELL_NEXT + (int) norm + TABLE_ROW_END);
-				if (style.percentY)
-					tip.append(TABLE_ROW_START + style.yLabel + TABLE_CELL_NEXT
-							+ (norm > 0.0 ? Formatter.formatPercent(data[row][bar] / norm, 2) : "0") +
-							TABLE_END);
-				else
-					tip.append(TABLE_ROW_START + style.yLabel + TABLE_CELL_NEXT
-							+ (norm > 0.0 ? Formatter.format(data[row][bar] / norm, 2) : "0") +
-							TABLE_END);
+				appendTipFixProb(tip, bar);
 				break;
 			case STATISTICS_FIXATION_TIME:
-				tip.append(TABLE_STYLE +
-						TABLE_ROW_START + style.xLabel + TABLE_CELL_NEXT);
-				int nPop = module.getNPopulation();
-				if (nPop > data[0].length) {
-					tip.append("[" + Formatter.format(style.xMin + (double) bar / nBins * (style.xMax - style.xMin), 2)
-							+ "-" +
-							Formatter.format(style.xMin + (double) (bar + 1) / nBins * (style.xMax - style.xMin), 2)
-							+ ")");
-				} else {
-					tip.append(bar + TABLE_ROW_END +
-							TABLE_ROW_START + "samples" + TABLE_CELL_NEXT + (int) getSamples(bar));
-				}
-				tip.append(TABLE_ROW_END + TABLE_ROW_START + style.yLabel + TABLE_CELL_NEXT);
-				if (style.percentY)
-					tip.append(Formatter.formatPercent(getData(bar), 2) + "</td>");
-				else
-					tip.append(Formatter.format(getData(bar), 2) + "</td>");
-				tip.append("</tr></table>");
+				appendTipFixTime(tip, bar);
 				break;
 			case STATISTICS_STATIONARY:
-				tip.append(TABLE_STYLE + //
-						TABLE_ROW_START + style.xLabel + TABLE_CELL_NEXT);
-				nPop = module.getNPopulation();
-				binSize = (nPop + 1) / MAX_BINS + 1;
-				if (binSize == 1)
-					tip.append(bar + TABLE_ROW_END);
-				else {
-					int start = bar * binSize;
-					int end = start + binSize - 1;
-					if (bar == nBins - 1) {
-						// careful with last bin
-						nPop = module.getNPopulation();
-						end = Math.max(end, nPop);
-					}
-					String separator = (end - start > 1) ? "-" : ",";
-					tip.append("[" + start + separator + end + "]" + TABLE_ROW_END);
-				}
-				tip.append(TABLE_ROW_START + style.yLabel + TABLE_CELL_NEXT
-						+ Formatter.formatPercent(data[row][bar] / getSamples(), 2) + TABLE_END);
+				appendTipStationary(tip, bar);
 				break;
 			default:
+				// no additional info
 				break;
-
 		}
 		return tip.toString();
+	}
+
+	/**
+	 * Append degree tooltip.
+	 * 
+	 * @param tip the tooltip string builder
+	 * @param bar the bar index
+	 */
+	private void appendTipDegree(StringBuilder tip, int bar) {
+		tip.append(TABLE_STYLE);
+		tip.append(TABLE_ROW_START + style.xLabel + TABLE_CELL_NEXT + bar + TABLE_ROW_END);
+		tip.append(TABLE_ROW_START + style.yLabel + TABLE_CELL_NEXT
+				+ Formatter.formatPercent(data[row][bar], 2) + TABLE_ROW_END + TABLE_END);
+	}
+
+	/**
+	 * Append tooltip for bin at mouse coordinates.
+	 * 
+	 * @param tip the tooltip string builder
+	 * @param bar the bar index
+	 */
+	private void appendBinTooltip(StringBuilder tip, int bar) {
+		tip.append(TABLE_STYLE);
+		tip.append(TABLE_ROW_START + style.xLabel + TABLE_CELL_NEXT + "["
+				+ Formatter.format(style.xMin + bar * (style.xMax - style.xMin) / nBins, 2) +
+				", " + Formatter.format(style.xMin + (bar + 1) * (style.xMax - style.xMin) / nBins, 2)
+				+ ")" + TABLE_ROW_END);
+		tip.append(TABLE_ROW_START + style.yLabel + TABLE_CELL_NEXT + Formatter.formatPercent(data[row][bar], 2)
+				+ TABLE_ROW_END);
+		String note = getNoteAt(bar);
+		if (note != null)
+			tip.append(TABLE_ROW_START + "Note" + TABLE_CELL_NEXT + note + TABLE_ROW_END);
+		tip.append(TABLE_END);
+	}
+
+	/**
+	 * Append fixation probability tooltip.
+	 * 
+	 * @param tip the tooltip string builder
+	 * @param bar the bar index
+	 */
+	private void appendTipFixProb(StringBuilder tip, int bar) {
+		tip.append(TABLE_STYLE);
+		tip.append(TABLE_ROW_START + style.xLabel + TABLE_CELL_NEXT);
+		int binSize = (int) ((style.xMax + 1) / nBins);
+		if (binSize == 1) {
+			tip.append(bar + TABLE_ROW_END);
+		} else {
+			int start = bar * binSize;
+			int end = start + binSize - 1;
+			if (bar == nBins - 1) {
+				// careful with last bin
+				end = Math.max(end, (int) style.xMax);
+			}
+			String separator = (end - start > 1) ? "-" : ",";
+			tip.append("[" + start + separator + end + "]" + TABLE_ROW_END);
+		}
+		int nTraits = data.length - 1;
+		double norm = data[nTraits][bar];
+		tip.append(TABLE_ROW_START + "samples" + TABLE_CELL_NEXT + (int) norm + TABLE_ROW_END);
+		if (style.percentY) {
+			tip.append(TABLE_ROW_START + style.yLabel + TABLE_CELL_NEXT
+					+ (norm > 0.0 ? Formatter.formatPercent(data[row][bar] / norm, 2) : "0") +
+					TABLE_ROW_END + TABLE_END);
+		} else {
+			tip.append(TABLE_ROW_START + style.yLabel + TABLE_CELL_NEXT
+					+ (norm > 0.0 ? Formatter.format(data[row][bar] / norm, 2) : "0") +
+					TABLE_ROW_END + TABLE_END);
+		}
+	}
+
+	/**
+	 * Append fixation time tooltip.
+	 * 
+	 * @param tip the tooltip string builder
+	 * @param bar the bar index
+	 */
+	private void appendTipFixTime(StringBuilder tip, int bar) {
+		tip.append(TABLE_STYLE + TABLE_ROW_START + style.xLabel + TABLE_CELL_NEXT);
+		int nPop = module.getNPopulation();
+		if (nPop > data[0].length) {
+			tip.append("[" + Formatter.format(style.xMin + (double) bar / nBins * (style.xMax - style.xMin), 2)
+					+ "-" +
+					Formatter.format(style.xMin + (double) (bar + 1) / nBins * (style.xMax - style.xMin), 2)
+					+ ")");
+		} else {
+			tip.append(bar + TABLE_ROW_END +
+					TABLE_ROW_START + "samples" + TABLE_CELL_NEXT + (int) getSamples(bar));
+		}
+		tip.append(TABLE_ROW_END + TABLE_ROW_START + style.yLabel + TABLE_CELL_NEXT);
+		if (style.percentY)
+			tip.append(Formatter.formatPercent(getData(bar), 2) + "</td>");
+		else
+			tip.append(Formatter.format(getData(bar), 2) + "</td>");
+		tip.append("</tr></table>");
+	}
+
+	/**
+	 * Append stationary distribution tooltip.
+	 * 
+	 * @param tip the tooltip string builder
+	 * @param bar the bar index
+	 */
+	private void appendTipStationary(StringBuilder tip, int bar) {
+		tip.append(TABLE_STYLE + //
+				TABLE_ROW_START + style.xLabel + TABLE_CELL_NEXT);
+		int nPop = module.getNPopulation();
+		int binSize = (nPop + 1) / MAX_BINS + 1;
+		if (binSize == 1) {
+			tip.append(bar + TABLE_ROW_END);
+		} else {
+			int start = bar * binSize;
+			int end = start + binSize - 1;
+			if (bar == nBins - 1) {
+				// careful with last bin
+				nPop = module.getNPopulation();
+				end = Math.max(end, nPop);
+			}
+			String separator = (end - start > 1) ? "-" : ",";
+			tip.append("[" + start + separator + end + "]" + TABLE_ROW_END);
+		}
+		tip.append(TABLE_ROW_START + style.yLabel + TABLE_CELL_NEXT
+				+ Formatter.formatPercent(data[row][bar] / getSamples(), 2) + TABLE_ROW_END + TABLE_END);
 	}
 
 	/**
