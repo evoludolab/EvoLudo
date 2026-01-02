@@ -34,6 +34,7 @@ import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
+import org.evoludo.simulator.models.ChangeListener.PendingAction;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -750,25 +751,23 @@ public class EvoLudoJRE extends EvoLudo implements Runnable {
 				!activeModel.requestMode(Mode.STATISTICS_SAMPLE)) {
 			return null;
 		}
-		FixationData fix;
+		FixationData fix = activeModel.getFixationData();
+		boolean success;
 		do {
-			// in unfortunate cases even a single sample can take exceedingly long
-			// times. stop/init/reset need to be able to interrupt.
-			switch (pendingAction) {
-				case NONE:
-				case STOP: // finish sample
-					break;
-				default:
-					fireModelStopped();
-					break;
+			// in unfortunate cases even a single sample can take exceedingly
+			// long times. GUI needs to be able to interrupt.
+			if (pendingAction != PendingAction.NONE) {
+				// mark as failed sample and exit
+				fix.mutantNode = -1;
+				processPendingAction();
+				return fix;
 			}
 			while (activeModel.next()) {
 				fireModelChanged();
 			}
-			fireModelStopped();
-			fireModelSample(activeModel.getFixationData().mutantNode >= 0);
-			fix = activeModel.getFixationData();
-		} while (fix.mutantNode < 0);
+			success = (fix.mutantNode >= 0);
+			fireModelSample(success);
+		} while (!success);
 		return fix;
 	}
 
