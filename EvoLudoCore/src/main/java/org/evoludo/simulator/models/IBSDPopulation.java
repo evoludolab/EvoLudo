@@ -44,6 +44,7 @@ import org.evoludo.simulator.models.IBS.ScoringType;
 import org.evoludo.simulator.models.IBSD.Init;
 import org.evoludo.simulator.models.Model.HasIBS;
 import org.evoludo.simulator.modules.Discrete;
+import org.evoludo.simulator.modules.Features.Payoffs;
 import org.evoludo.util.Formatter;
 import org.evoludo.util.Plist;
 
@@ -442,39 +443,182 @@ public class IBSDPopulation extends IBSPopulation<Discrete, IBSDPopulation> {
 	protected int updatePlayerEcologyAt(int me) {
 		debugFocal = me;
 		debugModel = -1;
-		int nPop = getPopulationSize();
-		double rDeath = module.getDeathRate() + module.getCompetitionRate();
+		// determine maximum rates for birth and death events
+		// note, updates always involve one focal and one peer as well as one model
+		// in multi-species scenarios. hence we need to determine the maximum rates
+		// of the following interactions:
+		// focal, peer, other
+		// X, 0, 0: birth (birth rate + fitness)
+		// X, X, 0: competition (competition rate)
+		// X, 0, Y: birth (birth rate + fitness + synergy with Y) or
+		// death (competition with Y)
+		// X, X, Y: death (competition with X and Y)
+		// death happens in all cases with death rate
+		double[] compRates = module.getCompetitionRates();
+		int idx = module.getId();
+		// compRates[i] > 0 indicates competition, compRates[i] < 0 synergy/mutualism
+		double rate = compRates[idx];
+		compRates[idx] = Double.NaN; // exclude peer interactions
 		double rBirth = module.getBirthRate();
-		// notes:
-		// 1) maxFitness == 0 if module does not implement Payoffs
-		// 2) must use maxFitness to ensure probabilities are in [0,1]
-		// at the expense of no event happening
-		// 3) can become highly inefficient if few individuals have much larger fitness
-		// 4) cannot subtract minFitness to improve efficiency since fitness is relative
-		// to other rates (birth, death and competition)
-		double randomTestVal = random01() * (rDeath + rBirth + maxFitness); // time rescaling
+		double rDeath = module.getDeathRate();
+		double maxRate = rBirth
+				+ rDeath
+				+ maxFitness
+				+ Math.abs(rate)
+				+ Math.abs(Math.max(0.0, ArrayMath.max(compRates)))
+				+ Math.abs(Math.min(0.0, ArrayMath.min(compRates)));
+		compRates[idx] = rate; // restore peer interactions
+		int nPop = getPopulationSize();
+		double randomTestVal = random01() * maxRate;
 		if (randomTestVal < rDeath) {
 			// vacate focal site
 			traitsNext[me] = vacantIdx + nTraits; // more efficient than setNextTraitAt(me, VACANT)
-			updateScoreAt(me, true);
+			if (module instanceof Payoffs)
+				updateScoreAt(me, true);
+			else
+				commitTraitAt(me);
 			if (nPop == 1) {
 				// population went extinct, no more events possible
 				return -1;
 			}
-		} else {
-			randomTestVal -= rDeath;
-			if (randomTestVal < rBirth + getFitnessAt(me)) {
-				// fill neighbor site if vacant
-				debugModel = pickNeighborSiteAt(me);
-				if (isVacantAt(debugModel)) {
-					maybeMutateMoran(me, debugModel);
-					return 1;
-				}
+			return 1;
+		}
+		randomTestVal -= rDeath;
+		rDeath = 0.0;
+		int nSpecies = compRates.length;
+		if (nSpecies > 1) {
+			// multi-species scenario: pick opponent species
+			int specIdx = (module.getId() + 1
+					+ (nSpecies == 2 ? 0 : random0n(nSpecies - 1))) % nSpecies;
+			IBSPopulation<?, ?> oppPop = module.getSpecies(specIdx).getIBSPopulation();
+			int oppIdx = oppPop.pickNeighborSiteAt(me);
+			if (!oppPop.isVacantAt(oppIdx)) {
+				// cross-species competition/synergy
+				double comp = compRates[specIdx];
+				if (comp > 0.0)
+					rDeath += comp;
+				else
+					rBirth += -comp;
 			}
+		}
+		// peer interactions
+		debugModel = pickNeighborSiteAt(me);
+		if (isVacantAt(debugModel)) {
+			// peer site is vacant either birth (with synergies) or death through
+			// cross-species competition (no peer competition)
+			if (rate < 0.0)
+				// peer synergy/mutualism
+				rBirth -= rate;
+			// add fitness contribution if module implements Payoffs
+			if (module instanceof Payoffs)
+				rBirth += getFitnessAt(me);
+
+		} else {
+			rBirth = 0.0; // birth not possible if peer occupied
+			if (rate > 0.0)
+				// peer competition
+				rDeath += rate;
+		}
+		// determine event
+		if (randomTestVal > rBirth + rDeath) {
 			// nothing happened, no time elapsed
 			return 0;
 		}
+		if (randomTestVal < rBirth) {
+			// birth event
+			// fill neighbor site if vacant
+			if (nTraits > 2) {
+				// two (or more) trait consider mutation
+				maybeMutateMoran(me, debugModel);
+			} else {
+				// single trait (plus vacant): no mutation
+				updateFromModelAt(debugModel, me);
+			}
+			return 1;
+		}
+		// death event
+		traitsNext[me] = vacantIdx + nTraits; // more efficient than setNextTraitAt(me, VACANT)
+		if (module instanceof Payoffs)
+			updateScoreAt(me, true);
+		else
+			commitTraitAt(me);
+		if (nPop == 1) {
+			// population went extinct, no more events possible
+			return -1;
+		}
 		return 1;
+
+		// int nPop = getPopulationSize();
+		// int peer = pickNeighborSiteAt(me);
+		// boolean peerVacant = isVacantAt(peer);
+		// double rBirth = (peerVacant ? module.getBirthRate() : 0.0);
+		// double rDeath = module.getDeathRate();
+		// double[] compRates = module.getCompetitionRates();
+		// int[] neighIdx = new int[compRates.length];
+		// int idx = 0;
+		// for (Discrete mod : module.getSpecies()) {
+		// IBSDPopulation pop = (IBSDPopulation) mod.getIBSPopulation();
+		// if (pop == this) {
+		// neighIdx[idx] = peer;
+		// // if neighbour not vacant, death through competition
+		// if (!peerVacant)
+		// rDeath += compRates[idx];
+		// } else {
+		// int nidx = pop.pickNeighborSiteAt(me);
+		// boolean neighVacant = pop.isVacantAt(nidx);
+		// if (!neighVacant) {
+		// // interactions only if neighbour not vacant
+		// double nrate = compRates[idx];
+		// if (nrate >= 0.0) {
+		// // death through competition
+		// rDeath += nrate;
+		// } else if (peerVacant) {
+		// // birth through synergies/mutualism
+		// rBirth += -nrate;
+		// }
+		// }
+		// neighIdx[idx] = nidx;
+		// }
+		// idx++;
+		// }
+		// TODO
+		// draw random number
+		// determine birth or death of focal
+
+		// // notes:
+		// // 1) maxFitness == 0 if module does not implement Payoffs
+		// // 2) must use maxFitness to ensure probabilities are in [0,1]
+		// // at the expense of no event happening
+		// // 3) can become highly inefficient if few individuals have much larger
+		// fitness
+		// // 4) cannot subtract minFitness to improve efficiency since fitness is
+		// relative
+		// // to other rates (birth, death and competition)
+		// double randomTestVal = random01() * (rDeath + rBirth + maxFitness); // time
+		// rescaling
+		// if (randomTestVal < rDeath) {
+		// // vacate focal site
+		// traitsNext[me] = vacantIdx + nTraits; // more efficient than
+		// setNextTraitAt(me, VACANT)
+		// updateScoreAt(me, true);
+		// if (nPop == 1) {
+		// // population went extinct, no more events possible
+		// return -1;
+		// }
+		// } else {
+		// randomTestVal -= rDeath;
+		// if (randomTestVal < rBirth + getFitnessAt(me)) {
+		// // fill neighbor site if vacant
+		// debugModel = pickNeighborSiteAt(me);
+		// if (isVacantAt(debugModel)) {
+		// maybeMutateMoran(me, debugModel);
+		// return 1;
+		// }
+		// }
+		// // nothing happened, no time elapsed
+		// return 0;
+		// }
+		// return 1;
 	}
 
 	@Override
