@@ -118,9 +118,9 @@ public class KeyHandler {
 	private boolean registered = false;
 
 	/**
-	 * Index of previously active view before switching to console view.
+	 * Previously active view before switching to console view.
 	 */
-	private int toggleIdx = -1;
+	private AbstractView<?> toggleView = null;
 
 	/**
 	 * Initializes the key event handler.
@@ -554,15 +554,16 @@ public class KeyHandler {
 	 */
 	private boolean handleConsoleToggle() {
 		List<AbstractView<?>> views = gui.getActiveViews();
-		int consoleIdx = views.size() - 1;
-		if (consoleIdx < 0)
+		if (views.isEmpty())
 			return false;
-		if (gui.getActiveViewIndex() == consoleIdx) {
-			if (toggleIdx >= 0 && toggleIdx < views.size())
-				gui.changeView(views.get(toggleIdx));
+		AbstractView<?> consoleView = views.get(views.size() - 1);
+		AbstractView<?> active = gui.getActiveView();
+		if (active == consoleView) {
+			if (toggleView != null && views.contains(toggleView))
+				gui.changeView(toggleView);
 		} else {
-			toggleIdx = gui.getActiveViewIndex();
-			gui.changeView(views.get(consoleIdx));
+			toggleView = active;
+			gui.changeView(consoleView);
 		}
 		return true;
 	}

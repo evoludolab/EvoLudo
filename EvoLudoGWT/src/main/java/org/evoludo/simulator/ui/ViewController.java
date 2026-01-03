@@ -35,6 +35,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.logging.Logger;
+import java.util.LinkedHashMap;
 
 import org.evoludo.simulator.EvoLudoGWT;
 import org.evoludo.simulator.models.Data;
@@ -107,7 +108,7 @@ public class ViewController {
 	/**
 	 * Registry of active views keyed by name.
 	 */
-	private Map<String, AbstractView<?>> activeViews = new HashMap<>();
+	private Map<String, AbstractView<?>> activeViews = new LinkedHashMap<>();
 
 	/**
 	 * Currently active view.
@@ -278,8 +279,8 @@ public class ViewController {
 	 * Updates the list of available views based on the current module and model.
 	 */
 	public void refreshViews() {
-		HashMap<String, AbstractView<?>> oldViews = new HashMap<>(activeViews);
-		activeViews = new HashMap<>();
+			HashMap<String, AbstractView<?>> oldViews = new HashMap<>(activeViews);
+		activeViews = new LinkedHashMap<>();
 
 		Module<?> module = engine.getModule();
 		if (module == null) {
