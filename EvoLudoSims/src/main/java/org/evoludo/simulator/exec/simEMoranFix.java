@@ -32,14 +32,12 @@ package org.evoludo.simulator.exec;
 
 import java.io.PrintStream;
 import java.text.DecimalFormat;
+
 import org.evoludo.simulator.EvoLudoJRE;
 import org.evoludo.simulator.models.FixationData;
 import org.evoludo.simulator.models.Mode;
 import org.evoludo.simulator.modules.EcoMoran;
 import org.evoludo.util.CLOParser;
-import org.evoludo.util.CLOption;
-import org.evoludo.util.CLOption.CLODelegate;
-import org.evoludo.util.CLOption.Category;
 
 /**
  * Simulations to investigate the Moran process on graph structured populations.
@@ -197,24 +195,10 @@ public class simEMoranFix extends EcoMoran {
 	// }
 	// });
 
-	/**
-	 * Command line option to show the simulation progress.
-	 */
-	final CLOption cloProgress = new CLOption("progress", Category.Simulation,
-			"--progress      print progress reports",
-			new CLODelegate() {
-				@Override
-				public boolean parse(String arg) {
-					progress = cloProgress.isSet();
-					return true;
-				}
-			});
-
 	@Override
 	public void collectCLO(CLOParser parser) {
 		// prepare command line options
 		// parser.addCLO(cloSamples);
-		parser.addCLO(cloProgress);
 
 		super.collectCLO(parser);
 	}
