@@ -389,12 +389,6 @@ class IBSPop extends IBSDPopulation {
 	double deathRate;
 
 	/**
-	 * The maximum rate at which events can occur. This is used to convert rates
-	 * into transition probabilities.
-	 */
-	double maxRate;
-
-	/**
 	 * Create a new custom implementation for IBS simulations.
 	 * 
 	 * @param engine the pacemaker for running the model
@@ -431,11 +425,6 @@ class IBSPop extends IBSDPopulation {
 																												// +
 																												// predation
 		return doReset;
-	}
-
-	@Override
-	public double getSpeciesUpdateRate() {
-		return maxRate * getPopulationSize();
 	}
 
 	/**

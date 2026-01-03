@@ -151,11 +151,32 @@ public class IBSDPopulation extends IBSPopulation<Discrete, IBSDPopulation> {
 	 */
 	protected int[] initCount;
 
+	/**
+	 * The maximum rate at which ecological events can occur. This is used to
+	 * convert rates into transition probabilities.
+	 */
+	protected double maxRate = -1.0;
+
 	@Override
 	public int getPopulationSize() {
 		if (vacantIdx < 0)
 			return nPopulation;
 		return nPopulation - traitsCount[vacantIdx];
+	}
+
+	@Override
+	public double getSpeciesUpdateRate() {
+		if (populationUpdate.getType() != PopulationUpdate.Type.ECOLOGY)
+			return super.getSpeciesUpdateRate();
+		if (maxRate < 0.0)
+			updateMaxRate();
+		return maxRate * getPopulationSize();
+	}
+
+	@Override
+	public void updateMinMaxScores() {
+		super.updateMinMaxScores();
+		maxRate = -1.0;
 	}
 
 	/**
@@ -198,6 +219,7 @@ public class IBSDPopulation extends IBSPopulation<Discrete, IBSDPopulation> {
 			tmpTraits = new int[maxGroup];
 		if (tmpGroup == null || tmpGroup.length != maxGroup)
 			tmpGroup = new int[maxGroup];
+		maxRate = -1.0;
 	}
 
 	/**
@@ -432,6 +454,54 @@ public class IBSDPopulation extends IBSPopulation<Discrete, IBSDPopulation> {
 	}
 
 	/**
+	 * Computes the maximum ecological event rate for this species given the current
+	 * set of rates. Needed both for rejection sampling of events and to weight
+	 * species selection in multi-species simulations.
+	 */
+	protected void updateMaxRate() {
+		// updates always involve focal, peer, opponent; cover all combinations
+		double rBirth = module.getBirthRate();
+		double rDeath = module.getDeathRate();
+		double[] compRates = module.getCompetitionRates();
+		if (compRates == null || compRates.length == 0) {
+			maxRate = rBirth + rDeath + maxFitness;
+			return;
+		}
+		// determine maximum rates for birth and death events
+		// note, updates always involve one focal and one peer as well as one model
+		// in multi-species scenarios. hence we need to determine the maximum rates
+		// of the following interactions:
+		// focal, peer, other
+		// X, 0, 0: birth (birth rate + fitness)
+		// X, X, 0: competition (competition rate)
+		// X, 0, Y: birth (birth rate + fitness + synergy with Y) or
+		// death (competition with Y)
+		// X, X, Y: death (competition with X and Y)
+		// X, -, -: death happens in all cases with death rate
+		int idx = module.getId();
+		double peerRate = (idx >= 0 && idx < compRates.length) ? compRates[idx] : 0.0;
+		double peerComp = (peerRate > 0.0) ? peerRate : 0.0;
+		double peerSynergy = (peerRate < 0.0) ? -peerRate : 0.0;
+		double maxOppPos = 0.0;
+		double maxOppNeg = 0.0;
+		for (int n = 0; n < compRates.length; n++) {
+			if (n == idx)
+				continue;
+			double comp = compRates[n];
+			if (comp > maxOppPos)
+				maxOppPos = comp;
+			if (comp < 0.0 && -comp > maxOppNeg)
+				maxOppNeg = -comp;
+		}
+		// peer vacant: birth is possible (plus peer/opponent synergies and fitness)
+		// peer occupied: birth impossible, competition adds to death rate
+		double birthWithPeer = rBirth + maxFitness + peerSynergy;
+		double maxVacant = rDeath + birthWithPeer + Math.max(maxOppPos, maxOppNeg);
+		double maxOccupied = rDeath + peerComp + maxOppPos;
+		maxRate = Math.max(maxVacant, maxOccupied);
+	}
+
+	/**
 	 * Perform a single ecological update of the individual with index {@code me}:
 	 * <ol>
 	 * <li>Focal individual dies with probability proportional to the death rate.
@@ -443,31 +513,13 @@ public class IBSDPopulation extends IBSPopulation<Discrete, IBSDPopulation> {
 	protected int updatePlayerEcologyAt(int me) {
 		debugFocal = me;
 		debugModel = -1;
-		// determine maximum rates for birth and death events
-		// note, updates always involve one focal and one peer as well as one model
-		// in multi-species scenarios. hence we need to determine the maximum rates
-		// of the following interactions:
-		// focal, peer, other
-		// X, 0, 0: birth (birth rate + fitness)
-		// X, X, 0: competition (competition rate)
-		// X, 0, Y: birth (birth rate + fitness + synergy with Y) or
-		// death (competition with Y)
-		// X, X, Y: death (competition with X and Y)
-		// death happens in all cases with death rate
+		if (maxRate < 0.0)
+			updateMaxRate();
 		double[] compRates = module.getCompetitionRates();
 		int idx = module.getId();
-		// compRates[i] > 0 indicates competition, compRates[i] < 0 synergy/mutualism
 		double rate = compRates[idx];
-		compRates[idx] = Double.NaN; // exclude peer interactions
 		double rBirth = module.getBirthRate();
 		double rDeath = module.getDeathRate();
-		double maxRate = rBirth
-				+ rDeath
-				+ maxFitness
-				+ Math.abs(rate)
-				+ Math.abs(Math.max(0.0, ArrayMath.max(compRates)))
-				+ Math.abs(Math.min(0.0, ArrayMath.min(compRates)));
-		compRates[idx] = rate; // restore peer interactions
 		int nPop = getPopulationSize();
 		double randomTestVal = random01() * maxRate;
 		if (randomTestVal < rDeath) {
@@ -477,10 +529,9 @@ public class IBSDPopulation extends IBSPopulation<Discrete, IBSDPopulation> {
 				updateScoreAt(me, true);
 			else
 				commitTraitAt(me);
-			if (nPop == 1) {
-				// population went extinct, no more events possible
+			if (nPop == 1)
 				return -1;
-			}
+			updateMaxRate();
 			return 1;
 		}
 		randomTestVal -= rDeath;
@@ -534,6 +585,7 @@ public class IBSDPopulation extends IBSPopulation<Discrete, IBSDPopulation> {
 				// single trait (plus vacant): no mutation
 				updateFromModelAt(debugModel, me);
 			}
+			updateMaxRate();
 			return 1;
 		}
 		// death event
@@ -542,83 +594,10 @@ public class IBSDPopulation extends IBSPopulation<Discrete, IBSDPopulation> {
 			updateScoreAt(me, true);
 		else
 			commitTraitAt(me);
-		if (nPop == 1) {
-			// population went extinct, no more events possible
+		if (nPop == 1)
 			return -1;
-		}
+		updateMaxRate();
 		return 1;
-
-		// int nPop = getPopulationSize();
-		// int peer = pickNeighborSiteAt(me);
-		// boolean peerVacant = isVacantAt(peer);
-		// double rBirth = (peerVacant ? module.getBirthRate() : 0.0);
-		// double rDeath = module.getDeathRate();
-		// double[] compRates = module.getCompetitionRates();
-		// int[] neighIdx = new int[compRates.length];
-		// int idx = 0;
-		// for (Discrete mod : module.getSpecies()) {
-		// IBSDPopulation pop = (IBSDPopulation) mod.getIBSPopulation();
-		// if (pop == this) {
-		// neighIdx[idx] = peer;
-		// // if neighbour not vacant, death through competition
-		// if (!peerVacant)
-		// rDeath += compRates[idx];
-		// } else {
-		// int nidx = pop.pickNeighborSiteAt(me);
-		// boolean neighVacant = pop.isVacantAt(nidx);
-		// if (!neighVacant) {
-		// // interactions only if neighbour not vacant
-		// double nrate = compRates[idx];
-		// if (nrate >= 0.0) {
-		// // death through competition
-		// rDeath += nrate;
-		// } else if (peerVacant) {
-		// // birth through synergies/mutualism
-		// rBirth += -nrate;
-		// }
-		// }
-		// neighIdx[idx] = nidx;
-		// }
-		// idx++;
-		// }
-		// TODO
-		// draw random number
-		// determine birth or death of focal
-
-		// // notes:
-		// // 1) maxFitness == 0 if module does not implement Payoffs
-		// // 2) must use maxFitness to ensure probabilities are in [0,1]
-		// // at the expense of no event happening
-		// // 3) can become highly inefficient if few individuals have much larger
-		// fitness
-		// // 4) cannot subtract minFitness to improve efficiency since fitness is
-		// relative
-		// // to other rates (birth, death and competition)
-		// double randomTestVal = random01() * (rDeath + rBirth + maxFitness); // time
-		// rescaling
-		// if (randomTestVal < rDeath) {
-		// // vacate focal site
-		// traitsNext[me] = vacantIdx + nTraits; // more efficient than
-		// setNextTraitAt(me, VACANT)
-		// updateScoreAt(me, true);
-		// if (nPop == 1) {
-		// // population went extinct, no more events possible
-		// return -1;
-		// }
-		// } else {
-		// randomTestVal -= rDeath;
-		// if (randomTestVal < rBirth + getFitnessAt(me)) {
-		// // fill neighbor site if vacant
-		// debugModel = pickNeighborSiteAt(me);
-		// if (isVacantAt(debugModel)) {
-		// maybeMutateMoran(me, debugModel);
-		// return 1;
-		// }
-		// }
-		// // nothing happened, no time elapsed
-		// return 0;
-		// }
-		// return 1;
 	}
 
 	@Override
@@ -2065,6 +2044,7 @@ public class IBSDPopulation extends IBSPopulation<Discrete, IBSDPopulation> {
 			engine.fatal("accounting problem (sum of traits " + ArrayMath.norm(traitsCount) + "!=" + nPopulation
 					+ ").");
 		System.arraycopy(traitsCount, 0, initCount, 0, nTraits);
+		maxRate = -1.0;
 	}
 
 	/**
