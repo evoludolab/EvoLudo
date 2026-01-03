@@ -1480,17 +1480,14 @@ public class EvoLudoWeb extends Composite
 			// resume running if no reset was necessary or --run was provided
 			engine.setSuspended(guiState.resume || engine.isSuspended());
 		}
-		guiState.view = viewController.resolveInitialView(logger);
-		if (moduleChanged && !viewController.isInitialViewSet()
-				&& guiState.view == viewController.getConsoleView())
+		if (viewController.isInitialViewSet())
+			guiState.view = viewController.resolveInitialView(logger);
+		else if ((moduleChanged && guiState.view == viewController.getConsoleView())
+				|| !viewController.containsView(guiState.view))
 			guiState.view = null;
-		if (guiState.view == null || !viewController.containsView(guiState.view)) {
-			// initial load and view not set (or not found)
-			// pick first available view (at least the console has to be in the list)
+		if (guiState.view == null)
 			guiState.view = viewController.getFirstView();
-		}
-		if (guiState.view != null)
-			changeViewTo(guiState.view, true);
+		changeViewTo(guiState.view, true);
 		if (guiState.plist != null) {
 			Plist state = guiState.plist;
 			guiState.plist = null;
