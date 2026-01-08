@@ -116,6 +116,16 @@ public class ViewController {
 	private AbstractView<?> activeView;
 
 	/**
+	 * Track the module last used for view reuse decisions.
+	 */
+	private Module<?> lastModule;
+
+	/**
+	 * Track the model last used for view reuse decisions.
+	 */
+	private Model lastModel;
+
+	/**
 	 * Initial view specification (index or name with optional args).
 	 */
 	private String initialView = "1";
@@ -279,17 +289,22 @@ public class ViewController {
 	 * Updates the list of available views based on the current module and model.
 	 */
 	public void refreshViews() {
-			HashMap<String, AbstractView<?>> oldViews = new HashMap<>(activeViews);
+		HashMap<String, AbstractView<?>> oldViews = new HashMap<>(activeViews);
 		activeViews = new LinkedHashMap<>();
 
 		Module<?> module = engine.getModule();
 		if (module == null) {
 			addView(console, oldViews);
 			updateSelector();
+			lastModule = null;
+			lastModel = null;
 			return;
 		}
 
 		Model model = engine.getModel();
+		boolean reuseViews = (module == lastModule && model == lastModel);
+		if (!reuseViews)
+			unloadViews(oldViews);
 		ModelType mt = model.getType();
 		boolean isODESDE = mt.isODE() || mt.isSDE();
 
@@ -300,11 +315,24 @@ public class ViewController {
 
 		addView(console, oldViews);
 
-		for (AbstractView<?> view : oldViews.values())
-			deck.remove(view);
-		oldViews.clear();
-
+		if (!oldViews.isEmpty())
+			unloadViews(oldViews);
 		updateSelector();
+		lastModule = module;
+		lastModel = model;
+	}
+
+	/**
+	 * Unload and remove all views except the console.
+	 */
+	private void unloadViews(HashMap<String, AbstractView<?>> oldViews) {
+		for (AbstractView<?> view : oldViews.values()) {
+			if (view == console)
+				continue;
+			view.unload();
+			deck.remove(view);
+		}
+		oldViews.clear();
 	}
 
 	/**
