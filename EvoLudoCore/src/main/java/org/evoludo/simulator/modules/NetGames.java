@@ -32,6 +32,7 @@ package org.evoludo.simulator.modules;
 
 import java.awt.Color;
 import java.util.Arrays;
+import java.util.Objects;
 
 import org.evoludo.math.ArrayMath;
 import org.evoludo.simulator.ColorMap;
@@ -254,9 +255,10 @@ public class NetGames extends Discrete implements Payoffs,
 	 * @param altruist the new color of altruists
 	 */
 	public void setAltruistColor(Color altruist) {
+		if (Objects.equals(typeColor[TYPE_ALTRUIST], altruist))
+			return;
 		typeColor[TYPE_ALTRUIST] = altruist;
-		// note, resetting the GUI would be enough
-		engine.requiresReset(true);
+		engine.fireSettingsChanged();
 	}
 
 	/**
@@ -276,9 +278,10 @@ public class NetGames extends Discrete implements Payoffs,
 	 * @param fair the new color of fair individuals
 	 */
 	public void setFairColor(Color fair) {
+		if (Objects.equals(typeColor[TYPE_FAIR], fair))
+			return;
 		typeColor[TYPE_FAIR] = fair;
-		// note, resetting the GUI would be enough
-		engine.requiresReset(true);
+		engine.fireSettingsChanged();
 	}
 
 	/**
@@ -298,9 +301,10 @@ public class NetGames extends Discrete implements Payoffs,
 	 * @param egoist the new color of egoists
 	 */
 	public void setEgoistColor(Color egoist) {
+		if (Objects.equals(typeColor[TYPE_EGOIST], egoist))
+			return;
 		typeColor[TYPE_EGOIST] = egoist;
-		// note, resetting the GUI would be enough
-		engine.requiresReset(true);
+		engine.fireSettingsChanged();
 	}
 
 	/**
