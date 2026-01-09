@@ -67,15 +67,41 @@ public abstract class AbstractGeometry {
 	 * @return the instantiated geometry (arguments not yet parsed)
 	 */
 	public static AbstractGeometry create(EvoLudo engine, String cli) {
+		return create(engine, cli, null);
+	}
+
+	/**
+	 * Instantiate the requested geometry based on {@code cli} if it differs from
+	 * {@code current}. Returns {@code current} if no new geometry is needed.
+	 *
+	 * @param engine  the EvoLudo engine providing module/CLI metadata
+	 * @param cli     the command line style geometry descriptor
+	 * @param current the existing geometry to compare against (optional)
+	 * @return the instantiated geometry (arguments not yet parsed), or {@code current}
+	 */
+	public static AbstractGeometry create(EvoLudo engine, String cli, AbstractGeometry current) {
 		if (engine == null)
 			throw new IllegalArgumentException("engine must not be null");
-		if (cli == null || cli.isEmpty())
+		if (cli == null)
 			throw new IllegalArgumentException("geometry specification must not be empty");
+		String normalized = cli.trim();
+		if (normalized.isEmpty())
+			throw new IllegalArgumentException("geometry specification must not be empty");
+		if (current != null) {
+			String currentCLI = current.cli;
+			if (currentCLI == null) {
+				String currentSpecs = current.getSpecs();
+				currentCLI = current.getType().getKey() + (currentSpecs == null ? "" : currentSpecs);
+			}
+			if (normalized.equals(currentCLI))
+				return current;
+		}
 		CLOption clo = engine.getModule().cloGeometry;
-		GeometryType type = (GeometryType) clo.match(cli);
+		GeometryType type = (GeometryType) clo.match(normalized);
 		AbstractGeometry geometry = AbstractGeometry.create(engine, type);
-		String spec = cli.substring(Math.min(type.key.length(), cli.length()));
+		String spec = normalized.substring(Math.min(type.key.length(), normalized.length()));
 		geometry.specs = spec;
+		geometry.cli = normalized;
 		return geometry;
 	}
 
@@ -205,6 +231,11 @@ public abstract class AbstractGeometry {
 	 * Optional CLI specification used to configure this geometry.
 	 */
 	String specs;
+
+	/**
+	 * Optional trimmed CLI string used to create this geometry.
+	 */
+	String cli;
 
 	/**
 	 * Optional descriptive name.
@@ -450,6 +481,15 @@ public abstract class AbstractGeometry {
 	 */
 	public String getSpecs() {
 		return specs;
+	}
+
+	/**
+	 * Get the trimmed CLI string that created this geometry (if available).
+	 *
+	 * @return the original CLI specification string, or {@code null}
+	 */
+	public String getCLI() {
+		return cli;
 	}
 
 	/**
@@ -1597,6 +1637,7 @@ public abstract class AbstractGeometry {
 	public AbstractGeometry clone() {
 		AbstractGeometry clone = AbstractGeometry.create(engine, type);
 		clone.specs = specs;
+		clone.cli = cli;
 		clone.name = name;
 		if (kin != null)
 			clone.kin = Arrays.copyOf(kin, kin.length);

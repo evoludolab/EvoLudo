@@ -1282,8 +1282,14 @@ public abstract class IBS extends Model {
 						for (Module<?> mod : species) {
 							// creates new interaction geometry
 							IBSPopulation<?, ?> ibs = mod.getIBSPopulation();
-							ibs.interaction = AbstractGeometry.create(engine, geomargs[n % geomargs.length]);
-							doReset |= ibs.interaction.parse();
+							String geomarg = geomargs[n++ % geomargs.length];
+							AbstractGeometry current = ibs.interaction;
+							AbstractGeometry next = AbstractGeometry.create(engine, geomarg, current);
+							if (next != current) {
+								next.parse();
+								ibs.interaction = next;
+								doReset = true;
+							}
 						}
 						engine.requiresReset(doReset);
 					}
@@ -1325,8 +1331,15 @@ public abstract class IBS extends Model {
 						for (Module<?> mod : species) {
 							// creates new competition geometry
 							IBSPopulation<?, ?> ibs = mod.getIBSPopulation();
-							ibs.competition = AbstractGeometry.create(engine, geomargs[n % geomargs.length]);
-							doReset |= ibs.competition.parse();
+							String geomarg = geomargs[n % geomargs.length];
+							AbstractGeometry current = ibs.competition;
+							AbstractGeometry next = AbstractGeometry.create(engine, geomarg, current);
+							if (next != current) {
+								next.parse();
+								ibs.competition = next;
+								doReset = true;
+							}
+							n++;
 						}
 						engine.requiresReset(doReset);
 					}

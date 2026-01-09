@@ -1168,8 +1168,14 @@ public abstract class Module<T extends Module<T>>
 					boolean doReset = false;
 					int n = 0;
 					for (T mod : species) {
-						mod.structure = AbstractGeometry.create(engine, geomargs[n % geomargs.length]);
-						doReset |= mod.structure.parse();
+						String geomarg = geomargs[n++ % geomargs.length];
+						AbstractGeometry current = mod.structure;
+						AbstractGeometry next = AbstractGeometry.create(engine, geomarg, current);
+						if (next != current) {
+							next.parse();
+							mod.structure = next;
+							doReset = true;
+						}
 					}
 					engine.requiresReset(doReset);
 					return true;
