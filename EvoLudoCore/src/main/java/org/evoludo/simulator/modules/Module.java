@@ -973,7 +973,7 @@ public abstract class Module<T extends Module<T>>
 	/**
 	 * Per capita birth rate for ecological population updates.
 	 */
-	protected double birthRate = 1.0;
+	protected double birthRate = 0.0;
 
 	/**
 	 * Get the per capita birth rate for ecological population updates.
@@ -996,7 +996,7 @@ public abstract class Module<T extends Module<T>>
 	/**
 	 * Death rate for ecological population updates.
 	 */
-	protected double deathRate = 1.0;
+	protected double deathRate = 0.0;
 
 	/**
 	 * Sets the death rate for ecological population updates.
