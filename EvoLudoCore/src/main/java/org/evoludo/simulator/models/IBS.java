@@ -623,21 +623,27 @@ public abstract class IBS extends Model {
 	/**
 	 * Processes up to {@code nUpdates} events, updating time and updates
 	 * appropriately.
+	 * <p>
+	 * Ecological updates use the thinning method for simulating nonhomogeneous
+	 * Poisson processes by advancing time on rejected proposals.
 	 * 
 	 * @param nUpdates the maximum number of updates to process
 	 * @param gincr    the growth increment
 	 * @param totRate  the total update rate
 	 * @return the number of processed updates
+	 * 
+	 * @see Lewis, P. A. W. & Shedler, G. S. (1979). “Simulation of nonhomogeneous
+	 *      Poisson processes by thinning.” Naval Research Logistics Quarterly,
+	 *      26(3), 403–413. DOI: 10.1002/nav.3800260304
 	 */
 	private int processEvents(int nUpdates, double gincr, double totRate) {
 		int n = 0;
 		while (n < nUpdates) {
 			// update event
 			int dt = processEvent();
-			// advance time and real time (if possible)
+			PopulationUpdate.Type updateType = debugFocalSpecies.getPopulationUpdate().getType();
 			if (dt > 0) {
-				// if no time elapsed, nothing happened
-				if (debugFocalSpecies.getPopulationUpdate().getType() == PopulationUpdate.Type.ONCE) {
+				if (updateType == PopulationUpdate.Type.ONCE) {
 					updates += dt;
 					n += debugFocalSpecies.getPopulationSize();
 				} else {
@@ -646,10 +652,12 @@ public abstract class IBS extends Model {
 				}
 				if (time < Double.POSITIVE_INFINITY)
 					time += RNGDistribution.Exponential.next(rng.getRNG(), dt / totRate);
+			} else if (dt == 0 && time < Double.POSITIVE_INFINITY && updateType == PopulationUpdate.Type.ECOLOGY)
+				// thinning logic: advance time even if ecological update failed
+				time += RNGDistribution.Exponential.next(rng.getRNG(), 1.0 / totRate);
+			if (dt != 0) {
+				// dt < 0 indicates extinction of a species
 				totRate = checkConvergence();
-			} else if (dt < 0) {
-				// indicates extinction of a species
-				checkConvergence();
 			}
 			if (converged)
 				return n;
@@ -660,7 +668,7 @@ public abstract class IBS extends Model {
 	/**
 	 * Processes a single event.
 	 * 
-	 * @return the time increment associated with the event
+	 * @return the number of elapsed realtime units
 	 */
 	private int processEvent() {
 		debugFocalSpecies = pickFocalSpecies();
