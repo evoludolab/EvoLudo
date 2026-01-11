@@ -32,6 +32,7 @@ package org.evoludo.simulator.models;
 
 import java.util.Arrays;
 
+import org.evoludo.math.ArrayMath;
 import org.evoludo.simulator.EvoLudo;
 import org.evoludo.simulator.models.Model.HasDE;
 import org.evoludo.simulator.modules.Module;
@@ -113,8 +114,11 @@ class ODEInitialize {
 						return false;
 					break;
 				case DENSITY:
-				case FREQUENCY:
 					if (!processDensity(pop, iargs, start))
+						return false;
+					break;
+				case FREQUENCY:
+					if (!processFrequency(pop, iargs, start))
 						return false;
 					break;
 				case RANDOM:
@@ -186,7 +190,7 @@ class ODEInitialize {
 	}
 
 	/**
-	 * Parse a density/frequency specification and append it to {@link ODE#y0}.
+	 * Parse a density specification and append it to {@link ODE#y0}.
 	 * 
 	 * @param pop   module being initialized
 	 * @param iargs density values as a string
@@ -194,6 +198,30 @@ class ODEInitialize {
 	 * @return {@code true} if parsing succeeded
 	 */
 	private boolean processDensity(Module<?> pop, String iargs, int start) {
+		double[] initargs = CLOParser.parseVector(iargs);
+		if (initargs == null)
+			return false;
+		int vacidx = pop.getVacantIdx();
+		if (initargs.length == (pop.getNTraits() - 1) && vacidx >= 0)
+			initargs = ArrayMath.insert(initargs, 0.0, vacidx);
+		if (initargs.length != pop.getNTraits())
+			return false;
+		// ensure that vacant densities are zero for density based models
+		if (vacidx >= 0)
+			initargs[vacidx] = 0.0;
+		appendY0(initargs, start);
+		return true;
+	}
+
+	/**
+	 * Parse a frequency specification and append it to {@link ODE#y0}.
+	 * 
+	 * @param pop   module being initialized
+	 * @param iargs frequency values as a string
+	 * @param start index where the species slice begins
+	 * @return {@code true} if parsing succeeded
+	 */
+	private boolean processFrequency(Module<?> pop, String iargs, int start) {
 		double[] initargs = CLOParser.parseVector(iargs);
 		if (initargs == null || initargs.length != pop.getNTraits())
 			return false;

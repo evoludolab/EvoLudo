@@ -102,7 +102,7 @@ public class LV extends Discrete implements HasDE.ODE, HasDE.SDE, HasDE.DualDyna
 
 	@Override
 	public String getTitle() {
-		return "Predator-Prey dynamics";
+		return "Prey-Predator dynamics";
 	}
 
 	@Override

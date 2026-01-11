@@ -2,13 +2,13 @@
 
 # ODE
 # base scenarios (density and frequency dynamics)
---module LV --model ODE --birthrate 0.667,0 --deathrate 0,1 --comprate 0,-1.333;1,0 --init density 1,1 --timestop 100
-#--module LV --model ODE --birthrate 0.667,0 --deathrate 0,1 --comprate 0,-1.333;1,0 --init density 1,1 --timestop 100
+--module LV --model ODE --birthrate 0.667,0 --deathrate 0,1 --comprate 0,-1.333;1,0 --init density 1:1 --timestop 100
+#--module LV --model ODE --birthrate 0.667,0 --deathrate 0,1 --comprate 0,-1.333;1,0 --init density 1:1 --timestop 100
 --module LV --model ODE --birthrate 0.3,0.2 --deathrate 0.1,0.4 --comprate 0,-0.75;1.25,0  --init frequency 1,1 --timestop 100
 
 # SDE
 # base scenarios (density and frequency dynamics)
---module LV --model SDE --birthrate 0.667,0 --deathrate 0,1 --comprate 0,-1.333;1,0 --init density 1,1 --popsize 10000 --timestop 100
+--module LV --model SDE --birthrate 0.667,0 --deathrate 0,1 --comprate 0,-1.333;1,0 --init density 1:1 --popsize 10000 --timestop 100
 --module LV --model SDE --birthrate 0.3,0.2 --deathrate 0.1,0.4 --comprate 0,-0.75;1.25,0  --init frequency 1,1 --popsize 10000 --timestop 100
 
 # PDE not implemented
