@@ -412,19 +412,16 @@ class IBSPop extends IBSDPopulation {
 		deathRate = module.getDeathRate();
 		birthRate = module.getBirthRate();
 		competitionRates = module.getCompetitionRates();
-		// focal peer opponent
-		// X 0 0 death, birth: deathRate + birthRate
-		// X X 0 death, competition: deathRate + rates[module.getId()]
-		// X 0 Y death, birth, predation: deathRate + birthRate + |rates[1]|
-		// X X Y death, competition, predation: deathRate + rates[module.getId()] +
-		// |rates[1]|
-		maxRate = deathRate + Math.max(Math.max(Math.max(birthRate, // birth
-				competitionRates[module.getId()]), // competition
-				birthRate + Math.abs(competitionRates[opponent.getModule().getId()])), // birth + predation
-				competitionRates[module.getId()] + Math.abs(competitionRates[opponent.getModule().getId()])); // competition
-																												// +
-																												// predation
+		maxRate = -1.0;
 		return doReset;
+	}
+
+	@Override
+	protected void updateMaxRate() {
+		// maxRate is constant
+		if (maxRate > 0.0)
+			return;
+		super.updateMaxRate();
 	}
 
 	/**
@@ -480,13 +477,6 @@ class IBSPop extends IBSDPopulation {
 			}
 		}
 		double totRate = focalReproduces + focalDies;
-		// if (totRate <= 0.0) {
-		// // this implies deathRate == 0. converged if at maximum population size
-		// // and opponent extinct.
-		// if (traitsCount[LV.VACANT] == 0 && opponent.getPopulationSize() == 0)
-		// return -1;
-		// return 0;
-		// }
 		double randomTestVal = random01() * maxRate;
 		if (randomTestVal >= totRate) {
 			// nothing happens
