@@ -121,11 +121,6 @@ public class ViewController {
 	private Module<?> lastModule;
 
 	/**
-	 * Track the model last used for view reuse decisions.
-	 */
-	private Model lastModel;
-
-	/**
 	 * Initial view specification (index or name with optional args).
 	 */
 	private String initialView = "1";
@@ -297,13 +292,11 @@ public class ViewController {
 			addView(console, oldViews);
 			updateSelector();
 			lastModule = null;
-			lastModel = null;
 			return;
 		}
 
 		Model model = engine.getModel();
-		boolean reuseViews = (module == lastModule && model == lastModel);
-		if (!reuseViews)
+		if (module != lastModule)
 			unloadViews(oldViews);
 		ModelType mt = model.getType();
 		boolean isODESDE = mt.isODE() || mt.isSDE();
@@ -319,7 +312,6 @@ public class ViewController {
 			unloadViews(oldViews);
 		updateSelector();
 		lastModule = module;
-		lastModel = model;
 	}
 
 	/**
