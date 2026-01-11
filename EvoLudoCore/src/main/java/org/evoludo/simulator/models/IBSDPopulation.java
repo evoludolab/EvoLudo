@@ -1722,10 +1722,25 @@ public class IBSDPopulation extends IBSPopulation<Discrete, IBSDPopulation> {
 		if (!super.checkConvergence())
 			return false;
 		// monomorphic, no mutations and no optimizations for homogeneous states
-		// monomporhic stop requested or death rate zero and no vacant sites available
-		return (module.getMonoStop()
-				|| vacantIdx < 0 // no vacant sites
-				|| (module.getDeathRate() <= 0.0 && traitsCount[vacantIdx] == 0));
+		// monomporhic stop requested or no ecological events possible
+		if (module.getMonoStop() || vacantIdx < 0)
+			return true;
+		if (traitsCount[vacantIdx] == 0 && module.getDeathRate() <= 0.0) {
+			// no vacant sites and no deaths: check competition
+			double[] compRates = module.getCompetitionRates();
+			if (compRates == null)
+				return true;
+			for (int n = 0; n < compRates.length; n++) {
+				IBSPopulation<?, ?> pop = module.getSpecies(n).getIBSPopulation();
+				if (compRates[n] > 0.0 && pop.getPopulationSize() > 0)
+					return false;
+			}
+			String name = module.getName();
+			logger.warning(
+					"Population" + (name != null ? " of " + name : "") + " explodes (no death, no competition).");
+			return true;
+		}
+		return false;
 	}
 
 	@Override

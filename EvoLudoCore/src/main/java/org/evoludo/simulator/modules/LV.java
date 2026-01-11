@@ -480,13 +480,13 @@ class IBSPop extends IBSDPopulation {
 			}
 		}
 		double totRate = focalReproduces + focalDies;
-		if (totRate <= 0.0) {
-			// this implies deathRate == 0. converged if at maximum population size
-			// and opponent extinct.
-			if (traitsCount[LV.VACANT] == 0 && opponent.getPopulationSize() == 0)
-				return -1;
-			return 0;
-		}
+		// if (totRate <= 0.0) {
+		// // this implies deathRate == 0. converged if at maximum population size
+		// // and opponent extinct.
+		// if (traitsCount[LV.VACANT] == 0 && opponent.getPopulationSize() == 0)
+		// return -1;
+		// return 0;
+		// }
 		double randomTestVal = random01() * maxRate;
 		if (randomTestVal >= totRate) {
 			// nothing happens
