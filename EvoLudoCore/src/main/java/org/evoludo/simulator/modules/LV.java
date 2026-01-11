@@ -204,17 +204,17 @@ public class LV extends Discrete implements HasDE.ODE, HasDE.SDE, HasDE.DualDyna
 		double[] predRates = predator.competitionRates;
 		if (isDensity) {
 			// density dynamics
-			change[PREY] = x * (rx - x * preyRates[getId()] + y * preyRates[predator.getId()]);
+			change[PREY] = x * (rx - x * preyRates[getId()] - y * preyRates[predator.getId()]);
 			change[predatorIdx] = y
-					* (ry - y * predRates[predator.getId()] + x * predRates[getId()]);
+					* (ry - y * predRates[predator.getId()] - x * predRates[getId()]);
 			return;
 		}
 		// frequency dynamics
-		double delta = x * (rx - x * (getBirthRate() + preyRates[getId()]) + y * preyRates[predator.getId()]);
+		double delta = x * (rx - x * (getBirthRate() + preyRates[getId()]) - y * preyRates[predator.getId()]);
 		change[PREY] = delta;
 		change[VACANT] = -delta;
 		delta = y * (ry - y * (predator.getBirthRate() + predRates[predator.getId()])
-				+ x * (1.0 - y) * predRates[getId()]);
+				- x * (1.0 - y) * predRates[getId()]);
 		change[predatorIdx] = delta;
 		change[nTraits + VACANT] = -delta;
 	}
