@@ -200,6 +200,11 @@ public class Histogram extends AbstractView<HistoGraph> {
 	double scale2bins = 1.0;
 
 	/**
+	 * Small epsilon to avoid floating point truncation when mapping values to bins.
+	 */
+	private static final double BIN_EPSILON = 1e-12;
+
+	/**
 	 * The size of the bins in pixels.
 	 */
 	int binSize = 1;
@@ -1107,7 +1112,7 @@ public class Histogram extends AbstractView<HistoGraph> {
 			case STATISTICS_FIXATION_PROBABILITY:
 				if (fixData.probRead)
 					return;
-				graph.addData((int) (fixData.mutantNode * scale2bins));
+				graph.addData((int) (fixData.mutantNode * scale2bins + BIN_EPSILON));
 				fixData.probRead = true;
 				break;
 			case STATISTICS_FIXATION_TIME:
@@ -1291,7 +1296,7 @@ public class Histogram extends AbstractView<HistoGraph> {
 		model.getMeanTraits(state);
 		int idx = 0;
 		for (HistoGraph graph : graphs)
-			graph.addData((int) (state[idx++] * scale2bins));
+			graph.addData((int) (state[idx++] * scale2bins + BIN_EPSILON));
 	}
 
 	/**
