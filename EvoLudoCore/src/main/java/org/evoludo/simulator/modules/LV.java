@@ -76,20 +76,6 @@ public class LV extends Discrete implements HasDE.ODE, HasDE.SDE, HasDE.DualDyna
 	double[] rates;
 
 	/**
-	 * Prey net per capita growth rate, {@code a0 - dx}, where {@code dx} denotes
-	 * the death rate. Convenience variable for derivative calculations in
-	 * differential equations models.
-	 */
-	double rx;
-
-	/**
-	 * Predator net per capita growth rate, {@code b0 - dy}, where {@code dy}
-	 * denotes the death rate. Convenience variable for derivative calculations in
-	 * differential equations models.
-	 */
-	double ry;
-
-	/**
 	 * Create a new instance of the Lotka-Volterra module.
 	 * 
 	 * @param engine the pacemaker for running the module
@@ -128,11 +114,6 @@ public class LV extends Discrete implements HasDE.ODE, HasDE.SDE, HasDE.DualDyna
 	@Override
 	public boolean check() {
 		boolean doReset = super.check();
-		if (model.getType().isDE()) {
-			// initialize convenience variables for derivative calculations
-			rx = getBirthRate() - getDeathRate();
-			ry = predator.getBirthRate() - predator.getDeathRate();
-		}
 		return doReset;
 	}
 
@@ -149,7 +130,7 @@ public class LV extends Discrete implements HasDE.ODE, HasDE.SDE, HasDE.DualDyna
 		map.setFixedAxes(true);
 	}
 
-	/**
+	/*
 	 * The Lotka-Volterra model is defined by the following equations:
 	 * \[
 	 * \begin{align*}
@@ -182,42 +163,7 @@ public class LV extends Discrete implements HasDE.ODE, HasDE.SDE, HasDE.DualDyna
 	 * they include a cubic term for increased reproduction mitigated by the other
 	 * species but reduced by competition for space, i.e. \(x y (1-y) p_y\). This
 	 * results in a qualitatively different dynamics.
-	 * 
-	 * @param t         the current time
-	 * @param state     the current state of the system
-	 * @param unused    an unused array (for compatibility with the {@link Payoffs}
-	 *                  interface)
-	 * @param change    the array to store the changes
-	 * @param isDensity the flag indicating if the state is in terms of densities
-	 *                  for frequencies
-	 * 
-	 * @see #rates
-	 * @see Predator#rates
-	 * @see #getDeathRate()
 	 */
-	void getDerivatives(double t, double[] state, double[] unused, double[] change, boolean isDensity) {
-		int predatorIdx = nTraits + Predator.PREDATOR;
-		double x = state[PREY];
-		double y = state[predatorIdx];
-		// NOTE: the cross-terms cause problems for aligning DEs and IBS results
-		double[] preyRates = this.competitionRates;
-		double[] predRates = predator.competitionRates;
-		if (isDensity) {
-			// density dynamics
-			change[PREY] = x * (rx - x * preyRates[getId()] - y * preyRates[predator.getId()]);
-			change[predatorIdx] = y
-					* (ry - y * predRates[predator.getId()] - x * predRates[getId()]);
-			return;
-		}
-		// frequency dynamics
-		double delta = x * (rx - x * (getBirthRate() + preyRates[getId()]) - y * preyRates[predator.getId()]);
-		change[PREY] = delta;
-		change[VACANT] = -delta;
-		delta = y * (ry - y * (predator.getBirthRate() + predRates[predator.getId()])
-				- x * (1.0 - y) * predRates[getId()]);
-		change[predatorIdx] = delta;
-		change[nTraits + VACANT] = -delta;
-	}
 
 	@Override
 	public Model createModel(ModelType type) {
@@ -260,11 +206,6 @@ public class LV extends Discrete implements HasDE.ODE, HasDE.SDE, HasDE.DualDyna
 			// RungeKutta; causes troubles with tests otherwise
 			type = ModelType.ODE;
 		}
-
-		@Override
-		protected void getDerivatives(double t, double[] state, double[] unused, double[] change) {
-			LV.this.getDerivatives(t, state, unused, change, isDensity);
-		}
 	}
 
 	/**
@@ -278,11 +219,6 @@ public class LV extends Discrete implements HasDE.ODE, HasDE.SDE, HasDE.DualDyna
 		 */
 		public SDE() {
 			super(LV.this.engine);
-		}
-
-		@Override
-		protected void getDerivatives(double t, double[] state, double[] unused, double[] change) {
-			LV.this.getDerivatives(t, state, unused, change, isDensity);
 		}
 	}
 }

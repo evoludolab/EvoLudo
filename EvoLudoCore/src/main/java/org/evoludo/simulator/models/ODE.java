@@ -922,14 +922,20 @@ public class ODE extends Model implements DModel {
 	 * @param fitness array to return the fitness values of types in population
 	 */
 	private void computeFitness(double[] state, double[] fitness) {
+		if (fitness == null)
+			return;
 		int index = 0;
 		for (Module<?> mod : species) {
-			int nGroup = mod.getNGroup();
 			int nTraits = mod.getNTraits();
-			int skip = idxSpecies[index];
+			int skip = idxSpecies[index++];
+			if (!(mod instanceof Payoffs)) {
+				Arrays.fill(fitness, skip, skip + nTraits, 0.0);
+				continue;
+			}
+			int nGroup = mod.getNGroup();
 			if (mod.isStatic()) {
 				System.arraycopy(staticfit, skip, fitness, skip, nTraits);
-				return;
+				continue;
 			}
 			if (nGroup == 2)
 				((HasDE.DPairs) mod).avgScores(state, fitness);
@@ -938,7 +944,6 @@ public class ODE extends Model implements DModel {
 			Map2Fitness map2fit = mod.getMap2Fitness();
 			for (int n = skip; n < skip + nTraits; n++)
 				fitness[n] = map2fit.map(fitness[n]);
-			index++;
 		}
 	}
 
@@ -959,7 +964,8 @@ public class ODE extends Model implements DModel {
 
 			if (mod.getVacantIdx() >= 0) {
 				updateEcology(mod, state, fitness, nGroup, index, change);
-				return;
+				index++;
+				continue;
 			}
 
 			double totDelta;
@@ -1054,25 +1060,94 @@ public class ODE extends Model implements DModel {
 			double[] change) {
 		// XXX what happens if one trait is deactivated!?
 		int vacant = mod.getVacantIdx();
-		double err = 0.0;
 		int skip = idxSpecies[index];
 		int end = skip + mod.getNTraits();
-		double z = state[vacant];
+		double err = 0.0;
 		double dz = 0.0;
-		double drate = mod.getDeathRate();
+		double z = 1.0;
+		if (!isDensity && vacant >= 0)
+			z = state[skip + vacant];
+		if (fitness != null && vacant >= 0)
+			fitness[skip + vacant] = 0.0;
+		double occupied = 0.0;
 		for (int n = skip; n < end; n++) {
-			if (n == vacant) {
-				fitness[n] = 0.0;
+			if (n == skip + vacant)
 				continue;
+			occupied += state[n];
+		}
+		double rBirth = mod.getBirthRate();
+		double rDeath = mod.getDeathRate();
+		double birthBonus = 0.0;
+		double deathBonus = 0.0;
+		double[] compRates = mod.getCompetitionRates();
+		if (compRates != null && compRates.length > 0) {
+			int nSpecies = Math.min(compRates.length, species.size());
+			int self = mod.getId();
+			if (self < 0 || self >= nSpecies)
+				self = index;
+			if (self >= 0 && self < nSpecies) {
+				double selfRate = compRates[self];
+				if (selfRate > 0.0)
+					deathBonus += selfRate * occupied;
+				else if (selfRate < 0.0)
+					birthBonus += -selfRate;
 			}
-			double dyn = state[n] * (z * fitness[n] - drate);
+			if (nSpecies > 1) {
+				double crossBirth = 0.0;
+				double crossDeath = 0.0;
+				double oppScale = 1.0 / (nSpecies - 1);
+				for (int s = 0; s < nSpecies; s++) {
+					if (s == self)
+						continue;
+					double occ = getOccupiedDensity(s, state);
+					if (occ <= 0.0)
+						continue;
+					double rate = compRates[s];
+					if (rate > 0.0)
+						crossDeath += rate * occ;
+					else if (rate < 0.0)
+						crossBirth += -rate * occ;
+				}
+				birthBonus += crossBirth * oppScale;
+				deathBonus += crossDeath * oppScale;
+			}
+		}
+		double birthFactor = isDensity ? 1.0 : z;
+		for (int n = skip; n < end; n++) {
+			if (n == skip + vacant)
+				continue;
+			double fit = (fitness == null) ? 0.0 : fitness[n];
+			double dyn = state[n] * (birthFactor * (rBirth + birthBonus + fit) - (rDeath + deathBonus));
 			change[n] = dyn;
-			dz -= dyn;
+			if (!isDensity && vacant >= 0)
+				dz -= dyn;
 			err += dyn;
 		}
-		change[vacant] = dz;
-		err += dz;
+		if (vacant >= 0) {
+			if (isDensity) {
+				change[skip + vacant] = 0.0;
+			} else {
+				change[skip + vacant] = dz;
+				err += dz;
+			}
+		}
 		return err;
+	}
+
+	private double getOccupiedDensity(int speciesIndex, double[] state) {
+		if (speciesIndex < 0 || speciesIndex >= species.size())
+			return 0.0;
+		Module<?> mod = species.get(speciesIndex);
+		int start = idxSpecies[speciesIndex];
+		int end = start + mod.getNTraits();
+		int vacant = mod.getVacantIdx();
+		double occupied = 0.0;
+		for (int n = start; n < end; n++) {
+			if (n == start + vacant)
+				continue;
+			occupied += state[n];
+		}
+		return occupied;
 	}
 
 	/**
