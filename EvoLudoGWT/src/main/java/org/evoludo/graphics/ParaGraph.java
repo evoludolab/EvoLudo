@@ -75,9 +75,10 @@ import com.google.gwt.event.dom.client.TouchStartEvent;
  * <li>Handle special time values (NaN) and duplicate times: duplicate times
  * replace the last sample; NaN times mark new trajectory segments and update
  * the recorded initial state accordingly.</li>
- * <li>Map simulation state &lt;-&gt; phase coordinates using a {@link Data2Phase}
- * instance. If the mapper implements {@link BasicTooltipProvider} it will be
- * used as the tooltip provider for parametric tooltips.</li>
+ * <li>Map simulation state &lt;-&gt; phase coordinates using a
+ * {@link Data2Phase} instance. If the mapper implements
+ * {@link BasicTooltipProvider} it will be used as the tooltip provider for
+ * parametric tooltips.</li>
  * <li>Render the trajectory with optional start/end markers and custom markers.
  * The drawing code takes into account current axis ranges, scaling, translation
  * and zooming.</li>
@@ -233,6 +234,7 @@ public class ParaGraph extends AbstractGraph<double[]> implements Zooming, Shift
 	public void addData(double t, double[] data, boolean force) {
 		if (buffer.isEmpty()) {
 			handleEmptyBuffer(t, data);
+			updateAutoscale();
 			return;
 		}
 		double[] last = buffer.last();
@@ -241,14 +243,17 @@ public class ParaGraph extends AbstractGraph<double[]> implements Zooming, Shift
 		if (Math.abs(t - lastt) < 1e-8) {
 			buffer.replace(prependTime2Data(t, data));
 			System.arraycopy(data, 0, init, 1, len - 1);
+			updateAutoscale();
 			return;
 		}
 		if (Double.isNaN(t)) {
 			handleNaNTime(lastt, t, data, len);
+			updateAutoscale();
 			return;
 		}
 		if (force || distSq(data, last) > bufferThreshold) {
 			buffer.append(prependTime2Data(t, data));
+			updateAutoscale();
 		}
 	}
 
@@ -332,6 +337,9 @@ public class ParaGraph extends AbstractGraph<double[]> implements Zooming, Shift
 		double h = bounds.getHeight();
 		g.translate(0, h);
 		g.scale(1.0, -1.0);
+		g.beginPath();
+		g.rect(0, 0, bounds.getWidth(), h);
+		g.clip();
 		double xScale = bounds.getWidth() / (style.xMax - style.xMin);
 		double yScale = h / (style.yMax - style.yMin);
 
@@ -375,22 +383,6 @@ public class ParaGraph extends AbstractGraph<double[]> implements Zooming, Shift
 		double ct = current[0];
 		// current is last point added to buffer
 		map.data2Phase(current, currPt);
-
-		// update axes range if necessary
-		if (doAutoscale) {
-			style.xMin = Functions.roundDown(Math.min(style.xMin, map.getMinX(buffer)));
-			style.xMax = Functions.roundUp(Math.max(style.xMax, map.getMaxX(buffer)));
-			if (style.percentX) {
-				style.xMin = Math.max(style.xMin, 0.0);
-				style.xMax = Math.min(style.xMax, 1.0);
-			}
-			style.yMin = Functions.roundDown(Math.min(style.yMin, map.getMinY(buffer)));
-			style.yMax = Functions.roundUp(Math.max(style.yMax, map.getMaxY(buffer)));
-			if (style.percentX) {
-				style.yMin = Math.max(style.yMin, 0.0);
-				style.yMax = Math.min(style.yMax, 1.0);
-			}
-		}
 
 		while (i.hasNext()) {
 			double[] prev = i.next();
@@ -483,23 +475,168 @@ public class ParaGraph extends AbstractGraph<double[]> implements Zooming, Shift
 	public void autoscale() {
 		if (!doAutoscale)
 			return;
+		updateAutoscaleRanges();
+	}
+
+	@Override
+	public void zoom() {
+		super.zoom();
+		if (doAutoscale)
+			autoscale();
+		paint(true);
+	}
+
+	/**
+	 * Recompute autoscale ranges from the full buffer.
+	 */
+	private void updateAutoscaleRanges() {
+		if (buffer == null || buffer.isEmpty())
+			return;
 		map.reset();
-		double min = map.getMinX(buffer);
-		double max = map.getMaxX(buffer);
+		applyAutoscaleRanges(map.getMinX(buffer), map.getMaxX(buffer),
+				map.getMinY(buffer), map.getMaxY(buffer));
+	}
+
+	/**
+	 * Threshold below which linear axis bounds are snapped to zero.
+	 */
+	private static final double NEAR_ZERO = 1e-14;
+
+	/**
+	 * Reusable point for autoscale calculations.
+	 */
+	private final Point2D autoscalePoint = new Point2D();
+
+	@Override
+	public void clearHistory() {
+		super.clearHistory();
+		if (map != null)
+			map.reset();
+	}
+
+	/**
+	 * Update autoscale ranges based on the most recent buffered point.
+	 */
+	private void updateAutoscale() {
+		if (!doAutoscale || buffer == null || buffer.isEmpty())
+			return;
+		double[] last = buffer.last();
+		map.data2Phase(last, autoscalePoint);
+		if (buffer.getSize() <= 1) {
+			map.reset();
+			applyAutoscaleRanges(autoscalePoint.getX(), autoscalePoint.getX(),
+					autoscalePoint.getY(), autoscalePoint.getY());
+			return;
+		}
+		applyAutoscaleRanges(Math.min(style.xMin, autoscalePoint.getX()),
+				Math.max(style.xMax, autoscalePoint.getX()),
+				Math.min(style.yMin, autoscalePoint.getY()),
+				Math.max(style.yMax, autoscalePoint.getY()));
+	}
+
+	/**
+	 * Apply autoscale ranges and axis-specific constraints.
+	 *
+	 * @param minX minimum x value
+	 * @param maxX maximum x value
+	 * @param minY minimum y value
+	 * @param maxY maximum y value
+	 */
+	private void applyAutoscaleRanges(double minX, double maxX, double minY, double maxY) {
+		double min = minX;
+		double max = maxX;
 		if (min == max) {
 			min *= 0.99;
 			max /= 0.99;
 		}
 		style.xMin = Functions.roundDown(min);
 		style.xMax = Functions.roundUp(max);
-		min = map.getMinY(buffer);
-		max = map.getMaxY(buffer);
+		applyXConstraints();
+		min = minY;
+		max = maxY;
 		if (min == max) {
 			min *= 0.99;
 			max /= 0.99;
 		}
 		style.yMin = Functions.roundDown(min);
 		style.yMax = Functions.roundUp(max);
+		applyYConstraints();
+	}
+
+	/**
+	 * Clamp and snap the x-axis range according to axis settings.
+	 */
+	private void applyXConstraints() {
+		if (style.percentX) {
+			style.xMin = clampPercentMin(style.xMin);
+			style.xMax = clampPercentMax(style.xMax);
+		} else {
+			style.xMin = snapNearZero(style.xMin);
+		}
+	}
+
+	/**
+	 * Clamp and snap the y-axis range according to axis settings.
+	 */
+	private void applyYConstraints() {
+		if (style.percentY) {
+			style.yMin = clampPercentMin(style.yMin);
+			style.yMax = clampPercentMax(style.yMax);
+		} else if (style.logScaleY) {
+			style.yMin = clampLogMin(style.yMin);
+		} else {
+			style.yMin = snapNearZero(style.yMin);
+		}
+	}
+
+	/**
+	 * Snap small linear values to zero.
+	 *
+	 * @param value input value
+	 * @return snapped value
+	 */
+	private double snapNearZero(double value) {
+		if (Math.abs(value) < NEAR_ZERO)
+			return 0.0;
+		return value;
+	}
+
+	/**
+	 * Clamp the minimum of a percent axis.
+	 *
+	 * @param value input value
+	 * @return clamped value
+	 */
+	private double clampPercentMin(double value) {
+		value = Math.max(0.0, value);
+		if (value < NEAR_ZERO)
+			value = 0.0;
+		return value;
+	}
+
+	/**
+	 * Clamp the maximum of a percent axis.
+	 *
+	 * @param value input value
+	 * @return clamped value
+	 */
+	private double clampPercentMax(double value) {
+		value = Math.min(1.0, value);
+		if (Math.abs(1.0 - value) < NEAR_ZERO)
+			value = 1.0;
+		return value;
+	}
+
+	/**
+	 * Clamp the minimum of a log-scaled axis.
+	 *
+	 * @param value input value
+	 * @return clamped value
+	 */
+	private double clampLogMin(double value) {
+		if (!Double.isFinite(value) || value <= 0.0 || value < NEAR_ZERO)
+			return NEAR_ZERO;
+		return value;
 	}
 
 	/**
