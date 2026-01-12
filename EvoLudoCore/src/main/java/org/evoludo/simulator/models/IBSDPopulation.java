@@ -553,8 +553,9 @@ public class IBSDPopulation extends IBSPopulation<Discrete, IBSDPopulation> {
 			}
 		}
 		// peer interactions
-		debugModel = pickNeighborSiteAt(me);
-		if (isVacantAt(debugModel)) {
+		int peer = pickNeighborSiteAt(me);
+		boolean peerVacant = isVacantAt(peer);
+		if (peerVacant) {
 			// peer site is vacant either birth (with synergies) or death through
 			// cross-species competition (no peer competition)
 			if (rate < 0.0)
@@ -580,11 +581,16 @@ public class IBSDPopulation extends IBSPopulation<Discrete, IBSDPopulation> {
 			// fill neighbor site if vacant
 			if (nTraits > 2) {
 				// two (or more) trait consider mutation
-				maybeMutateMoran(me, debugModel);
+				maybeMutateMoran(me, peer);
 			} else {
 				// single trait (plus vacant): no mutation
-				updateFromModelAt(debugModel, me);
+				updateFromModelAt(peer, me);
+				if (module instanceof Payoffs)
+					updateScoreAt(peer, true);
+				else
+					commitTraitAt(peer);
 			}
+			debugModel = peer;
 			updateMaxRate();
 			return 1;
 		}
@@ -1943,6 +1949,7 @@ public class IBSDPopulation extends IBSPopulation<Discrete, IBSDPopulation> {
 			// best-response may require temporary memory - this is peanuts
 			tmpScore = new double[nTraits];
 		}
+		maxRate = -1.0;
 		return doReset;
 	}
 

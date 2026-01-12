@@ -347,48 +347,6 @@ class Predator extends Discrete implements Multispecies, HasDE {
 class IBSPop extends IBSDPopulation {
 
 	/**
-	 * The reference to the predator population. If {@code isPredator==true} then
-	 * {@code predator==this}.
-	 */
-	IBSPop predator;
-
-	/**
-	 * The reference to the prey population. If {@code isPredator==false} then
-	 * {@code prey==this}.
-	 */
-	IBSPop prey;
-
-	/**
-	 * The flag to indicate whether this is a predator population. Convenience
-	 * variable.
-	 */
-	final boolean isPredator;
-
-	/**
-	 * The interaction rates with other populations rates for the predator/prey
-	 * population. Convenience variable.
-	 * 
-	 * @see Module#getCompetitionRates()
-	 */
-	double[] competitionRates;
-
-	/**
-	 * The per capita birth rate for the predator/prey population. Convenience
-	 * variable.
-	 * 
-	 * @see Module#getBirthRate()
-	 */
-	double birthRate;
-
-	/**
-	 * The per capita death rate for the predator/prey population. Convenience
-	 * variable.
-	 * 
-	 * @see Module#getDeathRate()
-	 */
-	double deathRate;
-
-	/**
 	 * Create a new custom implementation for IBS simulations.
 	 * 
 	 * @param engine the pacemaker for running the model
@@ -396,24 +354,6 @@ class IBSPop extends IBSDPopulation {
 	 */
 	protected IBSPop(EvoLudo engine, Discrete module) {
 		super(engine, module);
-		isPredator = (module instanceof Predator);
-		if (isPredator) {
-			predator = this;
-			prey = (IBSPop) opponent;
-		} else {
-			predator = (IBSPop) opponent;
-			prey = this;
-		}
-	}
-
-	@Override
-	public boolean check() {
-		boolean doReset = super.check();
-		deathRate = module.getDeathRate();
-		birthRate = module.getBirthRate();
-		competitionRates = module.getCompetitionRates();
-		maxRate = -1.0;
-		return doReset;
 	}
 
 	@Override
@@ -422,79 +362,6 @@ class IBSPop extends IBSDPopulation {
 		if (maxRate > 0.0)
 			return;
 		super.updateMaxRate();
-	}
-
-	/**
-	 * Individual based simulation implementation of the classical Lotka-Volterra
-	 * model in finite and structured populations. For a focal individual three
-	 * events are possible based on the occupancy of a randomly selected
-	 * neighbouring site {@code A} of the peer species as well as one of the
-	 * opponent species {@code B} :
-	 * <ol>
-	 * <li>reproduction: occurs at rate {@code rates[0]} if {@code A} is empty;
-	 * <li>death: spontaneous death occurs at rate {@code rates[0]} and death due to
-	 * competition with peers occurs at rate {@code rates[2]} if {@code A} is
-	 * occupied;
-	 * <li>predation: prey gets eaten at rate {@code rates[1]} if {@code B} is
-	 * occupied, while predators have a chance to reproduce, provided {@code A} is
-	 * empty.
-	 * </ol>
-	 * The relative rates at which the two species are updated depends on the
-	 * population size as well as the above rates. In well-mixed populations and in
-	 * the limit of large populations the above updating rules recover the ODE
-	 * model.
-	 * 
-	 * @see #getSpeciesUpdateRate()
-	 * @see LV#getDerivatives(double, double[], double[], double[], boolean)
-	 */
-	@Override
-	protected int updatePlayerEcologyAt(int me) {
-		debugFocal = me;
-		debugModel = -1;
-		double focalDies = deathRate;
-		double focalReproduces;
-		int peer = pickNeighborSiteAt(me);
-		boolean peerVacant = isVacantAt(peer);
-		if (peerVacant) {
-			// focal may reproduce because neighbouring site is vacant
-			focalReproduces = birthRate;
-		} else {
-			// focal fails to reproduce due to lack of space
-			focalReproduces = 0.0;
-			// focal may also die due to competition
-			focalDies += competitionRates[module.getId()];
-		}
-		// predation if random neighbouring opponent site is occupied
-		int predation = opponent.pickNeighborSiteAt(me);
-		if (!opponent.isVacantAt(predation)) {
-			double predationRate = Math.abs(competitionRates[opponent.getModule().getId()]);
-			if (isPredator) {
-				// predator benefits from presence of prey
-				focalReproduces += predationRate;
-			} else {
-				// prey suffers from presence of predator
-				focalDies += predationRate;
-			}
-		}
-		double totRate = focalReproduces + focalDies;
-		double randomTestVal = random01() * maxRate;
-		if (randomTestVal >= totRate) {
-			// nothing happens
-			return 0;
-		}
-		if (randomTestVal < focalReproduces) {
-			if (!peerVacant)
-				return 1;
-			// focal reproduces because neighbouring site is vacant
-			setNextTraitAt(peer, 0); // note: works because Predator.PREDATOR == LV.PREY == 0
-			commitTraitAt(peer);
-			return 1;
-		}
-		// focal dies spontaneously, due to competition, or as prey due to predation:
-		// vacate focal site (more efficient than setNextTraitAt)
-		traitsNext[me] = LV.VACANT + nTraits;
-		commitTraitAt(me);
-		return (getPopulationSize() == 0 ? -1 : 1);
 	}
 
 	@Override
