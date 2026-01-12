@@ -430,12 +430,12 @@ public abstract class IBS extends Model {
 			return false;
 		}
 		// note: time resolution is limited. need to allow for some slack when
-		// signalling convergence. using 1/nPopulation of the first species is
-		// an approximation but hopefully good enough. deviations expected in
-		// multi-species modules with different population sizes or different
-		// update rates.
+		// signalling convergence. using 1/nPopulation of the first species is a
+		// heuristic approximation but hopefully good enough. deviations expected in
+		// multi-species modules with different population sizes or different update
+		// rates.
 		double minIncr = 1.0 / species.get(0).getNPopulation();
-		return (updates > nextHalt || Math.abs(nextHalt - updates) >= minIncr);
+		return (updates + minIncr < nextHalt);
 	}
 
 	/**
