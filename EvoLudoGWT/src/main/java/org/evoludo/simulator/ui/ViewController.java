@@ -286,11 +286,11 @@ public class ViewController {
 	public void refreshViews() {
 		HashMap<String, AbstractView<?>> oldViews = new HashMap<>(activeViews);
 		activeViews = new LinkedHashMap<>();
+		selector.clear();
 
 		Module<?> module = engine.getModule();
 		if (module == null) {
 			addView(console, oldViews);
-			updateSelector();
 			lastModule = null;
 			return;
 		}
@@ -310,7 +310,6 @@ public class ViewController {
 
 		if (!oldViews.isEmpty())
 			unloadViews(oldViews);
-		updateSelector();
 		lastModule = module;
 	}
 
@@ -499,22 +498,18 @@ public class ViewController {
 		if (oldViews.containsKey(name))
 			view = oldViews.remove(name);
 		activeViews.put(view.getName(), view);
-		for (Widget widget : deck)
-			if (widget == view)
-				return;
+		selector.addItem(view.getName());
+		if (view == console) {
+			if (deck.getWidgetIndex(view) < 0)
+				deck.add(view);
+			return;
+		}
+		if (deck.getWidgetIndex(view) >= 0)
+			deck.remove(view);
 		int consoleIdx = deck.getWidgetIndex(console);
 		if (consoleIdx < 0)
 			deck.add(view);
 		else
 			deck.insert(view, consoleIdx);
-	}
-
-	/**
-	 * Rebuilds the selector entries so they match the deck layout.
-	 */
-	private void updateSelector() {
-		selector.clear();
-		for (Widget view : deck)
-			selector.addItem(((AbstractView<?>) view).getName());
 	}
 }
