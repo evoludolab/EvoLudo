@@ -1464,16 +1464,14 @@ public class EvoLudoWeb extends Composite
 		boolean moduleChanged = (newModule == null || newModule != guiState.module || newModel != guiState.model);
 		if (moduleChanged) {
 			engine.modelReset(true);
-			loadViews();
+			loadViews(false);
 			// notify of reset (reset above was quiet because views may not have
 			// been ready for notification)
 			engine.fireModelReset();
 		} else {
 			boolean didReset = engine.paramsDidChange();
-			loadViews();
+			loadViews(didReset);
 			if (didReset) {
-				// need to notify updated set of views
-				engine.fireModelReset();
 				// do not resume execution if reset was required (unless --run was specified)
 				guiState.resume = false;
 			}
@@ -1574,7 +1572,7 @@ public class EvoLudoWeb extends Composite
 	 * have been added to the DOM have valid sizes. For this reason the dimensions
 	 * of the active view are passed to all other views.
 	 */
-	private void loadViews() {
+	private void loadViews(boolean resetViews) {
 		viewController.refreshViews();
 		AbstractView<?> anchorView = viewController.getActiveView();
 		if (anchorView == null)
@@ -1587,8 +1585,12 @@ public class EvoLudoWeb extends Composite
 			boolean loaded = view.load();
 			if (view != anchorView)
 				view.setBounds(width, height);
-			if (loaded)
-				view.reset(false);
+			if (loaded) {
+				if (resetViews)
+					view.modelDidReset();
+				else
+					view.reset(false);
+			}
 		}
 		evoludoLayout.onResize();
 		updateDropHandlers();

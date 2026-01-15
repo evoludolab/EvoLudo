@@ -415,8 +415,8 @@ public abstract class AbstractView<G extends AbstractGraph<?>> extends Composite
 	}
 
 	/**
-	 * Called when a module has been reset. All graphs are reset and updated if
-	 * needed, unless {@code hard} is {@code true}.
+	 * Called when a module has been reset. All graphs of the view are reset and
+	 * updated if needed, unless {@code hard} is {@code false}.
 	 * 
 	 * @param hard the flag to indicate whether to do a hard reset
 	 */
