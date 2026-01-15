@@ -3539,6 +3539,21 @@ public abstract class IBSPopulation<M extends Module<?>, P extends IBSPopulation
 	}
 
 	/**
+	 * Ensure a well-mixed geometry instance is available, sized, and initialized.
+	 *
+	 * @param geometry the geometry to reuse when already well-mixed
+	 * @param size     the number of nodes to enforce
+	 * @return the well-mixed geometry instance
+	 */
+	private AbstractGeometry ensureWellmixed(AbstractGeometry geometry, int size) {
+		if (!geometry.isType(GeometryType.WELLMIXED))
+			geometry = AbstractGeometry.create(engine, GeometryType.WELLMIXED);
+		geometry.setSize(size);
+		geometry.check();
+		return geometry;
+	}
+
+	/**
 	 * Set the names of the interaction and competition geometries based on the
 	 * module name and whether the geometries are the same or different.
 	 */
@@ -3635,22 +3650,23 @@ public abstract class IBSPopulation<M extends Module<?>, P extends IBSPopulation
 			logger.warning(
 					"inter-species interactions with populations of different size limited to well-mixed structures"
 							+ " - well-mixed structure forced!");
-			interaction = AbstractGeometry.create(engine, GeometryType.WELLMIXED);
-			opponent.interaction = AbstractGeometry.create(engine, GeometryType.WELLMIXED);
+			interaction = ensureWellmixed(interaction, module.getNPopulation());
+			opponent.interaction = ensureWellmixed(opponent.interaction, opponent.getModule().getNPopulation());
 			doReset = true;
 		}
 		// combinations of unstructured and structured populations in inter-species
 		// interactions require more attention. exclude for now.
-		if (interaction.isInterspecies() && opponent.interaction != null &&
+		if (module.getOpponent().getId() < module.getId()
+				&& interaction.isInterspecies() && opponent.interaction != null &&
 				(interaction.getType() != opponent.interaction.getType()) &&
 				(interaction.isType(GeometryType.WELLMIXED) ||
 						opponent.interaction.isType(GeometryType.WELLMIXED))) {
-			// opponent not yet ready; check will be repeated for opponent
+			// enforce after both species were checked
 			logger.warning(
 					"interspecies interactions combining well-mixed and structured populations not (yet) tested"
 							+ " - well-mixed structure forced!");
-			interaction = AbstractGeometry.create(engine, GeometryType.WELLMIXED);
-			opponent.interaction = AbstractGeometry.create(engine, GeometryType.WELLMIXED);
+			interaction = ensureWellmixed(interaction, module.getNPopulation());
+			opponent.interaction = ensureWellmixed(opponent.interaction, opponent.getModule().getNPopulation());
 			doReset = true;
 		}
 		return doReset;
