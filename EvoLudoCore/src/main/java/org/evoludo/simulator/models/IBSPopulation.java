@@ -3460,12 +3460,19 @@ public abstract class IBSPopulation<M extends Module<?>, P extends IBSPopulation
 			// use default for interaction
 			interaction = structure;
 		}
+		boolean derivedCompetition = false;
 		if (!ibs.cloGeometryCompetition.isSet()) {
-			doReset |= (competition != structure);
-			// use default for competition
-			competition = structure;
+			boolean keepDerived = opponent != this && competition != null && interaction != null
+					&& competition.isDerivedFrom(interaction);
+			if (!keepDerived) {
+				doReset |= (competition != structure);
+				// use default for competition
+				competition = structure;
+			} else {
+				derivedCompetition = true;
+			}
 		}
-		boolean sameGeometry = interaction.equals(competition);
+		boolean sameGeometry = interaction.equals(competition) || derivedCompetition;
 		interaction.setSingle(sameGeometry);
 		competition.setSingle(sameGeometry);
 		interGroup.setGeometry(interaction);

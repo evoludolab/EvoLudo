@@ -77,7 +77,8 @@ public abstract class AbstractGeometry {
 	 * @param engine  the EvoLudo engine providing module/CLI metadata
 	 * @param cli     the command line style geometry descriptor
 	 * @param current the existing geometry to compare against (optional)
-	 * @return the instantiated geometry (arguments not yet parsed), or {@code current}
+	 * @return the instantiated geometry (arguments not yet parsed), or
+	 *         {@code current}
 	 */
 	public static AbstractGeometry create(EvoLudo engine, String cli, AbstractGeometry current) {
 		if (engine == null)
@@ -194,6 +195,7 @@ public abstract class AbstractGeometry {
 			throw new IllegalStateException(
 					"Cannot derive competition geometry when isSingle == false.");
 		AbstractGeometry competition = clone();
+		competition.markDerivedFrom(this);
 		// remove competition with self
 		if (!competition.isType(GeometryType.WELLMIXED))
 			for (int n = 0; n < size; n++)
@@ -246,6 +248,22 @@ public abstract class AbstractGeometry {
 	 * Current geometry type handled by this instance.
 	 */
 	GeometryType type = GeometryType.WELLMIXED;
+
+	/**
+	 * Unique identifier for this geometry instance.
+	 */
+	private static int nextGeometryId = 1;
+
+	/**
+	 * Identifier for this geometry instance.
+	 */
+	final int geometryId;
+
+	/**
+	 * Identifier of the geometry this one was derived from, or {@code -1} if this
+	 * geometry was not derived.
+	 */
+	int derivedId = -1;
 
 	/**
 	 * The number of nodes in the graph.
@@ -335,6 +353,7 @@ public abstract class AbstractGeometry {
 		this.engine = engine;
 		this.logger = engine.getLogger();
 		this.isInterspecies = engine.getModule().getNSpecies() > 1;
+		this.geometryId = nextGeometryId++;
 	}
 
 	/**
@@ -369,6 +388,25 @@ public abstract class AbstractGeometry {
 		if (name == null || name.isEmpty())
 			return "Structure";
 		return name;
+	}
+
+	/**
+	 * Mark this geometry as derived from {@code source}.
+	 *
+	 * @param source the geometry this one was derived from
+	 */
+	public void markDerivedFrom(AbstractGeometry source) {
+		derivedId = source == null ? -1 : source.geometryId;
+	}
+
+	/**
+	 * Check whether this geometry was derived from {@code source}.
+	 *
+	 * @param source the source geometry to compare against
+	 * @return {@code true} if this geometry was derived from {@code source}
+	 */
+	public boolean isDerivedFrom(AbstractGeometry source) {
+		return source != null && derivedId == source.geometryId;
 	}
 
 	/**
@@ -1665,6 +1703,7 @@ public abstract class AbstractGeometry {
 		clone.isSingle = isSingle;
 		clone.isRegular = isRegular;
 		clone.isValid = isValid;
+		clone.derivedId = derivedId;
 		return clone;
 	}
 
