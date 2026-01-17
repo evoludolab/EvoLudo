@@ -30,6 +30,8 @@
 
 package org.evoludo.simulator.models;
 
+import java.util.Arrays;
+
 import org.evoludo.math.ArrayMath;
 import org.evoludo.simulator.EvoLudo;
 import org.evoludo.simulator.models.ODEInitialize.InitType;
@@ -54,6 +56,13 @@ public class SDE extends ODE {
 	protected Module<?> module;
 
 	/**
+	 * Reusable scratch space for noise adjustments due to competition.
+	 * Index 0: birth adjustment, index 1: death adjustment.
+	 * Safe to reuse because SDE models are single-threaded.
+	 */
+	private double[] adj;
+
+	/**
 	 * Constructs a new model for the numerical integration of the system of
 	 * stochastic differential equations representing the dynamics specified by the
 	 * {@link Module} <code>module</code> using the {@link EvoLudo} pacemaker
@@ -76,11 +85,13 @@ public class SDE extends ODE {
 	public void load() {
 		super.load();
 		module = engine.getModule();
+		adj = new double[2];
 	}
 
 	@Override
 	public synchronized void unload() {
 		module = null;
+		adj = null;
 		super.unload();
 	}
 
@@ -341,8 +352,7 @@ public class SDE extends ODE {
 		}
 		// in the absence of mutations, extinct traits (or species) must not make
 		// a sudden reappearance due to roundoff errors!
-		yout[skip] = (yt[skip] > 0.0) ? yt[skip] + dy : 0.0;
-		yout[skip1] = (yt[skip1] > 0.0) ? yt[skip1] + dy1 : 0.0;
+		applyStep(skip, skip + 2, step);
 	}
 
 	/**
@@ -443,11 +453,7 @@ public class SDE extends ODE {
 				dyt[2] -= nx + ny;
 			// in the absence of mutations, extinct traits (or species) must not make
 			// a sudden reappearance due to roundoff errors!
-			for (int i = 0; i < nDim; i++)
-				if (yt[i] > 0.0)
-					yout[i] = yt[i] + step * dyt[i];
-				else
-					yout[i] = 0.0;
+			applyStep(0, nDim, step);
 		}
 	}
 
@@ -460,22 +466,203 @@ public class SDE extends ODE {
 	private void processAnyTraits(double step, double sqrtdt) {
 		int skip = 0;
 		if (isDensity) {
+			int index = 0;
 			for (Module<?> mod : species) {
-				double noise = Math.sqrt(getEffectiveNoise(mod, skip)) * rng.nextGaussian() * sqrtdt;
-				// species that went extinct should not make a sudden reappearance
-				if (yt[skip] > 0.0) {
-					dyt[skip] += noise;
-					yout[skip] = yt[skip] + step * dyt[skip];
+				if (mod.getVacantIdx() >= 0) {
+					processEcologyDensity(mod, index, skip, sqrtdt);
+				} else {
+					double noise = Math.sqrt(getEffectiveNoise(mod, skip)) * rng.nextGaussian() * sqrtdt;
+					// species that went extinct should not make a sudden reappearance
+					if (yt[skip] > 0.0)
+						dyt[skip] += noise;
 				}
+				applyStep(skip, skip + mod.getNTraits(), step);
 				skip += mod.getNTraits();
+				index++;
 			}
 			return;
 		}
-		// frequency dynamics: no mutations in ecological processes
+		// frequency dynamics: demographic noise from ecological events only
+		int index = 0;
 		for (Module<?> mod : species) {
-			process2Traits(skip, step, sqrtdt, 0.0, getEffectiveNoise(mod, skip));
+			if (mod.getVacantIdx() >= 0) {
+				processEcologyFrequency(mod, index++, skip, sqrtdt);
+				applyStep(skip, skip + mod.getNTraits(), step);
+			} else {
+				process2Traits(skip, step, sqrtdt, 0.0, getEffectiveNoise(mod, skip));
+			}
 			skip += mod.getNTraits();
 		}
+	}
+
+	/**
+	 * Process density-based ecological dynamics with demographic noise from birth
+	 * and death events.
+	 *
+	 * @param mod    the module to process
+	 * @param index  the species index
+	 * @param skip   the starting index in state arrays
+	 * @param sqrtdt square root of time step for noise scaling
+	 */
+	private void processEcologyDensity(Module<?> mod, int index, int skip, double sqrtdt) {
+		int vacant = mod.getVacantIdx();
+		int vacantIdx = (vacant >= 0) ? skip + vacant : -1;
+		int end = skip + mod.getNTraits();
+		double occupied = 0.0;
+		for (int n = skip; n < end; n++) {
+			if (n != vacantIdx)
+				occupied += yt[n];
+		}
+
+		computeCompetitionAdjustments(mod, index, occupied);
+		double effBirth = mod.getBirthRate() + adj[0];
+		double effDeath = mod.getDeathRate() + adj[1];
+		double nPop = mod.getNPopulation();
+		double invN = 1.0 / nPop;
+
+		for (int n = skip; n < end; n++) {
+			if (n == vacantIdx)
+				continue;
+			double x = yt[n];
+			if (x <= 0.0)
+				continue;
+			double birthRate = effBirth + ((ft != null) ? ft[n] : 0.0);
+			double aBirth = (birthRate > 0.0) ? nPop * x * birthRate : 0.0;
+			double aDeath = (effDeath > 0.0) ? nPop * x * effDeath : 0.0;
+			double eta = 0.0;
+			if (aBirth > 0.0)
+				eta += Math.sqrt(aBirth) * rng.nextGaussian() * sqrtdt * invN;
+			if (aDeath > 0.0)
+				eta -= Math.sqrt(aDeath) * rng.nextGaussian() * sqrtdt * invN;
+			if (eta != 0.0)
+				dyt[n] += eta;
+		}
+	}
+
+	/**
+	 * Process ecological dynamics with demographic noise from birth and death
+	 * events.
+	 * 
+	 * @param mod    the module to process
+	 * @param index  the species index
+	 * @param skip   the starting index in state arrays
+	 * @param sqrtdt square root of time step for noise scaling
+	 */
+	private void processEcologyFrequency(Module<?> mod, int index, int skip, double sqrtdt) {
+		int vacant = mod.getVacantIdx();
+		if (vacant < 0)
+			return;
+		int end = skip + mod.getNTraits();
+		double z = yt[skip + vacant];
+		double occupied = 0.0;
+		for (int n = skip; n < end; n++)
+			if (n != skip + vacant)
+				occupied += yt[n];
+
+		// Calculate effective rates with competition adjustments
+		computeCompetitionAdjustments(mod, index, occupied);
+		double effBirth = mod.getBirthRate() + adj[0];
+		double effDeath = mod.getDeathRate() + adj[1];
+		double nPop = mod.getNPopulation();
+		double invN = 1.0 / nPop;
+
+		// Apply demographic noise to each trait
+		for (int n = skip; n < end; n++) {
+			if (n == skip + vacant)
+				continue;
+			double x = yt[n];
+			if (x <= 0.0)
+				continue;
+			double birthRate = effBirth + ((ft != null) ? ft[n] : 0.0);
+			double aBirth = (birthRate > 0.0 && z > 0.0) ? nPop * x * z * birthRate : 0.0;
+			double aDeath = (effDeath > 0.0) ? nPop * x * effDeath : 0.0;
+			double eta = 0.0;
+			if (aBirth > 0.0)
+				eta += Math.sqrt(aBirth) * rng.nextGaussian() * sqrtdt * invN;
+			if (aDeath > 0.0)
+				eta -= Math.sqrt(aDeath) * rng.nextGaussian() * sqrtdt * invN;
+			if (eta != 0.0) {
+				dyt[n] += eta;
+				dyt[skip + vacant] -= eta;
+			}
+		}
+	}
+
+	/**
+	 * Compute competition-driven adjustments for birth and death rates.
+	 *
+	 * @param mod      the module to compute adjustments for
+	 * @param index    the species index used as a fallback identifier
+	 * @param occupied total occupied density for the species
+	 * @return scratch array with birth adjustment at index 0 and death adjustment
+	 *         at index 1
+	 */
+	private void computeCompetitionAdjustments(Module<?> mod, int index, double occupied) {
+		Arrays.fill(adj, 0.0);
+		double[] compRates = mod.getCompetitionRates();
+		if (compRates == null || compRates.length == 0)
+			return;
+
+		int nSpecies = Math.min(compRates.length, species.size());
+		int self = (mod.getId() >= 0 && mod.getId() < nSpecies) ? mod.getId() : index;
+		if (self >= 0 && self < nSpecies) {
+			double selfRate = compRates[self];
+			if (selfRate > 0.0)
+				adj[1] += selfRate * occupied;
+			else if (selfRate < 0.0)
+				adj[0] -= selfRate;
+		}
+		if (nSpecies > 1) {
+			double scale = 1.0 / (nSpecies - 1);
+			for (int s = 0; s < nSpecies; s++) {
+				if (s == self)
+					continue;
+				double occ = getOccupiedDensity(s);
+				if (occ > 0.0) {
+					double rate = compRates[s];
+					if (rate > 0.0)
+						adj[1] += rate * occ * scale;
+					else if (rate < 0.0)
+						adj[0] -= rate * occ * scale;
+				}
+			}
+		}
+	}
+
+	/**
+	 * Apply an Euler step with zero-clamping to prevent extinct traits from
+	 * reappearing due to roundoff errors. Used when mutations are absent.
+	 * 
+	 * @param start the starting index (inclusive)
+	 * @param end   the ending index (exclusive)
+	 * @param step  the step size
+	 */
+	private void applyStep(int start, int end, double step) {
+		for (int i = start; i < end; i++)
+			yout[i] = (yt[i] > 0.0) ? yt[i] + step * dyt[i] : 0.0;
+	}
+
+	/**
+	 * Compute the occupied density (sum over non-vacant traits) for a species.
+	 * Used to adjust cross-species ecological noise terms.
+	 *
+	 * @param speciesIndex index of the species to query
+	 * @return total density excluding the vacant trait
+	 */
+	private double getOccupiedDensity(int speciesIndex) {
+		if (speciesIndex < 0 || speciesIndex >= species.size())
+			return 0.0;
+		Module<?> mod = species.get(speciesIndex);
+		int start = idxSpecies[speciesIndex];
+		int end = start + mod.getNTraits();
+		int vacant = mod.getVacantIdx();
+		double occupied = 0.0;
+		for (int n = start; n < end; n++) {
+			if (n == start + vacant)
+				continue;
+			occupied += yt[n];
+		}
+		return occupied;
 	}
 
 	/**
