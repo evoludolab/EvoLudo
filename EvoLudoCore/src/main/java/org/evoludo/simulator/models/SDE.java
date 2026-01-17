@@ -93,29 +93,19 @@ public class SDE extends ODE {
 				if (nt == 1 || (nt == 2 && mod.getVacantIdx() >= 0))
 					continue;
 				// multiple traits implies evolutionary module - revert to ODE
-				logger.warning("SDE model for multi-species modules requires single trait - revert to ODE.");
-				engine.loadModel(ModelType.ODE);
-				return true;
+				return revertToODE("multi-species require single trait - revert to ODE.");
 			}
-		} else {
+		} else if (((HasDE) module).getDependent() < 0) {
 			// single species module requires dependent trait
-			if (((HasDE) module).getDependent() < 0) {
-				logger.warning("SDE model requires dependent trait - revert to ODE.");
-				engine.loadModel(ModelType.ODE);
-				return true;
-			}
+			return revertToODE("requires dependent trait - revert to ODE.");
 		}
 		boolean doReset = super.check();
 		// at this point it is clear that we have a dependent trait
 		int dim = nDim - 1;
 		// only one or two traits acceptable or, alternatively, two or three
 		// traits for replicator dynamics (for SDE but not SDEN)
-		if (!getClass().getSuperclass().equals(SDE.class) && (dim < 1 || dim > 2)) {
-			logger.warning(getClass().getSimpleName()
-					+ " - max. 3 traits incl. dependent - revert to ODE (use SDEN).");
-			engine.loadModel(ModelType.ODE);
-			return true;
-		}
+		if (!getClass().getSuperclass().equals(SDE.class) && (dim < 1 || dim > 2))
+			return revertToODE("max. 3 traits incl. dependent - revert to ODE (use SDEN).");
 		if (isAdjustedDynamics) {
 			// XXX check min/max fitness instead
 			// fitness is not guaranteed to be positive
@@ -124,6 +114,18 @@ public class SDE extends ODE {
 			isAdjustedDynamics = false;
 		}
 		return doReset;
+	}
+
+	/**
+	 * Log a warning and request switching to the ODE model.
+	 *
+	 * @param message the warning message to log
+	 * @return {@code true} to signal a reset
+	 */
+	private boolean revertToODE(String message) {
+		logger.warning(() -> getClass().getSimpleName() + ": " + message);
+		engine.loadModel(ModelType.ODE);
+		return true;
 	}
 
 	@Override
@@ -174,19 +176,67 @@ public class SDE extends ODE {
 		if (converged)
 			return true;
 		converged = true;
-		for (Module<?> mod : species) {
+		boolean hasMutation = false;
+		for (int idx = 0; idx < nSpecies; idx++) {
+			Module<?> mod = species.get(idx);
+			int start = idxSpecies[idx];
+			int end = idxSpecies[idx + 1];
 			if (mod.getMutation().getProbability() > 0.0) {
+				hasMutation = true;
 				// if dist2 is zero (or very small) and (at least) one trait is absent,
 				// random noise may be invalid (pushing state outside of permissible values)
-				if (dist2 < accuracy && ArrayMath.min(yt) < accuracy)
+				if (dist2 < accuracy && min(yt, start, end) < accuracy)
 					return false;
 				int vacant = mod.getVacantIdx();
 				// extinction is absorbing even with mutations
-				converged &= (vacant >= 0 && yt[vacant] > 1.0 - accuracy);
-			} else
-				converged &= monoStop ? isMonomorphic() : (!isDensity && ArrayMath.max(yt) > 1.0 - accuracy);
+				if (vacant < 0 || yt[start + vacant] <= 1.0 - accuracy) {
+					converged = false;
+					break;
+				}
+			} else if (!monoStop && (isDensity || max(yt, start, end) <= 1.0 - accuracy)) {
+				converged = false;
+				break;
+			}
 		}
+		if (monoStop && !hasMutation)
+			converged = isMonomorphic();
 		return converged;
+	}
+
+	/**
+	 * Find the minimum value in a range of an array.
+	 * 
+	 * @param values the array to search
+	 * @param start  the starting index (inclusive)
+	 * @param end    the ending index (exclusive)
+	 * @return the minimum value in the specified range
+	 */
+	private static double min(double[] values, int start, int end) {
+		double min = Double.MAX_VALUE;
+		for (int n = start; n < end; n++) {
+			double value = values[n];
+			if (value < min)
+				min = value;
+		}
+		return min;
+	}
+
+	/**
+	 * Find the maximum value in a range of an array.
+	 * 
+	 * @param values the array to search
+	 * @param start  the starting index (inclusive)
+	 * @param end    the ending index (exclusive)
+	 * @return the maximum value in the specified range
+	 */
+	private static double max(double[] values, int start, int end) {
+		double max = -Double.MAX_VALUE;
+		for (int n = start; n < end; n++) {
+			double value = values[n];
+			if (value > max)
+				max = value;
+		}
+		return max;
 	}
 
 	/**
@@ -264,21 +314,21 @@ public class SDE extends ODE {
 	 */
 	private void process2Traits(int skip, double step, double sqrtdt, double mu, double noise) {
 		double x = yt[skip];
-		double b = ((1.0 - mu) * x * (1.0 - x) + mu) * noise;
-		double c = Math.sqrt(b);
-		double n = c * rng.nextGaussian() * sqrtdt;
+		double n = Math.sqrt(((1.0 - mu) * x * (1.0 - x) + mu) * noise)
+				* rng.nextGaussian() * sqrtdt;
 		dyt[skip] += n;
 		int skip1 = skip + 1;
 		dyt[skip1] -= n;
+
+		double dy = step * dyt[skip];
+		double dy1 = step * dyt[skip1];
 		if (mu > 0.0) {
-			double dy = step * dyt[skip];
 			if (yt[skip] <= 0.0) {
 				dy = Math.max(0.0, dy);
 				yout[skip] = yt[skip] + dy;
 				yout[skip1] = yt[skip1] - dy;
 				return;
 			}
-			double dy1 = step * dyt[skip1];
 			if (yt[skip1] <= 0.0) {
 				dy1 = Math.max(0.0, dy1);
 				yout[skip] = yt[skip] - dy;
@@ -287,25 +337,19 @@ public class SDE extends ODE {
 			}
 			yout[skip] = yt[skip] + dy;
 			yout[skip1] = yt[skip1] + dy1;
-		} else {
-			// in the absence of mutations, extinct traits (or species) must not make
-			// a sudden reappearance due to roundoff errors!
-			if (yt[skip] > 0.0)
-				yout[skip] = yt[skip] + step * dyt[skip];
-			else
-				yout[skip] = 0.0;
-			if (yt[skip1] > 0.0)
-				yout[skip1] = yt[skip1] + step * dyt[skip1];
-			else
-				yout[skip1] = 0.0;
+			return;
 		}
+		// in the absence of mutations, extinct traits (or species) must not make
+		// a sudden reappearance due to roundoff errors!
+		yout[skip] = (yt[skip] > 0.0) ? yt[skip] + dy : 0.0;
+		yout[skip1] = (yt[skip1] > 0.0) ? yt[skip1] + dy1 : 0.0;
 	}
 
 	/**
 	 * Process the three-trait stochastic update (including vacant).
 	 * 
-	 * @param step    Euler step size
-	 * @param sqrtdt  square root of the time step (for noise terms)
+	 * @param step   Euler step size
+	 * @param sqrtdt square root of the time step (for noise terms)
 	 */
 	private void process3Traits(double step, double sqrtdt) {
 		// NOTE: if not replicator equation some adjustments are required (references to
@@ -446,13 +490,12 @@ public class SDE extends ODE {
 		double effnoise = 1.0 / mod.getNPopulation();
 		// scale noise according effective population size
 		int vacant = skip + mod.getVacantIdx();
-		if (vacant >= 0) {
-			double ytv = yt[vacant];
-			if (ytv > 1.0 - 1e-8)
-				return 0.0;
-			effnoise /= (1.0 - ytv);
-		}
-		return effnoise;
+		if (vacant < 0)
+			return effnoise;
+		double ytv = yt[vacant];
+		if (ytv > 1.0 - 1e-8)
+			return 0.0;
+		return effnoise / (1.0 - ytv);
 	}
 
 	@Override
@@ -526,11 +569,11 @@ public class SDE extends ODE {
 		// SDE's currently are restricted to single species modules and implement
 		// mutation to other types only (including ALL as well should be fairly straight
 		// forward, though).
-		if (mutation != null && mutation.length > 0) {
-			CLOption clo = mutation[0].clo;
-			clo.clearKeys();
-			clo.addKey(Mutation.Discrete.Type.NONE);
-			clo.addKey(Mutation.Discrete.Type.OTHER);
-		}
+		if (mutation == null || mutation.length == 0)
+			return;
+		CLOption clo = mutation[0].clo;
+		clo.clearKeys();
+		clo.addKey(Mutation.Discrete.Type.NONE);
+		clo.addKey(Mutation.Discrete.Type.OTHER);
 	}
 }
