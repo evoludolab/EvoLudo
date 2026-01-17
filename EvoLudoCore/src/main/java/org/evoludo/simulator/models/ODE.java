@@ -819,8 +819,15 @@ public class ODE extends Model implements DModel {
 	}
 
 	/**
-	 * Attempts a numerical integration step of size <code>step</code>. The baseline
-	 * are steps of fixed size following Euler's method.
+	 * Attempts a numerical integration step of size <code>step</code> with step
+	 * size adjustment. Starts with an Euler step but if the result yields:
+	 * <ol>
+	 * <li>negative densities/frequencies
+	 * <li>frequencies exceeding 1.0
+	 * </ol>
+	 * the step size is reduced such that densities/frequencies are set to
+	 * {@code 0.0} or {@code 1.0}, respectively, and the effective step size is
+	 * adjusted and recorded in {@link #dtTaken}.
 	 *
 	 * @param step the time step to attempt
 	 * @return squared distance between this state and previous one,
@@ -846,7 +853,7 @@ public class ODE extends Model implements DModel {
 				ArrayMath.addscale(yt, dyt, step, yout);
 				yout[idx] = 1.0; // avoid roundoff errors
 			}
-			normalizeState(yt);
+			normalizeState(yout);
 		}
 		// the new state is in yout - swap and determine new fitness
 		double[] swap = yt;
