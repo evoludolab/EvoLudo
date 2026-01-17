@@ -308,7 +308,7 @@ public abstract class IBS extends Model {
 	protected void resetState() {
 		super.resetState();
 		updates = 0.0;
-		time = (positiveMinFitness() ? 0.0 : Double.POSITIVE_INFINITY);
+		time = (!(species.get(0) instanceof Payoffs) || positiveMinFitness()) ? 0.0 : Double.POSITIVE_INFINITY;
 	}
 
 	/**
