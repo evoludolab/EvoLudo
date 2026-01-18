@@ -30,8 +30,6 @@
 
 package org.evoludo.simulator.models;
 
-import java.util.Arrays;
-
 import org.evoludo.math.ArrayMath;
 import org.evoludo.simulator.EvoLudo;
 import org.evoludo.simulator.models.ODEInitialize.InitType;
@@ -56,13 +54,6 @@ public class SDE extends ODE {
 	protected Module<?> module;
 
 	/**
-	 * Reusable scratch space for noise adjustments due to competition.
-	 * Index 0: birth adjustment, index 1: death adjustment.
-	 * Safe to reuse because SDE models are single-threaded.
-	 */
-	private double[] adj;
-
-	/**
 	 * Constructs a new model for the numerical integration of the system of
 	 * stochastic differential equations representing the dynamics specified by the
 	 * {@link Module} <code>module</code> using the {@link EvoLudo} pacemaker
@@ -85,13 +76,11 @@ public class SDE extends ODE {
 	public void load() {
 		super.load();
 		module = engine.getModule();
-		adj = new double[2];
 	}
 
 	@Override
 	public synchronized void unload() {
 		module = null;
-		adj = null;
 		super.unload();
 	}
 
@@ -251,18 +240,23 @@ public class SDE extends ODE {
 	}
 
 	/**
-	 * {@inheritDoc} For stochastic differential equations Gaussian distributed
-	 * white noise is added.
+	 * {@inheritDoc}
+	 * <p>
+	 * For stochastic differential equations Gaussian distributed white noise is
+	 * added.
 	 * 
 	 * <h3>Implementation Notes:</h3>
 	 * Integration of SDEs can be optimized in 1 and 2 dimensions. For replicator
-	 * systems this means 2 or 3 traits. Currently noise implemented only for
-	 * replicator type dynamics.
+	 * systems this means 2 or 3 traits.
 	 * 
 	 * @see <a href="http://dx.doi.org/10.1103/PhysRevE.85.041901">Traulsen, A.,
 	 *      Claussen J. C. &amp; Hauert, Ch. (2012) Stochastic differential
 	 *      equations for evolutionary dynamics with demographic noise and
 	 *      mutations, Phys. Rev. E 85, 041901</a>
+	 * @see <a href="https://doi.org/10.1103/PhysRevLett.94.218102">McKane, A. J., &
+	 *      Newman, T. J. (2005). Predator–prey cycles from resonant amplification
+	 *      of demographic stochasticity. Physical Review Letters, 94(21),
+	 *      218102</a>
 	 */
 	@Override
 	protected double deStep(double step) {
@@ -325,6 +319,8 @@ public class SDE extends ODE {
 	 */
 	private void process2Traits(int skip, double step, double sqrtdt, double mu, double noise) {
 		double x = yt[skip];
+		// T^+ + T^-: b = ((1.0 - mu) * x * (1.0 - x) + mu) * noise;
+		// noise: n = Math.sqrt(b) * rng.nextGaussian() * sqrtdt;
 		double n = Math.sqrt(((1.0 - mu) * x * (1.0 - x) + mu) * noise)
 				* rng.nextGaussian() * sqrtdt;
 		dyt[skip] += n;
@@ -508,18 +504,14 @@ public class SDE extends ODE {
 		int vacant = mod.getVacantIdx();
 		int vacantIdx = (vacant >= 0) ? skip + vacant : -1;
 		int end = skip + mod.getNTraits();
-		double occupied = 0.0;
-		for (int n = skip; n < end; n++) {
-			if (n != vacantIdx)
-				occupied += yt[n];
-		}
-
-		computeCompetitionAdjustments(mod, index, occupied);
-		double effBirth = mod.getBirthRate() + adj[0];
-		double effDeath = mod.getDeathRate() + adj[1];
+		// Calculate effective rates with competition adjustments
+		computeEffRates(mod, index, yt, effRate);
+		double effBirth = effRate[0];
+		double effDeath = effRate[1];
 		double nPop = mod.getNPopulation();
 		double invN = 1.0 / nPop;
 
+		// Apply demographic noise to each trait
 		for (int n = skip; n < end; n++) {
 			if (n == vacantIdx)
 				continue;
@@ -554,15 +546,10 @@ public class SDE extends ODE {
 			return;
 		int end = skip + mod.getNTraits();
 		double z = yt[skip + vacant];
-		double occupied = 0.0;
-		for (int n = skip; n < end; n++)
-			if (n != skip + vacant)
-				occupied += yt[n];
-
 		// Calculate effective rates with competition adjustments
-		computeCompetitionAdjustments(mod, index, occupied);
-		double effBirth = mod.getBirthRate() + adj[0];
-		double effDeath = mod.getDeathRate() + adj[1];
+		computeEffRates(mod, index, yt, effRate);
+		double effBirth = effRate[0];
+		double effDeath = effRate[1];
 		double nPop = mod.getNPopulation();
 		double invN = 1.0 / nPop;
 
@@ -589,47 +576,6 @@ public class SDE extends ODE {
 	}
 
 	/**
-	 * Compute competition-driven adjustments for birth and death rates.
-	 *
-	 * @param mod      the module to compute adjustments for
-	 * @param index    the species index used as a fallback identifier
-	 * @param occupied total occupied density for the species
-	 * @return scratch array with birth adjustment at index 0 and death adjustment
-	 *         at index 1
-	 */
-	private void computeCompetitionAdjustments(Module<?> mod, int index, double occupied) {
-		Arrays.fill(adj, 0.0);
-		double[] compRates = mod.getCompetitionRates();
-		if (compRates == null || compRates.length == 0)
-			return;
-
-		int nSpecies = Math.min(compRates.length, species.size());
-		int self = (mod.getId() >= 0 && mod.getId() < nSpecies) ? mod.getId() : index;
-		if (self >= 0 && self < nSpecies) {
-			double selfRate = compRates[self];
-			if (selfRate > 0.0)
-				adj[1] += selfRate * occupied;
-			else if (selfRate < 0.0)
-				adj[0] -= selfRate;
-		}
-		if (nSpecies > 1) {
-			double scale = 1.0 / (nSpecies - 1);
-			for (int s = 0; s < nSpecies; s++) {
-				if (s == self)
-					continue;
-				double occ = getOccupiedDensity(s);
-				if (occ > 0.0) {
-					double rate = compRates[s];
-					if (rate > 0.0)
-						adj[1] += rate * occ * scale;
-					else if (rate < 0.0)
-						adj[0] -= rate * occ * scale;
-				}
-			}
-		}
-	}
-
-	/**
 	 * Apply an Euler step with zero-clamping to prevent extinct traits from
 	 * reappearing due to roundoff errors. Used when mutations are absent.
 	 * 
@@ -640,29 +586,6 @@ public class SDE extends ODE {
 	private void applyStep(int start, int end, double step) {
 		for (int i = start; i < end; i++)
 			yout[i] = (yt[i] > 0.0) ? yt[i] + step * dyt[i] : 0.0;
-	}
-
-	/**
-	 * Compute the occupied density (sum over non-vacant traits) for a species.
-	 * Used to adjust cross-species ecological noise terms.
-	 *
-	 * @param speciesIndex index of the species to query
-	 * @return total density excluding the vacant trait
-	 */
-	private double getOccupiedDensity(int speciesIndex) {
-		if (speciesIndex < 0 || speciesIndex >= species.size())
-			return 0.0;
-		Module<?> mod = species.get(speciesIndex);
-		int start = idxSpecies[speciesIndex];
-		int end = start + mod.getNTraits();
-		int vacant = mod.getVacantIdx();
-		double occupied = 0.0;
-		for (int n = start; n < end; n++) {
-			if (n == start + vacant)
-				continue;
-			occupied += yt[n];
-		}
-		return occupied;
 	}
 
 	/**

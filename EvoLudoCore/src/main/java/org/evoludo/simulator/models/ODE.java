@@ -266,6 +266,13 @@ public class ODE extends Model implements DModel {
 	double[] invFitRange;
 
 	/**
+	 * Reusable scratch space for effective rates used by single-threaded ODE and
+	 * SDE models. PDEs use per-call buffers to remain thread safe.
+	 * Index 0: effective birth rate, index 1: effective death rate.
+	 */
+	protected double[] effRate;
+
+	/**
 	 * The names of the traits (dynamical variables) in the ODE. In multi-species
 	 * modules all names are concatenated into this single array. The names of the
 	 * first species are stored in <code>names[0]</code> through
@@ -342,6 +349,7 @@ public class ODE extends Model implements DModel {
 		initType = new InitType[nSpecies];
 		mutation = new Mutation.Discrete[nSpecies];
 		dependents = new int[nSpecies];
+		effRate = new double[2];
 		int idx = 0;
 		for (Module<?> mod : species) {
 			mutation[idx] = (Mutation.Discrete) mod.getMutation();
@@ -354,6 +362,7 @@ public class ODE extends Model implements DModel {
 		initType = null;
 		mutation = null;
 		dependents = null;
+		effRate = null;
 		yt = ft = dyt = yout = null;
 		staticfit = null;
 		names = null;
@@ -1043,11 +1052,10 @@ public class ODE extends Model implements DModel {
 
 	/**
 	 * Implementation of the player updates for modules with populations of variable
-	 * size (density based or with vacant 'space', i.e.
-	 * reproductive opportunities). In models with varying reproductive
-	 * opportunities the rate of reproduction is given by the product of the
-	 * individual's fitness moderated by the available 'space'.
-	 * This results in the dynamical equation given by
+	 * size (density based or with vacant 'space', i.e. reproductive opportunities).
+	 * In models with varying reproductive opportunities the rate of reproduction is
+	 * given by the product of the individual's fitness moderated by the available
+	 * 'space'. This results in the dynamical equation given by
 	 * \[\dot x = x_i (z\cdot f_i - d)\]
 	 * where \(z\) denotes vacant space, \(f_i\) the fitness of type \(i\) and \(d\)
 	 * is the death rate. This works nicely for replicator type equations but may
@@ -1076,55 +1084,16 @@ public class ODE extends Model implements DModel {
 			z = state[skip + vacant];
 		if (fitness != null && vacant >= 0)
 			fitness[skip + vacant] = 0.0;
-		double occupied = 0.0;
-		for (int n = skip; n < end; n++) {
-			if (n == skip + vacant)
-				continue;
-			occupied += state[n];
-		}
-		double rBirth = mod.getBirthRate();
-		double rDeath = mod.getDeathRate();
-		double birthBonus = 0.0;
-		double deathBonus = 0.0;
-		double[] compRates = mod.getCompetitionRates();
-		if (compRates != null && compRates.length > 0) {
-			int nSpecies = Math.min(compRates.length, species.size());
-			int self = mod.getId();
-			if (self < 0 || self >= nSpecies)
-				self = index;
-			if (self >= 0 && self < nSpecies) {
-				double selfRate = compRates[self];
-				if (selfRate > 0.0)
-					deathBonus += selfRate * occupied;
-				else if (selfRate < 0.0)
-					birthBonus += -selfRate;
-			}
-			if (nSpecies > 1) {
-				double crossBirth = 0.0;
-				double crossDeath = 0.0;
-				double oppScale = 1.0 / (nSpecies - 1);
-				for (int s = 0; s < nSpecies; s++) {
-					if (s == self)
-						continue;
-					double occ = getOccupiedDensity(s, state);
-					if (occ <= 0.0)
-						continue;
-					double rate = compRates[s];
-					if (rate > 0.0)
-						crossDeath += rate * occ;
-					else if (rate < 0.0)
-						crossBirth += -rate * occ;
-				}
-				birthBonus += crossBirth * oppScale;
-				deathBonus += crossDeath * oppScale;
-			}
-		}
+		double[] effRates = type.isPDE() ? new double[2] : effRate;
+		computeEffRates(mod, index, state, effRates);
+		double effBirth = effRates[0];
+		double effDeath = effRates[1];
 		double birthFactor = isDensity ? 1.0 : z;
 		for (int n = skip; n < end; n++) {
 			if (n == skip + vacant)
 				continue;
 			double fit = (fitness == null) ? 0.0 : fitness[n];
-			double dyn = state[n] * (birthFactor * (rBirth + birthBonus + fit) - (rDeath + deathBonus));
+			double dyn = state[n] * (birthFactor * (effBirth + fit) - effDeath);
 			change[n] = dyn;
 			if (!isDensity && vacant >= 0)
 				dz -= dyn;
@@ -1141,7 +1110,14 @@ public class ODE extends Model implements DModel {
 		return err;
 	}
 
-	private double getOccupiedDensity(int speciesIndex, double[] state) {
+	/**
+	 * Compute the occupied density (sum over non-vacant traits) for a species.
+	 *
+	 * @param speciesIndex the index of the species to query
+	 * @param state        the state vector to sample
+	 * @return the occupied density for the species
+	 */
+	protected double getOccupiedDensity(int speciesIndex, double[] state) {
 		if (speciesIndex < 0 || speciesIndex >= species.size())
 			return 0.0;
 		Module<?> mod = species.get(speciesIndex);
@@ -1155,6 +1131,54 @@ public class ODE extends Model implements DModel {
 			occupied += state[n];
 		}
 		return occupied;
+	}
+
+	/**
+	 * Compute effective birth and death rates, including competition adjustments.
+	 *
+	 * @param mod   the module to compute effective rates for
+	 * @param index the species index used as a fallback identifier
+	 * @param state the state vector to sample for occupied densities
+	 * @param out   output array: effective birth rate at index 0, death at index 1
+	 */
+	protected void computeEffRates(Module<?> mod, int index, double[] state, double[] out) {
+		out[0] = mod.getBirthRate();
+		out[1] = mod.getDeathRate();
+		double[] compRates = mod.getCompetitionRates();
+		if (compRates == null || compRates.length == 0)
+			return;
+
+		double occupied = getOccupiedDensity(index, state);
+		int nSpecies = Math.min(compRates.length, species.size());
+		int self = mod.getId();
+		if (self < 0 || self >= nSpecies)
+			self = index;
+		if (self >= 0 && self < nSpecies) {
+			double selfRate = compRates[self];
+			if (selfRate > 0.0)
+				out[1] += selfRate * occupied;
+			else if (selfRate < 0.0)
+				out[0] -= selfRate;
+		}
+		if (nSpecies > 1) {
+			double crossBirth = 0.0;
+			double crossDeath = 0.0;
+			double oppScale = 1.0 / (nSpecies - 1);
+			for (int s = 0; s < nSpecies; s++) {
+				if (s == self)
+					continue;
+				double occ = getOccupiedDensity(s, state);
+				if (occ <= 0.0)
+					continue;
+				double rate = compRates[s];
+				if (rate > 0.0)
+					crossDeath += rate * occ;
+				else if (rate < 0.0)
+					crossBirth -= rate * occ;
+			}
+			out[0] += crossBirth * oppScale;
+			out[1] += crossDeath * oppScale;
+		}
 	}
 
 	/**
