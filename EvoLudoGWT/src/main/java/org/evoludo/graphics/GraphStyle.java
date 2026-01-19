@@ -202,6 +202,11 @@ public class GraphStyle {
 	public boolean showYTickLabels = true;
 
 	/**
+	 * The flag to indicate whether y-axis decorations are drawn on the right.
+	 */
+	public boolean showYAxisRight = true;
+
+	/**
 	 * The flag to indicate whether to show the frame of the graph.
 	 */
 	public boolean showFrame = true;

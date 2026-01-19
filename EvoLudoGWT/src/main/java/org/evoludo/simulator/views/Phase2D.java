@@ -195,6 +195,7 @@ public class Phase2D extends AbstractView<ParaGraph> {
 		style.showYTicks = true;
 		style.showYTickLabels = true;
 		style.showYLevels = false;
+		style.showYAxisRight = false;
 		// arrange graphs vertically (currently only one)
 		gRows = 1;
 		gCols = 1;

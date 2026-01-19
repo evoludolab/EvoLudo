@@ -127,7 +127,8 @@ import com.google.gwt.user.client.ui.Widget;
  * ContextMenu (for buffer size, log-scale and zoom actions). Subclasses
  * and the owning AbstractView can extend and populate the context menu.
  * </li>
- * <li>Maintain an optional RingBuffer&lt;B&gt; for historical data and provide a
+ * <li>Maintain an optional RingBuffer&lt;B&gt; for historical data and provide
+ * a
  * small context menu for configuring buffer capacity. Subclasses may
  * implement exporting of trajectory/history data when relevant.
  * </li>
@@ -1175,7 +1176,7 @@ public abstract class AbstractGraph<B> extends FocusPanel
 		if (style.showXTicks)
 			bounds.adjust(0, 0, 0, -(style.tickLength + 2));
 		if (style.showYTicks)
-			bounds.adjust(0, 0, -(style.tickLength + 2), 0);
+			adjustBoundsForYSide(style.tickLength + 2);
 	}
 
 	/**
@@ -1186,7 +1187,7 @@ public abstract class AbstractGraph<B> extends FocusPanel
 			bounds.adjust(0, 0, 0, -20); // 14px for font size plus some padding
 		// something does not add up but at least this improves results
 		if (style.showYLabel && style.yLabel != null)
-			bounds.adjust(0, 0, -12, 0);
+			adjustBoundsForYSide(12);
 	}
 
 	/**
@@ -1216,17 +1217,30 @@ public abstract class AbstractGraph<B> extends FocusPanel
 					digits = 1;
 				else
 					digits = 0;
-				bounds.adjust(0, 0, -g.measureText(Formatter.formatPercent(100, digits)).getWidth(), 0);
+				adjustBoundsForYSide(g.measureText(Formatter.formatPercent(100, digits)).getWidth());
 			} else {
-				bounds.adjust(0, 0,
-						-g.measureText(
+				adjustBoundsForYSide(
+						g.measureText(
 								Formatter.formatFix(-Math.max(Math.abs(style.yMin), Math.abs(style.yMax)), digits))
-								.getWidth(),
-						0);
+								.getWidth());
 			}
-			bounds.adjust(0, 0, -4, 0);
+			adjustBoundsForYSide(4);
 		}
 		g.setFont(font);
+	}
+
+	/**
+	 * Adjust bounds to make room for y-axis decorations on the selected side.
+	 * 
+	 * @param padding the horizontal padding to reserve
+	 */
+	private void adjustBoundsForYSide(double padding) {
+		if (padding <= 0.0)
+			return;
+		if (style.showYAxisRight)
+			bounds.adjust(0, 0, -padding, 0);
+		else
+			bounds.adjust(padding, 0, -padding, 0);
 	}
 
 	/**
@@ -1320,8 +1334,16 @@ public abstract class AbstractGraph<B> extends FocusPanel
 				g.setFillStyle(style.frameColor);
 				double xval = style.xMin + n * frac * (style.xMax - style.xMin);
 				String tick = style.percentX ? Formatter.formatPercent(xval, 0) : Formatter.format(xval, 2);
-				// center tick labels with ticks, except for first label (left most)
-				double xpos = level - (n > 0 ? g.measureText(tick).getWidth() * 0.5 : 2.0);
+				// center tick labels with ticks, except for first/last labels at the edges
+				double tickWidth = g.measureText(tick).getWidth();
+				double xpos;
+				if (n == 0) {
+					xpos = 2.0;
+				} else if (n == xLevels) {
+					xpos = level - tickWidth;
+				} else {
+					xpos = level - tickWidth * 0.5;
+				}
 				g.fillText(tick, xpos, h + (style.tickLength + 12.5));
 			}
 		}
@@ -1361,6 +1383,8 @@ public abstract class AbstractGraph<B> extends FocusPanel
 		double[] range = computeYRange();
 		double ymin = range[0];
 		double yrange = range[1];
+		double tickStart = style.showYAxisRight ? w + 0.5 : 0.5;
+		double tickEnd = style.showYAxisRight ? w + 0.5 + style.tickLength : 0.5 - style.tickLength;
 
 		for (int n = 0; n <= yLevels; n++) {
 			level += incr;
@@ -1370,7 +1394,7 @@ public abstract class AbstractGraph<B> extends FocusPanel
 			}
 			if (style.showYTicks) {
 				g.setStrokeStyle(style.frameColor);
-				strokeLine(w + 0.5, level, w + 0.5 + style.tickLength, level);
+				strokeLine(tickStart, level, tickEnd, level);
 			}
 			if (style.showYTickLabels) {
 				double yval = computeYVal(n, frac, yrange, ymin);
@@ -1426,7 +1450,13 @@ public abstract class AbstractGraph<B> extends FocusPanel
 		g.setFillStyle(style.frameColor);
 		String tick = style.percentY ? Formatter.formatPretty(100.0 * yval, 2) : Formatter.formatPretty(yval, 2);
 		String[] numexp = tick.split("\\^");
-		double xpos = w + 0.5 + (style.tickLength + 4);
+		double xpos;
+		if (style.showYAxisRight) {
+			xpos = w + 0.5 + (style.tickLength + 4);
+		} else {
+			double labelWidth = measureYTickLabelWidth(numexp, style.percentY);
+			xpos = 0.5 - (style.tickLength + 4) - labelWidth;
+		}
 		double ypos = level + (n == 0 ? 9 : 4.5);
 		g.fillText(numexp[0], xpos, ypos);
 		xpos += g.measureText(numexp[0]).getWidth();
@@ -1438,6 +1468,27 @@ public abstract class AbstractGraph<B> extends FocusPanel
 		}
 		if (style.percentY)
 			g.fillText("%", xpos, ypos);
+	}
+
+	/**
+	 * Measure the width of a y-axis tick label including exponent and percent.
+	 * 
+	 * @param numexp  the tick label split into base and exponent parts
+	 * @param percent whether a percent sign is appended
+	 * @return the total width in pixels
+	 */
+	private double measureYTickLabelWidth(String[] numexp, boolean percent) {
+		setFont(style.ticksLabelFont);
+		double width = g.measureText(numexp[0]).getWidth();
+		if (numexp.length > 1) {
+			String expFont = style.ticksLabelFont.replace("11px", "9px");
+			setFont(expFont);
+			width += g.measureText(numexp[1]).getWidth();
+			setFont(style.ticksLabelFont);
+		}
+		if (percent)
+			width += g.measureText("%").getWidth();
+		return width;
 	}
 
 	/**
@@ -1494,7 +1545,8 @@ public abstract class AbstractGraph<B> extends FocusPanel
 		}
 		setFont(style.axesLabelFont);
 		String ylabel = style.yLabel + (style.logScaleY ? " (log)" : "");
-		fillTextVertical(ylabel, w + tickskip + style.tickLength, (h + g.measureText(ylabel).getWidth()) / 2);
+		double xpos = style.showYAxisRight ? w + tickskip + style.tickLength : -tickskip - style.tickLength;
+		fillTextVertical(ylabel, xpos, (h + g.measureText(ylabel).getWidth()) / 2);
 	}
 
 	/**
