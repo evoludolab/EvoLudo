@@ -42,7 +42,6 @@ import org.evoludo.simulator.views.BasicTooltipProvider;
 import org.evoludo.simulator.views.Phase2D;
 import org.evoludo.simulator.views.HasPhase2D.Data2Phase;
 import org.evoludo.ui.ContextMenu;
-import org.evoludo.ui.ContextMenuCheckBoxItem;
 import org.evoludo.ui.ContextMenuItem;
 import org.evoludo.util.Formatter;
 import org.evoludo.util.RingBuffer;
@@ -156,11 +155,6 @@ public class ParaGraph extends AbstractGraph<double[]> implements Zooming, Shift
 	 * The map for converting data to phase plane coordinates.
 	 */
 	Data2Phase map;
-
-	/**
-	 * The flag to indicate autoscaling of axes.
-	 */
-	boolean doAutoscale = true;
 
 	/**
 	 * Create new parametric graph for <code>module</code> running in
@@ -470,31 +464,22 @@ public class ParaGraph extends AbstractGraph<double[]> implements Zooming, Shift
 	}
 
 	/**
-	 * Automatically adjust the range of both axes to fit the data in the buffer.
+	 * Automatically adjust the range of autoscaled axes to fit the data in the
+	 * buffer.
 	 */
 	public void autoscale() {
-		if (!doAutoscale)
+		if (!(style.autoscaleX || style.autoscaleY) || buffer == null || buffer.isEmpty())
 			return;
-		updateAutoscaleRanges();
+		map.reset();
+		applyRanges(map.getMinX(buffer), map.getMaxX(buffer),
+				map.getMinY(buffer), map.getMaxY(buffer), style.autoscaleX, style.autoscaleY);
 	}
 
 	@Override
 	public void zoom() {
 		super.zoom();
-		if (doAutoscale)
-			autoscale();
+		autoscale();
 		paint(true);
-	}
-
-	/**
-	 * Recompute autoscale ranges from the full buffer.
-	 */
-	private void updateAutoscaleRanges() {
-		if (buffer == null || buffer.isEmpty())
-			return;
-		map.reset();
-		applyAutoscaleRanges(map.getMinX(buffer), map.getMaxX(buffer),
-				map.getMinY(buffer), map.getMaxY(buffer));
 	}
 
 	/**
@@ -518,49 +503,67 @@ public class ParaGraph extends AbstractGraph<double[]> implements Zooming, Shift
 	 * Update autoscale ranges based on the most recent buffered point.
 	 */
 	private void updateAutoscale() {
-		if (!doAutoscale || buffer == null || buffer.isEmpty())
+		if (!(style.autoscaleX || style.autoscaleY) || buffer == null || buffer.isEmpty())
 			return;
 		double[] last = buffer.last();
 		map.data2Phase(last, autoscalePoint);
 		if (buffer.getSize() <= 1) {
 			map.reset();
-			applyAutoscaleRanges(autoscalePoint.getX(), autoscalePoint.getX(),
-					autoscalePoint.getY(), autoscalePoint.getY());
+			applyRanges(autoscalePoint.getX(), autoscalePoint.getX(),
+					autoscalePoint.getY(), autoscalePoint.getY(), style.autoscaleX, style.autoscaleY);
 			return;
 		}
-		applyAutoscaleRanges(Math.min(style.xMin, autoscalePoint.getX()),
+		applyRanges(Math.min(style.xMin, autoscalePoint.getX()),
 				Math.max(style.xMax, autoscalePoint.getX()),
 				Math.min(style.yMin, autoscalePoint.getY()),
-				Math.max(style.yMax, autoscalePoint.getY()));
+				Math.max(style.yMax, autoscalePoint.getY()), style.autoscaleX, style.autoscaleY);
 	}
 
 	/**
-	 * Apply autoscale ranges and axis-specific constraints.
+	 * Apply axis ranges with axis-specific constraints.
 	 *
-	 * @param minX minimum x value
-	 * @param maxX maximum x value
-	 * @param minY minimum y value
-	 * @param maxY maximum y value
+	 * @param minX   minimum x value
+	 * @param maxX   maximum x value
+	 * @param minY   minimum y value
+	 * @param maxY   maximum y value
+	 * @param applyX whether to update the x-axis range
+	 * @param applyY whether to update the y-axis range
 	 */
-	private void applyAutoscaleRanges(double minX, double maxX, double minY, double maxY) {
-		double min = minX;
-		double max = maxX;
-		if (min == max) {
-			min *= 0.99;
-			max /= 0.99;
+	private void applyRanges(double minX, double maxX, double minY, double maxY, boolean applyX, boolean applyY) {
+		if (applyX) {
+			double min = minX;
+			double max = maxX;
+			if (min == max) {
+				min *= 0.99;
+				max /= 0.99;
+			}
+			style.xMin = Functions.roundDown(min);
+			style.xMax = Functions.roundUp(max);
+			applyXConstraints();
 		}
-		style.xMin = Functions.roundDown(min);
-		style.xMax = Functions.roundUp(max);
-		applyXConstraints();
-		min = minY;
-		max = maxY;
-		if (min == max) {
-			min *= 0.99;
-			max /= 0.99;
+		if (style.autoscaleY) {
+			double min = minY;
+			double max = maxY;
+			if (min == max) {
+				min *= 0.99;
+				max /= 0.99;
+			}
+			style.yMin = Functions.roundDown(min);
+			style.yMax = Functions.roundUp(max);
+			applyYConstraints();
 		}
-		style.yMin = Functions.roundDown(min);
-		style.yMax = Functions.roundUp(max);
-		applyYConstraints();
+	}
+
+	/**
+	 * Set axis ranges to fit the full buffered trajectory and reset zoom factor.
+	 */
+	private void zoomToFit() {
+		if (buffer == null || buffer.isEmpty())
+			return;
+		super.zoom();
+		map.reset();
+		applyRanges(map.getMinX(buffer), map.getMaxX(buffer),
+				map.getMinY(buffer), map.getMaxY(buffer), true, true);
 	}
 
 	/**
@@ -744,11 +747,6 @@ public class ParaGraph extends AbstractGraph<double[]> implements Zooming, Shift
 	 */
 	private ContextMenuItem clearMenu;
 
-	/**
-	 * The context menu item to autoscale the axes.
-	 */
-	private ContextMenuCheckBoxItem autoscaleMenu;
-
 	@Override
 	public void populateContextMenuAt(ContextMenu menu, int x, int y) {
 		// add menu to clear canvas
@@ -759,19 +757,6 @@ public class ParaGraph extends AbstractGraph<double[]> implements Zooming, Shift
 			});
 		}
 		menu.add(clearMenu);
-		// add autoscale menu if not percent scale
-		if (!(style.percentX || style.percentY)) {
-			if (autoscaleMenu == null) {
-				autoscaleMenu = new ContextMenuCheckBoxItem("Autoscale axes", () -> {
-					doAutoscale = !autoscaleMenu.isChecked();
-					autoscaleMenu.setChecked(doAutoscale);
-					autoscale();
-					paint(true);
-				});
-			}
-			autoscaleMenu.setChecked(doAutoscale);
-			menu.add(autoscaleMenu);
-		}
 		super.populateContextMenuAt(menu, x, y);
 	}
 

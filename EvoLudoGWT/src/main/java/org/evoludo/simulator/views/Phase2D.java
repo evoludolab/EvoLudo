@@ -343,6 +343,7 @@ public class Phase2D extends AbstractView<ParaGraph> {
 
 	@Override
 	public void populateContextMenu(ContextMenu menu) {
+		addAxesMenu(menu);
 		if (map.hasFixedAxes()) {
 			super.populateContextMenu(menu);
 			return;
@@ -364,6 +365,55 @@ public class Phase2D extends AbstractView<ParaGraph> {
 		menu.add("X-axis trait...", traitXMenu);
 		menu.add("Y-axis trait...", traitYMenu);
 		super.populateContextMenu(menu);
+	}
+
+	/**
+	 * Add the axes submenu with autoscale, full-range, and y-axis side controls.
+	 * 
+	 * @param menu the context menu to populate
+	 */
+	private void addAxesMenu(ContextMenu menu) {
+		if (axesMenu == null) {
+			axesMenu = new ContextMenu(menu);
+			autoscaleMenu = new ContextMenuCheckBoxItem("Autoscale axes", () -> {
+				GraphStyle style = graph.getStyle();
+				boolean enable = !autoscaleMenu.isChecked();
+				style.autoscaleX = enable;
+				style.autoscaleY = enable;
+				autoscaleMenu.setChecked(enable);
+				graph.autoscale();
+				graph.paint(true);
+			});
+			fullRangeMenu = new ContextMenuItem("Full range", () -> {
+				GraphStyle style = graph.getStyle();
+				if (style.autoscaleX || style.autoscaleY) {
+					style.autoscaleX = false;
+					style.autoscaleY = false;
+					autoscaleMenu.setChecked(false);
+				}
+				style.xMin = 0.0;
+				style.xMax = 1.0;
+				style.yMin = 0.0;
+				style.yMax = 1.0;
+				graph.paint(true);
+			});
+			rightYAxisMenu = new ContextMenuCheckBoxItem("Right Y-axis", () -> {
+				GraphStyle style = graph.getStyle();
+				style.showYAxisRight = !style.showYAxisRight;
+				rightYAxisMenu.setChecked(style.showYAxisRight);
+				graph.onResize();
+				graph.paint(true);
+			});
+		}
+		axesMenu.clear();
+		GraphStyle style = graph.getStyle();
+		autoscaleMenu.setChecked(style.autoscaleX && style.autoscaleY);
+		rightYAxisMenu.setChecked(style.showYAxisRight);
+		axesMenu.add(autoscaleMenu);
+		if (style.percentX && style.percentY)
+			axesMenu.add(fullRangeMenu);
+		axesMenu.add(rightYAxisMenu);
+		menu.add("Axes", axesMenu);
 	}
 
 	/**
@@ -487,6 +537,26 @@ public class Phase2D extends AbstractView<ParaGraph> {
 	 * axis.
 	 */
 	private ContextMenu traitYMenu;
+
+	/**
+	 * The context menu for axis-related controls.
+	 */
+	private ContextMenu axesMenu;
+
+	/**
+	 * The context menu item to toggle autoscaling on both axes.
+	 */
+	private ContextMenuCheckBoxItem autoscaleMenu;
+
+	/**
+	 * The context menu item to set the full frequency range.
+	 */
+	private ContextMenuItem fullRangeMenu;
+
+	/**
+	 * The context menu item to toggle the y-axis side.
+	 */
+	private ContextMenuCheckBoxItem rightYAxisMenu;
 
 	/**
 	 * Command to toggle the inclusion of a trait on the phase plane axes.
