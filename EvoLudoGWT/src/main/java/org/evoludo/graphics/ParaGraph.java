@@ -541,7 +541,7 @@ public class ParaGraph extends AbstractGraph<double[]> implements Zooming, Shift
 			style.xMax = Functions.roundUp(max);
 			applyXConstraints();
 		}
-		if (style.autoscaleY) {
+		if (applyY) {
 			double min = minY;
 			double max = maxY;
 			if (min == max) {
@@ -746,6 +746,23 @@ public class ParaGraph extends AbstractGraph<double[]> implements Zooming, Shift
 	 * The context menu item to clear the canvas.
 	 */
 	private ContextMenuItem clearMenu;
+
+	/**
+	 * The context menu item to zoom to fit the buffered data.
+	 */
+	private ContextMenuItem zoomFitMenu;
+
+	@Override
+	protected void populateZoomMenu(ContextMenu menu) {
+		super.populateZoomMenu(menu);
+		if (zoomFitMenu == null) {
+			zoomFitMenu = new ContextMenuItem("Zoom to fit", () -> {
+				zoomToFit();
+				paint(true);
+			});
+		}
+		menu.add(zoomFitMenu);
+	}
 
 	@Override
 	public void populateContextMenuAt(ContextMenu menu, int x, int y) {

@@ -958,6 +958,11 @@ public abstract class AbstractGraph<B> extends FocusPanel
 	ContextMenuItem zoomOutMenu;
 
 	/**
+	 * The context menu holding zoom actions.
+	 */
+	private ContextMenu zoomMenu;
+
+	/**
 	 * The menu item to toggle logarithmic scaling on the y-axis.
 	 */
 	ContextMenuCheckBoxItem logYMenu;
@@ -1044,17 +1049,30 @@ public abstract class AbstractGraph<B> extends FocusPanel
 	 * @param menu the context menu to populate
 	 */
 	private void addZoomMenu(ContextMenu menu) {
-		if (this instanceof Zooming) {
-			if (zoomInMenu == null)
-				zoomInMenu = new ContextMenuItem("Zoom in (2x)", new ZoomCommand(2.0));
-			menu.add(zoomInMenu);
-			if (zoomOutMenu == null)
-				zoomOutMenu = new ContextMenuItem("Zoom out (0.5x)", new ZoomCommand(0.5));
-			menu.add(zoomOutMenu);
-			if (zoomResetMenu == null)
-				zoomResetMenu = new ContextMenuItem("Reset zoom", new ZoomCommand(0.0));
-			menu.add(zoomResetMenu);
+		if (!(this instanceof Zooming))
+			return;
+		if (zoomMenu == null) {
+			zoomMenu = new ContextMenu(menu);
+			populateZoomMenu(zoomMenu);
 		}
+		menu.add("Zoom", zoomMenu);
+	}
+
+	/**
+	 * Populate the zoom submenu with standard zoom actions.
+	 * 
+	 * @param menu the zoom submenu to populate
+	 */
+	protected void populateZoomMenu(ContextMenu menu) {
+		if (zoomInMenu == null)
+			zoomInMenu = new ContextMenuItem("Zoom in (2x)", new ZoomCommand(2.0));
+		menu.add(zoomInMenu);
+		if (zoomOutMenu == null)
+			zoomOutMenu = new ContextMenuItem("Zoom out (0.5x)", new ZoomCommand(0.5));
+		menu.add(zoomOutMenu);
+		if (zoomResetMenu == null)
+			zoomResetMenu = new ContextMenuItem("Reset zoom", new ZoomCommand(0.0));
+		menu.add(zoomResetMenu);
 	}
 
 	/**
