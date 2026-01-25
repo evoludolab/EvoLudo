@@ -1333,6 +1333,7 @@ public abstract class AbstractGraph<B> extends FocusPanel
 	private void drawXLevels(int xLevels, double w, double h) {
 		if (xLevels <= 0)
 			return;
+		int digits = computeLinearDigits(style.xMin, style.xMax, xLevels, style.percentX, false);
 		double frac = 1.0 / xLevels;
 		double incr = frac * w;
 		double level = 0.5 - incr;
@@ -1351,7 +1352,7 @@ public abstract class AbstractGraph<B> extends FocusPanel
 				setFont(style.ticksLabelFont);
 				g.setFillStyle(style.frameColor);
 				double xval = style.xMin + n * frac * (style.xMax - style.xMin);
-				String tick = style.percentX ? Formatter.formatPercent(xval, 0) : Formatter.format(xval, 2);
+				String tick = style.percentX ? Formatter.formatPercent(xval, digits) : Formatter.format(xval, digits);
 				// center tick labels with ticks, except for first/last labels at the edges
 				double tickWidth = g.measureText(tick).getWidth();
 				double xpos;
@@ -1395,6 +1396,9 @@ public abstract class AbstractGraph<B> extends FocusPanel
 	private void drawYLevels(int yLevels, double w, double h) {
 		if (yLevels <= 0)
 			return;
+		int digits = (!style.logScaleY)
+				? computeLinearDigits(style.yMin, style.yMax, yLevels, style.percentY, true)
+				: 2;
 		double frac = 1.0 / yLevels;
 		double incr = frac * h;
 		double level = 0.5 - incr;
@@ -1416,7 +1420,7 @@ public abstract class AbstractGraph<B> extends FocusPanel
 			}
 			if (style.showYTickLabels) {
 				double yval = computeYVal(n, frac, yrange, ymin);
-				drawYTickLabel(w, level, n, yval);
+				drawYTickLabel(w, level, n, yval, digits);
 			}
 		}
 	}
@@ -1458,15 +1462,18 @@ public abstract class AbstractGraph<B> extends FocusPanel
 	/**
 	 * Draw the y-axis tick label at the specified screen level.
 	 *
-	 * @param w     frame width
-	 * @param level screen y-position for the tick
-	 * @param n     tick index
-	 * @param yval  y-value represented by the tick
+	 * @param w      frame width
+	 * @param level  screen y-position for the tick
+	 * @param n      tick index
+	 * @param yval   y-value represented by the tick
+	 * @param digits decimal digits for tick label formatting
 	 */
-	private void drawYTickLabel(double w, double level, int n, double yval) {
+	private void drawYTickLabel(double w, double level, int n, double yval, int digits) {
 		setFont(style.ticksLabelFont);
 		g.setFillStyle(style.frameColor);
-		String tick = style.percentY ? Formatter.formatPretty(100.0 * yval, 2) : Formatter.formatPretty(yval, 2);
+		String tick = style.percentY
+				? Formatter.formatPretty(100.0 * yval, digits)
+				: Formatter.formatPretty(yval, digits);
 		String[] numexp = tick.split("\\^");
 		double xpos;
 		if (style.showYAxisRight) {
@@ -1486,6 +1493,53 @@ public abstract class AbstractGraph<B> extends FocusPanel
 		}
 		if (style.percentY)
 			g.fillText("%", xpos, ypos);
+	}
+
+	/**
+	 * Compute the number of decimal digits needed for linear labels so consecutive
+	 * ticks remain distinct.
+	 *
+	 * @param min    axis minimum
+	 * @param max    axis maximum
+	 * @param levels number of tick levels
+	 * @param percent whether values are percent formatted
+	 * @param pretty  whether to use pretty formatting for duplicates check
+	 * @return decimal digits for linear labels
+	 */
+	private int computeLinearDigits(double min, double max, int levels, boolean percent, boolean pretty) {
+		if (levels <= 0)
+			return 0;
+		double step = (max - min) / levels;
+		double stepUnits = percent ? Math.abs(step * 100.0) : Math.abs(step);
+		int digits = 0;
+		if (stepUnits > 0.0)
+			digits = (int) Math.max(0, Math.ceil(-Math.log10(stepUnits)));
+		digits = Math.min(digits, 12);
+		for (; digits < 12; digits++) {
+			String prev = null;
+			boolean dup = false;
+			for (int n = 0; n <= levels; n++) {
+				double val = min + n * step;
+				String label;
+				if (percent) {
+					label = pretty
+							? Formatter.formatPretty(100.0 * val, digits)
+							: Formatter.formatPercent(val, digits);
+				} else {
+					label = pretty
+							? Formatter.formatPretty(val, digits)
+							: Formatter.format(val, digits);
+				}
+				if (prev != null && prev.equals(label)) {
+					dup = true;
+					break;
+				}
+				prev = label;
+			}
+			if (!dup)
+				break;
+		}
+		return digits;
 	}
 
 	/**

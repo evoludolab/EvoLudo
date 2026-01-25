@@ -33,6 +33,7 @@ package org.evoludo.graphics;
 import java.util.Iterator;
 
 import org.evoludo.geom.Point2D;
+import org.evoludo.geom.Rectangle2D;
 import org.evoludo.graphics.AbstractGraph.HasTrajectory;
 import org.evoludo.graphics.AbstractGraph.Shifting;
 import org.evoludo.graphics.AbstractGraph.Zooming;
@@ -325,17 +326,22 @@ public class ParaGraph extends AbstractGraph<double[]> implements Zooming, Shift
 		g.save();
 		g.scale(scale, scale);
 		clearCanvas();
-		g.translate(bounds.getX() - viewCorner.getX(), bounds.getY() - viewCorner.getY());
-		g.scale(zoomFactor, zoomFactor);
+		ViewState state = currentViewState();
+		if (!state.valid) {
+			g.restore();
+			return;
+		}
+		clampViewCorner(state);
+		double w = state.w;
+		double h = state.h;
 		g.save();
-		double h = bounds.getHeight();
-		g.translate(0, h);
-		g.scale(1.0, -1.0);
+		g.translate(bounds.getX(), bounds.getY());
 		g.beginPath();
-		g.rect(0, 0, bounds.getWidth(), h);
+		g.rect(0, 0, w, h);
 		g.clip();
-		double xScale = bounds.getWidth() / (style.xMax - style.xMin);
-		double yScale = h / (style.yMax - style.yMin);
+		g.translate(-viewCorner.getX(), -viewCorner.getY());
+		double xScale = (w / state.baseRangeX) * state.zoomX;
+		double yScale = (h / state.baseRangeY) * state.zoomY;
 
 		Point2D nextPt = new Point2D();
 		Point2D currPt = new Point2D();
@@ -343,21 +349,103 @@ public class ParaGraph extends AbstractGraph<double[]> implements Zooming, Shift
 		// Paint trajectory (may also update autoscale ranges)
 		String tC = style.trajColor;
 		g.setStrokeStyle(tC);
-		// increase line width for trajectories with transparency
-		g.setLineWidth((tC.startsWith("rgba") ? 1.25 * style.lineWidth : style.lineWidth));
+		g.setLineWidth(style.lineWidth);
 		drawTrajectory(currPt, nextPt, xScale, yScale);
 
-		// Paint markers if requested
+		// Paint markers if requested (use screen coordinates to keep circles round)
 		if (withMarkers)
 			drawStartEndMarkers(currPt, xScale, yScale);
 
 		// Paint custom markers if present
 		if (markers != null)
 			drawCustomMarkers(currPt, xScale, yScale);
+		g.restore();
+		g.save();
+		g.translate(bounds.getX(), bounds.getY());
+		drawFrameForView(state, 4, 4);
+		g.restore();
+		g.restore();
+	}
 
+	/**
+	 * Draw the frame using the visible ranges implied by the current zoom and
+	 * shift.
+	 *
+	 * @param state   the current view state
+	 * @param xLevels number of x-axis levels
+	 * @param yLevels number of y-axis levels
+	 */
+	private void drawFrameForView(ViewState state, int xLevels, int yLevels) {
+		if (!state.valid) {
+			drawFrame(xLevels, yLevels);
+			return;
+		}
+		double baseXMin = state.baseXMin;
+		double baseXMax = state.baseXMin + state.baseRangeX;
+		double baseYMin = state.baseYMin;
+		double baseYMax = state.baseYMin + state.baseRangeY;
+		double visibleRangeX = state.baseRangeX / state.zoomX;
+		double visibleRangeY = state.baseRangeY / state.zoomY;
+		boolean clampX = style.percentX && visibleRangeX > domain.getWidth();
+		boolean clampY = style.percentY && visibleRangeY > domain.getHeight();
+		double plotW = state.w;
+		double plotH = state.h;
+		if (clampX)
+			plotW = state.w * domain.getWidth() / visibleRangeX;
+		if (clampY)
+			plotH = state.h * domain.getHeight() / visibleRangeY;
+		double plotX = 0.5 * (state.w - plotW);
+		double plotY = 0.5 * (state.h - plotH);
+		Rectangle2D boundsBase = new Rectangle2D(bounds);
+		applyVisibleRanges(state);
+		if (clampX) {
+			style.xMin = domain.getX();
+			style.xMax = domain.getX() + domain.getWidth();
+		}
+		if (clampY) {
+			style.yMin = domain.getY();
+			style.yMax = domain.getY() + domain.getHeight();
+		}
+		bounds.set(0.0, 0.0, plotW, plotH);
+		g.save();
+		g.translate(plotX, plotY);
+		drawFrame(xLevels, yLevels);
 		g.restore();
-		drawFrame(4, 4);
-		g.restore();
+		bounds.set(boundsBase.getX(), boundsBase.getY(), boundsBase.getWidth(), boundsBase.getHeight());
+		style.xMin = baseXMin;
+		style.xMax = baseXMax;
+		style.yMin = baseYMin;
+		style.yMax = baseYMax;
+	}
+
+	/**
+	 * Adjust axis ranges to match the current zoom and shift.
+	 *
+	 * @param state the current view state
+	 */
+	private void applyVisibleRanges(ViewState state) {
+		if (!state.valid)
+			return;
+		double cornerX = viewCorner == null ? 0.0 : viewCorner.getX();
+		double cornerY = viewCorner == null ? 0.0 : viewCorner.getY();
+		double xMin = state.baseXMin + (cornerX / (state.zoomX * state.w)) * state.baseRangeX;
+		double yMax = (state.baseYMin + state.baseRangeY)
+				- (cornerY / (state.zoomY * state.h)) * state.baseRangeY;
+		double rangeX = state.baseRangeX / state.zoomX;
+		double rangeY = state.baseRangeY / state.zoomY;
+		style.xMin = xMin;
+		style.xMax = xMin + rangeX;
+		style.yMax = yMax;
+		style.yMin = yMax - rangeY;
+	}
+
+	/**
+	 * Update and return the cached view state for the current axis ranges.
+	 *
+	 * @return the updated view state
+	 */
+	private ViewState currentViewState() {
+		return viewState.update(style.xMin, style.xMax, style.yMin, style.yMax, zoomFactor);
 	}
 
 	/**
@@ -382,10 +470,10 @@ public class ParaGraph extends AbstractGraph<double[]> implements Zooming, Shift
 			double[] prev = i.next();
 			double pt = prev[0];
 			map.data2Phase(prev, nextPt);
-			if (!Double.isNaN(ct)) {
-				strokeLine((nextPt.getX() - style.xMin) * xScale, (nextPt.getY() - style.yMin) * yScale, //
-						(currPt.getX() - style.xMin) * xScale, (currPt.getY() - style.yMin) * yScale);
-			}
+				if (!Double.isNaN(ct)) {
+					strokeLine((nextPt.getX() - style.xMin) * xScale, (style.yMax - nextPt.getY()) * yScale, //
+							(currPt.getX() - style.xMin) * xScale, (style.yMax - currPt.getY()) * yScale);
+				}
 			ct = pt;
 			Point2D swap = currPt;
 			currPt = nextPt;
@@ -404,15 +492,13 @@ public class ParaGraph extends AbstractGraph<double[]> implements Zooming, Shift
 		// mark start point
 		map.data2Phase(init, aPt);
 		g.setFillStyle(style.startColor);
-		fillCircle((aPt.getX() - style.xMin) * xScale, (aPt.getY() - style.yMin) * yScale, style.markerSize);
+		drawMarkerCircle(aPt, xScale, yScale, true, style.markerSize);
 
 		// mark end point if available
 		if (!buffer.isEmpty()) {
 			map.data2Phase(buffer.last(), aPt);
 			g.setFillStyle(style.endColor);
-			fillCircle((aPt.getX() - style.xMin) * xScale,
-					(aPt.getY() - style.yMin) * yScale,
-					style.markerSize);
+			drawMarkerCircle(aPt, xScale, yScale, true, style.markerSize);
 		}
 	}
 
@@ -431,15 +517,31 @@ public class ParaGraph extends AbstractGraph<double[]> implements Zooming, Shift
 			String mcolor = markerColors[n++ % nMarkers];
 			if (mark[0] > 0.0) {
 				g.setFillStyle(mcolor);
-				fillCircle((pt.getX() - style.xMin) * xScale, (pt.getY() - style.yMin) * yScale,
-						style.markerSize);
+				drawMarkerCircle(pt, xScale, yScale, true, style.markerSize);
 			} else {
 				g.setLineWidth(style.lineWidth);
 				g.setStrokeStyle(mcolor);
-				strokeCircle((pt.getX() - style.xMin) * xScale, (pt.getY() - style.yMin) * yScale,
-						style.markerSize);
+				drawMarkerCircle(pt, xScale, yScale, false, style.markerSize);
 			}
 		}
+	}
+
+	/**
+	 * Draw a marker circle in screen coordinates to avoid distortion from scaling.
+	 *
+	 * @param pt     marker location in data coordinates
+	 * @param xScale base x-axis scale
+	 * @param yScale base y-axis scale
+	 * @param fill   {@code true} for filled markers, {@code false} for outline
+	 * @param radius marker radius in screen pixels
+	 */
+	private void drawMarkerCircle(Point2D pt, double xScale, double yScale, boolean fill, double radius) {
+		double sx = (pt.getX() - style.xMin) * xScale;
+		double sy = (style.yMax - pt.getY()) * yScale;
+		if (fill)
+			fillCircle(sx, sy, radius);
+		else
+			strokeCircle(sx, sy, radius);
 	}
 
 	/**
@@ -482,6 +584,347 @@ public class ParaGraph extends AbstractGraph<double[]> implements Zooming, Shift
 		paint(true);
 	}
 
+	@Override
+	public void zoom(double zoom) {
+		if (zoom <= 0.0) {
+			zoom();
+			return;
+		}
+		int cx = (int) Math.round(bounds.getX() + bounds.getWidth() * 0.5);
+		int cy = (int) Math.round(bounds.getY() + bounds.getHeight() * 0.5);
+		zoom(zoom, cx, cy);
+	}
+
+	@Override
+	public void zoom(double zoom, int x, int y) {
+		if (hasMessage)
+			return;
+		if (zoom <= 0.0) {
+			zoom();
+			return;
+		}
+		ViewState state = currentViewState();
+		if (!state.valid)
+			return;
+		double minZoomX = computeMinZoom(state.baseRangeX, domain.getWidth());
+		double minZoomY = computeMinZoom(state.baseRangeY, domain.getHeight());
+		double localX = x - bounds.getX();
+		double localY = y - bounds.getY();
+		double ux = state.dataXFromLocal(localX);
+		double uy = state.dataYFromLocal(localY);
+		double minZoom = Math.min(minZoomX, minZoomY);
+		if (style.percentX && style.percentY && state.w > 0.0 && state.h > 0.0) {
+			double baseScaleX = state.w / state.baseRangeX;
+			double baseScaleY = state.h / state.baseRangeY;
+			double baseScale = Math.min(baseScaleX, baseScaleY);
+			double pMin = Math.min(state.w / domain.getWidth(), state.h / domain.getHeight());
+			double factorMin = pMin / baseScale;
+			minZoom = Math.max(minZoom, factorMin);
+		}
+		double oldZoom = zoomFactor;
+		double newZoom = Math.min(Zooming.ZOOM_MAX, Math.max(minZoom, zoomFactor * zoom));
+		if (Math.abs(newZoom - zoomFactor) < 1e-8)
+			return;
+		double relX = (ux - state.baseXMin) / state.baseRangeX;
+		double baseYMax = state.baseYMin + state.baseRangeY;
+		double relY = (baseYMax - uy) / state.baseRangeY;
+		double baseXMax = state.baseXMin + state.baseRangeX;
+		state.update(state.baseXMin, baseXMax, state.baseYMin, baseYMax, newZoom);
+		double newViewCornerX = relX * state.w * state.zoomX - localX;
+		double newViewCornerY = relY * state.h * state.zoomY - localY;
+		setViewCorner(state, newViewCornerX, newViewCornerY);
+		zoomFactor = newZoom;
+		if (zoomInertiaTimer != null && zoomInertiaTimer.isRunning()) {
+			double dz = newZoom - oldZoom;
+			element.addClassName(dz > 0 ? CURSOR_ZOOM_IN_CLASS : CURSOR_ZOOM_OUT_CLASS);
+		}
+		paint(true);
+	}
+
+	@Override
+	public void shift(int dx, int dy) {
+		if (hasMessage)
+			return;
+		ViewState state = currentViewState();
+		if (!state.valid)
+			return;
+		double newViewCornerX = viewCorner.getX() + dx;
+		double newViewCornerY = viewCorner.getY() + dy;
+		setViewCorner(state, newViewCornerX, newViewCornerY);
+		paint(true);
+	}
+
+	/**
+	 * Minimum zoom level to avoid unbounded ranges.
+	 */
+	private static final double MIN_ZOOM_FACTOR = 1e-6;
+
+	/**
+	 * Compute minimum zoom factor for a base range and domain width.
+	 *
+	 * @param baseRange   axis range in data units
+	 * @param domainWidth width of the constrained domain
+	 * @return minimum zoom factor that keeps the view within the domain
+	 */
+	private double computeMinZoom(double baseRange, double domainWidth) {
+		double minZoom = MIN_ZOOM_FACTOR;
+		if (Double.isFinite(domainWidth) && domainWidth > 0.0) {
+			double required = baseRange / domainWidth;
+			if (required < 1.0)
+				minZoom = Math.max(minZoom, required);
+			else
+				minZoom = Math.max(minZoom, 1.0);
+		}
+		return minZoom;
+	}
+
+	/**
+	 * Reusable rectangle for the domain bounds.
+	 */
+	private final Rectangle2D domain = new Rectangle2D();
+
+	/**
+	 * Reusable view state for zooming and shifting calculations.
+	 */
+	private final ViewState viewState = new ViewState();
+
+	/**
+	 * Return the current domain limits for zooming and shifting.
+	 *
+	 * @return the domain rectangle (origin at minimum values)
+	 */
+	private Rectangle2D updateDomain() {
+		double minX = 0.0;
+		double minY = style.logScaleY ? NEAR_ZERO : 0.0;
+		double maxX = style.percentX ? 1.0 : Double.POSITIVE_INFINITY;
+		double maxY = style.percentY ? 1.0 : Double.POSITIVE_INFINITY;
+		return domain.set(minX, minY, maxX - minX, maxY - minY);
+	}
+
+	/**
+	 * Helper that caches derived view quantities for the current bounds, ranges,
+	 * and zoom factor.
+	 */
+	private final class ViewState {
+		/**
+		 * Cached frame width in pixels.
+		 */
+		private double w;
+
+		/**
+		 * Cached frame height in pixels.
+		 */
+		private double h;
+
+		/** Cached minimum x-axis value for the base range. */
+		private double baseXMin;
+
+		/**
+		 * Cached minimum y-axis value for the base range.
+		 */
+		private double baseYMin;
+
+		/**
+		 * Cached x-axis range for the base view.
+		 */
+		private double baseRangeX;
+
+		/**
+		 * Cached y-axis range for the base view.
+		 */
+		private double baseRangeY;
+
+		/**
+		 * Cached x-axis zoom factor.
+		 */
+		private double zoomX;
+
+		/** Cached y-axis zoom factor. */
+		private double zoomY;
+
+		/**
+		 * Cached validity flag.
+		 */
+		private boolean valid;
+
+		/**
+		 * Update the cached view state for the provided base ranges and zoom factor.
+		 *
+		 * @param baseXMin minimum x-axis value
+		 * @param baseXMax maximum x-axis value
+		 * @param baseYMin minimum y-axis value
+		 * @param baseYMax maximum y-axis value
+		 * @param factor   zoom factor to apply
+		 * @return this view state
+		 */
+		private ViewState update(double baseXMin, double baseXMax, double baseYMin, double baseYMax, double factor) {
+			this.baseXMin = baseXMin;
+			this.baseYMin = baseYMin;
+			w = bounds.getWidth();
+			h = bounds.getHeight();
+			baseRangeX = baseXMax - baseXMin;
+			baseRangeY = baseYMax - baseYMin;
+			valid = !(w <= 0.0 || h <= 0.0 || baseRangeX == 0.0 || baseRangeY == 0.0);
+			if (!valid)
+				return this;
+			computeZoom(factor);
+			if (zoomX == 0.0 || zoomY == 0.0) {
+				valid = false;
+				return this;
+			}
+			return this;
+		}
+
+		/**
+		 * Convert a local x-coordinate into data coordinates.
+		 *
+		 * @param localX x-coordinate relative to the frame
+		 * @return x value in data coordinates
+		 */
+		private double dataXFromLocal(double localX) {
+			double cornerX = viewCorner == null ? 0.0 : viewCorner.getX();
+			double sx = (cornerX + localX) / zoomX;
+			return baseXMin + (sx / w) * baseRangeX;
+		}
+
+		/**
+		 * Convert a local y-coordinate into data coordinates.
+		 *
+		 * @param localY y-coordinate relative to the frame
+		 * @return y value in data coordinates
+		 */
+		private double dataYFromLocal(double localY) {
+			double cornerY = viewCorner == null ? 0.0 : viewCorner.getY();
+			double sy = (cornerY + localY) / zoomY;
+			return baseYMin + (1.0 - sy / h) * baseRangeY;
+		}
+
+		/**
+		 * Compute a view corner value that aligns the visible minimum with
+		 * {@code desiredMin}.
+		 *
+		 * @param desiredMin desired visible minimum
+		 * @return view corner x-position in pixels
+		 */
+		private double viewCornerXForMin(double desiredMin) {
+			return (desiredMin - baseXMin) * (zoomX * w) / baseRangeX;
+		}
+
+		/**
+		 * Compute a view corner value that aligns the visible maximum with
+		 * {@code desiredMax}.
+		 *
+		 * @param desiredMax desired visible maximum
+		 * @return view corner y-position in pixels
+		 */
+		private double viewCornerYForMax(double desiredMax) {
+			double baseYMax = baseYMin + baseRangeY;
+			return (baseYMax - desiredMax) * (zoomY * h) / baseRangeY;
+		}
+
+		/**
+		 * Compute per-axis zoom factors after applying domain constraints.
+		 *
+		 * @param factor requested zoom factor
+		 */
+		private void computeZoom(double factor) {
+			updateDomain();
+			zoomX = Math.max(factor, computeMinZoom(baseRangeX, domain.getWidth()));
+			zoomY = Math.max(factor, computeMinZoom(baseRangeY, domain.getHeight()));
+			if (style.percentX && style.percentY && w > 0.0 && h > 0.0) {
+				// Keep equal pixel-per-unit scale on both axes for frequency plots.
+				double baseScaleX = w / baseRangeX;
+				double baseScaleY = h / baseRangeY;
+				double baseScale = Math.min(baseScaleX, baseScaleY);
+				double p = baseScale * factor;
+				double minPX = baseScaleX * computeMinZoom(baseRangeX, domain.getWidth());
+				double minPY = baseScaleY * computeMinZoom(baseRangeY, domain.getHeight());
+				double maxPX = baseScaleX * Zooming.ZOOM_MAX;
+				double maxPY = baseScaleY * Zooming.ZOOM_MAX;
+				p = Math.max(p, Math.min(minPX, minPY));
+				p = Math.min(p, Math.min(maxPX, maxPY));
+				zoomX = p * baseRangeX / w;
+				zoomY = p * baseRangeY / h;
+			}
+		}
+	}
+
+	/**
+	 * Clamp the current view corner to keep the visible range inside the domain.
+	 *
+	 * @param state the current view state
+	 */
+	private void clampViewCorner(ViewState state) {
+		if (viewCorner == null)
+			return;
+		setViewCorner(state, viewCorner.getX(), viewCorner.getY());
+	}
+
+	/**
+	 * Clamp and apply the view corner for the provided state.
+	 *
+	 * @param state   the current view state
+	 * @param cornerX candidate x view corner
+	 * @param cornerY candidate y view corner
+	 */
+	private void setViewCorner(ViewState state, double cornerX, double cornerY) {
+		if (viewCorner == null)
+			return;
+		double clampedX = clampViewX(cornerX, state.zoomX, state.w, state.baseRangeX);
+		double clampedY = clampViewY(cornerY, state.zoomY, state.h, state.baseRangeY);
+		viewCorner.set(clampedX, clampedY);
+	}
+
+	/**
+	 * Clamp a horizontal view corner to keep the visible range inside the domain.
+	 *
+	 * @param corner     candidate view corner (pixels)
+	 * @param zoom       zoom factor for x-axis
+	 * @param width      frame width in pixels
+	 * @param baseRangeX base x-axis range
+	 * @return clamped view corner value
+	 */
+	private double clampViewX(double corner, double zoom, double width, double baseRangeX) {
+		double rangeX = baseRangeX / zoom;
+		double scale = zoom * width / baseRangeX;
+		double min = Double.NEGATIVE_INFINITY;
+		double max = Double.POSITIVE_INFINITY;
+		double domainMin = domain.getX();
+		double domainMax = domain.getX() + domain.getWidth();
+		if (Double.isFinite(domainMin))
+			min = (domainMin - style.xMin) * scale;
+		if (Double.isFinite(domainMax))
+			max = (domainMax - style.xMin - rangeX) * scale;
+		if (min > max)
+			return 0.5 * (min + max);
+		return Math.min(max, Math.max(min, corner));
+	}
+
+	/**
+	 * Clamp a vertical view corner to keep the visible range inside the domain.
+	 *
+	 * @param corner     candidate view corner (pixels)
+	 * @param zoom       zoom factor for y-axis
+	 * @param height     frame height in pixels
+	 * @param baseRangeY base y-axis range
+	 * @return clamped view corner value
+	 */
+	private double clampViewY(double corner, double zoom, double height, double baseRangeY) {
+		double rangeY = baseRangeY / zoom;
+		double scale = zoom * height / baseRangeY;
+		double min = Double.NEGATIVE_INFINITY;
+		double max = Double.POSITIVE_INFINITY;
+		double domainMin = domain.getY();
+		double domainMax = domain.getY() + domain.getHeight();
+		if (Double.isFinite(domainMax))
+			min = (style.yMax - domainMax) * scale;
+		if (Double.isFinite(domainMin))
+			max = (style.yMax - domainMin - rangeY) * scale;
+		if (min > max)
+			return 0.5 * (min + max);
+		return Math.min(max, Math.max(min, corner));
+	}
+
 	/**
 	 * Threshold below which linear axis bounds are snapped to zero.
 	 */
@@ -513,10 +956,80 @@ public class ParaGraph extends AbstractGraph<double[]> implements Zooming, Shift
 					autoscalePoint.getY(), autoscalePoint.getY(), style.autoscaleX, style.autoscaleY);
 			return;
 		}
-		applyRanges(Math.min(style.xMin, autoscalePoint.getX()),
-				Math.max(style.xMax, autoscalePoint.getX()),
-				Math.min(style.yMin, autoscalePoint.getY()),
-				Math.max(style.yMax, autoscalePoint.getY()), style.autoscaleX, style.autoscaleY);
+		double minX = style.xMin;
+		double maxX = style.xMax;
+		double minY = style.yMin;
+		double maxY = style.yMax;
+		boolean expandX = false;
+		boolean expandY = false;
+		if (style.autoscaleX) {
+			if (autoscalePoint.getX() < minX) {
+				minX = autoscalePoint.getX();
+				expandX = true;
+			} else if (autoscalePoint.getX() > maxX) {
+				maxX = autoscalePoint.getX();
+				expandX = true;
+			}
+		}
+		if (style.autoscaleY) {
+			if (autoscalePoint.getY() < minY) {
+				minY = autoscalePoint.getY();
+				expandY = true;
+			} else if (autoscalePoint.getY() > maxY) {
+				maxY = autoscalePoint.getY();
+				expandY = true;
+			}
+		}
+		if (expandX || expandY)
+			applyRanges(minX, maxX, minY, maxY, expandX, expandY);
+		ensureAutoscaleVisible();
+	}
+
+	/**
+	 * Shift the view corner to keep the latest autoscale point visible without
+	 * shrinking the current ranges.
+	 */
+	private void ensureAutoscaleVisible() {
+		if (viewCorner == null)
+			return;
+		ViewState state = currentViewState();
+		if (!state.valid)
+			return;
+		double newViewCornerX = viewCorner.getX();
+		double newViewCornerY = viewCorner.getY();
+		boolean shift = false;
+		double visibleRangeX = state.baseRangeX / state.zoomX;
+		double visibleRangeY = state.baseRangeY / state.zoomY;
+		double cornerX = viewCorner.getX();
+		double cornerY = viewCorner.getY();
+		double xMinVisible = state.baseXMin + (cornerX / (state.zoomX * state.w)) * state.baseRangeX;
+		double xMaxVisible = xMinVisible + visibleRangeX;
+		double baseYMax = state.baseYMin + state.baseRangeY;
+		double yMaxVisible = baseYMax - (cornerY / (state.zoomY * state.h)) * state.baseRangeY;
+		double yMinVisible = yMaxVisible - visibleRangeY;
+		if (style.autoscaleX) {
+			if (autoscalePoint.getX() < xMinVisible) {
+				newViewCornerX = state.viewCornerXForMin(autoscalePoint.getX());
+				shift = true;
+			} else if (autoscalePoint.getX() > xMaxVisible) {
+				double desiredMin = autoscalePoint.getX() - visibleRangeX;
+				newViewCornerX = state.viewCornerXForMin(desiredMin);
+				shift = true;
+			}
+		}
+		if (style.autoscaleY) {
+			if (autoscalePoint.getY() < yMinVisible) {
+				double desiredMax = autoscalePoint.getY() + visibleRangeY;
+				newViewCornerY = state.viewCornerYForMax(desiredMax);
+				shift = true;
+			} else if (autoscalePoint.getY() > yMaxVisible) {
+				newViewCornerY = state.viewCornerYForMax(autoscalePoint.getY());
+				shift = true;
+			}
+		}
+		if (!shift)
+			return;
+		setViewCorner(state, newViewCornerX, newViewCornerY);
 	}
 
 	/**
@@ -537,8 +1050,19 @@ public class ParaGraph extends AbstractGraph<double[]> implements Zooming, Shift
 				min *= 0.99;
 				max /= 0.99;
 			}
-			style.xMin = Functions.roundDown(min);
-			style.xMax = Functions.roundUp(max);
+			if (style.percentX) {
+				min = clampPercentMin(min);
+				max = clampPercentMax(max);
+				if (min >= max) {
+					min = 0.0;
+					max = 1.0;
+				}
+				style.xMin = min;
+				style.xMax = max;
+			} else {
+				style.xMin = Functions.roundDown(min);
+				style.xMax = Functions.roundUp(max);
+			}
 			applyXConstraints();
 		}
 		if (applyY) {
@@ -548,10 +1072,129 @@ public class ParaGraph extends AbstractGraph<double[]> implements Zooming, Shift
 				min *= 0.99;
 				max /= 0.99;
 			}
-			style.yMin = Functions.roundDown(min);
-			style.yMax = Functions.roundUp(max);
+			if (style.percentY) {
+				min = clampPercentMin(min);
+				max = clampPercentMax(max);
+				if (min >= max) {
+					min = 0.0;
+					max = 1.0;
+				}
+				style.yMin = min;
+				style.yMax = max;
+			} else {
+				style.yMin = Functions.roundDown(min);
+				style.yMax = Functions.roundUp(max);
+			}
 			applyYConstraints();
 		}
+		if (applyX && applyY && !style.logScaleY && !(style.percentX && style.percentY))
+			enforceEqualAxisScale();
+	}
+
+	/**
+	 * Enforce equal units-per-pixel scale on both axes for linear plots.
+	 */
+	private void enforceEqualAxisScale() {
+		double w = bounds.getWidth();
+		double h = bounds.getHeight();
+		if (w <= 0.0 || h <= 0.0)
+			return;
+		double rangeX = style.xMax - style.xMin;
+		double rangeY = style.yMax - style.yMin;
+		if (rangeX <= 0.0 || rangeY <= 0.0)
+			return;
+		updateDomain();
+		double domainMinX = domain.getX();
+		double domainMaxX = domain.getX() + domain.getWidth();
+		double domainMinY = domain.getY();
+		double domainMaxY = domain.getY() + domain.getHeight();
+		boolean clampX = Double.isFinite(domain.getWidth());
+		boolean clampY = Double.isFinite(domain.getHeight());
+		double scaleX = rangeX / w;
+		double scaleY = rangeY / h;
+		if (Math.abs(scaleX - scaleY) < 1e-12)
+			return;
+		if (scaleX > scaleY) {
+			double targetRangeY = scaleX * h;
+			if (clampY && targetRangeY > domain.getHeight()) {
+				targetRangeY = domain.getHeight();
+				setCenteredY(targetRangeY, clampY, domainMinY, domainMaxY);
+				double targetScale = targetRangeY / h;
+				double targetRangeX = targetScale * w;
+				setCenteredX(targetRangeX, clampX, domainMinX, domainMaxX);
+				return;
+			}
+			setCenteredY(targetRangeY, clampY, domainMinY, domainMaxY);
+			return;
+		}
+		double targetRangeX = scaleY * w;
+		if (clampX && targetRangeX > domain.getWidth()) {
+			targetRangeX = domain.getWidth();
+			setCenteredX(targetRangeX, clampX, domainMinX, domainMaxX);
+			double targetScale = targetRangeX / w;
+			double targetRangeY = targetScale * h;
+			setCenteredY(targetRangeY, clampY, domainMinY, domainMaxY);
+			return;
+		}
+		setCenteredX(targetRangeX, clampX, domainMinX, domainMaxX);
+	}
+
+	/**
+	 * Center and optionally clamp the x-range.
+	 *
+	 * @param range     target range
+	 * @param clamp     whether to clamp to the domain
+	 * @param domainMin domain minimum
+	 * @param domainMax domain maximum
+	 */
+	private void setCenteredX(double range, boolean clamp, double domainMin, double domainMax) {
+		double cx = 0.5 * (style.xMin + style.xMax);
+		double min = cx - 0.5 * range;
+		double max = cx + 0.5 * range;
+		if (clamp) {
+			if (min < domainMin) {
+				max += domainMin - min;
+				min = domainMin;
+			}
+			if (max > domainMax) {
+				min -= max - domainMax;
+				max = domainMax;
+			}
+			if (min < domainMin) {
+				min = domainMin;
+			}
+		}
+		style.xMin = snapNearZero(min);
+		style.xMax = max;
+	}
+
+	/**
+	 * Center and optionally clamp the y-range.
+	 *
+	 * @param range     target range
+	 * @param clamp     whether to clamp to the domain
+	 * @param domainMin domain minimum
+	 * @param domainMax domain maximum
+	 */
+	private void setCenteredY(double range, boolean clamp, double domainMin, double domainMax) {
+		double cy = 0.5 * (style.yMin + style.yMax);
+		double min = cy - 0.5 * range;
+		double max = cy + 0.5 * range;
+		if (clamp) {
+			if (min < domainMin) {
+				max += domainMin - min;
+				min = domainMin;
+			}
+			if (max > domainMax) {
+				min -= max - domainMax;
+				max = domainMax;
+			}
+			if (min < domainMin) {
+				min = domainMin;
+			}
+		}
+		style.yMin = snapNearZero(min);
+		style.yMax = max;
 	}
 
 	/**
@@ -574,7 +1217,8 @@ public class ParaGraph extends AbstractGraph<double[]> implements Zooming, Shift
 			style.xMin = clampPercentMin(style.xMin);
 			style.xMax = clampPercentMax(style.xMax);
 		} else {
-			style.xMin = snapNearZero(style.xMin);
+			style.xMin = Math.max(0.0, snapNearZero(style.xMin));
+			style.xMax = Math.max(0.0, style.xMax);
 		}
 	}
 
@@ -588,7 +1232,8 @@ public class ParaGraph extends AbstractGraph<double[]> implements Zooming, Shift
 		} else if (style.logScaleY) {
 			style.yMin = clampLogMin(style.yMin);
 		} else {
-			style.yMin = snapNearZero(style.yMin);
+			style.yMin = Math.max(0.0, snapNearZero(style.yMin));
+			style.yMax = Math.max(0.0, style.yMax);
 		}
 	}
 
@@ -687,18 +1332,21 @@ public class ParaGraph extends AbstractGraph<double[]> implements Zooming, Shift
 	 * @param y the {@code y}-coordinate on screen
 	 */
 	private void processInitXY(double x, double y) {
-		int sx = (int) ((viewCorner.getX() + x - bounds.getX()) / zoomFactor + 0.5);
-		int sy = (int) ((viewCorner.getY() + y - bounds.getY()) / zoomFactor + 0.5);
-		if (!inside(sx, sy))
+		double localX = x - bounds.getX();
+		double localY = y - bounds.getY();
+		if (!inside(localX, localY))
 			return;
-		double ux = style.xMin + sx / bounds.getWidth() * (style.xMax - style.xMin);
-		double uy = style.yMin + (1.0 - sy / bounds.getHeight()) * (style.yMax - style.yMin);
+		ViewState state = currentViewState();
+		if (!state.valid)
+			return;
+		double ux = state.dataXFromLocal(localX);
+		double uy = state.dataYFromLocal(localY);
 		double[] last = buffer.last();
 		int len = last.length;
-		double[] state = new double[len - 1];
-		System.arraycopy(last, 1, state, 0, len - 1);
-		map.phase2Data(new Point2D(ux, uy), state);
-		view.setInitialState(state);
+		double[] initState = new double[len - 1];
+		System.arraycopy(last, 1, initState, 0, len - 1);
+		map.phase2Data(new Point2D(ux, uy), initState);
+		view.setInitialState(initState);
 	}
 
 	// CHECK!
@@ -717,12 +1365,15 @@ public class ParaGraph extends AbstractGraph<double[]> implements Zooming, Shift
 
 	@Override
 	public String getTooltipAt(int x, int y) {
-		int sx = (int) ((viewCorner.getX() + x - bounds.getX()) / zoomFactor + 0.5);
-		int sy = (int) ((viewCorner.getY() + y - bounds.getY()) / zoomFactor + 0.5);
-		if (!inside(sx, sy))
+		double localX = x - bounds.getX();
+		double localY = y - bounds.getY();
+		if (!inside(localX, localY))
 			return null;
-		double ux = style.xMin + sx / bounds.getWidth() * (style.xMax - style.xMin);
-		double uy = style.yMin + (1.0 - sy / bounds.getHeight()) * (style.yMax - style.yMin);
+		ViewState state = currentViewState();
+		if (!state.valid)
+			return null;
+		double ux = state.dataXFromLocal(localX);
+		double uy = state.dataYFromLocal(localY);
 		if (tooltipProvider instanceof TooltipProvider.Parametric)
 			return ((TooltipProvider.Parametric) tooltipProvider).getTooltipAt(this, ux, uy);
 		if (tooltipProvider != null)
