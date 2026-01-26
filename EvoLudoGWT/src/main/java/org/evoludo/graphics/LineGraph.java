@@ -1067,10 +1067,10 @@ public class LineGraph extends AbstractGraph<double[]>
 		absoluteTimeMenu.setText("Absolute " + axisLabel);
 		absoluteTimeMenu.setChecked(style.offsetXTickLabels);
 		rightYAxisMenu.setChecked(style.showYAxisRight);
-		axesMenu.addHeader("x-axis");
+		axesMenu.addHeader("X-axis");
 		axesMenu.add(fullXRangeMenu);
 		axesMenu.add(absoluteTimeMenu);
-		axesMenu.addHeader("y-axis");
+		axesMenu.addHeader("Y-axis");
 		axesMenu.add(autoscaleYMenu);
 		fullYRangeMenu.setEnabled(style.percentY);
 		axesMenu.add(fullYRangeMenu);

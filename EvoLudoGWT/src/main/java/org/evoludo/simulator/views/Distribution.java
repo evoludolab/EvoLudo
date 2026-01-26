@@ -426,7 +426,7 @@ public class Distribution extends AbstractView<PopGraph2D> implements TooltipPro
 			return;
 		}
 		if (traitXMenu == null || traitXItems == null || traitXItems.length != nTraits) {
-			traitXMenu = new ContextMenu(menu);
+			traitXMenu = new ContextMenu(menu, "X-axis trait");
 			traitXItems = new ContextMenuCheckBoxItem[nTraits];
 			for (int n = 0; n < nTraits; n++) {
 				traitXItems[n] = new ContextMenuCheckBoxItem(module.getTraitName(n),
@@ -435,7 +435,7 @@ public class Distribution extends AbstractView<PopGraph2D> implements TooltipPro
 			}
 		}
 		if (traitYMenu == null || traitYItems == null || traitYItems.length != nTraits) {
-			traitYMenu = new ContextMenu(menu);
+			traitYMenu = new ContextMenu(menu, "Y-axis trait");
 			traitYItems = new ContextMenuCheckBoxItem[nTraits];
 			for (int n = 0; n < nTraits; n++) {
 				traitYItems[n] = new ContextMenuCheckBoxItem(module.getTraitName(n),
@@ -451,8 +451,8 @@ public class Distribution extends AbstractView<PopGraph2D> implements TooltipPro
 			traitYItems[n].setChecked(false);
 		traitYItems[traitYIdx].setChecked(true);
 		menu.addSeparator();
-		menu.add("X-axis trait...", traitXMenu);
-		menu.add("Y-axis trait...", traitYMenu);
+		menu.add("X-axis trait", traitXMenu);
+		menu.add("Y-axis trait", traitYMenu);
 		populateContextMenu(menu);
 	}
 

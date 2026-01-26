@@ -760,7 +760,7 @@ public abstract class AbstractView<G extends AbstractGraph<?>> extends Composite
 		// process exports context menu (suppress in ePub, regardless of whether a
 		// standalone lab or not)
 		if (!NativeJS.isEPub()) {
-			exportSubmenu = new ContextMenu(contextMenu);
+			exportSubmenu = new ContextMenu(contextMenu, "Export");
 			exportSubmenu.add(new ContextMenuItem(ExportType.STATE.toString(), new ExportCommand(ExportType.STATE)));
 			for (ExportType e : exportTypes()) {
 				if (e == ExportType.STATE)
@@ -768,7 +768,7 @@ public abstract class AbstractView<G extends AbstractGraph<?>> extends Composite
 				exportSubmenu.add(new ContextMenuItem(e.toString(), new ExportCommand(e)));
 			}
 			contextMenu.addSeparator();
-			exportSubmenuTrigger = contextMenu.add("Export...", exportSubmenu);
+			exportSubmenuTrigger = contextMenu.add("Export", exportSubmenu);
 			if (restoreMenu == null)
 				restoreMenu = new ContextMenuItem("Restore...", () -> engine.restoreFromFile());
 		}

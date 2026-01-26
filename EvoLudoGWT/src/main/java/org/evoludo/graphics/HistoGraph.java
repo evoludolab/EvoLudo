@@ -1058,7 +1058,7 @@ public class HistoGraph extends AbstractGraph<double[]> implements BasicTooltipP
 	 */
 	private void addAxesMenu(ContextMenu menu) {
 		if (axesMenu == null) {
-			axesMenu = new ContextMenu(menu);
+			axesMenu = new ContextMenu(menu, "Axes");
 			autoscaleYMenu = new ContextMenuCheckBoxItem("Autoscale y-axis", () -> {
 				style.autoscaleY = !style.autoscaleY;
 				autoscaleYMenu.setChecked(style.autoscaleY);
@@ -1087,6 +1087,7 @@ public class HistoGraph extends AbstractGraph<double[]> implements BasicTooltipP
 			});
 		}
 		axesMenu.clear();
+		axesMenu.addHeader("Axes");
 		autoscaleYMenu.setChecked(style.autoscaleY);
 		autoscaleYMenu.setEnabled(enableAutoscaleYMenu);
 		rightYAxisMenu.setChecked(style.showYAxisRight);

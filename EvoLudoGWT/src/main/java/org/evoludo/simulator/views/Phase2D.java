@@ -362,8 +362,8 @@ public class Phase2D extends AbstractView<ParaGraph> {
 		}
 		buildTraitMenus(menu, species, isMultispecies);
 		menu.addSeparator();
-		menu.add("X-axis trait...", traitXMenu);
-		menu.add("Y-axis trait...", traitYMenu);
+		menu.add("X-axis trait", traitXMenu);
+		menu.add("Y-axis trait", traitYMenu);
 		super.populateContextMenu(menu);
 	}
 
@@ -374,7 +374,7 @@ public class Phase2D extends AbstractView<ParaGraph> {
 	 */
 	private void addAxesMenu(ContextMenu menu) {
 		if (axesMenu == null) {
-			axesMenu = new ContextMenu(menu);
+			axesMenu = new ContextMenu(menu, "Axes");
 			autoscaleMenu = new ContextMenuCheckBoxItem("Autoscale axes", () -> {
 				GraphStyle style = graph.getStyle();
 				boolean enable = !autoscaleMenu.isChecked();
@@ -406,6 +406,7 @@ public class Phase2D extends AbstractView<ParaGraph> {
 			});
 		}
 		axesMenu.clear();
+		axesMenu.addHeader("Axes");
 		GraphStyle style = graph.getStyle();
 		autoscaleMenu.setChecked(style.autoscaleX && style.autoscaleY);
 		rightYAxisMenu.setChecked(style.showYAxisRight);
@@ -427,8 +428,8 @@ public class Phase2D extends AbstractView<ParaGraph> {
 		int totTraits = computeTotalTraits(species, model.isDensity());
 		if (traitXMenu == null || traitXItems == null || traitXItems.length != totTraits ||
 				traitYMenu == null || traitYItems == null || traitYItems.length != totTraits) {
-			traitXMenu = new ContextMenu(parent);
-			traitYMenu = new ContextMenu(parent);
+			traitXMenu = new ContextMenu(parent, "X-axis trait");
+			traitYMenu = new ContextMenu(parent, "Y-axis trait");
 			traitXItems = new ContextMenuCheckBoxItem[totTraits];
 			traitYItems = new ContextMenuCheckBoxItem[totTraits];
 			populateTraitItems(species, isMultispecies);

@@ -698,14 +698,14 @@ public abstract class GenericPopGraph<T, N extends Network<?>> extends AbstractG
 		int debugNode = findNodeAt(x, y);
 		if (debugNode >= 0 && debugNode < geometry.getSize()) {
 			if (debugSubmenu == null) {
-				debugSubmenu = new ContextMenu(menu);
+				debugSubmenu = new ContextMenu(menu, "Debug");
 				debugNodeMenu = new ContextMenuItem("Update node @ -",
 						() -> module.getIBSPopulation().debugUpdatePopulationAt(debugNode));
 				debugSubmenu.add(debugNodeMenu);
 			}
 			debugNodeMenu.setText("Update node @ " + debugNode);
 			debugNodeMenu.setEnabled(view.getModel().getType().isIBS());
-			debugSubmenuTrigger = menu.add("Debug...", debugSubmenu);
+			debugSubmenuTrigger = menu.add("Debug", debugSubmenu);
 		}
 		if (debugSubmenuTrigger != null)
 			debugSubmenuTrigger.setEnabled(!view.isRunning());

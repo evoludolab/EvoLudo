@@ -914,7 +914,7 @@ public class S3Graph extends AbstractGraph<double[]> implements Zooming, Shiftin
 		String[] names = map.getNames();
 		int cornerIdx = closestCorner(x, y);
 		if (setTraitMenu == null) {
-			setTraitMenu = new ContextMenu(menu);
+			setTraitMenu = new ContextMenu(menu, "Set trait");
 			for (String name : names)
 				setTraitMenu.add(new ContextMenuItem(name, () -> {
 					Iterator<Widget> items = setTraitMenu.iterator();
@@ -930,7 +930,7 @@ public class S3Graph extends AbstractGraph<double[]> implements Zooming, Shiftin
 					paint(true);
 				}));
 		}
-		menu.add("Set trait '" + names[order[cornerIdx]] + "' to ...", setTraitMenu);
+		menu.add("Set trait '" + names[order[cornerIdx]] + "' to", setTraitMenu);
 		for (Widget item : setTraitMenu)
 			((ContextMenuItem) item).setEnabled(true);
 		for (int t : order)

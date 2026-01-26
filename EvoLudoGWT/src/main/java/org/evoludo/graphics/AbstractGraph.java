@@ -994,7 +994,7 @@ public abstract class AbstractGraph<B> extends FocusPanel
 		if (!hasHistory())
 			return;
 		if (bufferSizeMenu == null) {
-			bufferSizeMenu = new ContextMenu(menu);
+			bufferSizeMenu = new ContextMenu(menu, "Buffer");
 			bufferSizeMenu.add(new ContextMenuCheckBoxItem("5k", //
 					(ScheduledCommand) () -> {
 						setBufferCapacity(5000);
@@ -1017,7 +1017,7 @@ public abstract class AbstractGraph<B> extends FocusPanel
 					}));
 		}
 		setBufferCapacity(buffer.getCapacity());
-		ContextMenuItem bufferSizeTrigger = menu.add("Buffer size...", bufferSizeMenu);
+		ContextMenuItem bufferSizeTrigger = menu.add("Buffer size", bufferSizeMenu);
 		bufferSizeTrigger.setEnabled(!view.isRunning());
 		menu.addSeparator();
 	}
@@ -1052,7 +1052,7 @@ public abstract class AbstractGraph<B> extends FocusPanel
 		if (!(this instanceof Zooming))
 			return;
 		if (zoomMenu == null) {
-			zoomMenu = new ContextMenu(menu);
+			zoomMenu = new ContextMenu(menu, "Zoom");
 			populateZoomMenu(zoomMenu);
 		}
 		menu.add("Zoom", zoomMenu);
@@ -1106,6 +1106,8 @@ public abstract class AbstractGraph<B> extends FocusPanel
 		int bufSize = buffer.getCapacity();
 		String label = (bufSize / 1000) + "k";
 		for (Widget item : bufferSizeMenu) {
+			if (!(item instanceof ContextMenuCheckBoxItem))
+				continue;
 			ContextMenuCheckBoxItem menuItem = (ContextMenuCheckBoxItem) item;
 			menuItem.setChecked(menuItem.getText().equals(label));
 		}
@@ -1507,9 +1509,9 @@ public abstract class AbstractGraph<B> extends FocusPanel
 	 * Compute the number of decimal digits needed for linear labels so consecutive
 	 * ticks remain distinct.
 	 *
-	 * @param min    axis minimum
-	 * @param max    axis maximum
-	 * @param levels number of tick levels
+	 * @param min     axis minimum
+	 * @param max     axis maximum
+	 * @param levels  number of tick levels
 	 * @param percent whether values are percent formatted
 	 * @param pretty  whether to use pretty formatting for duplicates check
 	 * @return decimal digits for linear labels
