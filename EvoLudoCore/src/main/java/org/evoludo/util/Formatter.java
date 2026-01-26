@@ -468,8 +468,18 @@ public class Formatter {
 		// catch zero
 		if (abs < Double.MIN_VALUE)
 			return myFormatters[digits].format(aDouble);
-		if (abs > thresh[1] || abs < thresh[0])
-			return mySciFormatters[digits].format(aDouble).replace("E", pre) + post;
+		if (abs > thresh[1] || abs < thresh[0]) {
+			String sci = mySciFormatters[digits].format(aDouble);
+			int expPos = sci.indexOf('E');
+			if (expPos > -1 && expPos + 1 < sci.length()) {
+				int exp = Integer.parseInt(sci.substring(expPos + 1));
+				if (exp == 1)
+					return myFormatters[digits].format(aDouble);
+				if (exp == -1)
+					return myFormatters[Math.min(digits + 1, MAX_DIGITS)].format(aDouble);
+			}
+			return sci.replace("E", pre) + post;
+		}
 		return myFormatters[digits].format(aDouble);
 	}
 
