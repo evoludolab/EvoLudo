@@ -573,6 +573,7 @@ public class Histogram extends AbstractView<HistoGraph> {
 		style.autoscaleY = false;
 		style.showYLabel = true;
 		style.showYTickLabels = true;
+		style.showYAxisRight = false;
 		style.showXTicks = true;
 		style.showYTicks = true;
 		style.showXLevels = false;

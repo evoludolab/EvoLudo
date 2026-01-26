@@ -40,6 +40,7 @@ import org.evoludo.simulator.views.BasicTooltipProvider;
 import org.evoludo.simulator.views.Histogram;
 import org.evoludo.ui.ContextMenu;
 import org.evoludo.ui.ContextMenuCheckBoxItem;
+import org.evoludo.ui.ContextMenuItem;
 import org.evoludo.util.Formatter;
 
 /**
@@ -126,8 +127,8 @@ import org.evoludo.util.Formatter;
  * {@link #getTooltipAt(int)}. Tooltip content varies by the histogram
  * {@code view.type} (degree, fitness, trait and several statistics types have
  * specialized tooltip formats).</li>
- * <li>Context menu support includes a check-box item for toggling autoscaling
- * of the y-axis; it can be enabled/disabled via
+ * <li>Context menu support includes an Axes submenu with autoscaling, full-range,
+ * and right y-axis controls; autoscaling can be enabled/disabled via
  * {@link #enableAutoscaleYMenu(boolean)}.</li>
  * </ul>
  *
@@ -1011,9 +1012,24 @@ public class HistoGraph extends AbstractGraph<double[]> implements BasicTooltipP
 	}
 
 	/**
-	 * The context menu to select autoscaling of the y-axis.
+	 * The context menu for axis-related options.
+	 */
+	private ContextMenu axesMenu;
+
+	/**
+	 * The context menu item to select autoscaling of the y-axis.
 	 */
 	private ContextMenuCheckBoxItem autoscaleYMenu;
+
+	/**
+	 * The context menu item to reset percent axes to full range.
+	 */
+	private ContextMenuItem fullRangeMenu;
+
+	/**
+	 * The context menu item to toggle the y-axis side.
+	 */
+	private ContextMenuCheckBoxItem rightYAxisMenu;
 
 	/**
 	 * The flag to indicate whether the autoscale y-axis menu is enabled.
@@ -1031,15 +1047,53 @@ public class HistoGraph extends AbstractGraph<double[]> implements BasicTooltipP
 
 	@Override
 	public void populateContextMenuAt(ContextMenu menu, int x, int y) {
-		// process autoscale context menu
-		if (autoscaleYMenu == null) {
-			autoscaleYMenu = new ContextMenuCheckBoxItem("Autoscale y-axis",
-					() -> style.autoscaleY = !style.autoscaleY);
+		addAxesMenu(menu);
+		super.populateContextMenuAt(menu, x, y);
+	}
+
+	/**
+	 * Add the axes submenu with autoscale, full-range, and y-axis side controls.
+	 * 
+	 * @param menu the context menu to populate
+	 */
+	private void addAxesMenu(ContextMenu menu) {
+		if (axesMenu == null) {
+			axesMenu = new ContextMenu(menu);
+			autoscaleYMenu = new ContextMenuCheckBoxItem("Autoscale y-axis", () -> {
+				style.autoscaleY = !style.autoscaleY;
+				autoscaleYMenu.setChecked(style.autoscaleY);
+				paint(true);
+			});
+			fullRangeMenu = new ContextMenuItem("Full range", () -> {
+				if (style.autoscaleY) {
+					style.autoscaleY = false;
+					autoscaleYMenu.setChecked(false);
+				}
+				if (style.percentX) {
+					style.xMin = 0.0;
+					style.xMax = 1.0;
+				}
+				if (style.percentY) {
+					style.yMin = 0.0;
+					style.yMax = 1.0;
+				}
+				paint(true);
+			});
+			rightYAxisMenu = new ContextMenuCheckBoxItem("Right Y-axis", () -> {
+				style.showYAxisRight = !style.showYAxisRight;
+				rightYAxisMenu.setChecked(style.showYAxisRight);
+				onResize();
+				paint(true);
+			});
 		}
+		axesMenu.clear();
 		autoscaleYMenu.setChecked(style.autoscaleY);
 		autoscaleYMenu.setEnabled(enableAutoscaleYMenu);
-		menu.addSeparator();
-		menu.add(autoscaleYMenu);
-		super.populateContextMenuAt(menu, x, y);
+		rightYAxisMenu.setChecked(style.showYAxisRight);
+		axesMenu.add(autoscaleYMenu);
+		if (style.percentX || style.percentY)
+			axesMenu.add(fullRangeMenu);
+		axesMenu.add(rightYAxisMenu);
+		menu.add("Axes", axesMenu);
 	}
 }
