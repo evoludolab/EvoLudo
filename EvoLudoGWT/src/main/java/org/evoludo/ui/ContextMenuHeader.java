@@ -35,24 +35,26 @@ import com.google.gwt.user.client.ui.Label;
 /**
  * Component of the context menu extension to GWT's user interface.
  * <p>
- * Represents a separator in the context menu. The actual layout of the menu
- * separator is controlled via CSS using the class
- * <code>gwt-ContextMenuSeparator</code>.
+ * Represents a header label in the context menu. The actual layout of the
+ * header is controlled via CSS using the class
+ * <code>gwt-ContextMenuHeader</code>.
  * 
  * @author Christoph Hauert
  */
-public class ContextMenuSeparator extends Label {
+public class ContextMenuHeader extends Label {
 
 	/**
-	 * Creates a new separator to structure entries in context menus.
+	 * Create a new context menu header with the given title.
+	 * 
+	 * @param title header text
 	 */
-	public ContextMenuSeparator() {
-		// the actual layout of the menu separator is controlled via CSS
+	public ContextMenuHeader(String title) {
+		super(title, false);
 	}
 
 	@Override
 	protected void onLoad() {
 		super.onLoad();
-		setStyleName("gwt-ContextMenuSeparator");
+		setStyleName("gwt-ContextMenuHeader");
 	}
 }

@@ -135,6 +135,8 @@ public class ContextMenuItem extends Label
 	protected void onLoad() {
 		super.onLoad();
 		setStyleName("gwt-ContextMenuItem");
+		if (!isEnabled)
+			setStyleDependentName("disabled", true);
 		clickHandler = addClickHandler(this);
 		contextMenuHandler = addDomHandler(this, ContextMenuEvent.getType());
 		if (hasSubmenu()) {
@@ -236,6 +238,7 @@ public class ContextMenuItem extends Label
 		setStyleDependentName("disabled", !enabled);
 		this.isEnabled = enabled;
 	}
+
 
 	@Override
 	public boolean isEnabled() {
