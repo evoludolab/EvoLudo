@@ -46,6 +46,7 @@ import org.evoludo.simulator.modules.Module;
 import org.evoludo.simulator.views.BasicTooltipProvider;
 import org.evoludo.simulator.views.Mean;
 import org.evoludo.ui.ContextMenu;
+import org.evoludo.ui.ContextMenuCheckBoxItem;
 import org.evoludo.ui.ContextMenuItem;
 import org.evoludo.util.CLOParser;
 import org.evoludo.util.Formatter;
@@ -55,7 +56,8 @@ import com.google.gwt.core.client.Scheduler;
 
 /**
  * LineGraph visualizes time series data as one or more line plots inside a
- * resizable, pannable and zoomable canvas. It extends AbstractGraph&lt;double[]&gt;
+ * resizable, pannable and zoomable canvas. It extends
+ * AbstractGraph&lt;double[]&gt;
  * and implements interactions for shifting and zooming (Shifting, Zooming),
  * optional logarithmic y-axis scaling (HasLogScaleY) and provides tooltips
  * (BasicTooltipProvider).
@@ -193,6 +195,11 @@ public class LineGraph extends AbstractGraph<double[]>
 	int nLines;
 
 	/**
+	 * Padding applied when fitting the y-axis to visible data.
+	 */
+	private static final double ZOOM_FIT_MARGIN = 0.05;
+
+	/**
 	 * Create new line graph for {@code view}. The {@code id} is used to
 	 * distinguish different graphs of the same module to visualize different
 	 * components of the data and represents the index of the data column.
@@ -209,6 +216,16 @@ public class LineGraph extends AbstractGraph<double[]>
 		super.onLoad();
 		setStylePrimaryName("evoludo-HistoGraph");
 		setTooltipProvider(this);
+	}
+
+	@Override
+	public void calcBounds(int width, int height) {
+		super.calcBounds(width, height);
+		double pad = style.markerSize + 2.0;
+		if (pad > 0.0 && bounds.getWidth() > pad) {
+			// keep some room on the right for latest markers
+			bounds.adjust(0, 0, -pad, 0);
+		}
 	}
 
 	@Override
@@ -312,6 +329,11 @@ public class LineGraph extends AbstractGraph<double[]>
 		double t = data[0];
 		data[0] = style.yMin;
 		double min = ArrayMath.min(data);
+		if (style.logScaleY && min <= 0.0) {
+			// keep log scale: ignore non-positive point for autoscale updates
+			data[0] = t;
+			return;
+		}
 		if (min <= 0.0)
 			style.logScaleY = false;
 		if (style.autoscaleY) {
@@ -404,17 +426,25 @@ public class LineGraph extends AbstractGraph<double[]>
 
 		g.translate(w, h);
 		g.scale(1.0, -1.0);
+
+		// compute y transform and draw content
+		double[] yinfo = computeYScale(h);
+
+		g.save();
 		g.beginPath();
 		// with -w a small strip on left is not drawn... proper fix needed!
 		g.rect(style.markerSize, 0.0, -(w + 3.0), h);
 		g.clip();
-
-		// compute y transform and draw content
-		double[] yinfo = computeYScale(h);
 		drawLines(w, yinfo, nLines);
 		drawMarkers(w, yinfo[0], nLines);
-
 		g.restore();
+
+		drawLatestMarkers(w, yinfo, nLines);
+		g.restore();
+		if (style.offsetXTickLabels)
+			updateXTickOffset();
+		else
+			style.xTickOffset = 0.0;
 		drawFrame(4, 4);
 		g.restore();
 		return false;
@@ -441,7 +471,7 @@ public class LineGraph extends AbstractGraph<double[]>
 	}
 
 	/**
-	 * Draw the line plots and (suppressed) markers at the newest sample.
+	 * Draw the line plots.
 	 * 
 	 * @param width  the width of the plotting area
 	 * @param yinfo  the y-axis transform info
@@ -456,11 +486,6 @@ public class LineGraph extends AbstractGraph<double[]>
 		g.setLineWidth(style.lineWidth);
 		double xScale = width / (style.xMax - style.xMin);
 		double start = -style.xMax * xScale;
-
-		// draw markers for the newest sample if visible
-		if (start <= 0.0) {
-			drawLatestMarkers(start, current, nLines, yinfo);
-		}
 
 		double end = start;
 		while (it.hasNext()) {
@@ -482,13 +507,23 @@ public class LineGraph extends AbstractGraph<double[]>
 	/**
 	 * Draw markers for the newest sample (extracted helper).
 	 * 
-	 * @param start   the starting x-coordinate
-	 * @param current the current data array
-	 * @param nLines  the number of lines to draw
-	 * @param yinfo   the y-axis transform info
+	 * @param width  the width of the plotting area
+	 * @param yinfo  the y-axis transform info
+	 * @param nLines the number of lines to draw
 	 */
-	private void drawLatestMarkers(double start, double[] current, int nLines, double[] yinfo) {
+	private void drawLatestMarkers(double width, double[] yinfo, int nLines) {
+		if (buffer == null || buffer.isEmpty() || nLines <= 0)
+			return;
+		double[] current = buffer.last();
+		if (current == null)
+			return;
+		double xScale = width / (style.xMax - style.xMin);
+		double start = -style.xMax * xScale;
+		if (start > 0.0)
+			return;
 		for (int n = 0; n < nLines; n++) {
+			if (style.logScaleY && current[n + 1] <= 0.0)
+				continue;
 			g.setFillStyle(colors[n]);
 			double y = (style.logScaleY ? Math.log10(current[n + 1]) : current[n + 1]) - yinfo[0];
 			fillCircle(start, y * yinfo[1], style.markerSize);
@@ -517,8 +552,14 @@ public class LineGraph extends AbstractGraph<double[]>
 			double pi;
 			double ci;
 			if (style.logScaleY) {
-				pi = Math.log10(prev[n + 1]) - ymin;
-				ci = Math.log10(current[n + 1]) - ymin;
+				double pval = prev[n + 1];
+				double cval = current[n + 1];
+				if (pval <= 0.0)
+					pval = style.yMin;
+				if (cval <= 0.0)
+					cval = style.yMin;
+				pi = Math.log10(pval) - ymin;
+				ci = Math.log10(cval) - ymin;
 			} else {
 				pi = prev[n + 1] - ymin;
 				ci = current[n + 1] - ymin;
@@ -905,6 +946,46 @@ public class LineGraph extends AbstractGraph<double[]>
 	 */
 	private ContextMenuItem clearMenu;
 
+	/**
+	 * The context menu for axis-related options.
+	 */
+	private ContextMenu axesMenu;
+
+	/**
+	 * The context menu item to toggle autoscaling of the y-axis.
+	 */
+	private ContextMenuCheckBoxItem autoscaleYMenu;
+
+	/**
+	 * The context menu item to reset percent axes to full range.
+	 */
+	private ContextMenuItem fullYRangeMenu;
+
+	/**
+	 * The context menu item to show the full x-range of the buffer.
+	 */
+	private ContextMenuItem fullXRangeMenu;
+
+	/**
+	 * The context menu item to fit the y-axis to the visible data.
+	 */
+	private ContextMenuItem zoomFitMenu;
+
+	/**
+	 * The context menu item to toggle logarithmic y-axis scaling.
+	 */
+	private ContextMenuCheckBoxItem logYAxesMenu;
+
+	/**
+	 * The context menu item to toggle absolute x-axis tick labels.
+	 */
+	private ContextMenuCheckBoxItem absoluteTimeMenu;
+
+	/**
+	 * The context menu item to toggle the y-axis side.
+	 */
+	private ContextMenuCheckBoxItem rightYAxisMenu;
+
 	@Override
 	public void populateContextMenuAt(ContextMenu menu, int x, int y) {
 		// add menu to clear canvas
@@ -916,8 +997,242 @@ public class LineGraph extends AbstractGraph<double[]>
 		}
 		menu.addSeparator();
 		menu.add(clearMenu);
-		super.populateContextMenuAt(menu, x, y);
+		addBufferSizeMenu(menu);
+		addAxesMenu(menu);
+		addZoomMenu(menu);
+		if (menu.getWidgetCount() > 0 && tooltip.isVisible())
+			tooltip.close();
+		view.populateContextMenu(menu);
 		zoomInMenu.setText("Zoom in x-axis (2x)");
 		zoomOutMenu.setText("Zoom out x-axis (0.5x)");
+	}
+
+	/**
+	 * Add the axes submenu with autoscale, full-range, log, and side controls.
+	 * 
+	 * @param menu the context menu to populate
+	 */
+	private void addAxesMenu(ContextMenu menu) {
+		if (axesMenu == null) {
+			axesMenu = new ContextMenu(menu);
+			autoscaleYMenu = new ContextMenuCheckBoxItem("Autoscale", () -> {
+				style.autoscaleY = !style.autoscaleY;
+				autoscaleYMenu.setChecked(style.autoscaleY);
+				if (style.autoscaleY)
+					updateYRangeFromBuffer(false, false);
+				paint(true);
+			});
+			fullYRangeMenu = new ContextMenuItem("Full range", () -> {
+				if (style.autoscaleY) {
+					style.autoscaleY = false;
+					autoscaleYMenu.setChecked(false);
+				}
+				if (style.percentY) {
+					style.yMin = 0.0;
+					style.yMax = 1.0;
+					clampLogRange();
+				}
+				paint(true);
+			});
+			fullXRangeMenu = new ContextMenuItem("Full range", () -> {
+				if (updateXRangeFromBuffer())
+					paint(true);
+			});
+			logYAxesMenu = new ContextMenuCheckBoxItem("Logarithmic", () -> {
+				setLogY(!style.logScaleY);
+				logYAxesMenu.setChecked(style.logScaleY);
+				paint(true);
+			});
+			absoluteTimeMenu = new ContextMenuCheckBoxItem("Absolute " + style.xLabel, () -> {
+				style.offsetXTickLabels = !style.offsetXTickLabels;
+				if (style.offsetXTickLabels)
+					updateXTickOffset();
+				else
+					style.xTickOffset = 0.0;
+				absoluteTimeMenu.setChecked(style.offsetXTickLabels);
+				paint(true);
+			});
+			rightYAxisMenu = new ContextMenuCheckBoxItem("Right side", () -> {
+				style.showYAxisRight = !style.showYAxisRight;
+				rightYAxisMenu.setChecked(style.showYAxisRight);
+				onResize();
+				paint(true);
+			});
+		}
+		axesMenu.clear();
+		String axisLabel = style.xLabel == null ? "time" : style.xLabel;
+		autoscaleYMenu.setChecked(style.autoscaleY);
+		logYAxesMenu.setChecked(style.logScaleY);
+		logYAxesMenu.setEnabled(style.yMin >= 0.0);
+		absoluteTimeMenu.setText("Absolute " + axisLabel);
+		absoluteTimeMenu.setChecked(style.offsetXTickLabels);
+		rightYAxisMenu.setChecked(style.showYAxisRight);
+		axesMenu.addHeader("x-axis");
+		axesMenu.add(fullXRangeMenu);
+		axesMenu.add(absoluteTimeMenu);
+		axesMenu.addHeader("y-axis");
+		axesMenu.add(autoscaleYMenu);
+		fullYRangeMenu.setEnabled(style.percentY);
+		axesMenu.add(fullYRangeMenu);
+		axesMenu.add(logYAxesMenu);
+		axesMenu.add(rightYAxisMenu);
+		menu.add("Axes", axesMenu);
+	}
+
+	@Override
+	protected void populateZoomMenu(ContextMenu menu) {
+		super.populateZoomMenu(menu);
+		if (zoomFitMenu == null) {
+			zoomFitMenu = new ContextMenuItem("Zoom to fit", () -> {
+				if (style.autoscaleY) {
+					style.autoscaleY = false;
+					autoscaleYMenu.setChecked(false);
+				}
+				boolean addMargin = !style.percentY;
+				if (updateYRangeFromBuffer(true, addMargin)) {
+					if (style.percentY) {
+						style.yMin = Math.max(0.0, style.yMin);
+						style.yMax = Math.min(1.0, style.yMax);
+						if (style.yMin > style.yMax) {
+							style.yMin = 0.0;
+							style.yMax = 1.0;
+						}
+						clampLogRange();
+					}
+					paint(true);
+				}
+			});
+		}
+		menu.add(zoomFitMenu);
+	}
+
+	/**
+	 * Update the y-axis range based on buffered data.
+	 * 
+	 * @param visibleOnly whether to limit to the visible x-range
+	 * @param addMargin   whether to add a small top/bottom margin
+	 * @return {@code true} if the range was updated
+	 */
+	private boolean updateYRangeFromBuffer(boolean visibleOnly, boolean addMargin) {
+		if (buffer == null || buffer.isEmpty())
+			return false;
+		double min = Double.POSITIVE_INFINITY;
+		double max = Double.NEGATIVE_INFINITY;
+		double tMin = 0.0;
+		double tMax = 0.0;
+		if (visibleOnly) {
+			double[] latest = buffer.last();
+			if (latest == null)
+				return false;
+			tMax = latest[0] + style.xMax;
+			tMin = latest[0] + style.xMin;
+		}
+		Iterator<double[]> it = buffer.ordered();
+		while (it.hasNext()) {
+			double[] data = it.next();
+			double t = data[0];
+			if (visibleOnly && (t < tMin || t > tMax))
+				continue;
+			for (int i = 1; i < data.length; i++) {
+				double v = data[i];
+				if (!Double.isFinite(v))
+					continue;
+				if (v < min)
+					min = v;
+				if (v > max)
+					max = v;
+			}
+		}
+		if (min == Double.POSITIVE_INFINITY) {
+			if (visibleOnly)
+				return updateYRangeFromBuffer(false, addMargin);
+			return false;
+		}
+		if (addMargin) {
+			double range = max - min;
+			double pad = range * ZOOM_FIT_MARGIN;
+			if (pad == 0.0)
+				pad = Math.max(1e-6, Math.abs(min) * ZOOM_FIT_MARGIN);
+			min -= pad;
+			max += pad;
+		}
+		if (style.logScaleY) {
+			if (max <= 0.0)
+				return false;
+			if (min <= 0.0)
+				min = max * 0.01;
+		}
+		double newMin = Functions.roundDown(min);
+		double newMax = Functions.roundUp(max);
+		if (style.logScaleY && newMin <= 0.0)
+			newMin = min;
+		style.yMin = newMin;
+		style.yMax = newMax;
+		return true;
+	}
+
+	/**
+	 * Update the x-axis range to show all buffered data (latest segment only).
+	 * 
+	 * @return {@code true} if the range was updated
+	 */
+	private boolean updateXRangeFromBuffer() {
+		if (buffer == null || buffer.isEmpty())
+			return false;
+		double tMin = Double.NaN;
+		double tMax = Double.NaN;
+		Iterator<double[]> it = buffer.ordered();
+		while (it.hasNext()) {
+			double t = it.next()[0];
+			if (Double.isNaN(t)) {
+				tMin = Double.NaN;
+				continue;
+			}
+			if (!Double.isFinite(t))
+				continue;
+			if (Double.isNaN(tMin))
+				tMin = t;
+			tMax = t;
+		}
+		if (!Double.isFinite(tMin) || !Double.isFinite(tMax))
+			return false;
+		style.xMax = 0.0;
+		style.xMin = tMin - tMax;
+		return true;
+	}
+
+	/**
+	 * Update the x-axis tick label offset to the most recent finite time value.
+	 */
+	private void updateXTickOffset() {
+		if (buffer == null || buffer.isEmpty()) {
+			style.xTickOffset = 0.0;
+			return;
+		}
+		Iterator<double[]> it = buffer.iterator();
+		while (it.hasNext()) {
+			double t = it.next()[0];
+			if (Double.isNaN(t))
+				break;
+			if (Double.isFinite(t)) {
+				style.xTickOffset = t;
+				return;
+			}
+		}
+		style.xTickOffset = 0.0;
+	}
+
+	/**
+	 * Clamp the y-axis range for logarithmic scaling.
+	 */
+	private void clampLogRange() {
+		if (!style.logScaleY)
+			return;
+		if (style.yMax <= 0.0) {
+			noLogY();
+			return;
+		}
+		if (style.yMin <= 0.0)
+			style.yMin = 0.01 * style.yMax;
 	}
 }

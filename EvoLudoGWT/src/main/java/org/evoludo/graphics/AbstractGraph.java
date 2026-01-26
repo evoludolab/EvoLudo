@@ -990,7 +990,7 @@ public abstract class AbstractGraph<B> extends FocusPanel
 	 * 
 	 * @param menu the context menu to populate
 	 */
-	private void addBufferSizeMenu(ContextMenu menu) {
+	protected void addBufferSizeMenu(ContextMenu menu) {
 		if (!hasHistory())
 			return;
 		if (bufferSizeMenu == null) {
@@ -1029,7 +1029,7 @@ public abstract class AbstractGraph<B> extends FocusPanel
 	 * 
 	 * @param menu the context menu to populate
 	 */
-	private void addLogScaleMenu(ContextMenu menu) {
+	protected void addLogScaleMenu(ContextMenu menu) {
 		if (this instanceof HasLogScaleY) {
 			if (logYMenu == null) {
 				logYMenu = new ContextMenuCheckBoxItem("Logarithmic y-axis", (ScheduledCommand) () -> {
@@ -1048,7 +1048,7 @@ public abstract class AbstractGraph<B> extends FocusPanel
 	 * 
 	 * @param menu the context menu to populate
 	 */
-	private void addZoomMenu(ContextMenu menu) {
+	protected void addZoomMenu(ContextMenu menu) {
 		if (!(this instanceof Zooming))
 			return;
 		if (zoomMenu == null) {
@@ -1218,8 +1218,14 @@ public abstract class AbstractGraph<B> extends FocusPanel
 			bounds.adjust(0, 0, 0, -14); // 10px for font size plus some padding
 		String font = g.getFont();
 		setFont(style.ticksLabelFont);
-		double tik2 = Math.max(g.measureText(Formatter.formatFix(style.xMax, 2)).getWidth(),
-				g.measureText(Formatter.formatFix(style.xMin, 2)).getWidth()) * 0.5;
+		double xMinLabel = style.xMin;
+		double xMaxLabel = style.xMax;
+		if (style.offsetXTickLabels && !style.percentX) {
+			xMinLabel += style.xTickOffset;
+			xMaxLabel += style.xTickOffset;
+		}
+		double tik2 = Math.max(g.measureText(Formatter.formatFix(xMaxLabel, 2)).getWidth(),
+				g.measureText(Formatter.formatFix(xMinLabel, 2)).getWidth()) * 0.5;
 		if (tik2 > style.minPadding) {
 			bounds.adjust(tik2, 0, -tik2, 0);
 		}
@@ -1352,6 +1358,8 @@ public abstract class AbstractGraph<B> extends FocusPanel
 				setFont(style.ticksLabelFont);
 				g.setFillStyle(style.frameColor);
 				double xval = style.xMin + n * frac * (style.xMax - style.xMin);
+				if (style.offsetXTickLabels && !style.percentX)
+					xval += style.xTickOffset;
 				String tick = style.percentX ? Formatter.formatPercent(xval, digits) : Formatter.format(xval, digits);
 				// center tick labels with ticks, except for first/last labels at the edges
 				double tickWidth = g.measureText(tick).getWidth();
