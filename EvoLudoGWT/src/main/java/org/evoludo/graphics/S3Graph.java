@@ -329,7 +329,10 @@ public class S3Graph extends AbstractGraph<double[]> implements Zooming, Shiftin
 			buffer.replace(add);
 		else
 			buffer.append(add);
-		System.arraycopy(buffer.last(), 0, init, 0, data.length);
+		int len = data.length;
+		if (init == null || init.length != len + 1)
+			init = new double[len + 1];
+		System.arraycopy(buffer.last(), 0, init, 0, len + 1);
 	}
 
 	/**
