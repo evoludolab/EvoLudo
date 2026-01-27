@@ -546,6 +546,7 @@ public class ODE extends Model implements DModel {
 	public boolean setInitialTraits(double[] init) {
 		if (init.length != nDim)
 			return false;
+		applyDependentTraits(init);
 		System.arraycopy(init, 0, y0, 0, nDim);
 		return true;
 	}
@@ -560,9 +561,51 @@ public class ODE extends Model implements DModel {
 		int start = idxSpecies[id];
 		if (init.length != idxSpecies[id + 1] - start)
 			return false;
+		applyDependentTraits(init, 0, init.length, dependents[id]);
 		System.arraycopy(init, start, y0, 0, idxSpecies[id + 1] - start);
 		init(false);
 		return true;
+	}
+
+	/**
+	 * Adjust dependent traits for all species in frequency-based dynamics so each
+	 * species' frequencies sum to one.
+	 *
+	 * @param state the state vector covering all species
+	 */
+	private void applyDependentTraits(double[] state) {
+		if (isDensity || dependents == null)
+			return;
+		for (int idx = 0; idx < species.size(); idx++) {
+			int nTraits = species.get(idx).getNTraits();
+			int start = idxSpecies[idx];
+			if (start + nTraits > state.length)
+				return;
+			applyDependentTraits(state, start, nTraits, dependents[idx]);
+		}
+	}
+
+	/**
+	 * Adjust the dependent trait for a single species slice in frequency-based
+	 * dynamics.
+	 *
+	 * @param state     the state vector containing the slice to adjust
+	 * @param start     the start offset of the species slice
+	 * @param nTraits   the number of traits for the species
+	 * @param dependent the dependent trait index (relative to the slice)
+	 */
+	private void applyDependentTraits(double[] state, int start, int nTraits, int dependent) {
+		if (isDensity || nTraits <= 0 || dependent < 0 || dependent >= nTraits)
+			return;
+		if (start < 0 || start + nTraits > state.length)
+			return;
+		double sum = 0.0;
+		for (int n = 0; n < nTraits; n++) {
+			if (n == dependent)
+				continue;
+			sum += state[start + n];
+		}
+		state[start + dependent] = Math.max(0.0, 1.0 - sum);
 	}
 
 	@Override
