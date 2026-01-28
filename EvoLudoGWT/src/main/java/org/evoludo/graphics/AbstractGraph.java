@@ -602,29 +602,6 @@ public abstract class AbstractGraph<B> extends FocusPanel
 	}
 
 	/**
-	 * The minimum time between updates in milliseconds.
-	 */
-	public static final int MIN_MSEC_BETWEEN_UPDATES = 100; // max 10 updates per second
-
-	/**
-	 * The field to store the time of the last update.
-	 */
-	protected double updatetime = -1.0;
-
-	/**
-	 * Determine whether it is time to update the display.
-	 * 
-	 * @return {@code true} if time to update graph
-	 */
-	public boolean doUpdate() {
-		double now = Duration.currentTimeMillis();
-		if (now - updatetime < MIN_MSEC_BETWEEN_UPDATES)
-			return false;
-		updatetime = now;
-		return true;
-	}
-
-	/**
 	 * CSS class applied when the user is grabbing a node.
 	 */
 	static final String CURSOR_GRAB_NODE_CLASS = "evoludo-cursorGrabNode";

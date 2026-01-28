@@ -651,8 +651,6 @@ public class HistoGraph extends AbstractGraph<double[]> implements BasicTooltipP
 	public boolean paint(boolean force) {
 		if (super.paint(force))
 			return true;
-		if (!force && !doUpdate())
-			return true;
 
 		g.save();
 		g.scale(scale, scale);

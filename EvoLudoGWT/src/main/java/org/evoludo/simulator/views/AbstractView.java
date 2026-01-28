@@ -136,7 +136,12 @@ public abstract class AbstractView<G extends AbstractGraph<?>> extends Composite
 	/**
 	 * Time of last GUI update
 	 */
-	double updatetime = -1.0;
+	double updatetimeView;
+
+	/**
+	 * Time of last status update.
+	 */
+	double updatetimeStatus;
 
 	/**
 	 * The GWT widget that contains the graphical representations of the data.
@@ -402,8 +407,7 @@ public abstract class AbstractView<G extends AbstractGraph<?>> extends Composite
 
 	@Override
 	public void moduleRestored() {
-		timestamp = -Double.MAX_VALUE;
-		updatetime = -1.0;
+		resetTimestamps();
 		for (G graph : graphs)
 			graph.reset();
 	}
@@ -421,8 +425,7 @@ public abstract class AbstractView<G extends AbstractGraph<?>> extends Composite
 	 * @param hard the flag to indicate whether to do a hard reset
 	 */
 	public void reset(boolean hard) {
-		timestamp = -Double.MAX_VALUE;
-		updatetime = -1.0;
+		resetTimestamps();
 		if (allocateGraphs()) {
 			int with = getOffsetWidth();
 			int height = getOffsetHeight();
@@ -433,8 +436,16 @@ public abstract class AbstractView<G extends AbstractGraph<?>> extends Composite
 
 	@Override
 	public void modelDidInit() {
+		resetTimestamps();
+	}
+
+	/**
+	 * Reset the timestamps used for throttling view and status updates.
+	 */
+	private void resetTimestamps() {
 		timestamp = -Double.MAX_VALUE;
-		updatetime = -1.0;
+		updatetimeView = -1.0;
+		updatetimeStatus = -1.0;
 	}
 
 	@Override
@@ -448,17 +459,54 @@ public abstract class AbstractView<G extends AbstractGraph<?>> extends Composite
 	 * <code>MIN_MSEC_BETWEEN_UPDATES</code> milliseconds. If update request are
 	 * made more frequently some are request are not honoured and simply dropped.
 	 */
-	protected static final int MIN_MSEC_BETWEEN_UPDATES = 50; // max 20 updates per second
+	protected static final int MIN_MSEC_BETWEEN_UPDATES = 100;
+
+	/**
+	 * Check if enough time has elapsed to perform a view update.
+	 *
+	 * @param force whether to force the update
+	 * @return {@code true} if the update should run
+	 */
+	protected boolean doUpdateView(boolean force) {
+		if (force)
+			return true;
+		double now = Duration.currentTimeMillis();
+		if (now - updatetimeView < MIN_MSEC_BETWEEN_UPDATES)
+			return false;
+		updatetimeView = now;
+		return true;
+	}
+
+	/**
+	 * Check if enough time has elapsed to compute a status update.
+	 *
+	 * @param force whether to force the status update
+	 * @return {@code true} if status should be recomputed
+	 */
+	protected boolean doUpdateStatus(boolean force) {
+		if (force)
+			return true;
+		double now = Duration.currentTimeMillis();
+		if (now - updatetimeStatus < MIN_MSEC_BETWEEN_UPDATES)
+			return false;
+		updatetimeStatus = now;
+		return true;
+	}
 
 	@Override
 	public void modelChanged(PendingAction action) {
-		if (action == PendingAction.NONE) {
-			double now = Duration.currentTimeMillis();
-			boolean update = (now - updatetime > MIN_MSEC_BETWEEN_UPDATES);
-			if (update)
-				updatetime = now;
-			update(update);
-		}
+		if (action != PendingAction.NONE)
+			return;
+		updateData();
+		if (!doUpdateView(false))
+			return;
+		update(false);
+	}
+
+	/**
+	 * Update view-specific data even when GUI rendering is throttled.
+	 */
+	protected void updateData() {
 	}
 
 	/**

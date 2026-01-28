@@ -309,8 +309,6 @@ public class ParaGraph extends AbstractGraph<double[]> implements Zooming, Shift
 	public boolean paint(boolean force) {
 		if (super.paint(force))
 			return true;
-		if (!force && !doUpdate())
-			return true;
 		paintPara(true);
 		return false;
 	}

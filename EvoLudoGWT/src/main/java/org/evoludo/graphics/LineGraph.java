@@ -412,8 +412,6 @@ public class LineGraph extends AbstractGraph<double[]>
 		// keep this method small — delegate detailed drawing to helpers
 		if (super.paint(force))
 			return true;
-		if (!force && !doUpdate())
-			return true;
 
 		g.save();
 		g.scale(scale, scale);

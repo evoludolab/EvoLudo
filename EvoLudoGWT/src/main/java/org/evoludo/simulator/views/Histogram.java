@@ -34,7 +34,6 @@ import java.awt.Color;
 import java.util.Arrays;
 import java.util.List;
 
-import org.evoludo.graphics.AbstractGraph;
 import org.evoludo.graphics.GraphStyle;
 import org.evoludo.graphics.HistoGraph;
 import org.evoludo.math.ArrayMath;
@@ -61,8 +60,6 @@ import org.evoludo.ui.ContextMenu;
 import org.evoludo.ui.ContextMenuItem;
 import org.evoludo.util.Formatter;
 import org.evoludo.util.NativeJS;
-
-import com.google.gwt.core.client.Duration;
 
 /**
  * Histogram view for displaying binned distributions of model quantities.
@@ -152,8 +149,8 @@ import com.google.gwt.core.client.Duration;
  * re-computes them only when geometries are dynamic or when not yet
  * processed.</li>
  * <li>Frequent status calculations and graph paints are throttled to avoid
- * excessive CPU usage (see {@code MIN_MSEC_BETWEEN_UPDATES} and timestamp
- * checks).</li>
+ * excessive CPU usage (see {@link AbstractView#MIN_MSEC_BETWEEN_UPDATES} and
+ * timestamp checks).</li>
  * </ul>
  *
  * <h3>Fixation statistics</h3>
@@ -629,9 +626,9 @@ public class Histogram extends AbstractView<HistoGraph> {
 	/**
 	 * Configure x-axis decorations based on group and overall position.
 	 *
-	 * @param style         graph style to update
+	 * @param style          graph style to update
 	 * @param showTickLabels whether to show x-axis tick labels
-	 * @param showLabel     whether to show the x-axis label
+	 * @param showLabel      whether to show the x-axis label
 	 */
 	private void applyXDecorations(GraphStyle style, boolean showTickLabels, boolean showLabel) {
 		style.showXTickLabels = showTickLabels || showLabel;
@@ -1162,8 +1159,21 @@ public class Histogram extends AbstractView<HistoGraph> {
 		}
 		if (!isActive)
 			return;
+		if (!doUpdateView(false))
+			return;
 		for (HistoGraph g : graphs)
 			g.paint(false);
+	}
+
+	@Override
+	protected void updateData() {
+		if (!isActive || type != Data.STATISTICS_STATIONARY)
+			return;
+		double newtime = model.getUpdates();
+		if (Math.abs(timestamp - newtime) > 1e-8) {
+			timestamp = newtime;
+			updateStationary();
+		}
 	}
 
 	@Override
@@ -1351,10 +1361,8 @@ public class Histogram extends AbstractView<HistoGraph> {
 	@Override
 	public String getStatus(boolean force) {
 		// status calculation are somewhat costly - throttle the max number of updates
-		double now = Duration.currentTimeMillis();
-		if (!force && now - updatetime < AbstractGraph.MIN_MSEC_BETWEEN_UPDATES)
+		if (!doUpdateStatus(force))
 			return status;
-		updatetime = now;
 		// multi-species not supported for statistics
 		// clo changes may trigger reset before view has been loaded
 		if (isMultispecies || !isLoaded)

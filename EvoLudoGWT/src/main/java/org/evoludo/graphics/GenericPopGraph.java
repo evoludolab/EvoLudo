@@ -364,13 +364,6 @@ public abstract class GenericPopGraph<T, N extends Network<?>> extends AbstractG
 		}
 	}
 
-	@Override
-	public boolean paint(boolean force) {
-		if (super.paint(force))
-			return true;
-		return !force && !doUpdate();
-	}
-
 	/**
 	 * Check whether the layout of the graph is static, i.e. a lattice or lattice
 	 * hierarchy.

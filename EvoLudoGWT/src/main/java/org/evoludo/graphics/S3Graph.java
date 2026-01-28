@@ -356,8 +356,6 @@ public class S3Graph extends AbstractGraph<double[]> implements Zooming, Shiftin
 	public boolean paint(boolean force) {
 		if (super.paint(force))
 			return true;
-		if (!force && !doUpdate())
-			return true;
 		paintS3(true);
 		return false;
 	}
