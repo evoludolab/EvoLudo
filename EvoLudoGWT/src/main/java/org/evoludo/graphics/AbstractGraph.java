@@ -829,6 +829,7 @@ public abstract class AbstractGraph<B> extends FocusPanel
 	 * 
 	 * @return the module
 	 */
+	@SuppressWarnings("java:S1452") // impossible to specify generic type here
 	public Module<?> getModule() {
 		return module;
 	}
@@ -1173,7 +1174,7 @@ public abstract class AbstractGraph<B> extends FocusPanel
 		if (style.showXTicks)
 			bounds.adjust(0, 0, 0, -(style.tickLength + 2));
 		if (style.showYTicks)
-			adjustBoundsForYSide(style.tickLength + 2);
+			adjustBoundsForYSide(style.tickLength + 2.0);
 	}
 
 	/**

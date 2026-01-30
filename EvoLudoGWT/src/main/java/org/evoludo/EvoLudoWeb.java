@@ -1571,6 +1571,8 @@ public class EvoLudoWeb extends Composite
 	 * exmple, buffer sizes or data storage for statistics. However, only views that
 	 * have been added to the DOM have valid sizes. For this reason the dimensions
 	 * of the active view are passed to all other views.
+	 *
+	 * @param resetViews whether to reset view state after loading
 	 */
 	private void loadViews(boolean resetViews) {
 		viewController.refreshViews();

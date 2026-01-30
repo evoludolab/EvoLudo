@@ -632,9 +632,9 @@ public abstract class IBS extends Model {
 	 * @param totRate  the total update rate
 	 * @return the number of processed updates
 	 * 
-	 * @see Lewis, P. A. W. & Shedler, G. S. (1979). “Simulation of nonhomogeneous
-	 *      Poisson processes by thinning.” Naval Research Logistics Quarterly,
-	 *      26(3), 403–413. DOI: 10.1002/nav.3800260304
+	 * @see <a href="https://doi.org/10.1002/nav.3800260304">Lewis, P. A. W. &amp; Shedler,
+	 *      G. S. (1979). Simulation of nonhomogeneous Poisson processes by
+	 *      thinning. Naval Research Logistics Quarterly, 26(3), 403-413.</a>
 	 */
 	private int processEvents(int nUpdates, double gincr, double totRate) {
 		int n = 0;

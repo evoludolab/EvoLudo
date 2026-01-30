@@ -901,6 +901,13 @@ public class ContextMenu extends FlowPanel
 	public class TouchTimer extends Timer {
 
 		/**
+		 * Create a timer to handle delayed touch-triggered context menus.
+		 */
+		public TouchTimer() {
+			// Default constructor - no initialization needed
+		}
+
+		/**
 		 * Horizontal position of touch event scheduled to trigger context menu
 		 * (relative to browser window).
 		 */

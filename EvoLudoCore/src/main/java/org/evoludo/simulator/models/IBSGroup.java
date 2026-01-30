@@ -410,30 +410,48 @@ public class IBSGroup {
 	 * Internal class to store hierarchy unit information.
 	 */
 	private class HierarchyUnit {
+
+		/**
+		 * Private constructor for the HierarchyUnit class. Prevents external
+		 * instantiation of HierarchyUnit objects, ensuring that HierarchyUnit instances
+		 * can only be created within the enclosing class. This follows the typical use
+		 * for inner classes that represent internal state or configuration but remain
+		 * hidden from outside.
+		 */
+		private HierarchyUnit() {
+			// No initialization needed
+		}
+
 		/**
 		 * Cached hierarchy geometry to avoid repeated casts.
 		 */
 		private final HierarchicalGeometry hgeom = (HierarchicalGeometry) geometry;
+
 		/**
 		 * Current hierarchy level being inspected.
 		 */
 		private int level = 0;
+
 		/**
 		 * Highest hierarchy level supported by the geometry.
 		 */
 		private int maxLevel = hgeom.getHierarchyLevels().length - 1;
+
 		/**
 		 * Size of a full hierarchy unit (leaf count).
 		 */
 		private int unitSize = hgeom.getHierarchyLevels()[maxLevel];
+
 		/**
 		 * Number of individuals contained at the current level.
 		 */
 		private int levelSize = 1;
+
 		/**
 		 * Size of the excluded neighborhood from previous level.
 		 */
 		private int exclSize = 1;
+
 		/**
 		 * Probability threshold used to progress through the hierarchy.
 		 */

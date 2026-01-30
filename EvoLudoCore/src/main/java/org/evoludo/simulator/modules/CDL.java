@@ -1024,6 +1024,9 @@ public class CDL extends Discrete implements Payoffs,
 			}
 		}
 
+		/**
+		 * Initialize the cube kaleidoscope pattern for cubic geometries.
+		 */
 		private void initCubeKaleidoscope() {
 			int l;
 			int mz;

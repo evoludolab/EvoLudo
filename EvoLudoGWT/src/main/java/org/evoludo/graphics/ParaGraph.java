@@ -468,10 +468,10 @@ public class ParaGraph extends AbstractGraph<double[]> implements Zooming, Shift
 			double[] prev = i.next();
 			double pt = prev[0];
 			map.data2Phase(prev, nextPt);
-				if (!Double.isNaN(ct)) {
-					strokeLine((nextPt.getX() - style.xMin) * xScale, (style.yMax - nextPt.getY()) * yScale, //
-							(currPt.getX() - style.xMin) * xScale, (style.yMax - currPt.getY()) * yScale);
-				}
+			if (!Double.isNaN(ct)) {
+				strokeLine((nextPt.getX() - style.xMin) * xScale, (style.yMax - nextPt.getY()) * yScale, //
+						(currPt.getX() - style.xMin) * xScale, (style.yMax - currPt.getY()) * yScale);
+			}
 			ct = pt;
 			Point2D swap = currPt;
 			currPt = nextPt;
@@ -704,6 +704,18 @@ public class ParaGraph extends AbstractGraph<double[]> implements Zooming, Shift
 	 * and zoom factor.
 	 */
 	private final class ViewState {
+
+		/**
+		 * Private constructor for the ViewState class. Prevents external instantiation
+		 * of ViewState objects, ensuring that ViewState instances can only be created
+		 * within the enclosing class. This follows the typical use for inner classes
+		 * that represent internal state or configuration but remain hidden from
+		 * outside.
+		 */
+		private ViewState() {
+			// No initialization needed
+		}
+
 		/**
 		 * Cached frame width in pixels.
 		 */
@@ -714,7 +726,9 @@ public class ParaGraph extends AbstractGraph<double[]> implements Zooming, Shift
 		 */
 		private double h;
 
-		/** Cached minimum x-axis value for the base range. */
+		/**
+		 * Cached minimum x-axis value for the base range.
+		 */
 		private double baseXMin;
 
 		/**
@@ -737,7 +751,9 @@ public class ParaGraph extends AbstractGraph<double[]> implements Zooming, Shift
 		 */
 		private double zoomX;
 
-		/** Cached y-axis zoom factor. */
+		/**
+		 * Cached y-axis zoom factor.
+		 */
 		private double zoomY;
 
 		/**

@@ -32,16 +32,16 @@ package org.evoludo.simulator.ui;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.logging.Logger;
-import java.util.LinkedHashMap;
 
 import org.evoludo.simulator.EvoLudoGWT;
 import org.evoludo.simulator.models.Data;
+import org.evoludo.simulator.models.Mode;
 import org.evoludo.simulator.models.Model;
 import org.evoludo.simulator.models.ModelType;
-import org.evoludo.simulator.models.Mode;
 import org.evoludo.simulator.modules.Module;
 import org.evoludo.simulator.views.AbstractView;
 import org.evoludo.simulator.views.Console;
@@ -68,7 +68,6 @@ import org.evoludo.util.NativeJS;
 import com.google.gwt.core.client.Scheduler;
 import com.google.gwt.user.client.ui.DeckLayoutPanel;
 import com.google.gwt.user.client.ui.ListBox;
-import com.google.gwt.user.client.ui.Widget;
 
 /**
  * Controller that manages the set of {@link AbstractView} instances displayed
@@ -315,6 +314,8 @@ public class ViewController {
 
 	/**
 	 * Unload and remove all views except the console.
+	 *
+	 * @param oldViews previously active views to unload
 	 */
 	private void unloadViews(HashMap<String, AbstractView<?>> oldViews) {
 		for (AbstractView<?> view : oldViews.values()) {

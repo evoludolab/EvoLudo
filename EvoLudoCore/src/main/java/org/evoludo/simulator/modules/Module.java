@@ -1037,7 +1037,7 @@ public abstract class Module<T extends Module<T>>
 	/**
 	 * Sets the competition rate for ecological population updates.
 	 * 
-	 * @param rate the competition rate
+	 * @param rates the competition rates per species
 	 * @return {@code true} if the competition rate changed
 	 */
 	public boolean setCompetitionRates(double[] rates) {
