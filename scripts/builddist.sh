@@ -30,35 +30,23 @@
 # The formatting may be adjusted to comply with publisher requirements.
 #
 
-EVOLUDO_PUBLIC="EvoLudo"
-EVOLUDO_CORE_HOME="EvoLudoCore"
-EVOLUDO_JRE_HOME="EvoLudoJRE"
-EVOLUDO_GWT_HOME="EvoLudoGWT"
-EVOLUDO_TEST_HOME="EvoLudoTest"
-EVOLUDO_TEST_TEST="$EVOLUDO_TEST_HOME/tests"
-EVOLUDO_DIST="dist"
-EVOLUDO_API="$EVOLUDO_DIST/api"
-EVOLUDO_WAR="$EVOLUDO_DIST/war"
-EVOLUDO_SH="scripts"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+source "${SCRIPT_DIR}/vars.sh"
 
-### find most recently changed src file (skip hidden files)
-LATEST_JAVA=$(find . -type f -name '*.java' -print0 |
-	xargs -0 stat -f "%m %N" |
-	sort -rn | head -1 | cut -f2- -d" ")
-LATEST_GWT=$(find ${EVOLUDO_GWT_HOME}/target/EvoLudoGWT* \
-	-type f -name 'evoludoweb.nocache.js')
-LATEST_JAR=$(find ${EVOLUDO_JRE_HOME}/target/ \
-	-type f -name 'EvoLudo.*.jar' -print0 |
-	xargs -0 stat -f "%m %N" |
-	sort -rn | head -1 | cut -f2- -d" ")
-LATEST_DOC=$(find ${EVOLUDO_API}/ \
-	-type f -name '*.html' -print0 |
-	xargs -0 stat -f "%m %N" |
-	sort -rn | head -1 | cut -f2- -d" ")
+# make scripts fail fast on errors
+set -euo pipefail
+echo "Building EvoLudo distribution..."
 
 if [ -d ${EVOLUDO_DIST} ]; then
-	echo "Distribution directory exists - aborting!"
-	exit 1
+    read -p "Distribution directory exists - skip or rebuild? [Skip|rebuild] " -n 1 -r
+	echo # (optional) move to a new line
+	if [[ $REPLY =~ ^[Ss]$ ]]; then
+		echo "Skipping distribution!"
+		exit 0
+	else
+		echo "Re-building EvoLudo distribution..."
+		rm -rf ${EVOLUDO_DIST}
+	fi
 fi
 
 read -p "Run tests? [Yes|no] " -n 1 -r
