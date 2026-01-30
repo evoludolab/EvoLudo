@@ -33,8 +33,6 @@
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "${SCRIPT_DIR}/vars.sh"
 
-# make scripts fail fast on errors
-set -euo pipefail
 echo "Preparing to run EvoLudo tests..."
 
 # build project - if needed

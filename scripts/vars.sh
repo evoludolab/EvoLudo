@@ -2,6 +2,9 @@
 
 # Shared variables and helpers for EvoLudo scripts.
 
+# make scripts fail fast on errors
+set -euo pipefail
+
 EVOLUDO_PUBLIC="EvoLudo"
 EVOLUDO_CORE_HOME="EvoLudoCore"
 EVOLUDO_JRE_HOME="EvoLudoJRE"
@@ -15,6 +18,16 @@ EVOLUDO_SH="scripts"
 EVOLUDO_GITEXPORTER_JSON="config/gitexporter.json"
 EVOLUDO_GITEXPORTER_FETCH_JSON="config/gitexporter.fetch.json"
 
+if stat --version >/dev/null 2>&1; then
+	STAT_MTIME_ARGS=(-c "%Y %n")
+else
+	STAT_MTIME_ARGS=(-f "%m %N")
+fi
+
+stat_mtime_name() {
+	stat "${STAT_MTIME_ARGS[@]}" "$@"
+}
+
 latest_file() {
 	local root=$1
 	local pattern=$2
@@ -22,13 +35,17 @@ latest_file() {
 		return 0
 	fi
 	find "${root}" -type f -name "${pattern}" -print0 |
-		xargs -0 -r stat -f "%m %N" |
+		while IFS= read -r -d '' file; do
+			stat_mtime_name "$file"
+		done |
 		sort -rn | head -1 | cut -f2- -d" "
 }
 
 latest_java() {
 	find . -type f -name '*.java' -print0 |
-		xargs -0 -r stat -f "%m %N" |
+		while IFS= read -r -d '' file; do
+			stat_mtime_name "$file"
+		done |
 		sort -rn | head -1 | cut -f2- -d" "
 }
 

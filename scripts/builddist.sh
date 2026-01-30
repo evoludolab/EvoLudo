@@ -33,8 +33,6 @@
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "${SCRIPT_DIR}/vars.sh"
 
-# make scripts fail fast on errors
-set -euo pipefail
 echo "Building EvoLudo distribution..."
 
 if [ -d ${EVOLUDO_DIST} ]; then
