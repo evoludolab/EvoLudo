@@ -212,6 +212,7 @@ class LifecycleController {
 			}
 		}
 		engine.fireModuleUnloaded();
+		engine.activeModule = null;
 	}
 
 	/**
@@ -266,6 +267,8 @@ class LifecycleController {
 		if (engine.activeModel == null)
 			return;
 		engine.activeModel.unload();
+		// clear references to avoid stale models after unload.
+		engine.activeModule.setModel(null);
 		if (!quiet)
 			engine.fireModelUnloaded();
 		engine.activeModel = null;

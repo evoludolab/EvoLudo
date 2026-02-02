@@ -1671,12 +1671,12 @@ public class EvoLudoWeb extends Composite
 	public void showHelp() {
 		guiState.view = viewConsole;
 		logger.info(TAG_PRE_OPEN + "EvoLudo (GWT):\n" + engine.getCLOHelp() + TAG_PRE_CLOSE);
-		// no view may be available if things went wrong from the start...
-		if (evoludoDeck.getWidgetCount() == 0) {
-			evoludoDeck.add(viewConsole);
-			evoludoDeck.showWidget(viewConsole);
-			evoludoViews.clear();
-			evoludoViews.addItem(viewConsole.getName());
+		// no view may be available if things went wrong from the start,
+		// or neither a module or a model may be available...
+		if (evoludoDeck.getWidgetCount() == 0
+				|| engine.getModule() == null
+				|| engine.getModel() == null) {
+			viewController.refreshViews();
 			displayStatus("Set EvoLudo options to get started.");
 			return;
 		}

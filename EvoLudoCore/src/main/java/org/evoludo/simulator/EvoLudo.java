@@ -558,11 +558,13 @@ public abstract class EvoLudo
 	 * @return <code>true</code> if reset was necessary
 	 */
 	public boolean paramsDidChange() {
-		if (resetRequested || modelCheck()) {
-			modelReset();
-			return true;
+		if (activeModel != null) {
+			if (resetRequested || modelCheck()) {
+				modelReset();
+				return true;
+			}
+			activeModel.update();
 		}
-		activeModel.update();
 		fireSettingsChanged();
 		return false;
 	}

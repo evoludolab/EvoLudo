@@ -31,13 +31,10 @@
 package org.evoludo.simulator;
 
 import java.awt.Color;
-import java.util.Collection;
-import java.util.List;
 import java.util.logging.Level;
 
 import org.evoludo.math.ArrayMath;
 import org.evoludo.simulator.models.Model;
-import org.evoludo.simulator.models.ModelType;
 import org.evoludo.simulator.modules.Module;
 import org.evoludo.simulator.views.HasPhase2D;
 import org.evoludo.simulator.views.HasS3;
@@ -46,7 +43,6 @@ import org.evoludo.util.CLODelegate;
 import org.evoludo.util.CLOParser;
 import org.evoludo.util.CLOProvider;
 import org.evoludo.util.CLOption;
-import org.evoludo.util.CLOption.Key;
 
 /**
  * Encapsulates command line option setup, preprocessing, and parsing for
@@ -79,18 +75,6 @@ public class CLOController {
 	 */
 	public final CLOption cloModule = new CLOption("module", null, CLOCategory.Global,
 			"--module <m>    select module from:", new CLODelegate() {
-				@Override
-				public boolean parse(String arg) {
-					// option gets special treatment
-					return true;
-				}
-			});
-
-	/**
-	 * Command line option to set the type of model (see {@link ModelType}).
-	 */
-	public final CLOption cloModel = new CLOption("model", ModelType.IBS.getKey(), CLOCategory.Module,
-			"--model <m>     model type", new CLODelegate() {
 				@Override
 				public boolean parse(String arg) {
 					// option gets special treatment
@@ -354,7 +338,8 @@ public class CLOController {
 		if (engine.getModule() != null)
 			cloarray = ArrayMath.append(cloarray, cloModule.getName() + " " + engine.getModule().getKey());
 		if (engine.getModel() != null)
-			cloarray = ArrayMath.append(cloarray, cloModel.getName() + " " + engine.getModel().getType().getKey());
+			cloarray = ArrayMath.append(cloarray,
+					Module.cloModel.getName() + " " + engine.getModel().getType().getKey());
 		int issues = parser.parseCLO(cloarray);
 		if (reparseCLO) {
 			// start again from scratch
@@ -376,23 +361,18 @@ public class CLOController {
 		// first, deal with --help option
 		boolean helpRequested = containsHelpOption(cloarray);
 
-		// handle module option (preprocessing requires module to be loaded early)
-		cloarray = handleModuleOption(cloarray, helpRequested);
-
-		// determine feasible --model options for given module
-		cloModel.clearKeys();
-		Module<?> module = engine.getModule();
-		if (module == null)
-			return helpCLO;
-		List<ModelType> mt = module.getModelTypes();
-		cloModel.addKeys(mt);
-
-		// handle model option
-		cloarray = handleModelOption(cloarray, helpRequested);
-
 		// handle verbose option early so parsing reports use desired logging level
 		cloarray = handleVerboseOption(cloarray);
 
+		// handle module option (preprocessing requires module to be loaded early)
+		cloarray = handleModuleOption(cloarray, helpRequested);
+		// now we should have a valid module, if not, model should have been unloaded
+		Module<?> module = engine.getModule();
+		if (module == null)
+			return cloarray;
+
+		// handle model option
+		cloarray = module.preprocessModelOption(cloarray, helpRequested, helpCLO);
 		return cloarray;
 	}
 
@@ -448,69 +428,6 @@ public class CLOController {
 				engine.logger.severe("Use --module to load a module or --help for more information.");
 			if (engine.getModule() != null)
 				engine.unloadModule();
-			return helpCLO;
-		}
-		return cloarray;
-	}
-
-	/**
-	 * Process the {@code --model} option, constraining choices based on the
-	 * selected module.
-	 * 
-	 * @param cloarray      arguments to inspect
-	 * @param helpRequested whether help has been requested already
-	 * @return updated argument array
-	 */
-	private String[] handleModelOption(String[] cloarray, boolean helpRequested) {
-		String modelName = cloModel.getName();
-		Collection<Key> keys = cloModel.getKeys();
-		if (keys.isEmpty()) {
-			if (!helpRequested)
-				engine.logger.severe("No model found!");
-			return helpCLO;
-		}
-		ModelType defaulttype = (ModelType) cloModel.match(cloModel.getDefault());
-		ModelType type = null;
-		for (int i = 0; i < cloarray.length; i++) {
-			String param = cloarray[i];
-			if (!param.startsWith(modelName))
-				continue;
-			String newModel = CLOption.stripKey(modelName, param).trim();
-			// remove model option
-			cloarray = ArrayMath.drop(cloarray, i);
-			if (newModel.isEmpty()) {
-				type = defaulttype;
-				if (!helpRequested)
-					engine.logger.warning("model key missing - use default type " + type.getKey() + ".");
-				break;
-			}
-			type = ModelType.parse(newModel);
-			if (type == null || !keys.contains(type)) {
-				Model activeModel = engine.getModel();
-				if (activeModel != null) {
-					type = activeModel.getType();
-					if (!helpRequested)
-						engine.logger.warning(
-								"invalid model type " + newModel + " - keep current type " + type.getKey() + ".");
-				} else {
-					type = defaulttype;
-					if (!helpRequested)
-						engine.logger.warning(
-								"invalid model type " + newModel + " - use default type " + type.getKey() + ".");
-				}
-			}
-			break;
-		}
-		if (type == null) {
-			type = defaulttype;
-			if (keys.size() > 1 && !defaulttype.getKey().equals(cloModel.getDefault()) && !helpRequested)
-				engine.logger.warning("model type unspecified - use default type " + type.getKey() + ".");
-		}
-		// NOTE: currently models cannot be mix'n'matched between species
-		engine.loadModel(type);
-		if (engine.getModel() == null) {
-			if (!helpRequested)
-				engine.logger.severe("model type '" + type.getKey() + "' not supported!");
 			return helpCLO;
 		}
 		return cloarray;
@@ -604,7 +521,6 @@ public class CLOController {
 			// default verbosity if running as java application is warning
 			cloVerbose.setDefault("warning");
 		prsr.addCLO(cloModule);
-		prsr.addCLO(cloModel);
 		prsr.addCLO(cloSeed);
 		prsr.addCLO(cloRun);
 		prsr.addCLO(cloDelay);

@@ -961,7 +961,10 @@ public class CLOption implements Comparable<CLOption> {
 	private String buildArgKeys() {
 		// for multi-species modules, remember previous key
 		Key prev = null;
-		String[] args = getArg().split(CLOParser.SPECIES_DELIMITER);
+		String arg = getArg();
+		if (arg == null || arg.isEmpty())
+			return "INVALID";
+		String[] args = arg.split(CLOParser.SPECIES_DELIMITER);
 		StringBuilder sb = new StringBuilder();
 		for (int n = 0; n < args.length; n++) {
 			String[] argsn = args[n].split("\\s+|=|,");

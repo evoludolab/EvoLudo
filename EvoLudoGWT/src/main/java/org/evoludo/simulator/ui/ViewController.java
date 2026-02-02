@@ -138,6 +138,8 @@ public class ViewController {
 		public String getDescription() {
 			StringBuilder descr = new StringBuilder("--view <v>      select view (v: index or title)");
 			int idx = 1;
+			if (engine.getModel() == null)
+				refreshViews();
 			for (AbstractView<?> view : activeViews.values()) {
 				String keycode = "              " + (idx++) + ": ";
 				int len = keycode.length();
@@ -288,22 +290,18 @@ public class ViewController {
 		selector.clear();
 
 		Module<?> module = engine.getModule();
-		if (module == null) {
-			addView(console, oldViews);
-			lastModule = null;
-			return;
-		}
-
 		Model model = engine.getModel();
-		if (module != lastModule)
-			unloadViews(oldViews);
-		ModelType mt = model.getType();
-		boolean isODESDE = mt.isODE() || mt.isSDE();
+		if (module != null && model != null) {
+			if (module != lastModule)
+				unloadViews(oldViews);
+			ModelType mt = model.getType();
+			boolean isODESDE = mt.isODE() || mt.isSDE();
 
-		addStrategyViews(module, isODESDE, oldViews);
-		addFitnessViews(module, isODESDE, oldViews);
-		addStructureViews(module, isODESDE, oldViews);
-		addStatisticsViews(module, model, oldViews);
+			addStrategyViews(module, isODESDE, oldViews);
+			addFitnessViews(module, isODESDE, oldViews);
+			addStructureViews(module, isODESDE, oldViews);
+			addStatisticsViews(module, model, oldViews);
+		}
 
 		addView(console, oldViews);
 

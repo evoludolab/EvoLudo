@@ -33,6 +33,7 @@ package org.evoludo.simulator.modules;
 import java.awt.Color;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -469,6 +470,72 @@ public abstract class Module<T extends Module<T>>
 		if (this instanceof HasDE.PDEADV)
 			types.add(ModelType.PDEADV);
 		return types;
+	}
+
+	/**
+	 * Preprocess the {@code --model} option based on the selected module.
+	 * 
+	 * @param cloarray      the raw argument array
+	 * @param helpRequested whether help was already requested
+	 * @param helpCLO       the option array to trigger help output
+	 * @return updated argument array or {@code helpCLO} on failure
+	 */
+	public String[] preprocessModelOption(String[] cloarray, boolean helpRequested,
+			String[] helpCLO) {
+		cloModel.clearKeys();
+		List<ModelType> types = getModelTypes();
+		cloModel.addKeys(types);
+		String modelName = cloModel.getName();
+		Collection<CLOption.Key> keys = cloModel.getKeys();
+		if (keys.isEmpty()) {
+			if (!helpRequested)
+				logger.severe("No model found!");
+			return helpCLO;
+		}
+		ModelType defaulttype = (ModelType) cloModel.match(cloModel.getDefault());
+		ModelType type = null;
+		for (int i = 0; i < cloarray.length; i++) {
+			String param = cloarray[i];
+			if (!param.startsWith(modelName))
+				continue;
+			String newModel = CLOption.stripKey(modelName, param).trim();
+			// remove model option
+			cloarray = ArrayMath.drop(cloarray, i);
+			if (newModel.isEmpty()) {
+				type = defaulttype;
+				if (!helpRequested)
+					logger.warning("model key missing - use default type " + type.getKey() + ".");
+				break;
+			}
+			type = ModelType.parse(newModel);
+			if (type == null || !keys.contains(type)) {
+				Model activeModel = engine.getModel();
+				if (activeModel != null) {
+					type = activeModel.getType();
+					if (!helpRequested)
+						logger.warning(
+								"invalid model type " + newModel + " - keep current type " + type.getKey() + ".");
+				} else {
+					type = defaulttype;
+					if (!helpRequested)
+						logger.warning("invalid model type " + newModel + " - use default type " + type.getKey() + ".");
+				}
+			}
+			break;
+		}
+		if (type == null) {
+			type = defaulttype;
+			if (keys.size() > 1 && !defaulttype.getKey().equals(cloModel.getDefault()) && !helpRequested)
+				logger.warning("model type unspecified - use default type " + type.getKey() + ".");
+		}
+		// NOTE: currently models cannot be mix'n'matched between species
+		engine.loadModel(type);
+		if (engine.getModel() == null) {
+			if (!helpRequested)
+				logger.severe("model type '" + type.getKey() + "' not supported!");
+			return helpCLO;
+		}
+		return cloarray;
 	}
 
 	/**
@@ -1116,6 +1183,18 @@ public abstract class Module<T extends Module<T>>
 	}
 
 	/**
+	 * Command line option to set the type of model (see {@link ModelType}).
+	 */
+	public static final CLOption cloModel = new CLOption("model", ModelType.IBS.getKey(), CLOCategory.Module,
+			"--model <m>     model type", new CLODelegate() {
+				@Override
+				public boolean parse(String arg) {
+					// option gets special treatment
+					return true;
+				}
+			});
+
+	/**
 	 * Command line option to set the geometry (interaction and competition graphs
 	 * identical).
 	 * 
@@ -1759,6 +1838,8 @@ public abstract class Module<T extends Module<T>>
 		// continuous modules with no vacancies (cannot disable vacancies)
 		if (minTraits > 2 || (anyNonVacant && minTraits > 1))
 			parser.addCLO(cloTraitDisable);
+
+		parser.addCLO(cloModel);
 
 		if (model == null)
 			return;
