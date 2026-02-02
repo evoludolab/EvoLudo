@@ -157,7 +157,7 @@ public class TBT extends Discrete implements Payoffs,
 	@Override
 	public String getTraitName(int idx) {
 		String idxname = super.getTraitName(idx % nTraits);
-		if (!model.getType().isIBS()
+		if (!getModelType().isIBS()
 				|| !getIBSPopulation().getCompetitionGeometry().isType(GeometryType.SQUARE_NEUMANN_2ND))
 			return idxname;
 		if (idx >= nTraits)
@@ -169,7 +169,7 @@ public class TBT extends Discrete implements Payoffs,
 	public Color[] getMeanColors() {
 		Color[] colors = super.getMeanColors();
 		// not all models entertain competition geometries, e.g. ODE/SDE
-		if (!model.getType().isIBS()
+		if (!getModelType().isIBS()
 				|| !getIBSPopulation().getCompetitionGeometry().isType(GeometryType.SQUARE_NEUMANN_2ND))
 			return colors;
 		Color[] color2nd = new Color[2 * nTraits];

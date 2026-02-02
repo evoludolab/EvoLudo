@@ -608,7 +608,7 @@ public class ATBT extends TBT implements HasS3, HasPhase2D {
 	public Model createModel(ModelType type) {
 		if (!type.isODE())
 			return super.createModel(type);
-		if (model != null && model.getType().isODE())
+		if (getModelType().isODE())
 			return model;
 		return new ATBT.ODE();
 	}

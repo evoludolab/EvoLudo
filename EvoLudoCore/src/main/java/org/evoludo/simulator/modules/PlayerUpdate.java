@@ -180,7 +180,7 @@ public class PlayerUpdate {
 			case IMITATE_BETTER: // imitation update (better traits only)
 				str += " " + Formatter.formatSci(noise, 6);
 				// XXX add errors to PROPORTIONAL as well as DE models?
-				if (module.model.getType().isIBS())
+				if (module.getModelType().isIBS())
 					str += "," + Formatter.formatSci(error, 6);
 				break;
 			default:

@@ -187,7 +187,7 @@ public abstract class GenericPop<T, N extends Network<?>, G extends GenericPopGr
 	 *              competition geometry
 	 */
 	void setGraphGeometry(GenericPopGraph<T, N> graph, boolean inter) {
-		ModelType mt = model.getType();
+		ModelType mt = getModelType();
 		if (mt.isIBS()) {
 			Module<?> module = graph.getModule();
 			AbstractGeometry igeom = module.getIBSPopulation().getInteractionGeometry();
@@ -218,7 +218,7 @@ public abstract class GenericPop<T, N extends Network<?>, G extends GenericPopGr
 
 	@Override
 	public void update(boolean force) {
-		ModelType mt = model.getType();
+		ModelType mt = getModelType();
 		if (mt.isIBS() || mt.isPDE()) {
 			// always read data - some nodes may have changed due to user actions
 			double newtime = model.getUpdates();
@@ -276,7 +276,7 @@ public abstract class GenericPop<T, N extends Network<?>, G extends GenericPopGr
 
 	@Override
 	public void mouseHitNode(int id, int node, boolean alt) {
-		ModelType mt = model.getType();
+		ModelType mt = getModelType();
 		if (mt.isIBS())
 			((IBS) model).mouseHitNode(id, node, alt);
 	}
@@ -296,7 +296,7 @@ public abstract class GenericPop<T, N extends Network<?>, G extends GenericPopGr
 					.append(module.getName())
 					.append(TABLE_ROW_END);
 
-		ModelType mt = model.getType();
+		ModelType mt = getModelType();
 		// Delegate heavy logic to dedicated helpers to reduce cognitive complexity
 		if (mt.isIBS())
 			return tooltipForIBS(node, nNodes, module, graph, tip);

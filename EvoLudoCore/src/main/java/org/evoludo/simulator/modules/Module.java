@@ -116,6 +116,16 @@ public abstract class Module<T extends Module<T>>
 	protected Model model;
 
 	/**
+	 * Gets the type of the current model or {@link ModelType#NONE} if no model
+	 * is loaded.
+	 *
+	 * @return the model type or {@link ModelType#NONE}
+	 */
+	public ModelType getModelType() {
+		return model == null ? ModelType.NONE : model.getType();
+	}
+
+	/**
 	 * List with all species in module including this one.
 	 * 
 	 * <h3>Important:</h3>
@@ -215,7 +225,7 @@ public abstract class Module<T extends Module<T>>
 	 * @see EvoLudo#getRNG()
 	 */
 	public Model createModel(ModelType type) {
-		if (model != null && model.getType() == type)
+		if (getModelType() == type)
 			return model;
 		if (!getModelTypes().contains(type))
 			return null;

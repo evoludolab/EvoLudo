@@ -50,8 +50,10 @@ import org.evoludo.simulator.models.Data;
 import org.evoludo.simulator.models.LifecycleListener;
 import org.evoludo.simulator.models.Mode;
 import org.evoludo.simulator.models.Model;
+import org.evoludo.simulator.models.ModelType;
 import org.evoludo.simulator.models.RunListener;
 import org.evoludo.simulator.models.SampleListener;
+import org.evoludo.simulator.modules.Module;
 import org.evoludo.ui.ContextMenu;
 import org.evoludo.ui.ContextMenuItem;
 import org.evoludo.util.Formatter;
@@ -92,6 +94,16 @@ public abstract class AbstractView<G extends AbstractGraph<?>> extends Composite
 	 * The reference to the model that supplies the data for this graph.
 	 */
 	Model model;
+
+	/**
+	 * Gets the type of the current model or {@link ModelType#NONE} if no model
+	 * is loaded.
+	 *
+	 * @return the model type or {@link ModelType#NONE}
+	 */
+	protected ModelType getModelType() {
+		return engine.getModule().getModelType();
+	}
 
 	/**
 	 * The type of data shown in this graph.
