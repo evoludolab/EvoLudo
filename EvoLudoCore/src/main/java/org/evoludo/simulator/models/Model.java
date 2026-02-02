@@ -562,6 +562,7 @@ public abstract class Model implements CLOProvider {
 		species = engine.getModule().getSpecies();
 		nSpecies = species.size();
 		isMultispecies = (nSpecies > 1);
+		engine.addCLOProvider(this);
 		markers = new Markers(this);
 	}
 
@@ -571,6 +572,7 @@ public abstract class Model implements CLOProvider {
 	 * @see LifecycleListener#modelUnloaded()
 	 */
 	public void unload() {
+		engine.removeCLOProvider(this);
 		resetStatisticsSample();
 		rng = null;
 		species = null;
