@@ -162,6 +162,13 @@ public class Console extends AbstractView<AbstractGraph<?>> implements ContextMe
 	}
 
 	@Override
+	public void activate() {
+		if (isActive)
+			return;
+		isActive = true;
+	}
+
+	@Override
 	public String getName() {
 		return "Console log";
 	}

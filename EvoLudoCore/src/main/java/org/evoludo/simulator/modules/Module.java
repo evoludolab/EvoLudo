@@ -47,7 +47,6 @@ import org.evoludo.simulator.models.Advection;
 import org.evoludo.simulator.models.ChangeListener;
 import org.evoludo.simulator.models.IBS;
 import org.evoludo.simulator.models.IBSPopulation;
-import org.evoludo.simulator.models.Markers;
 import org.evoludo.simulator.models.LifecycleListener;
 import org.evoludo.simulator.models.Model;
 import org.evoludo.simulator.models.Model.HasDE;
@@ -139,21 +138,6 @@ public abstract class Module<T extends Module<T>>
 	 */
 	public int getId() {
 		return id;
-	}
-
-	/**
-	 * Markers for annotating graphical represenations of the state of the model.
-	 */
-	protected Markers markers;
-
-	/**
-	 * Get the list of markers. This serves to mark special values in different
-	 * kinds of graphs.
-	 * 
-	 * @return the list of markers
-	 */
-	public List<double[]> getMarkers() {
-		return markers.getMarkers();
 	}
 
 	/**
@@ -273,10 +257,8 @@ public abstract class Module<T extends Module<T>>
 	 * @param model the current model
 	 */
 	public void setModel(Model model) {
-		markers = new Markers(model);
 		for (T pop : species) {
 			pop.model = model;
-			pop.markers = markers;
 		}
 	}
 
@@ -392,7 +374,6 @@ public abstract class Module<T extends Module<T>>
 		trajectoryColor = null;
 		map2fitness = null;
 		playerUpdate = null;
-		markers = null;
 		// in multispecies modules reset opponent to this in order to allow
 		// freeing the memory of the other species. loading the module again
 		// will regenerate the other species.
@@ -1778,9 +1759,6 @@ public abstract class Module<T extends Module<T>>
 		// continuous modules with no vacancies (cannot disable vacancies)
 		if (minTraits > 2 || (anyNonVacant && minTraits > 1))
 			parser.addCLO(cloTraitDisable);
-
-		// add markers, fixed points in particular
-		parser.addCLO(markers.clo);
 
 		if (model == null)
 			return;

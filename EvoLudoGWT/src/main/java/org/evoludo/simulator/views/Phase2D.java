@@ -216,7 +216,7 @@ public class Phase2D extends AbstractView<ParaGraph> {
 		super.reset(hard);
 
 		Module<?> module = engine.getModule();
-		graph.setMarkers(module.getMarkers());
+		graph.setMarkers(model.getMarkers());
 		// set map for converting data to phase plane coordinates
 		map = ((HasPhase2D) module).getPhase2DMap();
 		if (map != null)

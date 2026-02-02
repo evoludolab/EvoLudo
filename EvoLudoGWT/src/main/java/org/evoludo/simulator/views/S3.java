@@ -152,7 +152,7 @@ public class S3 extends AbstractView<S3Graph> {
 		for (S3Graph graph : graphs) {
 			S3Map map = graph.getMap();
 			Module<?> module = graph.getModule();
-			graph.setMarkers(module.getMarkers());
+			graph.setMarkers(model.getMarkers());
 			graph.getStyle().trajColor = ColorMapCSS.Color2Css(module.getTrajectoryColor());
 			map.setNames(module.getTraitNames());
 			map.setColors(module.getTraitColors());

@@ -918,7 +918,7 @@ public class Histogram extends AbstractView<HistoGraph> {
 				data = graph.getData();
 			int nTraits = module.getNTraits();
 			Color[] colors = module.getTraitColors();
-			List<double[]> markers = module.getMarkers();
+			List<double[]> markers = model.getMarkers();
 			if (markers != null) {
 				for (double[] mark : markers)
 					graph.addMarker(mark[idx + 1], ColorMapCSS.Color2Css(colors[idx]), null,

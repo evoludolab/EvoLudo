@@ -212,7 +212,7 @@ public class Mean extends AbstractView<LineGraph> implements Shifter, Zoomer {
 		int i = 0;
 		for (Color color : colors)
 			mcolors[i++] = ColorMapCSS.Color2Css(ColorMap.addAlpha(color, 100));
-		graph.setMarkers(module.getMarkers(), mcolors);
+		graph.setMarkers(model.getMarkers(), mcolors);
 	}
 
 	/**
