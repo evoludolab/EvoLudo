@@ -489,7 +489,7 @@ public abstract class Module<T extends Module<T>>
 		Collection<CLOption.Key> keys = cloModel.getKeys();
 		if (keys.isEmpty()) {
 			if (!helpRequested)
-				logger.severe("No model found!");
+				logger.severe("model not found!");
 			return helpCLO;
 		}
 		ModelType defaulttype = (ModelType) cloModel.match(cloModel.getDefault());

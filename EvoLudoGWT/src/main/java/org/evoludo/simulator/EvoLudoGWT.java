@@ -337,7 +337,7 @@ public class EvoLudoGWT extends EvoLudo {
 	 * @param menu the context menu where entries can be added
 	 */
 	public void populateContextMenu(ContextMenu menu) {
-		ModelType mt = activeModel.getType();
+		ModelType mt = activeModel != null ? activeModel.getType() : ModelType.NONE;
 		if (mt.isODE() || mt.isSDE()) {
 			// add time reverse context menu
 			if (timeReverseMenu == null) {

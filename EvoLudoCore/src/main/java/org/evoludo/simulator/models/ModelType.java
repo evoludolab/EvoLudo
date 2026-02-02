@@ -92,7 +92,12 @@ public enum ModelType implements CLOption.Key {
 	/**
 	 * Reaction-diffusion-advection model.
 	 */
-	PDEADV("PDEADV", "Reaction-diffusion-advection model");
+	PDEADV("PDEADV", "Reaction-diffusion-advection model"),
+
+	/**
+	 * Place holder if no model available.
+	 */
+	NONE("NONE", "No model");
 
 	/**
 	 * Identifying key of the model type.
