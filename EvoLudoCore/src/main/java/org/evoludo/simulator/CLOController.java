@@ -346,17 +346,8 @@ public class CLOController {
 	 * @return parser exit status
 	 */
 	public int parseCLO(String[] cloarray) {
-		return parsePreprocessedCLO(preprocessCLO(cloarray));
-	}
-
-	/**
-	 * Parse arguments after preprocessing (quoting, substitutions) has completed.
-	 * 
-	 * @param cloarray processed arguments
-	 * @return parser exit status
-	 */
-	public int parsePreprocessedCLO(String[] cloarray) {
 		parser.setLogger(engine.logger);
+		cloarray = preprocessCLO(cloarray);
 		parser.initCLO();
 		// preprocessing removed (and possibly altered) --module and --model options
 		// add current settings back to cloarray
@@ -391,6 +382,8 @@ public class CLOController {
 		// determine feasible --model options for given module
 		cloModel.clearKeys();
 		Module<?> module = engine.getModule();
+		if (module == null)
+			return helpCLO;
 		List<ModelType> mt = module.getModelTypes();
 		cloModel.addKeys(mt);
 
@@ -437,6 +430,8 @@ public class CLOController {
 			if (moduleArgs == null || moduleArgs.length < 2) {
 				if (!helpRequested)
 					engine.logger.severe("module key missing");
+				if (engine.getModule() != null)
+					engine.unloadModule();
 				return helpCLO;
 			}
 			moduleName = moduleArgs[1];
@@ -451,6 +446,8 @@ public class CLOController {
 		if (moduleKey == null || !engine.loadModule(moduleKey.getKey())) {
 			if (!helpRequested)
 				engine.logger.severe("Use --module to load a module or --help for more information.");
+			if (engine.getModule() != null)
+				engine.unloadModule();
 			return helpCLO;
 		}
 		return cloarray;
