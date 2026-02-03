@@ -134,6 +134,11 @@ public class SIR extends Discrete implements HasIBS, HasDE.ODE, HasDE.SDE, HasDE
 	}
 
 	@Override
+	public String getAuthors() {
+		return "Christoph Hauert";
+	}
+
+	@Override
 	public void load() {
 		super.load();
 		// trait names (optional)

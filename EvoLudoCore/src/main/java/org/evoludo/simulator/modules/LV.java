@@ -92,6 +92,11 @@ public class LV extends Discrete implements HasDE.ODE, HasDE.SDE, HasDE.DualDyna
 	}
 
 	@Override
+	public String getAuthors() {
+		return "Christoph Hauert";
+	}
+
+	@Override
 	public void load() {
 		super.load();
 		// set species name
@@ -109,12 +114,6 @@ public class LV extends Discrete implements HasDE.ODE, HasDE.SDE, HasDE.DualDyna
 		super.unload();
 		predator.unload();
 		predator = null;
-	}
-
-	@Override
-	public boolean check() {
-		boolean doReset = super.check();
-		return doReset;
 	}
 
 	@Override
