@@ -36,6 +36,7 @@ import java.util.List;
 
 import org.evoludo.graphics.AbstractGraph.Shifter;
 import org.evoludo.graphics.AbstractGraph.Zoomer;
+import org.evoludo.math.ArrayMath;
 import org.evoludo.graphics.GraphStyle;
 import org.evoludo.graphics.LineGraph;
 import org.evoludo.simulator.ColorMap;
@@ -206,7 +207,8 @@ public class Mean extends AbstractView<LineGraph> implements Shifter, Zoomer {
 			style.percentY = true;
 		}
 		Module<?> module = graph.getModule();
-		Color[] colors = module.getMeanColors();
+		int nState = model.getNMean(module.getId());
+		Color[] colors = resizeColors(module.getMeanColors(), nState);
 		graph.setColors(ColorMapCSS.Color2Css(colors));
 		String[] mcolors = new String[colors.length];
 		int i = 0;
@@ -268,15 +270,13 @@ public class Mean extends AbstractView<LineGraph> implements Shifter, Zoomer {
 	 * @param graph the graph to configure
 	 */
 	private void setupDFitGraph(LineGraph graph) {
-		Color[] fitcolors;
 		Module<?> module = graph.getModule();
-		int nState = module.getNTraits();
+		int nState = model.getNMean(module.getId());
 
 		// one 'state' more for the average fitness
-		fitcolors = new Color[nState + 1]; // +1 for average fitness
-		System.arraycopy(module.getMeanColors(), 0, fitcolors, 0, nState);
-		fitcolors[nState] = Color.BLACK;
-		graph.setColors(ColorMapCSS.Color2Css(fitcolors));
+		Color[] colors = resizeColors(module.getMeanColors(), nState);
+		colors = ArrayMath.append(colors, Color.BLACK);
+		graph.setColors(ColorMapCSS.Color2Css(colors));
 
 		// cast is safe because module is Discrete
 		DModel dmodel = (DModel) model;
@@ -288,7 +288,7 @@ public class Mean extends AbstractView<LineGraph> implements Shifter, Zoomer {
 			monoScores[n + 1] = dmodel.getMonoScore(module.getId(), n);
 		String[] monoColors = new String[nState + 1];
 		int k = 0;
-		for (Color color : fitcolors)
+		for (Color color : colors)
 			monoColors[k++] = ColorMapCSS.Color2Css(ColorMap.addAlpha(color, 100));
 		ArrayList<double[]> marker = new ArrayList<>();
 		marker.add(monoScores);
@@ -304,6 +304,22 @@ public class Mean extends AbstractView<LineGraph> implements Shifter, Zoomer {
 		// hardcoded color: black for mean, light gray for mean +/- sdev
 		Color[] fitcolors = new Color[] { Color.BLACK, Color.LIGHT_GRAY, Color.LIGHT_GRAY };
 		graph.setColors(ColorMapCSS.Color2Css(fitcolors));
+	}
+
+	/**
+	 * Resize the color array to the specified length by repeating colors as needed.
+	 * 
+	 * @param colors array of colors to resize
+	 * @param length desired length of the resized array
+	 * @return the (resized) array of colors
+	 */
+	private Color[] resizeColors(Color[] colors, int length) {
+		Color[] resized = new Color[length];
+		if (length == 0 || colors == null || colors.length == 0)
+			return resized;
+		for (int i = 0; i < length; i++)
+			resized[i] = colors[i % colors.length];
+		return resized;
 	}
 
 	/**
