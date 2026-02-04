@@ -330,7 +330,8 @@ public class Mean extends AbstractView<LineGraph> implements Shifter, Zoomer {
 	 */
 	private void finishGraphSetup(LineGraph graph, boolean hard) {
 		int nState = graph.getNLines();
-		if (state == null || state.length != nState)
+		// shared buffer across graphs: keep it large enough for graph with most lines.
+		if (state == null || state.length < nState)
 			state = new double[nState];
 		GraphStyle style = graph.getStyle();
 		int nSpecies = model.getNSpecies();
