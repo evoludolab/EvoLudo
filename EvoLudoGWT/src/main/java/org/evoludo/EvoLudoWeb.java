@@ -682,6 +682,18 @@ public class EvoLudoWeb extends Composite
 	}
 
 	/**
+	 * Handle model reset event.
+	 */
+	public void handleModelDidReset() {
+		updateGUI();
+		if (deferStatusThresholdReset)
+			displayStatus(engine.getVersion(), Level.INFO.intValue() + 1);
+		else
+			resetStatusThreshold();
+		clearSnapshotMarker();
+	}
+
+	/**
 	 * Retrieve the logger and setup the log handler.
 	 * 
 	 * @param engine the EvoLudo engine
@@ -1463,6 +1475,7 @@ public class EvoLudoWeb extends Composite
 		Model newModel = engine.getModel();
 		boolean moduleChanged = (newModule == null || newModule != guiState.module || newModel != guiState.model);
 		if (moduleChanged) {
+			deferStatusThresholdReset = true;
 			engine.modelReset(true);
 			loadViews(false);
 			// notify of reset (reset above was quiet because views may not have
@@ -1502,6 +1515,10 @@ public class EvoLudoWeb extends Composite
 		processCLOSnap();
 		if (currentView != null && currentView.hasLayout() && engine.isSuspended())
 			engine.run();
+		if (deferStatusThresholdReset) {
+			deferStatusThresholdReset = false;
+			resetStatusThreshold();
+		}
 	}
 
 	/**
@@ -1705,6 +1722,12 @@ public class EvoLudoWeb extends Composite
 	private int displayStatusThresholdLevel = Level.ALL.intValue();
 
 	/**
+	 * Defer resetting the status threshold until after the loading sequence
+	 * completes.
+	 */
+	private boolean deferStatusThresholdReset = false;
+
+	/**
 	 * Displays a message in the status line of the EvoLudo GUI with the severity
 	 * <code>level</code>. Status messages are only overridden by subsequent
 	 * messages with the same or higher levels. The threshold level for displaying
@@ -1841,11 +1864,11 @@ public class EvoLudoWeb extends Composite
 		if (keyController.isAltDown()) {
 			evoludoInitReset.setText(BUTTON_RESET);
 			evoludoInitReset.setTitle("Initialize population and regenerate structure");
-			if (engine.getModel().permitsTimeReversal()) {
+			if (model.permitsTimeReversal()) {
 				evoludoStep.setText(BUTTON_PREV);
 				evoludoStep.setTitle("Backtrack single simulation step");
 			}
-			if (engine.getModel().permitsDebugStep()) {
+			if (model.permitsDebugStep()) {
 				evoludoStep.setText(BUTTON_DEBUG);
 				evoludoStep.setTitle("Single update event");
 			}

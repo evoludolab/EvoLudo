@@ -163,9 +163,6 @@ public class WebListener implements LifecycleListener, RunListener, ChangeListen
 
 	@Override
 	public void modelDidReset() {
-		gui.updateGUI();
-		gui.displayStatus(engine.getVersion(), Level.INFO.intValue() + 1);
-		gui.clearSnapshotMarker();
-		gui.resetStatusThreshold();
+		gui.handleModelDidReset();
 	}
 }
