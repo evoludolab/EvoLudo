@@ -86,6 +86,7 @@ public class WebListener implements LifecycleListener, RunListener, ChangeListen
 		engine.removeSampleListener(this);
 		engine.removeChangeListener(this);
 		SettingsController.onModelStopped(gui);
+		keyController.unregister();
 	}
 
 	@Override
