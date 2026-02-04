@@ -503,6 +503,8 @@ public abstract class Module<T extends Module<T>>
 			return helpCLO;
 		}
 		ModelType defaulttype = (ModelType) cloModel.match(cloModel.getDefault());
+		if (defaulttype == null && !types.isEmpty())
+			defaulttype = types.get(0);
 		ModelType type = null;
 		for (int i = 0; i < cloarray.length; i++) {
 			String param = cloarray[i];
