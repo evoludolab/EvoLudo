@@ -53,6 +53,9 @@ import com.google.gwt.core.client.Scheduler;
 import com.google.gwt.dom.client.Touch;
 import com.google.gwt.event.dom.client.DoubleClickEvent;
 import com.google.gwt.event.dom.client.DoubleClickHandler;
+import com.google.gwt.event.dom.client.MouseDownEvent;
+import com.google.gwt.event.dom.client.MouseMoveEvent;
+import com.google.gwt.event.dom.client.MouseWheelEvent;
 import com.google.gwt.event.dom.client.TouchStartEvent;
 
 /**
@@ -1336,6 +1339,40 @@ public class ParaGraph extends AbstractGraph<double[]> implements Zooming, Shift
 		double x = event.getX() - style.frameWidth;
 		double y = event.getY();
 		processInitXY(x, y);
+	}
+
+	@Override
+	public void onMouseDown(MouseDownEvent event) {
+		if (!inside(event.getX() - bounds.getX(), event.getY() - bounds.getY()))
+			return;
+		super.onMouseDown(event);
+	}
+
+	@Override
+	public void onMouseMove(MouseMoveEvent event) {
+		int x = event.getX();
+		int y = event.getY();
+		if (!leftMouseButton)
+			return;
+		if (!inside(x - bounds.getX(), y - bounds.getY())) {
+			element.removeClassName(CSS_CURSOR_MOVE_VIEW);
+			mouseX = -Integer.MAX_VALUE;
+			mouseY = -Integer.MAX_VALUE;
+			return;
+		}
+		if (mouseX == -Integer.MAX_VALUE) {
+			mouseX = x;
+			mouseY = y;
+			return;
+		}
+		super.onMouseMove(event);
+	}
+
+	@Override
+	public void onMouseWheel(MouseWheelEvent event) {
+		if (!inside(event.getX() - bounds.getX(), event.getY() - bounds.getY()))
+			return;
+		super.onMouseWheel(event);
 	}
 
 	/**
