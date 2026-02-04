@@ -53,9 +53,6 @@ import com.google.gwt.core.client.Scheduler;
 import com.google.gwt.dom.client.Touch;
 import com.google.gwt.event.dom.client.DoubleClickEvent;
 import com.google.gwt.event.dom.client.DoubleClickHandler;
-import com.google.gwt.event.dom.client.MouseDownEvent;
-import com.google.gwt.event.dom.client.MouseMoveEvent;
-import com.google.gwt.event.dom.client.MouseWheelEvent;
 import com.google.gwt.event.dom.client.TouchStartEvent;
 
 /**
@@ -1341,40 +1338,6 @@ public class ParaGraph extends AbstractGraph<double[]> implements Zooming, Shift
 		processInitXY(x, y);
 	}
 
-	@Override
-	public void onMouseDown(MouseDownEvent event) {
-		if (!inside(event.getX() - bounds.getX(), event.getY() - bounds.getY()))
-			return;
-		super.onMouseDown(event);
-	}
-
-	@Override
-	public void onMouseMove(MouseMoveEvent event) {
-		int x = event.getX();
-		int y = event.getY();
-		if (!leftMouseButton)
-			return;
-		if (!inside(x - bounds.getX(), y - bounds.getY())) {
-			element.removeClassName(CSS_CURSOR_MOVE_VIEW);
-			mouseX = -Integer.MAX_VALUE;
-			mouseY = -Integer.MAX_VALUE;
-			return;
-		}
-		if (mouseX == -Integer.MAX_VALUE) {
-			mouseX = x;
-			mouseY = y;
-			return;
-		}
-		super.onMouseMove(event);
-	}
-
-	@Override
-	public void onMouseWheel(MouseWheelEvent event) {
-		if (!inside(event.getX() - bounds.getX(), event.getY() - bounds.getY()))
-			return;
-		super.onMouseWheel(event);
-	}
-
 	/**
 	 * Helper method to convert screen coordinates into an initial configuration and
 	 * set the controller's initial state.
@@ -1416,10 +1379,10 @@ public class ParaGraph extends AbstractGraph<double[]> implements Zooming, Shift
 
 	@Override
 	public String getTooltipAt(int x, int y) {
+		if (!inside(x, y))
+			return null;
 		double localX = x - bounds.getX();
 		double localY = y - bounds.getY();
-		if (!inside(localX, localY))
-			return null;
 		ViewState state = currentViewState();
 		if (!state.valid)
 			return null;
@@ -1442,6 +1405,11 @@ public class ParaGraph extends AbstractGraph<double[]> implements Zooming, Shift
 	 */
 	private boolean inside(double x, double y) {
 		return !(x < 0 || y < 0 || x > bounds.getWidth() || y > bounds.getHeight());
+	}
+
+	@Override
+	protected boolean inside(int x, int y) {
+		return inside(x - bounds.getX(), y - bounds.getY());
 	}
 
 	/**

@@ -837,11 +837,11 @@ public class HistoGraph extends AbstractGraph<double[]> implements BasicTooltipP
 	public int getBinAt(int x, int y) {
 		if (data == null)
 			return -1;
-		x -= (int) (3 * style.frameWidth);
-		if (!bounds.contains(x, y))
+		if (!inside(x, y))
 			return -1;
+		int adjX = x - (int) (3 * style.frameWidth);
 		double ibarwidth = nBins / bounds.getWidth();
-		return (int) ((x - bounds.getX()) * ibarwidth);
+		return (int) ((adjX - bounds.getX()) * ibarwidth);
 	}
 
 	@Override
@@ -851,6 +851,12 @@ public class HistoGraph extends AbstractGraph<double[]> implements BasicTooltipP
 			return null;
 		BasicTooltipProvider provider = tooltipProvider != null ? tooltipProvider : this;
 		return provider.getTooltipAt(bar);
+	}
+
+	@Override
+	protected boolean inside(int x, int y) {
+		int adjX = x - (int) (3 * style.frameWidth);
+		return bounds.contains(adjX, y);
 	}
 
 	@Override

@@ -1012,15 +1012,18 @@ public class PopGraph2D extends GenericPopGraph<String, Network2D> implements Sh
 	 */
 	@Override
 	public void onMouseDown(MouseDownEvent event) {
-		// super sets mouse coordinates
+		// super sets mouse coordinates and leftMouseButton when inside
 		super.onMouseDown(event);
-		if (event.getNativeButton() == NativeEvent.BUTTON_LEFT) {
-			hitNode = findNodeAt(mouseX, mouseY);
-			if (hitNode >= 0) {
-				element.addClassName(CURSOR_GRAB_NODE_CLASS);
-			} else {
-				element.removeClassName(CURSOR_GRAB_NODE_CLASS);
-			}
+		if (!leftMouseButton) {
+			hitNode = -1;
+			element.removeClassName(CURSOR_GRAB_NODE_CLASS);
+			return;
+		}
+		hitNode = findNodeAt(mouseX, mouseY);
+		if (hitNode >= 0) {
+			element.addClassName(CURSOR_GRAB_NODE_CLASS);
+		} else {
+			element.removeClassName(CURSOR_GRAB_NODE_CLASS);
 		}
 	}
 
@@ -1068,10 +1071,21 @@ public class PopGraph2D extends GenericPopGraph<String, Network2D> implements Sh
 	@Override
 	public void onMouseMove(MouseMoveEvent event) {
 		if (hitNode >= 0) {
-			hitDragged = true;
-			element.addClassName("evoludo-cursorMoveNode");
 			int x = event.getX();
 			int y = event.getY();
+			if (!inside(x, y)) {
+				element.removeClassName("evoludo-cursorMoveNode");
+				mouseX = -Integer.MAX_VALUE;
+				mouseY = -Integer.MAX_VALUE;
+				return;
+			}
+			if (mouseX == -Integer.MAX_VALUE || mouseY == -Integer.MAX_VALUE) {
+				mouseX = x;
+				mouseY = y;
+				return;
+			}
+			hitDragged = true;
+			element.addClassName("evoludo-cursorMoveNode");
 			shiftNodeBy(hitNode, mouseX - x, mouseY - y);
 			mouseX = x;
 			mouseY = y;
@@ -1120,6 +1134,16 @@ public class PopGraph2D extends GenericPopGraph<String, Network2D> implements Sh
 			Touch touch = touches.get(0);
 			int x = touch.getRelativeX(element);
 			int y = touch.getRelativeY(element);
+			if (!inside(x, y)) {
+				mouseX = -Integer.MAX_VALUE;
+				mouseY = -Integer.MAX_VALUE;
+				return;
+			}
+			if (mouseX == -Integer.MAX_VALUE || mouseY == -Integer.MAX_VALUE) {
+				mouseX = x;
+				mouseY = y;
+				return;
+			}
 			// shift position of node
 			shiftNodeBy(hitNode, mouseX - x, mouseY - y);
 			mouseX = x;
@@ -1128,6 +1152,14 @@ public class PopGraph2D extends GenericPopGraph<String, Network2D> implements Sh
 			return;
 		}
 		super.onTouchMove(event);
+	}
+
+	@Override
+	protected boolean inside(int x, int y) {
+		// heuristic offset aligns with findNodeAt bounds checks
+		int adjX = x - (int) (style.frameWidth * zoomFactor + 0.5);
+		int adjY = y - (int) (style.frameWidth * zoomFactor - 0.5);
+		return bounds.contains(adjX, adjY);
 	}
 
 	/**

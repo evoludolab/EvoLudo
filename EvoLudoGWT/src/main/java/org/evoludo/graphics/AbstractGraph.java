@@ -2103,6 +2103,18 @@ public abstract class AbstractGraph<B> extends FocusPanel
 	protected int mouseY;
 
 	/**
+	 * Check if the event coordinates are inside the interactive plot area.
+	 * Default implementation accepts all coordinates.
+	 *
+	 * @param x the {@code x}-coordinate relative to the graph element
+	 * @param y the {@code y}-coordinate relative to the graph element
+	 * @return {@code true} if inside the interactive plot area
+	 */
+	protected boolean inside(int x, int y) {
+		return true;
+	}
+
+	/**
 	 * {@inheritDoc}
 	 * <p>
 	 * If mouse leaves graph while shifting the view stop shifting. Mouse events are
@@ -2131,8 +2143,15 @@ public abstract class AbstractGraph<B> extends FocusPanel
 	@Override
 	public void onMouseDown(MouseDownEvent event) {
 		if (event.getNativeButton() == NativeEvent.BUTTON_LEFT) {
-			mouseX = event.getX();
-			mouseY = event.getY();
+			int x = event.getX();
+			int y = event.getY();
+			if (!inside(x, y)) {
+				leftMouseButton = false;
+				element.removeClassName(CSS_CURSOR_MOVE_VIEW);
+				return;
+			}
+			mouseX = x;
+			mouseY = y;
 			leftMouseButton = true;
 			if (mouseMoveHandler == null)
 				mouseMoveHandler = addMouseMoveHandler(this);
@@ -2188,9 +2207,20 @@ public abstract class AbstractGraph<B> extends FocusPanel
 	public void onMouseMove(MouseMoveEvent event) {
 		if (leftMouseButton) {
 			// shift view
-			element.addClassName(CSS_CURSOR_MOVE_VIEW);
 			int x = event.getX();
 			int y = event.getY();
+			if (!inside(x, y)) {
+				element.removeClassName(CSS_CURSOR_MOVE_VIEW);
+				mouseX = -Integer.MAX_VALUE;
+				mouseY = -Integer.MAX_VALUE;
+				return;
+			}
+			if (mouseX == -Integer.MAX_VALUE || mouseY == -Integer.MAX_VALUE) {
+				mouseX = x;
+				mouseY = y;
+				return;
+			}
+			element.addClassName(CSS_CURSOR_MOVE_VIEW);
 			shifter.shift(mouseX - x, mouseY - y);
 			mouseX = x;
 			mouseY = y;
@@ -2218,9 +2248,11 @@ public abstract class AbstractGraph<B> extends FocusPanel
 	 */
 	@Override
 	public void onMouseWheel(MouseWheelEvent event) {
-		event.preventDefault();
 		int x = event.getX();
 		int y = event.getY();
+		if (!inside(x, y))
+			return;
+		event.preventDefault();
 		double dz = event.getNativeDeltaY();
 		if (hasMessage || dz == 0.0)
 			return;
@@ -2270,12 +2302,21 @@ public abstract class AbstractGraph<B> extends FocusPanel
 		if (Duration.currentTimeMillis() - touchEndTime > 250.0) {
 			// long touch(es)
 			JsArray<Touch> touches = event.getTouches();
+			boolean enableMove = false;
 			switch (touches.length()) {
 				case 1:
 					// initiate shift view
 					Touch touch = touches.get(0);
-					mouseX = touch.getRelativeX(element);
-					mouseY = touch.getRelativeY(element);
+					int x = touch.getRelativeX(element);
+					int y = touch.getRelativeY(element);
+					if (inside(x, y)) {
+						mouseX = x;
+						mouseY = y;
+						enableMove = true;
+					} else {
+						mouseX = -Integer.MAX_VALUE;
+						mouseY = -Integer.MAX_VALUE;
+					}
 					break;
 				case 2:
 					// initiate pinch zoom
@@ -2285,16 +2326,23 @@ public abstract class AbstractGraph<B> extends FocusPanel
 					Touch touch1 = touches.get(1);
 					int x1 = touch1.getRelativeX(element);
 					int y1 = touch1.getRelativeY(element);
-					pinchX = (x0 + x1) / 2;
-					pinchY = (y0 + y1) / 2;
-					double dX = (double) x0 - x1;
-					double dY = (double) y0 - y1;
-					pinchDist = Math.sqrt(dX * dX + dY * dY);
+					if (inside(x0, y0) && inside(x1, y1)) {
+						pinchX = (x0 + x1) / 2;
+						pinchY = (y0 + y1) / 2;
+						double dX = (double) x0 - x1;
+						double dY = (double) y0 - y1;
+						pinchDist = Math.sqrt(dX * dX + dY * dY);
+						enableMove = true;
+					} else {
+						pinchX = -Integer.MAX_VALUE;
+						pinchY = -Integer.MAX_VALUE;
+						pinchDist = -Double.MAX_VALUE;
+					}
 					break;
 				default:
 					break;
 			}
-			if (touchMoveHandler == null)
+			if (enableMove && touchMoveHandler == null)
 				touchMoveHandler = addTouchMoveHandler(this);
 		}
 	}
@@ -2352,6 +2400,16 @@ public abstract class AbstractGraph<B> extends FocusPanel
 				Touch touch = touches.get(0);
 				int x = touch.getRelativeX(element);
 				int y = touch.getRelativeY(element);
+				if (!inside(x, y)) {
+					mouseX = -Integer.MAX_VALUE;
+					mouseY = -Integer.MAX_VALUE;
+					return;
+				}
+				if (mouseX == -Integer.MAX_VALUE || mouseY == -Integer.MAX_VALUE) {
+					mouseX = x;
+					mouseY = y;
+					return;
+				}
 				shift(mouseX - x, mouseY - y);
 				mouseX = x;
 				mouseY = y;
@@ -2360,14 +2418,32 @@ public abstract class AbstractGraph<B> extends FocusPanel
 			case 2:
 				// process pinch zoom
 				Touch touch0 = touches.get(0);
-				int x0 = touch0.getClientX();
-				int y0 = touch0.getClientY();
+				int relX0 = touch0.getRelativeX(element);
+				int relY0 = touch0.getRelativeY(element);
+				int clientX0 = touch0.getClientX();
+				int clientY0 = touch0.getClientY();
 				Touch touch1 = touches.get(1);
-				int x1 = touch1.getClientX();
-				int y1 = touch1.getClientY();
-				double dX = (double) x0 - x1;
-				double dY = (double) y0 - y1;
+				int relX1 = touch1.getRelativeX(element);
+				int relY1 = touch1.getRelativeY(element);
+				int clientX1 = touch1.getClientX();
+				int clientY1 = touch1.getClientY();
+				if (!inside(relX0, relY0) || !inside(relX1, relY1)) {
+					pinchDist = -Double.MAX_VALUE;
+					pinchX = -Integer.MAX_VALUE;
+					pinchY = -Integer.MAX_VALUE;
+					return;
+				}
+				double dX = (double) clientX0 - clientX1;
+				double dY = (double) clientY0 - clientY1;
 				double dist = Math.sqrt(dX * dX + dY * dY);
+				if (pinchDist <= 0.0) {
+					pinchDist = dist;
+					pinchX = (relX0 + relX1) / 2;
+					pinchY = (relY0 + relY1) / 2;
+					return;
+				}
+				pinchX = (relX0 + relX1) / 2;
+				pinchY = (relY0 + relY1) / 2;
 				zoom(dist / pinchDist, pinchX, pinchY);
 				pinchDist = dist;
 				event.preventDefault();

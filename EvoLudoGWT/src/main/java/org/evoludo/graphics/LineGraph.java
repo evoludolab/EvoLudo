@@ -751,7 +751,7 @@ public class LineGraph extends AbstractGraph<double[]>
 	public String getTooltipAt(int x, int y) {
 		if (leftMouseButton)
 			return null;
-		if (!bounds.contains(x, y))
+		if (!inside(x, y))
 			return null;
 		double sx = (x - bounds.getX() - 0.5) / bounds.getWidth();
 		if (sx < 0.0 || sx > 1.0)
@@ -761,6 +761,11 @@ public class LineGraph extends AbstractGraph<double[]>
 		if (sy < 0.0 || sy > 1.0)
 			return null;
 		return tooltipProvider.getTooltipAt(sx, sy);
+	}
+
+	@Override
+	protected boolean inside(int x, int y) {
+		return bounds.contains(x, y);
 	}
 
 	@Override

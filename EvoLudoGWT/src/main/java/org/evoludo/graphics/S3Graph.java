@@ -760,10 +760,10 @@ public class S3Graph extends AbstractGraph<double[]> implements Zooming, Shiftin
 	@Override
 	public String getTooltipAt(int x, int y) {
 		// convert to user coordinates
+		if (!inside(x, y))
+			return null;
 		double sx = scaledX(x);
 		double sy = scaledY(y);
-		if (!inside(sx, sy))
-			return null;
 		if (tooltipProvider instanceof TooltipProvider.Simplex)
 			return ((TooltipProvider.Simplex) tooltipProvider).getTooltipAt(this, sx, sy);
 		if (tooltipProvider != null)
@@ -790,6 +790,11 @@ public class S3Graph extends AbstractGraph<double[]> implements Zooming, Shiftin
 		if (!inside)
 			return false;
 		return (Segment2D.orientation(c2, c0, p) >= 0);
+	}
+
+	@Override
+	protected boolean inside(int x, int y) {
+		return inside(scaledX(x), scaledY(y));
 	}
 
 	/**
