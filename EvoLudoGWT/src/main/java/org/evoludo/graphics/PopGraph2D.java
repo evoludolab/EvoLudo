@@ -751,6 +751,7 @@ public class PopGraph2D extends GenericPopGraph<String, Network2D> implements Sh
 			return;
 		}
 		dh = dw;
+		dw2 = dw / 2;
 		int newdim = dw * side + gap;
 		int dx = (bWidth - newdim) / 2;
 		int dy = (bHeight - newdim) / 2;
