@@ -63,6 +63,23 @@ public class VonNeumannGeometry extends SquareGeometry {
 	}
 
 	/**
+	 * Initialize one hierarchical von Neumann square deme using population and
+	 * deme sizes.
+	 *
+	 * @param geometry      geometry receiving the links
+	 * @param popSize       total population size
+	 * @param demeSize      number of individuals in the deme
+	 * @param startIndex    index offset into the population
+	 * @param fixedBoundary {@code true} for fixed boundary conditions
+	 */
+	public static void initHierarchicalVonNeumann(AbstractGeometry geometry, int popSize, int demeSize,
+			int startIndex, boolean fixedBoundary) {
+		int side = (int) Math.sqrt(demeSize);
+		int fullside = (int) Math.sqrt(popSize);
+		initVonNeumann(geometry, side, fullside, startIndex, fixedBoundary);
+	}
+
+	/**
 	 * Initialize a von Neumann square lattice.
 	 *
 	 * @param geometry      geometry receiving the links

@@ -94,9 +94,9 @@ public class SquareGeometry extends AbstractLattice {
 	public void init() {
 		int side = prepareSquareLattice();
 		if ((int) Math.rint(connectivity) == 1)
-			initSquareSelf(side, side, 0);
+			SquareGeometry.initSquareSelf(this, side, side, 0);
 		else
-			initSquare(side, side, 0);
+			SquareGeometry.initSquare(this, side, side, 0, fixedBoundary);
 		isValid = true;
 	}
 
@@ -112,18 +112,6 @@ public class SquareGeometry extends AbstractLattice {
 		isUndirected = true;
 		isRegular = true;
 		return (int) Math.floor(Math.sqrt(size) + 0.5);
-	}
-
-	/**
-	 * Initialize a square lattice that only connects nodes to themselves (used
-	 * when connectivity equals one).
-	 *
-	 * @param side     side length of the (sub) lattice
-	 * @param fullside global side length
-	 * @param offset   index offset into the population
-	 */
-	protected void initSquareSelf(int side, int fullside, int offset) {
-		SquareGeometry.initSquareSelf(this, side, fullside, offset);
 	}
 
 	/**
@@ -146,14 +134,19 @@ public class SquareGeometry extends AbstractLattice {
 	}
 
 	/**
-	 * Initialize a square lattice with arbitrary (odd) neighbourhood sizes.
+	 * Initialize one hierarchical square deme using population and deme sizes.
 	 *
-	 * @param side     side length of the (sub) lattice
-	 * @param fullside global side length
-	 * @param offset   index offset into the population
+	 * @param geometry      geometry receiving the links
+	 * @param popSize       total population size
+	 * @param demeSize      number of individuals in the deme
+	 * @param startIndex    index offset into the population
+	 * @param fixedBoundary {@code true} for fixed boundary conditions
 	 */
-	protected void initSquare(int side, int fullside, int offset) {
-		SquareGeometry.initSquare(this, side, fullside, offset, fixedBoundary);
+	public static void initHierarchicalSquare(AbstractGeometry geometry, int popSize, int demeSize, int startIndex,
+			boolean fixedBoundary) {
+		int side = (int) Math.sqrt(demeSize);
+		int fullside = (int) Math.sqrt(popSize);
+		SquareGeometry.initSquare(geometry, side, fullside, startIndex, fixedBoundary);
 	}
 
 	/**

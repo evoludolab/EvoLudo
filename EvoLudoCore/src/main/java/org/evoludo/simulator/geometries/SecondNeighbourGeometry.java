@@ -64,6 +64,23 @@ public class SecondNeighbourGeometry extends SquareGeometry {
 	}
 
 	/**
+	 * Initialize one hierarchical second-neighbour square deme using population and
+	 * deme sizes.
+	 *
+	 * @param geometry      geometry receiving the links
+	 * @param popSize       total population size
+	 * @param demeSize      number of individuals in the deme
+	 * @param startIndex    index offset into the population
+	 * @param fixedBoundary {@code true} for fixed boundary conditions
+	 */
+	public static void initHierarchicalSecondNeighbour(AbstractGeometry geometry, int popSize, int demeSize,
+			int startIndex, boolean fixedBoundary) {
+		int side = (int) Math.sqrt(demeSize);
+		int fullside = (int) Math.sqrt(popSize);
+		initSecondNeighbour(geometry, side, fullside, startIndex, fixedBoundary);
+	}
+
+	/**
 	 * Initialize a second-neighbour square lattice.
 	 *
 	 * @param geometry      geometry receiving the links

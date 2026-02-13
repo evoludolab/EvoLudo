@@ -238,20 +238,29 @@ public class HierarchicalGeometry extends AbstractLattice {
 	private void initHierarchy(int level, int start) {
 		if (level == hierarchy.length - 1) {
 			int nIndiv = hierarchy[level];
-			int end = start + nIndiv;
+			Hierarchical initializer;
 			switch (subType) {
 				case SQUARE_NEUMANN:
+					initializer = VonNeumannGeometry::initHierarchicalVonNeumann;
+					break;
 				case SQUARE_NEUMANN_2ND:
+					initializer = SecondNeighbourGeometry::initHierarchicalSecondNeighbour;
+					break;
 				case SQUARE_MOORE:
+					initializer = MooreGeometry::initHierarchicalMoore;
+					break;
 				case SQUARE:
-					initHierarchySquare(start, end);
-					return;
+					initializer = SquareGeometry::initHierarchicalSquare;
+					break;
 				case WELLMIXED:
 				case COMPLETE:
+					initializer = CompleteGeometry::initHierarchicalComplete;
+					break;
 				default:
-					initHierarchyMeanfield(start, end);
-					return;
+					throw new IllegalStateException("Unhandled sub-geometry type: " + subType);
 			}
+			initializer.initHierarchicalDeme(this, size, nIndiv, start, fixedBoundary);
+			return;
 		}
 		switch (subType) {
 			case SQUARE_NEUMANN:
@@ -278,53 +287,6 @@ public class HierarchicalGeometry extends AbstractLattice {
 					initHierarchy(level + 1, skip);
 					skip += hskip;
 				}
-		}
-	}
-
-	/**
-	 * Utility method to generate hierarchical well-mixed subpopulations (demes).
-	 *
-	 * @param start the index of the first node to process
-	 * @param end   the index of the last node to process
-	 */
-	private void initHierarchyMeanfield(int start, int end) {
-		int nIndiv = end - start;
-		int nIndiv1 = Math.max(0, nIndiv - 1);
-		for (int n = start; n < end; n++) {
-			int[] links = new int[nIndiv1];
-			for (int i = 0; i < nIndiv1; i++)
-				links[i] = (start + i >= n) ? start + i + 1 : start + i;
-			in[n] = links;
-			out[n] = links;
-			kin[n] = nIndiv1;
-			kout[n] = nIndiv1;
-		}
-	}
-
-	/**
-	 * Utility method to generate hierarchical square-lattice demes.
-	 *
-	 * @param start the index of the first node to process
-	 * @param end   the index of the last node to process
-	 */
-	private void initHierarchySquare(int start, int end) {
-		int nIndiv = end - start;
-		int demeSide = (int) Math.sqrt(nIndiv);
-		int fullSide = (int) Math.sqrt(size);
-		switch (subType) {
-			case SQUARE_NEUMANN:
-				VonNeumannGeometry.initVonNeumann(this, demeSide, fullSide, start, fixedBoundary);
-				break;
-			case SQUARE_NEUMANN_2ND:
-				SecondNeighbourGeometry.initSecondNeighbour(this, demeSide, fullSide, start, fixedBoundary);
-				break;
-			case SQUARE_MOORE:
-				MooreGeometry.initMoore(this, demeSide, fullSide, start, fixedBoundary);
-				break;
-			case SQUARE:
-			default:
-				SquareGeometry.initSquare(this, demeSide, fullSide, start, fixedBoundary);
-				break;
 		}
 	}
 

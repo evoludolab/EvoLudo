@@ -75,22 +75,36 @@ public class CompleteGeometry extends AbstractGeometry {
 	public void init() {
 		if (size <= 0)
 			throw new IllegalStateException("size must be set before initializing a complete geometry");
-		int size1 = size - 1;
 		isRewired = false;
 		isUndirected = true;
 		isRegular = true;
-		connectivity = size1;
-
-		for (int n = 0; n < size; n++) {
-			int[] links = new int[size1];
-			in[n] = links;
-			kin[n] = size1;
-			out[n] = links;
-			kout[n] = size1;
-			for (int i = 0; i < size1; i++) {
-				links[i] = (i >= n) ? i + 1 : i;
-			}
-		}
+		connectivity = size - 1;
+		initHierarchicalComplete(this, size, size, 0, false);
 		isValid = true;
+	}
+
+	/**
+	 * Initialize one hierarchical complete-graph deme inside a host geometry.
+	 * For demes, this is identical to well-mixed initialization.
+	 *
+	 * @param geometry      host geometry receiving the links
+	 * @param popSize       total population size of the host geometry
+	 * @param demeSize      number of individuals in the deme
+	 * @param startIndex    index offset of the deme in the host geometry
+	 * @param fixedBoundary ignored for complete demes
+	 */
+	public static void initHierarchicalComplete(AbstractGeometry geometry, int popSize, int demeSize, int startIndex,
+			boolean fixedBoundary) {
+		int nIndiv = Math.max(0, demeSize);
+		int nIndiv1 = Math.max(0, nIndiv - 1);
+		for (int n = startIndex; n < startIndex + nIndiv; n++) {
+			int[] links = new int[nIndiv1];
+			geometry.in[n] = links;
+			geometry.kin[n] = nIndiv1;
+			geometry.out[n] = links;
+			geometry.kout[n] = nIndiv1;
+			for (int i = 0; i < nIndiv1; i++)
+				links[i] = (startIndex + i >= n) ? startIndex + i + 1 : startIndex + i;
+		}
 	}
 }

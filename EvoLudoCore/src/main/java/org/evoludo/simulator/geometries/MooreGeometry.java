@@ -64,6 +64,23 @@ public class MooreGeometry extends SquareGeometry {
 	}
 
 	/**
+	 * Initialize one hierarchical Moore square deme using population and deme
+	 * sizes.
+	 *
+	 * @param geometry      geometry receiving the links
+	 * @param popSize       total population size
+	 * @param demeSize      number of individuals in the deme
+	 * @param startIndex    index offset into the population
+	 * @param fixedBoundary {@code true} for fixed boundary conditions
+	 */
+	public static void initHierarchicalMoore(AbstractGeometry geometry, int popSize, int demeSize, int startIndex,
+			boolean fixedBoundary) {
+		int side = (int) Math.sqrt(demeSize);
+		int fullside = (int) Math.sqrt(popSize);
+		initMoore(geometry, side, fullside, startIndex, fixedBoundary);
+	}
+
+	/**
 	 * Initialize a Moore square lattice.
 	 *
 	 * @param geometry      geometry receiving the links
