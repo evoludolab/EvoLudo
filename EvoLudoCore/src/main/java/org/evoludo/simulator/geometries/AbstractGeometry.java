@@ -1526,11 +1526,11 @@ public abstract class AbstractGeometry {
 				for (int n = j + 1; n < k; n++)
 					if (links[i][n] == idx) {
 						ok = false;
-						logger.fine("Node " + i + " has double " + type + "-connection with node " + idx);
+						logNodeIssue(i, "has double " + type + "-connection with node " + idx);
 					}
 			}
 		}
-		logger.fine("Multiple " + type + "-connections check: " + (ok ? "success!" : "failed!"));
+		logCheckResult("Multiple " + type + "-connections check:", ok);
 		return ok;
 	}
 
@@ -1551,7 +1551,7 @@ public abstract class AbstractGeometry {
 				ok &= hasNeigh(i, outi[j], in[outi[j]], kin[outi[j]], "out");
 			}
 		}
-		logger.fine("Consistency of in-, out-connections check: " + (ok ? "success!" : "failed!"));
+		logCheckResult("Consistency of in-, out-connections check:", ok);
 		return ok;
 	}
 
@@ -1571,7 +1571,7 @@ public abstract class AbstractGeometry {
 			for (int j = 0; j < nout; j++) {
 				if (outi[j] == i) {
 					ok = false;
-					logger.fine("Node " + i + " has loop in 'out'-connections");
+					logNodeIssue(i, "has loop in 'out'-connections");
 				}
 			}
 			int[] ini = in[i];
@@ -1579,11 +1579,11 @@ public abstract class AbstractGeometry {
 			for (int j = 0; j < nin; j++) {
 				if (ini[j] == i) {
 					ok = false;
-					logger.fine("Node " + i + " has loop in 'in'-connections");
+					logNodeIssue(i, "has loop in 'in'-connections");
 				}
 			}
 		}
-		logger.fine("Self-connections check: " + (ok ? "success!" : "failed!"));
+		logCheckResult("Self-connections check:", ok);
 		return ok;
 	}
 
@@ -1601,14 +1601,14 @@ public abstract class AbstractGeometry {
 		for (int i = 0; i < size; i++) {
 			if (kout[i] != nout) {
 				ok = false;
-				logger.fine("Node " + i + " has wrong 'out'-link count - " + kout[i] + " instead of " + nout);
+				logNodeIssue(i, "has wrong 'out'-link count - " + kout[i] + " instead of " + nout);
 			}
 			if (kin[i] != nin) {
 				ok = false;
-				logger.fine("Node " + i + " has wrong 'in'-link count - " + kin[i] + " instead of " + nin);
+				logNodeIssue(i, "has wrong 'in'-link count - " + kin[i] + " instead of " + nin);
 			}
 		}
-		logger.fine("Regularity check: " + (ok ? "success!" : "failed!"));
+		logCheckResult("Regularity check:", ok);
 		return ok;
 	}
 
@@ -1633,8 +1633,28 @@ public abstract class AbstractGeometry {
 			for (int j = 0; j < nina; j++)
 				ok &= hasNeigh(i, ina[j], in[ina[j]], kin[ina[j]], "in");
 		}
-		logger.fine("Undirected structure check: " + (ok ? "success!" : "failed!"));
+		logCheckResult("Undirected structure check:", ok);
 		return ok;
+	}
+
+	/**
+	 * Log a standardized pass/fail outcome for consistency checks.
+	 *
+	 * @param label message prefix describing the check
+	 * @param ok    {@code true} if the check passed
+	 */
+	private void logCheckResult(String label, boolean ok) {
+		logger.fine(label + (ok ? " pass" : " failed!"));
+	}
+
+	/**
+	 * Log a standardized node-centric message for consistency checks.
+	 *
+	 * @param node    node identifier referenced in the message
+	 * @param message message suffix describing the issue
+	 */
+	private void logNodeIssue(int node, String message) {
+		logger.fine("Node " + node + " " + message);
 	}
 
 	/**
@@ -1652,7 +1672,7 @@ public abstract class AbstractGeometry {
 		for (int k = 0; k < nNeigh; k++)
 			if (neighs[k] == src)
 				return true;
-		logger.fine("Node " + src + " has '" + dir + "'-link to node " + target + ", but not vice versa");
+		logNodeIssue(src, "has '" + dir + "'-link to node " + target + ", but not vice versa");
 		return false;
 	}
 
