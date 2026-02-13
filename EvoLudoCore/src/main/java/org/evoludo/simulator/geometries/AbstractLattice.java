@@ -95,6 +95,28 @@ public abstract class AbstractLattice extends AbstractGeometry {
 		return working;
 	}
 
+	/**
+	 * Enforce square lattice size and optionally even side lengths.
+	 *
+	 * @param requireEvenSide {@code true} if the side length must be even
+	 * @return {@code true} if the size had to be adjusted
+	 */
+	protected boolean ensureSquareSize(boolean requireEvenSide) {
+		boolean doReset = false;
+		int side = (int) Math.floor(Math.sqrt(size) + 0.5);
+		if (requireEvenSide)
+			side = (side + 1) / 2 * 2;
+		int side2 = side * side;
+		if (setSize(side2)) {
+			if (engine.getModule().cloNPopulation.isSet()) {
+				String parity = requireEvenSide ? "even integer " : "integer ";
+				warn("requires " + parity + "square size - using " + size + "!");
+			}
+			doReset = true;
+		}
+		return doReset;
+	}
+
 	@Override
 	public AbstractLattice clone() {
 		AbstractLattice clone = (AbstractLattice) super.clone();
