@@ -98,28 +98,24 @@ public class SecondNeighbourGeometry extends SquareGeometry {
 		clearLinksFrom(aPlayer);
 		if (interspecies)
 			addLinkAt(aPlayer, aPlayer);
-		addLinkAt(aPlayer, aPlayer + fullside);
 		addLinkAt(aPlayer, aPlayer + fullside + 1);
 
 		aPlayer = offset + side - 1;
 		clearLinksFrom(aPlayer);
 		if (interspecies)
 			addLinkAt(aPlayer, aPlayer);
-		addLinkAt(aPlayer, aPlayer + fullside);
 		addLinkAt(aPlayer, aPlayer + fullside - 1);
 
 		aPlayer = offset + (side - 1) * fullside;
 		clearLinksFrom(aPlayer);
 		if (interspecies)
 			addLinkAt(aPlayer, aPlayer);
-		addLinkAt(aPlayer, aPlayer - fullside);
 		addLinkAt(aPlayer, aPlayer - fullside + 1);
 
 		aPlayer = offset + (side - 1) * (fullside + 1);
 		clearLinksFrom(aPlayer);
 		if (interspecies)
 			addLinkAt(aPlayer, aPlayer);
-		addLinkAt(aPlayer, aPlayer - fullside);
 		addLinkAt(aPlayer, aPlayer - fullside - 1);
 
 		for (int i = 1; i < side - 1; i++) {
