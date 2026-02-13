@@ -53,7 +53,6 @@ import org.evoludo.simulator.models.Model;
 import org.evoludo.simulator.models.ModelType;
 import org.evoludo.simulator.models.RunListener;
 import org.evoludo.simulator.models.SampleListener;
-import org.evoludo.simulator.modules.Module;
 import org.evoludo.ui.ContextMenu;
 import org.evoludo.ui.ContextMenuItem;
 import org.evoludo.util.Formatter;

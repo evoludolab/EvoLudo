@@ -30,8 +30,6 @@
 
 package org.evoludo.simulator.ui;
 
-import java.util.logging.Level;
-
 import org.evoludo.EvoLudoWeb;
 import org.evoludo.simulator.EvoLudoGWT;
 import org.evoludo.simulator.models.ChangeListener;
