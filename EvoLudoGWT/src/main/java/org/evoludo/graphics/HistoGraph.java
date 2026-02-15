@@ -1,7 +1,7 @@
 //
 // EvoLudo Project
 //
-// Copyright 2010-2025 Christoph Hauert
+// Copyright 2010-2026 Christoph Hauert
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -127,7 +127,8 @@ import org.evoludo.util.Formatter;
  * {@link #getTooltipAt(int)}. Tooltip content varies by the histogram
  * {@code view.type} (degree, fitness, trait and several statistics types have
  * specialized tooltip formats).</li>
- * <li>Context menu support includes an Axes submenu with autoscaling, full-range,
+ * <li>Context menu support includes an Axes submenu with autoscaling,
+ * full-range,
  * and right y-axis controls; autoscaling can be enabled/disabled via
  * {@link #enableAutoscaleYMenu(boolean)}.</li>
  * </ul>

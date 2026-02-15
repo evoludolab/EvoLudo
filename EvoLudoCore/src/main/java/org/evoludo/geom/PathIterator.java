@@ -1,7 +1,7 @@
 //
 // EvoLudo Project
 //
-// Copyright 2010-2025 Christoph Hauert
+// Copyright 2010-2026 Christoph Hauert
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -34,7 +34,7 @@ package org.evoludo.geom;
  * for objects that implement the {@link java.awt.Shape Shape}
  * interface to return the geometry of their boundary by allowing
  * a caller to retrieve the path of that boundary a segment at a
- * time.  This interface allows these objects to retrieve the path of
+ * time. This interface allows these objects to retrieve the path of
  * their boundary a segment at a time by using 1st through 3rd order
  * B&eacute;zier curves, which are lines and quadratic or cubic
  * B&eacute;zier splines.
@@ -61,7 +61,7 @@ package org.evoludo.geom;
  *
  * @author Jim Graham
  *
- * Adapted from java.awt.geom.PathIterator and made more GWT friendly.
+ *         Adapted from java.awt.geom.PathIterator and made more GWT friendly.
  * 
  * @author Christoph Hauert
  */
@@ -73,7 +73,7 @@ public interface PathIterator {
      * path if a ray drawn in any direction from that point to
      * infinity is crossed by path segments an odd number of times.
      */
-	public static final int WIND_EVEN_ODD       = 0;
+    public static final int WIND_EVEN_ODD = 0;
 
     /**
      * The winding rule constant for specifying a non-zero rule
@@ -84,20 +84,20 @@ public interface PathIterator {
      * of times in the counter-clockwise direction than the
      * clockwise direction.
      */
-	public static final int WIND_NON_ZERO       = 1;
+    public static final int WIND_NON_ZERO = 1;
 
     /**
      * The segment type constant for a point that specifies the
      * starting location for a new subpath.
      */
-	public static final int SEG_MOVETO          = 0;
+    public static final int SEG_MOVETO = 0;
 
     /**
      * The segment type constant for a point that specifies the
      * end point of a line to be drawn from the most recently
      * specified point.
      */
-	public static final int SEG_LINETO          = 1;
+    public static final int SEG_LINETO = 1;
 
     /**
      * The segment type constant for the pair of points that specify
@@ -109,6 +109,7 @@ public interface PathIterator {
      * the first control point (P1),
      * and the final interpolated control point (P2).
      * The parametric control equation for this curve is:
+     * 
      * <pre>
      *          P(t) = B(2,0)*CP + B(2,1)*P1 + B(2,2)*P2
      *          0 &lt;= t &lt;= 1
@@ -119,7 +120,7 @@ public interface PathIterator {
      *               = n! / (m! * (n-m)!)
      * </pre>
      */
-	public static final int SEG_QUADTO          = 2;
+    public static final int SEG_QUADTO = 2;
 
     /**
      * The segment type constant for the set of 3 points that specify
@@ -132,6 +133,7 @@ public interface PathIterator {
      * the second control point (P2),
      * and the final interpolated control point (P3).
      * The parametric control equation for this curve is:
+     * 
      * <pre>
      *          P(t) = B(3,0)*CP + B(3,1)*P1 + B(3,2)*P2 + B(3,3)*P3
      *          0 &lt;= t &lt;= 1
@@ -141,20 +143,22 @@ public interface PathIterator {
      *        C(n,m) = Combinations of n things, taken m at a time
      *               = n! / (m! * (n-m)!)
      * </pre>
+     * 
      * This form of curve is commonly known as a B&eacute;zier curve.
      */
-	public static final int SEG_CUBICTO         = 3;
+    public static final int SEG_CUBICTO = 3;
 
     /**
      * The segment type constant that specifies that
      * the preceding subpath should be closed by appending a line segment
      * back to the point corresponding to the most recent SEG_MOVETO.
      */
-	public static final int SEG_CLOSE           = 4;
+    public static final int SEG_CLOSE = 4;
 
     /**
      * Returns the winding rule for determining the interior of the
      * path.
+     * 
      * @return the winding rule.
      * @see #WIND_EVEN_ODD
      * @see #WIND_NON_ZERO
@@ -163,8 +167,9 @@ public interface PathIterator {
 
     /**
      * Tests if the iteration is complete.
+     * 
      * @return <code>true</code> if all the segments have
-     * been read; <code>false</code> otherwise.
+     *         been read; <code>false</code> otherwise.
      */
     public boolean isDone();
 
@@ -187,8 +192,9 @@ public interface PathIterator {
      * SEG_QUADTO returns two points,
      * SEG_CUBICTO returns 3 points
      * and SEG_CLOSE does not return any points.
+     * 
      * @param coords an array that holds the data returned from
-     * this method
+     *               this method
      * @return the path-segment type of the current path segment.
      * @see #SEG_MOVETO
      * @see #SEG_LINETO

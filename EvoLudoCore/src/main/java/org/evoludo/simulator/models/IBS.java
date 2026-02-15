@@ -1,7 +1,7 @@
 //
 // EvoLudo Project
 //
-// Copyright 2010-2025 Christoph Hauert
+// Copyright 2010-2026 Christoph Hauert
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -632,7 +632,8 @@ public abstract class IBS extends Model {
 	 * @param totRate  the total update rate
 	 * @return the number of processed updates
 	 * 
-	 * @see <a href="https://doi.org/10.1002/nav.3800260304">Lewis, P. A. W. &amp; Shedler,
+	 * @see <a href="https://doi.org/10.1002/nav.3800260304">Lewis, P. A. W. &amp;
+	 *      Shedler,
 	 *      G. S. (1979). Simulation of nonhomogeneous Poisson processes by
 	 *      thinning. Naval Research Logistics Quarterly, 26(3), 403-413.</a>
 	 */

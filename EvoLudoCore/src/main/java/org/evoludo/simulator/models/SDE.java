@@ -1,7 +1,7 @@
 //
 // EvoLudo Project
 //
-// Copyright 2010-2025 Christoph Hauert
+// Copyright 2010-2026 Christoph Hauert
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -253,7 +253,8 @@ public class SDE extends ODE {
 	 *      Claussen J. C. &amp; Hauert, Ch. (2012) Stochastic differential
 	 *      equations for evolutionary dynamics with demographic noise and
 	 *      mutations, Phys. Rev. E 85, 041901</a>
-	 * @see <a href="https://doi.org/10.1103/PhysRevLett.94.218102">McKane, A. J., &amp;
+	 * @see <a href="https://doi.org/10.1103/PhysRevLett.94.218102">McKane, A. J.,
+	 *      &amp;
 	 *      Newman, T. J. (2005). Predator–prey cycles from resonant amplification
 	 *      of demographic stochasticity. Physical Review Letters, 94(21),
 	 *      218102</a>
