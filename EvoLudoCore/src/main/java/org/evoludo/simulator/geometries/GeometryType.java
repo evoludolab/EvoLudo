@@ -44,6 +44,9 @@ import org.evoludo.util.CLOption;
  * <dd>complete graph (connectivity \(k=N-1\))</dd>
  * <dt>HIERARCHY</dt>
  * <dd>hierarchical (meta-)populations</dd>
+ * <dt>META</dt>
+ * <dd>metapopulation with configurable deme and deme-arrangement
+ * structures</dd>
  * <dt>STAR</dt>
  * <dd>star graph (single hub)</dd>
  * <dt>WHEEL</dt>
@@ -145,14 +148,26 @@ public enum GeometryType implements CLOption.Key {
 					+ "                w: strength of ties between levels"),
 
 	/**
+	 * Metapopulation with independent geometry choices for within-deme links and
+	 * the deme arrangement.
+	 *
+	 * @see MetapopulationGeometry#init()
+	 */
+	META("L", "metapopulation (deme + arrangement)",
+			"L<deme>;<meta>[;d<nDemes>][,s<demeSize>] metapopulation\n"//
+					+ "                with geometry specs for demes and arrangement\n"//
+					+ "                (hierarchies excluded)"),
+
+	/**
 	 * Linear lattice, 1D. {@code l<l>[,<r>]} specifies a linear lattice with
 	 * {@code l} neighbours to the left and {@code r} to the right. If {@code r} is
 	 * missing or {@code r==l} the neighbourhood is symmetric.
 	 * 
 	 * @see LinearGeometry#init()
 	 */
-	LINEAR("l", "linear lattice, 1D", "l<l>[,<r>] linear lattice (l neighbourhood,\n"//
-			+ "                if r!=l asymmetric neighbourhood)"),
+	LINEAR("l", "linear lattice, 1D",
+			"l<l>[,<r>] linear lattice (l neighbourhood,\n"//
+					+ "                if r!=l asymmetric neighbourhood)"),
 
 	/**
 	 * Square lattice (von Neumann neighbourhood). Four nearest neighbours (north,
@@ -185,7 +200,8 @@ public enum GeometryType implements CLOption.Key {
 	 * @see SquareGeometry#init()
 	 * @see SquareGeometry#initSquare(int, int, int)
 	 */
-	SQUARE("N", "square lattice, 2D", "N<k> square lattice (k=3x3, 5x5...)"),
+	SQUARE("N", "square lattice, 2D",
+			"N<k> square lattice (k=3x3, 5x5...)"),
 
 	/**
 	 * Cubic lattice, 3D. {@code C<n>} cubic lattice with {@code n} neighbours,
@@ -193,7 +209,8 @@ public enum GeometryType implements CLOption.Key {
 	 * 
 	 * @see CubicGeometry#init()
 	 */
-	CUBE("C", "cubic lattice, 3D", "C<k> cubic lattice (k=2+2+2, 3x3x3, 5x5x5...)"),
+	CUBE("C", "cubic lattice, 3D",
+			"C<k> cubic lattice (k=2+2+2, 3x3x3, 5x5x5...)"),
 
 	/**
 	 * Hexagonal (honeycomb) lattice, connectivity \(k=6\).
@@ -504,6 +521,7 @@ public enum GeometryType implements CLOption.Key {
 
 			// hierarchies of random regular graphs or similar would be unique
 			case HIERARCHY: // deme structured, hierarchical graph
+			case META: // deme structured metapopulation
 				throw new UnsupportedOperationException(
 						"check uniqueness of sub-geometries instead!");
 
