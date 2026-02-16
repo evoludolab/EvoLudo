@@ -115,7 +115,7 @@ public class CLOController {
 	/**
 	 * Command line option to set the delay between subsequent updates.
 	 */
-	public final CLOption cloDelay = new CLOption("delay", "" + EvoLudo.DELAY_INIT, CLOCategory.GUI,
+	public final CLOption cloDelay = new CLOption("delay", Integer.toString((int) EvoLudo.DELAY_INIT), CLOCategory.GUI,
 			"--delay <d>     delay between updates (d: delay in msec)", new CLODelegate() {
 				@Override
 				public boolean parse(String arg) {
