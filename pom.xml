@@ -77,6 +77,16 @@
     </dependencies>
   </dependencyManagement>
 
+  <repositories>
+    <repository>
+      <id>evoludo-thirdparty-local</id>
+      <name>EvoLudo Third-Party Local Artifacts</name>
+      <url>file://${maven.multiModuleProjectDirectory}/EvoLudoGWT/maven-repo</url>
+      <!-- org.parallax3d:parallax-gwt:1.6 not available on maven central, see
+      https://github.com/thothbot/parallax -->
+    </repository>
+  </repositories>
+
   <build>
     <plugins>
       <plugin>
