@@ -48,6 +48,7 @@
     <gwt.optimize>9</gwt.optimize>
     <gwt.style.devmode>PRETTY</gwt.style.devmode>
     <gwt.optimize.devmode>0</gwt.optimize.devmode>
+    <gwt.version>2.13.0</gwt.version>
 
     <!-- Java version properties -->
     <java.version.lts>21</java.version.lts>
@@ -62,14 +63,9 @@
         <version>1.6</version>
       </dependency>
       <dependency>
-        <groupId>org.evoludo</groupId>
-        <artifactId>gwt-user-epub</artifactId>
-        <version>2.12.2</version>
-      </dependency>
-      <dependency>
         <groupId>org.gwtproject</groupId>
         <artifactId>gwt</artifactId>
-        <version>2.12.2</version>
+        <version>${gwt.version}</version>
         <type>pom</type>
         <scope>import</scope>
       </dependency>
@@ -259,7 +255,9 @@
           <configuration>
             <sourceLevel>${java.version.gwt}</sourceLevel>
             <failOnError>true</failOnError>
-            <!-- Centralized devmode configuration for all modules using GWT -->
+            <classpathScope>compile+runtime</classpathScope>
+            <projects>EvoLudoGWT</projects>
+            <!-- GWT 2.13+ devmode serves static files by default; do not set -server -->
             <devmodeArgs>
               <arg>-bindAddress</arg>
               <arg>${evoludo.server}</arg>
