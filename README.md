@@ -1,3 +1,6 @@
+<sub>Hauert, Christoph (&lt;year&gt;) *EvoLudo Project*, https://www.evoludo.org
+			(doi: 10.5281/zenodo.14591549 [, &lt;version&gt;])</br></sub>
+<sup>&lt;year&gt;: year of release (or download), and &lt;version&gt;: optional version number.</br></sup>
 [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.14591549.svg)](https://zenodo.org/doi/10.5281/zenodo.14591549)
 
 # [*EvoLudo*](https://www.evoludo.org)
@@ -10,7 +13,7 @@ Visit the growing collection of interactive online tutorials at [www.evoludo.org
 ## Installation of the *EvoLudo* framework
 
 ### Requirements
-1. Java compiler: Install *Java SDK 8* or better (*Java SDK 21* at the time of writing).
+1. Java compiler: Install *Java 11* or better (*Java SDK 25* at the time of writing).
 2. Developer tools: Install the [*maven*](https://maven.apache.org) and [*git*](https://git-scm.com/downloads).
 
 ### Download
@@ -18,7 +21,7 @@ The *EvoLudo* simulation toolkit is available on [GitHub](https://github.com/). 
 
 
 ## Quick start
-Start exploring the fascinating world of evolutionary dynamics and spatio-temporal patterns by setting up your own *EvoLudo* environment in three easy steps:
+Explore the fascinating world of evolutionary dynamics and spatio-temporal patterns by setting up your own *EvoLudo* environment in three easy steps:
 
 > [!IMPORTANT]
 > In order to initialize your *EvoLudo* development environment execute `mvn clean` to download and install all required software dependencies into your local maven repository. This includes those from remote repositories as well as those provided by *EvoLudo*. This is only needed for the initial setup.
@@ -45,12 +48,20 @@ On a more technical level, perfect replication of simulations is possible, yield
 In fact, the state of any *EvoLudo* module/model can be exported in one framework and continued in the other again with *identical* results.
 
 ## Research
-Explorations in the web browser are very useful but have significant limitations. Most importantly execution speed is of the essence for running simulations but also access to data. The *EvoLudo* project offers different modes for running simulations depending on how the `EvoLudo.jar` is launched:
+Explorations in the web browser are very useful but have significant limitations. Most importantly not only is execution speed of the essence for running simulations, but also access to data. The *EvoLudo* project offers different modes for running simulations depending on how the `EvoLudo.jar` is launched:
 
 1. Simply running *EvoLudo* with `java -jar EvoLudoJRE/target/EvoLudo.<git version>.jar` launches the *JRE* GUI. Through the *Settings* panel an *EvoLudo* module can be loaded, and a model selected as well as setting all the relevant parameters.
-2. Alternatively, all parameters can be set on the command line. For example, `java -jar EvoLudoJRE/target/EvoLudo.<git version>.jar --module 2x2 --delay 200 --geometry m --init kaleidoscope 0,1 --interactions all --mutation 0.0 --playerupdate b --popsize 165x --popupdate s --references a --timestep 1 --paymatrix 1,0;1.65,0 --view Traits_-_Structure`. For comparison, pointing your web browser to [`https://www.evoludo.org/supplement/EvoLudoLab.html?clo=--module 2x2 --delay 200 --geometry m --init kaleidoscope 0,1 --interactions all --mutation 0.0 --playerupdate b --popsize 165x --popupdate s --references a --timestep 1 --paymatrix 1,0;1.65,0 --view Traits_-_Structure`](https://www.evoludo.org/supplement/EvoLudoLab.html?clo=--module%202x2%20--delay%20200%20--geometry%20m%20--init%20kaleidoscope%200,1%20--interactions%20all%20--mutation%200.0%20--playerupdate%20b%20--popsize%20165x%20--popupdate%20s%20--references%20a%20--timestep%201%20--paymatrix%201,0;1.65,0%20--view%20Traits_-_Structure) shows identical results running in the browser. Note that the string of options on the command line or the URL are identical.
+2. Alternatively, all parameters can be set on the command line. For example, `java -jar EvoLudoJRE/target/EvoLudo.<git version>.jar --module 2x2 --delay 200 --geometry m --init kaleidoscope 0,1 --interactions all --mutation 0.0 --playerupdate b --popsize 165x --popupdate s --references a --timestep 1 --paymatrix 1,0;1.65,0 --view Traits_-_Structure`. 
+3. For comparison, pointing your web browser to [`https://www.evoludo.org/supplement/EvoLudoLab.html?clo=--module 2x2 --delay 200 --geometry m --init kaleidoscope 0,1 --interactions all --mutation 0.0 --playerupdate b --popsize 165x --popupdate s --references a --timestep 1 --paymatrix 1,0;1.65,0 --view Traits_-_Structure`](https://www.evoludo.org/supplement/EvoLudoLab.html?clo=--module%202x2%20--delay%20200%20--geometry%20m%20--init%20kaleidoscope%200,1%20--interactions%20all%20--mutation%200.0%20--playerupdate%20b%20--popsize%20165x%20--popupdate%20s%20--references%20a%20--timestep%201%20--paymatrix%201,0;1.65,0%20--view%20Traits_-_Structure) shows identical results running in the browser. Note that the string of options on the command line or the URL are identical.
 
-See [Documentation](#Documentation) and, in particular, the extensive step-by-step tutorials on recreating the *EvoLudo* modules for 2x2 games or SIR models.
+<!-- See [Documentation](#Documentation) and, in particular, the extensive step-by-step tutorials on recreating the *EvoLudo* modules for 2x2 games or SIR models. -->
+### Citing *EvoLudo* ###
+For publications in any form you are kindly requested to attribute *EvoLudo* as follows:
+
+   Hauert, Christoph (&lt;year&gt;) *EvoLudo Project*, https://www.evoludo.org (doi: 10.5281/zenodo.14591549 [,&lt;version&gt;])
+
+<sup>&lt;year&gt;: year of release (or download), and &lt;version&gt;: optional version number (as reported in output header or GUI console) to simplify replication of reported results.</sup>
+
 
 ## Documentation
 The documentation for the *EvoLudo* simulation toolkit is designed to provide a quick introduction to the source code to rapidly pave the way to run your own simulations or even develop your own custom *EvoLudo* modules. The documentation is divided into multiple parts:
@@ -59,7 +70,7 @@ The documentation for the *EvoLudo* simulation toolkit is designed to provide a 
 2. An [overview of the *EvoLudo* code structure](https://www.evoludo.org/docs/reference/Code.html)
 3. A growing collection of step-by-step tutorials to re-create key *EvoLudo* modules, as an easy and hands-on introduction on using *EvoLudo* simulation toolkit.
 
-    1. [Tutorial to re-create the `TBT` module](https://www.evoludo.org/docs/tutorial/TBT/) to explore the evolution of cooperation in the prisoner's dilemma, or more general 2x2 games, in structured populations.
+    1. [Tutorial to re-create the `TBT` module](https://www.evoludo.org/docs/tutorial/TBT/) to explore the evolution of cooperation in the prisoner's dilemma, or any 2x2 game, in structured populations.
     2. [Tutorial to re-create the `SIR` module](https://www.evoludo.org/docs/tutorial/SIR/) to explore the disease dynamics in structured population for an epidemiological model of susceptible, infected and recovered individuals.
     3. Tutorial to re-create the `LV` module to explore the ecological dynamics of a predator-prey interactions in the Lotka-Volterra model for infinite, finite and structured populations (in preparation).
 
@@ -131,8 +142,9 @@ Unmaintained instructions for developing *EvoLudo* using the [*eclipse* IDE](doc
 
 ## Acknowledgments
 *EvoLudo* relies on other open source projects:
-1. [`MersenneTwister`](http://www.math.sci.hiroshima-u.ac.jp/~m-mat/MT/emt.html) and, more specifically, the *java* port of MersenneTwister by [Jean Luke](https://cs.gmu.edu/~sean/research/) with further adaptations to make it *GWT* compliant.
-2. [`Parallax`](https://thothbot.github.io) version 1.6 for the 3D rendering of population structures using WebGL. Moreover, dust off your red-cyan glasses to explore the structures in real 3D (see context menu).
-3. [`Canvas2Svg.js`](https://gliffy.github.io/canvas2svg/) to export and save *EvoLudo* graphics.
+1. [`GWT`](https://www.gwtproject.org) toolkit for converting *java* source code into *JavaScript*. GWT version 2.13 includes tweaks to allow GWT applications in [e-books](https://github.com/gwtproject/gwt/pull/10148).
+2. [`MersenneTwister`](http://www.math.sci.hiroshima-u.ac.jp/~m-mat/MT/emt.html) and, more specifically, the *java* port of MersenneTwister by [Jean Luke](https://cs.gmu.edu/~sean/research/) with further adaptations to make it *GWT* compliant.
+3. [`Parallax`](https://thothbot.github.io) version 1.6 for the 3D rendering of population structures using WebGL. Moreover, dust off your red-cyan glasses to explore the structures in real 3D (see context menu).
+4. [`Canvas2Svg.js`](https://gliffy.github.io/canvas2svg/) to export and save *EvoLudo* graphics.
 
-A big thank you to the respective researchers and developers.
+A big thank you to all developers.
