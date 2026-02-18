@@ -38,7 +38,7 @@ latest_file() {
 		while IFS= read -r -d '' file; do
 			stat_mtime_name "$file"
 		done |
-		sort -rn | head -1 | cut -f2- -d" "
+		sort -rn | cut -f2- -d" " | sed -n '1p'
 }
 
 latest_java() {
@@ -46,7 +46,7 @@ latest_java() {
 		while IFS= read -r -d '' file; do
 			stat_mtime_name "$file"
 		done |
-		sort -rn | head -1 | cut -f2- -d" "
+		sort -rn | cut -f2- -d" " | sed -n '1p'
 }
 
 latest_gwt() {
