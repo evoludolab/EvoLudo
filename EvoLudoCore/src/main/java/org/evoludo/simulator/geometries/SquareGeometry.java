@@ -186,6 +186,7 @@ public class SquareGeometry extends AbstractLattice {
 	/**
 	 * Adjust arbitrary-range neighbourhoods along fixed boundaries.
 	 *
+	 * @param geometry     geometry receiving the links
 	 * @param range        interaction range
 	 * @param side         side length of the (sub) lattice
 	 * @param fullside     global side length

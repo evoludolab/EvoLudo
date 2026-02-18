@@ -31,7 +31,7 @@
 package org.evoludo.geom;
 
 /**
- * Utility class for deal with straight (infinite) lines in 2D. <br>
+ * Utility class for dealing with straight (infinite) lines in 2D. <br>
  * Note: the drop-in replacement for java.awt.geom.Line2D.Double is not Line2D
  * but rather Segment2D for straight lines of finite length.
  * 

@@ -183,7 +183,7 @@ public enum GeometryType implements CLOption.Key {
 	 * neighbours, where {@code n} is {@code 3x3, 5x5...}.
 	 * 
 	 * @see SquareGeometry#init()
-	 * @see SquareGeometry#initSquare(int, int, int)
+	 * @see SquareGeometry#initSquare(AbstractGeometry, int, int, int, boolean)
 	 */
 	SQUARE("N", "square lattice, 2D", "N<k> square lattice (k=3x3, 5x5...)"),
 

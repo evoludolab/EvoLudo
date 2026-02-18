@@ -28,18 +28,6 @@
 //
 // Copyright 2010-2026 Christoph Hauert
 //
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//	http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
-//
 // For publications in any form, you are kindly requested to attribute the
 // author and project as follows:
 //
@@ -57,11 +45,45 @@ package org.evoludo.geom;
 import java.util.Arrays;
 
 /**
- * Adapted from {@code java.awt.geom.Path2D}, merged with {@code PathIterator}
- * and stripped to the bare bones. In particular, all the {@code Shape} stuff
- * and {@code AffineTransform} removed. Generally made more GWT friendly.
+ * The {@code Path2D} class provides a simple, yet flexible
+ * shape which represents an arbitrary geometric path.
+ * It can fully represent any path which can be iterated by the
+ * {@link PathIterator} interface including all of its segment
+ * types and winding rules and it implements all of the
+ * basic hit testing methods of the {@code Shape} interface.
+ * <p>
+ * Use {@code java.awt.geom.Path2D.Float} when dealing with data that can be represented
+ * and used with floating point precision. Use {@code java.awt.geom.Path2D.Double}
+ * for data that requires the accuracy or range of double precision.
+ * <p>
+ * {@code Path2D} provides exactly those facilities required for
+ * basic construction and management of a geometric path and
+ * implementation of the above interfaces with little added
+ * interpretation.
+ * If it is useful to manipulate the interiors of closed
+ * geometric shapes beyond simple hit testing then the
+ * {@code Area} class provides additional capabilities
+ * specifically targeted at closed figures.
+ * While both classes nominally implement the {@code Shape}
+ * interface, they differ in purpose and together they provide
+ * two useful views of a geometric shape where {@code Path2D}
+ * deals primarily with a trajectory formed by path segments
+ * and {@code Area} deals more with interpretation and manipulation
+ * of enclosed regions of 2D geometric space.
+ * <p>
+ * The {@link PathIterator} interface has more detailed descriptions
+ * of the types of segments that make up a path and the winding rules
+ * that control how to determine which regions are inside or outside
+ * the path.
+ *
+ * @author Jim Graham
+ * @since 1.6
  * 
  * @author Christoph Hauert
+ *         Adapted from {@code java.awt.geom.Path2D}, merged with
+ *         {@code PathIterator} and stripped to the bare bones. In particular,
+ *         all the {@code Shape} stuff and {@code AffineTransform} removed.
+ *         Generally made more GWT friendly for use in EvoLudo project.
  */
 public class Path2D {
 
