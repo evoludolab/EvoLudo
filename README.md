@@ -18,6 +18,7 @@ Visit the growing collection of interactive online tutorials at [www.evoludo.org
 
 ### Download
 The *EvoLudo* simulation toolkit is available on [GitHub](https://github.com/). Obtain the source code or a release at https://github.com/evoludolab/EvoLudo. For example, executing `git clone https://github.com/evoludolab/EvoLudo` downloads the latest source code. Visit https://github.com/evoludolab/EvoLudo/releases for a list of releases.
+Revision history is maintained in [CHANGELOG.md](CHANGELOG.md).
 
 
 ## Quick start
