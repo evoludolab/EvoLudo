@@ -29,6 +29,24 @@
  * 231104: Limit argument range instead of throwing exceptions that throw GWT off
  */
 
+//
+// EvoLudo Project
+//
+// Copyright 2010-2026 Christoph Hauert
+//
+// For publications in any form, you are kindly requested to attribute the
+// author and project as follows:
+//
+//	Hauert, Christoph (<year>) EvoLudo Project, https://www.evoludo.org
+//			(doi: 10.5281/zenodo.14591549 [, <version>])
+//
+//	<year>:    year of release (or download), and
+//	<version>: optional version number (as reported in output header
+//			or GUI console) to simplify replication of reported results.
+//
+// The formatting may be adjusted to comply with publisher requirements.
+//
+
 package java.awt;
 
 /**
