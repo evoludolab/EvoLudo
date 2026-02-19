@@ -797,7 +797,7 @@ public class PDE extends ODE {
 		if (max - min < 1e-8) {
 			// close enough to neutral
 			map = nBins * 0.5;
-			min--;
+			min -= 1.0;
 		} else
 			map = nBins / (max - min);
 		int idx = 0;
@@ -1034,18 +1034,22 @@ public class PDE extends ODE {
 	@Override
 	public boolean parse(String arg) {
 		// this is just for a single species - as everything else in PDE models
-		initType = (PDEInitialize.Type) cloInit.match(arg);
+		boolean success = true;
 		String[] typeargs = arg.split(CLOParser.SPLIT_ARG_REGEX);
-		double[][] init = (typeargs.length > 1) ? CLOParser.parseMatrix(typeargs[1]) : null;
-
+		String initArg = (typeargs.length > 1) ? typeargs[1] : null;
+		double[][] init = (initArg != null) ? CLOParser.parseMatrix(initArg) : null;
 		int nt = module.getNTraits();
 		if (y0 == null || y0.length != nt) {
 			y0 = new double[nt];
 			background = new double[nt];
 		}
 
-		if (!isValidInitForType(init))
-			return false;
+		initType = (PDEInitialize.Type) cloInit.match(typeargs[0]);
+		if (!isValidInitForType(init)) {
+			success = false;
+			initType = PDEInitialize.Type.RANDOM;
+			init = null;
+		}
 
 		// init can be null for RANDOM initializations
 		if (init == null)
@@ -1060,7 +1064,7 @@ public class PDE extends ODE {
 
 		// UNIFORM and RANDOM do not need a background
 		if (initType == PDEInitialize.Type.UNIFORM || initType == PDEInitialize.Type.RANDOM)
-			return true;
+			return success;
 
 		// set background either from init or to default empty state
 		if (init != null && init.length > 1) {
@@ -1069,16 +1073,22 @@ public class PDE extends ODE {
 				// normalize background
 				ArrayMath.normalize(background);
 			}
-			return true;
+			return success;
 		}
 
 		int vacant = module.getVacantIdx();
-		if (vacant < 0)
-			return false;
+		if (vacant < 0) {
+			success = false;
+			initType = PDEInitialize.Type.RANDOM;
+			Arrays.fill(y0, 1.0);
+			if (dependent >= 0)
+				ArrayMath.normalize(y0);
+			return success;
+		}
 		// set background to empty
 		Arrays.fill(background, 0.0);
 		background[vacant] = 1.0;
-		return true;
+		return success;
 	}
 
 	/**
