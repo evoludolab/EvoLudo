@@ -434,7 +434,7 @@ public class LineGraph extends AbstractGraph<double[]>
 		g.rect(style.markerSize, 0.0, -(w + 3.0), h);
 		g.clip();
 		drawLines(w, yinfo, nLines);
-		drawMarkers(w, yinfo[0], nLines);
+		drawMarkers(w, yinfo, nLines);
 		g.restore();
 
 		drawLatestMarkers(w, yinfo, nLines);
@@ -581,18 +581,23 @@ public class LineGraph extends AbstractGraph<double[]>
 	 * Draw horizontal marker lines (if any) using the same y transform.
 	 * 
 	 * @param width  the width of the plotting area
-	 * @param ymin   the minimum y-value
+	 * @param yinfo  the y-axis transform info
 	 * @param nLines the number of lines to draw
 	 */
-	private void drawMarkers(double width, double ymin, int nLines) {
+	private void drawMarkers(double width, double[] yinfo, int nLines) {
 		if (markers == null || nLines <= 0)
 			return;
+		double ymin = yinfo[0];
+		double yScale = yinfo[1];
 		for (double[] mark : markers) {
 			g.setLineDash(mark[0] > 0.0 ? style.dashedLine : style.dottedLine);
 			for (int n = 0; n < nLines; n++) {
-				double mn = (style.logScaleY ? Math.log10(mark[n + 1]) : mark[n + 1]) - ymin;
+				double mn1 = mark[n + 1];
+				if (style.logScaleY && mn1 <= 0.0)
+					continue;
+				double myn = ((style.logScaleY ? Math.log10(mn1) : mn1) - ymin) * yScale;
 				g.setStrokeStyle(markerColors[n % markerColors.length]);
-				strokeLine(-width, mn, 0.0, mn);
+				strokeLine(-width, myn, 0.0, myn);
 			}
 			g.setLineDash(style.solidLine);
 		}
