@@ -540,7 +540,7 @@ public class ATBT extends TBT implements HasS3, HasPhase2D {
 	 * Command line option to set the origin of asymmetries to differences in
 	 * genotype or in the environment.
 	 */
-	public final CLOption cloAsymmetry = new CLOption("asymmetry", "e", CLOption.Argument.NONE, CLOCategory.Module,
+	public final CLOption cloAsymmetry = new CLOption("asymmetry", "e", CLOption.Argument.REQUIRED, CLOCategory.Module,
 			"--asymmetry <a>    type of asymmetry\n" //
 					+ "             g:    genetic (inherited) asymmetries\n" //
 					+ "             e:    environmental (default)",
