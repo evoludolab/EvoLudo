@@ -338,7 +338,7 @@ public class ATBT extends TBT implements HasS3, HasPhase2D {
 	 * @return {@code true} if feedback successfully set
 	 */
 	public boolean setFeedback(double[] feedback) {
-		if (feedback == null)
+		if (feedback == null || feedback.length == 0)
 			return false;
 		// recall:
 		// "--feedback <Cb→g:Dg→b:Cg→b:Db→g> feedback between traits and patches"
@@ -384,7 +384,7 @@ public class ATBT extends TBT implements HasS3, HasPhase2D {
 	 * @return {@code true} if environmental values successfully set
 	 */
 	public boolean setEnvironment(double[] environment) {
-		if (environment == null)
+		if (environment == null || environment.length == 0)
 			return false;
 		// recall: "--environment <g[:b]> payoff on good (bad) patches",
 		switch (environment.length) {

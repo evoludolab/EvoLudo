@@ -60,11 +60,13 @@ public class ScalefreeGeometry extends AbstractNetwork {
 
 	@Override
 	public boolean parse(String arg) {
+		boolean success = true;
 		double[] values = CLOParser.parseVector(arg);
 		if (values.length == 0) {
 			connectivity = Math.max(2, (int) Math.round(connectivity > 0 ? connectivity : 2.0));
 			sfExponent = -2.0;
 			warn("requires connectivity argument - using " + (int) connectivity + " and exponent -2.");
+			success = false;
 		} else {
 			connectivity = Math.max(2, (int) values[0]);
 			sfExponent = values.length >= 2 ? values[1] : -2.0;
@@ -72,9 +74,10 @@ public class ScalefreeGeometry extends AbstractNetwork {
 				warn("exponent for scale-free graph is " + Formatter.format(sfExponent, 2)
 						+ " but must be < 0 - using -2.");
 				sfExponent = -2.0;
+				success = false;
 			}
 		}
-		return true;
+		return success;
 	}
 
 	/**

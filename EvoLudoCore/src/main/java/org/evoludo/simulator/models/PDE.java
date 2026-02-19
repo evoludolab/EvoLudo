@@ -1262,6 +1262,8 @@ public class PDE extends ODE {
 				@Override
 				public boolean parse(String arg) {
 					diffcoeff = CLOParser.parseVector(arg);
+					if (diffcoeff == null || diffcoeff.length == 0)
+						return false;
 					// number of traits and dependent not yet set - retrieve directly from module
 					int dim = module.getNTraits();
 					int dep = ((HasDE) module).getDependent();

@@ -60,21 +60,24 @@ public class KlemmEguiluzGeometry extends AbstractNetwork {
 
 	@Override
 	public boolean parse(String arg) {
+		boolean success = true;
 		double[] values = CLOParser.parseVector(arg);
 		if (values.length == 0) {
 			connectivity = Math.max(2, (int) Math.round(connectivity > 0 ? connectivity : 2.0));
 			pSmallWorld = 0.0;
 			warn("requires connectivity argument - using " + (int) connectivity + " and p=0.");
+			success = false;
 		} else {
 			connectivity = Math.max(2, (int) values[0]);
 			pSmallWorld = values.length >= 2 ? clampProbability(values[1]) : 0.0;
 		}
 		if (pRewire > 0.0 || pAddwire > 0.0) {
-			warn("adding or rewiring links not supported - ignoring requests.");
 			pRewire = 0.0;
 			pAddwire = 0.0;
+			warn("adding or rewiring links not supported - ignoring requests.");
+			success = false;
 		}
-		return true;
+		return success;
 	}
 
 	/**
