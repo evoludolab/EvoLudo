@@ -115,7 +115,12 @@ public abstract class Model implements CLOProvider {
 		 * Interface for differential equation models with interactions in groups of
 		 * arbitrary size.
 		 */
-		public interface DGroups extends Features.Groups {
+		public interface DGroups extends DPairs, Features.Groups {
+
+			@Override
+			public default void avgScores(double[] state, double[] scores) {
+				avgScores(state, 2, scores);
+			}
 
 			/**
 			 * Calculate the average payoff for the frequency of traits specified in

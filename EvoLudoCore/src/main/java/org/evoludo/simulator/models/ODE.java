@@ -996,10 +996,10 @@ public class ODE extends Model implements DModel {
 				System.arraycopy(staticfit, skip, fitness, skip, nTraits);
 				continue;
 			}
-			if (nGroup == 2)
-				((HasDE.DPairs) mod).avgScores(state, fitness);
-			else
+			if (mod instanceof HasDE.DGroups)
 				((HasDE.DGroups) mod).avgScores(state, nGroup, fitness);
+			else
+				((HasDE.DPairs) mod).avgScores(state, fitness);
 			Map2Fitness map2fit = mod.getMap2Fitness();
 			for (int n = skip; n < skip + nTraits; n++)
 				fitness[n] = map2fit.map(fitness[n]);
