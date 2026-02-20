@@ -404,10 +404,9 @@ public class Phase2D extends AbstractView<ParaGraph> {
 			});
 			rightYAxisMenu = new ContextMenuCheckBoxItem("Right Y-axis", () -> {
 				GraphStyle style = graph.getStyle();
-				style.showYAxisRight = !style.showYAxisRight;
-				rightYAxisMenu.setChecked(style.showYAxisRight);
-				graph.onResize();
-				graph.paint(true);
+				boolean showOnRight = !style.showYAxisRight;
+				rightYAxisMenu.setChecked(showOnRight);
+				setRightYAxis(showOnRight);
 			});
 		}
 		axesMenu.clear();

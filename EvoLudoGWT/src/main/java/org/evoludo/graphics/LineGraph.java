@@ -1120,10 +1120,9 @@ public class LineGraph extends AbstractGraph<double[]>
 				paint(true);
 			});
 			rightYAxisMenu = new ContextMenuCheckBoxItem("Right side", () -> {
-				style.showYAxisRight = !style.showYAxisRight;
-				rightYAxisMenu.setChecked(style.showYAxisRight);
-				onResize();
-				paint(true);
+				boolean showOnRight = !style.showYAxisRight;
+				rightYAxisMenu.setChecked(showOnRight);
+				view.setRightYAxis(showOnRight);
 			});
 		}
 		axesMenu.clear();

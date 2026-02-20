@@ -491,7 +491,7 @@ public class HistoGraph extends AbstractGraph<double[]> implements BasicTooltipP
 	 * @see #setNormalized(int)
 	 */
 	public void addData(int bin) {
-		nSamples++;
+		nSamples += 1.0;
 		if (data == null || bin < 0)
 			return;
 		if (bin >= nBins)
@@ -513,7 +513,7 @@ public class HistoGraph extends AbstractGraph<double[]> implements BasicTooltipP
 	 * @see #setNormalized(int)
 	 */
 	public void addData(int bin, double incr) {
-		nSamples++;
+		nSamples += 1.0;
 		if (data == null || bin < 0)
 			return;
 		data[row][bin] += incr;
@@ -536,7 +536,7 @@ public class HistoGraph extends AbstractGraph<double[]> implements BasicTooltipP
 	 * @see #x2bin(double)
 	 */
 	public void addData(double x) {
-		nSamples++;
+		nSamples += 1.0;
 		if (data == null)
 			return;
 		while (x > style.xMax) {
@@ -1085,10 +1085,9 @@ public class HistoGraph extends AbstractGraph<double[]> implements BasicTooltipP
 				paint(true);
 			});
 			rightYAxisMenu = new ContextMenuCheckBoxItem("Right Y-axis", () -> {
-				style.showYAxisRight = !style.showYAxisRight;
-				rightYAxisMenu.setChecked(style.showYAxisRight);
-				onResize();
-				paint(true);
+				boolean showOnRight = !style.showYAxisRight;
+				rightYAxisMenu.setChecked(showOnRight);
+				view.setRightYAxis(showOnRight);
 			});
 		}
 		axesMenu.clear();

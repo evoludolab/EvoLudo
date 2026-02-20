@@ -42,6 +42,7 @@ import org.evoludo.graphics.AbstractGraph.MyContext2d;
 import org.evoludo.graphics.AbstractGraph.Shifter;
 import org.evoludo.graphics.AbstractGraph.Zoomer;
 import org.evoludo.graphics.GenericPopGraph;
+import org.evoludo.graphics.GraphStyle;
 import org.evoludo.simulator.EvoLudo;
 import org.evoludo.simulator.EvoLudoGWT;
 import org.evoludo.simulator.Resources;
@@ -618,6 +619,24 @@ public abstract class AbstractView<G extends AbstractGraph<?>> extends Composite
 	 * @see AbstractView#populateContextMenu(ContextMenu)
 	 */
 	public void populateContextMenuAt(ContextMenu menu, int node) {
+	}
+
+	/**
+	 * Apply the y-axis side setting to all graphs in this view and refresh layout.
+	 *
+	 * @param showOnRight {@code true} to display y-axes on the right side
+	 */
+	public void setRightYAxis(boolean showOnRight) {
+		boolean changed = false;
+		for (G graph : graphs) {
+			GraphStyle style = graph.getStyle();
+			if (style.showYAxisRight != showOnRight) {
+				style.showYAxisRight = showOnRight;
+				changed = true;
+			}
+		}
+		if (changed)
+			onResize();
 	}
 
 	/**
