@@ -68,10 +68,10 @@ import com.google.gwt.event.dom.client.TouchStartEvent;
  * <li>Maintain a bounded history of parametric data points in a
  * {@code RingBuffer<double[]>}, where each stored array has the time prepended
  * as the first element.</li>
- * <li>Coalesce incoming samples to conserve memory: samples are appended only
- * when the estimated distance (in phase plane units) to the previous stored
- * point exceeds a configurable threshold (derived from a minimum pixel
- * spacing), unless explicitly forced.</li>
+ * <li>Coalesce incoming samples to conserve memory using a display-agnostic
+ * heuristic. Samples are appended when normalized state-space distance exceeds
+ * a threshold or trajectory curvature indicates a significant turn, unless
+ * explicitly forced.</li>
  * <li>Handle special time values (NaN) and duplicate times: duplicate times
  * replace the last sample; NaN times mark new trajectory segments and update
  * the recorded initial state accordingly.</li>
@@ -115,10 +115,8 @@ import com.google.gwt.event.dom.client.TouchStartEvent;
  *
  * <h3>Buffering and sampling:</h3>
  * <ul>
- * <li>{@code bufferThreshold} is computed in {@code calcBounds} from
- * {@code MIN_PIXELS} and the current scale and axis ranges. It represents the
- * squared minimal distance (in data units) required between successive stored
- * samples and prevents storing points closer than a few screen pixels.</li>
+ * <li>Sample retention uses a display-agnostic heuristic based on normalized
+ * state-space distance and local curvature.</li>
  * <li>Initial trajectory starting point is stored in {@code init} and updated
  * whenever the buffer begins a new segment (empty buffer) or when a NaN time
  * indicates a new starting point.</li>
@@ -213,12 +211,9 @@ public class ParaGraph extends AbstractGraph<double[]> implements Zooming, Shift
 	 * @evoludo.impl
 	 *               <ul>
 	 *               <li>The data array is cloned and the time prepended before
-	 *               adding
-	 *               it to the buffer.
+	 *               adding it to the buffer.
 	 *               <li>In order to conserve memory the data is added only if the
-	 *               distance between
-	 *               the new data point and the last point in the buffer is larger
-	 *               than threshold {@link #bufferThreshold}, unless
+	 *               display-agnostic throttling heuristic accepts the sample, or
 	 *               {@code force == true}.
 	 *               </ul>
 	 * 
@@ -246,8 +241,9 @@ public class ParaGraph extends AbstractGraph<double[]> implements Zooming, Shift
 			updateAutoscale();
 			return;
 		}
-		if (force || distSq(data, last) > bufferThreshold) {
-			buffer.append(prependTime2Data(t, data));
+		double[] sample = prependTime2Data(t, data);
+		if (force || keepSample(buffer, sample, last)) {
+			buffer.append(sample);
 			updateAutoscale();
 		}
 	}
@@ -286,23 +282,6 @@ public class ParaGraph extends AbstractGraph<double[]> implements Zooming, Shift
 		else
 			buffer.append(prependTime2Data(t, data));
 		System.arraycopy(buffer.last(), 0, init, 0, len);
-	}
-
-	/**
-	 * Helper method to calculate the distance squared between two vectors.
-	 * 
-	 * @param vec the first vector
-	 * @param buf the second vector
-	 * @return the squared distance
-	 */
-	private double distSq(double[] vec, double[] buf) {
-		int dim = vec.length;
-		double dist2 = 0.0;
-		for (int n = 0; n < dim; n++) {
-			double d = vec[n] - buf[n + 1];
-			dist2 += d * d;
-		}
-		return dist2;
 	}
 
 	@Override
@@ -540,27 +519,6 @@ public class ParaGraph extends AbstractGraph<double[]> implements Zooming, Shift
 			fillCircle(sx, sy, radius);
 		else
 			strokeCircle(sx, sy, radius);
-	}
-
-	/**
-	 * Threshold for storing new data point in buffer. Roughly corresponds to the
-	 * squared distance between two points that are at least a pixel apart.
-	 */
-	private double bufferThreshold;
-
-	/**
-	 * The minimum distance between two subsequent points in pixels.
-	 */
-	private static final double MIN_PIXELS = 3.0;
-
-	@Override
-	public void calcBounds(int width, int height) {
-		super.calcBounds(width, height);
-		// store point only if it is estimated to be at least a few pixels from the
-		// previous point
-		bufferThreshold = MIN_PIXELS * scale * Math.min((style.xMax - style.xMin) / bounds.getWidth(), //
-				(style.yMax - style.yMin) / bounds.getHeight());
-		bufferThreshold *= bufferThreshold;
 	}
 
 	/**

@@ -30,6 +30,7 @@
 
 package org.evoludo.graphics;
 
+import java.util.Iterator;
 import java.util.List;
 import java.util.logging.Logger;
 
@@ -907,6 +908,110 @@ public abstract class AbstractGraph<B> extends FocusPanel
 		System.arraycopy(data, 0, tdata, 1, data.length);
 		tdata[0] = t;
 		return tdata;
+	}
+
+	/**
+	 * Squared normalized distance threshold for throttling successive
+	 * samples.
+	 */
+	protected static final double MIN_NORM_DIST_SQ = 0.01 * 0.01;
+
+	/**
+	 * Squared minimum normalized step before curvature checks.
+	 */
+	protected static final double MIN_CURVATURE_STEP_SQ = 0.005 * 0.005;
+
+	/**
+	 * Cosine threshold for a turn-angle criterion (\(6^\circ\)).
+	 */
+	protected static final double TURN_COS_THRESHOLD = Math.cos(Math.toRadians(6.0));
+
+	/**
+	 * Decide whether to retain a candidate sample by applying a display-agnostic
+	 * heuristic: normalized distance and local curvature.
+	 *
+	 * @param history             ring buffer holding retained samples (latest first)
+	 * @param current             candidate sample including prepended time
+	 * @param last                most recently retained sample including prepended
+	 *                            time
+	 * @return {@code true} if sample should be kept
+	 */
+	protected final boolean keepSample(RingBuffer<double[]> history, double[] current, double[] last) {
+		if (normalizedDistSq(current, last) > MIN_NORM_DIST_SQ)
+			return true;
+		return hasSignificantTurn(history, current, last);
+	}
+
+	/**
+	 * Compute mean squared distance in normalized state space, excluding time.
+	 *
+	 * @param current current sample including prepended time
+	 * @param last    last sample including prepended time
+	 * @return mean squared normalized distance
+	 */
+	protected final double normalizedDistSq(double[] current, double[] last) {
+		if (current == null || last == null || current.length != last.length || current.length < 2)
+			return Double.POSITIVE_INFINITY;
+		int dim = current.length - 1;
+		double dist2 = 0.0;
+		for (int n = 1; n < current.length; n++) {
+			double a = current[n];
+			double b = last[n];
+			if (!Double.isFinite(a) || !Double.isFinite(b))
+				return Double.POSITIVE_INFINITY;
+			double scale = Math.max(1.0, Math.max(Math.abs(a), Math.abs(b)));
+			double d = (a - b) / scale;
+			dist2 += d * d;
+		}
+		return dist2 / dim;
+	}
+
+	/**
+	 * Check whether the last two retained segments form a sufficiently strong turn.
+	 *
+	 * @param history            ring buffer holding retained samples (latest first)
+	 * @param current            candidate sample including prepended time
+	 * @param last               most recently retained sample including prepended
+	 *                           time
+	 * @return {@code true} if local turn angle exceeds threshold
+	 */
+	protected final boolean hasSignificantTurn(RingBuffer<double[]> history, double[] current, double[] last) {
+		if (history == null || history.getSize() < 2 || current == null || last == null)
+			return false;
+		if (current.length != last.length || current.length < 2 || Double.isNaN(last[0]))
+			return false;
+		Iterator<double[]> iter = history.iterator();
+		if (!iter.hasNext())
+			return false;
+		// first entry is 'last'
+		iter.next();
+		if (!iter.hasNext())
+			return false;
+		double[] prev = iter.next();
+		if (prev == null || prev.length != last.length || Double.isNaN(prev[0]))
+			return false;
+
+		double dot = 0.0;
+		double normPrevSq = 0.0;
+		double normCurrSq = 0.0;
+		for (int n = 1; n < current.length; n++) {
+			double p = prev[n];
+			double l = last[n];
+			double c = current[n];
+			if (!Double.isFinite(p) || !Double.isFinite(l) || !Double.isFinite(c))
+				return true;
+			double scale = Math.max(1.0, Math.max(Math.abs(c), Math.max(Math.abs(l), Math.abs(p))));
+			double vPrev = (l - p) / scale;
+			double vCurr = (c - l) / scale;
+			dot += vPrev * vCurr;
+			normPrevSq += vPrev * vPrev;
+			normCurrSq += vCurr * vCurr;
+		}
+		if (normPrevSq < MIN_CURVATURE_STEP_SQ || normCurrSq < MIN_CURVATURE_STEP_SQ)
+			return false;
+		double cos = dot / Math.sqrt(normPrevSq * normCurrSq);
+		cos = Math.max(-1.0, Math.min(1.0, cos));
+		return cos <= TURN_COS_THRESHOLD;
 	}
 
 	/**

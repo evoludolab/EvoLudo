@@ -70,8 +70,8 @@ import com.google.gwt.user.client.ui.Widget;
  * <li>Store and draw a time-ordered trajectory of composition vectors in a
  * ring buffer; the buffer entries include time as the first element
  * (internal format: [time, comp0, comp1, comp2, ...]).</li>
- * <li>Efficiently sample and append incoming data using a pixel-distance based
- * threshold to avoid storing nearly identical consecutive points.</li>
+ * <li>Efficiently sample and append incoming data using a display-agnostic
+ * heuristic to avoid storing nearly identical consecutive points.</li>
  * <li>Draw start/end markers and arbitrary custom markers; export the stored
  * trajectory in a human-readable CSV-like format.</li>
  * <li>Provide user interaction support: double-click and single-touch to set
@@ -94,9 +94,8 @@ import com.google.gwt.user.client.ui.Widget;
  * <li>When a new sample has the same time (within numerical tolerance) as the
  * last stored sample the last sample is replaced and the initial-state
  * (start point) tracking is updated accordingly.</li>
- * <li>Buffer sampling threshold is computed in screen pixels (see
- * {@link #calcBounds(int,int)}); points closer than the threshold
- * (squared) are not stored unless {@code force} is true.</li>
+ * <li>Buffer sampling uses normalized state-space distance and local curvature;
+ * samples failing both criteria are not stored unless {@code force} is true.</li>
  * <li>Coordinate conversions for mouse/touch interactions map screen
  * coordinates to scaled simplex coordinates in [0,1] (see
  * {@link #scaledX(double)} / {@link #scaledY(double)}). A hit test
@@ -268,9 +267,7 @@ public class S3Graph extends AbstractGraph<double[]> implements Zooming, Shiftin
 	 *               adding
 	 *               it to the buffer.
 	 *               <li>In order to conserve memory the data is added only if the
-	 *               distance between
-	 *               the new data point and the last point in the buffer is larger
-	 *               than threshold {@link #bufferThreshold}, unless
+	 *               display-agnostic throttling heuristic accepts the sample, unless
 	 *               {@code force == true}.
 	 *               </ul>
 	 * 
@@ -294,8 +291,9 @@ public class S3Graph extends AbstractGraph<double[]> implements Zooming, Shiftin
 			handleNaNTime(data, lastt);
 			return;
 		}
-		if (force || distSq(data, last) > bufferThreshold) {
-			buffer.append(prependTime2Data(t, data));
+		double[] sample = prependTime2Data(t, data);
+		if (force || keepSample(buffer, sample, last)) {
+			buffer.append(sample);
 		}
 	}
 
@@ -333,23 +331,6 @@ public class S3Graph extends AbstractGraph<double[]> implements Zooming, Shiftin
 		if (init == null || init.length != len + 1)
 			init = new double[len + 1];
 		System.arraycopy(buffer.last(), 0, init, 0, len + 1);
-	}
-
-	/**
-	 * Helper method to calculate the distance squared between two vectors.
-	 * 
-	 * @param vec the first vector
-	 * @param buf the second vector
-	 * @return the squared distance
-	 */
-	private double distSq(double[] vec, double[] buf) {
-		int dim = vec.length;
-		double dist2 = 0.0;
-		for (int n = 0; n < dim; n++) {
-			double d = vec[n] - buf[n + 1];
-			dist2 += d * d;
-		}
-		return dist2;
 	}
 
 	@Override
@@ -478,17 +459,6 @@ public class S3Graph extends AbstractGraph<double[]> implements Zooming, Shiftin
 	 */
 	static final double SQRT_2 = 1.41421356237;
 
-	/**
-	 * Threshold for storing new data point in buffer. Roughly corresponds to the
-	 * squared distance between two points that are at least a pixel apart.
-	 */
-	private double bufferThreshold;
-
-	/**
-	 * The minimum distance between two subsequent points in pixels.
-	 */
-	private static final double MIN_PIXELS = 3.0;
-
 	@Override
 	public void calcBounds(int width, int height) {
 		super.calcBounds(width, height);
@@ -544,10 +514,6 @@ public class S3Graph extends AbstractGraph<double[]> implements Zooming, Shiftin
 		outline.lineTo(e1);
 		outline.lineTo(e2);
 		outline.closePath();
-		// store point only if it is estimated to be at least a few pixels from the
-		// previous point
-		bufferThreshold = MIN_PIXELS * scale / Math.max(bounds.getWidth(), bounds.getHeight());
-		bufferThreshold *= bufferThreshold;
 	}
 
 	/**
