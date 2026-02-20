@@ -34,6 +34,7 @@ import java.awt.Color;
 import java.util.List;
 
 import org.evoludo.graphics.GraphStyle;
+import org.evoludo.graphics.PopGraph1D;
 import org.evoludo.graphics.PopGraph2D;
 import org.evoludo.simulator.ColorMap;
 import org.evoludo.simulator.ColorMapCSS;
@@ -46,6 +47,7 @@ import org.evoludo.simulator.models.DModel;
 import org.evoludo.simulator.models.Data;
 import org.evoludo.simulator.models.Model.HasDE;
 import org.evoludo.simulator.models.ModelType;
+import org.evoludo.simulator.models.PDE;
 import org.evoludo.simulator.modules.Continuous;
 import org.evoludo.simulator.modules.Continuous.ColorModelType;
 import org.evoludo.simulator.modules.Discrete;
@@ -194,17 +196,47 @@ public class Pop2D extends GenericPop<String, Network2D, PopGraph2D> {
 		for (Module<?> mod : species)
 			nGraphs += mod.getIBSPopulation().getInteractionGeometry().isSingle() ? 1 : 2;
 
-		if (graphs.size() == nGraphs)
+		boolean compatible = graphs.size() == nGraphs;
+		if (compatible) {
+			int idx = 0;
+			boolean inter = true;
+			for (Module<?> mod : species) {
+				AbstractGeometry geometry = resolveIBSGeometry(mod, inter);
+				if (isLinearGeometry(geometry) != (graphs.get(idx) instanceof PopGraph1D)) {
+					compatible = false;
+					break;
+				}
+				idx++;
+				inter = !inter;
+				if (!mod.getIBSPopulation().getInteractionGeometry().isSingle()) {
+					geometry = resolveIBSGeometry(mod, inter);
+					if (isLinearGeometry(geometry) != (graphs.get(idx) instanceof PopGraph1D)) {
+						compatible = false;
+						break;
+					}
+					idx++;
+					inter = !inter;
+				}
+			}
+		}
+		if (compatible)
 			return false;
+
 		destroyGraphs();
+		gCols = 1;
+		boolean inter = true;
 		for (Module<?> mod : species) {
-			PopGraph2D graph = new PopGraph2D(this, mod);
+			AbstractGeometry geometry = resolveIBSGeometry(mod, inter);
+			PopGraph2D graph = createGraph(mod, geometry);
 			wrapper.add(graph);
 			graphs.add(graph);
+			inter = !inter;
 			if (!mod.getIBSPopulation().getInteractionGeometry().isSingle()) {
-				graph = new PopGraph2D(this, mod);
+				geometry = resolveIBSGeometry(mod, inter);
+				graph = createGraph(mod, geometry);
 				wrapper.add(graph);
 				graphs.add(graph);
+				inter = !inter;
 				// arrange graphs horizontally
 				gCols = 2;
 			}
@@ -217,11 +249,11 @@ public class Pop2D extends GenericPop<String, Network2D, PopGraph2D> {
 		}
 		int width = 100 / gCols;
 		int height = 100 / gRows;
-		boolean inter = true;
+		boolean interLayout = true;
 		for (PopGraph2D graph : graphs) {
 			graph.setSize(width + "%", height + "%");
-			setGraphGeometry(graph, inter);
-			inter = !inter;
+			setGraphGeometry(graph, interLayout);
+			interLayout = !interLayout;
 		}
 		return true;
 	}
@@ -232,13 +264,14 @@ public class Pop2D extends GenericPop<String, Network2D, PopGraph2D> {
 	 * @return {@code true} if graphs were reallocated
 	 */
 	private boolean allocatePDEGraph() {
+		Module<?> module = engine.getModule();
+		AbstractGeometry geometry = ((PDE) model).getGeometry();
 		// PDEs currently restricted to single species
-		if (graphs.size() == 1)
+		if (graphs.size() == 1 && (isLinearGeometry(geometry) == (graphs.get(0) instanceof PopGraph1D)))
 			return false;
 
 		destroyGraphs();
-		Module<?> module = engine.getModule();
-		PopGraph2D graph = new PopGraph2D(this, module);
+		PopGraph2D graph = createGraph(module, geometry);
 		// debugging not available for DE's
 		graph.setDebugEnabled(false);
 		wrapper.add(graph);
@@ -246,6 +279,44 @@ public class Pop2D extends GenericPop<String, Network2D, PopGraph2D> {
 		graph.setSize("100%", "100%");
 		setGraphGeometry(graph, true);
 		return true;
+	}
+
+	/**
+	 * Resolve the geometry shown for an IBS graph slot.
+	 *
+	 * @param module the module backing the graph
+	 * @param inter  {@code true} for interaction geometry, {@code false} for
+	 *               competition geometry
+	 * @return the geometry used for the graph
+	 */
+	private AbstractGeometry resolveIBSGeometry(Module<?> module, boolean inter) {
+		AbstractGeometry igeom = module.getIBSPopulation().getInteractionGeometry();
+		AbstractGeometry cgeom = module.getIBSPopulation().getCompetitionGeometry();
+		AbstractGeometry geometry = inter ? igeom : cgeom;
+		if (!igeom.isSingle() && AbstractGeometry.displaySingle(igeom, cgeom))
+			geometry = cgeom;
+		return geometry;
+	}
+
+	/**
+	 * Return whether the geometry should be rendered with a linear graph.
+	 *
+	 * @param geometry the candidate geometry
+	 * @return {@code true} if a linear graph is required
+	 */
+	private boolean isLinearGeometry(AbstractGeometry geometry) {
+		return geometry != null && geometry.isType(GeometryType.LINEAR);
+	}
+
+	/**
+	 * Create a graph instance for the given geometry.
+	 *
+	 * @param module   the module backing the graph
+	 * @param geometry the target geometry
+	 * @return a graph with matching specialization
+	 */
+	private PopGraph2D createGraph(Module<?> module, AbstractGeometry geometry) {
+		return isLinearGeometry(geometry) ? new PopGraph1D(this, module) : new PopGraph2D(this, module);
 	}
 
 	@Override

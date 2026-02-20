@@ -30,27 +30,62 @@
 
 package org.evoludo.graphics;
 
+import java.util.Arrays;
 import java.util.Iterator;
 
+import org.evoludo.simulator.Network.Status;
+import org.evoludo.simulator.geometries.AbstractGeometry;
 import org.evoludo.simulator.geometries.GeometryType;
 import org.evoludo.simulator.modules.Module;
-import org.evoludo.simulator.views.Distribution;
+import org.evoludo.simulator.views.AbstractView;
+import org.evoludo.util.RingBuffer;
 
 /**
- * Specialized population graph for 1D trait distributions with history.
+ * Specialized population graph for linear geometries with history.
  * <p>
  * Content is shifted/zoomed, while the frame and axis decorations remain fixed.
  */
 public class PopGraph1D extends PopGraph2D {
 
 	/**
-	 * Create a graph for 1D distribution rendering.
+	 * The maximum number of nodes supported in linear geometry.
+	 */
+	public static final int MAX_LINEAR_SIZE = 500;
+
+	/**
+	 * Create a graph for linear population rendering.
 	 *
-	 * @param view   the owning distribution view
+	 * @param view   the owning view
 	 * @param module the module backing the graph
 	 */
-	public PopGraph1D(Distribution view, Module<?> module) {
+	public PopGraph1D(AbstractView<?> view, Module<?> module) {
 		super(view, module);
+	}
+
+	@Override
+	public void setGeometry(AbstractGeometry geometry) {
+		int size = geometry.getSize();
+		if (geometry.isType(GeometryType.LINEAR) && size <= MAX_LINEAR_SIZE) {
+			if (buffer == null)
+				buffer = new RingBuffer<String[]>(2 * MAX_LINEAR_SIZE);
+			if (data == null || data.length != size)
+				data = new String[size];
+		} else {
+			buffer = null;
+		}
+		super.setGeometry(geometry);
+	}
+
+	@Override
+	public void update(boolean isNext) {
+		if (buffer != null && data != null) {
+			String[] copy = Arrays.copyOf(data, data.length);
+			if (isNext || buffer.isEmpty())
+				buffer.append(copy);
+			else
+				buffer.replace(copy);
+		}
+		super.update(isNext);
 	}
 
 	@Override
@@ -158,5 +193,61 @@ public class PopGraph1D extends PopGraph2D {
 		style.xMax = baseXMin + fx1 * xRange;
 		style.yMax = baseYMax - fy0 * yRange;
 		style.yMin = baseYMax - fy1 * yRange;
+	}
+
+	@Override
+	public void calcBounds(int width, int height) {
+		super.calcBounds(width, height);
+		clearMessage();
+		noGraph = false;
+		dw = 0;
+		dh = 0;
+		dR = 0.0;
+
+		int bWidth = (int) bounds.getWidth();
+		dw = bWidth / geometry.getSize();
+		int bHeight = (int) bounds.getHeight();
+		dh = dw;
+		int steps = (dh == 0) ? 0 : bHeight / dh;
+		if (dw < MIN_DW || steps == 0) {
+			bounds.setSize(width, height);
+			data = null;
+			noGraph = true;
+			displayMessage("Population size to large!");
+			return;
+		}
+		int adjw = dw * geometry.getSize();
+		int adjh = bHeight - (bHeight % dh);
+		int dx = (bWidth - adjw) / 2;
+		int dy = (bHeight - adjh) / 2;
+		bounds.set(bounds.getX() + dx, bounds.getY() + dy, adjw, adjh);
+		if (buffer == null)
+			throw new IllegalStateException("Increase MAX_LINEAR_SIZE (" + MAX_LINEAR_SIZE + ")!");
+		int capacity = 2 * steps;
+		buffer.setCapacity(capacity);
+		style.setYRange(steps - 1);
+		style.showFrame = true;
+		if (data == null || data.length != geometry.getSize())
+			data = new String[geometry.getSize()];
+	}
+
+	@Override
+	public int findNodeAt(int x, int y) {
+		// no network may have been initialized (e.g. for ODE/SDE models)
+		if (hasMessage || network == null || invalidated || network.isStatus(Status.LAYOUT_IN_PROGRESS))
+			return FINDNODEAT_OUT_OF_BOUNDS;
+
+		x = x - (int) (style.frameWidth * zoomFactor + 0.5);
+		y = y - (int) (style.frameWidth * zoomFactor - 0.5);
+		if (!bounds.contains(x, y))
+			return FINDNODEAT_OUT_OF_BOUNDS;
+
+		int sx = (int) ((viewCorner.getX() + x - bounds.getX()) / zoomFactor + 0.5);
+		int sy = (int) ((viewCorner.getY() + y - bounds.getY()) / zoomFactor + 0.5);
+		int c = sx / dw;
+		int r = sy / dh;
+		if (c < 0 || c >= geometry.getSize() || r < 0)
+			return FINDNODEAT_OUT_OF_BOUNDS;
+		return r * geometry.getSize() + c;
 	}
 }

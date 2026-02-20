@@ -30,9 +30,6 @@
 
 package org.evoludo.graphics;
 
-import java.util.Arrays;
-import java.util.Iterator;
-
 import org.evoludo.geom.Node2D;
 import org.evoludo.geom.Path2D;
 import org.evoludo.geom.Point2D;
@@ -44,7 +41,6 @@ import org.evoludo.simulator.geometries.HierarchicalGeometry;
 import org.evoludo.simulator.Network2D;
 import org.evoludo.simulator.modules.Module;
 import org.evoludo.simulator.views.AbstractView;
-import org.evoludo.util.RingBuffer;
 
 import com.google.gwt.core.client.JsArray;
 import com.google.gwt.dom.client.NativeEvent;
@@ -58,8 +54,8 @@ import com.google.gwt.event.dom.client.TouchMoveEvent;
 /**
  * The graphical representation of lattices and network structures in 2D. This
  * class adapts a generic population graph view to a 2D canvas, supporting
- * multiple geometry types (triangular, honeycomb, square variants, linear, and
- * generic network layouts) and providing custom drawing, hit-testing and user
+ * multiple geometry types (triangular, honeycomb, square variants, and generic
+ * network layouts) and providing custom drawing, hit-testing and user
  * interaction behavior.
  *
  * <h3>Responsibilities</h3>
@@ -68,8 +64,6 @@ import com.google.gwt.event.dom.client.TouchMoveEvent;
  * types based on the current canvas size and configuration.</li>
  * <li>Render lattice cells or network nodes and links to a canvas using an
  * internal graphics context.</li>
- * <li>Maintain an optional history buffer for linear (time-series) lattices,
- * enabling visualization of past states.</li>
  * <li>Map input coordinates (mouse/touch) to node indices for selection and
  * dragging, with geometry-specific hit-test logic.</li>
  * <li>Allow interactive shifting of individual network nodes (dragging) and
@@ -85,8 +79,6 @@ import com.google.gwt.event.dom.client.TouchMoveEvent;
  * <li>SQUARE, SQUARE_MOORE, SQUARE_NEUMANN, SQUARE_NEUMANN_2ND — drawn as
  * square grids with several decoration/neighbor variations; supports
  * hierarchical gaps when geometry describes a HIERARCHY</li>
- * <li>LINEAR — drawn as rows of cells where the vertical axis can represent
- * time; uses an internal RingBuffer to store historical states</li>
  * <li>Generic network — uses Node2D positions and a radius-based scaling to
  * draw nodes and links; supports manual node shifting</li>
  * </ul>
@@ -95,9 +87,6 @@ import com.google.gwt.event.dom.client.TouchMoveEvent;
  * <ul>
  * <li>data: a String[] holding per-node CSS color values used to paint each
  * cell/node.</li>
- * <li>buffer: an optional RingBuffer&lt;String[]&gt; used by linear geometry to
- * retain previous states for history visualization. Capacity is based on
- * visible steps and MAX_LINEAR_SIZE.</li>
  * <li>Bounds and sizing: internal fields such as side, dw, dw2, dh, dh3 and
  * dR compute per-cell/node sizes and are recalculated in calcBounds.</li>
  * <li>Hierarchy support: when geometry indicates a HIERARCHY, the component
@@ -123,7 +112,7 @@ import com.google.gwt.event.dom.client.TouchMoveEvent;
  * <ul>
  * <li>When a static lattice layout is available it delegates to dedicated
  * drawXxx methods (drawTriangular, drawHoneycomb, drawSquareLattice,
- * drawSquareNeumann2nd, drawLinearLattice).</li>
+ * drawSquareNeumann2nd).</li>
  * <li>For arbitrary networks the drawNetwork method scales the universe,
  * draws links and nodes (with per-node color optimization) and supports
  * node diameter computation (dR).</li>
@@ -136,16 +125,12 @@ import com.google.gwt.event.dom.client.TouchMoveEvent;
  * <li>MIN_DW, MIN_DH and MIN_DR define minimum drawable dimensions; if elements
  * would be smaller than these thresholds, the graph is disabled and a
  * message is displayed.</li>
- * <li>MAX_LINEAR_SIZE controls the maximum retained history length for linear
- * geometries; callers must ensure MAX_LINEAR_SIZE is adequate for their
- * configured canvas/steps, otherwise an exception is thrown during setup.</li>
  * </ul>
  *
  * <h3>Performance</h3>
  * Drawing operations use batching and occasional optimizations (e.g., reusing
  * fill style until it changes) but may still be expensive for very large
- * populations or frequent updates. For linear geometries the history buffer
- * size is chosen to balance memory and visible steps; it is lazily allocated.
+ * populations or frequent updates.
  *
  * <h3>Extensibility &amp; Limitations</h3>
  * <ul>
@@ -173,9 +158,7 @@ import com.google.gwt.event.dom.client.TouchMoveEvent;
  * Instantiate via the view/module infrastructure this project provides. Ensure
  * to call {@link #activate()} and allow {@link #calcBounds()} to run with the
  * appropriate canvas size; {@link #update()} should be invoked whenever the
- * underlying population state changes to refresh the visualization. For linear
- * geometries, ensure the {@code MAX_LINEAR_SIZE} accommodates the expected
- * width of the viewport.
+ * underlying population state changes to refresh the visualization.
  * 
  * @author Christoph Hauert
  */
@@ -209,24 +192,9 @@ public class PopGraph2D extends GenericPopGraph<String, Network2D> implements Sh
 		label.setStyleName("evoludo-Label2D");
 	}
 
-	/**
-	 * The maximum size of a linear graph. This affects memory allocation to retain
-	 * the history of the graph.
-	 */
-	public static final int MAX_LINEAR_SIZE = 500;
-
 	@Override
 	public void setGeometry(AbstractGeometry geometry) {
 		super.setGeometry(geometry);
-		int size = geometry.getSize();
-		if (geometry.isType(GeometryType.LINEAR) && size <= MAX_LINEAR_SIZE) {
-			// linear graphs maintain history; allocate generously
-			if (buffer == null)
-				buffer = new RingBuffer<String[]>(2 * MAX_LINEAR_SIZE);
-			// with a buffer we need to make sure colors is initialized as well
-			if (data == null || data.length != size)
-				data = new String[size];
-		}
 		calcBounds();
 	}
 
@@ -236,20 +204,6 @@ public class PopGraph2D extends GenericPopGraph<String, Network2D> implements Sh
 		// lazy allocation of memory for colors
 		if (!hasMessage && (data == null || data.length != geometry.getSize()))
 			data = new String[geometry.getSize()];
-	}
-
-	@Override
-	public void update(boolean isNext) {
-		if (buffer != null) {
-			// add copy of data array to buffer
-			// note: cannot be reliably done in RingBuffer class without reflection
-			String[] copy = Arrays.copyOf(data, data.length);
-			if (isNext || buffer.isEmpty())
-				buffer.append(copy);
-			else
-				buffer.replace(copy);
-		}
-		super.update(isNext);
 	}
 
 	/**
@@ -300,9 +254,6 @@ public class PopGraph2D extends GenericPopGraph<String, Network2D> implements Sh
 				break;
 			case SQUARE_NEUMANN_2ND:
 				drawSquareNeumann2nd();
-				break;
-			case LINEAR:
-				drawLinearLattice();
 				break;
 			default:
 				logger.warning("Unsupported geometry: " + type.getTitle());
@@ -452,26 +403,6 @@ public class PopGraph2D extends GenericPopGraph<String, Network2D> implements Sh
 			drawFrame(0, 0);
 	}
 
-	/**
-	 * Draw linear lattice with history.
-	 */
-	private void drawLinearLattice() {
-		int nSteps = (int) (bounds.getHeight() / dh);
-		int yshift = 0;
-		Iterator<String[]> it = buffer.iterator();
-		while (it.hasNext() && nSteps-- > 0) {
-			int xshift = 0;
-			String[] state = it.next();
-			for (int n = 0; n < geometry.getSize(); n++) {
-				g.setFillStyle(state[n]);
-				fillRect(xshift, yshift, dw, dh);
-				xshift += dw;
-			}
-			yshift += dh;
-		}
-		drawFrame(4, 4);
-	}
-
 	@Override
 	protected void drawNetwork() {
 		if (!prepCanvas())
@@ -612,6 +543,7 @@ public class PopGraph2D extends GenericPopGraph<String, Network2D> implements Sh
 		// dispatch to concise handlers for each geometry
 		switch (type) {
 			case CUBE:
+			case LINEAR:
 				handleNoRepresentation(type);
 				return;
 			case TRIANGULAR:
@@ -626,9 +558,6 @@ public class PopGraph2D extends GenericPopGraph<String, Network2D> implements Sh
 			case SQUARE:
 				handleSquare(width, height);
 				break;
-			case LINEAR:
-				handleLinear(width, height);
-				break;
 			default:
 				handleNetwork(width, height);
 				break;
@@ -636,7 +565,6 @@ public class PopGraph2D extends GenericPopGraph<String, Network2D> implements Sh
 
 		// final sanity checks and lazy allocation
 		if (dw < MIN_DW && dh < MIN_DH && dR < MIN_DR) {
-			buffer = null;
 			data = null;
 			noGraph = true;
 			displayMessage("Population size to large!");
@@ -652,7 +580,6 @@ public class PopGraph2D extends GenericPopGraph<String, Network2D> implements Sh
 	 * @param type the geometry type
 	 */
 	private void handleNoRepresentation(GeometryType type) {
-		buffer = null;
 		data = null;
 		noGraph = true;
 		displayMessage("No representation for " + type.getTitle() + "!");
@@ -665,7 +592,6 @@ public class PopGraph2D extends GenericPopGraph<String, Network2D> implements Sh
 	 * @param height the height of the canvas
 	 */
 	private void handleTriangular(int width, int height) {
-		buffer = null;
 		side = (int) (Math.sqrt(geometry.getSize()) + 0.5);
 		int diameter = Math.min(width, height);
 		dw2 = diameter / (side + 3);
@@ -690,7 +616,6 @@ public class PopGraph2D extends GenericPopGraph<String, Network2D> implements Sh
 	 * @param height the height of the canvas
 	 */
 	private void handleHoneycomb(int width, int height) {
-		buffer = null;
 		side = (int) (Math.sqrt(geometry.getSize()) + 0.5);
 		int diameter = Math.min(width, height);
 		dw2 = diameter / (2 * side + 1);
@@ -716,7 +641,6 @@ public class PopGraph2D extends GenericPopGraph<String, Network2D> implements Sh
 	 * @param height the height of the canvas
 	 */
 	private void handleSquare(int width, int height) {
-		buffer = null;
 		if (style.showDecoratedFrame) {
 			super.calcBounds(width, height);
 		} else {
@@ -760,35 +684,6 @@ public class PopGraph2D extends GenericPopGraph<String, Network2D> implements Sh
 	}
 
 	/**
-	 * Handle linear lattice geometry with history.
-	 * 
-	 * @param width  the width of the canvas
-	 * @param height the height of the canvas
-	 */
-	private void handleLinear(int width, int height) {
-		int bWidth = (int) bounds.getWidth();
-		dw = bWidth / geometry.getSize();
-		int bHeight = (int) bounds.getHeight();
-		dh = dw;
-		int steps = (dh == 0) ? 0 : bHeight / dh;
-		if (dw < MIN_DW || steps == 0) {
-			bounds.setSize(width, height);
-			return;
-		}
-		int adjw = dw * geometry.getSize();
-		int adjh = bHeight - (bHeight % dh);
-		int dx = (bWidth - adjw) / 2;
-		int dy = (bHeight - adjh) / 2;
-		bounds.set(bounds.getX() + dx, bounds.getY() + dy, adjw, adjh);
-		if (buffer == null)
-			throw new IllegalStateException("Increase MAX_LINEAR_SIZE (" + MAX_LINEAR_SIZE + ")!");
-		int capacity = 2 * steps;
-		buffer.setCapacity(capacity);
-		style.setYRange(steps - 1);
-		style.showFrame = true;
-	}
-
-	/**
 	 * Handle generic network geometry.
 	 * 
 	 * @param width  the width of the canvas
@@ -802,7 +697,6 @@ public class PopGraph2D extends GenericPopGraph<String, Network2D> implements Sh
 			bounds.setSize(width, height);
 			return;
 		}
-		buffer = null;
 		bounds.set((width - diameter) / 2.0, (height - diameter) / 2.0, diameter, diameter);
 		style.showFrame = false;
 	}
@@ -847,6 +741,7 @@ public class PopGraph2D extends GenericPopGraph<String, Network2D> implements Sh
 		switch (type) {
 			// 3D views must deal with this
 			case CUBE:
+			case LINEAR:
 				return FINDNODEAT_UNIMPLEMENTED;
 			case TRIANGULAR:
 				return findTriangularNode(sx, sy);
@@ -857,8 +752,6 @@ public class PopGraph2D extends GenericPopGraph<String, Network2D> implements Sh
 			case SQUARE_MOORE:
 			case SQUARE:
 				return findSquareNode(sx, sy);
-			case LINEAR:
-				return findLinearNode(sx, sy);
 			default:
 				return findNetworkNode(sx, sy);
 		}
@@ -949,20 +842,6 @@ public class PopGraph2D extends GenericPopGraph<String, Network2D> implements Sh
 			r = side - 1 - (y - hgap * HIERARCHY_GAP) / dh;
 		}
 		return r * side + c;
-	}
-
-	/**
-	 * Find the index of the node at the location with coordinates {@code (x, y)} in
-	 * a linear lattice.
-	 * 
-	 * @param x the {@code x}-coordinate of the location
-	 * @param y the {@code y}-coordinate of the location
-	 * @return the index of the node
-	 */
-	private int findLinearNode(int x, int y) {
-		int c = x / dw;
-		int r = y / dh;
-		return r * geometry.getSize() + c;
 	}
 
 	/**
