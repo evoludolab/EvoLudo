@@ -253,6 +253,7 @@ public class Distribution extends AbstractView<PopGraph2D> implements TooltipPro
 		style.showYLabel = true;
 		style.showYTickLabels = true;
 		style.showYTicks = true;
+		style.showYAxisRight = false;
 		if (hard)
 			graph.reset();
 	}

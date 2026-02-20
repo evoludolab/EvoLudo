@@ -755,7 +755,7 @@ public class PopGraph2D extends GenericPopGraph<String, Network2D> implements Sh
 		int newdim = dw * side + gap;
 		int dx = (bWidth - newdim) / 2;
 		int dy = (bHeight - newdim) / 2;
-		bounds.set(dx, dy, newdim, newdim);
+		bounds.set(bounds.getX() + dx, bounds.getY() + dy, newdim, newdim);
 		style.showFrame = true;
 	}
 
@@ -779,7 +779,7 @@ public class PopGraph2D extends GenericPopGraph<String, Network2D> implements Sh
 		int adjh = bHeight - (bHeight % dh);
 		int dx = (bWidth - adjw) / 2;
 		int dy = (bHeight - adjh) / 2;
-		bounds.set(dx, dy, adjw, adjh);
+		bounds.set(bounds.getX() + dx, bounds.getY() + dy, adjw, adjh);
 		if (buffer == null)
 			throw new IllegalStateException("Increase MAX_LINEAR_SIZE (" + MAX_LINEAR_SIZE + ")!");
 		int capacity = 2 * steps;
