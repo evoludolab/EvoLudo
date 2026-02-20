@@ -424,8 +424,12 @@ public class CLOController {
 			break;
 		}
 		if (moduleKey == null || !engine.loadModule(moduleKey.getKey())) {
-			if (!helpRequested)
-				engine.logger.severe("Use --module to load a module or --help for more information.");
+			if (!helpRequested) {
+				if (!moduleName.isEmpty())
+					engine.logger.severe("module '" + moduleName + "' not found.");
+				else
+					engine.logger.severe("Use --module to load a module or --help for more information.");
+			}
 			if (engine.getModule() != null)
 				engine.unloadModule();
 			return helpCLO;
