@@ -896,6 +896,7 @@ public class Histogram extends AbstractView<HistoGraph> {
 			for (HistoGraph graph : graphs)
 				graph.reset();
 		}
+		update(hard);
 	}
 
 	/**
