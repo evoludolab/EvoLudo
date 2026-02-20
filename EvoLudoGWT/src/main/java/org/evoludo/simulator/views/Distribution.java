@@ -34,7 +34,9 @@ import java.awt.Color;
 import java.util.List;
 
 import org.evoludo.graphics.AbstractGraph;
+import org.evoludo.graphics.DistrGraph2D;
 import org.evoludo.graphics.GraphStyle;
+import org.evoludo.graphics.PopGraph1D;
 import org.evoludo.graphics.PopGraph2D;
 import org.evoludo.graphics.TooltipProvider;
 import org.evoludo.math.ArrayMath;
@@ -164,11 +166,24 @@ public class Distribution extends AbstractView<PopGraph2D> implements TooltipPro
 	protected boolean allocateGraphs() {
 		List<? extends Module<?>> species = engine.getModule().getSpecies();
 		int nGraphs = species.size();
-		if (graphs.size() == nGraphs)
+		boolean compatible = graphs.size() == nGraphs;
+		if (compatible) {
+			for (int i = 0; i < nGraphs; i++) {
+				boolean linear = species.get(i).getNTraits() == 1;
+				PopGraph2D graph = graphs.get(i);
+				if (linear != (graph instanceof PopGraph1D)) {
+					compatible = false;
+					break;
+				}
+			}
+		}
+		if (compatible)
 			return false;
 		destroyGraphs();
 		for (Module<?> module : species) {
-			PopGraph2D graph = new PopGraph2D(this, module);
+			PopGraph2D graph = module.getNTraits() == 1
+					? new PopGraph1D(this, module)
+					: new DistrGraph2D(this, module);
 			graph.setDebugEnabled(false);
 			graph.setLayoutMenusEnabled(false);
 			wrapper.add(graph);
@@ -310,7 +325,7 @@ public class Distribution extends AbstractView<PopGraph2D> implements TooltipPro
 			geometry = AbstractGeometry.create(engine, GeometryType.LINEAR);
 			geometry.setSize(MAX_BINS);
 		} else {
-			geometry = AbstractGeometry.create(engine, GeometryType.SQUARE);
+			geometry = AbstractGeometry.create(engine, GeometryType.SQUARE_NEUMANN);
 			geometry.setConnectivity(4);
 			geometry.setSize(MAX_BINS * MAX_BINS);
 		}
