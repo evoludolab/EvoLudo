@@ -316,7 +316,12 @@ public class Pop2D extends GenericPop<String, Network2D, PopGraph2D> {
 	 * @return a graph with matching specialization
 	 */
 	private PopGraph2D createGraph(Module<?> module, AbstractGeometry geometry) {
-		return isLinearGeometry(geometry) ? new PopGraph1D(this, module) : new PopGraph2D(this, module);
+		if (isLinearGeometry(geometry)) {
+			PopGraph2D graph = new PopGraph1D(this, module);
+			graph.setLayoutMenusEnabled(false);
+			return graph;
+		}
+		return new PopGraph2D(this, module);
 	}
 
 	@Override
@@ -361,6 +366,7 @@ public class Pop2D extends GenericPop<String, Network2D, PopGraph2D> {
 
 		if (geometry.isType(GeometryType.LINEAR)) {
 			// frame, ticks, labels needed
+			style.showYAxisRight = false;
 			style.xLabel = "nodes";
 			style.showXLabel = true;
 			style.showXTickLabels = true;
