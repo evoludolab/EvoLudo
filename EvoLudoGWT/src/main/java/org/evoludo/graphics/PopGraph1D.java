@@ -60,31 +60,27 @@ public class PopGraph1D extends PopGraph2D {
 	 */
 	public PopGraph1D(AbstractView<?> view, Module<?> module) {
 		super(view, module);
+		buffer = new RingBuffer<String[]>(2 * MAX_LINEAR_SIZE);
 	}
 
 	@Override
-	public void setGeometry(AbstractGeometry geometry) {
-		int size = geometry.getSize();
-		if (geometry.isType(GeometryType.LINEAR) && size <= MAX_LINEAR_SIZE) {
-			if (buffer == null)
-				buffer = new RingBuffer<String[]>(2 * MAX_LINEAR_SIZE);
-			if (data == null || data.length != size)
-				data = new String[size];
-		} else {
-			buffer = null;
+	protected void ensureData() {
+		if (geometry == null) {
+			data = null;
+			return;
 		}
-		super.setGeometry(geometry);
+		int size = geometry.getSize();
+		if (data == null || data.length != size)
+			data = new String[size];
 	}
 
 	@Override
 	public void update(boolean isNext) {
-		if (buffer != null && data != null) {
-			String[] copy = Arrays.copyOf(data, data.length);
-			if (isNext || buffer.isEmpty())
-				buffer.append(copy);
-			else
-				buffer.replace(copy);
-		}
+		String[] copy = Arrays.copyOf(data, data.length);
+		if (isNext || buffer.isEmpty())
+			buffer.append(copy);
+		else
+			buffer.replace(copy);
 		super.update(isNext);
 	}
 
@@ -128,7 +124,7 @@ public class PopGraph1D extends PopGraph2D {
 	 * Draw linear lattice content without frame.
 	 */
 	private void drawLinearContent() {
-		if (buffer == null || geometry == null)
+		if (geometry == null)
 			return;
 		int nSteps = (int) (bounds.getHeight() / dh);
 		int yshift = 0;
@@ -211,7 +207,6 @@ public class PopGraph1D extends PopGraph2D {
 		int steps = (dh == 0) ? 0 : bHeight / dh;
 		if (dw < MIN_DW || steps == 0) {
 			bounds.setSize(width, height);
-			data = null;
 			noGraph = true;
 			displayMessage("Population size to large!");
 			return;
@@ -221,14 +216,10 @@ public class PopGraph1D extends PopGraph2D {
 		int dx = (bWidth - adjw) / 2;
 		int dy = (bHeight - adjh) / 2;
 		bounds.set(bounds.getX() + dx, bounds.getY() + dy, adjw, adjh);
-		if (buffer == null)
-			throw new IllegalStateException("Increase MAX_LINEAR_SIZE (" + MAX_LINEAR_SIZE + ")!");
 		int capacity = 2 * steps;
 		buffer.setCapacity(capacity);
 		style.setYRange(steps - 1);
 		style.showFrame = true;
-		if (data == null || data.length != geometry.getSize())
-			data = new String[geometry.getSize()];
 	}
 
 	@Override

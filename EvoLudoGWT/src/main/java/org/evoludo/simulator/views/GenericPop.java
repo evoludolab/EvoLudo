@@ -225,10 +225,13 @@ public abstract class GenericPop<T, N extends Network<?>, G extends GenericPopGr
 			boolean isNext = (Math.abs(timestamp - newtime) > 1e-8);
 			timestamp = newtime;
 			for (G graph : graphs) {
-				boolean doUpdate = (isActive || graph.hasHistory()) && !graph.hasMessage();
+				boolean doUpdate = (isActive || graph.hasHistory());
 				// if graph is neither active nor has history, force can be safely ignored
 				// otherwise may lead to problems if graph has never been activated
 				if (!doUpdate)
+					continue;
+				// inactive history graphs still need data updates to keep their buffers in sync.
+				if (isActive && graph.hasMessage())
 					continue;
 				switch (type) {
 					case TRAIT:

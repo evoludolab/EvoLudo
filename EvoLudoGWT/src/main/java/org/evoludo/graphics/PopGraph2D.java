@@ -196,14 +196,33 @@ public class PopGraph2D extends GenericPopGraph<String, Network2D> implements Sh
 	public void setGeometry(AbstractGeometry geometry) {
 		super.setGeometry(geometry);
 		calcBounds();
+		ensureData();
 	}
 
 	@Override
 	public void activate() {
 		super.activate();
-		// lazy allocation of memory for colors
-		if (!hasMessage && (data == null || data.length != geometry.getSize()))
-			data = new String[geometry.getSize()];
+		ensureData();
+	}
+
+	@Override
+	public void onResize() {
+		super.onResize();
+		ensureData();
+	}
+
+	/**
+	 * Ensure that the data array is properly initialized based on the current
+	 * geometry.
+	 */
+	protected void ensureData() {
+		if (noGraph || geometry == null) {
+			data = null;
+		} else {
+			int size = geometry.getSize();
+			if (data == null || data.length != size)
+				data = new String[size];
+		}
 	}
 
 	/**
@@ -545,7 +564,7 @@ public class PopGraph2D extends GenericPopGraph<String, Network2D> implements Sh
 			case CUBE:
 			case LINEAR:
 				handleNoRepresentation(type);
-				return;
+				break;
 			case TRIANGULAR:
 				handleTriangular(width, height);
 				break;
@@ -563,14 +582,10 @@ public class PopGraph2D extends GenericPopGraph<String, Network2D> implements Sh
 				break;
 		}
 
-		// final sanity checks and lazy allocation
+		// final sanity checks
 		if (dw < MIN_DW && dh < MIN_DH && dR < MIN_DR) {
-			data = null;
 			noGraph = true;
 			displayMessage("Population size to large!");
-		} else {
-			if (view.isActive() && (data == null || data.length != geometry.getSize()))
-				data = new String[geometry.getSize()];
 		}
 	}
 
@@ -580,7 +595,6 @@ public class PopGraph2D extends GenericPopGraph<String, Network2D> implements Sh
 	 * @param type the geometry type
 	 */
 	private void handleNoRepresentation(GeometryType type) {
-		data = null;
 		noGraph = true;
 		displayMessage("No representation for " + type.getTitle() + "!");
 	}
