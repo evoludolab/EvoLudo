@@ -603,12 +603,27 @@ public abstract class GenericPopGraph<T, N extends Network<?>> extends AbstractG
 	private boolean isDebugEnabled = true;
 
 	/**
+	 * The flag to indicate whether layout-specific context menu entries should be
+	 * shown.
+	 */
+	private boolean showLayoutMenus = true;
+
+	/**
 	 * Set whether the debugging menu is enabled.
 	 * 
 	 * @param enabled {@code true} to enable debugging
 	 */
 	public void setDebugEnabled(boolean enabled) {
 		isDebugEnabled = enabled;
+	}
+
+	/**
+	 * Set whether layout-specific context menu entries should be shown.
+	 *
+	 * @param enabled {@code true} to show layout entries
+	 */
+	public void setLayoutMenusEnabled(boolean enabled) {
+		showLayoutMenus = enabled;
 	}
 
 	@Override
@@ -618,8 +633,10 @@ public abstract class GenericPopGraph<T, N extends Network<?>> extends AbstractG
 			super.populateContextMenuAt(menu, x, y);
 			return;
 		}
-		addShakeMenu(menu);
-		addAnimateMenu(menu);
+		if (showLayoutMenus) {
+			addShakeMenu(menu);
+			addAnimateMenu(menu);
+		}
 		addClearMenu(menu);
 		// process debug node update
 		addDebugSubmenu(menu, x, y);

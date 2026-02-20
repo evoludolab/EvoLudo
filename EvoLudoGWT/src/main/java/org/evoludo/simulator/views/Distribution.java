@@ -170,6 +170,7 @@ public class Distribution extends AbstractView<PopGraph2D> implements TooltipPro
 		for (Module<?> module : species) {
 			PopGraph2D graph = new PopGraph2D(this, module);
 			graph.setDebugEnabled(false);
+			graph.setLayoutMenusEnabled(false);
 			wrapper.add(graph);
 			graphs.add(graph);
 			// even if nGraphs did not change, the geometries associated with the graphs
@@ -416,14 +417,15 @@ public class Distribution extends AbstractView<PopGraph2D> implements TooltipPro
 	}
 
 	@Override
-	public void populateContextMenuAt(ContextMenu menu, int node) {
+	public void populateContextMenu(ContextMenu menu) {
 		Module<?> module = engine.getModule();
 		int nTraits = module.getNTraits();
+		addAxesMenu(menu);
 		// ignore if less than 3 traits
 		if (nTraits < 3) {
 			traitXMenu = traitYMenu = null;
 			traitXItems = traitYItems = null;
-			populateContextMenu(menu);
+			super.populateContextMenu(menu);
 			return;
 		}
 		if (traitXMenu == null || traitXItems == null || traitXItems.length != nTraits) {
@@ -454,7 +456,30 @@ public class Distribution extends AbstractView<PopGraph2D> implements TooltipPro
 		menu.addSeparator();
 		menu.add("X-axis trait", traitXMenu);
 		menu.add("Y-axis trait", traitYMenu);
-		populateContextMenu(menu);
+		super.populateContextMenu(menu);
+	}
+
+	/**
+	 * Add axes-related entries to the context menu.
+	 *
+	 * @param menu the context menu to populate
+	 */
+	private void addAxesMenu(ContextMenu menu) {
+		if (graphs.isEmpty())
+			return;
+		if (axesMenu == null) {
+			axesMenu = new ContextMenu(menu, "Axes");
+			rightYAxisMenu = new ContextMenuCheckBoxItem("Right Y-axis", () -> {
+				boolean showOnRight = !graphs.get(0).getStyle().showYAxisRight;
+				rightYAxisMenu.setChecked(showOnRight);
+				setRightYAxis(showOnRight);
+			});
+		}
+		axesMenu.clear();
+		axesMenu.addHeader("Axes");
+		rightYAxisMenu.setChecked(graphs.get(0).getStyle().showYAxisRight);
+		axesMenu.add(rightYAxisMenu);
+		menu.add("Axes", axesMenu);
 	}
 
 	@Override
@@ -483,6 +508,16 @@ public class Distribution extends AbstractView<PopGraph2D> implements TooltipPro
 	 * axis.
 	 */
 	private ContextMenu traitYMenu;
+
+	/**
+	 * The context menu trigger for axis settings.
+	 */
+	private ContextMenu axesMenu;
+
+	/**
+	 * The context menu item to toggle the y-axis side.
+	 */
+	private ContextMenuCheckBoxItem rightYAxisMenu;
 
 	/**
 	 * Command to toggle the inclusion of a trait on the phase plane axes.
