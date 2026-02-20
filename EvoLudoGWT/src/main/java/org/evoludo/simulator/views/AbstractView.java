@@ -508,7 +508,7 @@ public abstract class AbstractView<G extends AbstractGraph<?>> extends Composite
 	public void modelChanged(PendingAction action) {
 		if (action != PendingAction.NONE)
 			return;
-		updateData();
+		updateData(false);
 		if (!doUpdateView(false))
 			return;
 		update(false);
@@ -518,6 +518,15 @@ public abstract class AbstractView<G extends AbstractGraph<?>> extends Composite
 	 * Update view-specific data even when GUI rendering is throttled.
 	 */
 	protected void updateData() {
+	}
+
+	/**
+	 * Update view-specific data even when GUI rendering is throttled.
+	 *
+	 * @param force whether the update was explicitly forced
+	 */
+	protected void updateData(boolean force) {
+		updateData();
 	}
 
 	/**

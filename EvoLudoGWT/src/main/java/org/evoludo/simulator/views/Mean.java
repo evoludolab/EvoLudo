@@ -365,20 +365,24 @@ public class Mean extends AbstractView<LineGraph> implements Shifter, Zoomer {
 	}
 
 	@Override
-	public void update(boolean force) {
+	protected void updateData() {
 		double newtime = model.getUpdates();
 		Module<?> module = null;
 		if (Math.abs(timestamp - newtime) > 1e-8) {
 			int idx = 0;
-			for (LineGraph graph : graphs) {
-				idx = updateGraph(graph, module, idx, newtime);
-			}
-		}
-		if (isActive) {
 			for (LineGraph graph : graphs)
-				graph.paint(force);
+				idx = updateGraph(graph, module, idx, newtime);
+			timestamp = newtime;
 		}
-		timestamp = newtime;
+	}
+
+	@Override
+	public void update(boolean force) {
+		updateData();
+		if (!isActive)
+			return;
+		for (LineGraph graph : graphs)
+			graph.paint(force);
 	}
 
 	/**

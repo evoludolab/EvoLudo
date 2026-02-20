@@ -172,7 +172,7 @@ public class S3 extends AbstractView<S3Graph> {
 	}
 
 	@Override
-	public void update(boolean force) {
+	protected void updateData(boolean force) {
 		double newtime = model.getUpdates();
 		boolean isNext = (Math.abs(timestamp - newtime) > 1e-8);
 		for (S3Graph graph : graphs) {
@@ -180,9 +180,16 @@ public class S3 extends AbstractView<S3Graph> {
 				model.getMeanTraits(graph.getModule().getId(), state);
 				graph.addData(newtime, state, force);
 			}
-			graph.paint(force);
 		}
-		timestamp = newtime;
+		if (isNext)
+			timestamp = newtime;
+	}
+
+	@Override
+	public void update(boolean force) {
+		updateData(force);
+		for (S3Graph graph : graphs)
+			graph.paint(force);
 	}
 
 	@Override

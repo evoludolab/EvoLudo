@@ -256,14 +256,19 @@ public class Phase2D extends AbstractView<ParaGraph> {
 	}
 
 	@Override
-	public void update(boolean force) {
+	protected void updateData(boolean force) {
 		double newtime = model.getUpdates();
 		if (Math.abs(timestamp - newtime) > 1e-8) {
 			model.getMeanTraits(state);
 			graph.addData(newtime, state, force);
+			timestamp = newtime;
 		}
+	}
+
+	@Override
+	public void update(boolean force) {
+		updateData(force);
 		graph.paint(force);
-		timestamp = newtime;
 	}
 
 	/**
