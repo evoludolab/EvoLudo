@@ -911,10 +911,14 @@ public abstract class AbstractGraph<B> extends FocusPanel
 	}
 
 	/**
-	 * Squared normalized distance threshold for throttling successive
-	 * samples.
+	 * Squared normalized mean-distance threshold for throttling successive samples.
 	 */
 	protected static final double MIN_NORM_DIST_SQ = 0.01 * 0.01;
+
+	/**
+	 * Normalized absolute-difference threshold for max-delta throttling.
+	 */
+	protected static final double MIN_NORM_DELTA = 0.001;
 
 	/**
 	 * Squared minimum normalized step before curvature checks.
@@ -928,18 +932,28 @@ public abstract class AbstractGraph<B> extends FocusPanel
 
 	/**
 	 * Decide whether to retain a candidate sample by applying a display-agnostic
-	 * heuristic: normalized distance and local curvature.
+	 * heuristic: normalized mean squared distance and local curvature.
 	 *
-	 * @param history             ring buffer holding retained samples (latest first)
-	 * @param current             candidate sample including prepended time
-	 * @param last                most recently retained sample including prepended
-	 *                            time
+	 * @param history ring buffer holding retained samples (latest first)
+	 * @param current candidate sample including prepended time
+	 * @param last    most recently retained sample including prepended
+	 *                time
 	 * @return {@code true} if sample should be kept
 	 */
-	protected final boolean keepSample(RingBuffer<double[]> history, double[] current, double[] last) {
+	protected boolean keepSample(RingBuffer<double[]> history, double[] current, double[] last) {
 		if (normalizedDistSq(current, last) > MIN_NORM_DIST_SQ)
 			return true;
-		return hasSignificantTurn(history, current, last);
+		if (history == null || history.getSize() < 2)
+			return false;
+		Iterator<double[]> iter = history.iterator();
+		if (!iter.hasNext())
+			return false;
+		// first entry is 'last'
+		iter.next();
+		if (!iter.hasNext())
+			return false;
+		double[] prev = iter.next();
+		return hasSignificantTurn(current, last, prev);
 	}
 
 	/**
@@ -959,8 +973,8 @@ public abstract class AbstractGraph<B> extends FocusPanel
 			double b = last[n];
 			if (!Double.isFinite(a) || !Double.isFinite(b))
 				return Double.POSITIVE_INFINITY;
-			double scale = Math.max(1.0, Math.max(Math.abs(a), Math.abs(b)));
-			double d = (a - b) / scale;
+			double norm = Math.max(1.0, Math.max(Math.abs(a), Math.abs(b)));
+			double d = (a - b) / norm;
 			dist2 += d * d;
 		}
 		return dist2 / dim;
@@ -969,26 +983,18 @@ public abstract class AbstractGraph<B> extends FocusPanel
 	/**
 	 * Check whether the last two retained segments form a sufficiently strong turn.
 	 *
-	 * @param history            ring buffer holding retained samples (latest first)
-	 * @param current            candidate sample including prepended time
-	 * @param last               most recently retained sample including prepended
-	 *                           time
+	 * @param current candidate sample including prepended time
+	 * @param last    most recently retained sample including prepended time
+	 * @param prev    previous retained sample before {@code last} including
+	 *                prepended time
 	 * @return {@code true} if local turn angle exceeds threshold
 	 */
-	protected final boolean hasSignificantTurn(RingBuffer<double[]> history, double[] current, double[] last) {
-		if (history == null || history.getSize() < 2 || current == null || last == null)
+	protected final boolean hasSignificantTurn(double[] current, double[] last, double[] prev) {
+		if (current == null || last == null || prev == null)
 			return false;
 		if (current.length != last.length || current.length < 2 || Double.isNaN(last[0]))
 			return false;
-		Iterator<double[]> iter = history.iterator();
-		if (!iter.hasNext())
-			return false;
-		// first entry is 'last'
-		iter.next();
-		if (!iter.hasNext())
-			return false;
-		double[] prev = iter.next();
-		if (prev == null || prev.length != last.length || Double.isNaN(prev[0]))
+		if (prev.length != last.length || Double.isNaN(prev[0]))
 			return false;
 
 		double dot = 0.0;
@@ -1000,9 +1006,9 @@ public abstract class AbstractGraph<B> extends FocusPanel
 			double c = current[n];
 			if (!Double.isFinite(p) || !Double.isFinite(l) || !Double.isFinite(c))
 				return true;
-			double scale = Math.max(1.0, Math.max(Math.abs(c), Math.max(Math.abs(l), Math.abs(p))));
-			double vPrev = (l - p) / scale;
-			double vCurr = (c - l) / scale;
+			double norm = Math.max(1.0, Math.max(Math.abs(c), Math.max(Math.abs(l), Math.abs(p))));
+			double vPrev = (l - p) / norm;
+			double vCurr = (c - l) / norm;
 			dot += vPrev * vCurr;
 			normPrevSq += vPrev * vPrev;
 			normCurrSq += vCurr * vCurr;

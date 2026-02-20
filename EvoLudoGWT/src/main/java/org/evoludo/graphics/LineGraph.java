@@ -316,15 +316,37 @@ public class LineGraph extends AbstractGraph<double[]>
 	/**
 	 * Add data to the graph.
 	 * 
-	 * @evoludo.impl The data array is directly added to the buffer. It is the
-	 *               caller's responsibility to ensure that the first entry
+	 * @evoludo.impl If the change relative to the latest buffered sample is
+	 *               negligible, only the latest sample's time entry is updated.
+	 *               Otherwise the data array is directly added to the buffer. It is
+	 *               the caller's responsibility to ensure that the first entry
 	 *               represents time and the data remains unmodified.
 	 * 
 	 * @param data the data to add
 	 */
 	public void addData(double[] data) {
-		// always add data
+		if (!buffer.isEmpty()) {
+			double[] last = buffer.last();
+			if (Math.abs(data[0] - last[0]) < 1e-8) {
+				System.arraycopy(data, 0, last, 0, last.length);
+				return;
+			}
+			if (updateTimeOnly(data, last)) {
+				last[0] = data[0];
+				return;
+			}
+		}
+		// add new sample
 		buffer.append(data);
+		updateAutoscale(data);
+	}
+
+	/**
+	 * Update autoscaled {@code y}-range from a newly appended sample.
+	 * 
+	 * @param data the latest buffered sample (time prepended)
+	 */
+	private void updateAutoscale(double[] data) {
 		// time does not count for min/max
 		double t = data[0];
 		data[0] = style.yMin;
@@ -347,6 +369,43 @@ public class LineGraph extends AbstractGraph<double[]>
 				style.yMax = Math.max(style.yMax, Functions.roundUp(max));
 		}
 		data[0] = t;
+	}
+
+	/**
+	 * Return whether the latest buffered sample should only update its time entry.
+	 *
+	 * @param current candidate sample
+	 * @param last    latest buffered sample
+	 * @return {@code true} if only time should be updated
+	 */
+	private boolean updateTimeOnly(double[] current, double[] last) {
+		if (current == null || last == null)
+			return false;
+		if (current.length != last.length)
+			return false;
+		double t = current[0];
+		double lastt = last[0];
+		// Preserve segment markers and non-monotonic inputs.
+		if (!Double.isFinite(t) || !Double.isFinite(lastt) || t < lastt)
+			return false;
+		return !keepSample(buffer, current, last);
+	}
+
+	@Override
+	protected boolean keepSample(RingBuffer<double[]> buffer, double[] current, double[] last) {
+		if (current == null || last == null || current.length != last.length || current.length < 2)
+			return true;
+		double max = 0.0;
+		for (int n = 1; n < current.length; n++) {
+			double a = current[n];
+			double b = last[n];
+			if (!Double.isFinite(a) || !Double.isFinite(b))
+				return true;
+			double norm = Math.max(1.0, Math.max(Math.abs(a), Math.abs(b)));
+			double d = Math.abs(a - b) / norm;
+			max = Math.max(max, d);
+		}
+		return max > MIN_NORM_DELTA;
 	}
 
 	@Override
