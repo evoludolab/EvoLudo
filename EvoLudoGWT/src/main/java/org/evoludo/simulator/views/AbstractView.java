@@ -341,7 +341,9 @@ public abstract class AbstractView<G extends AbstractGraph<?>> extends Composite
 		isActive = true;
 		for (G graph : graphs)
 			graph.activate();
-		if (!model.requestMode(getMode())) {
+		if (model.requestMode(getMode())) {
+			updateData(true);
+		} else {
 			// this is should not happen because view should not be available
 			// if mode is not supported, see EvoLudoWeb#updateViews()
 			for (G graph : graphs)
@@ -462,6 +464,7 @@ public abstract class AbstractView<G extends AbstractGraph<?>> extends Composite
 
 	@Override
 	public void modelStopped() {
+		updateData(true);
 		update(true);
 	}
 

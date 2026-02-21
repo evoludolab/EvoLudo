@@ -279,19 +279,19 @@ public class Distribution extends AbstractView<PopGraph2D> implements TooltipPro
 		super.modelDidInit();
 		for (PopGraph2D graph : graphs)
 			graph.init();
+		updateData(true);
 		update();
 	}
 
 	@Override
-	public void update(boolean force) {
+	protected void updateData(boolean force) {
+		// force intentionally ignored; update policy depends on active/history state.
 		// always read data - some nodes may have changed due to user actions
 		double newtime = model.getUpdates();
 		boolean isNext = (Math.abs(timestamp - newtime) > 1e-8);
-		timestamp = newtime;
+		boolean updated = false;
 		for (PopGraph2D graph : graphs) {
-			boolean doUpdate = isActive || graph.hasHistory();
-			// if graph is neither active nor has history, force can be safely ignored
-			// otherwise may lead to problems if graph has never been activated
+			boolean doUpdate = (isActive || graph.hasHistory());
 			if (!doUpdate)
 				continue;
 			if (!type.equals(Data.TRAIT)) {
@@ -304,8 +304,18 @@ public class Distribution extends AbstractView<PopGraph2D> implements TooltipPro
 			cMap.setRange(0.0, ArrayMath.max(bins));
 			cMap.translate(bins, graph.getData());
 			graph.update(isNext);
-			graph.paint(force);
+			updated = true;
 		}
+		if (updated)
+			timestamp = newtime;
+	}
+
+	@Override
+	public void update(boolean force) {
+		if (!isActive)
+			return;
+		for (PopGraph2D graph : graphs)
+			graph.paint(force);
 	}
 
 	/**

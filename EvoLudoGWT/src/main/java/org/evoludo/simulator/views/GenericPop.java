@@ -213,41 +213,54 @@ public abstract class GenericPop<T, N extends Network<?>, G extends GenericPopGr
 		super.modelDidInit();
 		for (G graph : graphs)
 			graph.init();
+		updateData(true);
 		update();
+	}
+
+	@Override
+	protected void updateData(boolean force) {
+		// force intentionally ignored; update policy depends on active/history state.
+		ModelType mt = getModelType();
+		if (!(mt.isIBS() || mt.isPDE()))
+			return;
+		// always read data for the selected graph set
+		double newtime = model.getUpdates();
+		boolean isNext = (Math.abs(timestamp - newtime) > 1e-8);
+		boolean updated = false;
+		for (G graph : graphs) {
+			boolean doUpdate = (isActive || graph.hasHistory());
+			if (!doUpdate)
+				continue;
+			// inactive history graphs still need data updates to keep their buffers in sync.
+			if (isActive && graph.hasMessage())
+				continue;
+			switch (type) {
+				case TRAIT:
+					model.getTraitData(graph.getModule().getId(), graph.getData(), graph.getColorMap());
+					break;
+				case FITNESS:
+					// cast should be safe for fitness data
+					model.getFitnessData(graph.getModule().getId(), graph.getData(),
+							(ColorMap.Gradient1D<T>) graph.getColorMap());
+					break;
+				default:
+					break;
+			}
+			graph.update(isNext);
+			updated = true;
+		}
+		if (updated)
+			timestamp = newtime;
 	}
 
 	@Override
 	public void update(boolean force) {
 		ModelType mt = getModelType();
 		if (mt.isIBS() || mt.isPDE()) {
-			// always read data - some nodes may have changed due to user actions
-			double newtime = model.getUpdates();
-			boolean isNext = (Math.abs(timestamp - newtime) > 1e-8);
-			timestamp = newtime;
-			for (G graph : graphs) {
-				boolean doUpdate = (isActive || graph.hasHistory());
-				// if graph is neither active nor has history, force can be safely ignored
-				// otherwise may lead to problems if graph has never been activated
-				if (!doUpdate)
-					continue;
-				// inactive history graphs still need data updates to keep their buffers in sync.
-				if (isActive && graph.hasMessage())
-					continue;
-				switch (type) {
-					case TRAIT:
-						model.getTraitData(graph.getModule().getId(), graph.getData(), graph.getColorMap());
-						break;
-					case FITNESS:
-						// cast should be safe for fitness data
-						model.getFitnessData(graph.getModule().getId(), graph.getData(),
-								(ColorMap.Gradient1D<T>) graph.getColorMap());
-						break;
-					default:
-						break;
-				}
-				graph.update(isNext);
+			if (!isActive)
+				return;
+			for (G graph : graphs)
 				graph.paint(force);
-			}
 			return;
 		}
 		for (G graph : graphs)
