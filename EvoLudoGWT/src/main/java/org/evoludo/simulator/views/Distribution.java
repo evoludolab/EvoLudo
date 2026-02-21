@@ -185,6 +185,11 @@ public class Distribution extends AbstractView<PopGraph2D> implements TooltipPro
 	}
 
 	@Override
+	public int[] getBufferMenuCapacities() {
+		return new int[] { 1000, 2000, 5000, 10000 };
+	}
+
+	@Override
 	protected boolean allocateGraphs() {
 		List<? extends Module<?>> species = engine.getModule().getSpecies();
 		int nGraphs = species.size();
@@ -571,8 +576,8 @@ public class Distribution extends AbstractView<PopGraph2D> implements TooltipPro
 	/**
 	 * Add binning controls to the context menu.
 	 *
-	 * @param menu  the context menu to populate
-	 * @param is2D  {@code true} for 2D distributions
+	 * @param menu the context menu to populate
+	 * @param is2D {@code true} for 2D distributions
 	 */
 	private void addBinsMenu(ContextMenu menu, boolean is2D) {
 		if (graphs.isEmpty())

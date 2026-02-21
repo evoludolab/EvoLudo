@@ -37,7 +37,6 @@ import org.evoludo.graphics.AbstractGraph;
 import org.evoludo.simulator.EvoLudoGWT;
 import org.evoludo.simulator.models.Data;
 import org.evoludo.ui.ContextMenu;
-import org.evoludo.ui.ContextMenuCheckBoxItem;
 import org.evoludo.ui.ContextMenuItem;
 import org.evoludo.util.RingBuffer;
 
@@ -46,7 +45,6 @@ import com.google.gwt.event.dom.client.ContextMenuEvent;
 import com.google.gwt.event.dom.client.ContextMenuHandler;
 import com.google.gwt.event.shared.HandlerRegistration;
 import com.google.gwt.user.client.ui.HTML;
-import com.google.gwt.user.client.ui.Widget;
 
 /**
  * The view to display the console log.
@@ -79,6 +77,31 @@ public class Console extends AbstractView<AbstractGraph<?>> implements ContextMe
 		 * The buffer to store the log messages.
 		 */
 		RingBuffer<String> buffer = new RingBuffer<>(DEFAULT_CAPACITY);
+
+		/**
+		 * The logical capacity for console output ({@code 0} means unlimited).
+		 */
+		int capacity = DEFAULT_CAPACITY;
+
+		/**
+		 * Set logical capacity of this log.
+		 *
+		 * @param capacity the new capacity ({@code 0} for unlimited)
+		 */
+		public void setCapacity(int capacity) {
+			this.capacity = capacity;
+			if (capacity > 0)
+				buffer.setCapacity(capacity);
+		}
+
+		/**
+		 * Get logical capacity of this log.
+		 *
+		 * @return the logical capacity ({@code 0} means unlimited)
+		 */
+		public int getCapacity() {
+			return capacity;
+		}
 
 		/**
 		 * Clear the log buffer and the display.
@@ -238,7 +261,7 @@ public class Console extends AbstractView<AbstractGraph<?>> implements ContextMe
 		Element ele = log.getElement();
 		int scroll = ele.getScrollHeight();
 		int top = ele.getScrollTop();
-		if (log.buffer.getCapacity() == 0) {
+		if (log.getCapacity() == 0) {
 			// unlimited log messages
 			if (level != Level.CONFIG)
 				sb.append("<br/>");
@@ -286,33 +309,33 @@ public class Console extends AbstractView<AbstractGraph<?>> implements ContextMe
 	}
 
 	/**
-	 * Set the capacity of the log buffer. If the buffer capacity is set to
-	 * {@code 0} the number of messsages is unlimited.
-	 * 
-	 * @param capacity the capacity of the log buffer
-	 */
-	public void setLogCapacity(int capacity) {
-		log.buffer.setCapacity(capacity);
-		String label = (capacity / 1000) + "k";
-		if (label.equals("0k"))
-			label = "unlimited";
-		for (Widget item : bufferSizeMenu) {
-			if (!(item instanceof ContextMenuCheckBoxItem))
-				continue;
-			ContextMenuCheckBoxItem menuItem = (ContextMenuCheckBoxItem) item;
-			menuItem.setChecked(menuItem.getText().equals(label));
-		}
-	}
-
-	/**
-	 * The context menu to set the buffer size for graphs with historical data.
-	 */
-	private ContextMenu bufferSizeMenu;
-
-	/**
 	 * The context menu item to clear the console.
 	 */
 	private ContextMenuItem clearMenu;
+
+	@Override
+	public int[] getBufferMenuCapacities() {
+		return new int[] { 100, 1000, 10000, 0 };
+	}
+
+	@Override
+	protected int getBufferCapacity() {
+		return log.getCapacity();
+	}
+
+	@Override
+	protected boolean applyBufferCapacity(int capacity) {
+		if (capacity < 0 || log.getCapacity() == capacity)
+			return false;
+		log.setCapacity(capacity);
+		return true;
+	}
+
+	@Override
+	protected void bufferCapacityChanged() {
+		if (log.getCapacity() > 0)
+			log.show();
+	}
 
 	@Override
 	public void populateContextMenuAt(ContextMenu menu, int x, int y) {
@@ -320,23 +343,7 @@ public class Console extends AbstractView<AbstractGraph<?>> implements ContextMe
 		if (clearMenu == null)
 			clearMenu = new ContextMenuItem("Clear", this::clearLog);
 		menu.add(clearMenu);
-		if (bufferSizeMenu == null) {
-			bufferSizeMenu = new ContextMenu(menu, "Buffer size");
-			bufferSizeMenu.add(new ContextMenuCheckBoxItem("1k", //
-					() -> {
-						setLogCapacity(1000);
-						log.show();
-					}));
-			bufferSizeMenu.add(new ContextMenuCheckBoxItem("10k",
-					() -> {
-						setLogCapacity(10000);
-						log.show();
-					}));
-			bufferSizeMenu.add(new ContextMenuCheckBoxItem("unlimited", //
-					() -> setLogCapacity(0)));
-			setLogCapacity(log.buffer.getCapacity());
-		}
-		menu.add("Buffer size", bufferSizeMenu);
+		addBufferSizeMenu(menu);
 		populateContextMenu(menu);
 	}
 }

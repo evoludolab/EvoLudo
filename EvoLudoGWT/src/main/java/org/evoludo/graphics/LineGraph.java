@@ -1064,7 +1064,6 @@ public class LineGraph extends AbstractGraph<double[]>
 		}
 		menu.addSeparator();
 		menu.add(clearMenu);
-		addBufferSizeMenu(menu);
 		addAxesMenu(menu);
 		addZoomMenu(menu);
 		if (menu.getWidgetCount() > 0 && tooltip.isVisible())

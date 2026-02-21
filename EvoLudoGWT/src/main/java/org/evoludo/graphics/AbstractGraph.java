@@ -85,7 +85,6 @@ import com.google.gwt.user.client.Timer;
 import com.google.gwt.user.client.ui.FocusPanel;
 import com.google.gwt.user.client.ui.LayoutPanel;
 import com.google.gwt.user.client.ui.RequiresResize;
-import com.google.gwt.user.client.ui.Widget;
 
 /**
  * Abstract base class for 2D graphs rendered into a Canvas within the UI.
@@ -1021,11 +1020,6 @@ public abstract class AbstractGraph<B> extends FocusPanel
 	}
 
 	/**
-	 * The context menu to set the buffer size for graphs with historical data.
-	 */
-	private ContextMenu bufferSizeMenu;
-
-	/**
 	 * The flag to indicate whether the graph supports zoom. The default is no
 	 * support.
 	 */
@@ -1066,46 +1060,11 @@ public abstract class AbstractGraph<B> extends FocusPanel
 	 */
 	@Override
 	public void populateContextMenuAt(ContextMenu menu, int x, int y) {
-		addBufferSizeMenu(menu);
 		addLogScaleMenu(menu);
 		addZoomMenu(menu);
 		if (menu.getWidgetCount() > 0 && tooltip.isVisible())
 			tooltip.close();
 		view.populateContextMenu(menu);
-	}
-
-	/**
-	 * Add buffer size menu item to context menu if graph supports historical data.
-	 * 
-	 * @param menu the context menu to populate
-	 */
-	protected void addBufferSizeMenu(ContextMenu menu) {
-		if (!hasHistory())
-			return;
-		if (bufferSizeMenu == null) {
-			bufferSizeMenu = new ContextMenu(menu, "Buffer");
-			for (int capacity : getBufferMenuCapacities()) {
-				final int cap = capacity;
-				bufferSizeMenu.add(new ContextMenuCheckBoxItem((cap / 1000) + "k", //
-						(ScheduledCommand) () -> {
-							setBufferCapacity(cap);
-							paint(true);
-						}));
-			}
-		}
-		setBufferCapacity(buffer.getCapacity());
-		ContextMenuItem bufferSizeTrigger = menu.add("Buffer size", bufferSizeMenu);
-		bufferSizeTrigger.setEnabled(!view.isRunning());
-		menu.addSeparator();
-	}
-
-	/**
-	 * Return the list of buffer capacities offered in the context menu.
-	 *
-	 * @return buffer capacities in entries
-	 */
-	protected int[] getBufferMenuCapacities() {
-		return new int[] { 5000, 10000, 50000, 100000 };
 	}
 
 	/**
@@ -1179,23 +1138,6 @@ public abstract class AbstractGraph<B> extends FocusPanel
 		if (style.yMin == 0.0) {
 			// increase to 1% of yMax
 			style.yMin = 0.01 * style.yMax;
-		}
-	}
-
-	/**
-	 * Sets the buffer capacity to {@code capacity}, if applicable.
-	 * 
-	 * @param capacity the new buffer capacity
-	 */
-	protected void setBufferCapacity(int capacity) {
-		buffer.setCapacity(capacity);
-		int bufSize = buffer.getCapacity();
-		String label = (bufSize / 1000) + "k";
-		for (Widget item : bufferSizeMenu) {
-			if (!(item instanceof ContextMenuCheckBoxItem))
-				continue;
-			ContextMenuCheckBoxItem menuItem = (ContextMenuCheckBoxItem) item;
-			menuItem.setChecked(menuItem.getText().equals(label));
 		}
 	}
 

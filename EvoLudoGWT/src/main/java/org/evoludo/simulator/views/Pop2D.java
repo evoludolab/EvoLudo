@@ -167,6 +167,11 @@ public class Pop2D extends GenericPop<String, Network2D, PopGraph2D> {
 	}
 
 	@Override
+	public int[] getBufferMenuCapacities() {
+		return new int[] { 1000, 2000, 5000, 10000 };
+	}
+
+	@Override
 	protected boolean allocateGraphs() {
 		ModelType mt = getModelType();
 		if (mt.isIBS())

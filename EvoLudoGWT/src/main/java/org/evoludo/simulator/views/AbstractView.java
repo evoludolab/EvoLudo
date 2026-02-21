@@ -55,6 +55,7 @@ import org.evoludo.simulator.models.ModelType;
 import org.evoludo.simulator.models.RunListener;
 import org.evoludo.simulator.models.SampleListener;
 import org.evoludo.ui.ContextMenu;
+import org.evoludo.ui.ContextMenuCheckBoxItem;
 import org.evoludo.ui.ContextMenuItem;
 import org.evoludo.util.Formatter;
 import org.evoludo.util.NativeJS;
@@ -625,6 +626,114 @@ public abstract class AbstractView<G extends AbstractGraph<?>> extends Composite
 	}
 
 	/**
+	 * Add a synchronized buffer-size menu for all buffered data sources in this
+	 * view.
+	 *
+	 * @param menu the context menu to populate
+	 */
+	public void addBufferSizeMenu(ContextMenu menu) {
+		int[] capacities = getBufferMenuCapacities();
+		if (capacities == null || capacities.length == 0)
+			return;
+		int current = getBufferCapacity();
+		if (current < 0)
+			return;
+		ContextMenu bufferMenu = new ContextMenu(menu, "Buffer");
+		for (int cap : capacities) {
+			ContextMenuCheckBoxItem item = new ContextMenuCheckBoxItem(formatBufferCapacity(cap),
+					() -> setBufferCapacity(cap));
+			item.setChecked(cap == current);
+			bufferMenu.add(item);
+		}
+		ContextMenuItem trigger = menu.add("Buffer size", bufferMenu);
+		trigger.setEnabled(!isRunning());
+		menu.addSeparator();
+	}
+
+	/**
+	 * Return capacities offered in the synchronized buffer-size menu.
+	 *
+	 * @return capacities in entries
+	 */
+	public int[] getBufferMenuCapacities() {
+		return new int[] { 5000, 10000, 50000, 100000 };
+	}
+
+	/**
+	 * Format a buffer capacity label for the context menu.
+	 *
+	 * @param capacity the buffer capacity
+	 * @return the menu label
+	 */
+	protected String formatBufferCapacity(int capacity) {
+		if (capacity == 0)
+			return "unlimited";
+		if (capacity % 1000 == 0)
+			return (capacity / 1000) + "k";
+		return Integer.toString(capacity);
+	}
+
+	/**
+	 * Set the buffer capacity for all buffered data sources of this view.
+	 *
+	 * @param capacity the new capacity
+	 */
+	public void setBufferCapacity(int capacity) {
+		if (capacity < 0)
+			return;
+		if (applyBufferCapacity(capacity))
+			bufferCapacityChanged();
+	}
+
+	/**
+	 * Return current buffer capacity, or a negative value if no buffer is
+	 * available.
+	 *
+	 * @return current capacity or {@code -1} if unavailable
+	 */
+	protected int getBufferCapacity() {
+		int capacity = -1;
+		for (G graph : graphs) {
+			RingBuffer<?> history = graph.getBuffer();
+			if (history == null)
+				continue;
+			if (capacity < 0)
+				capacity = history.getCapacity();
+		}
+		return capacity;
+	}
+
+	/**
+	 * Apply a new buffer capacity to all buffered graphs in this view.
+	 *
+	 * @param capacity the new capacity
+	 * @return {@code true} if at least one capacity changed
+	 */
+	protected boolean applyBufferCapacity(int capacity) {
+		boolean changed = false;
+		for (G graph : graphs) {
+			RingBuffer<?> history = graph.getBuffer();
+			if (history == null || history.getCapacity() == capacity)
+				continue;
+			history.setCapacity(capacity);
+			changed = true;
+		}
+		return changed;
+	}
+
+	/**
+	 * Callback after buffer capacity changes. Default repaints buffered graphs.
+	 */
+	protected void bufferCapacityChanged() {
+		if (!isActive)
+			return;
+		for (G graph : graphs) {
+			if (graph.hasHistory())
+				graph.paint(true);
+		}
+	}
+
+	/**
 	 * Apply the y-axis side setting to all graphs in this view and refresh layout.
 	 *
 	 * @param showOnRight {@code true} to display y-axes on the right side
@@ -847,6 +956,7 @@ public abstract class AbstractView<G extends AbstractGraph<?>> extends Composite
 		// simulations. all GUI related methods must be quarantined through EvoLudoGWT
 		engine.populateContextMenu(contextMenu);
 
+		addBufferSizeMenu(contextMenu);
 		// process exports context menu (suppress in ePub, regardless of whether a
 		// standalone lab or not)
 		if (!NativeJS.isEPub()) {

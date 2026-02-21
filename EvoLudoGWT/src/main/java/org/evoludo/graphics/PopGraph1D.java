@@ -63,11 +63,6 @@ public class PopGraph1D extends PopGraph2D {
 	}
 
 	@Override
-	protected int[] getBufferMenuCapacities() {
-		return new int[] { 1000, 2000, 5000, 10000 };
-	}
-
-	@Override
 	protected void ensureData() {
 		if (geometry == null) {
 			data = null;
