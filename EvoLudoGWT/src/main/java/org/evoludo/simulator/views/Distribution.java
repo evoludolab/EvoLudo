@@ -144,6 +144,11 @@ public class Distribution extends AbstractView<PopGraph2D> implements TooltipPro
 	private static final int[] BIN_OPTIONS = new int[] { 100, 200, 500 };
 
 	/**
+	 * Sentinel for unavailable frequency values.
+	 */
+	private static final double INVALID_FREQUENCY = -1.0;
+
+	/**
 	 * Active number of bins per axis.
 	 */
 	private int nBins = DEFAULT_BINS;
@@ -396,6 +401,12 @@ public class Distribution extends AbstractView<PopGraph2D> implements TooltipPro
 			return null;
 		GraphStyle style = graph.getStyle();
 		int binsAxis = nBins;
+		PopGraph2D popGraph = (graph instanceof PopGraph2D ? (PopGraph2D) graph : null);
+		ColorMap.Gradient1D<String> cMap = null;
+		if (popGraph != null && popGraph.getColorMap() instanceof ColorMap.Gradient1D) {
+			ColorMap.Gradient1D<String> map = (ColorMap.Gradient1D<String>) popGraph.getColorMap();
+			cMap = map;
+		}
 		StringBuilder tip = new StringBuilder(TABLE_STYLE);
 		if (style.label != null)
 			tip.append("<b>")
@@ -415,13 +426,21 @@ public class Distribution extends AbstractView<PopGraph2D> implements TooltipPro
 					.append(Formatter.format(style.xMin + (bar + 1) * (style.xMax - style.xMin) / binsAxis, 2))
 					.append("]")
 					.append(TABLE_ROW_END);
-			if (node < binsAxis) {
-				// report frequency for most recent row
-				// all historical data is stored in terms of colors only...
+			double frequency = INVALID_FREQUENCY;
+			if (popGraph instanceof PopGraph1D) {
+				RingBuffer<String[]> history = popGraph.getBuffer();
+				if (history != null && row < history.getSize()) {
+					String[] rowData = history.get(row);
+					frequency = decodeProbabilityMass(rowData, bar, binsAxis, cMap);
+				}
+			}
+			if (frequency < 0.0 && !(popGraph instanceof PopGraph1D) && bar < bins.length)
+				frequency = bins[bar];
+			if (frequency >= 0.0) {
 				tip.append(TABLE_ROW_START)
 						.append("frequency")
 						.append(TABLE_CELL_NEXT)
-						.append(Formatter.formatPercent(bins[bar], 1))
+						.append(Formatter.formatPercent(frequency, 1))
 						.append(TABLE_ROW_END);
 			}
 			// + 0.0: silly trick to avoid -0 display
@@ -447,15 +466,39 @@ public class Distribution extends AbstractView<PopGraph2D> implements TooltipPro
 					.append(Formatter.format(style.yMin + (bar2 + 1) * (style.yMax - style.yMin) / binsAxis, 2))
 					.append("]");
 			// report frequency
-			tip.append(TABLE_ROW_START)
-					.append("frequency")
-					.append(TABLE_CELL_NEXT)
-					.append(Formatter.formatPercent(bins[node], 1))
-					.append(TABLE_ROW_END);
+			double frequency = INVALID_FREQUENCY;
+			if (node < bins.length)
+				frequency = bins[node];
+			if (frequency >= 0.0) {
+				tip.append(TABLE_ROW_START)
+						.append("frequency")
+						.append(TABLE_CELL_NEXT)
+						.append(Formatter.formatPercent(frequency, 1))
+						.append(TABLE_ROW_END);
+			}
 		}
 		tip.append(TABLE_ROW_END)
 				.append(TABLE_END);
 		return tip.toString();
+	}
+
+	/**
+	 * Decode a bin's probability mass from color-encoded histogram data.
+	 *
+	 * @param colors   the color-encoded histogram
+	 * @param idx      the bin index to decode
+	 * @param nEntries number of histogram entries to consider
+	 * @param cMap     color map used for encoding
+	 * @return decoded probability mass or {@link #INVALID_FREQUENCY} if unavailable
+	 */
+	private static double decodeProbabilityMass(String[] colors, int idx, int nEntries,
+			ColorMap.Gradient1D<String> cMap) {
+		if (idx < 0)
+			return INVALID_FREQUENCY;
+		double[] masses = decodeHistogram1D(colors, cMap, nEntries);
+		if (masses == null || idx >= masses.length)
+			return INVALID_FREQUENCY;
+		return masses[idx];
 	}
 
 	@Override
@@ -598,10 +641,8 @@ public class Distribution extends AbstractView<PopGraph2D> implements TooltipPro
 		if (oldData != null)
 			oldData = Arrays.copyOf(oldData, oldData.length);
 		ColorMap.Gradient1D<String> cMap = null;
-		if (graph.getColorMap() instanceof ColorMap.Gradient1D) {
-			ColorMap.Gradient1D<String> map = (ColorMap.Gradient1D<String>) graph.getColorMap();
-			cMap = map;
-		}
+		if (graph.getColorMap() instanceof ColorMap.Gradient1D)
+			cMap = (ColorMap.Gradient1D<String>) graph.getColorMap();
 		List<String[]> oldHistory = null;
 		RingBuffer<String[]> history = graph.getBuffer();
 		if (history != null && !history.isEmpty()) {
@@ -663,18 +704,26 @@ public class Distribution extends AbstractView<PopGraph2D> implements TooltipPro
 		int len = Math.min(Math.min(source.length, decoded.length), bins);
 		double sum = 0.0;
 		for (int i = 0; i < len; i++) {
-			double mass = cMap.normalize(source[i]);
-			if (!Double.isFinite(mass) || mass < 0.0)
-				mass = 0.0;
+			double mass = nonNegativeFinite(cMap.normalize(source[i]));
 			decoded[i] = mass;
 			sum += mass;
 		}
 		if (sum <= 0.0)
-			return decoded;
+			return null;
 		double invSum = 1.0 / sum;
 		for (int i = 0; i < len; i++)
 			decoded[i] *= invSum;
 		return decoded;
+	}
+
+	/**
+	 * Convert non-finite or negative values to zero.
+	 *
+	 * @param value the value to sanitize
+	 * @return {@code value} if finite and non-negative, {@code 0.0} otherwise
+	 */
+	private static double nonNegativeFinite(double value) {
+		return (Double.isFinite(value) && value >= 0.0 ? value : 0.0);
 	}
 
 	/**
