@@ -35,6 +35,7 @@ import java.util.Arrays;
 
 import org.evoludo.math.ArrayMath;
 import org.evoludo.math.Functions;
+import org.evoludo.simulator.models.Data;
 import org.evoludo.simulator.modules.Module;
 import org.evoludo.simulator.views.BasicTooltipProvider;
 import org.evoludo.simulator.views.Histogram;
@@ -103,10 +104,9 @@ import org.evoludo.util.Formatter;
  * {@code style.autoscaleY} is enabled the graph will adapt {@code style.yMin}
  * and {@code style.yMax} automatically based on the observed data values or the
  * configured normalization row.</li>
- * <li>When autoscaling normalized data the graph uses a fixed table of
- * thresholds (see the private {@code autoscale} matrix) to pick a convenient
- * set of y-levels and step values; when data exceeds 1.0 it rounds up/down to
- * "nice" boundaries.</li>
+ * <li>Autoscaling rounds bounds to "nice" values using
+ * {@link Functions#roundDown(double)} / {@link Functions#roundUp(double)} and
+ * updates only when extrema change sufficiently to avoid jitter.</li>
  * <li>Bars are clipped and mapped into pixel space using {@code bounds} and the
  * current y-range; rendering ensures minimal visible height for very small
  * values.</li>
@@ -267,28 +267,6 @@ public class HistoGraph extends AbstractGraph<double[]> implements BasicTooltipP
 				return mark.descr;
 		return null;
 	}
-
-	/**
-	 * The list of thresholds for automatically scaling the y-axis. The first
-	 * element of each row is the maximum value for the y-axis, the second element
-	 * is the minimum value for the y-axis, and the third element is the number of
-	 * levels for the y-axis.
-	 * <p>
-	 * For example, the scale changes from {@code 0-1} with 4 levels to {@code
-	 * 0-0.5} with 5 levels if the maximum value drops below {@code 0.4}.
-	 */
-	private static final double[][] autoscale = new double[][] { //
-			{ 1.0, 0.4, 4.0 }, //
-			{ 0.5, 0.2, 5.0 }, //
-			{ 0.25, 0.08, 5.0 }, //
-			{ 0.1, 0.04, 5.0 }, //
-			{ 0.05, 0.008, 5.0 }, //
-			{ 0.01, 0.0, 5.0 } };
-
-	/**
-	 * The index of the current autoscale setting.
-	 */
-	private int autoscaleidx = 0;
 
 	/**
 	 * The list of markers for the histogram.
@@ -659,78 +637,98 @@ public class HistoGraph extends AbstractGraph<double[]> implements BasicTooltipP
 		g.translate(bounds.getX(), bounds.getY());
 		g.setFillStyle(style.graphColor);
 
-		int yLevels = 4;
-		double[] norm = null;
+		double[] norm = (normIdx >= 0 && data != null && normIdx < data.length) ? data[normIdx] : null;
 		double[] myData = data[row];
 		if (style.autoscaleY) {
+			double yMin;
 			double yMax;
-			if (normIdx >= 0) {
-				norm = data[normIdx];
+			if (norm != null) {
 				double[] bounds = computeNormBounds(myData, norm);
+				yMin = bounds[0];
 				yMax = bounds[1];
 			} else {
+				yMin = ArrayMath.min(myData);
 				yMax = ArrayMath.max(myData);
 				if (!isNormalized) {
-					yMax /= nSamples;
+					yMin /= Math.max(1.0, nSamples);
+					yMax /= Math.max(1.0, nSamples);
 				}
 			}
-			if (yMax <= 1.0) {
-				// normalized small values: pick a suitable autoscale index
-				yLevels = handleSmallYMax(yMax);
-			} else {
-				// larger values: adjust yMax and possibly yMin
-				handleLargeYMax(yMax, myData);
-			}
+			updateAutoscaledYMax(yMax);
+			updateAutoscaledYMin(yMin);
 		}
 
 		double barwidth = bounds.getWidth() / nBins;
 		double h = bounds.getHeight();
-		double map = h / (style.yMax - style.yMin);
+		double yRange = style.yMax - style.yMin;
+		double map = h / (yRange > 0.0 ? yRange : 1.0);
 
 		drawBars(myData, norm, barwidth, h, map);
 
 		drawMarkers();
-		drawFrame(4, yLevels);
+		drawFrame(4, 4);
 		g.restore();
 		return false;
 	}
 
 	/**
-	 * Handle the case where {@code yMax <= 1.0} by selecting an autoscale index and
-	 * updating {@link GraphStyle#yMax}.
+	 * Update and round {@link GraphStyle#yMax} when the observed maximum changed
+	 * sufficiently.
 	 * 
 	 * @param yMax observed maximum bin height
-	 * @return number of y-levels to use
 	 */
-	private int handleSmallYMax(double yMax) {
-		int yLevels = selectAutoscaleIndexForYMax(yMax);
-		style.yMax = autoscale[autoscaleidx][0];
-		return yLevels;
+	private void updateAutoscaledYMax(double yMax) {
+		if (Double.isNaN(yMax))
+			return;
+		if (!(yMax > style.yMax || yMax < 0.8 * style.yMax))
+			return;
+		double roundedMax = roundAutoscale(yMax, true);
+		if (roundedMax <= style.yMin) {
+			double delta = Math.max(Math.abs(style.yMin) * 0.1, 1e-12);
+			roundedMax = roundAutoscale(style.yMin + delta, true);
+			if (roundedMax <= style.yMin)
+				roundedMax = style.yMin + delta;
+		}
+		style.yMax = roundedMax;
 	}
 
 	/**
-	 * Handle the case where {@code yMax > 1.0} by rounding the maximum up if
-	 * necessary and determining/rounding {@code yMin} when applicable.
+	 * Update and round {@link GraphStyle#yMin} when the observed minimum changed
+	 * sufficiently.
 	 * 
-	 * @param yMax   observed maximum bin height
-	 * @param myData histogram counts
+	 * @param yMin observed minimum bin height
 	 */
-	private void handleLargeYMax(double yMax, double[] myData) {
-		if (yMax > style.yMax || yMax < 0.8 * style.yMax) {
-			style.yMax = Functions.roundUp(yMax);
+	private void updateAutoscaledYMin(double yMin) {
+		if (!(yMin < style.yMin || yMin > 1.25 * style.yMin))
+			return;
+		double roundedMin = roundAutoscale(yMin, false);
+		if (roundedMin >= style.yMax) {
+			double delta = Math.max(Math.abs(style.yMax) * 0.1, 1e-12);
+			roundedMin = roundAutoscale(style.yMax - delta, false);
+			if (roundedMin >= style.yMax)
+				roundedMin = style.yMax - delta;
 		}
+		style.yMin = roundedMin;
+	}
 
-		double yMin = Double.NaN;
-		// determine yMin only for non-normalized per-bin case
-		if (normIdx < 0) {
-			yMin = ArrayMath.min(myData);
-			if (!isNormalized) {
-				yMin /= nSamples;
-			}
-		}
-		if (!Double.isNaN(yMin) && (yMin < style.yMin || yMin > 1.25 * style.yMin)) {
-			style.yMin = Functions.roundDown(yMin);
-		}
+	/**
+	 * Round autoscaled bounds. Percent axes use one additional decimal order
+	 * compared to {@link Functions#round(double)} for higher sensitivity.
+	 *
+	 * @param value value to round
+	 * @param up    {@code true} to round up, {@code false} to round down
+	 * @return rounded value
+	 */
+	private double roundAutoscale(double value, boolean up) {
+		if (!style.percentY)
+			return up ? Functions.roundUp(value) : Functions.roundDown(value);
+		// percent aware rounding
+		int magnitude = Functions.magnitude(value) - 1;
+		double factor = Math.pow(10.0, magnitude);
+		if (factor == 0.0 || !Double.isFinite(factor))
+			return up ? Functions.roundUp(value) : Functions.roundDown(value);
+		double scaled = value / factor;
+		return (up ? Math.ceil(scaled) : Math.floor(scaled)) * factor;
 	}
 
 	/**
@@ -761,20 +759,6 @@ public class HistoGraph extends AbstractGraph<double[]> implements BasicTooltipP
 	}
 
 	/**
-	 * Adjust {@link #autoscaleidx} to match the given {@code yMax}.
-	 * 
-	 * @param yMax observed maximum bin height
-	 * @return number of y-levels for the selected autoscale row
-	 */
-	private int selectAutoscaleIndexForYMax(double yMax) {
-		while (yMax > autoscale[autoscaleidx][0])
-			autoscaleidx--;
-		while (yMax < autoscale[autoscaleidx][1])
-			autoscaleidx++;
-		return (int) autoscale[autoscaleidx][2];
-	}
-
-	/**
 	 * Draw bars for the histogram using either per-bin normalization row or global
 	 * normalization flag.
 	 * 
@@ -795,11 +779,12 @@ public class HistoGraph extends AbstractGraph<double[]> implements BasicTooltipP
 				xshift += barwidth;
 			}
 		} else {
-			double localMap = map;
-			if (!isNormalized)
-				localMap = map / nSamples;
+			double sampleNorm = Math.max(1.0, nSamples);
 			for (int n = 0; n < nBins; n++) {
-				double barheight = Math.min(Math.max(1.0, localMap * (myData[n] - style.yMin)), h - 1);
+				double val = myData[n];
+				if (!isNormalized)
+					val /= sampleNorm;
+				double barheight = Math.min(Math.max(1.0, map * (val - style.yMin)), h - 1);
 				fillRect(xshift, h - barheight, barwidth - 1.0, barheight);
 				xshift += barwidth;
 			}
@@ -1074,14 +1059,7 @@ public class HistoGraph extends AbstractGraph<double[]> implements BasicTooltipP
 					style.autoscaleY = false;
 					autoscaleYMenu.setChecked(false);
 				}
-				if (style.percentX) {
-					style.xMin = 0.0;
-					style.xMax = 1.0;
-				}
-				if (style.percentY) {
-					style.yMin = 0.0;
-					style.yMax = 1.0;
-				}
+				applyFullRange();
 				paint(true);
 			});
 			rightYAxisMenu = new ContextMenuCheckBoxItem("Right Y-axis", () -> {
@@ -1096,9 +1074,64 @@ public class HistoGraph extends AbstractGraph<double[]> implements BasicTooltipP
 		autoscaleYMenu.setEnabled(enableAutoscaleYMenu);
 		rightYAxisMenu.setChecked(style.showYAxisRight);
 		axesMenu.add(autoscaleYMenu);
-		if (style.percentX || style.percentY)
+		if (hasFullRangeMenu())
 			axesMenu.add(fullRangeMenu);
 		axesMenu.add(rightYAxisMenu);
 		menu.add("Axes", axesMenu);
+	}
+
+	/**
+	 * Determine whether the full-range action is applicable.
+	 *
+	 * @return {@code true} if the full-range menu item should be shown
+	 */
+	private boolean hasFullRangeMenu() {
+		return style.percentX
+				|| style.percentY
+				|| view.getType() == Data.STATISTICS_FIXATION_TIME;
+	}
+
+	/**
+	 * Apply full-range bounds according to axis style and histogram type.
+	 */
+	private void applyFullRange() {
+		if (style.percentX) {
+			style.xMin = 0.0;
+			style.xMax = 1.0;
+		}
+		if (style.percentY || view.getType() == Data.STATISTICS_FIXATION_PROBABILITY) {
+			style.yMin = 0.0;
+			style.yMax = 1.0;
+			return;
+		}
+		if (view.getType() != Data.STATISTICS_FIXATION_TIME) {
+			return;
+		}
+		double yMax = computeObservedYMax();
+		style.yMin = 0.0;
+		if (!Double.isFinite(yMax) || yMax <= 0.0) {
+			style.yMax = 1.0;
+			return;
+		}
+		style.yMax = Math.max(Functions.roundUp(yMax), 1e-12);
+	}
+
+	/**
+	 * Compute observed maximum y-value from current data and normalization mode.
+	 *
+	 * @return observed maximum, or {@link Double#NaN} if unavailable
+	 */
+	private double computeObservedYMax() {
+		if (data == null || row < 0 || row >= data.length || data[row] == null)
+			return Double.NaN;
+		double[] myData = data[row];
+		if (normIdx >= 0 && normIdx < data.length && data[normIdx] != null) {
+			return computeNormBounds(myData, data[normIdx])[1];
+		}
+		double yMax = ArrayMath.max(myData);
+		if (!isNormalized) {
+			yMax /= Math.max(1.0, nSamples);
+		}
+		return yMax;
 	}
 }
