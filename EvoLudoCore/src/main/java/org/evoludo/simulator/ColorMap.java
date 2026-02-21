@@ -666,6 +666,37 @@ public abstract class ColorMap<T extends Object> {
 		}
 
 		/**
+		 * Utility method to calculate the index of {@code color} in the gradient.
+		 *
+		 * @param color the color to locate
+		 * @return the index of the bin or {@code -1} if not found
+		 */
+		public int binOf(T color) {
+			if (color == null)
+				return -1;
+			for (int bin = 0; bin <= nGradient; bin++) {
+				T ref = gradient[bin];
+				if (ref == color || color.equals(ref))
+					return bin;
+			}
+			return -1;
+		}
+
+		/**
+		 * Map a gradient {@code color} back to a normalized value in {@code [0,1]}.
+		 *
+		 * @param color the color to map
+		 * @return normalized value corresponding to the color, or {@link Double#NaN}
+		 *         if not found
+		 */
+		public double normalize(T color) {
+			int bin = binOf(color);
+			if (bin < 0)
+				return Double.NaN;
+			return (nGradient <= 0 ? 0.0 : (double) bin / nGradient);
+		}
+
+		/**
 		 * Sets the gradient to span the colors in the array {@code colors}.
 		 * 
 		 * @param colors the array of colors for the gradient

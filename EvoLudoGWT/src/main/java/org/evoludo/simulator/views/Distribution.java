@@ -31,6 +31,9 @@
 package org.evoludo.simulator.views;
 
 import java.awt.Color;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Iterator;
 import java.util.List;
 
 import org.evoludo.graphics.AbstractGraph;
@@ -51,6 +54,8 @@ import org.evoludo.simulator.modules.Continuous;
 import org.evoludo.simulator.modules.Module;
 import org.evoludo.ui.ContextMenu;
 import org.evoludo.ui.ContextMenuCheckBoxItem;
+import org.evoludo.ui.ContextMenuItem;
+import org.evoludo.util.RingBuffer;
 import org.evoludo.util.Formatter;
 
 import com.google.gwt.user.client.Command;
@@ -70,7 +75,8 @@ import com.google.gwt.user.client.Command;
  * <li>Create and manage one PopGraph2D per species module returned by the
  * engine.
  * <li>Allocate and maintain a shared bin storage array sized to the current
- * geometry ({@code MAX_BINS} for 1D, {@code MAX_BINS * MAX_BINS} for 2D).</li>
+ * geometry ({@code nBins} for 1D, {@code nBins * nBins} for
+ * 2D).</li>
  * <li>Configure graph appearance (axis labels, ranges, ticks, color map) based
  * on the underlying Continuous module trait metadata.</li>
  * <li>Request 1D/2D trait histogram data from the CModel implementation and
@@ -82,10 +88,11 @@ import com.google.gwt.user.client.Command;
  *
  * <h3>Behavioral notes</h3>
  * <ul>
- * <li>{@code MAX_BINS} (100) controls the resolution along each trait axis. For
- * single-trait modules a LINEAR geometry of size {@code MAX_BINS} is used (with
- * history rows), for multi-trait modules a square lattice with
- * {@code MAX_BINS * MAX_BINS} bins is used.</li>
+ * <li>The number of bins per axis is configurable from the context menu
+ * (100/200/500), with {@code DEFAULT_BINS} (100) as the initial value. For
+ * single-trait modules a LINEAR geometry of size {@code nBins} is used
+ * (with history rows), for multi-trait modules a square lattice with
+ * {@code nBins * nBins} bins is used.</li>
  * <li>The shared {@code bins} array is reallocated when the geometry size
  * changes.</li>
  * <li>When initializing or resetting, the view updates axis ranges from the
@@ -127,9 +134,19 @@ import com.google.gwt.user.client.Command;
 public class Distribution extends AbstractView<PopGraph2D> implements TooltipProvider.Index {
 
 	/**
-	 * The maximum number of bins for the trait histograms.
+	 * Default number of bins per trait axis for histograms.
 	 */
-	protected static final int MAX_BINS = 100;
+	protected static final int DEFAULT_BINS = 100;
+
+	/**
+	 * Available bin counts per axis.
+	 */
+	private static final int[] BIN_OPTIONS = new int[] { 100, 200, 500 };
+
+	/**
+	 * Active number of bins per axis.
+	 */
+	private int nBins = DEFAULT_BINS;
 
 	/**
 	 * The storage to accommodate the trait histograms.
@@ -333,11 +350,11 @@ public class Distribution extends AbstractView<PopGraph2D> implements TooltipPro
 		// geometry.name = module.getTraitName(n);
 		if (nTraits == 1) {
 			geometry = AbstractGeometry.create(engine, GeometryType.LINEAR);
-			geometry.setSize(MAX_BINS);
+			geometry.setSize(nBins);
 		} else {
 			geometry = AbstractGeometry.create(engine, GeometryType.SQUARE_NEUMANN);
 			geometry.setConnectivity(4);
-			geometry.setSize(MAX_BINS * MAX_BINS);
+			geometry.setSize(nBins * nBins);
 		}
 		if (bins == null || bins.length != geometry.getSize())
 			bins = new double[geometry.getSize()];
@@ -378,7 +395,7 @@ public class Distribution extends AbstractView<PopGraph2D> implements TooltipPro
 		if (node < 0)
 			return null;
 		GraphStyle style = graph.getStyle();
-		int nBins = MAX_BINS;
+		int binsAxis = nBins;
 		StringBuilder tip = new StringBuilder(TABLE_STYLE);
 		if (style.label != null)
 			tip.append("<b>")
@@ -390,15 +407,15 @@ public class Distribution extends AbstractView<PopGraph2D> implements TooltipPro
 		Module<?> module = engine.getModule();
 		int nTraits = module.getNTraits();
 		if (nTraits == 1) {
-			int bar = node % nBins;
-			int row = node / nBins;
+			int bar = node % binsAxis;
+			int row = node / binsAxis;
 			double time = -row * model.getTimeStep();
-			tip.append(Formatter.format(style.xMin + bar * (style.xMax - style.xMin) / nBins, 2))
+			tip.append(Formatter.format(style.xMin + bar * (style.xMax - style.xMin) / binsAxis, 2))
 					.append(", ")
-					.append(Formatter.format(style.xMin + (bar + 1) * (style.xMax - style.xMin) / nBins, 2))
+					.append(Formatter.format(style.xMin + (bar + 1) * (style.xMax - style.xMin) / binsAxis, 2))
 					.append("]")
 					.append(TABLE_ROW_END);
-			if (node < nBins) {
+			if (node < binsAxis) {
 				// report frequency for most recent row
 				// all historical data is stored in terms of colors only...
 				tip.append(TABLE_ROW_START)
@@ -413,21 +430,21 @@ public class Distribution extends AbstractView<PopGraph2D> implements TooltipPro
 					.append(TABLE_CELL_NEXT)
 					.append(Formatter.format(time + 0.0, 2));
 		} else {
-			int bar1 = node % MAX_BINS;
-			int bar2 = node / MAX_BINS;
+			int bar1 = node % binsAxis;
+			int bar2 = node / binsAxis;
 			// horizontal trait
-			tip.append(Formatter.format(style.xMin + bar1 * (style.xMax - style.xMin) / nBins, 2))
+			tip.append(Formatter.format(style.xMin + bar1 * (style.xMax - style.xMin) / binsAxis, 2))
 					.append(", ")
-					.append(Formatter.format(style.xMin + (bar1 + 1) * (style.xMax - style.xMin) / nBins, 2))
+					.append(Formatter.format(style.xMin + (bar1 + 1) * (style.xMax - style.xMin) / binsAxis, 2))
 					.append("]")
 					.append(TABLE_ROW_END);
 			// vertical trait
 			tip.append(TABLE_ROW_START)
 					.append(style.yLabel)
 					.append(TABLE_CELL_NEXT)
-					.append(Formatter.format(style.yMin + bar2 * (style.yMax - style.yMin) / nBins, 2))
+					.append(Formatter.format(style.yMin + bar2 * (style.yMax - style.yMin) / binsAxis, 2))
 					.append(", ")
-					.append(Formatter.format(style.yMin + (bar2 + 1) * (style.yMax - style.yMin) / nBins, 2))
+					.append(Formatter.format(style.yMin + (bar2 + 1) * (style.yMax - style.yMin) / binsAxis, 2))
 					.append("]");
 			// report frequency
 			tip.append(TABLE_ROW_START)
@@ -446,6 +463,7 @@ public class Distribution extends AbstractView<PopGraph2D> implements TooltipPro
 		Module<?> module = engine.getModule();
 		int nTraits = module.getNTraits();
 		addAxesMenu(menu);
+		addBinsMenu(menu, nTraits > 1);
 		// ignore if less than 3 traits
 		if (nTraits < 3) {
 			traitXMenu = traitYMenu = null;
@@ -507,6 +525,262 @@ public class Distribution extends AbstractView<PopGraph2D> implements TooltipPro
 		menu.add("Axes", axesMenu);
 	}
 
+	/**
+	 * Add binning controls to the context menu.
+	 *
+	 * @param menu  the context menu to populate
+	 * @param is2D  {@code true} for 2D distributions
+	 */
+	private void addBinsMenu(ContextMenu menu, boolean is2D) {
+		if (graphs.isEmpty())
+			return;
+		if (binsMenu == null) {
+			binsMenu = new ContextMenu(menu, "Bins");
+			binOptionItems = new ContextMenuCheckBoxItem[BIN_OPTIONS.length];
+			for (int i = 0; i < BIN_OPTIONS.length; i++) {
+				final int option = BIN_OPTIONS[i];
+				binOptionItems[i] = new ContextMenuCheckBoxItem(Integer.toString(option), () -> {
+					applyBinsPerAxis(option);
+					updateBinMenuChecks();
+				});
+			}
+		}
+		binsMenu.clear();
+		binsMenu.addHeader(is2D ? "Bins per axis" : "Bins");
+		for (ContextMenuCheckBoxItem item : binOptionItems)
+			binsMenu.add(item);
+		updateBinMenuChecks();
+		ContextMenuItem binsTrigger = menu.add("Bins", binsMenu);
+		binsTrigger.setEnabled(!isRunning());
+	}
+
+	/**
+	 * Update checked state of binning menu entries.
+	 */
+	private void updateBinMenuChecks() {
+		if (binOptionItems == null)
+			return;
+		for (int i = 0; i < BIN_OPTIONS.length; i++)
+			binOptionItems[i].setChecked(BIN_OPTIONS[i] == nBins);
+	}
+
+	/**
+	 * Apply a new number of bins per axis and preserve existing rendered data.
+	 *
+	 * @param newBins the new number of bins per axis
+	 */
+	private void applyBinsPerAxis(int newBins) {
+		if (newBins <= 0 || newBins == nBins)
+			return;
+		int oldBins = nBins;
+		nBins = newBins;
+		bins = rebinHistogram(bins, oldBins, newBins);
+		for (PopGraph2D graph : graphs)
+			rebinGraphData(graph, oldBins, newBins);
+		updateData(true);
+		update(true);
+	}
+
+	/**
+	 * Rebin data for a single graph while preserving current state/history.
+	 *
+	 * @param graph   the graph to rebin
+	 * @param oldBins previous number of bins per axis
+	 * @param newBins new number of bins per axis
+	 */
+	private void rebinGraphData(PopGraph2D graph, int oldBins, int newBins) {
+		if (!(graph instanceof PopGraph1D)) {
+			// no history in 2D distribution graphs; data will be rebuilt in updateData()
+			graph.setGeometry(createGeometry(graph.getModule().getNTraits()));
+			return;
+		}
+		String[] oldData = graph.getData();
+		if (oldData != null)
+			oldData = Arrays.copyOf(oldData, oldData.length);
+		ColorMap.Gradient1D<String> cMap = null;
+		if (graph.getColorMap() instanceof ColorMap.Gradient1D) {
+			ColorMap.Gradient1D<String> map = (ColorMap.Gradient1D<String>) graph.getColorMap();
+			cMap = map;
+		}
+		List<String[]> oldHistory = null;
+		RingBuffer<String[]> history = graph.getBuffer();
+		if (history != null && !history.isEmpty()) {
+			oldHistory = new ArrayList<>(history.getSize());
+			Iterator<String[]> it = history.ordered();
+			while (it.hasNext()) {
+				String[] row = it.next();
+				oldHistory.add(Arrays.copyOf(row, row.length));
+			}
+		}
+
+		graph.setGeometry(createGeometry(graph.getModule().getNTraits()));
+
+		String[] newData = graph.getData();
+		if (oldData != null && newData != null) {
+			String[] rebinned = null;
+			if (cMap != null) {
+				double[] masses = decodeHistogram1D(oldData, cMap, oldBins);
+				if (masses != null) {
+					double[] rebinnedMasses = rebinHistogram1D(masses, oldBins, newBins);
+					rebinned = encodeHistogram(rebinnedMasses, cMap);
+				}
+			}
+			if (rebinned == null)
+				rebinned = Arrays.copyOf(oldData, newData.length);
+			System.arraycopy(rebinned, 0, newData, 0, Math.min(rebinned.length, newData.length));
+		}
+
+		if (oldHistory != null) {
+			history.clear();
+			for (String[] row : oldHistory) {
+				String[] rebinned = null;
+				if (cMap != null) {
+					double[] masses = decodeHistogram1D(row, cMap, oldBins);
+					if (masses != null) {
+						double[] rebinnedMasses = rebinHistogram1D(masses, oldBins, newBins);
+						rebinned = encodeHistogram(rebinnedMasses, cMap);
+					}
+				}
+				if (rebinned == null)
+					rebinned = Arrays.copyOf(row, newBins);
+				history.append(rebinned);
+			}
+		}
+	}
+
+	/**
+	 * Decode a 1D histogram row from colors into normalized probability masses.
+	 *
+	 * @param source source colors
+	 * @param cMap   color map used for encoding
+	 * @param bins   number of bins
+	 * @return decoded masses or {@code null} if decoding is not possible
+	 */
+	private static double[] decodeHistogram1D(String[] source, ColorMap.Gradient1D<String> cMap, int bins) {
+		if (source == null || cMap == null || bins <= 0)
+			return null;
+		double[] decoded = new double[bins];
+		int len = Math.min(Math.min(source.length, decoded.length), bins);
+		double sum = 0.0;
+		for (int i = 0; i < len; i++) {
+			double mass = cMap.normalize(source[i]);
+			if (!Double.isFinite(mass) || mass < 0.0)
+				mass = 0.0;
+			decoded[i] = mass;
+			sum += mass;
+		}
+		if (sum <= 0.0)
+			return decoded;
+		double invSum = 1.0 / sum;
+		for (int i = 0; i < len; i++)
+			decoded[i] *= invSum;
+		return decoded;
+	}
+
+	/**
+	 * Encode histogram masses into colors using the graph color map.
+	 *
+	 * @param masses histogram masses
+	 * @param cMap   color map used for encoding
+	 * @return encoded colors
+	 */
+	private static String[] encodeHistogram(double[] masses, ColorMap.Gradient1D<String> cMap) {
+		if (masses == null || cMap == null)
+			return null;
+		String[] encoded = new String[masses.length];
+		cMap.setRange(0.0, ArrayMath.max(masses));
+		cMap.translate(masses, encoded);
+		return encoded;
+	}
+
+	/**
+	 * Rebin histogram masses while preserving totals.
+	 *
+	 * @param source  source histogram
+	 * @param oldBins previous bins per axis
+	 * @param newBins new bins per axis
+	 * @return rebinned histogram
+	 */
+	private static double[] rebinHistogram(double[] source, int oldBins, int newBins) {
+		if (source == null)
+			return null;
+		if (newBins <= 0)
+			return new double[0];
+		if (source.length == oldBins)
+			return rebinHistogram1D(source, oldBins, newBins);
+		if (source.length == oldBins * oldBins)
+			return rebinHistogram2D(source, oldBins, newBins);
+		return Arrays.copyOf(source, source.length);
+	}
+
+	/**
+	 * Rebin 1D histogram masses by exact overlap.
+	 *
+	 * @param source  source masses
+	 * @param oldBins old bins
+	 * @param newBins new bins
+	 * @return rebinned masses
+	 */
+	private static double[] rebinHistogram1D(double[] source, int oldBins, int newBins) {
+		double[] rebinned = new double[newBins];
+		for (int i = 0; i < oldBins; i++) {
+			double start = i / (double) oldBins;
+			double end = (i + 1) / (double) oldBins;
+			int j0 = Math.max(0, (int) Math.floor(start * newBins));
+			int j1 = Math.min(newBins - 1, (int) Math.ceil(end * newBins) - 1);
+			for (int j = j0; j <= j1; j++) {
+				double nStart = j / (double) newBins;
+				double nEnd = (j + 1) / (double) newBins;
+				double overlap = Math.max(0.0, Math.min(end, nEnd) - Math.max(start, nStart));
+				if (overlap <= 0.0)
+					continue;
+				rebinned[j] += source[i] * overlap * oldBins;
+			}
+		}
+		return rebinned;
+	}
+
+	/**
+	 * Rebin 2D histogram masses by exact cell overlap.
+	 *
+	 * @param source  source masses (row-major)
+	 * @param oldBins old bins per axis
+	 * @param newBins new bins per axis
+	 * @return rebinned masses (row-major)
+	 */
+	private static double[] rebinHistogram2D(double[] source, int oldBins, int newBins) {
+		double[] rebinned = new double[newBins * newBins];
+		for (int oy = 0; oy < oldBins; oy++) {
+			double yStart = oy / (double) oldBins;
+			double yEnd = (oy + 1) / (double) oldBins;
+			int ny0 = Math.max(0, (int) Math.floor(yStart * newBins));
+			int ny1 = Math.min(newBins - 1, (int) Math.ceil(yEnd * newBins) - 1);
+			for (int ox = 0; ox < oldBins; ox++) {
+				double xStart = ox / (double) oldBins;
+				double xEnd = (ox + 1) / (double) oldBins;
+				int nx0 = Math.max(0, (int) Math.floor(xStart * newBins));
+				int nx1 = Math.min(newBins - 1, (int) Math.ceil(xEnd * newBins) - 1);
+				double mass = source[oy * oldBins + ox];
+				for (int ny = ny0; ny <= ny1; ny++) {
+					double nYStart = ny / (double) newBins;
+					double nYEnd = (ny + 1) / (double) newBins;
+					double yOverlap = Math.max(0.0, Math.min(yEnd, nYEnd) - Math.max(yStart, nYStart));
+					if (yOverlap <= 0.0)
+						continue;
+					for (int nx = nx0; nx <= nx1; nx++) {
+						double nXStart = nx / (double) newBins;
+						double nXEnd = (nx + 1) / (double) newBins;
+						double xOverlap = Math.max(0.0, Math.min(xEnd, nXEnd) - Math.max(xStart, nXStart));
+						if (xOverlap <= 0.0)
+							continue;
+						rebinned[ny * newBins + nx] += mass * xOverlap * yOverlap * oldBins * oldBins;
+					}
+				}
+			}
+		}
+		return rebinned;
+	}
+
 	@Override
 	protected ExportType[] exportTypes() {
 		return new ExportType[] { ExportType.SVG, ExportType.PNG };
@@ -540,9 +814,19 @@ public class Distribution extends AbstractView<PopGraph2D> implements TooltipPro
 	private ContextMenu axesMenu;
 
 	/**
+	 * The context menu trigger for binning settings.
+	 */
+	private ContextMenu binsMenu;
+
+	/**
 	 * The context menu item to toggle the y-axis side.
 	 */
 	private ContextMenuCheckBoxItem rightYAxisMenu;
+
+	/**
+	 * The context menu items to select bin count per axis.
+	 */
+	private ContextMenuCheckBoxItem[] binOptionItems;
 
 	/**
 	 * Command to toggle the inclusion of a trait on the phase plane axes.
