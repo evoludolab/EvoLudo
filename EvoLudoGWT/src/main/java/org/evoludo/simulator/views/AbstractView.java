@@ -46,12 +46,14 @@ import org.evoludo.graphics.GraphStyle;
 import org.evoludo.simulator.EvoLudo;
 import org.evoludo.simulator.EvoLudoGWT;
 import org.evoludo.simulator.Resources;
+import org.evoludo.simulator.geometries.AbstractGeometry;
 import org.evoludo.simulator.models.ChangeListener;
 import org.evoludo.simulator.models.Data;
 import org.evoludo.simulator.models.LifecycleListener;
 import org.evoludo.simulator.models.Mode;
 import org.evoludo.simulator.models.Model;
 import org.evoludo.simulator.models.ModelType;
+import org.evoludo.simulator.models.PDE;
 import org.evoludo.simulator.models.RunListener;
 import org.evoludo.simulator.models.SampleListener;
 import org.evoludo.ui.ContextMenu;
@@ -930,6 +932,16 @@ public abstract class AbstractView<G extends AbstractGraph<?>> extends Composite
 	}
 
 	/**
+	 * The context menu item to reverse time.
+	 */
+	private ContextMenuCheckBoxItem timeReverseMenu;
+
+	/**
+	 * The context menu item for symmetrical diffusion (only applies to PDE models).
+	 */
+	private ContextMenuCheckBoxItem symDiffMenu;
+
+	/**
 	 * The field to store the restore context menu.
 	 */
 	protected ContextMenuItem restoreMenu;
@@ -953,44 +965,67 @@ public abstract class AbstractView<G extends AbstractGraph<?>> extends Composite
 	 * Opportunity for the controller to add functionality to the context menu
 	 * (optional implementation).
 	 *
-	 * @param contextMenu the context menu
+	 * @param menu the context menu
 	 */
-	public void populateContextMenu(ContextMenu contextMenu) {
-		// models may also like to add entries to context menu
-		// IMPORTANT: cannot query model directly due to interference with java
-		// simulations. all GUI related methods must be quarantined through EvoLudoGWT
-		engine.populateContextMenu(contextMenu);
+	public void populateContextMenu(ContextMenu menu) {
+		addBufferSizeMenu(menu);
 
-		addBufferSizeMenu(contextMenu);
+		menu.addSeparator();
+		ModelType mt = model != null ? model.getType() : ModelType.NONE;
+		if (mt.isODE() || mt.isSDE()) {
+			// add time reverse context menu
+			if (timeReverseMenu == null) {
+				timeReverseMenu = new ContextMenuCheckBoxItem("Time reversed",
+						() -> model.setTimeReversed(!model.isTimeReversed()));
+			}
+			menu.add(timeReverseMenu);
+			timeReverseMenu.setChecked(model.isTimeReversed());
+			timeReverseMenu.setEnabled(model.permitsTimeReversal());
+		} else if (mt.isPDE()) {
+			// add context menu to allow symmetric diffusion
+			if (symDiffMenu == null) {
+				symDiffMenu = new ContextMenuCheckBoxItem("Symmetric diffusion", () -> {
+					PDE pde = (PDE) model;
+					pde.setSymmetric(!pde.isSymmetric());
+					pde.check();
+				});
+			}
+			menu.add(symDiffMenu);
+			PDE pde = (PDE) model;
+			symDiffMenu.setChecked(pde.isSymmetric());
+			AbstractGeometry space = pde.getGeometry();
+			symDiffMenu.setEnabled(space.isRegular() || space.isLattice());
+		}
+
 		// process fullscreen context menu
 		if (NativeJS.isFullscreenSupported()) {
 			if (fullscreenMenu == null)
 				fullscreenMenu = new ContextMenuCheckBoxItem("Full screen",
 						() -> engine.setFullscreen(!NativeJS.isFullscreen()));
-			contextMenu.addSeparator();
-			contextMenu.add(fullscreenMenu);
+			menu.addSeparator();
+			menu.add(fullscreenMenu);
 			fullscreenMenu.setChecked(NativeJS.isFullscreen());
 		}
 
 		// process exports context menu (suppress in ePub, regardless of whether a
 		// standalone lab or not)
 		if (!NativeJS.isEPub()) {
-			exportSubmenu = new ContextMenu(contextMenu, "Export");
+			exportSubmenu = new ContextMenu(menu, "Export");
 			exportSubmenu.add(new ContextMenuItem(ExportType.STATE.toString(), new ExportCommand(ExportType.STATE)));
 			for (ExportType e : exportTypes()) {
 				if (e == ExportType.STATE)
 					continue; // always included
 				exportSubmenu.add(new ContextMenuItem(e.toString(), new ExportCommand(e)));
 			}
-			contextMenu.addSeparator();
-			exportSubmenuTrigger = contextMenu.add("Export", exportSubmenu);
+			menu.addSeparator();
+			exportSubmenuTrigger = menu.add("Export", exportSubmenu);
 			if (restoreMenu == null)
 				restoreMenu = new ContextMenuItem("Restore...", () -> engine.restoreFromFile());
 		}
 		boolean idle = !engine.isRunning();
 		if (restoreMenu != null) {
 			restoreMenu.setEnabled(idle);
-			contextMenu.add(restoreMenu);
+			menu.add(restoreMenu);
 		}
 		if (exportSubmenuTrigger != null)
 			exportSubmenuTrigger.setEnabled(idle);

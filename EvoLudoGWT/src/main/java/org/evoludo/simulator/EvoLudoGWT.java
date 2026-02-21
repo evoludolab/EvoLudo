@@ -36,13 +36,10 @@ import org.evoludo.graphics.Network3DGWT;
 import org.evoludo.math.ArrayMath;
 import org.evoludo.simulator.geometries.AbstractGeometry;
 import org.evoludo.simulator.models.ChangeListener.PendingAction;
-import org.evoludo.simulator.models.ModelType;
 import org.evoludo.simulator.models.PDE;
 import org.evoludo.simulator.models.PDESupervisor;
 import org.evoludo.simulator.models.PDESupervisorGWT;
 import org.evoludo.simulator.views.AbstractView;
-import org.evoludo.ui.ContextMenu;
-import org.evoludo.ui.ContextMenuCheckBoxItem;
 import org.evoludo.util.CLOCategory;
 import org.evoludo.util.CLODelegate;
 import org.evoludo.util.CLOParser;
@@ -313,52 +310,6 @@ public class EvoLudoGWT extends EvoLudo {
 		super.setDelay(delay);
 		if (isRunning)
 			timer.scheduleRepeating(delay);
-	}
-
-	/**
-	 * The context menu item to reverse time.
-	 */
-	private ContextMenuCheckBoxItem timeReverseMenu;
-
-	/**
-	 * The context menu item for symmetrical diffusion (only applies to PDE models).
-	 */
-	private ContextMenuCheckBoxItem symDiffMenu;
-
-	/**
-	 * Opportunity to contribute entries to the context menu for models. this needs
-	 * to be quarantined in order to not interfere with java simulations.
-	 *
-	 * @param menu the context menu where entries can be added
-	 */
-	public void populateContextMenu(ContextMenu menu) {
-		ModelType mt = activeModel != null ? activeModel.getType() : ModelType.NONE;
-		if (mt.isODE() || mt.isSDE()) {
-			// add time reverse context menu
-			if (timeReverseMenu == null) {
-				timeReverseMenu = new ContextMenuCheckBoxItem("Time reversed",
-						() -> activeModel.setTimeReversed(!activeModel.isTimeReversed()));
-			}
-			menu.addSeparator();
-			menu.add(timeReverseMenu);
-			timeReverseMenu.setChecked(activeModel.isTimeReversed());
-			timeReverseMenu.setEnabled(activeModel.permitsTimeReversal());
-		} else if (mt.isPDE()) {
-			// add context menu to allow symmetric diffusion
-			if (symDiffMenu == null) {
-				symDiffMenu = new ContextMenuCheckBoxItem("Symmetric diffusion", () -> {
-					PDE pde = (PDE) activeModel;
-					pde.setSymmetric(!pde.isSymmetric());
-					pde.check();
-				});
-			}
-			menu.addSeparator();
-			menu.add(symDiffMenu);
-			PDE pde = (PDE) activeModel;
-			symDiffMenu.setChecked(pde.isSymmetric());
-			AbstractGeometry space = pde.getGeometry();
-			symDiffMenu.setEnabled(space.isRegular() || space.isLattice());
-		}
 	}
 
 	/**
