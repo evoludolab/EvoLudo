@@ -48,9 +48,9 @@ import org.evoludo.util.RingBuffer;
 public class PopGraph1D extends PopGraph2D {
 
 	/**
-	 * The maximum number of nodes supported in linear geometry.
+	 * Default buffer capacity for linear-history graphs.
 	 */
-	public static final int MAX_LINEAR_SIZE = 500;
+	private static final int DEFAULT_BUFFER_CAPACITY = 1000;
 
 	/**
 	 * Create a graph for linear population rendering.
@@ -60,7 +60,12 @@ public class PopGraph1D extends PopGraph2D {
 	 */
 	public PopGraph1D(AbstractView<?> view, Module<?> module) {
 		super(view, module);
-		buffer = new RingBuffer<String[]>(2 * MAX_LINEAR_SIZE);
+		buffer = new RingBuffer<String[]>(DEFAULT_BUFFER_CAPACITY);
+	}
+
+	@Override
+	protected int[] getBufferMenuCapacities() {
+		return new int[] { 1000, 2000, 5000, 10000 };
 	}
 
 	@Override
@@ -216,8 +221,6 @@ public class PopGraph1D extends PopGraph2D {
 		int dx = (bWidth - adjw) / 2;
 		int dy = (bHeight - adjh) / 2;
 		bounds.set(bounds.getX() + dx, bounds.getY() + dy, adjw, adjh);
-		int capacity = 2 * steps;
-		buffer.setCapacity(capacity);
 		style.setYRange(steps - 1);
 		style.showFrame = true;
 	}

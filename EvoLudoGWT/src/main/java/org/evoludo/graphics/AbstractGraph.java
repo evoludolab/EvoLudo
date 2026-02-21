@@ -1084,31 +1084,28 @@ public abstract class AbstractGraph<B> extends FocusPanel
 			return;
 		if (bufferSizeMenu == null) {
 			bufferSizeMenu = new ContextMenu(menu, "Buffer");
-			bufferSizeMenu.add(new ContextMenuCheckBoxItem("5k", //
-					(ScheduledCommand) () -> {
-						setBufferCapacity(5000);
-						paint(true);
-					}));
-			bufferSizeMenu.add(new ContextMenuCheckBoxItem("10k", //
-					(ScheduledCommand) () -> {
-						setBufferCapacity(10000);
-						paint(true);
-					}));
-			bufferSizeMenu.add(new ContextMenuCheckBoxItem("50k", //
-					(ScheduledCommand) () -> {
-						setBufferCapacity(50000);
-						paint(true);
-					}));
-			bufferSizeMenu.add(new ContextMenuCheckBoxItem("100k", //
-					(ScheduledCommand) () -> {
-						setBufferCapacity(100000);
-						paint(true);
-					}));
+			for (int capacity : getBufferMenuCapacities()) {
+				final int cap = capacity;
+				bufferSizeMenu.add(new ContextMenuCheckBoxItem((cap / 1000) + "k", //
+						(ScheduledCommand) () -> {
+							setBufferCapacity(cap);
+							paint(true);
+						}));
+			}
 		}
 		setBufferCapacity(buffer.getCapacity());
 		ContextMenuItem bufferSizeTrigger = menu.add("Buffer size", bufferSizeMenu);
 		bufferSizeTrigger.setEnabled(!view.isRunning());
 		menu.addSeparator();
+	}
+
+	/**
+	 * Return the list of buffer capacities offered in the context menu.
+	 *
+	 * @return buffer capacities in entries
+	 */
+	protected int[] getBufferMenuCapacities() {
+		return new int[] { 5000, 10000, 50000, 100000 };
 	}
 
 	/**
