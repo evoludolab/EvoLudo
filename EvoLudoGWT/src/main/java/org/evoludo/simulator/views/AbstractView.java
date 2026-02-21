@@ -940,6 +940,11 @@ public abstract class AbstractView<G extends AbstractGraph<?>> extends Composite
 	protected ContextMenuItem exportSubmenuTrigger;
 
 	/**
+	 * The field to store the fullscreen context menu.
+	 */
+	protected ContextMenuCheckBoxItem fullscreenMenu;
+
+	/**
 	 * The field to store the export context submenu.
 	 */
 	protected ContextMenu exportSubmenu;
@@ -957,6 +962,16 @@ public abstract class AbstractView<G extends AbstractGraph<?>> extends Composite
 		engine.populateContextMenu(contextMenu);
 
 		addBufferSizeMenu(contextMenu);
+		// process fullscreen context menu
+		if (NativeJS.isFullscreenSupported()) {
+			if (fullscreenMenu == null)
+				fullscreenMenu = new ContextMenuCheckBoxItem("Full screen",
+						() -> engine.setFullscreen(!NativeJS.isFullscreen()));
+			contextMenu.addSeparator();
+			contextMenu.add(fullscreenMenu);
+			fullscreenMenu.setChecked(NativeJS.isFullscreen());
+		}
+
 		// process exports context menu (suppress in ePub, regardless of whether a
 		// standalone lab or not)
 		if (!NativeJS.isEPub()) {

@@ -326,11 +326,6 @@ public class EvoLudoGWT extends EvoLudo {
 	private ContextMenuCheckBoxItem symDiffMenu;
 
 	/**
-	 * The field to store the fullscreen context menu.
-	 */
-	protected ContextMenuCheckBoxItem fullscreenMenu;
-
-	/**
 	 * Opportunity to contribute entries to the context menu for models. this needs
 	 * to be quarantined in order to not interfere with java simulations.
 	 *
@@ -363,15 +358,6 @@ public class EvoLudoGWT extends EvoLudo {
 			symDiffMenu.setChecked(pde.isSymmetric());
 			AbstractGeometry space = pde.getGeometry();
 			symDiffMenu.setEnabled(space.isRegular() || space.isLattice());
-		}
-		// process fullscreen context menu
-		if (NativeJS.isFullscreenSupported()) {
-			if (fullscreenMenu == null)
-				fullscreenMenu = new ContextMenuCheckBoxItem("Full screen",
-						() -> setFullscreen(!NativeJS.isFullscreen()));
-			menu.addSeparator();
-			menu.add(fullscreenMenu);
-			fullscreenMenu.setChecked(NativeJS.isFullscreen());
 		}
 	}
 
