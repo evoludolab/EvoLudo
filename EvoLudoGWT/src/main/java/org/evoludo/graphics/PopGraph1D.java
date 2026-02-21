@@ -31,7 +31,6 @@
 package org.evoludo.graphics;
 
 import java.util.Arrays;
-import java.util.Iterator;
 
 import org.evoludo.simulator.Network.Status;
 import org.evoludo.simulator.geometries.AbstractGeometry;
@@ -129,20 +128,25 @@ public class PopGraph1D extends PopGraph2D {
 	 * Draw linear lattice content without frame.
 	 */
 	private void drawLinearContent() {
-		if (geometry == null)
+		if (geometry == null || dh <= 0)
 			return;
-		int nSteps = (int) (bounds.getHeight() / dh);
-		int yshift = 0;
-		Iterator<String[]> it = buffer.iterator();
-		while (it.hasNext() && nSteps-- > 0) {
+		double vy = (viewCorner == null ? 0.0 : viewCorner.getY());
+		double z = Math.max(1e-12, zoomFactor);
+		int nRows = buffer.getSize();
+		if (nRows == 0)
+			return;
+		int startRow = Math.max(0, (int) Math.floor(vy / (z * dh)));
+		int rowsVisible = Math.max(1, (int) Math.ceil(bounds.getHeight() / (z * dh)) + 2);
+		int endRow = Math.min(nRows, startRow + rowsVisible);
+		for (int row = startRow; row < endRow; row++) {
 			int xshift = 0;
-			String[] state = it.next();
+			String[] state = buffer.get(row);
+			int yshift = row * dh;
 			for (int n = 0; n < geometry.getSize() && n < state.length; n++) {
 				g.setFillStyle(state[n]);
 				fillRect(xshift, yshift, dw, dh);
 				xshift += dw;
 			}
-			yshift += dh;
 		}
 	}
 
@@ -188,12 +192,16 @@ public class PopGraph1D extends PopGraph2D {
 		double vy = (viewCorner == null ? 0.0 : viewCorner.getY());
 		double fx0 = Math.max(0.0, Math.min(1.0, vx / (z * w)));
 		double fx1 = Math.max(0.0, Math.min(1.0, (vx + w) / (z * w)));
-		double fy0 = Math.max(0.0, Math.min(1.0, vy / (z * h)));
-		double fy1 = Math.max(0.0, Math.min(1.0, (vy + h) / (z * h)));
+		double rowsPerViewport = h / dh;
+		if (rowsPerViewport <= 1.0)
+			return;
+		double yPerRow = (baseYMin - baseYMax) / (rowsPerViewport - 1.0);
+		double topRow = vy / (z * dh);
+		double bottomRow = (vy + h) / (z * dh) - 1.0;
 		style.xMin = baseXMin + fx0 * xRange;
 		style.xMax = baseXMin + fx1 * xRange;
-		style.yMax = baseYMax - fy0 * yRange;
-		style.yMin = baseYMax - fy1 * yRange;
+		style.yMax = baseYMax + topRow * yPerRow;
+		style.yMin = baseYMax + bottomRow * yPerRow;
 	}
 
 	@Override
@@ -243,5 +251,54 @@ public class PopGraph1D extends PopGraph2D {
 		if (c < 0 || c >= geometry.getSize() || r < 0)
 			return FINDNODEAT_OUT_OF_BOUNDS;
 		return r * geometry.getSize() + c;
+	}
+
+	@Override
+	public void shift(int dx, int dy) {
+		if (hasMessage)
+			return;
+		double z = zoomFactor;
+		double maxX = Math.max(0.0, z * bounds.getWidth() - bounds.getWidth());
+		double contentHeight = getContentHeight();
+		double maxY = Math.max(0.0, z * contentHeight - bounds.getHeight());
+		viewCorner.set(
+				Math.min(maxX, Math.max(0.0, viewCorner.getX() + dx)),
+				Math.min(maxY, Math.max(0.0, viewCorner.getY() + dy)));
+		paint(true);
+	}
+
+	@Override
+	protected void zoom(double zoom, double fx, double fy) {
+		if (hasMessage)
+			return;
+		double newZoomFactor = Math.min(Zooming.ZOOM_MAX, Math.max(1.0, zoomFactor * zoom));
+		double dz = newZoomFactor - zoomFactor;
+		if (Math.abs(dz) < 1e-8)
+			return;
+		double w = bounds.getWidth();
+		double h = bounds.getHeight();
+		double contentHeight = getContentHeight();
+		double maxX = Math.max(0.0, w * (newZoomFactor - 1.0));
+		double maxY = Math.max(0.0, contentHeight * newZoomFactor - h);
+		viewCorner.set(
+				Math.min(maxX, Math.max(0.0, viewCorner.getX() + w * dz * fx)),
+				Math.min(maxY, Math.max(0.0, viewCorner.getY() + h * dz * fy)));
+		zoomFactor = newZoomFactor;
+		if (zoomInertiaTimer.isRunning())
+			element.addClassName(dz > 0 ? CURSOR_ZOOM_IN_CLASS : CURSOR_ZOOM_OUT_CLASS);
+		paint(true);
+	}
+
+	/**
+	 * Return content height in graph coordinates, taking buffered history into
+	 * account.
+	 *
+	 * @return content height in pixels
+	 */
+	private double getContentHeight() {
+		double contentHeight = bounds.getHeight();
+		if (buffer != null && dh > 0)
+			contentHeight = Math.max(contentHeight, buffer.getSize() * (double) dh);
+		return contentHeight;
 	}
 }
