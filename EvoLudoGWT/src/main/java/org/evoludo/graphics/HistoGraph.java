@@ -316,9 +316,9 @@ public class HistoGraph extends AbstractGraph<double[]> implements BasicTooltipP
 	int nBins;
 
 	/**
-	 * The maximum number of bins for the histogram.
+	 * The default number of bins for the histogram.
 	 */
-	public static final int MAX_BINS = 100;
+	public static final int DEFAULT_BINS = 100;
 
 	/**
 	 * The minimum width of a bin.
@@ -983,7 +983,7 @@ public class HistoGraph extends AbstractGraph<double[]> implements BasicTooltipP
 		tip.append(TABLE_STYLE + //
 				TABLE_ROW_START + style.xLabel + TABLE_CELL_NEXT);
 		int nPop = module.getNPopulation();
-		int binSize = (nPop + 1) / MAX_BINS + 1;
+		int binSize = (nPop + 1) / DEFAULT_BINS + 1;
 		if (binSize == 1) {
 			tip.append(bar + TABLE_ROW_END);
 		} else {

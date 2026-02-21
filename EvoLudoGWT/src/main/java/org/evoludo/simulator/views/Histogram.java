@@ -57,6 +57,7 @@ import org.evoludo.simulator.modules.Continuous;
 import org.evoludo.simulator.modules.Discrete;
 import org.evoludo.simulator.modules.Module;
 import org.evoludo.ui.ContextMenu;
+import org.evoludo.ui.ContextMenuCheckBoxItem;
 import org.evoludo.ui.ContextMenuItem;
 import org.evoludo.util.Formatter;
 import org.evoludo.util.NativeJS;
@@ -135,11 +136,11 @@ import org.evoludo.util.NativeJS;
  * or node indices) to histogram bins. Their values depend on the Data type
  * and the population/graph size.</li>
  * <li>For stationary and fixation statistics the view chooses a sensible bin
- * count that honors {@code HistoGraph.MAX_BINS} and per-graph max bin
+ * count that honors {@code HistoGraph.DEFAULT_BINS} and per-graph max bin
  * limits.</li>
  * <li>For degree distributions, the view computes a displayable maximum degree
  * with maxDegree(int) (rounding up to human-friendly magnitudes) and
- * limits the resulting bin count to {@code HistoGraph.MAX_BINS}.</li>
+ * limits the resulting bin count to {@code HistoGraph.DEFAULT_BINS}.</li>
  * <li>Directed graphs create separate histograms for in-degree, out-degree,
  * and total degree. When interaction and competition geometries differ,
  * histograms are created for both structures.</li>
@@ -192,6 +193,11 @@ import org.evoludo.util.NativeJS;
 public class Histogram extends AbstractView<HistoGraph> {
 
 	/**
+	 * Available bin counts for trait/fitness histograms.
+	 */
+	private static final int[] HISTOGRAM_BIN_OPTIONS = new int[] { 25, 50, 100, 200, 500 };
+
+	/**
 	 * The scaling factor to map the data onto bins.
 	 */
 	double scale2bins = 1.0;
@@ -217,6 +223,11 @@ public class Histogram extends AbstractView<HistoGraph> {
 	 * been processed.
 	 */
 	protected boolean degreeProcessed;
+
+	/**
+	 * Active number of bins for trait/fitness histograms.
+	 */
+	private int histogramBins = HistoGraph.DEFAULT_BINS;
 
 	/**
 	 * Construct a new view to display the histogram of various quantities.
@@ -925,8 +936,8 @@ public class Histogram extends AbstractView<HistoGraph> {
 					graph.addMarker(mark[idx + 1], ColorMapCSS.Color2Css(colors[idx]), null,
 							mark[0] > 0.0 ? style.dashedLine : style.dottedLine);
 			}
-			if (newPop || data == null || data.length != nTraits || data[0].length != HistoGraph.MAX_BINS)
-				data = new double[nTraits][HistoGraph.MAX_BINS];
+			if (newPop || data == null || data.length != nTraits || data[0].length != histogramBins)
+				data = new double[nTraits][histogramBins];
 			graph.setData(data);
 			hard |= applyTraitStyle(graph, idx);
 			idx++;
@@ -955,8 +966,8 @@ public class Histogram extends AbstractView<HistoGraph> {
 			int vacant = module.getVacantIdx();
 			if (vacant >= 0)
 				nTraits--;
-			if (newPop || data == null || data.length != nTraits || data[0].length != HistoGraph.MAX_BINS)
-				data = new double[nTraits][HistoGraph.MAX_BINS];
+			if (newPop || data == null || data.length != nTraits || data[0].length != histogramBins)
+				data = new double[nTraits][histogramBins];
 			graph.setData(data);
 			hard |= applyFitnessStyle(graph, idx);
 			idx++;
@@ -1020,7 +1031,7 @@ public class Histogram extends AbstractView<HistoGraph> {
 			int nPop = (isSDE ? 1 : module.getNPopulation());
 			int maxBins = graph.getMaxBins();
 			if (maxBins <= 0)
-				maxBins = Math.min(nPop, HistoGraph.MAX_BINS);
+				maxBins = Math.min(nPop, HistoGraph.DEFAULT_BINS);
 			binSize = 1;
 			int bins = nPop;
 			while (bins > maxBins) {
@@ -1064,7 +1075,7 @@ public class Histogram extends AbstractView<HistoGraph> {
 				graph.setNormalized(false);
 				graph.setNormalized(-1);
 			} else {
-				// doFixtimeDistr is responsible that nPop > HistoGraph.MAX_BINS cannot happen
+				// doFixtimeDistr must ensure nPop <= HistoGraph.DEFAULT_BINS
 				int nPop = module.getNPopulation();
 				if (data == null || data.length != 2 * (nTraits + 1) || data[0].length != nPop)
 					data = new double[2 * (nTraits + 1)][nPop];
@@ -1091,8 +1102,8 @@ public class Histogram extends AbstractView<HistoGraph> {
 				data = graph.getData();
 			int nTraits = module.getNTraits();
 			int nBins = Math.min(module.getNPopulation(), graph.getMaxBins());
-			if (data == null || data.length != nTraits || data[0].length != HistoGraph.MAX_BINS)
-				data = new double[nTraits][HistoGraph.MAX_BINS];
+			if (data == null || data.length != nTraits || data[0].length != HistoGraph.DEFAULT_BINS)
+				data = new double[nTraits][HistoGraph.DEFAULT_BINS];
 			scale2bins = nBins;
 			graph.setData(data);
 			applyStationaryStyle(graph, idx);
@@ -1316,7 +1327,7 @@ public class Histogram extends AbstractView<HistoGraph> {
 			bincount = maxDegree(Math.max(interFeatures.maxTot, compFeatures.maxTot));
 		double min = 0.0;
 		double max = bincount;
-		bincount = Math.min(bincount, HistoGraph.MAX_BINS);
+		bincount = Math.min(bincount, HistoGraph.DEFAULT_BINS);
 		if (bincount != data[0].length) {
 			data = new double[data.length][bincount];
 			graph.setData(data);
@@ -1627,7 +1638,7 @@ public class Histogram extends AbstractView<HistoGraph> {
 			nBins = Math.max(maxDegree(compFeatures.maxOut) + 1, nBins);
 		if (!comp.isUndirected())
 			nBins = Math.max(maxDegree(compFeatures.maxTot) + 1, nBins);
-		return Math.max(2, Math.min(nBins, HistoGraph.MAX_BINS));
+		return Math.max(2, Math.min(nBins, HistoGraph.DEFAULT_BINS));
 	}
 
 	/**
@@ -1669,9 +1680,16 @@ public class Histogram extends AbstractView<HistoGraph> {
 	 */
 	private ContextMenuItem clearMenu;
 
+	/**
+	 * Populate context menu with histogram-specific actions.
+	 *
+	 * @param menu the context menu to populate
+	 */
 	@Override
 	public void populateContextMenu(ContextMenu menu) {
-		if (type == Data.STATISTICS_STATIONARY) {
+		if (hasHistogramBinsMenu()) {
+			addHistogramBinsMenu(menu);
+		} else if (type == Data.STATISTICS_STATIONARY) {
 			// add menu to clear canvas
 			if (clearMenu == null) {
 				clearMenu = new ContextMenuItem("Clear", () -> {
@@ -1687,6 +1705,90 @@ public class Histogram extends AbstractView<HistoGraph> {
 			clearMenu = null;
 		}
 		super.populateContextMenu(menu);
+	}
+
+	/**
+	 * Check whether the histogram-bins submenu is applicable.
+	 *
+	 * @return {@code true} if current histograms support manual bin selection
+	 */
+	private boolean hasHistogramBinsMenu() {
+		if (graphs.isEmpty())
+			return false;
+		if (type == Data.TRAIT)
+			return model != null && model.isContinuous();
+		return type == Data.FITNESS;
+	}
+
+	/**
+	 * Add submenu for selecting the number of bins in trait/fitness histograms.
+	 *
+	 * @param menu context menu to populate
+	 */
+	private void addHistogramBinsMenu(ContextMenu menu) {
+		clearMenu = null;
+		int[] binCounts = getBinCounts();
+		if (binCounts.length == 0)
+			return;
+		int selected = Math.min(Math.max(histogramBins, binCounts[0]), binCounts[binCounts.length - 1]);
+		ContextMenu binsMenu = new ContextMenu(menu, "Bins");
+		for (int bins : binCounts) {
+			ContextMenuCheckBoxItem item = new ContextMenuCheckBoxItem(Integer.toString(bins), () -> {
+				applyHistogramBins(bins);
+			});
+			item.setChecked(bins == selected);
+			binsMenu.add(item);
+		}
+		menu.addSeparator();
+		ContextMenuItem binsTrigger = menu.add("Bins", binsMenu);
+		binsTrigger.setEnabled(!isRunning());
+	}
+
+	/**
+	 * Return the feasible bin counts for trait/fitness histogram menus.
+	 * <p>
+	 * Feasible entries are the prefix of {@link #HISTOGRAM_BIN_OPTIONS} that fit
+	 * the current graph widths.
+	 *
+	 * @return feasible bin counts
+	 */
+	public int[] getBinCounts() {
+		if (graphs.isEmpty())
+			return HISTOGRAM_BIN_OPTIONS;
+		int maxFeasible = HISTOGRAM_BIN_OPTIONS[HISTOGRAM_BIN_OPTIONS.length - 1];
+		for (HistoGraph graph : graphs) {
+			int max = graph.getMaxBins();
+			if (max > 0)
+				maxFeasible = Math.min(maxFeasible, max);
+		}
+		int count = 0;
+		for (int option : HISTOGRAM_BIN_OPTIONS) {
+			if (option > maxFeasible)
+				break;
+			count++;
+		}
+		return Arrays.copyOf(HISTOGRAM_BIN_OPTIONS, count);
+	}
+
+	/**
+	 * Apply a new number of bins for trait/fitness histograms.
+	 *
+	 * @param newBins requested number of bins
+	 */
+	private void applyHistogramBins(int newBins) {
+		int[] binCounts = getBinCounts();
+		if (binCounts.length == 0)
+			return;
+		int clamped = binCounts[0];
+		for (int bins : binCounts) {
+			if (bins > newBins)
+				break;
+			clamped = bins;
+		}
+		if (clamped == histogramBins)
+			return;
+		histogramBins = clamped;
+		reset(true);
 	}
 
 	@Override
