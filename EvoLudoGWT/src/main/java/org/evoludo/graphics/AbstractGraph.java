@@ -2205,6 +2205,7 @@ public abstract class AbstractGraph<B> extends FocusPanel
 			leftMouseButton = true;
 			if (mouseMoveHandler == null)
 				mouseMoveHandler = addMouseMoveHandler(this);
+			event.preventDefault();
 		}
 	}
 
@@ -2235,6 +2236,7 @@ public abstract class AbstractGraph<B> extends FocusPanel
 				mouseMoveHandler.removeHandler();
 				mouseMoveHandler = null;
 			}
+			event.preventDefault();
 		}
 	}
 
@@ -2274,6 +2276,7 @@ public abstract class AbstractGraph<B> extends FocusPanel
 			shifter.shift(mouseX - x, mouseY - y);
 			mouseX = x;
 			mouseY = y;
+			event.preventDefault();
 		}
 	}
 

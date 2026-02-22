@@ -504,6 +504,7 @@ public abstract class GenericPopGraph<T, N extends Network<?>> extends AbstractG
 
 	@Override
 	public void onDoubleClick(DoubleClickEvent event) {
+		event.preventDefault();
 		// ignore if busy or invalid node
 		int node = findNodeAt(event.getX(), event.getY());
 		if (node >= 0 && !view.isRunning()) {

@@ -964,6 +964,7 @@ public class PopGraph2D extends GenericPopGraph<String, Network2D> implements Sh
 	@Override
 	public void onMouseMove(MouseMoveEvent event) {
 		if (hitNode >= 0) {
+			event.preventDefault();
 			int x = event.getX();
 			int y = event.getY();
 			if (!inside(x, y)) {
