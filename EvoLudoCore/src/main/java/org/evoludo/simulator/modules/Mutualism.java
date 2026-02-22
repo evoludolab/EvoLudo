@@ -43,10 +43,10 @@ import org.evoludo.simulator.views.HasMean;
 import org.evoludo.simulator.views.HasPhase2D;
 import org.evoludo.simulator.views.HasPop2D;
 import org.evoludo.simulator.views.HasPop3D;
+import org.evoludo.util.CLOCategory;
 import org.evoludo.util.CLODelegate;
 import org.evoludo.util.CLOParser;
 import org.evoludo.util.CLOption;
-import org.evoludo.util.CLOCategory;
 import org.evoludo.util.Formatter;
 
 /**
@@ -429,19 +429,25 @@ public class Mutualism extends Discrete implements Payoffs,
 
 		@Override
 		public String getTooltipAt(double x, double y) {
-			String tip = "<table><tr><td style='text-align:right'><i>" + getName() + ": " + getTraitName(COOPERATE)
-					+ ":</i></td><td>"
-					+ Formatter.formatPercent(x, 2) + "</td></tr>";
-			tip += "<tr><td style='text-align:right'><i>" + getName() + ": " + getTraitName(DEFECT) + ":</i></td><td>"
-					+ Formatter.formatPercent(1.0 - x, 2) + "</td></tr>";
-			tip += "<tr><td style='text-align:right'><i>" + partner.getName() + ": " + partner.getTraitName(COOPERATE)
-					+ ":</i></td><td>"
-					+ Formatter.formatPercent(y, 2) + "</td></tr>";
-			tip += "<tr><td style='text-align:right'><i>" + partner.getName() + ": " + partner.getTraitName(DEFECT)
-					+ ":</i></td><td>"
-					+ Formatter.formatPercent(1.0 - y, 2) + "</td></tr>";
-			tip += "</table>";
-			return tip;
+			StringBuilder tip = new StringBuilder(TABLE_STYLE)
+					.append(TABLE_ROW_START_RIGHT)
+					.append(getName()).append(": ").append(getTraitName(COOPERATE))
+					.append(TABLE_CELL_NEXT).append(Formatter.formatPercent(x, 2))
+					.append(TABLE_ROW_END);
+			tip.append(TABLE_STYLE).append(TABLE_ROW_START_RIGHT)
+					.append(getName()).append(": ").append(getTraitName(DEFECT))
+					.append(TABLE_CELL_NEXT).append(Formatter.formatPercent(1.0 - x, 2))
+					.append(TABLE_ROW_END);
+			tip.append(TABLE_STYLE).append(TABLE_ROW_START_RIGHT)
+					.append(partner.getName()).append(": ").append(partner.getTraitName(COOPERATE))
+					.append(TABLE_CELL_NEXT).append(Formatter.formatPercent(y, 2))
+					.append(TABLE_ROW_END);
+			tip.append(TABLE_STYLE).append(TABLE_ROW_START_RIGHT)
+					.append(partner.getName()).append(": ").append(partner.getTraitName(DEFECT))
+					.append(TABLE_CELL_NEXT).append(Formatter.formatPercent(1.0 - y, 2))
+					.append(TABLE_ROW_END);
+			tip.append(TABLE_END);
+			return tip.toString();
 		}
 	}
 

@@ -471,12 +471,14 @@ public class ATBT extends TBT implements HasS3, HasPhase2D {
 
 		@Override
 		public String getTooltipAt(double x, double y) {
-			String tip = "<table><tr><td style='text-align:right'><i>" + getXAxisLabel() + ":</i></td><td>"
-					+ Formatter.formatPercent(x, 2) + "</td></tr>";
-			tip += "<tr><td style='text-align:right'><i>" + getYAxisLabel() + ":</i></td><td>"
-					+ Formatter.formatPercent(y, 2) + "</td></tr>";
-			tip += "</table>";
-			return tip;
+			StringBuilder tip = new StringBuilder(TABLE_STYLE)
+					.append(TABLE_ROW_START_RIGHT)
+					.append(getXAxisLabel()).append(TABLE_CELL_NEXT)
+					.append(Formatter.formatPercent(x, 2)).append(TABLE_ROW_END);
+			tip.append(TABLE_ROW_START_RIGHT)
+					.append(getYAxisLabel()).append(TABLE_CELL_NEXT)
+					.append(Formatter.formatPercent(y, 2)).append(TABLE_ROW_END);
+			return tip.append(TABLE_END).toString();
 		}
 	}
 

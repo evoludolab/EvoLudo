@@ -266,13 +266,13 @@ public class S3Map implements BasicTooltipProvider {
 	@Override
 	public String getTooltipAt(double sx, double sy) {
 		s32Data(sx, sy, tip);
-		StringBuilder msg = new StringBuilder("<table>");
+		StringBuilder msg = new StringBuilder(TABLE_STYLE);
 		for (int i = 0; i < 3; i++)
-			msg.append("<tr><td style='text-align:right'><i>")
+			msg.append(TABLE_ROW_START_RIGHT)
 					.append(names[i])
-					.append(":</i></td><td>")
+					.append(TABLE_CELL_NEXT)
 					.append(Formatter.formatPercent(tip[i], 2))
-					.append("</td></tr>");
-		return msg.append("</table>").toString();
+					.append(TABLE_ROW_END);
+		return msg.append(TABLE_END).toString();
 	}
 }
