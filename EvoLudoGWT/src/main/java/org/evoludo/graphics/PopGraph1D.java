@@ -30,8 +30,13 @@
 
 package org.evoludo.graphics;
 
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Iterator;
+import java.util.List;
 
+import org.evoludo.math.ArrayMath;
+import org.evoludo.simulator.ColorMap;
 import org.evoludo.simulator.Network.Status;
 import org.evoludo.simulator.geometries.AbstractGeometry;
 import org.evoludo.simulator.geometries.GeometryType;
@@ -50,6 +55,16 @@ public class PopGraph1D extends PopGraph2D {
 	 * Default buffer capacity for linear-history graphs.
 	 */
 	private static final int DEFAULT_BUFFER_CAPACITY = 1000;
+
+	/**
+	 * Empty decoded row sentinel.
+	 */
+	private static final double[] EMPTY_MASS_ROW = new double[0];
+
+	/**
+	 * Empty encoded row sentinel.
+	 */
+	private static final String[] EMPTY_COLOR_ROW = new String[0];
 
 	/**
 	 * Create a graph for linear population rendering.
@@ -81,6 +96,163 @@ public class PopGraph1D extends PopGraph2D {
 		else
 			buffer.replace(copy);
 		super.update(isNext);
+	}
+
+	/**
+	 * Decode the probability mass for a bin from a color-encoded histogram row.
+	 *
+	 * @param colors   color-encoded histogram row
+	 * @param idx      bin index
+	 * @param nEntries number of histogram entries to decode
+	 * @return decoded bin mass, or {@code -1.0} if unavailable
+	 */
+	public double decodeBin(String[] colors, int idx, int nEntries) {
+		if (idx < 0)
+			return -1.0;
+		ColorMap.Gradient1D<String> cMap = null;
+		if (getColorMap() instanceof ColorMap.Gradient1D)
+			cMap = (ColorMap.Gradient1D<String>) getColorMap();
+		double[] masses = decodeRow(colors, cMap, nEntries);
+		if (idx >= masses.length)
+			return -1.0;
+		return masses[idx];
+	}
+
+	@Override
+	public void rebinGraphData(int oldBins, int newBins) {
+		if (newBins <= 0 || oldBins <= 0 || geometry == null)
+			return;
+		String[] oldData = (data == null ? null : Arrays.copyOf(data, data.length));
+		ColorMap.Gradient1D<String> cMap = null;
+		if (getColorMap() instanceof ColorMap.Gradient1D)
+			cMap = (ColorMap.Gradient1D<String>) getColorMap();
+		List<String[]> oldHistory = null;
+		if (buffer != null && !buffer.isEmpty()) {
+			oldHistory = new ArrayList<>(buffer.getSize());
+			Iterator<String[]> it = buffer.ordered();
+			while (it.hasNext()) {
+				String[] row = it.next();
+				oldHistory.add(Arrays.copyOf(row, row.length));
+			}
+		}
+		AbstractGeometry rebinnedGeometry = geometry.clone();
+		rebinnedGeometry.setSize(newBins);
+		setGeometry(rebinnedGeometry);
+
+		if (oldData != null && data != null) {
+			String[] rebinned = null;
+			if (cMap != null) {
+				double[] masses = decodeRow(oldData, cMap, oldBins);
+				if (masses.length == oldBins) {
+					double[] rebinnedMasses = rebinRow(masses, oldBins, newBins);
+					String[] encoded = encodeRow(rebinnedMasses, cMap);
+					if (encoded.length == newBins)
+						rebinned = encoded;
+				}
+			}
+			if (rebinned == null)
+				rebinned = Arrays.copyOf(oldData, data.length);
+			System.arraycopy(rebinned, 0, data, 0, Math.min(rebinned.length, data.length));
+		}
+
+		if (oldHistory != null && buffer != null) {
+			buffer.clear();
+			for (String[] row : oldHistory) {
+				String[] rebinned = null;
+				if (cMap != null) {
+					double[] masses = decodeRow(row, cMap, oldBins);
+					if (masses.length == oldBins) {
+						double[] rebinnedMasses = rebinRow(masses, oldBins, newBins);
+						String[] encoded = encodeRow(rebinnedMasses, cMap);
+						if (encoded.length == newBins)
+							rebinned = encoded;
+					}
+				}
+				if (rebinned == null)
+					rebinned = Arrays.copyOf(row, newBins);
+				buffer.append(rebinned);
+			}
+		}
+	}
+
+	/**
+	 * Decode a 1D histogram row from colors into normalized probability masses.
+	 *
+	 * @param source source colors
+	 * @param cMap   color map used for encoding
+	 * @param bins   number of bins
+	 * @return decoded masses or an empty array if decoding is not possible
+	 */
+	private static double[] decodeRow(String[] source, ColorMap.Gradient1D<String> cMap, int bins) {
+		if (source == null || cMap == null || bins <= 0)
+			return EMPTY_MASS_ROW;
+		double[] decoded = new double[bins];
+		int len = Math.min(Math.min(source.length, decoded.length), bins);
+		double sum = 0.0;
+		for (int i = 0; i < len; i++) {
+			double mass = nonNegativeFinite(cMap.normalize(source[i]));
+			decoded[i] = mass;
+			sum += mass;
+		}
+		if (sum <= 0.0)
+			return EMPTY_MASS_ROW;
+		double invSum = 1.0 / sum;
+		for (int i = 0; i < len; i++)
+			decoded[i] *= invSum;
+		return decoded;
+	}
+
+	/**
+	 * Convert non-finite or negative values to zero.
+	 *
+	 * @param value the value to sanitize
+	 * @return {@code value} if finite and non-negative, {@code 0.0} otherwise
+	 */
+	private static double nonNegativeFinite(double value) {
+		return (Double.isFinite(value) && value >= 0.0 ? value : 0.0);
+	}
+
+	/**
+	 * Encode histogram masses into colors using the graph color map.
+	 *
+	 * @param masses histogram masses
+	 * @param cMap   color map used for encoding
+	 * @return encoded colors or an empty array if encoding is not possible
+	 */
+	private static String[] encodeRow(double[] masses, ColorMap.Gradient1D<String> cMap) {
+		if (masses == null || cMap == null || masses.length == 0)
+			return EMPTY_COLOR_ROW;
+		String[] encoded = new String[masses.length];
+		cMap.setRange(0.0, ArrayMath.max(masses));
+		cMap.translate(masses, encoded);
+		return encoded;
+	}
+
+	/**
+	 * Rebin 1D histogram masses by exact overlap.
+	 *
+	 * @param source  source masses
+	 * @param oldBins old bins
+	 * @param newBins new bins
+	 * @return rebinned masses
+	 */
+	private static double[] rebinRow(double[] source, int oldBins, int newBins) {
+		double[] rebinned = new double[newBins];
+		for (int i = 0; i < oldBins; i++) {
+			double start = i / (double) oldBins;
+			double end = (i + 1) / (double) oldBins;
+			int j0 = Math.max(0, (int) Math.floor(start * newBins));
+			int j1 = Math.min(newBins - 1, (int) Math.ceil(end * newBins) - 1);
+			for (int j = j0; j <= j1; j++) {
+				double nStart = j / (double) newBins;
+				double nEnd = (j + 1) / (double) newBins;
+				double overlap = Math.max(0.0, Math.min(end, nEnd) - Math.max(start, nStart));
+				if (overlap <= 0.0)
+					continue;
+				rebinned[j] += source[i] * overlap * oldBins;
+			}
+		}
+		return rebinned;
 	}
 
 	@Override

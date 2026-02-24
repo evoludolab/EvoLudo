@@ -31,9 +31,6 @@
 package org.evoludo.simulator.views;
 
 import java.awt.Color;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Iterator;
 import java.util.List;
 
 import org.evoludo.graphics.AbstractGraph;
@@ -407,11 +404,6 @@ public class Distribution extends AbstractView<PopGraph2D> implements TooltipPro
 		GraphStyle style = graph.getStyle();
 		int binsAxis = nBins;
 		PopGraph2D popGraph = (graph instanceof PopGraph2D ? (PopGraph2D) graph : null);
-		ColorMap.Gradient1D<String> cMap = null;
-		if (popGraph != null && popGraph.getColorMap() instanceof ColorMap.Gradient1D) {
-			ColorMap.Gradient1D<String> map = (ColorMap.Gradient1D<String>) popGraph.getColorMap();
-			cMap = map;
-		}
 		StringBuilder tip = new StringBuilder(TABLE_STYLE);
 		if (style.label != null)
 			tip.append("<b>")
@@ -436,7 +428,7 @@ public class Distribution extends AbstractView<PopGraph2D> implements TooltipPro
 				RingBuffer<String[]> history = popGraph.getBuffer();
 				if (history != null && row < history.getSize()) {
 					String[] rowData = history.get(row);
-					frequency = decodeProbabilityMass(rowData, bar, binsAxis, cMap);
+					frequency = ((PopGraph1D) popGraph).decodeBin(rowData, bar, binsAxis);
 				}
 			}
 			if (frequency < 0.0 && !(popGraph instanceof PopGraph1D) && bar < bins.length)
@@ -485,25 +477,6 @@ public class Distribution extends AbstractView<PopGraph2D> implements TooltipPro
 		tip.append(TABLE_ROW_END)
 				.append(TABLE_END);
 		return tip.toString();
-	}
-
-	/**
-	 * Decode a bin's probability mass from color-encoded histogram data.
-	 *
-	 * @param colors   the color-encoded histogram
-	 * @param idx      the bin index to decode
-	 * @param nEntries number of histogram entries to consider
-	 * @param cMap     color map used for encoding
-	 * @return decoded probability mass or {@link #INVALID_FREQUENCY} if unavailable
-	 */
-	private static double decodeProbabilityMass(String[] colors, int idx, int nEntries,
-			ColorMap.Gradient1D<String> cMap) {
-		if (idx < 0)
-			return INVALID_FREQUENCY;
-		double[] masses = decodeHistogram1D(colors, cMap, nEntries);
-		if (masses == null || idx >= masses.length)
-			return INVALID_FREQUENCY;
-		return masses[idx];
 	}
 
 	@Override
@@ -622,217 +595,17 @@ public class Distribution extends AbstractView<PopGraph2D> implements TooltipPro
 			return;
 		int oldBins = nBins;
 		nBins = newBins;
-		bins = rebinHistogram(bins, oldBins, newBins);
-		for (PopGraph2D graph : graphs)
-			rebinGraphData(graph, oldBins, newBins);
+		boolean is2D = (bins != null
+				? bins.length == oldBins * oldBins
+				: (!graphs.isEmpty() && graphs.get(0).getModule().getNTraits() > 1));
+		bins = new double[is2D ? newBins * newBins : newBins];
+		for (PopGraph2D graph : graphs) {
+			graph.rebinGraphData(oldBins, newBins);
+			if (graph.getModule().getNTraits() > 1)
+				graph.setGeometry(createGeometry(graph.getModule().getNTraits()));
+		}
 		updateData(true);
 		update(true);
-	}
-
-	/**
-	 * Rebin data for a single graph while preserving current state/history.
-	 *
-	 * @param graph   the graph to rebin
-	 * @param oldBins previous number of bins per axis
-	 * @param newBins new number of bins per axis
-	 */
-	private void rebinGraphData(PopGraph2D graph, int oldBins, int newBins) {
-		if (!(graph instanceof PopGraph1D)) {
-			// no history in 2D distribution graphs; data will be rebuilt in updateData()
-			graph.setGeometry(createGeometry(graph.getModule().getNTraits()));
-			return;
-		}
-		String[] oldData = graph.getData();
-		if (oldData != null)
-			oldData = Arrays.copyOf(oldData, oldData.length);
-		ColorMap.Gradient1D<String> cMap = null;
-		if (graph.getColorMap() instanceof ColorMap.Gradient1D)
-			cMap = (ColorMap.Gradient1D<String>) graph.getColorMap();
-		List<String[]> oldHistory = null;
-		RingBuffer<String[]> history = graph.getBuffer();
-		if (history != null && !history.isEmpty()) {
-			oldHistory = new ArrayList<>(history.getSize());
-			Iterator<String[]> it = history.ordered();
-			while (it.hasNext()) {
-				String[] row = it.next();
-				oldHistory.add(Arrays.copyOf(row, row.length));
-			}
-		}
-
-		graph.setGeometry(createGeometry(graph.getModule().getNTraits()));
-
-		String[] newData = graph.getData();
-		if (oldData != null && newData != null) {
-			String[] rebinned = null;
-			if (cMap != null) {
-				double[] masses = decodeHistogram1D(oldData, cMap, oldBins);
-				if (masses != null) {
-					double[] rebinnedMasses = rebinHistogram1D(masses, oldBins, newBins);
-					rebinned = encodeHistogram(rebinnedMasses, cMap);
-				}
-			}
-			if (rebinned == null)
-				rebinned = Arrays.copyOf(oldData, newData.length);
-			System.arraycopy(rebinned, 0, newData, 0, Math.min(rebinned.length, newData.length));
-		}
-
-		if (oldHistory != null) {
-			history.clear();
-			for (String[] row : oldHistory) {
-				String[] rebinned = null;
-				if (cMap != null) {
-					double[] masses = decodeHistogram1D(row, cMap, oldBins);
-					if (masses != null) {
-						double[] rebinnedMasses = rebinHistogram1D(masses, oldBins, newBins);
-						rebinned = encodeHistogram(rebinnedMasses, cMap);
-					}
-				}
-				if (rebinned == null)
-					rebinned = Arrays.copyOf(row, newBins);
-				history.append(rebinned);
-			}
-		}
-	}
-
-	/**
-	 * Decode a 1D histogram row from colors into normalized probability masses.
-	 *
-	 * @param source source colors
-	 * @param cMap   color map used for encoding
-	 * @param bins   number of bins
-	 * @return decoded masses or {@code null} if decoding is not possible
-	 */
-	private static double[] decodeHistogram1D(String[] source, ColorMap.Gradient1D<String> cMap, int bins) {
-		if (source == null || cMap == null || bins <= 0)
-			return null;
-		double[] decoded = new double[bins];
-		int len = Math.min(Math.min(source.length, decoded.length), bins);
-		double sum = 0.0;
-		for (int i = 0; i < len; i++) {
-			double mass = nonNegativeFinite(cMap.normalize(source[i]));
-			decoded[i] = mass;
-			sum += mass;
-		}
-		if (sum <= 0.0)
-			return null;
-		double invSum = 1.0 / sum;
-		for (int i = 0; i < len; i++)
-			decoded[i] *= invSum;
-		return decoded;
-	}
-
-	/**
-	 * Convert non-finite or negative values to zero.
-	 *
-	 * @param value the value to sanitize
-	 * @return {@code value} if finite and non-negative, {@code 0.0} otherwise
-	 */
-	private static double nonNegativeFinite(double value) {
-		return (Double.isFinite(value) && value >= 0.0 ? value : 0.0);
-	}
-
-	/**
-	 * Encode histogram masses into colors using the graph color map.
-	 *
-	 * @param masses histogram masses
-	 * @param cMap   color map used for encoding
-	 * @return encoded colors
-	 */
-	private static String[] encodeHistogram(double[] masses, ColorMap.Gradient1D<String> cMap) {
-		if (masses == null || cMap == null)
-			return null;
-		String[] encoded = new String[masses.length];
-		cMap.setRange(0.0, ArrayMath.max(masses));
-		cMap.translate(masses, encoded);
-		return encoded;
-	}
-
-	/**
-	 * Rebin histogram masses while preserving totals.
-	 *
-	 * @param source  source histogram
-	 * @param oldBins previous bins per axis
-	 * @param newBins new bins per axis
-	 * @return rebinned histogram
-	 */
-	private static double[] rebinHistogram(double[] source, int oldBins, int newBins) {
-		if (source == null)
-			return null;
-		if (newBins <= 0)
-			return new double[0];
-		if (source.length == oldBins)
-			return rebinHistogram1D(source, oldBins, newBins);
-		if (source.length == oldBins * oldBins)
-			return rebinHistogram2D(source, oldBins, newBins);
-		return Arrays.copyOf(source, source.length);
-	}
-
-	/**
-	 * Rebin 1D histogram masses by exact overlap.
-	 *
-	 * @param source  source masses
-	 * @param oldBins old bins
-	 * @param newBins new bins
-	 * @return rebinned masses
-	 */
-	private static double[] rebinHistogram1D(double[] source, int oldBins, int newBins) {
-		double[] rebinned = new double[newBins];
-		for (int i = 0; i < oldBins; i++) {
-			double start = i / (double) oldBins;
-			double end = (i + 1) / (double) oldBins;
-			int j0 = Math.max(0, (int) Math.floor(start * newBins));
-			int j1 = Math.min(newBins - 1, (int) Math.ceil(end * newBins) - 1);
-			for (int j = j0; j <= j1; j++) {
-				double nStart = j / (double) newBins;
-				double nEnd = (j + 1) / (double) newBins;
-				double overlap = Math.max(0.0, Math.min(end, nEnd) - Math.max(start, nStart));
-				if (overlap <= 0.0)
-					continue;
-				rebinned[j] += source[i] * overlap * oldBins;
-			}
-		}
-		return rebinned;
-	}
-
-	/**
-	 * Rebin 2D histogram masses by exact cell overlap.
-	 *
-	 * @param source  source masses (row-major)
-	 * @param oldBins old bins per axis
-	 * @param newBins new bins per axis
-	 * @return rebinned masses (row-major)
-	 */
-	private static double[] rebinHistogram2D(double[] source, int oldBins, int newBins) {
-		double[] rebinned = new double[newBins * newBins];
-		for (int oy = 0; oy < oldBins; oy++) {
-			double yStart = oy / (double) oldBins;
-			double yEnd = (oy + 1) / (double) oldBins;
-			int ny0 = Math.max(0, (int) Math.floor(yStart * newBins));
-			int ny1 = Math.min(newBins - 1, (int) Math.ceil(yEnd * newBins) - 1);
-			for (int ox = 0; ox < oldBins; ox++) {
-				double xStart = ox / (double) oldBins;
-				double xEnd = (ox + 1) / (double) oldBins;
-				int nx0 = Math.max(0, (int) Math.floor(xStart * newBins));
-				int nx1 = Math.min(newBins - 1, (int) Math.ceil(xEnd * newBins) - 1);
-				double mass = source[oy * oldBins + ox];
-				for (int ny = ny0; ny <= ny1; ny++) {
-					double nYStart = ny / (double) newBins;
-					double nYEnd = (ny + 1) / (double) newBins;
-					double yOverlap = Math.max(0.0, Math.min(yEnd, nYEnd) - Math.max(yStart, nYStart));
-					if (yOverlap <= 0.0)
-						continue;
-					for (int nx = nx0; nx <= nx1; nx++) {
-						double nXStart = nx / (double) newBins;
-						double nXEnd = (nx + 1) / (double) newBins;
-						double xOverlap = Math.max(0.0, Math.min(xEnd, nXEnd) - Math.max(xStart, nXStart));
-						if (xOverlap <= 0.0)
-							continue;
-						rebinned[ny * newBins + nx] += mass * xOverlap * yOverlap * oldBins * oldBins;
-					}
-				}
-			}
-		}
-		return rebinned;
 	}
 
 	@Override

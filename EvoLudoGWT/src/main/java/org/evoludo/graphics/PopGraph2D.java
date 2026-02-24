@@ -226,6 +226,19 @@ public class PopGraph2D extends GenericPopGraph<String, Network2D> implements Sh
 	}
 
 	/**
+	 * Rebin graph data when the number of bins changes.
+	 * <p>
+	 * Default implementation does nothing. Subclasses can override to preserve
+	 * rendered state/history across bin changes.
+	 *
+	 * @param oldBins previous number of bins per axis
+	 * @param newBins new number of bins per axis
+	 */
+	public void rebinGraphData(int oldBins, int newBins) {
+		// default no-op
+	}
+
+	/**
 	 * {@inheritDoc}
 	 * <p>
 	 * Depending on the backing geometry this either
