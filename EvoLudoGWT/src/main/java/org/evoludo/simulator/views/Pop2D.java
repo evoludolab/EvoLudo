@@ -46,7 +46,6 @@ import org.evoludo.simulator.models.CModel;
 import org.evoludo.simulator.models.DModel;
 import org.evoludo.simulator.models.Data;
 import org.evoludo.simulator.models.Model.HasDE;
-import org.evoludo.simulator.models.ModelType;
 import org.evoludo.simulator.models.PDE;
 import org.evoludo.simulator.modules.Continuous;
 import org.evoludo.simulator.modules.Continuous.ColorModelType;
@@ -173,11 +172,10 @@ public class Pop2D extends GenericPop<String, Network2D, PopGraph2D> {
 
 	@Override
 	protected boolean allocateGraphs() {
-		ModelType mt = getModelType();
-		if (mt.isIBS())
+		if (model.isIBS())
 			return allocateIBSGraphs();
 
-		if (mt.isPDE())
+		if (model.isPDE())
 			return allocatePDEGraph();
 		return false;
 	}
@@ -472,7 +470,7 @@ public class Pop2D extends GenericPop<String, Network2D, PopGraph2D> {
 	 * @return configured color map
 	 */
 	private ColorMap<String> createTraitColorMapDiscreteOrPDE(Module<?> module) {
-		if (getModelType().isPDE()) {
+		if (model.isPDE()) {
 			int nTraits = module.getNTraits();
 			Color[] colors = module.getTraitColors();
 			int dep = ((HasDE) module).getDependent();
@@ -506,7 +504,7 @@ public class Pop2D extends GenericPop<String, Network2D, PopGraph2D> {
 		int tag = module.getId();
 		cMap1D.setRange(model.getMinFitness(tag), model.getMaxFitness(tag));
 
-		if (!getModelType().isIBS())
+		if (!model.isIBS())
 			return cMap;
 
 		Map2Fitness map2fit = module.getMap2Fitness();

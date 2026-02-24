@@ -52,7 +52,6 @@ import org.evoludo.simulator.models.Data;
 import org.evoludo.simulator.models.FixationData;
 import org.evoludo.simulator.models.IBSPopulation;
 import org.evoludo.simulator.models.Mode;
-import org.evoludo.simulator.models.ModelType;
 import org.evoludo.simulator.modules.Continuous;
 import org.evoludo.simulator.modules.Discrete;
 import org.evoludo.simulator.modules.Module;
@@ -381,7 +380,7 @@ public class Histogram extends AbstractView<HistoGraph> {
 					}
 					break;
 				case DEGREE:
-					if (getModelType().isIBS()) {
+					if (model.isIBS()) {
 						IBSPopulation<?, ?> ibspop = mod.getIBSPopulation();
 						nGraphs += getDegreeGraphs(ibspop.getInteractionGeometry(), ibspop.getCompetitionGeometry());
 					} else {
@@ -492,17 +491,16 @@ public class Histogram extends AbstractView<HistoGraph> {
 	 * @param nGraphs total number of graphs being created
 	 */
 	private void addDegreeGraphs(List<? extends Module<?>> species, int nGraphs) {
-		ModelType mt = getModelType();
 		int idx = 0;
 		for (Module<?> module : species) {
-			if (mt.isODE() || mt.isSDE()) {
+			if (model.isODE() || model.isSDE()) {
 				HistoGraph graph = new HistoGraph(this, module, 0);
 				wrapper.add(graph);
 				graphs.add(graph);
 				continue;
 			}
 			int nHisto = 1;
-			if (mt.isIBS()) {
+			if (model.isIBS()) {
 				IBSPopulation<?, ?> ibspop = module.getIBSPopulation();
 				nHisto = getDegreeGraphs(ibspop.getInteractionGeometry(), ibspop.getCompetitionGeometry());
 			}
@@ -755,7 +753,7 @@ public class Histogram extends AbstractView<HistoGraph> {
 
 		AbstractGeometry inter;
 		AbstractGeometry comp;
-		if (getModelType().isPDE()) {
+		if (model.isPDE()) {
 			inter = comp = module.getGeometry();
 		} else {
 			IBSPopulation<?, ?> ibspop = module.getIBSPopulation();
@@ -796,7 +794,7 @@ public class Histogram extends AbstractView<HistoGraph> {
 		style.yMin = 0.0;
 		style.yMax = 1.0;
 		style.xMin = 0;
-		style.xMax = (getModelType().isSDE() ? 1 : module.getNPopulation() - 1);
+		style.xMax = (model.isSDE() ? 1 : module.getNPopulation() - 1);
 		style.label = module.getTraitName(n);
 		Color[] colors = module.getTraitColors();
 		style.graphColor = ColorMapCSS.Color2Css(colors[n]);
@@ -857,7 +855,7 @@ public class Histogram extends AbstractView<HistoGraph> {
 		style.showLabel = true;
 		Module<?> module = graph.getModule();
 		int nPop = module.getNPopulation();
-		if (getModelType().isDE()) {
+		if (model.isDE()) {
 			if (model.isDensity()) {
 				style.xLabel = "density";
 				style.xMin = 0.0;
@@ -982,9 +980,8 @@ public class Histogram extends AbstractView<HistoGraph> {
 		Module<?> oldmod = null;
 		double[][] data = null;
 		int idx = 0;
-		ModelType mt = getModelType();
-		boolean isOSDE = mt.isODE() || mt.isSDE();
-		boolean isPDE = mt.isPDE();
+		boolean isOSDE = model.isODE() || model.isSDE();
+		boolean isPDE = model.isPDE();
 		for (HistoGraph graph : graphs) {
 			Module<?> module = graph.getModule();
 			if (oldmod != module)
@@ -1020,7 +1017,7 @@ public class Histogram extends AbstractView<HistoGraph> {
 		Module<?> oldmod = null;
 		double[][] data = null;
 		int idx = 0;
-		boolean isSDE = getModelType().isSDE();
+		boolean isSDE = model.isSDE();
 		for (HistoGraph graph : graphs) {
 			Module<?> module = graph.getModule();
 			boolean newPop = (oldmod != module);
@@ -1252,7 +1249,6 @@ public class Histogram extends AbstractView<HistoGraph> {
 	 */
 	private void updateDegree() {
 		double[][] data = null;
-		ModelType mt = getModelType();
 		for (HistoGraph graph : graphs) {
 			Module<?> module = graph.getModule();
 			IBSPopulation<?, ?> ibspop = module.getIBSPopulation();
@@ -1264,7 +1260,7 @@ public class Histogram extends AbstractView<HistoGraph> {
 					|| (comp != null && comp.isType(GeometryType.DYNAMIC));
 
 			double[][] graphdata = graph.getData();
-			if ((mt.isDE() && handleDEGraph(graph, mt, module))
+			if ((model.isDE() && handleDEGraph(graph, module))
 					|| !needsUpdate
 					|| graphdata == null
 					|| inter == null
@@ -1284,12 +1280,11 @@ public class Histogram extends AbstractView<HistoGraph> {
 	 * graph and further processing should be skipped.
 	 * 
 	 * @param graph  target histogram
-	 * @param mt     current model type
 	 * @param module module owning the histogram
 	 * @return {@code true} if the graph now displays a message
 	 */
-	private boolean handleDEGraph(HistoGraph graph, ModelType mt, Module<?> module) {
-		if (mt.isPDE()) {
+	private boolean handleDEGraph(HistoGraph graph, Module<?> module) {
+		if (model.isPDE()) {
 			AbstractGeometry inter = module.getGeometry();
 			if (inter.isRegular()) {
 				graph.displayMessage("PDE model: regular structure with degree "
@@ -1300,7 +1295,7 @@ public class Histogram extends AbstractView<HistoGraph> {
 						(inter.isRegular() ? " (periodic)" : " (fixed)") + " boundaries).");
 			}
 		} else {
-			graph.displayMessage(getModelType().getKey() + " model: well-mixed population.");
+			graph.displayMessage(model.getType().getKey() + " model: well-mixed population.");
 		}
 		return graph.hasMessage();
 	}
@@ -1359,7 +1354,7 @@ public class Histogram extends AbstractView<HistoGraph> {
 	 * @return {@code true} to show the fixation time distribution
 	 */
 	private boolean doFixtimeDistr(Module<?> module) {
-		if (getModelType().isSDE())
+		if (model.isSDE())
 			return true;
 		int maxBins = graphs.get(0).getMaxBins();
 		return (maxBins > 0 && module.getNPopulation() > maxBins);

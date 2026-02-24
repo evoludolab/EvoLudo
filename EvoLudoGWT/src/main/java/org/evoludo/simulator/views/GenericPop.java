@@ -45,7 +45,6 @@ import org.evoludo.simulator.geometries.AbstractGeometry;
 import org.evoludo.simulator.geometries.GeometryType;
 import org.evoludo.simulator.models.Data;
 import org.evoludo.simulator.models.IBS;
-import org.evoludo.simulator.models.ModelType;
 import org.evoludo.simulator.models.PDE;
 import org.evoludo.simulator.modules.Features.Payoffs;
 import org.evoludo.simulator.modules.Map2Fitness;
@@ -187,8 +186,7 @@ public abstract class GenericPop<T, N extends Network<?>, G extends GenericPopGr
 	 *              competition geometry
 	 */
 	void setGraphGeometry(GenericPopGraph<T, N> graph, boolean inter) {
-		ModelType mt = getModelType();
-		if (mt.isIBS()) {
+		if (model.isIBS()) {
 			Module<?> module = graph.getModule();
 			AbstractGeometry igeom = module.getIBSPopulation().getInteractionGeometry();
 			AbstractGeometry cgeom = module.getIBSPopulation().getCompetitionGeometry();
@@ -201,7 +199,7 @@ public abstract class GenericPop<T, N extends Network<?>, G extends GenericPopGr
 			graph.setGeometry(geo);
 			return;
 		}
-		if (mt.isPDE()) {
+		if (model.isPDE()) {
 			graph.setGeometry(((PDE) model).getGeometry());
 			return;
 		}
@@ -220,8 +218,7 @@ public abstract class GenericPop<T, N extends Network<?>, G extends GenericPopGr
 	@Override
 	protected void updateData(boolean force) {
 		// force intentionally ignored; update policy depends on active/history state.
-		ModelType mt = getModelType();
-		if (!(mt.isIBS() || mt.isPDE()))
+		if (!(model.isIBS() || model.isPDE()))
 			return;
 		// always read data for the selected graph set
 		double newtime = model.getUpdates();
@@ -255,8 +252,7 @@ public abstract class GenericPop<T, N extends Network<?>, G extends GenericPopGr
 
 	@Override
 	public void update(boolean force) {
-		ModelType mt = getModelType();
-		if (mt.isIBS() || mt.isPDE()) {
+		if (model.isIBS() || model.isPDE()) {
 			if (!isActive)
 				return;
 			for (G graph : graphs)
@@ -292,8 +288,7 @@ public abstract class GenericPop<T, N extends Network<?>, G extends GenericPopGr
 
 	@Override
 	public void mouseHitNode(int id, int node, boolean alt) {
-		ModelType mt = getModelType();
-		if (mt.isIBS())
+		if (model.isIBS())
 			((IBS) model).mouseHitNode(id, node, alt);
 	}
 
@@ -312,11 +307,10 @@ public abstract class GenericPop<T, N extends Network<?>, G extends GenericPopGr
 					.append(module.getName())
 					.append(TABLE_ROW_END);
 
-		ModelType mt = getModelType();
 		// Delegate heavy logic to dedicated helpers to reduce cognitive complexity
-		if (mt.isIBS())
+		if (model.isIBS())
 			return tooltipForIBS(node, nNodes, module, graph, tip);
-		if (mt.isPDE())
+		if (model.isPDE())
 			return tooltipForPDE(node, nNodes, geometry, module, graph, tip);
 		return null;
 	}

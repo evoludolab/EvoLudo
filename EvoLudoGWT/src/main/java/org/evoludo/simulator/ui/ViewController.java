@@ -41,7 +41,6 @@ import org.evoludo.simulator.EvoLudoGWT;
 import org.evoludo.simulator.models.Data;
 import org.evoludo.simulator.models.Mode;
 import org.evoludo.simulator.models.Model;
-import org.evoludo.simulator.models.ModelType;
 import org.evoludo.simulator.modules.Module;
 import org.evoludo.simulator.views.AbstractView;
 import org.evoludo.simulator.views.Console;
@@ -294,8 +293,7 @@ public class ViewController {
 		if (module != null && model != null) {
 			if (module != lastModule)
 				unloadViews(oldViews);
-			ModelType mt = model.getType();
-			boolean isODESDE = mt.isODE() || mt.isSDE();
+			boolean isODESDE = model.isODE() || model.isSDE();
 
 			addStrategyViews(module, isODESDE, oldViews);
 			addFitnessViews(module, isODESDE, oldViews);

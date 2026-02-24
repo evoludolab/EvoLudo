@@ -1470,7 +1470,7 @@ public abstract class AbstractGeometry {
 				|| clo.isValidKey(GeometryType.CUBE)
 				|| clo.isValidKey(GeometryType.HEXAGONAL) || clo.isValidKey(GeometryType.TRIANGULAR));
 		return "--geometry <>   geometry " //
-				+ (engine.getModel().getType().isIBS() ? "- interaction==competition\n" : "\n") //
+				+ (engine.getModel().isIBS() ? "- interaction==competition\n" : "\n") //
 				+ "      argument: <g><k>" //
 				+ (fixedBoundariesAvailable ? "[f|F]" : "") + " (g type, k neighbours)\n" //
 				+ clo.getDescriptionKey() + "\n      further specifications:" //

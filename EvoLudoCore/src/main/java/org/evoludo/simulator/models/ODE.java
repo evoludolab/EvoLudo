@@ -499,7 +499,7 @@ public class ODE extends Model implements DModel {
 	public void init() {
 		super.init();
 		dtTry = dt;
-		if (type.isPDE())
+		if (isPDE())
 			return; // PDE models handle initialization themselves
 		init(true);
 	}
@@ -1127,7 +1127,7 @@ public class ODE extends Model implements DModel {
 			z = state[skip + vacant];
 		if (fitness != null && vacant >= 0)
 			fitness[skip + vacant] = 0.0;
-		double[] effRates = type.isPDE() ? new double[2] : effRate;
+		double[] effRates = isPDE() ? new double[2] : effRate;
 		computeEffRates(mod, index, state, effRates);
 		double effBirth = effRates[0];
 		double effDeath = effRates[1];

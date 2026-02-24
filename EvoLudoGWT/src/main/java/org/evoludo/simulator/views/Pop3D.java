@@ -43,7 +43,6 @@ import org.evoludo.simulator.models.CModel;
 import org.evoludo.simulator.models.DModel;
 import org.evoludo.simulator.models.Data;
 import org.evoludo.simulator.models.Model.HasDE;
-import org.evoludo.simulator.models.ModelType;
 import org.evoludo.simulator.modules.Continuous;
 import org.evoludo.simulator.modules.Continuous.ColorModelType;
 import org.evoludo.simulator.modules.Discrete;
@@ -161,11 +160,10 @@ public class Pop3D extends GenericPop<MeshLambertMaterial, Network3DGWT, PopGrap
 
 	@Override
 	protected boolean allocateGraphs() {
-		ModelType mt = getModelType();
-		if (mt.isIBS())
+		if (model.isIBS())
 			return allocateIBSGraphs();
 
-		if (mt.isPDE())
+		if (model.isPDE())
 			return allocatePDEGraph();
 
 		return false;
@@ -334,7 +332,7 @@ public class Pop3D extends GenericPop<MeshLambertMaterial, Network3DGWT, PopGrap
 	 * @return configured color map
 	 */
 	private ColorMap<MeshLambertMaterial> createTraitColorMapDiscreteOrPDE(Module<?> module) {
-		if (getModelType().isPDE()) {
+		if (model.isPDE()) {
 			int nTraits = module.getNTraits();
 			Color[] colors = module.getTraitColors();
 			int dep = ((HasDE) module).getDependent();
@@ -364,7 +362,7 @@ public class Pop3D extends GenericPop<MeshLambertMaterial, Network3DGWT, PopGrap
 		int id = module.getId();
 		cMap1D.setRange(model.getMinFitness(id), model.getMaxFitness(id));
 
-		if (!getModelType().isIBS())
+		if (!model.isIBS())
 			return cMap1D;
 
 		Map2Fitness map2fit = module.getMap2Fitness();

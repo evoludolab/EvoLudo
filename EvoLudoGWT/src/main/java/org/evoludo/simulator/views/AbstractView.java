@@ -971,8 +971,7 @@ public abstract class AbstractView<G extends AbstractGraph<?>> extends Composite
 		addBufferSizeMenu(menu);
 
 		menu.addSeparator();
-		ModelType mt = model != null ? model.getType() : ModelType.NONE;
-		if (mt.isODE() || mt.isSDE()) {
+		if (model != null && (model.isODE() || model.isSDE())) {
 			// add time reverse context menu
 			if (timeReverseMenu == null) {
 				timeReverseMenu = new ContextMenuCheckBoxItem("Time reversed",
@@ -981,7 +980,7 @@ public abstract class AbstractView<G extends AbstractGraph<?>> extends Composite
 			menu.add(timeReverseMenu);
 			timeReverseMenu.setChecked(model.isTimeReversed());
 			timeReverseMenu.setEnabled(model.permitsTimeReversal());
-		} else if (mt.isPDE()) {
+		} else if (model != null && model.isPDE()) {
 			// add context menu to allow symmetric diffusion
 			if (symDiffMenu == null) {
 				symDiffMenu = new ContextMenuCheckBoxItem("Symmetric diffusion", () -> {

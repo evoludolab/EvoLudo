@@ -140,71 +140,34 @@ public enum ModelType implements CLOption.Key {
 	}
 
 	/**
-	 * Check if this model type is the same as the given type. Distinguishes between
-	 * ODE, SDE, PDE, and IBS models but remains agnostic to the implementation
+	 * Check whether this model type matches the given query type. Distinguishes
+	 * between ODE/SDE/PDE/IBS families while remaining agnostic to implementation
 	 * details.
-	 * 
-	 * @param type the type to compare with
-	 * @return {@code true} if this model type is the same as the given type,
-	 *         {@code false} otherwise
+	 *
+	 * @param query the type or type-family to compare against
+	 * @return {@code true} if this type matches {@code query}
 	 */
-	public boolean isType(ModelType type) {
-		if (this == type)
+	protected boolean isType(ModelType query) {
+		if (query == null)
+			return false;
+		if (this == query)
 			return true;
-		if (type.isODE())
-			return isODE();
-		if (type.isSDE())
-			return isSDE();
-		if (type.isPDE())
-			return isPDE();
-		if (type.isIBS())
-			return isIBS();
-		return false;
-	}
-
-	/**
-	 * Check if this model type is an ordinary differential equations model.
-	 * 
-	 * @return {@code true} if this is an ODE model, {@code false} otherwise
-	 */
-	public boolean isDE() {
-		return isODE() || isSDE() || isPDE();
-	}
-
-	/**
-	 * Check if this model type is an ordinary differential equations model.
-	 * 
-	 * @return {@code true} if this is an ODE model, {@code false} otherwise
-	 */
-	public boolean isODE() {
-		return this == ODE || this == RK5 || this == EM;
-	}
-
-	/**
-	 * Check if this model type is an stochastic differential equations model.
-	 * 
-	 * @return {@code true} if this is an SDE model, {@code false} otherwise
-	 */
-	public boolean isSDE() {
-		return this == SDE;
-	}
-
-	/**
-	 * Check if this model type is an [partial differential equations model.
-	 * 
-	 * @return {@code true} if this is an PDE model, {@code false} otherwise
-	 */
-	public boolean isPDE() {
-		return this == PDE || this == PDERD || this == PDEADV;
-	}
-
-	/**
-	 * Check if this model type is individual based simulations model.
-	 * 
-	 * @return {@code true} if this is an IBS model, {@code false} otherwise
-	 */
-	public boolean isIBS() {
-		return this == IBS;
+		switch (query) {
+			case ODE:
+			case RK5:
+			case EM:
+				return this == ODE || this == RK5 || this == EM;
+			case SDE:
+				return this == SDE;
+			case PDE:
+			case PDERD:
+			case PDEADV:
+				return this == PDE || this == PDERD || this == PDEADV;
+			case IBS:
+				return this == IBS;
+			default:
+				return false;
+		}
 	}
 
 	@Override

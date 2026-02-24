@@ -60,7 +60,6 @@ import org.evoludo.simulator.EvoLudo;
 import org.evoludo.simulator.EvoLudoJRE;
 import org.evoludo.simulator.EvoLudoLab;
 import org.evoludo.simulator.models.Model;
-import org.evoludo.simulator.models.ModelType;
 import org.evoludo.simulator.modules.Module;
 import org.evoludo.util.Formatter;
 import org.freehep.graphics2d.VectorGraphics;
@@ -294,12 +293,11 @@ public abstract class MVAbstract extends JComponent
 	@Override
 	public void showCustomMenu(JPopupMenu menu, Point loc, AbstractGraph owner) {
 		Model model = engine.getModel();
-		ModelType mt = model.getType();
 		if (menuTime) {
-			timeMenu.setEnabled(mt.isODE());
+			timeMenu.setEnabled(model.isODE());
 			timeMenu.setSelected(model.isTimeReversed());
 		}
-		if (mt.isPDE()) {
+		if (model.isPDE()) {
 			if (menuSetLocal) {
 				int node = ((PopGraph2D) owner).findNodeAt(loc);
 				if (node < 0) {

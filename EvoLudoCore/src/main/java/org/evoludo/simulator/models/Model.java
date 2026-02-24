@@ -966,6 +966,51 @@ public abstract class Model implements CLOProvider {
 	}
 
 	/**
+	 * Check if this model is based on differential equations.
+	 *
+	 * @return {@code true} if this is an ODE, SDE, or PDE model
+	 */
+	public boolean isDE() {
+		return isODE() || isSDE() || isPDE();
+	}
+
+	/**
+	 * Check if this model is an ordinary differential equations model.
+	 *
+	 * @return {@code true} if this is an ODE model
+	 */
+	public boolean isODE() {
+		return type.isType(ModelType.ODE);
+	}
+
+	/**
+	 * Check if this model is a stochastic differential equations model.
+	 *
+	 * @return {@code true} if this is an SDE model
+	 */
+	public boolean isSDE() {
+		return type.isType(ModelType.SDE);
+	}
+
+	/**
+	 * Check if this model is a partial differential equations model.
+	 *
+	 * @return {@code true} if this is a PDE model
+	 */
+	public boolean isPDE() {
+		return type.isType(ModelType.PDE);
+	}
+
+	/**
+	 * Check if this model is an individual based simulation model.
+	 *
+	 * @return {@code true} if this is an IBS model
+	 */
+	public boolean isIBS() {
+		return type.isType(ModelType.IBS);
+	}
+
+	/**
 	 * GWT models run asynchronously and long running tasks require scheduling to
 	 * maintain responsive user interface. In contrast, JRE provides a
 	 * multi-threaded environment, which allows to run multiple threads

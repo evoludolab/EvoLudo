@@ -323,7 +323,7 @@ public class MVDegree extends MVAbstract implements HistoGraphListener {
 		// System.out.println("MVDegree - getData: tag="+tag);
 		if (data.timestamp < 0.0 || (now - data.timestamp > 1e-10 && !isStatic)) {
 			AbstractGeometry geometry;
-			if (engine.getModel().getType().isIBS())
+			if (engine.getModel().isIBS())
 				geometry = module.getIBSPopulation().getInteractionGeometry();
 			else
 				geometry = module.getGeometry();

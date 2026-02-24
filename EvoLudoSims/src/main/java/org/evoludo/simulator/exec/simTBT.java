@@ -115,7 +115,7 @@ public class simTBT extends TBT implements ChangeListener {
 
 	@Override
 	public void run() {
-		if (!model.getType().isIBS()) {
+		if (model == null || !model.isIBS()) {
 			System.err.printf("ERROR: IBS model expected!");
 			return;
 		}
