@@ -752,8 +752,6 @@ public abstract class Model implements CLOProvider {
 	 * @return the list of markers
 	 */
 	public List<double[]> getMarkers() {
-		if (markers == null)
-			return null;
 		return markers.getMarkers();
 	}
 

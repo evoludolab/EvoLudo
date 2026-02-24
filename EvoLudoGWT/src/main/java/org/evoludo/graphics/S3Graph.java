@@ -95,7 +95,8 @@ import com.google.gwt.user.client.ui.Widget;
  * last stored sample the last sample is replaced and the initial-state
  * (start point) tracking is updated accordingly.</li>
  * <li>Buffer sampling uses normalized state-space distance and local curvature;
- * samples failing both criteria are not stored unless {@code force} is true.</li>
+ * samples failing both criteria are not stored unless {@code force} is
+ * true.</li>
  * <li>Coordinate conversions for mouse/touch interactions map screen
  * coordinates to scaled simplex coordinates in [0,1] (see
  * {@link #scaledX(double)} / {@link #scaledY(double)}). A hit test
@@ -264,11 +265,10 @@ public class S3Graph extends AbstractGraph<double[]> implements Zooming, Shiftin
 	 * @evoludo.impl
 	 *               <ul>
 	 *               <li>The data array is cloned and the time prepended before
-	 *               adding
-	 *               it to the buffer.
+	 *               adding it to the buffer.
 	 *               <li>In order to conserve memory the data is added only if the
-	 *               display-agnostic throttling heuristic accepts the sample, unless
-	 *               {@code force == true}.
+	 *               display-agnostic throttling heuristic accepts the sample,
+	 *               unless {@code force == true}.
 	 *               </ul>
 	 * 
 	 * @param t     the time of the data
@@ -427,8 +427,6 @@ public class S3Graph extends AbstractGraph<double[]> implements Zooming, Shiftin
 	 * @param h graph height
 	 */
 	private void drawCustomMarkers(double w, double h) {
-		if (markers == null)
-			return;
 		Point2D currPt = new Point2D();
 		int n = 0;
 		int nMarkers = markers.size();

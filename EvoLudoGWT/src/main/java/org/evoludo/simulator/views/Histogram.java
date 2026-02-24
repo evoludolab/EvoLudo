@@ -929,11 +929,9 @@ public class Histogram extends AbstractView<HistoGraph> {
 			int nTraits = module.getNTraits();
 			Color[] colors = module.getTraitColors();
 			List<double[]> markers = model.getMarkers();
-			if (markers != null) {
-				for (double[] mark : markers)
-					graph.addMarker(mark[idx + 1], ColorMapCSS.Color2Css(colors[idx]), null,
-							mark[0] > 0.0 ? style.dashedLine : style.dottedLine);
-			}
+			for (double[] mark : markers)
+				graph.addMarker(mark[idx + 1], ColorMapCSS.Color2Css(colors[idx]), null,
+						mark[0] > 0.0 ? style.dashedLine : style.dottedLine);
 			if (newPop || data == null || data.length != nTraits || data[0].length != histogramBins)
 				data = new double[nTraits][histogramBins];
 			graph.setData(data);
