@@ -455,7 +455,7 @@ public class Mutualism extends Discrete implements Payoffs,
 	 * Command line option to set the payoffs for the host species (when interacting
 	 * with the mutualist species).
 	 */
-	public final CLOption cloPayHost = new CLOption("payhost", "0,1.65;0,1", CLOCategory.Module,
+	public final CLOption cloPayHost = new CLOption("payhost", "1,0;1.65,0", CLOCategory.Module,
 			"--payhost <a,b;c,d>       payoff matrix for host species", new CLODelegate() {
 
 				/**
@@ -484,7 +484,7 @@ public class Mutualism extends Discrete implements Payoffs,
 	 * Command line option to set the payoffs for the mutualist species (when
 	 * interacting with the host species).
 	 */
-	public final CLOption cloPayMutualist = new CLOption("paymutualist", "0,1.65;0,1", CLOCategory.Module,
+	public final CLOption cloPayMutualist = new CLOption("paymutualist", "1,0;1.65,0", CLOCategory.Module,
 			"--paymutualist <a,b;c,d>  payoff matrix for mutualist species", new CLODelegate() {
 
 				/**
