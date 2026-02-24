@@ -516,7 +516,7 @@ public abstract class Module<T extends Module<T>>
 			if (newModel.isEmpty()) {
 				type = defaulttype;
 				if (!helpRequested)
-					logger.warning("model key missing - use default type " + type.getKey() + ".");
+					warnModel("model key missing " + newModel, type);
 				break;
 			}
 			type = ModelType.parse(newModel);
@@ -524,30 +524,43 @@ public abstract class Module<T extends Module<T>>
 				Model activeModel = engine.getModel();
 				if (activeModel != null) {
 					type = activeModel.getType();
-					if (!helpRequested)
+					if (!helpRequested && logger.isLoggable(Level.WARNING))
 						logger.warning(
 								"invalid model type " + newModel + " - keep current type " + type.getKey() + ".");
 				} else {
 					type = defaulttype;
 					if (!helpRequested)
-						logger.warning("invalid model type " + newModel + " - use default type " + type.getKey() + ".");
+						warnModel("invalid model type " + newModel, type);
 				}
 			}
 			break;
 		}
 		if (type == null) {
 			type = defaulttype;
-			if (keys.size() > 1 && !defaulttype.getKey().equals(cloModel.getDefault()) && !helpRequested)
-				logger.warning("model type unspecified - use default type " + type.getKey() + ".");
+			if (!helpRequested)
+				warnModel("model type unspecified", type);
 		}
 		// NOTE: currently models cannot be mix'n'matched between species
 		engine.loadModel(type);
 		if (engine.getModel() == null) {
-			if (!helpRequested)
-				logger.severe("model type '" + type.getKey() + "' not supported!");
+			if (!helpRequested && logger.isLoggable(Level.SEVERE))
+				logger.severe("model type " + (type == null ? "" : "'" + type.getKey() + "' not supported!"));
 			return helpCLO;
 		}
 		return cloarray;
+	}
+
+	/**
+	 * Helper method to warn about model type.
+	 * 
+	 * @param prefix the prefix of the warning
+	 * @param type   the model type
+	 * @return the message
+	 */
+	private void warnModel(String prefix, ModelType type) {
+		if (logger.isLoggable(Level.WARNING))
+			logger.warning(
+					prefix + " - " + (type == null ? "no default type." : "use default type " + type.getKey() + "."));
 	}
 
 	/**

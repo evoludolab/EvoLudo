@@ -49,6 +49,7 @@ import org.evoludo.util.RingBuffer;
  * <p>
  * Content is shifted/zoomed, while the frame and axis decorations remain fixed.
  */
+@SuppressWarnings("java:S110") // more than 5 parental classes acceptable
 public class PopGraph1D extends PopGraph2D {
 
 	/**

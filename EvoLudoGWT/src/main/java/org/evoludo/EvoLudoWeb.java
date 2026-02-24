@@ -1374,7 +1374,8 @@ public class EvoLudoWeb extends Composite
 		// open standalone lab (ePubs only)
 		RootPanel root = RootPanel.get(elementID);
 		if (root == null) {
-			logger.severe("Failed to open standalone lab (element '" + elementID + "' not found in DOM).");
+			if (logger.isLoggable(Level.SEVERE))
+				logger.severe("Failed to open standalone lab (element '" + elementID + "' not found in DOM).");
 			return;
 		}
 		String href = root.getElement().getAttribute("data-href").trim();

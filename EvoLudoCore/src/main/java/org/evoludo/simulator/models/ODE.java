@@ -718,7 +718,7 @@ public class ODE extends Model implements DModel {
 		if (maxFit - minFit < 1e-8) {
 			// close enough to neutral
 			map = nBins * 0.5;
-			minFit--;
+			minFit -= 1.0;
 		} else
 			map = nBins / (maxFit - minFit);
 		int idx = 0;

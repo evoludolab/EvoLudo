@@ -1623,7 +1623,7 @@ public class Histogram extends AbstractView<HistoGraph> {
 		if (inter == null)
 			return 0;
 		GeometryFeatures interFeatures = inter.getFeatures();
-		GeometryFeatures compFeatures = comp == null ? interFeatures : comp.getFeatures();
+		GeometryFeatures compFeatures = comp.getFeatures();
 		int nBins = maxDegree(interFeatures.maxOut);
 		if (!inter.isUndirected())
 			nBins = Math.max(maxDegree(interFeatures.maxTot) + 1, nBins);
@@ -1726,9 +1726,8 @@ public class Histogram extends AbstractView<HistoGraph> {
 		int selected = Math.min(Math.max(histogramBins, binCounts[0]), binCounts[binCounts.length - 1]);
 		ContextMenu binsMenu = new ContextMenu(menu, "Bins");
 		for (int bins : binCounts) {
-			ContextMenuCheckBoxItem item = new ContextMenuCheckBoxItem(Integer.toString(bins), () -> {
-				applyHistogramBins(bins);
-			});
+			ContextMenuCheckBoxItem item = new ContextMenuCheckBoxItem(Integer.toString(bins),
+					() -> applyHistogramBins(bins));
 			item.setChecked(bins == selected);
 			binsMenu.add(item);
 		}

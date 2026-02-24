@@ -32,6 +32,7 @@ package org.evoludo.simulator.models;
 
 import java.util.Arrays;
 import java.util.List;
+import java.util.logging.Level;
 
 import org.evoludo.math.ArrayMath;
 import org.evoludo.math.Combinatorics;
@@ -1741,9 +1742,11 @@ public class IBSDPopulation extends IBSPopulation<Discrete, IBSDPopulation> {
 				if (compRates[n] > 0.0 && pop.getPopulationSize() > 0)
 					return false;
 			}
-			String name = module.getName();
-			logger.warning(
-					"Population" + (name != null ? " of " + name : "") + " explodes (no death, no competition).");
+			if (logger.isLoggable(Level.WARNING)) {
+				String name = module.getName();
+				logger.warning(
+						"Population" + (name != null ? " of " + name : "") + " explodes (no death, no competition).");
+			}
 			return true;
 		}
 		return false;
@@ -1805,7 +1808,7 @@ public class IBSDPopulation extends IBSPopulation<Discrete, IBSDPopulation> {
 		double min = minScore;
 		if (isNeutral) {
 			map = nBins * 0.5;
-			min--;
+			min -= 1.0;
 		} else
 			map = nBins / (maxScore - min);
 		int idx = 0;

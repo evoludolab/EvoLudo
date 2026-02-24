@@ -31,6 +31,7 @@
 package org.evoludo.simulator.modules;
 
 import java.util.List;
+import java.util.logging.Level;
 
 import org.evoludo.math.ArrayMath;
 import org.evoludo.math.RNGDistribution;
@@ -558,9 +559,10 @@ public abstract class Mutation {
 									mut.range = CLOParser.parseDouble(args[2]);
 									if (mut.range <= 0.0) {
 										mut.type = Type.NONE;
-										module.logger.warning((species.size() > 1 ? mod.getName() + ": " : "") + //
-												"mutation range '" + args[2] + "' invalid - using '"
-												+ mut.type + "'");
+										if (module.logger.isLoggable(Level.WARNING))
+											module.logger.warning((species.size() > 1 ? mod.getName() + ": " : "") + //
+													"mutation range '" + args[2] + "' invalid - using '"
+													+ mut.type + "'");
 										success = false;
 										continue;
 									}
@@ -568,18 +570,20 @@ public abstract class Mutation {
 								case 2:
 									Type mutt = (Type) clo.match(args[1]);
 									if (mutt == null) {
-										module.logger.warning((species.size() > 1 ? mod.getName() + ": " : "") + //
-												"mutation type '" + args[1] + "' not recognized - using '"
-												+ mut.type + "'");
+										if (module.logger.isLoggable(Level.WARNING))
+											module.logger.warning((species.size() > 1 ? mod.getName() + ": " : "") + //
+													"mutation type '" + args[1] + "' not recognized - using '"
+													+ mut.type + "'");
 										success = false;
 										continue;
 									}
 									if ((mutt == Type.RANGE || mutt == Type.GAUSSIAN) && mut.range <= 0.0) {
 										// no valid range specified, default to entire trait interval
 										mut.type = Type.UNIFORM;
-										module.logger.warning((species.size() > 1 ? mod.getName() + ": " : "") + //
-												"no valid range found - using '"
-												+ mut.type + "'");
+										if (module.logger.isLoggable(Level.WARNING))
+											module.logger.warning((species.size() > 1 ? mod.getName() + ": " : "") + //
+													"no valid range found - using '"
+													+ mut.type + "'");
 										success = false;
 										continue;
 									}

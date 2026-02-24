@@ -78,7 +78,7 @@ public class CompleteGeometry extends AbstractGeometry {
 		isRewired = false;
 		isUndirected = true;
 		isRegular = true;
-		connectivity = size - 1;
+		connectivity = size - 1.0;
 		initHierarchicalComplete(this, size, size, 0, false);
 		isValid = true;
 	}
@@ -93,6 +93,8 @@ public class CompleteGeometry extends AbstractGeometry {
 	 * @param startIndex    index offset of the deme in the host geometry
 	 * @param fixedBoundary ignored for complete demes
 	 */
+	@SuppressWarnings("java:S1172") // popSize and fixedBoundary unused but kept for Hierarchical
+									// functional-interface signature
 	public static void initHierarchicalComplete(AbstractGeometry geometry, int popSize, int demeSize, int startIndex,
 			boolean fixedBoundary) {
 		int nIndiv = Math.max(0, demeSize);

@@ -436,6 +436,7 @@ public class ATBT extends TBT implements HasS3, HasPhase2D {
 		 * Create the 2D projection helper using the surrounding module settings.
 		 */
 		public ATBTMap() {
+			// Intentionally empty: no additional initialization needed.
 		}
 
 		@Override

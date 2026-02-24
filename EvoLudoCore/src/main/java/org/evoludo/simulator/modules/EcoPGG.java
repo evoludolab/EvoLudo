@@ -359,6 +359,7 @@ public class EcoPGG extends Discrete implements Payoffs,
 		 * Create the 2D projection helper using the surrounding module settings.
 		 */
 		public EcoPGGMap() {
+			// Intentionally empty: no additional initialization needed.
 		}
 
 		@Override

@@ -4535,7 +4535,7 @@ public abstract class IBSPopulation<M extends Module<?>, P extends IBSPopulation
 		double map;
 		if (isNeutral) {
 			map = nBins * 0.5;
-			min--;
+			min -= 1.0;
 		} else
 			map = nBins / (maxScore - minScore);
 
