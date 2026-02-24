@@ -178,129 +178,43 @@ public class SquareGeometry extends AbstractLattice {
 			}
 		}
 		if (fixedBoundary) {
-			adjustBoundaries(geometry, range, side, fullside, offset, interspecies);
+			// all boundary nodes
+			for (int i = 0; i < side; i++) {
+				adjustBoundaryAt(geometry, range, side, fullside, offset, 0, i);
+				adjustBoundaryAt(geometry, range, side, fullside, offset, side - 1, i);
+				adjustBoundaryAt(geometry, range, side, fullside, offset, i, 0);
+				adjustBoundaryAt(geometry, range, side, fullside, offset, i, side - 1);
+			}
 			geometry.isRegular = false;
 		}
 	}
 
 	/**
-	 * Adjust arbitrary-range neighbourhoods along fixed boundaries.
+	 * Remove wrapped links for a boundary node so only fixed-boundary neighbours
+	 * remain.
 	 *
-	 * @param geometry     geometry receiving the links
-	 * @param range        interaction range
-	 * @param side         side length of the (sub) lattice
-	 * @param fullside     global side length
-	 * @param offset       index offset into the population
-	 * @param interspecies {@code true} if self-links are required
+	 * @param geometry geometry receiving the links
+	 * @param range    interaction range
+	 * @param side     side length of the (sub) lattice
+	 * @param fullside global side length
+	 * @param offset   index offset into the population
+	 * @param row      boundary row
+	 * @param col      boundary column
 	 */
-	private static void adjustBoundaries(AbstractGeometry geometry, int range, int side, int fullside, int offset,
-			boolean interspecies) {
-		int aPlayer;
-		int bPlayer;
-		// top left
-		aPlayer = offset;
-		geometry.clearLinksFrom(aPlayer);
-		for (int u = 0; u <= range; u++) {
-			int r = aPlayer + u * fullside;
-			for (int v = 0; v <= range; v++) {
-				bPlayer = r + v;
-				if (aPlayer == bPlayer && !interspecies)
+	private static void adjustBoundaryAt(AbstractGeometry geometry, int range, int side, int fullside,
+			int offset, int row, int col) {
+		int aPlayer = offset + row * fullside + col;
+		for (int u = row - range; u <= row + range; u++) {
+			boolean rowWrapped = (u < 0 || u >= side);
+			int wrappedRow = (u + side) % side;
+			int r = offset + wrappedRow * fullside;
+			for (int v = col - range; v <= col + range; v++) {
+				boolean colWrapped = (v < 0 || v >= side);
+				if (!rowWrapped && !colWrapped)
 					continue;
-				geometry.addLinkAt(aPlayer, bPlayer);
-			}
-		}
-		// top right
-		aPlayer = offset + side - 1;
-		geometry.clearLinksFrom(aPlayer);
-		for (int u = 0; u <= range; u++) {
-			int r = aPlayer + u * fullside;
-			for (int v = -range; v <= 0; v++) {
-				bPlayer = r + v;
-				if (aPlayer == bPlayer && !interspecies)
-					continue;
-				geometry.addLinkAt(aPlayer, bPlayer);
-			}
-		}
-		// bottom left
-		aPlayer = offset + (side - 1) * fullside;
-		geometry.clearLinksFrom(aPlayer);
-		for (int u = -range; u <= 0; u++) {
-			int r = aPlayer + u * fullside;
-			for (int v = 0; v <= range; v++) {
-				bPlayer = r + v;
-				if (aPlayer == bPlayer && !interspecies)
-					continue;
-				geometry.addLinkAt(aPlayer, bPlayer);
-			}
-		}
-		// bottom right
-		aPlayer = offset + (side - 1) * (fullside + 1);
-		geometry.clearLinksFrom(aPlayer);
-		for (int u = -range; u <= 0; u++) {
-			int r = aPlayer + u * fullside;
-			for (int v = -range; v <= 0; v++) {
-				bPlayer = r + v;
-				if (aPlayer == bPlayer && !interspecies)
-					continue;
-				geometry.addLinkAt(aPlayer, bPlayer);
-			}
-		}
-		for (int i = 1; i < side - 1; i++) {
-			// top edge
-			int row = 0;
-			int col = i;
-			aPlayer = offset + row * fullside + col;
-			geometry.clearLinksFrom(aPlayer);
-			for (int u = row; u <= row + range; u++) {
-				int r = offset + u * fullside;
-				for (int v = col - range; v <= col + range; v++) {
-					bPlayer = r + (v + side) % side;
-					if (aPlayer == bPlayer && !interspecies)
-						continue;
-					geometry.addLinkAt(aPlayer, bPlayer);
-				}
-			}
-			// bottom edge
-			row = side - 1;
-			col = i;
-			aPlayer = offset + row * fullside + col;
-			geometry.clearLinksFrom(aPlayer);
-			for (int u = row - range; u <= row; u++) {
-				int r = offset + u * fullside;
-				for (int v = col - range; v <= col + range; v++) {
-					bPlayer = r + (v + side) % side;
-					if (aPlayer == bPlayer && !interspecies)
-						continue;
-					geometry.addLinkAt(aPlayer, bPlayer);
-				}
-			}
-			// left edge
-			row = i;
-			col = 0;
-			aPlayer = offset + row * fullside + col;
-			geometry.clearLinksFrom(aPlayer);
-			for (int u = row - range; u <= row + range; u++) {
-				int r = offset + ((u + side) % side) * fullside;
-				for (int v = col; v <= col + range; v++) {
-					bPlayer = r + v;
-					if (aPlayer == bPlayer && !interspecies)
-						continue;
-					geometry.addLinkAt(aPlayer, bPlayer);
-				}
-			}
-			// right edge
-			row = i;
-			col = side - 1;
-			aPlayer = offset + row * fullside + col;
-			geometry.clearLinksFrom(aPlayer);
-			for (int u = row - range; u <= row + range; u++) {
-				int r = offset + ((u + side) % side) * fullside;
-				for (int v = col - range; v <= col; v++) {
-					bPlayer = r + v;
-					if (aPlayer == bPlayer && !interspecies)
-						continue;
-					geometry.addLinkAt(aPlayer, bPlayer);
-				}
+				int wrappedCol = (v + side) % side;
+				int bPlayer = r + wrappedCol;
+				geometry.removeLinkAt(aPlayer, bPlayer);
 			}
 		}
 	}
