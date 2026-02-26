@@ -33,6 +33,7 @@ package org.evoludo.simulator.exec;
 import java.io.PrintStream;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Dictionary;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -248,7 +249,7 @@ public class simEMoran extends EcoMoran implements ChangeListener {
 		prevsample = generation;
 
 		String scores = engine.getModule().getIBSPopulation().getScores(2);
-		List<String> values = Arrays.stream(scores.split(","))
+		List<String> scoreValues = Arrays.stream(scores.split(","))
 				.map(String::trim)
 				.collect(Collectors.toList());
 		int[][] outNodes = engine.getModule().getGeometry().out;
@@ -256,13 +257,33 @@ public class simEMoran extends EcoMoran implements ChangeListener {
 		double nav = 0.0;
 		double naa = 0.0;
 		double na = 0.0;
-		double[] nvaDistArr = new double[outNodes[0].length + 1];
-		double[] navDistArr = new double[outNodes[0].length + 1];
-		double[] adjToAA = new double[outNodes[0].length * 2 - 1];
-		double[] vvAdjToAV = new double[outNodes[0].length];
-		double[] vvAdjToVV = new double[outNodes[0].length];
-		double[] numNStepsAway = new double[Math.min(50, values.size()) + 1];
-		double[] totalNStepsAway = new double[Math.min(50, values.size()) + 1];
+		int maxOutDegree = 0;
+		for (int[] out : outNodes) {
+			if (out.length > maxOutDegree) {
+				maxOutDegree = out.length;
+			}
+		}
+		double[] nvaDistArr = new double[maxOutDegree + 1];
+		double[] navDistArr = new double[maxOutDegree + 1];
+		double[] adjToAA = new double[maxOutDegree * 2 - 1];
+		double[] vvAdjToAV = new double[maxOutDegree + 1];
+		double[] vvAdjToVV = new double[maxOutDegree + 1];
+		double[] numNStepsAway = new double[Math.min(50, scoreValues.size()) + 1];
+		double[] totalNStepsAway = new double[Math.min(50, scoreValues.size()) + 1];
+		Dictionary<String, String> score_to_type = new java.util.Hashtable<>();
+		score_to_type.put(this.cloFitness.getArg().split(",")[0], "1");
+		score_to_type.put("0", "0");
+
+		List<String> values = new ArrayList<>();
+		for (String scoreValue : scoreValues) {
+			String mapped = score_to_type.get(scoreValue);
+			if (mapped == null) {
+				// fallback: unknown score values map to "0" (non-success)
+				mapped = "0";
+			}
+			values.add(mapped);
+		}
+
 		for (int n = 0; n < values.size(); n++) {
 			String node = values.get(n);
 
