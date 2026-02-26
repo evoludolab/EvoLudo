@@ -2070,6 +2070,9 @@ public class IBSDPopulation extends IBSPopulation<Discrete, IBSDPopulation> {
 	 * @param monoFreq the frequency of the monomorphic trait
 	 */
 	public void initMono(int monoType, double monoFreq) {
+		if (monoFreq <= 0.0) {
+			monoFreq = 1.0;
+		}
 		monoType = monoType % nTraits;
 		Arrays.fill(traitsCount, 0);
 		if (monoFreq > 1.0 - 1e-8) {
