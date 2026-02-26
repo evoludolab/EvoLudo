@@ -1,7 +1,7 @@
 //
 // EvoLudo Project
 //
-// Copyright 2010-2025 Christoph Hauert
+// Copyright 2010-2026 Christoph Hauert
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -180,7 +180,7 @@ public class PlayerUpdate {
 			case IMITATE_BETTER: // imitation update (better traits only)
 				str += " " + Formatter.formatSci(noise, 6);
 				// XXX add errors to PROPORTIONAL as well as DE models?
-				if (module.model.getType().isIBS())
+				if (module.getModelType().isIBS())
 					str += "," + Formatter.formatSci(error, 6);
 				break;
 			default:

@@ -1,7 +1,7 @@
 //
 // EvoLudo Project
 //
-// Copyright 2010-2025 Christoph Hauert
+// Copyright 2010-2026 Christoph Hauert
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -34,9 +34,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
-import java.util.List;
-
-import org.evoludo.simulator.models.ModelType;
 
 /**
  * Command line option and argument.
@@ -519,16 +516,17 @@ public class CLOption implements Comparable<CLOption> {
 	 * @return {@code true} if parsing succeeds
 	 */
 	private boolean parse(boolean isOptional) {
+		boolean isSet = isSet();
 		try {
 			if (isOptional)
-				return delegate.parse(getArg(), isSet());
-			if (delegate.parse(getArg()))
+				return delegate.parse(getArg(), isSet);
+			if (isSet && delegate.parse(getArg()))
 				return true;
-			return delegate.parse(getDefault());
+			return !isSet && delegate.parse(getDefault());
 		} catch (Exception e) {
 			try {
 				if (isOptional)
-					return delegate.parse(getDefault(), isSet());
+					return delegate.parse(getDefault(), isSet);
 				return delegate.parse(getDefault());
 			} catch (Exception ex) {
 				return false;
@@ -963,7 +961,10 @@ public class CLOption implements Comparable<CLOption> {
 	private String buildArgKeys() {
 		// for multi-species modules, remember previous key
 		Key prev = null;
-		String[] args = getArg().split(CLOParser.SPECIES_DELIMITER);
+		String arg = getArg();
+		if (arg == null || arg.isEmpty())
+			return "INVALID";
+		String[] args = arg.split(CLOParser.SPECIES_DELIMITER);
 		StringBuilder sb = new StringBuilder();
 		for (int n = 0; n < args.length; n++) {
 			String[] argsn = args[n].split("\\s+|=|,");

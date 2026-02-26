@@ -1,7 +1,7 @@
 //
 // EvoLudo Project
 //
-// Copyright 2010-2025 Christoph Hauert
+// Copyright 2010-2026 Christoph Hauert
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -67,15 +67,42 @@ public abstract class AbstractGeometry {
 	 * @return the instantiated geometry (arguments not yet parsed)
 	 */
 	public static AbstractGeometry create(EvoLudo engine, String cli) {
+		return create(engine, cli, null);
+	}
+
+	/**
+	 * Instantiate the requested geometry based on {@code cli} if it differs from
+	 * {@code current}. Returns {@code current} if no new geometry is needed.
+	 *
+	 * @param engine  the EvoLudo engine providing module/CLI metadata
+	 * @param cli     the command line style geometry descriptor
+	 * @param current the existing geometry to compare against (optional)
+	 * @return the instantiated geometry (arguments not yet parsed), or
+	 *         {@code current}
+	 */
+	public static AbstractGeometry create(EvoLudo engine, String cli, AbstractGeometry current) {
 		if (engine == null)
 			throw new IllegalArgumentException("engine must not be null");
-		if (cli == null || cli.isEmpty())
+		if (cli == null)
 			throw new IllegalArgumentException("geometry specification must not be empty");
+		String normalized = cli.trim();
+		if (normalized.isEmpty())
+			throw new IllegalArgumentException("geometry specification must not be empty");
+		if (current != null) {
+			String currentCLI = current.cli;
+			if (currentCLI == null) {
+				String currentSpecs = current.getSpecs();
+				currentCLI = current.getType().getKey() + (currentSpecs == null ? "" : currentSpecs);
+			}
+			if (normalized.equals(currentCLI))
+				return current;
+		}
 		CLOption clo = engine.getModule().cloGeometry;
-		GeometryType type = (GeometryType) clo.match(cli);
+		GeometryType type = (GeometryType) clo.match(normalized);
 		AbstractGeometry geometry = AbstractGeometry.create(engine, type);
-		String spec = cli.substring(Math.min(type.key.length(), cli.length()));
+		String spec = normalized.substring(Math.min(type.key.length(), normalized.length()));
 		geometry.specs = spec;
+		geometry.cli = normalized;
 		return geometry;
 	}
 
@@ -168,6 +195,7 @@ public abstract class AbstractGeometry {
 			throw new IllegalStateException(
 					"Cannot derive competition geometry when isSingle == false.");
 		AbstractGeometry competition = clone();
+		competition.markDerivedFrom(this);
 		// remove competition with self
 		if (!competition.isType(GeometryType.WELLMIXED))
 			for (int n = 0; n < size; n++)
@@ -207,6 +235,11 @@ public abstract class AbstractGeometry {
 	String specs;
 
 	/**
+	 * Optional trimmed CLI string used to create this geometry.
+	 */
+	String cli;
+
+	/**
 	 * Optional descriptive name.
 	 */
 	String name;
@@ -215,6 +248,22 @@ public abstract class AbstractGeometry {
 	 * Current geometry type handled by this instance.
 	 */
 	GeometryType type = GeometryType.WELLMIXED;
+
+	/**
+	 * Unique identifier for this geometry instance.
+	 */
+	private static int nextGeometryId = 1;
+
+	/**
+	 * Identifier for this geometry instance.
+	 */
+	final int geometryId;
+
+	/**
+	 * Identifier of the geometry this one was derived from, or {@code -1} if this
+	 * geometry was not derived.
+	 */
+	int derivedId = -1;
 
 	/**
 	 * The number of nodes in the graph.
@@ -304,6 +353,7 @@ public abstract class AbstractGeometry {
 		this.engine = engine;
 		this.logger = engine.getLogger();
 		this.isInterspecies = engine.getModule().getNSpecies() > 1;
+		this.geometryId = nextGeometryId++;
 	}
 
 	/**
@@ -338,6 +388,25 @@ public abstract class AbstractGeometry {
 		if (name == null || name.isEmpty())
 			return "Structure";
 		return name;
+	}
+
+	/**
+	 * Mark this geometry as derived from {@code source}.
+	 *
+	 * @param source the geometry this one was derived from
+	 */
+	public void markDerivedFrom(AbstractGeometry source) {
+		derivedId = source == null ? -1 : source.geometryId;
+	}
+
+	/**
+	 * Check whether this geometry was derived from {@code source}.
+	 *
+	 * @param source the source geometry to compare against
+	 * @return {@code true} if this geometry was derived from {@code source}
+	 */
+	public boolean isDerivedFrom(AbstractGeometry source) {
+		return source != null && derivedId == source.geometryId;
 	}
 
 	/**
@@ -450,6 +519,15 @@ public abstract class AbstractGeometry {
 	 */
 	public String getSpecs() {
 		return specs;
+	}
+
+	/**
+	 * Get the trimmed CLI string that created this geometry (if available).
+	 *
+	 * @return the original CLI specification string, or {@code null}
+	 */
+	public String getCLI() {
+		return cli;
 	}
 
 	/**
@@ -1448,11 +1526,11 @@ public abstract class AbstractGeometry {
 				for (int n = j + 1; n < k; n++)
 					if (links[i][n] == idx) {
 						ok = false;
-						logger.fine("Node " + i + " has double " + type + "-connection with node " + idx);
+						logNodeIssue(i, "has double " + type + "-connection with node " + idx);
 					}
 			}
 		}
-		logger.fine("Multiple " + type + "-connections check: " + (ok ? "success!" : "failed!"));
+		logCheckResult("Multiple " + type + "-connections check:", ok);
 		return ok;
 	}
 
@@ -1473,7 +1551,7 @@ public abstract class AbstractGeometry {
 				ok &= hasNeigh(i, outi[j], in[outi[j]], kin[outi[j]], "out");
 			}
 		}
-		logger.fine("Consistency of in-, out-connections check: " + (ok ? "success!" : "failed!"));
+		logCheckResult("Consistency of in-, out-connections check:", ok);
 		return ok;
 	}
 
@@ -1493,7 +1571,7 @@ public abstract class AbstractGeometry {
 			for (int j = 0; j < nout; j++) {
 				if (outi[j] == i) {
 					ok = false;
-					logger.fine("Node " + i + " has loop in 'out'-connections");
+					logNodeIssue(i, "has loop in 'out'-connections");
 				}
 			}
 			int[] ini = in[i];
@@ -1501,11 +1579,11 @@ public abstract class AbstractGeometry {
 			for (int j = 0; j < nin; j++) {
 				if (ini[j] == i) {
 					ok = false;
-					logger.fine("Node " + i + " has loop in 'in'-connections");
+					logNodeIssue(i, "has loop in 'in'-connections");
 				}
 			}
 		}
-		logger.fine("Self-connections check: " + (ok ? "success!" : "failed!"));
+		logCheckResult("Self-connections check:", ok);
 		return ok;
 	}
 
@@ -1523,14 +1601,14 @@ public abstract class AbstractGeometry {
 		for (int i = 0; i < size; i++) {
 			if (kout[i] != nout) {
 				ok = false;
-				logger.fine("Node " + i + " has wrong 'out'-link count - " + kout[i] + " instead of " + nout);
+				logNodeIssue(i, "has wrong 'out'-link count - " + kout[i] + " instead of " + nout);
 			}
 			if (kin[i] != nin) {
 				ok = false;
-				logger.fine("Node " + i + " has wrong 'in'-link count - " + kin[i] + " instead of " + nin);
+				logNodeIssue(i, "has wrong 'in'-link count - " + kin[i] + " instead of " + nin);
 			}
 		}
-		logger.fine("Regularity check: " + (ok ? "success!" : "failed!"));
+		logCheckResult("Regularity check:", ok);
 		return ok;
 	}
 
@@ -1555,8 +1633,28 @@ public abstract class AbstractGeometry {
 			for (int j = 0; j < nina; j++)
 				ok &= hasNeigh(i, ina[j], in[ina[j]], kin[ina[j]], "in");
 		}
-		logger.fine("Undirected structure check: " + (ok ? "success!" : "failed!"));
+		logCheckResult("Undirected structure check:", ok);
 		return ok;
+	}
+
+	/**
+	 * Log a standardized pass/fail outcome for consistency checks.
+	 *
+	 * @param label message prefix describing the check
+	 * @param ok    {@code true} if the check passed
+	 */
+	private void logCheckResult(String label, boolean ok) {
+		logger.fine(label + (ok ? " pass" : " failed!"));
+	}
+
+	/**
+	 * Log a standardized node-centric message for consistency checks.
+	 *
+	 * @param node    node identifier referenced in the message
+	 * @param message message suffix describing the issue
+	 */
+	private void logNodeIssue(int node, String message) {
+		logger.fine("Node " + node + " " + message);
 	}
 
 	/**
@@ -1574,7 +1672,7 @@ public abstract class AbstractGeometry {
 		for (int k = 0; k < nNeigh; k++)
 			if (neighs[k] == src)
 				return true;
-		logger.fine("Node " + src + " has '" + dir + "'-link to node " + target + ", but not vice versa");
+		logNodeIssue(src, "has '" + dir + "'-link to node " + target + ", but not vice versa");
 		return false;
 	}
 
@@ -1597,6 +1695,7 @@ public abstract class AbstractGeometry {
 	public AbstractGeometry clone() {
 		AbstractGeometry clone = AbstractGeometry.create(engine, type);
 		clone.specs = specs;
+		clone.cli = cli;
 		clone.name = name;
 		if (kin != null)
 			clone.kin = Arrays.copyOf(kin, kin.length);
@@ -1624,6 +1723,7 @@ public abstract class AbstractGeometry {
 		clone.isSingle = isSingle;
 		clone.isRegular = isRegular;
 		clone.isValid = isValid;
+		clone.derivedId = derivedId;
 		return clone;
 	}
 

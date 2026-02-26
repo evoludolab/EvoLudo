@@ -1,7 +1,7 @@
 //
 // EvoLudo Project
 //
-// Copyright 2010-2025 Christoph Hauert
+// Copyright 2010-2026 Christoph Hauert
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -135,6 +135,8 @@ public class ContextMenuItem extends Label
 	protected void onLoad() {
 		super.onLoad();
 		setStyleName("gwt-ContextMenuItem");
+		if (!isEnabled)
+			setStyleDependentName("disabled", true);
 		clickHandler = addClickHandler(this);
 		contextMenuHandler = addDomHandler(this, ContextMenuEvent.getType());
 		if (hasSubmenu()) {

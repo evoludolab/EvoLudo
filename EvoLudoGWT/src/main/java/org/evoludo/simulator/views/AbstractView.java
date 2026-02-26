@@ -1,7 +1,7 @@
 //
 // EvoLudo Project
 //
-// Copyright 2010-2025 Christoph Hauert
+// Copyright 2010-2026 Christoph Hauert
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -50,6 +50,7 @@ import org.evoludo.simulator.models.Data;
 import org.evoludo.simulator.models.LifecycleListener;
 import org.evoludo.simulator.models.Mode;
 import org.evoludo.simulator.models.Model;
+import org.evoludo.simulator.models.ModelType;
 import org.evoludo.simulator.models.RunListener;
 import org.evoludo.simulator.models.SampleListener;
 import org.evoludo.ui.ContextMenu;
@@ -94,6 +95,16 @@ public abstract class AbstractView<G extends AbstractGraph<?>> extends Composite
 	Model model;
 
 	/**
+	 * Gets the type of the current model or {@link ModelType#NONE} if no model
+	 * is loaded.
+	 *
+	 * @return the model type or {@link ModelType#NONE}
+	 */
+	protected ModelType getModelType() {
+		return engine.getModule().getModelType();
+	}
+
+	/**
 	 * The type of data shown in this graph.
 	 */
 	Data type;
@@ -136,7 +147,12 @@ public abstract class AbstractView<G extends AbstractGraph<?>> extends Composite
 	/**
 	 * Time of last GUI update
 	 */
-	double updatetime = -1.0;
+	double updatetimeView;
+
+	/**
+	 * Time of last status update.
+	 */
+	double updatetimeStatus;
 
 	/**
 	 * The GWT widget that contains the graphical representations of the data.
@@ -402,8 +418,7 @@ public abstract class AbstractView<G extends AbstractGraph<?>> extends Composite
 
 	@Override
 	public void moduleRestored() {
-		timestamp = -Double.MAX_VALUE;
-		updatetime = -1.0;
+		resetTimestamps();
 		for (G graph : graphs)
 			graph.reset();
 	}
@@ -415,14 +430,13 @@ public abstract class AbstractView<G extends AbstractGraph<?>> extends Composite
 	}
 
 	/**
-	 * Called when a module has been reset. All graphs are reset and updated if
-	 * needed, unless {@code hard} is {@code true}.
+	 * Called when a module has been reset. All graphs of the view are reset and
+	 * updated if needed, unless {@code hard} is {@code false}.
 	 * 
 	 * @param hard the flag to indicate whether to do a hard reset
 	 */
 	public void reset(boolean hard) {
-		timestamp = -Double.MAX_VALUE;
-		updatetime = -1.0;
+		resetTimestamps();
 		if (allocateGraphs()) {
 			int with = getOffsetWidth();
 			int height = getOffsetHeight();
@@ -433,8 +447,16 @@ public abstract class AbstractView<G extends AbstractGraph<?>> extends Composite
 
 	@Override
 	public void modelDidInit() {
+		resetTimestamps();
+	}
+
+	/**
+	 * Reset the timestamps used for throttling view and status updates.
+	 */
+	private void resetTimestamps() {
 		timestamp = -Double.MAX_VALUE;
-		updatetime = -1.0;
+		updatetimeView = -1.0;
+		updatetimeStatus = -1.0;
 	}
 
 	@Override
@@ -448,17 +470,54 @@ public abstract class AbstractView<G extends AbstractGraph<?>> extends Composite
 	 * <code>MIN_MSEC_BETWEEN_UPDATES</code> milliseconds. If update request are
 	 * made more frequently some are request are not honoured and simply dropped.
 	 */
-	protected static final int MIN_MSEC_BETWEEN_UPDATES = 50; // max 20 updates per second
+	protected static final int MIN_MSEC_BETWEEN_UPDATES = 100;
+
+	/**
+	 * Check if enough time has elapsed to perform a view update.
+	 *
+	 * @param force whether to force the update
+	 * @return {@code true} if the update should run
+	 */
+	protected boolean doUpdateView(boolean force) {
+		if (force)
+			return true;
+		double now = Duration.currentTimeMillis();
+		if (now - updatetimeView < MIN_MSEC_BETWEEN_UPDATES)
+			return false;
+		updatetimeView = now;
+		return true;
+	}
+
+	/**
+	 * Check if enough time has elapsed to compute a status update.
+	 *
+	 * @param force whether to force the status update
+	 * @return {@code true} if status should be recomputed
+	 */
+	protected boolean doUpdateStatus(boolean force) {
+		if (force)
+			return true;
+		double now = Duration.currentTimeMillis();
+		if (now - updatetimeStatus < MIN_MSEC_BETWEEN_UPDATES)
+			return false;
+		updatetimeStatus = now;
+		return true;
+	}
 
 	@Override
 	public void modelChanged(PendingAction action) {
-		if (action == PendingAction.NONE) {
-			double now = Duration.currentTimeMillis();
-			boolean update = (now - updatetime > MIN_MSEC_BETWEEN_UPDATES);
-			if (update)
-				updatetime = now;
-			update(update);
-		}
+		if (action != PendingAction.NONE)
+			return;
+		updateData();
+		if (!doUpdateView(false))
+			return;
+		update(false);
+	}
+
+	/**
+	 * Update view-specific data even when GUI rendering is throttled.
+	 */
+	protected void updateData() {
 	}
 
 	/**
@@ -760,7 +819,7 @@ public abstract class AbstractView<G extends AbstractGraph<?>> extends Composite
 		// process exports context menu (suppress in ePub, regardless of whether a
 		// standalone lab or not)
 		if (!NativeJS.isEPub()) {
-			exportSubmenu = new ContextMenu(contextMenu);
+			exportSubmenu = new ContextMenu(contextMenu, "Export");
 			exportSubmenu.add(new ContextMenuItem(ExportType.STATE.toString(), new ExportCommand(ExportType.STATE)));
 			for (ExportType e : exportTypes()) {
 				if (e == ExportType.STATE)
@@ -768,7 +827,7 @@ public abstract class AbstractView<G extends AbstractGraph<?>> extends Composite
 				exportSubmenu.add(new ContextMenuItem(e.toString(), new ExportCommand(e)));
 			}
 			contextMenu.addSeparator();
-			exportSubmenuTrigger = contextMenu.add("Export...", exportSubmenu);
+			exportSubmenuTrigger = contextMenu.add("Export", exportSubmenu);
 			if (restoreMenu == null)
 				restoreMenu = new ContextMenuItem("Restore...", () -> engine.restoreFromFile());
 		}

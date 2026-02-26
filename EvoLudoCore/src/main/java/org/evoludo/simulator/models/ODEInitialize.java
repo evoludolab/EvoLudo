@@ -1,7 +1,7 @@
 //
 // EvoLudo Project
 //
-// Copyright 2010-2025 Christoph Hauert
+// Copyright 2010-2026 Christoph Hauert
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -32,6 +32,7 @@ package org.evoludo.simulator.models;
 
 import java.util.Arrays;
 
+import org.evoludo.math.ArrayMath;
 import org.evoludo.simulator.EvoLudo;
 import org.evoludo.simulator.models.Model.HasDE;
 import org.evoludo.simulator.modules.Module;
@@ -92,6 +93,7 @@ class ODEInitialize {
 		String[] inittypes = arg.split(CLOParser.SPECIES_DELIMITER);
 		int idx = 0;
 		int start = 0;
+		boolean success = true;
 		for (Module<?> pop : ode.species) {
 			String inittype = inittypes[idx % inittypes.length];
 			String[] typeargs = inittype.split(CLOParser.SPLIT_ARG_REGEX);
@@ -100,39 +102,60 @@ class ODEInitialize {
 			// if matching of inittype failed assume it was omitted; use previous type
 			if (itype == null) {
 				// if no previous match, give up
-				if (idx == 0)
-					return false;
-				itype = ode.initType[idx - 1];
-				iargs = typeargs[0];
+				if (idx == 0) {
+					success = false;
+					itype = InitType.UNIFORM;
+					ode.logger.warning("invalid init type '" + inittype + "' - using " + itype.getKey() + ".");
+				} else {
+					itype = ode.initType[idx - 1];
+					iargs = typeargs[0];
+				}
 			} else if (typeargs.length > 1)
 				iargs = typeargs[1];
 			int nTraits = pop.getNTraits();
-			switch (itype) {
-				case MUTANT:
-					if (!processMutant(pop, iargs, start))
-						return false;
-					break;
-				case DENSITY:
-				case FREQUENCY:
-					if (!processDensity(pop, iargs, start))
-						return false;
-					break;
-				case RANDOM:
-				case UNIFORM:
-				case UNITY:
-					// uniform distribution is the default. for densities set all to zero.
-					double[] popinit = new double[nTraits];
-					Arrays.fill(popinit, 1.0);
-					appendY0(popinit, start);
-					break;
-				default:
-					throw new IllegalArgumentException("unknown initialization type: " + itype);
+			if (!processInit(pop, itype, iargs, start)) {
+				success = false;
+				ode.logger.warning("invalid init args '" + iargs + "' for init type '" + itype.getKey()
+						+ "' - using " + InitType.UNIFORM.getKey() + ".");
+				// fall back to uniform initialization
+				itype = InitType.UNIFORM;
+				processInit(pop, itype, null, start);
 			}
 			ode.initType[idx] = itype;
 			idx++;
 			start += nTraits;
 		}
-		return true;
+		return success;
+	}
+
+	/**
+	 * Process initialization for a single population and append it to
+	 * {@link ODE#y0}.
+	 * 
+	 * @param pop   module being initialized
+	 * @param itype initialization type
+	 * @param iargs initialization arguments
+	 * @param start index where the species slice begins
+	 * @return {@code true} if parsing succeeded
+	 */
+	private boolean processInit(Module<?> pop, InitType itype, String iargs, int start) {
+		switch (itype) {
+			case MUTANT:
+				return processMutant(pop, iargs, start);
+			case DENSITY:
+				return processDensity(pop, iargs, start);
+			case FREQUENCY:
+				return processFrequency(pop, iargs, start);
+			case RANDOM:
+			case UNIFORM:
+			case UNITY:
+				double[] popinit = new double[pop.getNTraits()];
+				Arrays.fill(popinit, 1.0);
+				appendY0(popinit, start);
+				return true;
+			default:
+				return false;
+		}
 	}
 
 	/**
@@ -186,7 +209,7 @@ class ODEInitialize {
 	}
 
 	/**
-	 * Parse a density/frequency specification and append it to {@link ODE#y0}.
+	 * Parse a density specification and append it to {@link ODE#y0}.
 	 * 
 	 * @param pop   module being initialized
 	 * @param iargs density values as a string
@@ -194,6 +217,30 @@ class ODEInitialize {
 	 * @return {@code true} if parsing succeeded
 	 */
 	private boolean processDensity(Module<?> pop, String iargs, int start) {
+		double[] initargs = CLOParser.parseVector(iargs);
+		if (initargs == null)
+			return false;
+		int vacidx = pop.getVacantIdx();
+		if (initargs.length == (pop.getNTraits() - 1) && vacidx >= 0)
+			initargs = ArrayMath.insert(initargs, 0.0, vacidx);
+		if (initargs.length != pop.getNTraits())
+			return false;
+		// ensure that vacant densities are zero for density based models
+		if (vacidx >= 0)
+			initargs[vacidx] = 0.0;
+		appendY0(initargs, start);
+		return true;
+	}
+
+	/**
+	 * Parse a frequency specification and append it to {@link ODE#y0}.
+	 * 
+	 * @param pop   module being initialized
+	 * @param iargs frequency values as a string
+	 * @param start index where the species slice begins
+	 * @return {@code true} if parsing succeeded
+	 */
+	private boolean processFrequency(Module<?> pop, String iargs, int start) {
 		double[] initargs = CLOParser.parseVector(iargs);
 		if (initargs == null || initargs.length != pop.getNTraits())
 			return false;

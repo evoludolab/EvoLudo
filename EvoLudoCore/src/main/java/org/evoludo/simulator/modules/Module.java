@@ -1,7 +1,7 @@
 //
 // EvoLudo Project
 //
-// Copyright 2010-2025 Christoph Hauert
+// Copyright 2010-2026 Christoph Hauert
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -33,6 +33,7 @@ package org.evoludo.simulator.modules;
 import java.awt.Color;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -47,7 +48,6 @@ import org.evoludo.simulator.models.Advection;
 import org.evoludo.simulator.models.ChangeListener;
 import org.evoludo.simulator.models.IBS;
 import org.evoludo.simulator.models.IBSPopulation;
-import org.evoludo.simulator.models.Markers;
 import org.evoludo.simulator.models.LifecycleListener;
 import org.evoludo.simulator.models.Model;
 import org.evoludo.simulator.models.Model.HasDE;
@@ -116,6 +116,16 @@ public abstract class Module<T extends Module<T>>
 	protected Model model;
 
 	/**
+	 * Gets the type of the current model or {@link ModelType#NONE} if no model
+	 * is loaded.
+	 *
+	 * @return the model type or {@link ModelType#NONE}
+	 */
+	public ModelType getModelType() {
+		return model == null ? ModelType.NONE : model.getType();
+	}
+
+	/**
 	 * List with all species in module including this one.
 	 * 
 	 * <h3>Important:</h3>
@@ -139,21 +149,6 @@ public abstract class Module<T extends Module<T>>
 	 */
 	public int getId() {
 		return id;
-	}
-
-	/**
-	 * Markers for annotating graphical represenations of the state of the model.
-	 */
-	protected Markers markers;
-
-	/**
-	 * Get the list of markers. This serves to mark special values in different
-	 * kinds of graphs.
-	 * 
-	 * @return the list of markers
-	 */
-	public List<double[]> getMarkers() {
-		return markers.getMarkers();
 	}
 
 	/**
@@ -230,7 +225,7 @@ public abstract class Module<T extends Module<T>>
 	 * @see EvoLudo#getRNG()
 	 */
 	public Model createModel(ModelType type) {
-		if (model != null && model.getType() == type)
+		if (getModelType() == type)
 			return model;
 		if (!getModelTypes().contains(type))
 			return null;
@@ -273,10 +268,8 @@ public abstract class Module<T extends Module<T>>
 	 * @param model the current model
 	 */
 	public void setModel(Model model) {
-		markers = new Markers(model);
 		for (T pop : species) {
 			pop.model = model;
-			pop.markers = markers;
 		}
 	}
 
@@ -392,7 +385,6 @@ public abstract class Module<T extends Module<T>>
 		trajectoryColor = null;
 		map2fitness = null;
 		playerUpdate = null;
-		markers = null;
 		// in multispecies modules reset opponent to this in order to allow
 		// freeing the memory of the other species. loading the module again
 		// will regenerate the other species.
@@ -488,6 +480,74 @@ public abstract class Module<T extends Module<T>>
 		if (this instanceof HasDE.PDEADV)
 			types.add(ModelType.PDEADV);
 		return types;
+	}
+
+	/**
+	 * Preprocess the {@code --model} option based on the selected module.
+	 * 
+	 * @param cloarray      the raw argument array
+	 * @param helpRequested whether help was already requested
+	 * @param helpCLO       the option array to trigger help output
+	 * @return updated argument array or {@code helpCLO} on failure
+	 */
+	public String[] preprocessModelOption(String[] cloarray, boolean helpRequested,
+			String[] helpCLO) {
+		cloModel.clearKeys();
+		List<ModelType> types = getModelTypes();
+		cloModel.addKeys(types);
+		String modelName = cloModel.getName();
+		Collection<CLOption.Key> keys = cloModel.getKeys();
+		if (keys.isEmpty()) {
+			if (!helpRequested)
+				logger.severe("model not found!");
+			return helpCLO;
+		}
+		ModelType defaulttype = (ModelType) cloModel.match(cloModel.getDefault());
+		if (defaulttype == null && !types.isEmpty())
+			defaulttype = types.get(0);
+		ModelType type = null;
+		for (int i = 0; i < cloarray.length; i++) {
+			String param = cloarray[i];
+			if (!param.startsWith(modelName))
+				continue;
+			String newModel = CLOption.stripKey(modelName, param).trim();
+			// remove model option
+			cloarray = ArrayMath.drop(cloarray, i);
+			if (newModel.isEmpty()) {
+				type = defaulttype;
+				if (!helpRequested)
+					logger.warning("model key missing - use default type " + type.getKey() + ".");
+				break;
+			}
+			type = ModelType.parse(newModel);
+			if (type == null || !keys.contains(type)) {
+				Model activeModel = engine.getModel();
+				if (activeModel != null) {
+					type = activeModel.getType();
+					if (!helpRequested)
+						logger.warning(
+								"invalid model type " + newModel + " - keep current type " + type.getKey() + ".");
+				} else {
+					type = defaulttype;
+					if (!helpRequested)
+						logger.warning("invalid model type " + newModel + " - use default type " + type.getKey() + ".");
+				}
+			}
+			break;
+		}
+		if (type == null) {
+			type = defaulttype;
+			if (keys.size() > 1 && !defaulttype.getKey().equals(cloModel.getDefault()) && !helpRequested)
+				logger.warning("model type unspecified - use default type " + type.getKey() + ".");
+		}
+		// NOTE: currently models cannot be mix'n'matched between species
+		engine.loadModel(type);
+		if (engine.getModel() == null) {
+			if (!helpRequested)
+				logger.severe("model type '" + type.getKey() + "' not supported!");
+			return helpCLO;
+		}
+		return cloarray;
 	}
 
 	/**
@@ -973,7 +1033,7 @@ public abstract class Module<T extends Module<T>>
 	/**
 	 * Per capita birth rate for ecological population updates.
 	 */
-	protected double birthRate = 1.0;
+	protected double birthRate = 0.0;
 
 	/**
 	 * Get the per capita birth rate for ecological population updates.
@@ -996,7 +1056,7 @@ public abstract class Module<T extends Module<T>>
 	/**
 	 * Death rate for ecological population updates.
 	 */
-	protected double deathRate = 1.0;
+	protected double deathRate = 0.0;
 
 	/**
 	 * Sets the death rate for ecological population updates.
@@ -1037,7 +1097,7 @@ public abstract class Module<T extends Module<T>>
 	/**
 	 * Sets the competition rate for ecological population updates.
 	 * 
-	 * @param rate the competition rate
+	 * @param rates the competition rates per species
 	 * @return {@code true} if the competition rate changed
 	 */
 	public boolean setCompetitionRates(double[] rates) {
@@ -1135,6 +1195,18 @@ public abstract class Module<T extends Module<T>>
 	}
 
 	/**
+	 * Command line option to set the type of model (see {@link ModelType}).
+	 */
+	public static final CLOption cloModel = new CLOption("model", ModelType.IBS.getKey(), CLOCategory.Module,
+			"--model <m>     model type", new CLODelegate() {
+				@Override
+				public boolean parse(String arg) {
+					// option gets special treatment
+					return true;
+				}
+			});
+
+	/**
 	 * Command line option to set the geometry (interaction and competition graphs
 	 * identical).
 	 * 
@@ -1168,8 +1240,14 @@ public abstract class Module<T extends Module<T>>
 					boolean doReset = false;
 					int n = 0;
 					for (T mod : species) {
-						mod.structure = AbstractGeometry.create(engine, geomargs[n % geomargs.length]);
-						doReset |= mod.structure.parse();
+						String geomarg = geomargs[n++ % geomargs.length];
+						AbstractGeometry current = mod.structure;
+						AbstractGeometry next = AbstractGeometry.create(engine, geomarg, current);
+						if (next != current) {
+							next.parse();
+							mod.structure = next;
+							doReset = true;
+						}
 					}
 					engine.requiresReset(doReset);
 					return true;
@@ -1773,8 +1851,7 @@ public abstract class Module<T extends Module<T>>
 		if (minTraits > 2 || (anyNonVacant && minTraits > 1))
 			parser.addCLO(cloTraitDisable);
 
-		// add markers, fixed points in particular
-		parser.addCLO(markers.clo);
+		parser.addCLO(cloModel);
 
 		if (model == null)
 			return;

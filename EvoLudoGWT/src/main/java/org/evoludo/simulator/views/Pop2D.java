@@ -1,7 +1,7 @@
 //
 // EvoLudo Project
 //
-// Copyright 2010-2025 Christoph Hauert
+// Copyright 2010-2026 Christoph Hauert
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -166,7 +166,7 @@ public class Pop2D extends GenericPop<String, Network2D, PopGraph2D> {
 
 	@Override
 	protected boolean allocateGraphs() {
-		ModelType mt = model.getType();
+		ModelType mt = getModelType();
 		if (mt.isIBS())
 			return allocateIBSGraphs();
 
@@ -390,7 +390,7 @@ public class Pop2D extends GenericPop<String, Network2D, PopGraph2D> {
 	 * @return configured color map
 	 */
 	private ColorMap<String> createTraitColorMapDiscreteOrPDE(Module<?> module) {
-		if (model.getType().isPDE()) {
+		if (getModelType().isPDE()) {
 			int nTraits = module.getNTraits();
 			Color[] colors = module.getTraitColors();
 			int dep = ((HasDE) module).getDependent();
@@ -424,7 +424,7 @@ public class Pop2D extends GenericPop<String, Network2D, PopGraph2D> {
 		int tag = module.getId();
 		cMap1D.setRange(model.getMinFitness(tag), model.getMaxFitness(tag));
 
-		if (!model.getType().isIBS())
+		if (!getModelType().isIBS())
 			return cMap;
 
 		Map2Fitness map2fit = module.getMap2Fitness();

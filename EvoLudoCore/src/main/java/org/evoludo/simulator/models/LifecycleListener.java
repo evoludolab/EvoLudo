@@ -1,7 +1,7 @@
 //
 // EvoLudo Project
 //
-// Copyright 2010-2025 Christoph Hauert
+// Copyright 2010-2026 Christoph Hauert
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -31,7 +31,8 @@
 package org.evoludo.simulator.models;
 
 /**
- * {@code LifecycleListener}s are notified about loading and unloading events for
+ * {@code LifecycleListener}s are notified about loading and unloading events
+ * for
  * modules and models. The implementation of all methods is optional.
  *
  * @author Christoph Hauert

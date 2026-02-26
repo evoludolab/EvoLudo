@@ -1,4 +1,35 @@
 <?xml version="1.0" encoding="UTF-8"?>
+<!--
+//
+// EvoLudo Project
+//
+// Copyright 2010-2026 Christoph Hauert
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//	http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+//
+// For publications in any form, you are kindly requested to attribute the
+// author and project as follows:
+//
+//	Hauert, Christoph (<year>) EvoLudo Project, https://www.evoludo.org
+//			(doi: 10.5281/zenodo.14591549 [, <version>])
+//
+//	<year>:    year of release (or download), and
+//	<version>: optional version number (as reported in output header
+//			or GUI console) to simplify replication of reported results.
+//
+// The formatting may be adjusted to comply with publisher requirements.
+//
+-->
 <project xmlns="http://maven.apache.org/POM/4.0.0"
   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
   xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
@@ -48,6 +79,7 @@
     <gwt.optimize>9</gwt.optimize>
     <gwt.style.devmode>PRETTY</gwt.style.devmode>
     <gwt.optimize.devmode>0</gwt.optimize.devmode>
+    <gwt.version>2.13.0</gwt.version>
 
     <!-- Java version properties -->
     <java.version.lts>21</java.version.lts>
@@ -62,14 +94,9 @@
         <version>1.6</version>
       </dependency>
       <dependency>
-        <groupId>org.evoludo</groupId>
-        <artifactId>gwt-user-epub</artifactId>
-        <version>2.12.2</version>
-      </dependency>
-      <dependency>
         <groupId>org.gwtproject</groupId>
         <artifactId>gwt</artifactId>
-        <version>2.12.2</version>
+        <version>${gwt.version}</version>
         <type>pom</type>
         <scope>import</scope>
       </dependency>
@@ -80,6 +107,16 @@
       </dependency>
     </dependencies>
   </dependencyManagement>
+
+  <repositories>
+    <repository>
+      <id>evoludo-thirdparty-local</id>
+      <name>EvoLudo Third-Party Local Artifacts</name>
+      <url>file://${maven.multiModuleProjectDirectory}/EvoLudoGWT/maven-repo</url>
+      <!-- org.parallax3d:parallax-gwt:1.6 not available on maven central, see
+      https://github.com/thothbot/parallax -->
+    </repository>
+  </repositories>
 
   <build>
     <plugins>
@@ -105,7 +142,6 @@
         <version>3.6.3</version>
         <configuration>
           <!-- Default configuration for all reports -->
-          <aggregate>true</aggregate>
           <noqualifier>all</noqualifier>
           <show>private</show>
           <doctitle>EvoLudo: in silico evolution</doctitle>
@@ -134,11 +170,6 @@
                other modules. this can only be verified at the time of aggregating the documentation. -->
           <doclint>all,-accessibility,-reference</doclint>
           <tags>
-            <tag>
-              <name>evoludo.todo</name>
-              <placement>a</placement>
-              <head>Work in progress:</head>
-            </tag>
             <tag>
               <name>evoludo.note</name>
               <placement>a</placement>
@@ -259,7 +290,9 @@
           <configuration>
             <sourceLevel>${java.version.gwt}</sourceLevel>
             <failOnError>true</failOnError>
-            <!-- Centralized devmode configuration for all modules using GWT -->
+            <classpathScope>compile+runtime</classpathScope>
+            <projects>EvoLudoGWT</projects>
+            <!-- GWT 2.13+ devmode serves static files by default; do not set -server -->
             <devmodeArgs>
               <arg>-bindAddress</arg>
               <arg>${evoludo.server}</arg>
@@ -393,7 +426,6 @@
             <groupId>org.apache.maven.plugins</groupId>
             <artifactId>maven-javadoc-plugin</artifactId>
             <configuration>
-              <aggregate>true</aggregate>
               <show>private</show>
               <quiet>false</quiet>
               <verbose>true</verbose>

@@ -1,7 +1,7 @@
 //
 // EvoLudo Project
 //
-// Copyright 2010-2025 Christoph Hauert
+// Copyright 2010-2026 Christoph Hauert
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -183,18 +183,7 @@ public class HexagonalGeometry extends AbstractLattice {
 
 	@Override
 	protected boolean checkSettings() {
-		boolean doReset = false;
-		int side = (int) Math.floor(Math.sqrt(size) + 0.5);
-		int side2 = side * side;
-		if (size != side2 || (side % 2) == 1) {
-			side += side % 2;
-			side2 = side * side;
-			if (setSize(side2)) {
-				if (engine.getModule().cloNPopulation.isSet())
-					warn("requires even integer square size - using " + size + "!");
-				doReset = true;
-			}
-		}
+		boolean doReset = ensureSquareSize(true);
 		if ((Math.abs(connectivity - 6) > 1e-8 && Math.abs(1.0 - connectivity) > 1e-8)
 				|| (Math.abs(1.0 - connectivity) < 1e-8 && !isInterspecies())) {
 			connectivity = 6;

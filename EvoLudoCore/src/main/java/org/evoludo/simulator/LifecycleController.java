@@ -1,7 +1,7 @@
 //
 // EvoLudo Project
 //
-// Copyright 2010-2025 Christoph Hauert
+// Copyright 2010-2026 Christoph Hauert
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -212,6 +212,7 @@ class LifecycleController {
 			}
 		}
 		engine.fireModuleUnloaded();
+		engine.activeModule = null;
 	}
 
 	/**
@@ -240,7 +241,6 @@ class LifecycleController {
 		if (engine.activeModel != newModel)
 			unloadModel();
 		engine.activeModel = newModel;
-		engine.addCLOProvider(engine.activeModel);
 		engine.activeModule.setModel(engine.activeModel);
 		engine.activeModel.load();
 		engine.fireModelLoaded();
@@ -266,8 +266,9 @@ class LifecycleController {
 	public void unloadModel(boolean quiet) {
 		if (engine.activeModel == null)
 			return;
-		engine.removeCLOProvider(engine.activeModel);
 		engine.activeModel.unload();
+		// clear references to avoid stale models after unload.
+		engine.activeModule.setModel(null);
 		if (!quiet)
 			engine.fireModelUnloaded();
 		engine.activeModel = null;

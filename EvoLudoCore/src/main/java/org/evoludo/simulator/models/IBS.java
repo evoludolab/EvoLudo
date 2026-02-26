@@ -1,7 +1,7 @@
 //
 // EvoLudo Project
 //
-// Copyright 2010-2025 Christoph Hauert
+// Copyright 2010-2026 Christoph Hauert
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -308,7 +308,7 @@ public abstract class IBS extends Model {
 	protected void resetState() {
 		super.resetState();
 		updates = 0.0;
-		time = (positiveMinFitness() ? 0.0 : Double.POSITIVE_INFINITY);
+		time = (!(species.get(0) instanceof Payoffs) || positiveMinFitness()) ? 0.0 : Double.POSITIVE_INFINITY;
 	}
 
 	/**
@@ -430,12 +430,12 @@ public abstract class IBS extends Model {
 			return false;
 		}
 		// note: time resolution is limited. need to allow for some slack when
-		// signalling convergence. using 1/nPopulation of the first species is
-		// an approximation but hopefully good enough. deviations expected in
-		// multi-species modules with different population sizes or different
-		// update rates.
+		// signalling convergence. using 1/nPopulation of the first species is a
+		// heuristic approximation but hopefully good enough. deviations expected in
+		// multi-species modules with different population sizes or different update
+		// rates.
 		double minIncr = 1.0 / species.get(0).getNPopulation();
-		return (updates > nextHalt || Math.abs(nextHalt - updates) >= minIncr);
+		return (updates + minIncr < nextHalt);
 	}
 
 	/**
@@ -623,21 +623,28 @@ public abstract class IBS extends Model {
 	/**
 	 * Processes up to {@code nUpdates} events, updating time and updates
 	 * appropriately.
+	 * <p>
+	 * Ecological updates use the thinning method for simulating nonhomogeneous
+	 * Poisson processes by advancing time on rejected proposals.
 	 * 
 	 * @param nUpdates the maximum number of updates to process
 	 * @param gincr    the growth increment
 	 * @param totRate  the total update rate
 	 * @return the number of processed updates
+	 * 
+	 * @see <a href="https://doi.org/10.1002/nav.3800260304">Lewis, P. A. W. &amp;
+	 *      Shedler,
+	 *      G. S. (1979). Simulation of nonhomogeneous Poisson processes by
+	 *      thinning. Naval Research Logistics Quarterly, 26(3), 403-413.</a>
 	 */
 	private int processEvents(int nUpdates, double gincr, double totRate) {
 		int n = 0;
 		while (n < nUpdates) {
 			// update event
 			int dt = processEvent();
-			// advance time and real time (if possible)
+			PopulationUpdate.Type updateType = debugFocalSpecies.getPopulationUpdate().getType();
 			if (dt > 0) {
-				// if no time elapsed, nothing happened
-				if (debugFocalSpecies.getPopulationUpdate().getType() == PopulationUpdate.Type.ONCE) {
+				if (updateType == PopulationUpdate.Type.ONCE) {
 					updates += dt;
 					n += debugFocalSpecies.getPopulationSize();
 				} else {
@@ -646,10 +653,12 @@ public abstract class IBS extends Model {
 				}
 				if (time < Double.POSITIVE_INFINITY)
 					time += RNGDistribution.Exponential.next(rng.getRNG(), dt / totRate);
+			} else if (dt == 0 && time < Double.POSITIVE_INFINITY && updateType == PopulationUpdate.Type.ECOLOGY)
+				// thinning logic: advance time even if ecological update failed
+				time += RNGDistribution.Exponential.next(rng.getRNG(), 1.0 / totRate);
+			if (dt != 0) {
+				// dt < 0 indicates extinction of a species
 				totRate = checkConvergence();
-			} else if (dt < 0) {
-				// indicates extinction of a species
-				checkConvergence();
 			}
 			if (converged)
 				return n;
@@ -660,7 +669,7 @@ public abstract class IBS extends Model {
 	/**
 	 * Processes a single event.
 	 * 
-	 * @return the time increment associated with the event
+	 * @return the number of elapsed realtime units
 	 */
 	private int processEvent() {
 		debugFocalSpecies = pickFocalSpecies();
@@ -1282,8 +1291,14 @@ public abstract class IBS extends Model {
 						for (Module<?> mod : species) {
 							// creates new interaction geometry
 							IBSPopulation<?, ?> ibs = mod.getIBSPopulation();
-							ibs.interaction = AbstractGeometry.create(engine, geomargs[n % geomargs.length]);
-							doReset |= ibs.interaction.parse();
+							String geomarg = geomargs[n++ % geomargs.length];
+							AbstractGeometry current = ibs.interaction;
+							AbstractGeometry next = AbstractGeometry.create(engine, geomarg, current);
+							if (next != current) {
+								next.parse();
+								ibs.interaction = next;
+								doReset = true;
+							}
 						}
 						engine.requiresReset(doReset);
 					}
@@ -1325,8 +1340,15 @@ public abstract class IBS extends Model {
 						for (Module<?> mod : species) {
 							// creates new competition geometry
 							IBSPopulation<?, ?> ibs = mod.getIBSPopulation();
-							ibs.competition = AbstractGeometry.create(engine, geomargs[n % geomargs.length]);
-							doReset |= ibs.competition.parse();
+							String geomarg = geomargs[n % geomargs.length];
+							AbstractGeometry current = ibs.competition;
+							AbstractGeometry next = AbstractGeometry.create(engine, geomarg, current);
+							if (next != current) {
+								next.parse();
+								ibs.competition = next;
+								doReset = true;
+							}
+							n++;
 						}
 						engine.requiresReset(doReset);
 					}

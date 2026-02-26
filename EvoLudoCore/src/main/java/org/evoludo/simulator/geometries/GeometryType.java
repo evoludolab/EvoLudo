@@ -1,7 +1,7 @@
 //
 // EvoLudo Project
 //
-// Copyright 2010-2025 Christoph Hauert
+// Copyright 2010-2026 Christoph Hauert
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -183,7 +183,7 @@ public enum GeometryType implements CLOption.Key {
 	 * neighbours, where {@code n} is {@code 3x3, 5x5...}.
 	 * 
 	 * @see SquareGeometry#init()
-	 * @see SquareGeometry#initSquare(int, int, int)
+	 * @see SquareGeometry#initSquare(AbstractGeometry, int, int, int, boolean)
 	 */
 	SQUARE("N", "square lattice, 2D", "N<k> square lattice (k=3x3, 5x5...)"),
 

@@ -1,7 +1,7 @@
 //
 // EvoLudo Project
 //
-// Copyright 2010-2025 Christoph Hauert
+// Copyright 2010-2026 Christoph Hauert
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -1024,6 +1024,9 @@ public class CDL extends Discrete implements Payoffs,
 			}
 		}
 
+		/**
+		 * Initialize the cube kaleidoscope pattern for cubic geometries.
+		 */
 		private void initCubeKaleidoscope() {
 			int l;
 			int mz;

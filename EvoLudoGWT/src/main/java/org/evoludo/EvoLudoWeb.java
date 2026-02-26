@@ -1,7 +1,7 @@
 //
 // EvoLudo Project
 //
-// Copyright 2010-2025 Christoph Hauert
+// Copyright 2010-2026 Christoph Hauert
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -74,6 +74,7 @@ import com.google.gwt.dom.client.DivElement;
 import com.google.gwt.dom.client.Document;
 import com.google.gwt.dom.client.Element;
 import com.google.gwt.dom.client.NodeList;
+import com.google.gwt.event.dom.client.BlurEvent;
 import com.google.gwt.event.dom.client.ChangeEvent;
 import com.google.gwt.event.dom.client.ClickEvent;
 import com.google.gwt.event.dom.client.DragEnterEvent;
@@ -90,6 +91,7 @@ import com.google.gwt.uibinder.client.UiField;
 import com.google.gwt.uibinder.client.UiHandler;
 import com.google.gwt.user.client.Timer;
 import com.google.gwt.user.client.Window;
+import com.google.gwt.event.dom.client.FocusEvent;
 import com.google.gwt.user.client.ui.Button;
 import com.google.gwt.user.client.ui.Composite;
 import com.google.gwt.user.client.ui.DeckLayoutPanel;
@@ -488,6 +490,8 @@ public class EvoLudoWeb extends Composite
 		// set command line options
 		evoludoCLO.getElement().setAttribute("contenteditable", "true");
 		evoludoCLO.setText(clo != null ? clo : "");
+		evoludoCLO.addDomHandler(event -> keyController.onCLOFocusGained(), FocusEvent.getType());
+		evoludoCLO.addDomHandler(event -> keyController.onCLOFocusLost(), BlurEvent.getType());
 
 		// layout speed controls - GWT has no slider...
 		// but we can construct one from HTML5!
@@ -495,7 +499,6 @@ public class EvoLudoWeb extends Composite
 		evoludoSlider.setLogBase(1.1);
 		// note: the {}-place holders interfere with UiBinder...
 		evoludoSlider.setTitle("Set delay between updates ({max} - {min}msec); now at {value}msec");
-
 	}
 
 	/**
@@ -676,6 +679,18 @@ public class EvoLudoWeb extends Composite
 	 */
 	public void resetStatusThreshold() {
 		displayStatusThresholdLevel = Level.ALL.intValue();
+	}
+
+	/**
+	 * Handle model reset event.
+	 */
+	public void handleModelDidReset() {
+		updateGUI();
+		if (deferStatusThresholdReset)
+			displayStatus(engine.getVersion(), Level.INFO.intValue() + 1);
+		else
+			resetStatusThreshold();
+		clearSnapshotMarker();
 	}
 
 	/**
@@ -1460,34 +1475,30 @@ public class EvoLudoWeb extends Composite
 		Model newModel = engine.getModel();
 		boolean moduleChanged = (newModule == null || newModule != guiState.module || newModel != guiState.model);
 		if (moduleChanged) {
+			deferStatusThresholdReset = true;
 			engine.modelReset(true);
-			loadViews();
+			loadViews(false);
 			// notify of reset (reset above was quiet because views may not have
 			// been ready for notification)
 			engine.fireModelReset();
 		} else {
 			boolean didReset = engine.paramsDidChange();
-			loadViews();
+			loadViews(didReset);
 			if (didReset) {
-				// need to notify updated set of views
-				engine.fireModelReset();
 				// do not resume execution if reset was required (unless --run was specified)
 				guiState.resume = false;
 			}
 			// resume running if no reset was necessary or --run was provided
 			engine.setSuspended(guiState.resume || engine.isSuspended());
 		}
-		guiState.view = viewController.resolveInitialView(logger);
-		if (moduleChanged && !viewController.isInitialViewSet()
-				&& guiState.view == viewController.getConsoleView())
+		if (viewController.isInitialViewSet())
+			guiState.view = viewController.resolveInitialView(logger);
+		else if ((moduleChanged && guiState.view == viewController.getConsoleView())
+				|| !viewController.containsView(guiState.view))
 			guiState.view = null;
-		if (guiState.view == null || !viewController.containsView(guiState.view)) {
-			// initial load and view not set (or not found)
-			// pick first available view (at least the console has to be in the list)
+		if (guiState.view == null)
 			guiState.view = viewController.getFirstView();
-		}
-		if (guiState.view != null)
-			changeViewTo(guiState.view, true);
+		changeViewTo(guiState.view, true);
 		if (guiState.plist != null) {
 			Plist state = guiState.plist;
 			guiState.plist = null;
@@ -1504,6 +1515,10 @@ public class EvoLudoWeb extends Composite
 		processCLOSnap();
 		if (currentView != null && currentView.hasLayout() && engine.isSuspended())
 			engine.run();
+		if (deferStatusThresholdReset) {
+			deferStatusThresholdReset = false;
+			resetStatusThreshold();
+		}
 	}
 
 	/**
@@ -1573,8 +1588,10 @@ public class EvoLudoWeb extends Composite
 	 * exmple, buffer sizes or data storage for statistics. However, only views that
 	 * have been added to the DOM have valid sizes. For this reason the dimensions
 	 * of the active view are passed to all other views.
+	 *
+	 * @param resetViews whether to reset view state after loading
 	 */
-	private void loadViews() {
+	private void loadViews(boolean resetViews) {
 		viewController.refreshViews();
 		AbstractView<?> anchorView = viewController.getActiveView();
 		if (anchorView == null)
@@ -1587,8 +1604,12 @@ public class EvoLudoWeb extends Composite
 			boolean loaded = view.load();
 			if (view != anchorView)
 				view.setBounds(width, height);
-			if (loaded)
-				view.reset(false);
+			if (loaded) {
+				if (resetViews)
+					view.modelDidReset();
+				else
+					view.reset(false);
+			}
 		}
 		evoludoLayout.onResize();
 		updateDropHandlers();
@@ -1667,12 +1688,12 @@ public class EvoLudoWeb extends Composite
 	public void showHelp() {
 		guiState.view = viewConsole;
 		logger.info(TAG_PRE_OPEN + "EvoLudo (GWT):\n" + engine.getCLOHelp() + TAG_PRE_CLOSE);
-		// no view may be available if things went wrong from the start...
-		if (evoludoDeck.getWidgetCount() == 0) {
-			evoludoDeck.add(viewConsole);
-			evoludoDeck.showWidget(viewConsole);
-			evoludoViews.clear();
-			evoludoViews.addItem(viewConsole.getName());
+		// no view may be available if things went wrong from the start,
+		// or neither a module or a model may be available...
+		if (evoludoDeck.getWidgetCount() == 0
+				|| engine.getModule() == null
+				|| engine.getModel() == null) {
+			viewController.refreshViews();
 			displayStatus("Set EvoLudo options to get started.");
 			return;
 		}
@@ -1699,6 +1720,12 @@ public class EvoLudoWeb extends Composite
 	 * Threshold level for overriding status message.
 	 */
 	private int displayStatusThresholdLevel = Level.ALL.intValue();
+
+	/**
+	 * Defer resetting the status threshold until after the loading sequence
+	 * completes.
+	 */
+	private boolean deferStatusThresholdReset = false;
 
 	/**
 	 * Displays a message in the status line of the EvoLudo GUI with the severity
@@ -1837,11 +1864,11 @@ public class EvoLudoWeb extends Composite
 		if (keyController.isAltDown()) {
 			evoludoInitReset.setText(BUTTON_RESET);
 			evoludoInitReset.setTitle("Initialize population and regenerate structure");
-			if (engine.getModel().permitsTimeReversal()) {
+			if (model.permitsTimeReversal()) {
 				evoludoStep.setText(BUTTON_PREV);
 				evoludoStep.setTitle("Backtrack single simulation step");
 			}
-			if (engine.getModel().permitsDebugStep()) {
+			if (model.permitsDebugStep()) {
 				evoludoStep.setText(BUTTON_DEBUG);
 				evoludoStep.setTitle("Single update event");
 			}

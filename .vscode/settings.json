@@ -18,6 +18,31 @@
             "path": "/Library/Java/JavaVirtualMachines/temurin-21.jdk/Contents/Home"
         }
     ],
+    "sonarlint.analyzerProperties": {
+        // Project identification
+        "sonar.projectKey": "evoludo",
+        "sonar.projectName": "EvoLudo",
+        "sonar.sources": ".",
+        "sonar.exclusions": "**/target/**,**/node_modules/**,**/lib/**,war/**,scratch/**",
+        // Analyze all code equally (not just new code)
+        "sonar.newCode.focus": "false",
+        // Enable automatic analysis on file open/save
+        "sonar.scanner.autoAnalysis": "true",
+        // Ignore customized rule sets
+        "sonar.issue.ignore.multicriteria": "code,complexity,loopcontrol",
+        // Allow commented-out code (S125) - check if really working... 
+        // attempts to disable parametrized logging S2629 failed (GWT doesn't implement String.format)
+        "sonar.issue.ignore.multicriteria.code.ruleKey": "java:S125",
+        "sonar.issue.ignore.multicriteria.code.resourceKey": "**/*.java",
+        // Raise cognitive complexity threshold (S3776) - verified, working
+        "sonar.issue.ignore.multicriteria.complexity.ruleKey": "java:S3776",
+        "sonar.issue.ignore.multicriteria.complexity.resourceKey": "**/*.java",
+        "sonar.java.S3776.threshold": "20",
+        // Allow multiple break/continue statements in loops 
+        // S135 - "Loops should not contain more than a single break or continue statement"
+        "sonar.issue.ignore.multicriteria.loopcontrol.ruleKey": "java:S135",
+        "sonar.issue.ignore.multicriteria.loopcontrol.resourceKey": "**/*.java"
+    },
     "[java]": {
         "editor.defaultFormatter": "redhat.java",
         "editor.formatOnSave": true,

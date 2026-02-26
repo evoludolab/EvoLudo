@@ -1,7 +1,7 @@
 //
 // EvoLudo Project
 //
-// Copyright 2010-2025 Christoph Hauert
+// Copyright 2010-2026 Christoph Hauert
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -40,6 +40,7 @@ import org.evoludo.simulator.geometries.GeometryType;
 import org.evoludo.simulator.models.IBSD;
 import org.evoludo.simulator.models.IBSD.Init;
 import org.evoludo.simulator.models.IBSDPopulation;
+import org.evoludo.simulator.models.IBSPopulation;
 import org.evoludo.simulator.models.Model.HasDE;
 import org.evoludo.simulator.models.Model.HasIBS;
 import org.evoludo.simulator.modules.Features.Payoffs;
@@ -157,8 +158,9 @@ public class TBT extends Discrete implements Payoffs,
 	@Override
 	public String getTraitName(int idx) {
 		String idxname = super.getTraitName(idx % nTraits);
-		if (!model.getType().isIBS()
-				|| !getIBSPopulation().getCompetitionGeometry().isType(GeometryType.SQUARE_NEUMANN_2ND))
+		IBSPopulation<?, ?> ibsPop = getIBSPopulation();
+		if (ibsPop == null
+				|| !ibsPop.getCompetitionGeometry().isType(GeometryType.SQUARE_NEUMANN_2ND))
 			return idxname;
 		if (idx >= nTraits)
 			return idxname + " (2nd)";
@@ -169,8 +171,9 @@ public class TBT extends Discrete implements Payoffs,
 	public Color[] getMeanColors() {
 		Color[] colors = super.getMeanColors();
 		// not all models entertain competition geometries, e.g. ODE/SDE
-		if (!model.getType().isIBS()
-				|| !getIBSPopulation().getCompetitionGeometry().isType(GeometryType.SQUARE_NEUMANN_2ND))
+		IBSPopulation<?, ?> ibsPop = getIBSPopulation();
+		if (ibsPop == null
+				|| !ibsPop.getCompetitionGeometry().isType(GeometryType.SQUARE_NEUMANN_2ND))
 			return colors;
 		Color[] color2nd = new Color[2 * nTraits];
 		for (int n = 0; n < nTraits; n++) {

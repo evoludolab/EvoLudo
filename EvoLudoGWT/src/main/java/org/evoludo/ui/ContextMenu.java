@@ -1,7 +1,7 @@
 //
 // EvoLudo Project
 //
-// Copyright 2010-2025 Christoph Hauert
+// Copyright 2010-2026 Christoph Hauert
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -66,6 +66,7 @@ import com.google.gwt.user.client.Timer;
 import com.google.gwt.user.client.Window;
 import com.google.gwt.user.client.ui.FlowPanel;
 import com.google.gwt.user.client.ui.RootPanel;
+import com.google.gwt.user.client.ui.Widget;
 
 /**
  * Context menu extension to GWT's user interface.
@@ -502,6 +503,17 @@ public class ContextMenu extends FlowPanel
 	}
 
 	/**
+	 * Create new context submenu for <code>parent</code> menu with a header.
+	 * 
+	 * @param parent menu (cannot be <code>null</code>)
+	 * @param header the header text (may be {@code null} or empty)
+	 */
+	public ContextMenu(ContextMenu parent, String header) {
+		this(parent);
+		addHeader(header);
+	}
+
+	/**
 	 * Register a new <code>listener</code> widget for context menu requests and
 	 * associate with the <code>provider</code> of the context menu.
 	 * 
@@ -529,7 +541,28 @@ public class ContextMenu extends FlowPanel
 	 * Add new separator to context menu.
 	 */
 	public void addSeparator() {
+		if (getWidgetCount() == 0)
+			return;
+		Widget last = getWidget(getWidgetCount() - 1);
+		if (last instanceof ContextMenuSeparator)
+			return;
 		super.add(new ContextMenuSeparator());
+	}
+
+	/**
+	 * Add a disabled header item to the context menu.
+	 *
+	 * @param title header text
+	 * @return the header item
+	 */
+	public ContextMenuHeader addHeader(String title) {
+		if (title == null || title.trim().isEmpty())
+			return null;
+		addSeparator();
+		ContextMenuHeader header = new ContextMenuHeader(title);
+		add(header);
+		addSeparator();
+		return header;
 	}
 
 	/**
@@ -868,9 +901,10 @@ public class ContextMenu extends FlowPanel
 	public class TouchTimer extends Timer {
 
 		/**
-		 * Create a timer helper for deferred touch handling.
+		 * Create a timer to handle delayed touch-triggered context menus.
 		 */
 		public TouchTimer() {
+			// Default constructor - no initialization needed
 		}
 
 		/**

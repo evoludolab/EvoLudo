@@ -1,7 +1,7 @@
 //
 // EvoLudo Project
 //
-// Copyright 2010-2025 Christoph Hauert
+// Copyright 2010-2026 Christoph Hauert
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -1531,7 +1531,9 @@ public class EvoLudoJRE extends EvoLudo implements Runnable {
 
 	@Override
 	public void exportState() {
-		if (cloExport.isSet() && exportname.equals(cloExport.getDefault())) {
+		if (!cloExport.isSet())
+			return;
+		if (exportname.equals(cloExport.getDefault())) {
 			// arg is default; prefer --append or --output file name (with extension plist
 			// added or substituted)
 			if (cloAppend.isSet()) {
@@ -1559,6 +1561,10 @@ public class EvoLudoJRE extends EvoLudo implements Runnable {
 			export = openSnapshot("plist");
 		else
 			export = uniqueFile(filename, "plist");
+		if (export == null) {
+			logger.severe("failed to create export file.");
+			return;
+		}
 		String state = encodeState();
 		if (state == null) {
 			logger.severe("failed to encode state.");
@@ -1566,16 +1572,13 @@ public class EvoLudoJRE extends EvoLudo implements Runnable {
 		}
 		try {
 			// if export==null this throws an exception
-			PrintStream stream = new PrintStream(export);
-			stream.println(state);
-			stream.close();
+			try (PrintStream stream = new PrintStream(export)) {
+				stream.println(state);
+			}
 			logger.info("state saved in '" + export.getName() + "'.");
 		} catch (Exception e) {
 			String msg = "";
-			if (export != null)
-				msg = "to '" + export.getPath() + "' ";
-			else if (filename != null)
-				msg = "to '" + filename + ".plist' ";
+			msg = "to '" + export.getPath() + "' ";
 			logger.warning("failed to export state " + msg + "- using '"
 					+ (cloAppend.isSet() ? cloAppend.getArg() : cloOutput.getArg()) + "'");
 			output.println(state);

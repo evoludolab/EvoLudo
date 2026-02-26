@@ -1,7 +1,7 @@
 //
 // EvoLudo Project
 //
-// Copyright 2010-2025 Christoph Hauert
+// Copyright 2010-2026 Christoph Hauert
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -161,7 +161,7 @@ public class Pop3D extends GenericPop<MeshLambertMaterial, Network3DGWT, PopGrap
 
 	@Override
 	protected boolean allocateGraphs() {
-		ModelType mt = model.getType();
+		ModelType mt = getModelType();
 		if (mt.isIBS())
 			return allocateIBSGraphs();
 
@@ -334,7 +334,7 @@ public class Pop3D extends GenericPop<MeshLambertMaterial, Network3DGWT, PopGrap
 	 * @return configured color map
 	 */
 	private ColorMap<MeshLambertMaterial> createTraitColorMapDiscreteOrPDE(Module<?> module) {
-		if (model.getType().isPDE()) {
+		if (getModelType().isPDE()) {
 			int nTraits = module.getNTraits();
 			Color[] colors = module.getTraitColors();
 			int dep = ((HasDE) module).getDependent();
@@ -364,7 +364,7 @@ public class Pop3D extends GenericPop<MeshLambertMaterial, Network3DGWT, PopGrap
 		int id = module.getId();
 		cMap1D.setRange(model.getMinFitness(id), model.getMaxFitness(id));
 
-		if (!model.getType().isIBS())
+		if (!getModelType().isIBS())
 			return cMap1D;
 
 		Map2Fitness map2fit = module.getMap2Fitness();

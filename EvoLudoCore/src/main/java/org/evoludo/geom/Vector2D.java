@@ -1,7 +1,7 @@
 //
 // EvoLudo Project
 //
-// Copyright 2010-2025 Christoph Hauert
+// Copyright 2010-2026 Christoph Hauert
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -224,7 +224,7 @@ public class Vector2D extends Point2D {
 	}
 
 	/**
-	 * Calculate the length of the 2D vector. 
+	 * Calculate the length of the 2D vector.
 	 * <p>
 	 * For computational efficiency the fairly expensive square-roots calculations
 	 * should be avoided whenever possible.

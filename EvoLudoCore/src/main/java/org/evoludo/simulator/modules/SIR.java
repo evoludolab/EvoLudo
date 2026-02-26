@@ -1,7 +1,7 @@
 //
 // EvoLudo Project
 //
-// Copyright 2010-2025 Christoph Hauert
+// Copyright 2010-2026 Christoph Hauert
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -131,6 +131,11 @@ public class SIR extends Discrete implements HasIBS, HasDE.ODE, HasDE.SDE, HasDE
 	@Override
 	public String getTitle() {
 		return "Disease dynamics";
+	}
+
+	@Override
+	public String getAuthors() {
+		return "Christoph Hauert";
 	}
 
 	@Override
@@ -325,7 +330,7 @@ public class SIR extends Discrete implements HasIBS, HasDE.ODE, HasDE.SDE, HasDE
 
 	@Override
 	public Model createModel(ModelType type) {
-		if (model != null && model.getType().isType(type))
+		if (getModelType().isType(type))
 			return model;
 		switch (type) {
 			case ODE:

@@ -1,7 +1,7 @@
 //
 // EvoLudo Project
 //
-// Copyright 2010-2025 Christoph Hauert
+// Copyright 2010-2026 Christoph Hauert
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -162,6 +162,13 @@ public class Console extends AbstractView<AbstractGraph<?>> implements ContextMe
 	}
 
 	@Override
+	public void activate() {
+		if (isActive)
+			return;
+		isActive = true;
+	}
+
+	@Override
 	public String getName() {
 		return "Console log";
 	}
@@ -290,6 +297,8 @@ public class Console extends AbstractView<AbstractGraph<?>> implements ContextMe
 		if (label.equals("0k"))
 			label = "unlimited";
 		for (Widget item : bufferSizeMenu) {
+			if (!(item instanceof ContextMenuCheckBoxItem))
+				continue;
 			ContextMenuCheckBoxItem menuItem = (ContextMenuCheckBoxItem) item;
 			menuItem.setChecked(menuItem.getText().equals(label));
 		}
@@ -312,7 +321,7 @@ public class Console extends AbstractView<AbstractGraph<?>> implements ContextMe
 			clearMenu = new ContextMenuItem("Clear", this::clearLog);
 		menu.add(clearMenu);
 		if (bufferSizeMenu == null) {
-			bufferSizeMenu = new ContextMenu(menu);
+			bufferSizeMenu = new ContextMenu(menu, "Buffer size");
 			bufferSizeMenu.add(new ContextMenuCheckBoxItem("1k", //
 					() -> {
 						setLogCapacity(1000);
@@ -327,7 +336,7 @@ public class Console extends AbstractView<AbstractGraph<?>> implements ContextMe
 					() -> setLogCapacity(0)));
 			setLogCapacity(log.buffer.getCapacity());
 		}
-		menu.add("Buffer size...", bufferSizeMenu);
+		menu.add("Buffer size", bufferSizeMenu);
 		populateContextMenu(menu);
 	}
 }

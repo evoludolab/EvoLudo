@@ -1,7 +1,7 @@
 //
 // EvoLudo Project
 //
-// Copyright 2010-2025 Christoph Hauert
+// Copyright 2010-2026 Christoph Hauert
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -337,7 +337,7 @@ public class EvoLudoGWT extends EvoLudo {
 	 * @param menu the context menu where entries can be added
 	 */
 	public void populateContextMenu(ContextMenu menu) {
-		ModelType mt = activeModel.getType();
+		ModelType mt = activeModel != null ? activeModel.getType() : ModelType.NONE;
 		if (mt.isODE() || mt.isSDE()) {
 			// add time reverse context menu
 			if (timeReverseMenu == null) {

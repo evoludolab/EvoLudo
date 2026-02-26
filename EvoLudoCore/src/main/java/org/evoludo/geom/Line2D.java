@@ -1,7 +1,7 @@
 //
 // EvoLudo Project
 //
-// Copyright 2010-2025 Christoph Hauert
+// Copyright 2010-2026 Christoph Hauert
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -31,7 +31,7 @@
 package org.evoludo.geom;
 
 /**
- * Utility class for deal with straight (infinite) lines in 2D. <br>
+ * Utility class for dealing with straight (infinite) lines in 2D. <br>
  * Note: the drop-in replacement for java.awt.geom.Line2D.Double is not Line2D
  * but rather Segment2D for straight lines of finite length.
  * 

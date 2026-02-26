@@ -1,7 +1,7 @@
 //
 // EvoLudo Project
 //
-// Copyright 2010-2025 Christoph Hauert
+// Copyright 2010-2026 Christoph Hauert
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -197,9 +197,26 @@ public class GraphStyle {
 	public boolean showXTickLabels = true;
 
 	/**
+	 * The flag to indicate whether x-axis tick labels are offset (e.g. to show
+	 * absolute time).
+	 */
+	public boolean offsetXTickLabels = false;
+
+	/**
+	 * The offset added to x-axis tick labels when {@link #offsetXTickLabels} is
+	 * enabled.
+	 */
+	public double xTickOffset = 0.0;
+
+	/**
 	 * The flag to indicate whether to show tick labels along the vertical axis.
 	 */
 	public boolean showYTickLabels = true;
+
+	/**
+	 * The flag to indicate whether y-axis decorations are drawn on the right.
+	 */
+	public boolean showYAxisRight = true;
 
 	/**
 	 * The flag to indicate whether to show the frame of the graph.

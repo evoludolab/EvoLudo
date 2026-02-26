@@ -1,7 +1,7 @@
 //
 // EvoLudo Project
 //
-// Copyright 2010-2025 Christoph Hauert
+// Copyright 2010-2026 Christoph Hauert
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -93,29 +93,19 @@ public class SDE extends ODE {
 				if (nt == 1 || (nt == 2 && mod.getVacantIdx() >= 0))
 					continue;
 				// multiple traits implies evolutionary module - revert to ODE
-				logger.warning("SDE model for multi-species modules requires single trait - revert to ODE.");
-				engine.loadModel(ModelType.ODE);
-				return true;
+				return revertToODE("multi-species require single trait - revert to ODE.");
 			}
-		} else {
+		} else if (((HasDE) module).getDependent() < 0) {
 			// single species module requires dependent trait
-			if (((HasDE) module).getDependent() < 0) {
-				logger.warning("SDE model requires dependent trait - revert to ODE.");
-				engine.loadModel(ModelType.ODE);
-				return true;
-			}
+			return revertToODE("requires dependent trait - revert to ODE.");
 		}
 		boolean doReset = super.check();
 		// at this point it is clear that we have a dependent trait
 		int dim = nDim - 1;
 		// only one or two traits acceptable or, alternatively, two or three
 		// traits for replicator dynamics (for SDE but not SDEN)
-		if (!getClass().getSuperclass().equals(SDE.class) && (dim < 1 || dim > 2)) {
-			logger.warning(getClass().getSimpleName()
-					+ " - max. 3 traits incl. dependent - revert to ODE (use SDEN).");
-			engine.loadModel(ModelType.ODE);
-			return true;
-		}
+		if (!getClass().getSuperclass().equals(SDE.class) && (dim < 1 || dim > 2))
+			return revertToODE("max. 3 traits incl. dependent - revert to ODE (use SDEN).");
 		if (isAdjustedDynamics) {
 			// XXX check min/max fitness instead
 			// fitness is not guaranteed to be positive
@@ -124,6 +114,18 @@ public class SDE extends ODE {
 			isAdjustedDynamics = false;
 		}
 		return doReset;
+	}
+
+	/**
+	 * Log a warning and request switching to the ODE model.
+	 *
+	 * @param message the warning message to log
+	 * @return {@code true} to signal a reset
+	 */
+	private boolean revertToODE(String message) {
+		logger.warning(() -> getClass().getSimpleName() + ": " + message);
+		engine.loadModel(ModelType.ODE);
+		return true;
 	}
 
 	@Override
@@ -174,34 +176,88 @@ public class SDE extends ODE {
 		if (converged)
 			return true;
 		converged = true;
-		for (Module<?> mod : species) {
+		boolean hasMutation = false;
+		for (int idx = 0; idx < nSpecies; idx++) {
+			Module<?> mod = species.get(idx);
+			int start = idxSpecies[idx];
+			int end = idxSpecies[idx + 1];
 			if (mod.getMutation().getProbability() > 0.0) {
+				hasMutation = true;
 				// if dist2 is zero (or very small) and (at least) one trait is absent,
 				// random noise may be invalid (pushing state outside of permissible values)
-				if (dist2 < accuracy && ArrayMath.min(yt) < accuracy)
+				if (dist2 < accuracy && min(yt, start, end) < accuracy)
 					return false;
 				int vacant = mod.getVacantIdx();
 				// extinction is absorbing even with mutations
-				converged &= (vacant >= 0 && yt[vacant] > 1.0 - accuracy);
-			} else
-				converged &= monoStop ? isMonomorphic() : (!isDensity && ArrayMath.max(yt) > 1.0 - accuracy);
+				if (vacant < 0 || yt[start + vacant] <= 1.0 - accuracy) {
+					converged = false;
+					break;
+				}
+			} else if (!monoStop && (isDensity || max(yt, start, end) <= 1.0 - accuracy)) {
+				converged = false;
+				break;
+			}
 		}
+		if (monoStop && !hasMutation)
+			converged = isMonomorphic();
 		return converged;
 	}
 
 	/**
-	 * {@inheritDoc} For stochastic differential equations Gaussian distributed
-	 * white noise is added.
+	 * Find the minimum value in a range of an array.
+	 * 
+	 * @param values the array to search
+	 * @param start  the starting index (inclusive)
+	 * @param end    the ending index (exclusive)
+	 * @return the minimum value in the specified range
+	 */
+	private static double min(double[] values, int start, int end) {
+		double min = Double.MAX_VALUE;
+		for (int n = start; n < end; n++) {
+			double value = values[n];
+			if (value < min)
+				min = value;
+		}
+		return min;
+	}
+
+	/**
+	 * Find the maximum value in a range of an array.
+	 * 
+	 * @param values the array to search
+	 * @param start  the starting index (inclusive)
+	 * @param end    the ending index (exclusive)
+	 * @return the maximum value in the specified range
+	 */
+	private static double max(double[] values, int start, int end) {
+		double max = -Double.MAX_VALUE;
+		for (int n = start; n < end; n++) {
+			double value = values[n];
+			if (value > max)
+				max = value;
+		}
+		return max;
+	}
+
+	/**
+	 * {@inheritDoc}
+	 * <p>
+	 * For stochastic differential equations Gaussian distributed white noise is
+	 * added.
 	 * 
 	 * <h3>Implementation Notes:</h3>
 	 * Integration of SDEs can be optimized in 1 and 2 dimensions. For replicator
-	 * systems this means 2 or 3 traits. Currently noise implemented only for
-	 * replicator type dynamics.
+	 * systems this means 2 or 3 traits.
 	 * 
 	 * @see <a href="http://dx.doi.org/10.1103/PhysRevE.85.041901">Traulsen, A.,
 	 *      Claussen J. C. &amp; Hauert, Ch. (2012) Stochastic differential
 	 *      equations for evolutionary dynamics with demographic noise and
 	 *      mutations, Phys. Rev. E 85, 041901</a>
+	 * @see <a href="https://doi.org/10.1103/PhysRevLett.94.218102">McKane, A. J.,
+	 *      &amp;
+	 *      Newman, T. J. (2005). Predator–prey cycles from resonant amplification
+	 *      of demographic stochasticity. Physical Review Letters, 94(21),
+	 *      218102</a>
 	 */
 	@Override
 	protected double deStep(double step) {
@@ -264,21 +320,23 @@ public class SDE extends ODE {
 	 */
 	private void process2Traits(int skip, double step, double sqrtdt, double mu, double noise) {
 		double x = yt[skip];
-		double b = ((1.0 - mu) * x * (1.0 - x) + mu) * noise;
-		double c = Math.sqrt(b);
-		double n = c * rng.nextGaussian() * sqrtdt;
+		// T^+ + T^-: b = ((1.0 - mu) * x * (1.0 - x) + mu) * noise;
+		// noise: n = Math.sqrt(b) * rng.nextGaussian() * sqrtdt;
+		double n = Math.sqrt(((1.0 - mu) * x * (1.0 - x) + mu) * noise)
+				* rng.nextGaussian() * sqrtdt;
 		dyt[skip] += n;
 		int skip1 = skip + 1;
 		dyt[skip1] -= n;
+
+		double dy = step * dyt[skip];
+		double dy1 = step * dyt[skip1];
 		if (mu > 0.0) {
-			double dy = step * dyt[skip];
 			if (yt[skip] <= 0.0) {
 				dy = Math.max(0.0, dy);
 				yout[skip] = yt[skip] + dy;
 				yout[skip1] = yt[skip1] - dy;
 				return;
 			}
-			double dy1 = step * dyt[skip1];
 			if (yt[skip1] <= 0.0) {
 				dy1 = Math.max(0.0, dy1);
 				yout[skip] = yt[skip] - dy;
@@ -287,25 +345,18 @@ public class SDE extends ODE {
 			}
 			yout[skip] = yt[skip] + dy;
 			yout[skip1] = yt[skip1] + dy1;
-		} else {
-			// in the absence of mutations, extinct traits (or species) must not make
-			// a sudden reappearance due to roundoff errors!
-			if (yt[skip] > 0.0)
-				yout[skip] = yt[skip] + step * dyt[skip];
-			else
-				yout[skip] = 0.0;
-			if (yt[skip1] > 0.0)
-				yout[skip1] = yt[skip1] + step * dyt[skip1];
-			else
-				yout[skip1] = 0.0;
+			return;
 		}
+		// in the absence of mutations, extinct traits (or species) must not make
+		// a sudden reappearance due to roundoff errors!
+		applyStep(skip, skip + 2, step);
 	}
 
 	/**
 	 * Process the three-trait stochastic update (including vacant).
 	 * 
-	 * @param step    Euler step size
-	 * @param sqrtdt  square root of the time step (for noise terms)
+	 * @param step   Euler step size
+	 * @param sqrtdt square root of the time step (for noise terms)
 	 */
 	private void process3Traits(double step, double sqrtdt) {
 		// NOTE: if not replicator equation some adjustments are required (references to
@@ -399,11 +450,7 @@ public class SDE extends ODE {
 				dyt[2] -= nx + ny;
 			// in the absence of mutations, extinct traits (or species) must not make
 			// a sudden reappearance due to roundoff errors!
-			for (int i = 0; i < nDim; i++)
-				if (yt[i] > 0.0)
-					yout[i] = yt[i] + step * dyt[i];
-				else
-					yout[i] = 0.0;
+			applyStep(0, nDim, step);
 		}
 	}
 
@@ -416,22 +463,130 @@ public class SDE extends ODE {
 	private void processAnyTraits(double step, double sqrtdt) {
 		int skip = 0;
 		if (isDensity) {
+			int index = 0;
 			for (Module<?> mod : species) {
-				double noise = Math.sqrt(getEffectiveNoise(mod, skip)) * rng.nextGaussian() * sqrtdt;
-				// species that went extinct should not make a sudden reappearance
-				if (yt[skip] > 0.0) {
-					dyt[skip] += noise;
-					yout[skip] = yt[skip] + step * dyt[skip];
+				if (mod.getVacantIdx() >= 0) {
+					processEcologyDensity(mod, index, skip, sqrtdt);
+				} else {
+					double noise = Math.sqrt(getEffectiveNoise(mod, skip)) * rng.nextGaussian() * sqrtdt;
+					// species that went extinct should not make a sudden reappearance
+					if (yt[skip] > 0.0)
+						dyt[skip] += noise;
 				}
+				applyStep(skip, skip + mod.getNTraits(), step);
 				skip += mod.getNTraits();
+				index++;
 			}
 			return;
 		}
-		// frequency dynamics: no mutations in ecological processes
+		// frequency dynamics: demographic noise from ecological events only
+		int index = 0;
 		for (Module<?> mod : species) {
-			process2Traits(skip, step, sqrtdt, 0.0, getEffectiveNoise(mod, skip));
+			if (mod.getVacantIdx() >= 0) {
+				processEcologyFrequency(mod, index++, skip, sqrtdt);
+				applyStep(skip, skip + mod.getNTraits(), step);
+			} else {
+				process2Traits(skip, step, sqrtdt, 0.0, getEffectiveNoise(mod, skip));
+			}
 			skip += mod.getNTraits();
 		}
+	}
+
+	/**
+	 * Process density-based ecological dynamics with demographic noise from birth
+	 * and death events.
+	 *
+	 * @param mod    the module to process
+	 * @param index  the species index
+	 * @param skip   the starting index in state arrays
+	 * @param sqrtdt square root of time step for noise scaling
+	 */
+	private void processEcologyDensity(Module<?> mod, int index, int skip, double sqrtdt) {
+		int vacant = mod.getVacantIdx();
+		int vacantIdx = (vacant >= 0) ? skip + vacant : -1;
+		int end = skip + mod.getNTraits();
+		// Calculate effective rates with competition adjustments
+		computeEffRates(mod, index, yt, effRate);
+		double effBirth = effRate[0];
+		double effDeath = effRate[1];
+		double nPop = mod.getNPopulation();
+		double invN = 1.0 / nPop;
+
+		// Apply demographic noise to each trait
+		for (int n = skip; n < end; n++) {
+			if (n == vacantIdx)
+				continue;
+			double x = yt[n];
+			if (x <= 0.0)
+				continue;
+			double birthRate = effBirth + ((ft != null) ? ft[n] : 0.0);
+			double aBirth = (birthRate > 0.0) ? nPop * x * birthRate : 0.0;
+			double aDeath = (effDeath > 0.0) ? nPop * x * effDeath : 0.0;
+			double eta = 0.0;
+			if (aBirth > 0.0)
+				eta += Math.sqrt(aBirth) * rng.nextGaussian() * sqrtdt * invN;
+			if (aDeath > 0.0)
+				eta -= Math.sqrt(aDeath) * rng.nextGaussian() * sqrtdt * invN;
+			if (eta != 0.0)
+				dyt[n] += eta;
+		}
+	}
+
+	/**
+	 * Process ecological dynamics with demographic noise from birth and death
+	 * events.
+	 * 
+	 * @param mod    the module to process
+	 * @param index  the species index
+	 * @param skip   the starting index in state arrays
+	 * @param sqrtdt square root of time step for noise scaling
+	 */
+	private void processEcologyFrequency(Module<?> mod, int index, int skip, double sqrtdt) {
+		int vacant = mod.getVacantIdx();
+		if (vacant < 0)
+			return;
+		int end = skip + mod.getNTraits();
+		double z = yt[skip + vacant];
+		// Calculate effective rates with competition adjustments
+		computeEffRates(mod, index, yt, effRate);
+		double effBirth = effRate[0];
+		double effDeath = effRate[1];
+		double nPop = mod.getNPopulation();
+		double invN = 1.0 / nPop;
+
+		// Apply demographic noise to each trait
+		for (int n = skip; n < end; n++) {
+			if (n == skip + vacant)
+				continue;
+			double x = yt[n];
+			if (x <= 0.0)
+				continue;
+			double birthRate = effBirth + ((ft != null) ? ft[n] : 0.0);
+			double aBirth = (birthRate > 0.0 && z > 0.0) ? nPop * x * z * birthRate : 0.0;
+			double aDeath = (effDeath > 0.0) ? nPop * x * effDeath : 0.0;
+			double eta = 0.0;
+			if (aBirth > 0.0)
+				eta += Math.sqrt(aBirth) * rng.nextGaussian() * sqrtdt * invN;
+			if (aDeath > 0.0)
+				eta -= Math.sqrt(aDeath) * rng.nextGaussian() * sqrtdt * invN;
+			if (eta != 0.0) {
+				dyt[n] += eta;
+				dyt[skip + vacant] -= eta;
+			}
+		}
+	}
+
+	/**
+	 * Apply an Euler step with zero-clamping to prevent extinct traits from
+	 * reappearing due to roundoff errors. Used when mutations are absent.
+	 * 
+	 * @param start the starting index (inclusive)
+	 * @param end   the ending index (exclusive)
+	 * @param step  the step size
+	 */
+	private void applyStep(int start, int end, double step) {
+		for (int i = start; i < end; i++)
+			yout[i] = (yt[i] > 0.0) ? yt[i] + step * dyt[i] : 0.0;
 	}
 
 	/**
@@ -446,13 +601,12 @@ public class SDE extends ODE {
 		double effnoise = 1.0 / mod.getNPopulation();
 		// scale noise according effective population size
 		int vacant = skip + mod.getVacantIdx();
-		if (vacant >= 0) {
-			double ytv = yt[vacant];
-			if (ytv > 1.0 - 1e-8)
-				return 0.0;
-			effnoise /= (1.0 - ytv);
-		}
-		return effnoise;
+		if (vacant < 0)
+			return effnoise;
+		double ytv = yt[vacant];
+		if (ytv > 1.0 - 1e-8)
+			return 0.0;
+		return effnoise / (1.0 - ytv);
 	}
 
 	@Override
@@ -526,11 +680,11 @@ public class SDE extends ODE {
 		// SDE's currently are restricted to single species modules and implement
 		// mutation to other types only (including ALL as well should be fairly straight
 		// forward, though).
-		if (mutation != null && mutation.length > 0) {
-			CLOption clo = mutation[0].clo;
-			clo.clearKeys();
-			clo.addKey(Mutation.Discrete.Type.NONE);
-			clo.addKey(Mutation.Discrete.Type.OTHER);
-		}
+		if (mutation == null || mutation.length == 0)
+			return;
+		CLOption clo = mutation[0].clo;
+		clo.clearKeys();
+		clo.addKey(Mutation.Discrete.Type.NONE);
+		clo.addKey(Mutation.Discrete.Type.OTHER);
 	}
 }

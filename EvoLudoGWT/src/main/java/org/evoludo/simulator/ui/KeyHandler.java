@@ -1,7 +1,7 @@
 //
 // EvoLudo Project
 //
-// Copyright 2010-2025 Christoph Hauert
+// Copyright 2010-2026 Christoph Hauert
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -39,6 +39,8 @@ import org.evoludo.simulator.EvoLudoTrigger;
 import org.evoludo.simulator.views.AbstractView;
 import org.evoludo.util.CLOParser;
 import org.evoludo.util.NativeJS;
+
+import com.google.gwt.dom.client.Element;
 
 /**
  * Handles global key events and delegates actions to the owning EvoLudoWeb.
@@ -116,9 +118,9 @@ public class KeyHandler {
 	private boolean registered = false;
 
 	/**
-	 * Index of previously active view before switching to console view.
+	 * Previously active view before switching to console view.
 	 */
-	private int toggleIdx = -1;
+	private AbstractView<?> toggleView = null;
 
 	/**
 	 * Initializes the key event handler.
@@ -149,6 +151,8 @@ public class KeyHandler {
 			return;
 		unregisterGlobal(this);
 		registered = false;
+		if (active == this)
+			active = null;
 	}
 
 	/**
@@ -242,6 +246,21 @@ public class KeyHandler {
 				return true;
 		}
 		return false;
+	}
+
+	/**
+	 * Determines whether any controller's CLO field currently has focus.
+	 *
+	 * @return {@code true} if one of the registered controllers has its CLO field
+	 *         focused
+	 */
+	@SuppressWarnings("java:S1144") // Used by JSNI
+	private static boolean isCLOFieldFocused() {
+		if (active == null)
+			return false;
+		Element focused = NativeJS.getActiveElement();
+		Element cloElement = active.gui.getCLOElement();
+		return focused != null && cloElement != null && focused.equals(cloElement);
 	}
 
 	/**
@@ -535,15 +554,16 @@ public class KeyHandler {
 	 */
 	private boolean handleConsoleToggle() {
 		List<AbstractView<?>> views = gui.getActiveViews();
-		int consoleIdx = views.size() - 1;
-		if (consoleIdx < 0)
+		if (views.isEmpty())
 			return false;
-		if (gui.getActiveViewIndex() == consoleIdx) {
-			if (toggleIdx >= 0 && toggleIdx < views.size())
-				gui.changeView(views.get(toggleIdx));
+		AbstractView<?> consoleView = views.get(views.size() - 1);
+		AbstractView<?> active = gui.getActiveView();
+		if (active == consoleView) {
+			if (toggleView != null && views.contains(toggleView))
+				gui.changeView(toggleView);
 		} else {
-			toggleIdx = gui.getActiveViewIndex();
-			gui.changeView(views.get(consoleIdx));
+			toggleView = active;
+			gui.changeView(consoleView);
 		}
 		return true;
 	}
@@ -618,22 +638,26 @@ public class KeyHandler {
 			$wnd.EvoLudoUtils.keyListeners = new Map();
 		}
 		if (!$wnd.EvoLudoUtils.keyListeners.get('keydown')) {
-			$wnd.EvoLudoUtils.keyListeners.set(
-					'keydown',
-					$entry(function(event) {
-						if (@org.evoludo.simulator.ui.KeyHandler::dispatchKeyDown(Ljava/lang/String;)(event.key)) {
-							event.preventDefault();
-						}
-						event.stopPropagation();
-					}));
-			$wnd.EvoLudoUtils.keyListeners.set(
-					'keyup',
-					$entry(function(event) {
-						if (@org.evoludo.simulator.ui.KeyHandler::dispatchKeyUp(Ljava/lang/String;)(event.key)) {
-							event.preventDefault();
-						}
-						event.stopPropagation();
-					}));
+		$wnd.EvoLudoUtils.keyListeners.set(
+				'keydown',
+				$entry(function(event) {
+					if (@org.evoludo.simulator.ui.KeyHandler::isCLOFieldFocused()())
+						return;
+					if (@org.evoludo.simulator.ui.KeyHandler::dispatchKeyDown(Ljava/lang/String;)(event.key)) {
+						event.preventDefault();
+					}
+					event.stopPropagation();
+				}));
+		$wnd.EvoLudoUtils.keyListeners.set(
+				'keyup',
+				$entry(function(event) {
+					if (@org.evoludo.simulator.ui.KeyHandler::isCLOFieldFocused()())
+						return;
+					if (@org.evoludo.simulator.ui.KeyHandler::dispatchKeyUp(Ljava/lang/String;)(event.key)) {
+						event.preventDefault();
+					}
+					event.stopPropagation();
+				}));
 		}
 		$wnd.addEventListener('keydown', $wnd.EvoLudoUtils.keyListeners.get('keydown'), true);
 		$wnd.addEventListener('keyup', $wnd.EvoLudoUtils.keyListeners.get('keyup'), true);
@@ -662,6 +686,21 @@ public class KeyHandler {
 	 */
 	public boolean isActive() {
 		return active == this;
+	}
+
+	/**
+	 * Marks this handler as active because its CLO field just gained focus.
+	 */
+	public void onCLOFocusGained() {
+		setActive(this);
+	}
+
+	/**
+	 * Releases priority when this handler's CLO field loses focus.
+	 */
+	public void onCLOFocusLost() {
+		if (!gui.hasPopup() && active == this)
+			active = null;
 	}
 
 	/**

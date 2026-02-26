@@ -1,7 +1,7 @@
 //
 // EvoLudo Project
 //
-// Copyright 2010-2025 Christoph Hauert
+// Copyright 2010-2026 Christoph Hauert
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -94,9 +94,9 @@ public class SquareGeometry extends AbstractLattice {
 	public void init() {
 		int side = prepareSquareLattice();
 		if ((int) Math.rint(connectivity) == 1)
-			initSquareSelf(side, side, 0);
+			SquareGeometry.initSquareSelf(this, side, side, 0);
 		else
-			initSquare(side, side, 0);
+			SquareGeometry.initSquare(this, side, side, 0, fixedBoundary);
 		isValid = true;
 	}
 
@@ -118,31 +118,50 @@ public class SquareGeometry extends AbstractLattice {
 	 * Initialize a square lattice that only connects nodes to themselves (used
 	 * when connectivity equals one).
 	 *
+	 * @param geometry geometry receiving the links
 	 * @param side     side length of the (sub) lattice
 	 * @param fullside global side length
 	 * @param offset   index offset into the population
 	 */
-	protected void initSquareSelf(int side, int fullside, int offset) {
+	public static void initSquareSelf(AbstractGeometry geometry, int side, int fullside, int offset) {
 		for (int i = 0; i < side; i++) {
 			int x = offset + i * fullside;
 			for (int j = 0; j < side; j++) {
 				int aPlayer = x + j;
-				addLinkAt(aPlayer, aPlayer);
+				geometry.addLinkAt(aPlayer, aPlayer);
 			}
 		}
 	}
 
 	/**
+	 * Initialize one hierarchical square deme using population and deme sizes.
+	 *
+	 * @param geometry      geometry receiving the links
+	 * @param popSize       total population size
+	 * @param demeSize      number of individuals in the deme
+	 * @param startIndex    index offset into the population
+	 * @param fixedBoundary {@code true} for fixed boundary conditions
+	 */
+	public static void initHierarchicalSquare(AbstractGeometry geometry, int popSize, int demeSize, int startIndex,
+			boolean fixedBoundary) {
+		int side = (int) Math.sqrt(demeSize);
+		int fullside = (int) Math.sqrt(popSize);
+		SquareGeometry.initSquare(geometry, side, fullside, startIndex, fixedBoundary);
+	}
+
+	/**
 	 * Initialize a square lattice with arbitrary (odd) neighbourhood sizes.
 	 *
-	 * @param side     side length of the (sub) lattice
-	 * @param fullside global side length
-	 * @param offset   index offset into the population
+	 * @param geometry      geometry receiving the links
+	 * @param side          side length of the (sub) lattice
+	 * @param fullside      global side length
+	 * @param offset        index offset into the population
+	 * @param fixedBoundary {@code true} for fixed boundary conditions
 	 */
-	protected void initSquare(int side, int fullside, int offset) {
-		boolean interspecies = isInterspecies();
-		int range = Math.min(side / 2, Math.max(1, (int) (Math.sqrt(connectivity + 1.5) / 2.0)));
-
+	public static void initSquare(AbstractGeometry geometry, int side, int fullside, int offset,
+			boolean fixedBoundary) {
+		boolean interspecies = geometry.isInterspecies();
+		int range = Math.min(side / 2, Math.max(1, (int) (Math.sqrt(geometry.connectivity + 1.5) / 2.0)));
 		for (int i = 0; i < side; i++) {
 			int x = i * fullside;
 			for (int j = 0; j < side; j++) {
@@ -153,75 +172,77 @@ public class SquareGeometry extends AbstractLattice {
 						int bPlayer = y + (v + side) % side;
 						if (aPlayer == bPlayer && !interspecies)
 							continue;
-						addLinkAt(aPlayer, bPlayer);
+						geometry.addLinkAt(aPlayer, bPlayer);
 					}
 				}
 			}
 		}
 		if (fixedBoundary) {
-			adjustBoundaries(range, side, fullside, offset, interspecies);
-			isRegular = false;
+			adjustBoundaries(geometry, range, side, fullside, offset, interspecies);
+			geometry.isRegular = false;
 		}
 	}
 
 	/**
 	 * Adjust arbitrary-range neighbourhoods along fixed boundaries.
 	 *
+	 * @param geometry     geometry receiving the links
 	 * @param range        interaction range
 	 * @param side         side length of the (sub) lattice
 	 * @param fullside     global side length
 	 * @param offset       index offset into the population
 	 * @param interspecies {@code true} if self-links are required
 	 */
-	private void adjustBoundaries(int range, int side, int fullside, int offset, boolean interspecies) {
+	private static void adjustBoundaries(AbstractGeometry geometry, int range, int side, int fullside, int offset,
+			boolean interspecies) {
 		int aPlayer;
 		int bPlayer;
 		// top left
 		aPlayer = offset;
-		clearLinksFrom(aPlayer);
+		geometry.clearLinksFrom(aPlayer);
 		for (int u = 0; u <= range; u++) {
 			int r = aPlayer + u * fullside;
 			for (int v = 0; v <= range; v++) {
 				bPlayer = r + v;
 				if (aPlayer == bPlayer && !interspecies)
 					continue;
-				addLinkAt(aPlayer, bPlayer);
+				geometry.addLinkAt(aPlayer, bPlayer);
 			}
 		}
 		// top right
 		aPlayer = offset + side - 1;
-		clearLinksFrom(aPlayer);
+		geometry.clearLinksFrom(aPlayer);
 		for (int u = 0; u <= range; u++) {
 			int r = aPlayer + u * fullside;
 			for (int v = -range; v <= 0; v++) {
 				bPlayer = r + v;
 				if (aPlayer == bPlayer && !interspecies)
 					continue;
-				addLinkAt(aPlayer, bPlayer);
+				geometry.addLinkAt(aPlayer, bPlayer);
 			}
 		}
 		// bottom left
 		aPlayer = offset + (side - 1) * fullside;
-		clearLinksFrom(aPlayer);
+		geometry.clearLinksFrom(aPlayer);
 		for (int u = -range; u <= 0; u++) {
 			int r = aPlayer + u * fullside;
 			for (int v = 0; v <= range; v++) {
 				bPlayer = r + v;
 				if (aPlayer == bPlayer && !interspecies)
 					continue;
-				addLinkAt(aPlayer, bPlayer);
+				geometry.addLinkAt(aPlayer, bPlayer);
 			}
 		}
 		// bottom right
 		aPlayer = offset + (side - 1) * (fullside + 1);
-		clearLinksFrom(aPlayer);
+		geometry.clearLinksFrom(aPlayer);
 		for (int u = -range; u <= 0; u++) {
 			int r = aPlayer + u * fullside;
 			for (int v = -range; v <= 0; v++) {
 				bPlayer = r + v;
 				if (aPlayer == bPlayer && !interspecies)
 					continue;
-				addLinkAt(aPlayer, bPlayer);
+				geometry.addLinkAt(aPlayer, bPlayer);
 			}
 		}
 		for (int i = 1; i < side - 1; i++) {
@@ -229,82 +250,59 @@ public class SquareGeometry extends AbstractLattice {
 			int row = 0;
 			int col = i;
 			aPlayer = offset + row * fullside + col;
-			clearLinksFrom(aPlayer);
+			geometry.clearLinksFrom(aPlayer);
 			for (int u = row; u <= row + range; u++) {
 				int r = offset + u * fullside;
 				for (int v = col - range; v <= col + range; v++) {
 					bPlayer = r + (v + side) % side;
 					if (aPlayer == bPlayer && !interspecies)
 						continue;
-					addLinkAt(aPlayer, bPlayer);
+					geometry.addLinkAt(aPlayer, bPlayer);
 				}
 			}
 			// bottom edge
 			row = side - 1;
 			col = i;
 			aPlayer = offset + row * fullside + col;
-			clearLinksFrom(aPlayer);
+			geometry.clearLinksFrom(aPlayer);
 			for (int u = row - range; u <= row; u++) {
 				int r = offset + u * fullside;
 				for (int v = col - range; v <= col + range; v++) {
 					bPlayer = r + (v + side) % side;
 					if (aPlayer == bPlayer && !interspecies)
 						continue;
-					addLinkAt(aPlayer, bPlayer);
+					geometry.addLinkAt(aPlayer, bPlayer);
 				}
 			}
 			// left edge
 			row = i;
 			col = 0;
 			aPlayer = offset + row * fullside + col;
-			clearLinksFrom(aPlayer);
+			geometry.clearLinksFrom(aPlayer);
 			for (int u = row - range; u <= row + range; u++) {
 				int r = offset + ((u + side) % side) * fullside;
 				for (int v = col; v <= col + range; v++) {
 					bPlayer = r + v;
 					if (aPlayer == bPlayer && !interspecies)
 						continue;
-					addLinkAt(aPlayer, bPlayer);
+					geometry.addLinkAt(aPlayer, bPlayer);
 				}
 			}
 			// right edge
 			row = i;
 			col = side - 1;
 			aPlayer = offset + row * fullside + col;
-			clearLinksFrom(aPlayer);
+			geometry.clearLinksFrom(aPlayer);
 			for (int u = row - range; u <= row + range; u++) {
 				int r = offset + ((u + side) % side) * fullside;
 				for (int v = col - range; v <= col; v++) {
 					bPlayer = r + v;
 					if (aPlayer == bPlayer && !interspecies)
 						continue;
-					addLinkAt(aPlayer, bPlayer);
+					geometry.addLinkAt(aPlayer, bPlayer);
 				}
 			}
 		}
-		isRegular = false;
-	}
-
-	/**
-	 * Enforce square lattice size and optionally even side lengths.
-	 *
-	 * @param requireEvenSide {@code true} if the side length must be even
-	 * @return {@code true} if the size had to be adjusted
-	 */
-	protected boolean ensureSquareSize(boolean requireEvenSide) {
-		boolean doReset = false;
-		int side = (int) Math.floor(Math.sqrt(size) + 0.5);
-		if (requireEvenSide)
-			side = (side + 1) / 2 * 2;
-		int side2 = side * side;
-		if (setSize(side2)) {
-			if (engine.getModule().cloNPopulation.isSet()) {
-				String parity = requireEvenSide ? "even integer " : "integer ";
-				warn("requires " + parity + "square size - using " + size + "!");
-			}
-			doReset = true;
-		}
-		return doReset;
 	}
 
 	@Override

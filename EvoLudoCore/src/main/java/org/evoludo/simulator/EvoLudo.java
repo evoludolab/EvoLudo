@@ -1,7 +1,7 @@
 //
 // EvoLudo Project
 //
-// Copyright 2010-2025 Christoph Hauert
+// Copyright 2010-2026 Christoph Hauert
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -563,11 +563,13 @@ public abstract class EvoLudo
 	 * @return <code>true</code> if reset was necessary
 	 */
 	public boolean paramsDidChange() {
-		if (resetRequested || modelCheck()) {
-			modelReset();
-			return true;
+		if (activeModel != null) {
+			if (resetRequested || modelCheck()) {
+				modelReset();
+				return true;
+			}
+			activeModel.update();
 		}
-		activeModel.update();
 		fireSettingsChanged();
 		return false;
 	}

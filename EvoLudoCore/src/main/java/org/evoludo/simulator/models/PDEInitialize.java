@@ -1,7 +1,7 @@
 //
 // EvoLudo Project
 //
-// Copyright 2010-2025 Christoph Hauert
+// Copyright 2010-2026 Christoph Hauert
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -130,13 +130,13 @@ class PDEInitialize extends ODEInitialize {
 		}
 	}
 
- 	/**
- 	 * Initialize every lattice point with the same state.
- 	 * 
- 	 * @param density per-node density buffer to populate
- 	 * @param y0      base state vector copied to each node
- 	 * @param space   simulation geometry describing the lattice size
- 	 */
+	/**
+	 * Initialize every lattice point with the same state.
+	 * 
+	 * @param density per-node density buffer to populate
+	 * @param y0      base state vector copied to each node
+	 * @param space   simulation geometry describing the lattice size
+	 */
 	private void initUniform(double[][] density, double[] y0, AbstractGeometry space) {
 		int nDim = y0.length;
 		int nodeCount = space.getSize();

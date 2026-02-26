@@ -1,7 +1,7 @@
 //
 // EvoLudo Project
 //
-// Copyright 2010-2025 Christoph Hauert
+// Copyright 2010-2026 Christoph Hauert
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -110,6 +110,16 @@ public class NativeJS {
 	public static final native boolean isElementActive(Element element)
 	/*-{
 		return ($doc.activeElement === element);
+	}-*/;
+
+	/**
+	 * JSNI method: return the currently focused element in the document.
+	 * 
+	 * @return the active element or {@code null} if none
+	 */
+	public static final native Element getActiveElement()
+	/*-{
+		return $doc.activeElement || null;
 	}-*/;
 
 	/**
@@ -587,11 +597,6 @@ public class NativeJS {
 	// public static native int getBoundingHeight(Element element)
 	// /*-{
 	// return element.getBoundingClientRect().height;
-	// }-*/;
-
-	// public final native Element activeElement()
-	// /*-{
-	// return $doc.activeElement;
 	// }-*/;
 
 	// public static native JsArray<Node> getAttributes(Element elem) /*-{

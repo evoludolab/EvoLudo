@@ -1,7 +1,7 @@
 //
 // EvoLudo Project
 //
-// Copyright 2010-2025 Christoph Hauert
+// Copyright 2010-2026 Christoph Hauert
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -202,7 +202,7 @@ public class Moran extends Discrete implements Static,
 	public double[] getCustomLevels(Data type, int trait) {
 		// currently reference levels only available for Moran (birth-death) updates
 		// in IBS models (otherwise ibs is null, see reset(Model)
-		if (!model.getType().isIBS() || !getIBSPopulation().getPopulationUpdate().isMoran())
+		if (!getModelType().isIBS() || !getIBSPopulation().getPopulationUpdate().isMoran())
 			return new double[0];
 		// Note:
 		// - return reference levels for fixation probabilities and times based

@@ -1,7 +1,7 @@
 //
 // EvoLudo Project
 //
-// Copyright 2010-2025 Christoph Hauert
+// Copyright 2010-2026 Christoph Hauert
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -608,7 +608,7 @@ public class ATBT extends TBT implements HasS3, HasPhase2D {
 	public Model createModel(ModelType type) {
 		if (!type.isODE())
 			return super.createModel(type);
-		if (model != null && model.getType().isODE())
+		if (getModelType().isODE())
 			return model;
 		return new ATBT.ODE();
 	}

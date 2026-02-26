@@ -1,7 +1,7 @@
 //
 // EvoLudo Project
 //
-// Copyright 2010-2025 Christoph Hauert
+// Copyright 2010-2026 Christoph Hauert
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -35,15 +35,11 @@ import com.google.gwt.user.client.ui.Label;
 /**
  * Component of the context menu extension to GWT's user interface.
  * <p>
- * Provides a separator between (collections of) context menu items. Typically
- * a thin horizontal line.
- * <p>
- * For CSS styling the context menu separators have the class
+ * Represents a separator in the context menu. The actual layout of the menu
+ * separator is controlled via CSS using the class
  * <code>gwt-ContextMenuSeparator</code>.
  * 
  * @author Christoph Hauert
- * 
- * @see ContextMenu
  */
 public class ContextMenuSeparator extends Label {
 

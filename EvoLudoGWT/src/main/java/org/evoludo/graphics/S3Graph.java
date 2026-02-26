@@ -1,7 +1,7 @@
 //
 // EvoLudo Project
 //
-// Copyright 2010-2025 Christoph Hauert
+// Copyright 2010-2026 Christoph Hauert
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -329,7 +329,10 @@ public class S3Graph extends AbstractGraph<double[]> implements Zooming, Shiftin
 			buffer.replace(add);
 		else
 			buffer.append(add);
-		System.arraycopy(buffer.last(), 0, init, 0, data.length);
+		int len = data.length;
+		if (init == null || init.length != len + 1)
+			init = new double[len + 1];
+		System.arraycopy(buffer.last(), 0, init, 0, len + 1);
 	}
 
 	/**
@@ -352,8 +355,6 @@ public class S3Graph extends AbstractGraph<double[]> implements Zooming, Shiftin
 	@Override
 	public boolean paint(boolean force) {
 		if (super.paint(force))
-			return true;
-		if (!force && !doUpdate())
 			return true;
 		paintS3(true);
 		return false;
@@ -759,10 +760,10 @@ public class S3Graph extends AbstractGraph<double[]> implements Zooming, Shiftin
 	@Override
 	public String getTooltipAt(int x, int y) {
 		// convert to user coordinates
+		if (!inside(x, y))
+			return null;
 		double sx = scaledX(x);
 		double sy = scaledY(y);
-		if (!inside(sx, sy))
-			return null;
 		if (tooltipProvider instanceof TooltipProvider.Simplex)
 			return ((TooltipProvider.Simplex) tooltipProvider).getTooltipAt(this, sx, sy);
 		if (tooltipProvider != null)
@@ -789,6 +790,11 @@ public class S3Graph extends AbstractGraph<double[]> implements Zooming, Shiftin
 		if (!inside)
 			return false;
 		return (Segment2D.orientation(c2, c0, p) >= 0);
+	}
+
+	@Override
+	protected boolean inside(int x, int y) {
+		return inside(scaledX(x), scaledY(y));
 	}
 
 	/**
@@ -914,7 +920,7 @@ public class S3Graph extends AbstractGraph<double[]> implements Zooming, Shiftin
 		String[] names = map.getNames();
 		int cornerIdx = closestCorner(x, y);
 		if (setTraitMenu == null) {
-			setTraitMenu = new ContextMenu(menu);
+			setTraitMenu = new ContextMenu(menu, "Set trait");
 			for (String name : names)
 				setTraitMenu.add(new ContextMenuItem(name, () -> {
 					Iterator<Widget> items = setTraitMenu.iterator();
@@ -930,7 +936,7 @@ public class S3Graph extends AbstractGraph<double[]> implements Zooming, Shiftin
 					paint(true);
 				}));
 		}
-		menu.add("Set trait '" + names[order[cornerIdx]] + "' to ...", setTraitMenu);
+		menu.add("Set trait '" + names[order[cornerIdx]] + "' to", setTraitMenu);
 		for (Widget item : setTraitMenu)
 			((ContextMenuItem) item).setEnabled(true);
 		for (int t : order)

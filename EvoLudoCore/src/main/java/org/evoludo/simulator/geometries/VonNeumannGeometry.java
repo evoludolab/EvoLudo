@@ -1,7 +1,7 @@
 //
 // EvoLudo Project
 //
-// Copyright 2010-2025 Christoph Hauert
+// Copyright 2010-2026 Christoph Hauert
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -58,9 +58,39 @@ public class VonNeumannGeometry extends SquareGeometry {
 	@Override
 	public void init() {
 		int side = prepareSquareLattice();
-		boolean interspecies = isInterspecies();
-		int fullside = side;
-		int offset = 0;
+		initVonNeumann(this, side, side, 0, fixedBoundary);
+		isValid = true;
+	}
+
+	/**
+	 * Initialize one hierarchical von Neumann square deme using population and
+	 * deme sizes.
+	 *
+	 * @param geometry      geometry receiving the links
+	 * @param popSize       total population size
+	 * @param demeSize      number of individuals in the deme
+	 * @param startIndex    index offset into the population
+	 * @param fixedBoundary {@code true} for fixed boundary conditions
+	 */
+	public static void initHierarchicalVonNeumann(AbstractGeometry geometry, int popSize, int demeSize,
+			int startIndex, boolean fixedBoundary) {
+		int side = (int) Math.sqrt(demeSize);
+		int fullside = (int) Math.sqrt(popSize);
+		initVonNeumann(geometry, side, fullside, startIndex, fixedBoundary);
+	}
+
+	/**
+	 * Initialize a von Neumann square lattice.
+	 *
+	 * @param geometry      geometry receiving the links
+	 * @param side          side length of the (sub) lattice
+	 * @param fullside      global side length
+	 * @param offset        index offset into the population
+	 * @param fixedBoundary {@code true} for fixed boundary conditions
+	 */
+	public static void initVonNeumann(AbstractGeometry geometry, int side, int fullside, int offset,
+			boolean fixedBoundary) {
+		boolean interspecies = geometry.isInterspecies();
 		for (int i = 0; i < side; i++) {
 			int x = i * fullside;
 			int u = ((i - 1 + side) % side) * fullside;
@@ -70,89 +100,90 @@ public class VonNeumannGeometry extends SquareGeometry {
 				int l = (j - 1 + side) % side;
 				int aPlayer = offset + x + j;
 				if (interspecies)
-					addLinkAt(aPlayer, aPlayer);
-				addLinkAt(aPlayer, offset + u + j);
-				addLinkAt(aPlayer, offset + x + r);
-				addLinkAt(aPlayer, offset + d + j);
-				addLinkAt(aPlayer, offset + x + l);
+					geometry.addLinkAt(aPlayer, aPlayer);
+				geometry.addLinkAt(aPlayer, offset + u + j);
+				geometry.addLinkAt(aPlayer, offset + x + r);
+				geometry.addLinkAt(aPlayer, offset + d + j);
+				geometry.addLinkAt(aPlayer, offset + x + l);
 			}
 		}
 		if (fixedBoundary) {
-			adjustBoundaries(side, fullside, offset, interspecies);
-			isRegular = false;
+			adjustBoundaries(geometry, side, fullside, offset, interspecies);
+			geometry.isRegular = false;
 		}
-		isValid = true;
 	}
 
 	/**
 	 * Adjust von Neumann neighbourhoods when fixed boundaries are requested.
 	 *
+	 * @param geometry     geometry receiving the links
 	 * @param side         side length of the (sub) lattice
 	 * @param fullside     global side length
 	 * @param offset       index offset into the population
 	 * @param interspecies {@code true} if self-links are required
 	 */
-	private void adjustBoundaries(int side, int fullside, int offset, boolean interspecies) {
+	private static void adjustBoundaries(AbstractGeometry geometry, int side, int fullside, int offset,
+			boolean interspecies) {
 		int aPlayer = offset;
-		clearLinksFrom(aPlayer);
+		geometry.clearLinksFrom(aPlayer);
 		if (interspecies)
-			addLinkAt(aPlayer, aPlayer);
-		addLinkAt(aPlayer, aPlayer + 1);
-		addLinkAt(aPlayer, aPlayer + fullside);
+			geometry.addLinkAt(aPlayer, aPlayer);
+		geometry.addLinkAt(aPlayer, aPlayer + 1);
+		geometry.addLinkAt(aPlayer, aPlayer + fullside);
 
 		aPlayer = offset + side - 1;
-		clearLinksFrom(aPlayer);
+		geometry.clearLinksFrom(aPlayer);
 		if (interspecies)
-			addLinkAt(aPlayer, aPlayer);
-		addLinkAt(aPlayer, aPlayer - 1);
-		addLinkAt(aPlayer, aPlayer + fullside);
+			geometry.addLinkAt(aPlayer, aPlayer);
+		geometry.addLinkAt(aPlayer, aPlayer - 1);
+		geometry.addLinkAt(aPlayer, aPlayer + fullside);
 
 		aPlayer = offset + (side - 1) * fullside;
-		clearLinksFrom(aPlayer);
+		geometry.clearLinksFrom(aPlayer);
 		if (interspecies)
-			addLinkAt(aPlayer, aPlayer);
-		addLinkAt(aPlayer, aPlayer + 1);
-		addLinkAt(aPlayer, aPlayer - fullside);
+			geometry.addLinkAt(aPlayer, aPlayer);
+		geometry.addLinkAt(aPlayer, aPlayer + 1);
+		geometry.addLinkAt(aPlayer, aPlayer - fullside);
 
 		aPlayer = offset + (side - 1) * (fullside + 1);
-		clearLinksFrom(aPlayer);
+		geometry.clearLinksFrom(aPlayer);
 		if (interspecies)
-			addLinkAt(aPlayer, aPlayer);
-		addLinkAt(aPlayer, aPlayer - 1);
-		addLinkAt(aPlayer, aPlayer - fullside);
+			geometry.addLinkAt(aPlayer, aPlayer);
+		geometry.addLinkAt(aPlayer, aPlayer - 1);
+		geometry.addLinkAt(aPlayer, aPlayer - fullside);
 
 		for (int i = 1; i < side - 1; i++) {
 			aPlayer = offset + i;
-			clearLinksFrom(aPlayer);
+			geometry.clearLinksFrom(aPlayer);
 			if (interspecies)
-				addLinkAt(aPlayer, aPlayer);
-			addLinkAt(aPlayer, aPlayer - 1);
-			addLinkAt(aPlayer, aPlayer + 1);
-			addLinkAt(aPlayer, aPlayer + fullside);
+				geometry.addLinkAt(aPlayer, aPlayer);
+			geometry.addLinkAt(aPlayer, aPlayer - 1);
+			geometry.addLinkAt(aPlayer, aPlayer + 1);
+			geometry.addLinkAt(aPlayer, aPlayer + fullside);
 
 			aPlayer = offset + (side - 1) * fullside + i;
-			clearLinksFrom(aPlayer);
+			geometry.clearLinksFrom(aPlayer);
 			if (interspecies)
-				addLinkAt(aPlayer, aPlayer);
-			addLinkAt(aPlayer, aPlayer - 1);
-			addLinkAt(aPlayer, aPlayer + 1);
-			addLinkAt(aPlayer, aPlayer - fullside);
+				geometry.addLinkAt(aPlayer, aPlayer);
+			geometry.addLinkAt(aPlayer, aPlayer - 1);
+			geometry.addLinkAt(aPlayer, aPlayer + 1);
+			geometry.addLinkAt(aPlayer, aPlayer - fullside);
 
 			aPlayer = offset + fullside * i;
-			clearLinksFrom(aPlayer);
+			geometry.clearLinksFrom(aPlayer);
 			if (interspecies)
-				addLinkAt(aPlayer, aPlayer);
-			addLinkAt(aPlayer, aPlayer + 1);
-			addLinkAt(aPlayer, aPlayer - fullside);
-			addLinkAt(aPlayer, aPlayer + fullside);
+				geometry.addLinkAt(aPlayer, aPlayer);
+			geometry.addLinkAt(aPlayer, aPlayer + 1);
+			geometry.addLinkAt(aPlayer, aPlayer - fullside);
+			geometry.addLinkAt(aPlayer, aPlayer + fullside);
 
 			aPlayer = offset + fullside * i + side - 1;
-			clearLinksFrom(aPlayer);
+			geometry.clearLinksFrom(aPlayer);
 			if (interspecies)
-				addLinkAt(aPlayer, aPlayer);
-			addLinkAt(aPlayer, aPlayer - 1);
-			addLinkAt(aPlayer, aPlayer - fullside);
-			addLinkAt(aPlayer, aPlayer + fullside);
+				geometry.addLinkAt(aPlayer, aPlayer);
+			geometry.addLinkAt(aPlayer, aPlayer - 1);
+			geometry.addLinkAt(aPlayer, aPlayer - fullside);
+			geometry.addLinkAt(aPlayer, aPlayer + fullside);
 		}
 	}
 

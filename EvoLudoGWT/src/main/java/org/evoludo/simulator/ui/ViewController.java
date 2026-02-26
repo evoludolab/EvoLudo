@@ -1,7 +1,7 @@
 //
 // EvoLudo Project
 //
-// Copyright 2010-2025 Christoph Hauert
+// Copyright 2010-2026 Christoph Hauert
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -32,15 +32,16 @@ package org.evoludo.simulator.ui;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.logging.Logger;
 
 import org.evoludo.simulator.EvoLudoGWT;
 import org.evoludo.simulator.models.Data;
+import org.evoludo.simulator.models.Mode;
 import org.evoludo.simulator.models.Model;
 import org.evoludo.simulator.models.ModelType;
-import org.evoludo.simulator.models.Mode;
 import org.evoludo.simulator.modules.Module;
 import org.evoludo.simulator.views.AbstractView;
 import org.evoludo.simulator.views.Console;
@@ -67,7 +68,6 @@ import org.evoludo.util.NativeJS;
 import com.google.gwt.core.client.Scheduler;
 import com.google.gwt.user.client.ui.DeckLayoutPanel;
 import com.google.gwt.user.client.ui.ListBox;
-import com.google.gwt.user.client.ui.Widget;
 
 /**
  * Controller that manages the set of {@link AbstractView} instances displayed
@@ -107,12 +107,17 @@ public class ViewController {
 	/**
 	 * Registry of active views keyed by name.
 	 */
-	private Map<String, AbstractView<?>> activeViews = new HashMap<>();
+	private Map<String, AbstractView<?>> activeViews = new LinkedHashMap<>();
 
 	/**
 	 * Currently active view.
 	 */
 	private AbstractView<?> activeView;
+
+	/**
+	 * Track the module last used for view reuse decisions.
+	 */
+	private Module<?> lastModule;
 
 	/**
 	 * Initial view specification (index or name with optional args).
@@ -133,6 +138,8 @@ public class ViewController {
 		public String getDescription() {
 			StringBuilder descr = new StringBuilder("--view <v>      select view (v: index or title)");
 			int idx = 1;
+			if (engine.getModel() == null)
+				refreshViews();
 			for (AbstractView<?> view : activeViews.values()) {
 				String keycode = "              " + (idx++) + ": ";
 				int len = keycode.length();
@@ -279,31 +286,43 @@ public class ViewController {
 	 */
 	public void refreshViews() {
 		HashMap<String, AbstractView<?>> oldViews = new HashMap<>(activeViews);
-		activeViews = new HashMap<>();
+		activeViews = new LinkedHashMap<>();
+		selector.clear();
 
 		Module<?> module = engine.getModule();
-		if (module == null) {
-			addView(console, oldViews);
-			updateSelector();
-			return;
-		}
-
 		Model model = engine.getModel();
-		ModelType mt = model.getType();
-		boolean isODESDE = mt.isODE() || mt.isSDE();
+		if (module != null && model != null) {
+			if (module != lastModule)
+				unloadViews(oldViews);
+			ModelType mt = model.getType();
+			boolean isODESDE = mt.isODE() || mt.isSDE();
 
-		addStrategyViews(module, isODESDE, oldViews);
-		addFitnessViews(module, isODESDE, oldViews);
-		addStructureViews(module, isODESDE, oldViews);
-		addStatisticsViews(module, model, oldViews);
+			addStrategyViews(module, isODESDE, oldViews);
+			addFitnessViews(module, isODESDE, oldViews);
+			addStructureViews(module, isODESDE, oldViews);
+			addStatisticsViews(module, model, oldViews);
+		}
 
 		addView(console, oldViews);
 
-		for (AbstractView<?> view : oldViews.values())
-			deck.remove(view);
-		oldViews.clear();
+		if (!oldViews.isEmpty())
+			unloadViews(oldViews);
+		lastModule = module;
+	}
 
-		updateSelector();
+	/**
+	 * Unload and remove all views except the console.
+	 *
+	 * @param oldViews previously active views to unload
+	 */
+	private void unloadViews(HashMap<String, AbstractView<?>> oldViews) {
+		for (AbstractView<?> view : oldViews.values()) {
+			if (view == console)
+				continue;
+			view.unload();
+			deck.remove(view);
+		}
+		oldViews.clear();
 	}
 
 	/**
@@ -478,22 +497,18 @@ public class ViewController {
 		if (oldViews.containsKey(name))
 			view = oldViews.remove(name);
 		activeViews.put(view.getName(), view);
-		for (Widget widget : deck)
-			if (widget == view)
-				return;
+		selector.addItem(view.getName());
+		if (view == console) {
+			if (deck.getWidgetIndex(view) < 0)
+				deck.add(view);
+			return;
+		}
+		if (deck.getWidgetIndex(view) >= 0)
+			deck.remove(view);
 		int consoleIdx = deck.getWidgetIndex(console);
 		if (consoleIdx < 0)
 			deck.add(view);
 		else
 			deck.insert(view, consoleIdx);
-	}
-
-	/**
-	 * Rebuilds the selector entries so they match the deck layout.
-	 */
-	private void updateSelector() {
-		selector.clear();
-		for (Widget view : deck)
-			selector.addItem(((AbstractView<?>) view).getName());
 	}
 }

@@ -1,7 +1,7 @@
 //
 // EvoLudo Project
 //
-// Copyright 2010-2025 Christoph Hauert
+// Copyright 2010-2026 Christoph Hauert
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -76,20 +76,6 @@ public class LV extends Discrete implements HasDE.ODE, HasDE.SDE, HasDE.DualDyna
 	double[] rates;
 
 	/**
-	 * Prey net per capita growth rate, {@code a0 - dx}, where {@code dx} denotes
-	 * the death rate. Convenience variable for derivative calculations in
-	 * differential equations models.
-	 */
-	double rx;
-
-	/**
-	 * Predator net per capita growth rate, {@code b0 - dy}, where {@code dy}
-	 * denotes the death rate. Convenience variable for derivative calculations in
-	 * differential equations models.
-	 */
-	double ry;
-
-	/**
 	 * Create a new instance of the Lotka-Volterra module.
 	 * 
 	 * @param engine the pacemaker for running the module
@@ -102,7 +88,12 @@ public class LV extends Discrete implements HasDE.ODE, HasDE.SDE, HasDE.DualDyna
 
 	@Override
 	public String getTitle() {
-		return "Predator-Prey dynamics";
+		return "Prey-Predator dynamics";
+	}
+
+	@Override
+	public String getAuthors() {
+		return "Christoph Hauert";
 	}
 
 	@Override
@@ -126,17 +117,6 @@ public class LV extends Discrete implements HasDE.ODE, HasDE.SDE, HasDE.DualDyna
 	}
 
 	@Override
-	public boolean check() {
-		boolean doReset = super.check();
-		if (model.getType().isDE()) {
-			// initialize convenience variables for derivative calculations
-			rx = getBirthRate() - getDeathRate();
-			ry = predator.getBirthRate() - predator.getDeathRate();
-		}
-		return doReset;
-	}
-
-	@Override
 	public int getDependent() {
 		return VACANT;
 	}
@@ -149,7 +129,7 @@ public class LV extends Discrete implements HasDE.ODE, HasDE.SDE, HasDE.DualDyna
 		map.setFixedAxes(true);
 	}
 
-	/**
+	/*
 	 * The Lotka-Volterra model is defined by the following equations:
 	 * \[
 	 * \begin{align*}
@@ -182,57 +162,22 @@ public class LV extends Discrete implements HasDE.ODE, HasDE.SDE, HasDE.DualDyna
 	 * they include a cubic term for increased reproduction mitigated by the other
 	 * species but reduced by competition for space, i.e. \(x y (1-y) p_y\). This
 	 * results in a qualitatively different dynamics.
-	 * 
-	 * @param t         the current time
-	 * @param state     the current state of the system
-	 * @param unused    an unused array (for compatibility with the {@link Payoffs}
-	 *                  interface)
-	 * @param change    the array to store the changes
-	 * @param isDensity the flag indicating if the state is in terms of densities
-	 *                  for frequencies
-	 * 
-	 * @see #rates
-	 * @see Predator#rates
-	 * @see #getDeathRate()
 	 */
-	void getDerivatives(double t, double[] state, double[] unused, double[] change, boolean isDensity) {
-		int predatorIdx = nTraits + Predator.PREDATOR;
-		double x = state[PREY];
-		double y = state[predatorIdx];
-		// NOTE: the cross-terms cause problems for aligning DEs and IBS results
-		double[] preyRates = this.competitionRates;
-		double[] predRates = predator.competitionRates;
-		if (isDensity) {
-			// density dynamics
-			change[PREY] = x * (rx - x * preyRates[getId()] + y * preyRates[predator.getId()]);
-			change[predatorIdx] = y
-					* (ry - y * predRates[predator.getId()] + x * predRates[getId()]);
-			return;
-		}
-		// frequency dynamics
-		double delta = x * (rx - x * (getBirthRate() + preyRates[getId()]) + y * preyRates[predator.getId()]);
-		change[PREY] = delta;
-		change[VACANT] = -delta;
-		delta = y * (ry - y * (predator.getBirthRate() + predRates[predator.getId()])
-				+ x * (1.0 - y) * predRates[getId()]);
-		change[predatorIdx] = delta;
-		change[nTraits + VACANT] = -delta;
-	}
 
 	@Override
 	public Model createModel(ModelType type) {
 		switch (type) {
 			case ODE:
-				if (model != null && model.getType().isODE())
+				if (getModelType().isODE())
 					return model;
 				return new LV.ODE();
 			case SDE:
-				if (model != null && model.getType().isSDE())
+				if (getModelType().isSDE())
 					return model;
 				return new LV.SDE();
 			// case PDE: not yet ready for multiple species
 			case IBS:
-				if (model != null && model.getType().isIBS())
+				if (getModelType().isIBS())
 					return model;
 				return super.createModel(type);
 			default:
@@ -260,11 +205,6 @@ public class LV extends Discrete implements HasDE.ODE, HasDE.SDE, HasDE.DualDyna
 			// RungeKutta; causes troubles with tests otherwise
 			type = ModelType.ODE;
 		}
-
-		@Override
-		protected void getDerivatives(double t, double[] state, double[] unused, double[] change) {
-			LV.this.getDerivatives(t, state, unused, change, isDensity);
-		}
 	}
 
 	/**
@@ -278,11 +218,6 @@ public class LV extends Discrete implements HasDE.ODE, HasDE.SDE, HasDE.DualDyna
 		 */
 		public SDE() {
 			super(LV.this.engine);
-		}
-
-		@Override
-		protected void getDerivatives(double t, double[] state, double[] unused, double[] change) {
-			LV.this.getDerivatives(t, state, unused, change, isDensity);
 		}
 	}
 }
@@ -347,54 +282,6 @@ class Predator extends Discrete implements Multispecies, HasDE {
 class IBSPop extends IBSDPopulation {
 
 	/**
-	 * The reference to the predator population. If {@code isPredator==true} then
-	 * {@code predator==this}.
-	 */
-	IBSPop predator;
-
-	/**
-	 * The reference to the prey population. If {@code isPredator==false} then
-	 * {@code prey==this}.
-	 */
-	IBSPop prey;
-
-	/**
-	 * The flag to indicate whether this is a predator population. Convenience
-	 * variable.
-	 */
-	final boolean isPredator;
-
-	/**
-	 * The interaction rates with other populations rates for the predator/prey
-	 * population. Convenience variable.
-	 * 
-	 * @see Module#getCompetitionRates()
-	 */
-	double[] competitionRates;
-
-	/**
-	 * The per capita birth rate for the predator/prey population. Convenience
-	 * variable.
-	 * 
-	 * @see Module#getBirthRate()
-	 */
-	double birthRate;
-
-	/**
-	 * The per capita death rate for the predator/prey population. Convenience
-	 * variable.
-	 * 
-	 * @see Module#getDeathRate()
-	 */
-	double deathRate;
-
-	/**
-	 * The maximum rate at which events can occur. This is used to convert rates
-	 * into transition probabilities.
-	 */
-	double maxRate;
-
-	/**
 	 * Create a new custom implementation for IBS simulations.
 	 * 
 	 * @param engine the pacemaker for running the model
@@ -402,135 +289,14 @@ class IBSPop extends IBSDPopulation {
 	 */
 	protected IBSPop(EvoLudo engine, Discrete module) {
 		super(engine, module);
-		isPredator = (module instanceof Predator);
-		if (isPredator) {
-			predator = this;
-			prey = (IBSPop) opponent;
-		} else {
-			predator = (IBSPop) opponent;
-			prey = this;
-		}
 	}
 
 	@Override
-	public boolean check() {
-		boolean doReset = super.check();
-		deathRate = module.getDeathRate();
-		birthRate = module.getBirthRate();
-		competitionRates = module.getCompetitionRates();
-		// focal peer opponent
-		// X 0 0 death, birth: deathRate + birthRate
-		// X X 0 death, competition: deathRate + rates[module.getId()]
-		// X 0 Y death, birth, predation: deathRate + birthRate + |rates[1]|
-		// X X Y death, competition, predation: deathRate + rates[module.getId()] +
-		// |rates[1]|
-		maxRate = deathRate + Math.max(Math.max(Math.max(birthRate, // birth
-				competitionRates[module.getId()]), // competition
-				birthRate + Math.abs(competitionRates[opponent.getModule().getId()])), // birth + predation
-				competitionRates[module.getId()] + Math.abs(competitionRates[opponent.getModule().getId()])); // competition
-																												// +
-																												// predation
-		return doReset;
-	}
-
-	@Override
-	public double getSpeciesUpdateRate() {
-		return maxRate * getPopulationSize();
-	}
-
-	/**
-	 * Individual based simulation implementation of the classical Lotka-Volterra
-	 * model in finite and structured populations. For a focal individual three
-	 * events are possible based on the occupancy of a randomly selected
-	 * neighbouring site {@code A} of the peer species as well as one of the
-	 * opponent species {@code B} :
-	 * <ol>
-	 * <li>reproduction: occurs at rate {@code rates[0]} if {@code A} is empty;
-	 * <li>death: spontaneous death occurs at rate {@code rates[0]} and death due to
-	 * competition with peers occurs at rate {@code rates[2]} if {@code A} is
-	 * occupied;
-	 * <li>predation: prey gets eaten at rate {@code rates[1]} if {@code B} is
-	 * occupied, while predators have a chance to reproduce, provided {@code A} is
-	 * empty.
-	 * </ol>
-	 * The relative rates at which the two species are updated depends on the
-	 * population size as well as the above rates. In well-mixed populations and in
-	 * the limit of large populations the above updating rules recover the ODE
-	 * model.
-	 * 
-	 * @see #getSpeciesUpdateRate()
-	 * @see LV#getDerivatives(double, double[], double[], double[], boolean)
-	 */
-	@Override
-	protected int updatePlayerEcologyAt(int me) {
-		debugFocal = me;
-		debugModel = -1;
-		double focalDies = deathRate;
-		double focalReproduces;
-		int peer = pickNeighborSiteAt(me);
-		boolean peerVacant = isVacantAt(peer);
-		if (peerVacant) {
-			// focal may reproduce because neighbouring site is vacant
-			focalReproduces = birthRate;
-		} else {
-			// focal fails to reproduce due to lack of space
-			focalReproduces = 0.0;
-			// focal may also die due to competition
-			focalDies += competitionRates[module.getId()];
-		}
-		// predation if random neighbouring opponent site is occupied
-		double focalPredation = 0.0;
-		int predation = opponent.pickNeighborSiteAt(me);
-		if (!opponent.isVacantAt(predation)) {
-			// assume predator.rates[1] > 0 and prey.rates[1] < 0 (at least for now)
-			focalPredation = Math.abs(competitionRates[opponent.getModule().getId()]);
-			// NOTE: the cross-terms cause problems for aligning DEs and IBS results
-			// if (!isPredator)
-			// focalPredation += Math.abs(predator.rates[1]);
-		}
-		double totRate = focalReproduces + focalDies + focalPredation;
-		if (totRate <= 0.0) {
-			// this implies deathRate == 0. converged if at maximum population size
-			// and opponent extinct.
-			if (traitsCount[LV.VACANT] == 0 && opponent.getPopulationSize() == 0)
-				return -1;
-			return 0;
-		}
-		double randomTestVal = random01() * maxRate;
-		if (randomTestVal >= totRate) {
-			// nothing happens
-			return 0;
-		}
-		boolean isExtinct = false;
-		if (randomTestVal < focalReproduces) {
-			// focal reproduces spontaneously
-			setNextTraitAt(peer, 0); // note: works because Predator.PREDATOR == LV.PREY == 0
-			commitTraitAt(peer);
-		} else {
-			randomTestVal -= focalReproduces;
-			if (randomTestVal < focalDies) {
-				// focal dies spontaneously or due to competition: vacate focal site
-				// more efficient than setNextTraitAt
-				traitsNext[me] = LV.VACANT + nTraits;
-				commitTraitAt(me);
-				isExtinct = (getPopulationSize() == 0);
-			} else {
-				// focal predation: prey dies, predator reproduces if neighbour vacant
-				if (isPredator) {
-					// predator reproduces provided random neighbouring site is vacant
-					if (peerVacant) {
-						setNextTraitAt(peer, Predator.PREDATOR);
-						commitTraitAt(peer);
-					}
-				} else {
-					// prey dies; more efficient than setNextTraitAt
-					traitsNext[me] = LV.VACANT + nTraits;
-					commitTraitAt(me);
-					isExtinct = (getPopulationSize() == 0);
-				}
-			}
-		}
-		return (isExtinct ? -1 : 1);
+	protected void updateMaxRate() {
+		// maxRate is constant
+		if (maxRate > 0.0)
+			return;
+		super.updateMaxRate();
 	}
 
 	@Override

@@ -1,7 +1,7 @@
 //
 // EvoLudo Project
 //
-// Copyright 2010-2025 Christoph Hauert
+// Copyright 2010-2026 Christoph Hauert
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -513,6 +513,11 @@ public abstract class Model implements CLOProvider {
 	protected List<? extends Module<?>> species;
 
 	/**
+	 * Markers for annotating graphical representations of the state of the model.
+	 */
+	protected Markers markers;
+
+	/**
 	 * The number of species in multi-species models.
 	 */
 	protected int nSpecies;
@@ -557,6 +562,8 @@ public abstract class Model implements CLOProvider {
 		species = engine.getModule().getSpecies();
 		nSpecies = species.size();
 		isMultispecies = (nSpecies > 1);
+		engine.addCLOProvider(this);
+		markers = new Markers(this);
 	}
 
 	/**
@@ -565,9 +572,11 @@ public abstract class Model implements CLOProvider {
 	 * @see LifecycleListener#modelUnloaded()
 	 */
 	public void unload() {
+		engine.removeCLOProvider(this);
 		resetStatisticsSample();
 		rng = null;
 		species = null;
+		markers = null;
 	}
 
 	/**
@@ -729,6 +738,18 @@ public abstract class Model implements CLOProvider {
 	 */
 	public int getNSpecies() {
 		return nSpecies;
+	}
+
+	/**
+	 * Get the list of markers. This serves to mark special values in different
+	 * kinds of graphs.
+	 * 
+	 * @return the list of markers
+	 */
+	public List<double[]> getMarkers() {
+		if (markers == null)
+			return null;
+		return markers.getMarkers();
 	}
 
 	/**
@@ -1609,6 +1630,8 @@ public abstract class Model implements CLOProvider {
 
 	@Override
 	public void collectCLO(CLOParser parser) {
+		if (markers != null)
+			parser.addCLO(markers.clo);
 		parser.addCLO(cloTimeStep);
 		parser.addCLO(cloTimeStop);
 		parser.addCLO(cloTimeRelax);

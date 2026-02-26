@@ -1,7 +1,7 @@
 //
 // EvoLudo Project
 //
-// Copyright 2010-2025 Christoph Hauert
+// Copyright 2010-2026 Christoph Hauert
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -127,7 +127,8 @@ import com.google.gwt.user.client.ui.Widget;
  * ContextMenu (for buffer size, log-scale and zoom actions). Subclasses
  * and the owning AbstractView can extend and populate the context menu.
  * </li>
- * <li>Maintain an optional RingBuffer&lt;B&gt; for historical data and provide a
+ * <li>Maintain an optional RingBuffer&lt;B&gt; for historical data and provide
+ * a
  * small context menu for configuring buffer capacity. Subclasses may
  * implement exporting of trajectory/history data when relevant.
  * </li>
@@ -601,29 +602,6 @@ public abstract class AbstractGraph<B> extends FocusPanel
 	}
 
 	/**
-	 * The minimum time between updates in milliseconds.
-	 */
-	public static final int MIN_MSEC_BETWEEN_UPDATES = 100; // max 10 updates per second
-
-	/**
-	 * The field to store the time of the last update.
-	 */
-	protected double updatetime = -1.0;
-
-	/**
-	 * Determine whether it is time to update the display.
-	 * 
-	 * @return {@code true} if time to update graph
-	 */
-	public boolean doUpdate() {
-		double now = Duration.currentTimeMillis();
-		if (now - updatetime < MIN_MSEC_BETWEEN_UPDATES)
-			return false;
-		updatetime = now;
-		return true;
-	}
-
-	/**
 	 * CSS class applied when the user is grabbing a node.
 	 */
 	static final String CURSOR_GRAB_NODE_CLASS = "evoludo-cursorGrabNode";
@@ -851,6 +829,7 @@ public abstract class AbstractGraph<B> extends FocusPanel
 	 * 
 	 * @return the module
 	 */
+	@SuppressWarnings("java:S1452") // impossible to specify generic type here
 	public Module<?> getModule() {
 		return module;
 	}
@@ -957,6 +936,11 @@ public abstract class AbstractGraph<B> extends FocusPanel
 	ContextMenuItem zoomOutMenu;
 
 	/**
+	 * The context menu holding zoom actions.
+	 */
+	private ContextMenu zoomMenu;
+
+	/**
 	 * The menu item to toggle logarithmic scaling on the y-axis.
 	 */
 	ContextMenuCheckBoxItem logYMenu;
@@ -984,11 +968,11 @@ public abstract class AbstractGraph<B> extends FocusPanel
 	 * 
 	 * @param menu the context menu to populate
 	 */
-	private void addBufferSizeMenu(ContextMenu menu) {
+	protected void addBufferSizeMenu(ContextMenu menu) {
 		if (!hasHistory())
 			return;
 		if (bufferSizeMenu == null) {
-			bufferSizeMenu = new ContextMenu(menu);
+			bufferSizeMenu = new ContextMenu(menu, "Buffer");
 			bufferSizeMenu.add(new ContextMenuCheckBoxItem("5k", //
 					(ScheduledCommand) () -> {
 						setBufferCapacity(5000);
@@ -1011,7 +995,7 @@ public abstract class AbstractGraph<B> extends FocusPanel
 					}));
 		}
 		setBufferCapacity(buffer.getCapacity());
-		ContextMenuItem bufferSizeTrigger = menu.add("Buffer size...", bufferSizeMenu);
+		ContextMenuItem bufferSizeTrigger = menu.add("Buffer size", bufferSizeMenu);
 		bufferSizeTrigger.setEnabled(!view.isRunning());
 		menu.addSeparator();
 	}
@@ -1023,7 +1007,7 @@ public abstract class AbstractGraph<B> extends FocusPanel
 	 * 
 	 * @param menu the context menu to populate
 	 */
-	private void addLogScaleMenu(ContextMenu menu) {
+	protected void addLogScaleMenu(ContextMenu menu) {
 		if (this instanceof HasLogScaleY) {
 			if (logYMenu == null) {
 				logYMenu = new ContextMenuCheckBoxItem("Logarithmic y-axis", (ScheduledCommand) () -> {
@@ -1042,18 +1026,31 @@ public abstract class AbstractGraph<B> extends FocusPanel
 	 * 
 	 * @param menu the context menu to populate
 	 */
-	private void addZoomMenu(ContextMenu menu) {
-		if (this instanceof Zooming) {
-			if (zoomInMenu == null)
-				zoomInMenu = new ContextMenuItem("Zoom in (2x)", new ZoomCommand(2.0));
-			menu.add(zoomInMenu);
-			if (zoomOutMenu == null)
-				zoomOutMenu = new ContextMenuItem("Zoom out (0.5x)", new ZoomCommand(0.5));
-			menu.add(zoomOutMenu);
-			if (zoomResetMenu == null)
-				zoomResetMenu = new ContextMenuItem("Reset zoom", new ZoomCommand(0.0));
-			menu.add(zoomResetMenu);
+	protected void addZoomMenu(ContextMenu menu) {
+		if (!(this instanceof Zooming))
+			return;
+		if (zoomMenu == null) {
+			zoomMenu = new ContextMenu(menu, "Zoom");
+			populateZoomMenu(zoomMenu);
 		}
+		menu.add("Zoom", zoomMenu);
+	}
+
+	/**
+	 * Populate the zoom submenu with standard zoom actions.
+	 * 
+	 * @param menu the zoom submenu to populate
+	 */
+	protected void populateZoomMenu(ContextMenu menu) {
+		if (zoomInMenu == null)
+			zoomInMenu = new ContextMenuItem("Zoom in (2x)", new ZoomCommand(2.0));
+		menu.add(zoomInMenu);
+		if (zoomOutMenu == null)
+			zoomOutMenu = new ContextMenuItem("Zoom out (0.5x)", new ZoomCommand(0.5));
+		menu.add(zoomOutMenu);
+		if (zoomResetMenu == null)
+			zoomResetMenu = new ContextMenuItem("Reset zoom", new ZoomCommand(0.0));
+		menu.add(zoomResetMenu);
 	}
 
 	/**
@@ -1087,6 +1084,8 @@ public abstract class AbstractGraph<B> extends FocusPanel
 		int bufSize = buffer.getCapacity();
 		String label = (bufSize / 1000) + "k";
 		for (Widget item : bufferSizeMenu) {
+			if (!(item instanceof ContextMenuCheckBoxItem))
+				continue;
 			ContextMenuCheckBoxItem menuItem = (ContextMenuCheckBoxItem) item;
 			menuItem.setChecked(menuItem.getText().equals(label));
 		}
@@ -1175,7 +1174,7 @@ public abstract class AbstractGraph<B> extends FocusPanel
 		if (style.showXTicks)
 			bounds.adjust(0, 0, 0, -(style.tickLength + 2));
 		if (style.showYTicks)
-			bounds.adjust(0, 0, -(style.tickLength + 2), 0);
+			adjustBoundsForYSide(style.tickLength + 2.0);
 	}
 
 	/**
@@ -1186,7 +1185,7 @@ public abstract class AbstractGraph<B> extends FocusPanel
 			bounds.adjust(0, 0, 0, -20); // 14px for font size plus some padding
 		// something does not add up but at least this improves results
 		if (style.showYLabel && style.yLabel != null)
-			bounds.adjust(0, 0, -12, 0);
+			adjustBoundsForYSide(12);
 	}
 
 	/**
@@ -1199,8 +1198,14 @@ public abstract class AbstractGraph<B> extends FocusPanel
 			bounds.adjust(0, 0, 0, -14); // 10px for font size plus some padding
 		String font = g.getFont();
 		setFont(style.ticksLabelFont);
-		double tik2 = Math.max(g.measureText(Formatter.formatFix(style.xMax, 2)).getWidth(),
-				g.measureText(Formatter.formatFix(style.xMin, 2)).getWidth()) * 0.5;
+		double xMinLabel = style.xMin;
+		double xMaxLabel = style.xMax;
+		if (style.offsetXTickLabels && !style.percentX) {
+			xMinLabel += style.xTickOffset;
+			xMaxLabel += style.xTickOffset;
+		}
+		double tik2 = Math.max(g.measureText(Formatter.formatFix(xMaxLabel, 2)).getWidth(),
+				g.measureText(Formatter.formatFix(xMinLabel, 2)).getWidth()) * 0.5;
 		if (tik2 > style.minPadding) {
 			bounds.adjust(tik2, 0, -tik2, 0);
 		}
@@ -1216,17 +1221,30 @@ public abstract class AbstractGraph<B> extends FocusPanel
 					digits = 1;
 				else
 					digits = 0;
-				bounds.adjust(0, 0, -g.measureText(Formatter.formatPercent(100, digits)).getWidth(), 0);
+				adjustBoundsForYSide(g.measureText(Formatter.formatPercent(100, digits)).getWidth());
 			} else {
-				bounds.adjust(0, 0,
-						-g.measureText(
+				adjustBoundsForYSide(
+						g.measureText(
 								Formatter.formatFix(-Math.max(Math.abs(style.yMin), Math.abs(style.yMax)), digits))
-								.getWidth(),
-						0);
+								.getWidth());
 			}
-			bounds.adjust(0, 0, -4, 0);
+			adjustBoundsForYSide(4);
 		}
 		g.setFont(font);
+	}
+
+	/**
+	 * Adjust bounds to make room for y-axis decorations on the selected side.
+	 * 
+	 * @param padding the horizontal padding to reserve
+	 */
+	private void adjustBoundsForYSide(double padding) {
+		if (padding <= 0.0)
+			return;
+		if (style.showYAxisRight)
+			bounds.adjust(0, 0, -padding, 0);
+		else
+			bounds.adjust(padding, 0, -padding, 0);
 	}
 
 	/**
@@ -1301,6 +1319,7 @@ public abstract class AbstractGraph<B> extends FocusPanel
 	private void drawXLevels(int xLevels, double w, double h) {
 		if (xLevels <= 0)
 			return;
+		int digits = computeLinearDigits(style.xMin, style.xMax, xLevels, style.percentX, false);
 		double frac = 1.0 / xLevels;
 		double incr = frac * w;
 		double level = 0.5 - incr;
@@ -1319,9 +1338,19 @@ public abstract class AbstractGraph<B> extends FocusPanel
 				setFont(style.ticksLabelFont);
 				g.setFillStyle(style.frameColor);
 				double xval = style.xMin + n * frac * (style.xMax - style.xMin);
-				String tick = style.percentX ? Formatter.formatPercent(xval, 0) : Formatter.format(xval, 2);
-				// center tick labels with ticks, except for first label (left most)
-				double xpos = level - (n > 0 ? g.measureText(tick).getWidth() * 0.5 : 2.0);
+				if (style.offsetXTickLabels && !style.percentX)
+					xval += style.xTickOffset;
+				String tick = style.percentX ? Formatter.formatPercent(xval, digits) : Formatter.format(xval, digits);
+				// center tick labels with ticks, except for first/last labels at the edges
+				double tickWidth = g.measureText(tick).getWidth();
+				double xpos;
+				if (n == 0) {
+					xpos = 2.0;
+				} else if (n == xLevels) {
+					xpos = level - tickWidth;
+				} else {
+					xpos = level - tickWidth * 0.5;
+				}
 				g.fillText(tick, xpos, h + (style.tickLength + 12.5));
 			}
 		}
@@ -1355,12 +1384,17 @@ public abstract class AbstractGraph<B> extends FocusPanel
 	private void drawYLevels(int yLevels, double w, double h) {
 		if (yLevels <= 0)
 			return;
+		int digits = (!style.logScaleY)
+				? computeLinearDigits(style.yMin, style.yMax, yLevels, style.percentY, true)
+				: 2;
 		double frac = 1.0 / yLevels;
 		double incr = frac * h;
 		double level = 0.5 - incr;
 		double[] range = computeYRange();
 		double ymin = range[0];
 		double yrange = range[1];
+		double tickStart = style.showYAxisRight ? w + 0.5 : 0.5;
+		double tickEnd = style.showYAxisRight ? w + 0.5 + style.tickLength : 0.5 - style.tickLength;
 
 		for (int n = 0; n <= yLevels; n++) {
 			level += incr;
@@ -1370,11 +1404,11 @@ public abstract class AbstractGraph<B> extends FocusPanel
 			}
 			if (style.showYTicks) {
 				g.setStrokeStyle(style.frameColor);
-				strokeLine(w + 0.5, level, w + 0.5 + style.tickLength, level);
+				strokeLine(tickStart, level, tickEnd, level);
 			}
 			if (style.showYTickLabels) {
 				double yval = computeYVal(n, frac, yrange, ymin);
-				drawYTickLabel(w, level, n, yval);
+				drawYTickLabel(w, level, n, yval, digits);
 			}
 		}
 	}
@@ -1416,17 +1450,26 @@ public abstract class AbstractGraph<B> extends FocusPanel
 	/**
 	 * Draw the y-axis tick label at the specified screen level.
 	 *
-	 * @param w     frame width
-	 * @param level screen y-position for the tick
-	 * @param n     tick index
-	 * @param yval  y-value represented by the tick
+	 * @param w      frame width
+	 * @param level  screen y-position for the tick
+	 * @param n      tick index
+	 * @param yval   y-value represented by the tick
+	 * @param digits decimal digits for tick label formatting
 	 */
-	private void drawYTickLabel(double w, double level, int n, double yval) {
+	private void drawYTickLabel(double w, double level, int n, double yval, int digits) {
 		setFont(style.ticksLabelFont);
 		g.setFillStyle(style.frameColor);
-		String tick = style.percentY ? Formatter.formatPretty(100.0 * yval, 2) : Formatter.formatPretty(yval, 2);
+		String tick = style.percentY
+				? Formatter.formatPretty(100.0 * yval, digits)
+				: Formatter.formatPretty(yval, digits);
 		String[] numexp = tick.split("\\^");
-		double xpos = w + 0.5 + (style.tickLength + 4);
+		double xpos;
+		if (style.showYAxisRight) {
+			xpos = w + 0.5 + (style.tickLength + 4);
+		} else {
+			double labelWidth = measureYTickLabelWidth(numexp, style.percentY);
+			xpos = 0.5 - (style.tickLength + 4) - labelWidth;
+		}
 		double ypos = level + (n == 0 ? 9 : 4.5);
 		g.fillText(numexp[0], xpos, ypos);
 		xpos += g.measureText(numexp[0]).getWidth();
@@ -1438,6 +1481,74 @@ public abstract class AbstractGraph<B> extends FocusPanel
 		}
 		if (style.percentY)
 			g.fillText("%", xpos, ypos);
+	}
+
+	/**
+	 * Compute the number of decimal digits needed for linear labels so consecutive
+	 * ticks remain distinct.
+	 *
+	 * @param min     axis minimum
+	 * @param max     axis maximum
+	 * @param levels  number of tick levels
+	 * @param percent whether values are percent formatted
+	 * @param pretty  whether to use pretty formatting for duplicates check
+	 * @return decimal digits for linear labels
+	 */
+	private int computeLinearDigits(double min, double max, int levels, boolean percent, boolean pretty) {
+		if (levels <= 0)
+			return 0;
+		double step = (max - min) / levels;
+		double stepUnits = percent ? Math.abs(step * 100.0) : Math.abs(step);
+		int digits = 0;
+		if (stepUnits > 0.0)
+			digits = (int) Math.max(0, Math.ceil(-Math.log10(stepUnits)));
+		digits = Math.min(digits, 12);
+		for (; digits < 12; digits++) {
+			String prev = null;
+			boolean dup = false;
+			for (int n = 0; n <= levels; n++) {
+				double val = min + n * step;
+				String label;
+				if (percent) {
+					label = pretty
+							? Formatter.formatPretty(100.0 * val, digits)
+							: Formatter.formatPercent(val, digits);
+				} else {
+					label = pretty
+							? Formatter.formatPretty(val, digits)
+							: Formatter.format(val, digits);
+				}
+				if (prev != null && prev.equals(label)) {
+					dup = true;
+					break;
+				}
+				prev = label;
+			}
+			if (!dup)
+				break;
+		}
+		return digits;
+	}
+
+	/**
+	 * Measure the width of a y-axis tick label including exponent and percent.
+	 * 
+	 * @param numexp  the tick label split into base and exponent parts
+	 * @param percent whether a percent sign is appended
+	 * @return the total width in pixels
+	 */
+	private double measureYTickLabelWidth(String[] numexp, boolean percent) {
+		setFont(style.ticksLabelFont);
+		double width = g.measureText(numexp[0]).getWidth();
+		if (numexp.length > 1) {
+			String expFont = style.ticksLabelFont.replace("11px", "9px");
+			setFont(expFont);
+			width += g.measureText(numexp[1]).getWidth();
+			setFont(style.ticksLabelFont);
+		}
+		if (percent)
+			width += g.measureText("%").getWidth();
+		return width;
 	}
 
 	/**
@@ -1494,7 +1605,8 @@ public abstract class AbstractGraph<B> extends FocusPanel
 		}
 		setFont(style.axesLabelFont);
 		String ylabel = style.yLabel + (style.logScaleY ? " (log)" : "");
-		fillTextVertical(ylabel, w + tickskip + style.tickLength, (h + g.measureText(ylabel).getWidth()) / 2);
+		double xpos = style.showYAxisRight ? w + tickskip + style.tickLength : -tickskip - style.tickLength;
+		fillTextVertical(ylabel, xpos, (h + g.measureText(ylabel).getWidth()) / 2);
 	}
 
 	/**
@@ -1991,6 +2103,18 @@ public abstract class AbstractGraph<B> extends FocusPanel
 	protected int mouseY;
 
 	/**
+	 * Check if the event coordinates are inside the interactive plot area.
+	 * Default implementation accepts all coordinates.
+	 *
+	 * @param x the {@code x}-coordinate relative to the graph element
+	 * @param y the {@code y}-coordinate relative to the graph element
+	 * @return {@code true} if inside the interactive plot area
+	 */
+	protected boolean inside(int x, int y) {
+		return true;
+	}
+
+	/**
 	 * {@inheritDoc}
 	 * <p>
 	 * If mouse leaves graph while shifting the view stop shifting. Mouse events are
@@ -2019,8 +2143,15 @@ public abstract class AbstractGraph<B> extends FocusPanel
 	@Override
 	public void onMouseDown(MouseDownEvent event) {
 		if (event.getNativeButton() == NativeEvent.BUTTON_LEFT) {
-			mouseX = event.getX();
-			mouseY = event.getY();
+			int x = event.getX();
+			int y = event.getY();
+			if (!inside(x, y)) {
+				leftMouseButton = false;
+				element.removeClassName(CSS_CURSOR_MOVE_VIEW);
+				return;
+			}
+			mouseX = x;
+			mouseY = y;
 			leftMouseButton = true;
 			if (mouseMoveHandler == null)
 				mouseMoveHandler = addMouseMoveHandler(this);
@@ -2076,9 +2207,20 @@ public abstract class AbstractGraph<B> extends FocusPanel
 	public void onMouseMove(MouseMoveEvent event) {
 		if (leftMouseButton) {
 			// shift view
-			element.addClassName(CSS_CURSOR_MOVE_VIEW);
 			int x = event.getX();
 			int y = event.getY();
+			if (!inside(x, y)) {
+				element.removeClassName(CSS_CURSOR_MOVE_VIEW);
+				mouseX = -Integer.MAX_VALUE;
+				mouseY = -Integer.MAX_VALUE;
+				return;
+			}
+			if (mouseX == -Integer.MAX_VALUE || mouseY == -Integer.MAX_VALUE) {
+				mouseX = x;
+				mouseY = y;
+				return;
+			}
+			element.addClassName(CSS_CURSOR_MOVE_VIEW);
 			shifter.shift(mouseX - x, mouseY - y);
 			mouseX = x;
 			mouseY = y;
@@ -2106,9 +2248,11 @@ public abstract class AbstractGraph<B> extends FocusPanel
 	 */
 	@Override
 	public void onMouseWheel(MouseWheelEvent event) {
-		event.preventDefault();
 		int x = event.getX();
 		int y = event.getY();
+		if (!inside(x, y))
+			return;
+		event.preventDefault();
 		double dz = event.getNativeDeltaY();
 		if (hasMessage || dz == 0.0)
 			return;
@@ -2158,12 +2302,21 @@ public abstract class AbstractGraph<B> extends FocusPanel
 		if (Duration.currentTimeMillis() - touchEndTime > 250.0) {
 			// long touch(es)
 			JsArray<Touch> touches = event.getTouches();
+			boolean enableMove = false;
 			switch (touches.length()) {
 				case 1:
 					// initiate shift view
 					Touch touch = touches.get(0);
-					mouseX = touch.getRelativeX(element);
-					mouseY = touch.getRelativeY(element);
+					int x = touch.getRelativeX(element);
+					int y = touch.getRelativeY(element);
+					if (inside(x, y)) {
+						mouseX = x;
+						mouseY = y;
+						enableMove = true;
+					} else {
+						mouseX = -Integer.MAX_VALUE;
+						mouseY = -Integer.MAX_VALUE;
+					}
 					break;
 				case 2:
 					// initiate pinch zoom
@@ -2173,16 +2326,23 @@ public abstract class AbstractGraph<B> extends FocusPanel
 					Touch touch1 = touches.get(1);
 					int x1 = touch1.getRelativeX(element);
 					int y1 = touch1.getRelativeY(element);
-					pinchX = (x0 + x1) / 2;
-					pinchY = (y0 + y1) / 2;
-					double dX = (double) x0 - x1;
-					double dY = (double) y0 - y1;
-					pinchDist = Math.sqrt(dX * dX + dY * dY);
+					if (inside(x0, y0) && inside(x1, y1)) {
+						pinchX = (x0 + x1) / 2;
+						pinchY = (y0 + y1) / 2;
+						double dX = (double) x0 - x1;
+						double dY = (double) y0 - y1;
+						pinchDist = Math.sqrt(dX * dX + dY * dY);
+						enableMove = true;
+					} else {
+						pinchX = -Integer.MAX_VALUE;
+						pinchY = -Integer.MAX_VALUE;
+						pinchDist = -Double.MAX_VALUE;
+					}
 					break;
 				default:
 					break;
 			}
-			if (touchMoveHandler == null)
+			if (enableMove && touchMoveHandler == null)
 				touchMoveHandler = addTouchMoveHandler(this);
 		}
 	}
@@ -2240,6 +2400,16 @@ public abstract class AbstractGraph<B> extends FocusPanel
 				Touch touch = touches.get(0);
 				int x = touch.getRelativeX(element);
 				int y = touch.getRelativeY(element);
+				if (!inside(x, y)) {
+					mouseX = -Integer.MAX_VALUE;
+					mouseY = -Integer.MAX_VALUE;
+					return;
+				}
+				if (mouseX == -Integer.MAX_VALUE || mouseY == -Integer.MAX_VALUE) {
+					mouseX = x;
+					mouseY = y;
+					return;
+				}
 				shift(mouseX - x, mouseY - y);
 				mouseX = x;
 				mouseY = y;
@@ -2248,14 +2418,32 @@ public abstract class AbstractGraph<B> extends FocusPanel
 			case 2:
 				// process pinch zoom
 				Touch touch0 = touches.get(0);
-				int x0 = touch0.getClientX();
-				int y0 = touch0.getClientY();
+				int relX0 = touch0.getRelativeX(element);
+				int relY0 = touch0.getRelativeY(element);
+				int clientX0 = touch0.getClientX();
+				int clientY0 = touch0.getClientY();
 				Touch touch1 = touches.get(1);
-				int x1 = touch1.getClientX();
-				int y1 = touch1.getClientY();
-				double dX = (double) x0 - x1;
-				double dY = (double) y0 - y1;
+				int relX1 = touch1.getRelativeX(element);
+				int relY1 = touch1.getRelativeY(element);
+				int clientX1 = touch1.getClientX();
+				int clientY1 = touch1.getClientY();
+				if (!inside(relX0, relY0) || !inside(relX1, relY1)) {
+					pinchDist = -Double.MAX_VALUE;
+					pinchX = -Integer.MAX_VALUE;
+					pinchY = -Integer.MAX_VALUE;
+					return;
+				}
+				double dX = (double) clientX0 - clientX1;
+				double dY = (double) clientY0 - clientY1;
 				double dist = Math.sqrt(dX * dX + dY * dY);
+				if (pinchDist <= 0.0) {
+					pinchDist = dist;
+					pinchX = (relX0 + relX1) / 2;
+					pinchY = (relY0 + relY1) / 2;
+					return;
+				}
+				pinchX = (relX0 + relX1) / 2;
+				pinchY = (relY0 + relY1) / 2;
 				zoom(dist / pinchDist, pinchX, pinchY);
 				pinchDist = dist;
 				event.preventDefault();
