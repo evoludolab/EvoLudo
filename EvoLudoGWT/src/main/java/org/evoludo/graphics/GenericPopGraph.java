@@ -38,6 +38,7 @@ import org.evoludo.simulator.geometries.AbstractGeometry;
 import org.evoludo.simulator.geometries.GeometryFeatures;
 import org.evoludo.simulator.geometries.GeometryType;
 import org.evoludo.simulator.geometries.HierarchicalGeometry;
+import org.evoludo.simulator.models.Model;
 import org.evoludo.simulator.modules.Module;
 import org.evoludo.simulator.views.AbstractView;
 import org.evoludo.ui.ContextMenu;
@@ -102,7 +103,7 @@ import com.google.gwt.user.client.ui.Label;
  * <li>Context menu population is centralized here. Implementations add
  * graph-specific menu items but benefit from the common items provided
  * (shake, animate, clear history and debug/update options). The debug
- * submenu is gated by isDebugEnabled and the model type.</li>
+ * submenu is gated by view capabilities and model type.</li>
  * <li>Invalidation resets the network (if present) and marks the view for
  * redraw; {@link #update(boolean isNext)} defers layout work using a scheduler
  * to allow dependent views (3D rendering) to become ready.</li>
@@ -160,6 +161,13 @@ import com.google.gwt.user.client.ui.Label;
 @SuppressWarnings("java:S110")
 public abstract class GenericPopGraph<T, N extends Network<?>> extends AbstractGraph<T[]>
 		implements Network.LayoutListener, Zooming, DoubleClickHandler {
+
+	/**
+	 * Views implementing this interface advertise that their population graphs
+	 * should expose the debug submenu.
+	 */
+	public interface HasDebugMenu {
+	}
 
 	/**
 	 * The CSS class name for changing the cursor when hovering over a node.
@@ -565,26 +573,10 @@ public abstract class GenericPopGraph<T, N extends Network<?>> extends AbstractG
 	}
 
 	/**
-	 * The flag to indicate whether the debug submenu is activated. For example,
-	 * debugging does not make sense if the nodes refer to states of PDE
-	 * calculations.
-	 */
-	private boolean isDebugEnabled = true;
-
-	/**
 	 * The flag to indicate whether layout-specific context menu entries should be
 	 * shown.
 	 */
 	private boolean showLayoutMenus = true;
-
-	/**
-	 * Set whether the debugging menu is enabled.
-	 * 
-	 * @param enabled {@code true} to enable debugging
-	 */
-	public void setDebugEnabled(boolean enabled) {
-		isDebugEnabled = enabled;
-	}
 
 	/**
 	 * Set whether layout-specific context menu entries should be shown.
@@ -630,9 +622,7 @@ public abstract class GenericPopGraph<T, N extends Network<?>> extends AbstractG
 	 * @param menu the context menu to which the animate menu is added
 	 */
 	private void addAnimateMenu(ContextMenu menu) {
-		ContextMenuCheckBoxItem animateMenu = new ContextMenuCheckBoxItem("Animate layout", () -> {
-			animate = !animate;
-		});
+		ContextMenuCheckBoxItem animateMenu = new ContextMenuCheckBoxItem("Animate layout", () -> animate = !animate);
 		animateMenu.setChecked(animate);
 		menu.add(animateMenu);
 		animateMenu.setEnabled(!hasMessage && !hasStaticLayout());
@@ -646,19 +636,20 @@ public abstract class GenericPopGraph<T, N extends Network<?>> extends AbstractG
 	 * @param y    the y-coordinate of the mouse when the context menu was invoked
 	 */
 	private void addDebugSubmenu(ContextMenu menu, int x, int y) {
-		if (!isDebugEnabled) {
+		if (!(view instanceof HasDebugMenu))
 			return;
-		}
+
+		Model model = view.getModel();
+		if (model == null || !model.isIBS() || view.isRunning())
+			return;
+
 		int debugNode = findNodeAt(x, y);
 		if (debugNode < 0 || debugNode >= geometry.getSize())
 			return;
 
 		ContextMenu debugSubmenu = new ContextMenu(menu, "Debug");
-		ContextMenuItem debugNodeMenu = new ContextMenuItem("Update node @ " + debugNode,
-				() -> module.getIBSPopulation().debugUpdatePopulationAt(debugNode));
-		debugNodeMenu.setEnabled(view.getModel() != null && view.getModel().isIBS());
-		debugSubmenu.add(debugNodeMenu);
-		ContextMenuItem debugSubmenuTrigger = menu.add("Debug", debugSubmenu);
-		debugSubmenuTrigger.setEnabled(!view.isRunning());
+		debugSubmenu.add(new ContextMenuItem("Update node @ " + debugNode,
+				() -> module.getIBSPopulation().debugUpdatePopulationAt(debugNode)));
+		menu.add("Debug", debugSubmenu);
 	}
 }

@@ -33,6 +33,7 @@ package org.evoludo.simulator.views;
 import java.awt.Color;
 import java.util.List;
 
+import org.evoludo.graphics.GenericPopGraph.HasDebugMenu;
 import org.evoludo.graphics.Network3DGWT;
 import org.evoludo.graphics.PopGraph3D;
 import org.evoludo.simulator.ColorMap;
@@ -145,7 +146,7 @@ import thothbot.parallax.core.shared.materials.MeshLambertMaterial;
  * @see Network3DGWT
  */
 @SuppressWarnings("java:S110")
-public class Pop3D extends GenericPop<MeshLambertMaterial, Network3DGWT, PopGraph3D> {
+public class Pop3D extends GenericPop<MeshLambertMaterial, Network3DGWT, PopGraph3D> implements HasDebugMenu {
 
 	/**
 	 * Construct a new view to display the configuration of the current state of the
@@ -234,8 +235,6 @@ public class Pop3D extends GenericPop<MeshLambertMaterial, Network3DGWT, PopGrap
 		destroyGraphs();
 		Module<?> module = engine.getModule();
 		PopGraph3D graph = new PopGraph3D(this, module);
-		// debugging not available for DE's
-		graph.setDebugEnabled(false);
 		wrapper.add(graph);
 		graphs.add(graph);
 		graph.setSize("100%", "100%");

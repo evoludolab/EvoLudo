@@ -34,6 +34,7 @@ import java.awt.Color;
 import java.util.List;
 
 import org.evoludo.graphics.GraphStyle;
+import org.evoludo.graphics.GenericPopGraph.HasDebugMenu;
 import org.evoludo.graphics.PopGraph1D;
 import org.evoludo.graphics.PopGraph2D;
 import org.evoludo.simulator.ColorMap;
@@ -152,7 +153,7 @@ import org.evoludo.simulator.modules.Module;
  * @see EvoLudoGWT
  */
 @SuppressWarnings("java:S110")
-public class Pop2D extends GenericPop<String, Network2D, PopGraph2D> {
+public class Pop2D extends GenericPop<String, Network2D, PopGraph2D> implements HasDebugMenu {
 
 	/**
 	 * Construct a new view to display the configuration of the current state of the
@@ -275,8 +276,6 @@ public class Pop2D extends GenericPop<String, Network2D, PopGraph2D> {
 
 		destroyGraphs();
 		PopGraph2D graph = createGraph(module, geometry);
-		// debugging not available for DE's
-		graph.setDebugEnabled(false);
 		wrapper.add(graph);
 		graphs.add(graph);
 		graph.setSize("100%", "100%");
