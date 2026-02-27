@@ -481,7 +481,7 @@ public class Distribution extends AbstractView<PopGraph2D> implements TooltipPro
 	public void populateContextMenu(ContextMenu menu) {
 		Module<?> module = engine.getModule();
 		int nTraits = module.getNTraits();
-		addAxesMenu(menu);
+		addAxesMenu(menu, null);
 		addBinsMenu(menu, nTraits > 1);
 		// ignore if less than 3 traits
 		if (nTraits < 3) {
@@ -513,25 +513,6 @@ public class Distribution extends AbstractView<PopGraph2D> implements TooltipPro
 		menu.add("X-axis trait", traitXMenu);
 		menu.add("Y-axis trait", traitYMenu);
 		super.populateContextMenu(menu);
-	}
-
-	/**
-	 * Add axes-related entries to the context menu.
-	 *
-	 * @param menu the context menu to populate
-	 */
-	private void addAxesMenu(ContextMenu menu) {
-		if (graphs.isEmpty())
-			return;
-		ContextMenu axesMenu = new ContextMenu(menu, "Axes");
-		ContextMenuCheckBoxItem rightYAxisMenu = new ContextMenuCheckBoxItem("Right Y-axis", () -> {
-			boolean showOnRight = !graphs.get(0).getStyle().showYAxisRight;
-			setRightYAxis(showOnRight);
-		});
-		axesMenu.addHeader("Axes");
-		rightYAxisMenu.setChecked(graphs.get(0).getStyle().showYAxisRight);
-		axesMenu.add(rightYAxisMenu);
-		menu.add("Axes", axesMenu);
 	}
 
 	/**

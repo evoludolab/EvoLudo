@@ -1017,17 +1017,12 @@ public class HistoGraph extends AbstractGraph<double[]> implements BasicTooltipP
 
 	@Override
 	public void populateContextMenuAt(ContextMenu menu, int x, int y) {
-		addAxesMenu(menu);
+		view.addAxesMenu(menu, this);
 		super.populateContextMenuAt(menu, x, y);
 	}
 
-	/**
-	 * Add the axes submenu with autoscale, full-range, and y-axis side controls.
-	 * 
-	 * @param menu the context menu to populate
-	 */
-	private void addAxesMenu(ContextMenu menu) {
-		ContextMenu axesMenu = new ContextMenu(menu, "Axes");
+	@Override
+	public void populateLocalAxesMenu(ContextMenu axesMenu) {
 		ContextMenuCheckBoxItem autoscaleYMenu = new ContextMenuCheckBoxItem("Autoscale y-axis", () -> {
 			style.autoscaleY = !style.autoscaleY;
 			paint(true);
@@ -1037,19 +1032,12 @@ public class HistoGraph extends AbstractGraph<double[]> implements BasicTooltipP
 			applyFullRange();
 			paint(true);
 		});
-		ContextMenuCheckBoxItem rightYAxisMenu = new ContextMenuCheckBoxItem("Right Y-axis", () -> {
-			boolean showOnRight = !style.showYAxisRight;
-			view.setRightYAxis(showOnRight);
-		});
 		axesMenu.addHeader("Axes");
 		autoscaleYMenu.setChecked(style.autoscaleY);
 		autoscaleYMenu.setEnabled(enableAutoscaleYMenu);
-		rightYAxisMenu.setChecked(style.showYAxisRight);
 		axesMenu.add(autoscaleYMenu);
 		if (hasFullRangeMenu())
 			axesMenu.add(fullRangeMenu);
-		axesMenu.add(rightYAxisMenu);
-		menu.add("Axes", axesMenu);
 	}
 
 	/**

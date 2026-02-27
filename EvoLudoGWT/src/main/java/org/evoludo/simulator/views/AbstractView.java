@@ -754,6 +754,46 @@ public abstract class AbstractView<G extends AbstractGraph<?>> extends Composite
 	}
 
 	/**
+	 * Add the shared axes submenu, composed from graph-local entries followed by
+	 * view-level entries.
+	 *
+	 * @param menu        the parent context menu
+	 * @param sourceGraph the graph contributing local axes entries, or {@code null}
+	 *                    if the axes submenu is view-owned only
+	 */
+	public final void addAxesMenu(ContextMenu menu, AbstractGraph<?> sourceGraph) {
+		ContextMenu axesMenu = new ContextMenu(menu);
+		if (sourceGraph != null)
+			sourceGraph.populateLocalAxesMenu(axesMenu);
+		int afterLocal = axesMenu.getWidgetCount();
+		axesMenu.addSeparator();
+		boolean insertedSeparator = axesMenu.getWidgetCount() > afterLocal;
+		int beforeView = axesMenu.getWidgetCount();
+		populateAxesMenu(axesMenu, sourceGraph);
+		if (insertedSeparator && axesMenu.getWidgetCount() == beforeView)
+			axesMenu.remove(beforeView - 1);
+		if (axesMenu.getWidgetCount() > 0)
+			menu.add("Axes", axesMenu);
+	}
+
+	/**
+	 * Opportunity for the view to contribute view-level entries to the shared axes
+	 * submenu.
+	 *
+	 * @param menu        the axes submenu to populate
+	 * @param sourceGraph the graph that requested the axes submenu, or {@code null}
+	 */
+	protected void populateAxesMenu(ContextMenu menu, AbstractGraph<?> sourceGraph) {
+		if (graphs.isEmpty())
+			return;
+		GraphStyle style = graphs.get(0).getStyle();
+		menu.add(new ContextMenuCheckBoxItem("Right Y-axis", style.showYAxisRight, () -> {
+			boolean showOnRight = !style.showYAxisRight;
+			setRightYAxis(showOnRight);
+		}));
+	}
+
+	/**
 	 * Default implementation for synchronized shifting of multiple graphs.
 	 * 
 	 * @param dx the shift in x-direction

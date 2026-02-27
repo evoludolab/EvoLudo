@@ -1043,6 +1043,15 @@ public abstract class AbstractGraph<B> extends FocusPanel
 	}
 
 	/**
+	 * Opportunity for graph subclasses to contribute graph-local entries to the
+	 * shared axes submenu assembled by the owning view.
+	 *
+	 * @param menu the axes submenu to populate
+	 */
+	public void populateLocalAxesMenu(ContextMenu menu) {
+	}
+
+	/**
 	 * Add a clear-history entry to the context menu when this graph stores history.
 	 *
 	 * @param menu the context menu to populate
@@ -1066,10 +1075,11 @@ public abstract class AbstractGraph<B> extends FocusPanel
 	 */
 	protected void addLogScaleMenu(ContextMenu menu) {
 		if (this instanceof HasLogScaleY) {
-			ContextMenuCheckBoxItem logYMenu = new ContextMenuCheckBoxItem("Logarithmic y-axis", (ScheduledCommand) () -> {
-				setLogY(!style.logScaleY);
-				paint(true);
-			});
+			ContextMenuCheckBoxItem logYMenu = new ContextMenuCheckBoxItem("Logarithmic y-axis",
+					(ScheduledCommand) () -> {
+						setLogY(!style.logScaleY);
+						paint(true);
+					});
 			logYMenu.setChecked(style.logScaleY);
 			logYMenu.setEnabled(style.yMin >= 0.0);
 			menu.add(logYMenu);

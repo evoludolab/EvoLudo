@@ -1011,20 +1011,15 @@ public class LineGraph extends AbstractGraph<double[]>
 	@Override
 	public void populateContextMenuAt(ContextMenu menu, int x, int y) {
 		addClearMenu(menu);
-		addAxesMenu(menu);
+		view.addAxesMenu(menu, this);
 		addZoomMenu(menu);
 		if (menu.getWidgetCount() > 0 && tooltip.isVisible())
 			tooltip.close();
 		view.populateContextMenu(menu);
 	}
 
-	/**
-	 * Add the axes submenu with autoscale, full-range, log, and side controls.
-	 * 
-	 * @param menu the context menu to populate
-	 */
-	private void addAxesMenu(ContextMenu menu) {
-		ContextMenu axesMenu = new ContextMenu(menu);
+	@Override
+	public void populateLocalAxesMenu(ContextMenu axesMenu) {
 		ContextMenuCheckBoxItem autoscaleYMenu = new ContextMenuCheckBoxItem("Autoscale", () -> {
 			style.autoscaleY = !style.autoscaleY;
 			if (style.autoscaleY)
@@ -1056,17 +1051,12 @@ public class LineGraph extends AbstractGraph<double[]>
 				style.xTickOffset = 0.0;
 			paint(true);
 		});
-		ContextMenuCheckBoxItem rightYAxisMenu = new ContextMenuCheckBoxItem("Right side", () -> {
-			boolean showOnRight = !style.showYAxisRight;
-			view.setRightYAxis(showOnRight);
-		});
 		String axisLabel = style.xLabel == null ? "time" : style.xLabel;
 		autoscaleYMenu.setChecked(style.autoscaleY);
 		logYAxesMenu.setChecked(style.logScaleY);
 		logYAxesMenu.setEnabled(style.yMin >= 0.0);
 		absoluteTimeMenu.setText("Absolute " + axisLabel);
 		absoluteTimeMenu.setChecked(style.offsetXTickLabels);
-		rightYAxisMenu.setChecked(style.showYAxisRight);
 		axesMenu.addHeader("X-axis");
 		axesMenu.add(fullXRangeMenu);
 		axesMenu.add(absoluteTimeMenu);
@@ -1075,15 +1065,12 @@ public class LineGraph extends AbstractGraph<double[]>
 		fullYRangeMenu.setEnabled(style.percentY);
 		axesMenu.add(fullYRangeMenu);
 		axesMenu.add(logYAxesMenu);
-		axesMenu.add(rightYAxisMenu);
-		menu.add("Axes", axesMenu);
 	}
 
 	@Override
 	protected void populateZoomMenu(ContextMenu menu) {
-		menu.add(new ContextMenuItem("Zoom in x-axis (2x)", new ZoomCommand(2.0)));
-		menu.add(new ContextMenuItem("Zoom out x-axis (0.5x)", new ZoomCommand(0.5)));
-		menu.add(new ContextMenuItem("Reset zoom", new ZoomCommand(0.0)));
+		menu.addHeader("X-axis");
+		super.populateZoomMenu(menu);
 		menu.add(new ContextMenuItem("Zoom to fit", () -> {
 			if (style.autoscaleY)
 				style.autoscaleY = false;

@@ -32,6 +32,7 @@ package org.evoludo.simulator.views;
 
 import java.util.List;
 
+import org.evoludo.graphics.AbstractGraph;
 import org.evoludo.graphics.GraphStyle;
 import org.evoludo.graphics.ParaGraph;
 import org.evoludo.math.ArrayMath;
@@ -348,7 +349,7 @@ public class Phase2D extends AbstractView<ParaGraph> {
 
 	@Override
 	public void populateContextMenu(ContextMenu menu) {
-		addAxesMenu(menu);
+		addAxesMenu(menu, null);
 		if (map.hasFixedAxes()) {
 			super.populateContextMenu(menu);
 			return;
@@ -379,13 +380,8 @@ public class Phase2D extends AbstractView<ParaGraph> {
 		super.populateContextMenu(menu);
 	}
 
-	/**
-	 * Add the axes submenu with autoscale, full-range, and y-axis side controls.
-	 * 
-	 * @param menu the context menu to populate
-	 */
-	private void addAxesMenu(ContextMenu menu) {
-		ContextMenu axesMenu = new ContextMenu(menu, "Axes");
+	@Override
+	protected void populateAxesMenu(ContextMenu axesMenu, AbstractGraph<?> sourceGraph) {
 		ContextMenuCheckBoxItem autoscaleMenu = new ContextMenuCheckBoxItem("Autoscale axes", () -> {
 			GraphStyle style = graph.getStyle();
 			boolean enable = !(style.autoscaleX && style.autoscaleY);
@@ -404,20 +400,13 @@ public class Phase2D extends AbstractView<ParaGraph> {
 			style.yMax = 1.0;
 			graph.paint(true);
 		});
-		ContextMenuCheckBoxItem rightYAxisMenu = new ContextMenuCheckBoxItem("Right Y-axis", () -> {
-			GraphStyle style = graph.getStyle();
-			boolean showOnRight = !style.showYAxisRight;
-			setRightYAxis(showOnRight);
-		});
 		axesMenu.addHeader("Axes");
 		GraphStyle style = graph.getStyle();
 		autoscaleMenu.setChecked(style.autoscaleX && style.autoscaleY);
-		rightYAxisMenu.setChecked(style.showYAxisRight);
 		axesMenu.add(autoscaleMenu);
 		if (style.percentX && style.percentY)
 			axesMenu.add(fullRangeMenu);
-		axesMenu.add(rightYAxisMenu);
-		menu.add("Axes", axesMenu);
+		super.populateAxesMenu(axesMenu, sourceGraph);
 	}
 
 	/**

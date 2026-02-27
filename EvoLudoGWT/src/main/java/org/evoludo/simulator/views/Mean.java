@@ -46,6 +46,7 @@ import org.evoludo.simulator.models.DModel;
 import org.evoludo.simulator.models.Data;
 import org.evoludo.simulator.models.IBSC;
 import org.evoludo.simulator.modules.Module;
+import org.evoludo.ui.ContextMenu;
 
 /**
  * A view that displays time-series plots of mean trait values or mean fitness
