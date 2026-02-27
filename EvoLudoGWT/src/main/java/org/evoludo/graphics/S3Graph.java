@@ -54,7 +54,6 @@ import com.google.gwt.dom.client.Touch;
 import com.google.gwt.event.dom.client.DoubleClickEvent;
 import com.google.gwt.event.dom.client.DoubleClickHandler;
 import com.google.gwt.event.dom.client.TouchStartEvent;
-import com.google.gwt.user.client.ui.Widget;
 
 /**
  * Graph for the simplex \(S_3\). The graph is used to visualize the evolution
@@ -771,11 +770,6 @@ public class S3Graph extends AbstractGraph<double[]> implements Zooming, Shiftin
 	 */
 	private ContextMenuItem clearMenu;
 
-	/**
-	 * The context menu to select the trait in the closest corner.
-	 */
-	private ContextMenu setTraitMenu;
-
 	@Override
 	public void populateContextMenuAt(ContextMenu menu, int x, int y) {
 		addClearMenu(menu);
@@ -883,26 +877,15 @@ public class S3Graph extends AbstractGraph<double[]> implements Zooming, Shiftin
 		int[] order = map.getOrder();
 		String[] names = map.getNames();
 		int cornerIdx = closestCorner(x, y);
-		if (setTraitMenu == null) {
-			setTraitMenu = new ContextMenu(menu, "Set trait");
-			for (String name : names)
-				setTraitMenu.add(new ContextMenuItem(name, () -> {
-					Iterator<Widget> items = setTraitMenu.iterator();
-					int idx = 0;
-					while (items.hasNext()) {
-						ContextMenuItem item = (ContextMenuItem) items.next();
-						if (item.getText().equals(name)) {
-							order[cornerIdx] = idx;
-							break;
-						}
-						idx++;
-					}
-					paint(true);
-				}));
+		ContextMenu setTraitMenu = new ContextMenu(menu, "Set trait");
+		for (int traitIdx = 0; traitIdx < names.length; traitIdx++) {
+			final int selectedTraitIdx = traitIdx;
+			setTraitMenu.add(new ContextMenuItem(names[traitIdx], () -> {
+				map.getOrder()[cornerIdx] = selectedTraitIdx;
+				paint(true);
+			}));
 		}
 		menu.add("Set trait '" + names[order[cornerIdx]] + "' to", setTraitMenu);
-		for (Widget item : setTraitMenu)
-			((ContextMenuItem) item).setEnabled(true);
 		for (int t : order)
 			((ContextMenuItem) setTraitMenu.getWidget(t)).setEnabled(false);
 	}
