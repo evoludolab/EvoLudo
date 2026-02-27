@@ -66,6 +66,7 @@ public class Console extends AbstractView<AbstractGraph<?>> implements ContextMe
 		 * Create an empty log widget.
 		 */
 		public Log() {
+			// intentionally empty constructor; no further initialization required
 		}
 
 		/**
@@ -338,12 +339,15 @@ public class Console extends AbstractView<AbstractGraph<?>> implements ContextMe
 	}
 
 	@Override
-	public void populateContextMenuAt(ContextMenu menu, int x, int y) {
-		// add menu to clear canvas
+	public void populateContextMenu(ContextMenu menu) {
 		if (clearMenu == null)
 			clearMenu = new ContextMenuItem("Clear", this::clearLog);
 		menu.add(clearMenu);
-		addBufferSizeMenu(menu);
+		super.populateContextMenu(menu);
+	}
+
+	@Override
+	public void populateContextMenuAt(ContextMenu menu, int x, int y) {
 		populateContextMenu(menu);
 	}
 }
