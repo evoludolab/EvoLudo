@@ -1043,6 +1043,21 @@ public abstract class AbstractGraph<B> extends FocusPanel
 	}
 
 	/**
+	 * Add a clear-history entry to the context menu when this graph stores history.
+	 *
+	 * @param menu the context menu to populate
+	 */
+	protected void addClearMenu(ContextMenu menu) {
+		if (!hasHistory())
+			return;
+		menu.add(new ContextMenuItem("Clear", () -> {
+			clearHistory();
+			paint(true);
+		}));
+		menu.addSeparator();
+	}
+
+	/**
 	 * Add logarithmic scale menu item to context menu if graph supports log scale
 	 * on
 	 * {@code y}-axis.

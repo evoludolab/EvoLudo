@@ -1381,11 +1381,7 @@ public class ParaGraph extends AbstractGraph<double[]> implements Zooming, Shift
 
 	@Override
 	public void populateContextMenuAt(ContextMenu menu, int x, int y) {
-		ContextMenuItem clearMenu = new ContextMenuItem("Clear", () -> {
-			clearHistory();
-			paint(true);
-		});
-		menu.add(clearMenu);
+		addClearMenu(menu);
 		super.populateContextMenuAt(menu, x, y);
 	}
 

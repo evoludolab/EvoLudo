@@ -639,22 +639,6 @@ public abstract class GenericPopGraph<T, N extends Network<?>> extends AbstractG
 	}
 
 	/**
-	 * Helper method to process the clear context menu.
-	 * 
-	 * @param menu the context menu to which the clear menu is added
-	 */
-	private void addClearMenu(ContextMenu menu) {
-		// add menu to clear buffer (applies only to linear geometry)
-		if (!hasHistory())
-			return;
-		ContextMenuItem clearMenu = new ContextMenuItem("Clear", () -> {
-			clearHistory();
-			paint(true);
-		});
-		menu.add(clearMenu);
-	}
-
-	/**
 	 * Helper method to process the debug submenu logic for context menu.
 	 * 
 	 * @param menu the context menu to which the debug submenu is added

@@ -1010,12 +1010,7 @@ public class LineGraph extends AbstractGraph<double[]>
 
 	@Override
 	public void populateContextMenuAt(ContextMenu menu, int x, int y) {
-		ContextMenuItem clearMenu = new ContextMenuItem("Clear", () -> {
-			clearHistory();
-			paint(true);
-		});
-		menu.addSeparator();
-		menu.add(clearMenu);
+		addClearMenu(menu);
 		addAxesMenu(menu);
 		addZoomMenu(menu);
 		if (menu.getWidgetCount() > 0 && tooltip.isVisible())

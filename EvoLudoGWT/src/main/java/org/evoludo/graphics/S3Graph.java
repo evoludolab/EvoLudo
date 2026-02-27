@@ -769,20 +769,6 @@ public class S3Graph extends AbstractGraph<double[]> implements Zooming, Shiftin
 	}
 
 	/**
-	 * Helper method to process the clear context menu.
-	 * 
-	 * @param menu the context menu to populate
-	 */
-	private void addClearMenu(ContextMenu menu) {
-		ContextMenuItem clearMenu = new ContextMenuItem("Clear", () -> {
-			clearHistory();
-			paint(true);
-		});
-		menu.addSeparator();
-		menu.add(clearMenu);
-	}
-
-	/**
 	 * The prefix of the swap order menu item.
 	 */
 	private static final String SWAP_MENU = "Swap ";
