@@ -760,16 +760,6 @@ public class S3Graph extends AbstractGraph<double[]> implements Zooming, Shiftin
 		return inside(scaledX(x), scaledY(y));
 	}
 
-	/**
-	 * The context menu item to swap the order of the traits along the closest edge.
-	 */
-	private ContextMenuItem swapOrderMenu;
-
-	/**
-	 * The context menu item to clear the canvas.
-	 */
-	private ContextMenuItem clearMenu;
-
 	@Override
 	public void populateContextMenuAt(ContextMenu menu, int x, int y) {
 		addClearMenu(menu);
@@ -784,20 +774,13 @@ public class S3Graph extends AbstractGraph<double[]> implements Zooming, Shiftin
 	 * @param menu the context menu to populate
 	 */
 	private void addClearMenu(ContextMenu menu) {
-		if (clearMenu == null) {
-			clearMenu = new ContextMenuItem("Clear", () -> {
-				clearHistory();
-				paint(true);
-			});
-		}
+		ContextMenuItem clearMenu = new ContextMenuItem("Clear", () -> {
+			clearHistory();
+			paint(true);
+		});
 		menu.addSeparator();
 		menu.add(clearMenu);
 	}
-
-	/**
-	 * The label of the swap order menu item.
-	 */
-	private static final String SWAP_MENU_LABEL = "Swap Order";
 
 	/**
 	 * The prefix of the swap order menu item.
@@ -817,36 +800,37 @@ public class S3Graph extends AbstractGraph<double[]> implements Zooming, Shiftin
 	 * @param y    the <code>y</code>-coordinate of the mouse pointer
 	 */
 	private void addSwapOrderMenu(ContextMenu menu, int x, int y) {
-		if (swapOrderMenu == null) {
-			swapOrderMenu = new ContextMenuItem(SWAP_MENU_LABEL, () -> {
-				int[] order = map.getOrder();
-				String[] names = map.getNames();
-				String label = swapOrderMenu.getText();
-				if (label.startsWith(SWAP_MENU + names[order[0]])) {
-					swapOrder(order, 0, 1);
-				} else if (label.startsWith(SWAP_MENU + names[order[1]])) {
-					swapOrder(order, 1, 2);
-				} else {
-					swapOrder(order, 2, 0);
-				}
-				map.setOrder(order);
-				paint(true);
-			});
-		}
-		menu.add(swapOrderMenu);
+		int edge = closestEdge(x, y);
 		int[] order = map.getOrder();
 		String[] names = map.getNames();
-		switch (closestEdge(x, y)) {
+		String label;
+		switch (edge) {
 			case HasS3.EDGE_LEFT:
-				swapOrderMenu.setText(SWAP_MENU + names[order[0]] + SWAP_MENU_ARROW + names[order[1]]);
+				label = SWAP_MENU + names[order[0]] + SWAP_MENU_ARROW + names[order[1]];
 				break;
 			case HasS3.EDGE_RIGHT:
-				swapOrderMenu.setText(SWAP_MENU + names[order[1]] + SWAP_MENU_ARROW + names[order[2]]);
+				label = SWAP_MENU + names[order[1]] + SWAP_MENU_ARROW + names[order[2]];
 				break;
 			default:
-				swapOrderMenu.setText(SWAP_MENU + names[order[2]] + SWAP_MENU_ARROW + names[order[0]]);
+				label = SWAP_MENU + names[order[2]] + SWAP_MENU_ARROW + names[order[0]];
 				break;
 		}
+		menu.add(new ContextMenuItem(label, () -> {
+			int[] currentOrder = map.getOrder();
+			switch (edge) {
+				case HasS3.EDGE_LEFT:
+					swapOrder(currentOrder, 0, 1);
+					break;
+				case HasS3.EDGE_RIGHT:
+					swapOrder(currentOrder, 1, 2);
+					break;
+				default:
+					swapOrder(currentOrder, 2, 0);
+					break;
+			}
+			map.setOrder(currentOrder);
+			paint(true);
+		}));
 	}
 
 	/**

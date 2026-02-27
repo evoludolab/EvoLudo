@@ -565,23 +565,6 @@ public abstract class GenericPopGraph<T, N extends Network<?>> extends AbstractG
 	}
 
 	/**
-	 * The context menu item for animating the layouting process.
-	 */
-	private ContextMenuCheckBoxItem animateMenu;
-
-	/**
-	 * The context menu item for rearranging networks through random shifts of node
-	 * positions.
-	 */
-	private ContextMenuItem shakeMenu;
-
-	/**
-	 * The context menu item to clear the canvas. Only active for linear graphs to
-	 * clear the history.
-	 */
-	private ContextMenuItem clearMenu;
-
-	/**
 	 * The flag to indicate whether the debug submenu is activated. For example,
 	 * debugging does not make sense if the nodes refer to states of PDE
 	 * calculations.
@@ -636,9 +619,7 @@ public abstract class GenericPopGraph<T, N extends Network<?>> extends AbstractG
 	 * @param menu the context menu to which the shake menu is added
 	 */
 	private void addShakeMenu(ContextMenu menu) {
-		if (shakeMenu == null) {
-			shakeMenu = new ContextMenuItem("Shake", () -> network.shake(GenericPopGraph.this, 0.05));
-		}
+		ContextMenuItem shakeMenu = new ContextMenuItem("Shake", () -> network.shake(GenericPopGraph.this, 0.05));
 		menu.add(shakeMenu);
 		shakeMenu.setEnabled(!hasStaticLayout());
 	}
@@ -649,12 +630,9 @@ public abstract class GenericPopGraph<T, N extends Network<?>> extends AbstractG
 	 * @param menu the context menu to which the animate menu is added
 	 */
 	private void addAnimateMenu(ContextMenu menu) {
-		if (animateMenu == null) {
-			animateMenu = new ContextMenuCheckBoxItem("Animate layout", () -> {
-				animate = !animateMenu.isChecked();
-				animateMenu.setChecked(animate);
-			});
-		}
+		ContextMenuCheckBoxItem animateMenu = new ContextMenuCheckBoxItem("Animate layout", () -> {
+			animate = !animate;
+		});
 		animateMenu.setChecked(animate);
 		menu.add(animateMenu);
 		animateMenu.setEnabled(!hasMessage && !hasStaticLayout());
@@ -667,16 +645,12 @@ public abstract class GenericPopGraph<T, N extends Network<?>> extends AbstractG
 	 */
 	private void addClearMenu(ContextMenu menu) {
 		// add menu to clear buffer (applies only to linear geometry)
-		if (!hasHistory()) {
-			clearMenu = null;
+		if (!hasHistory())
 			return;
-		}
-		if (clearMenu == null) {
-			clearMenu = new ContextMenuItem("Clear", () -> {
-				clearHistory();
-				paint(true);
-			});
-		}
+		ContextMenuItem clearMenu = new ContextMenuItem("Clear", () -> {
+			clearHistory();
+			paint(true);
+		});
 		menu.add(clearMenu);
 	}
 

@@ -1370,37 +1370,21 @@ public class ParaGraph extends AbstractGraph<double[]> implements Zooming, Shift
 		return inside(x - bounds.getX(), y - bounds.getY());
 	}
 
-	/**
-	 * The context menu item to clear the canvas.
-	 */
-	private ContextMenuItem clearMenu;
-
-	/**
-	 * The context menu item to zoom to fit the buffered data.
-	 */
-	private ContextMenuItem zoomFitMenu;
-
 	@Override
 	protected void populateZoomMenu(ContextMenu menu) {
 		super.populateZoomMenu(menu);
-		if (zoomFitMenu == null) {
-			zoomFitMenu = new ContextMenuItem("Zoom to fit", () -> {
-				zoomToFit();
-				paint(true);
-			});
-		}
-		menu.add(zoomFitMenu);
+		menu.add(new ContextMenuItem("Zoom to fit", () -> {
+			zoomToFit();
+			paint(true);
+		}));
 	}
 
 	@Override
 	public void populateContextMenuAt(ContextMenu menu, int x, int y) {
-		// add menu to clear canvas
-		if (clearMenu == null) {
-			clearMenu = new ContextMenuItem("Clear", () -> {
-				clearHistory();
-				paint(true);
-			});
-		}
+		ContextMenuItem clearMenu = new ContextMenuItem("Clear", () -> {
+			clearHistory();
+			paint(true);
+		});
 		menu.add(clearMenu);
 		super.populateContextMenuAt(menu, x, y);
 	}

@@ -1002,26 +1002,6 @@ public class HistoGraph extends AbstractGraph<double[]> implements BasicTooltipP
 	}
 
 	/**
-	 * The context menu for axis-related options.
-	 */
-	private ContextMenu axesMenu;
-
-	/**
-	 * The context menu item to select autoscaling of the y-axis.
-	 */
-	private ContextMenuCheckBoxItem autoscaleYMenu;
-
-	/**
-	 * The context menu item to reset percent axes to full range.
-	 */
-	private ContextMenuItem fullRangeMenu;
-
-	/**
-	 * The context menu item to toggle the y-axis side.
-	 */
-	private ContextMenuCheckBoxItem rightYAxisMenu;
-
-	/**
 	 * The flag to indicate whether the autoscale y-axis menu is enabled.
 	 */
 	private boolean enableAutoscaleYMenu = true;
@@ -1047,28 +1027,20 @@ public class HistoGraph extends AbstractGraph<double[]> implements BasicTooltipP
 	 * @param menu the context menu to populate
 	 */
 	private void addAxesMenu(ContextMenu menu) {
-		if (axesMenu == null) {
-			axesMenu = new ContextMenu(menu, "Axes");
-			autoscaleYMenu = new ContextMenuCheckBoxItem("Autoscale y-axis", () -> {
-				style.autoscaleY = !style.autoscaleY;
-				autoscaleYMenu.setChecked(style.autoscaleY);
-				paint(true);
-			});
-			fullRangeMenu = new ContextMenuItem("Full range", () -> {
-				if (style.autoscaleY) {
-					style.autoscaleY = false;
-					autoscaleYMenu.setChecked(false);
-				}
-				applyFullRange();
-				paint(true);
-			});
-			rightYAxisMenu = new ContextMenuCheckBoxItem("Right Y-axis", () -> {
-				boolean showOnRight = !style.showYAxisRight;
-				rightYAxisMenu.setChecked(showOnRight);
-				view.setRightYAxis(showOnRight);
-			});
-		}
-		axesMenu.clear();
+		ContextMenu axesMenu = new ContextMenu(menu, "Axes");
+		ContextMenuCheckBoxItem autoscaleYMenu = new ContextMenuCheckBoxItem("Autoscale y-axis", () -> {
+			style.autoscaleY = !style.autoscaleY;
+			paint(true);
+		});
+		ContextMenuItem fullRangeMenu = new ContextMenuItem("Full range", () -> {
+			style.autoscaleY = false;
+			applyFullRange();
+			paint(true);
+		});
+		ContextMenuCheckBoxItem rightYAxisMenu = new ContextMenuCheckBoxItem("Right Y-axis", () -> {
+			boolean showOnRight = !style.showYAxisRight;
+			view.setRightYAxis(showOnRight);
+		});
 		axesMenu.addHeader("Axes");
 		autoscaleYMenu.setChecked(style.autoscaleY);
 		autoscaleYMenu.setEnabled(enableAutoscaleYMenu);

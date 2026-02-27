@@ -398,24 +398,6 @@ public class Pop3D extends GenericPop<MeshLambertMaterial, Network3DGWT, PopGrap
 		update();
 	}
 
-	/**
-	 * The context menu item for selecting parallel projection of the graph instead
-	 * of the default perspective projection.
-	 */
-	private ContextMenuCheckBoxItem projectionMenu;
-
-	/**
-	 * The context menu item for selecting anaglyph projection of the 3D space for a
-	 * reperesentation of the graph suitable for colored 3D glasses.
-	 */
-	private ContextMenuCheckBoxItem anaglyphMenu;
-
-	/**
-	 * The context menu item for selecting stereo projection of the 3D space for a
-	 * virtual reality representation of the graph.
-	 */
-	private ContextMenuCheckBoxItem vrMenu;
-
 	@Override
 	public void populateContextMenu(ContextMenu menu) {
 		menu.addSeparator();
@@ -424,77 +406,37 @@ public class Pop3D extends GenericPop<MeshLambertMaterial, Network3DGWT, PopGrap
 		boolean isOrthographic = graph.isOrthographic();
 		boolean isAnaglyph = graph.isAnaglyph();
 		boolean isVR = graph.isVR();
-		// projections synchronized across graphs.
-		addProjectionMenu(menu);
+		// projections synchronized across graphs
+		ContextMenuCheckBoxItem projectionMenu = new ContextMenuCheckBoxItem("Parallel projection", () -> {
+			boolean orthographic = !graphs.get(0).isOrthographic();
+			for (PopGraph3D popGraph : graphs)
+				popGraph.setOrthographic(orthographic);
+		});
 		projectionMenu.setChecked(isOrthographic);
 		projectionMenu.setEnabled(!(isAnaglyph || isVR));
+		menu.add(projectionMenu);
 		// anaglyph and VR modes are mutually exclusive
 		// only available for a single graph
 		if (!multiGraph) {
-			addAnaglyphMenu(menu);
-			addVRMenu(menu);
+			ContextMenuCheckBoxItem anaglyphMenu = new ContextMenuCheckBoxItem("Anaglyph 3D", () -> {
+				boolean anaglyph = !graphs.get(0).isAnaglyph();
+				for (PopGraph3D popGraph : graphs)
+					popGraph.setAnaglyph(anaglyph);
+			});
 			anaglyphMenu.setChecked(isAnaglyph);
 			anaglyphMenu.setEnabled(!isOrthographic);
+			menu.add(anaglyphMenu);
+
+			ContextMenuCheckBoxItem vrMenu = new ContextMenuCheckBoxItem("Virtual reality (β)", () -> {
+				boolean vr = !graphs.get(0).isVR();
+				for (PopGraph3D popGraph : graphs)
+					popGraph.setVR(vr);
+			});
 			vrMenu.setChecked(isVR);
 			vrMenu.setEnabled(!isOrthographic);
-		}
-		super.populateContextMenu(menu);
-	}
-
-	/**
-	 * Add the menu item to select parallel projection of the graph instead of the
-	 * default perspective projection.
-	 * 
-	 * @param menu the context menu to which the item is added
-	 */
-	private void addProjectionMenu(ContextMenu menu) {
-		if (projectionMenu == null) {
-			projectionMenu = new ContextMenuCheckBoxItem("Parallel projection", () -> {
-				boolean isOrtho = !projectionMenu.isChecked();
-				for (PopGraph3D graph : graphs)
-					graph.setOrthographic(isOrtho);
-				projectionMenu.setChecked(isOrtho);
-			});
-		}
-		menu.add(projectionMenu);
-	}
-
-	/**
-	 * Add the menu item to select anaglyph projection of the 3D space for a
-	 * representation of the graph suitable for colored 3D glasses.
-	 * 
-	 * @param menu the context menu to which the item is added
-	 */
-	private void addAnaglyphMenu(ContextMenu menu) {
-		if (anaglyphMenu == null) {
-			anaglyphMenu = new ContextMenuCheckBoxItem("Anaglyph 3D", () -> {
-				boolean anaglyph = !anaglyphMenu.isChecked();
-				for (PopGraph3D graph : graphs)
-					graph.setAnaglyph(anaglyph);
-				anaglyphMenu.setChecked(anaglyph);
-			});
-		}
-		menu.add(anaglyphMenu);
-	}
-
-	/**
-	 * Add the menu item to select stereo projection of the 3D space for a virtual
-	 * reality representation of the graph.
-	 * 
-	 * @param menu the context menu to which the item is added
-	 */
-	private void addVRMenu(ContextMenu menu) {
-		if (graphs.size() == 1) {
-			if (vrMenu == null) {
-				vrMenu = new ContextMenuCheckBoxItem("Virtual reality (β)", () -> {
-					boolean vr = !vrMenu.isChecked();
-					for (PopGraph3D graph : graphs)
-						graph.setVR(vr);
-					vrMenu.setChecked(vr);
-				});
-			}
 			menu.add(vrMenu);
 		}
+		super.populateContextMenu(menu);
 	}
 
 	@Override

@@ -1669,11 +1669,6 @@ public class Histogram extends AbstractView<HistoGraph> {
 	}
 
 	/**
-	 * The clear context menu.
-	 */
-	private ContextMenuItem clearMenu;
-
-	/**
 	 * Populate context menu with histogram-specific actions.
 	 *
 	 * @param menu the context menu to populate
@@ -1684,18 +1679,14 @@ public class Histogram extends AbstractView<HistoGraph> {
 			addHistogramBinsMenu(menu);
 		} else if (type == Data.STATISTICS_STATIONARY) {
 			// add menu to clear canvas
-			if (clearMenu == null) {
-				clearMenu = new ContextMenuItem("Clear", () -> {
-					for (HistoGraph graph : graphs)
-						graph.clearData();
-					timestamp = -1.0;
-					update();
-				});
-			}
+			ContextMenuItem clearMenu = new ContextMenuItem("Clear", () -> {
+				for (HistoGraph graph : graphs)
+					graph.clearData();
+				timestamp = -1.0;
+				update();
+			});
 			menu.addSeparator();
 			menu.add(clearMenu);
-		} else {
-			clearMenu = null;
 		}
 		super.populateContextMenu(menu);
 	}
@@ -1719,7 +1710,6 @@ public class Histogram extends AbstractView<HistoGraph> {
 	 * @param menu context menu to populate
 	 */
 	private void addHistogramBinsMenu(ContextMenu menu) {
-		clearMenu = null;
 		int[] binCounts = getBinCounts();
 		if (binCounts.length == 0)
 			return;

@@ -1026,31 +1026,6 @@ public abstract class AbstractGraph<B> extends FocusPanel
 	protected boolean hasZoom = false;
 
 	/**
-	 * The context menu item to reset the zoom level.
-	 */
-	ContextMenuItem zoomResetMenu;
-
-	/**
-	 * The context menu item to zoom in (enlarge) by a factor of {@code 2}.
-	 */
-	ContextMenuItem zoomInMenu;
-
-	/**
-	 * The context menu item to zoom out (reduce) by a factor of {@code 1/2}.
-	 */
-	ContextMenuItem zoomOutMenu;
-
-	/**
-	 * The context menu holding zoom actions.
-	 */
-	private ContextMenu zoomMenu;
-
-	/**
-	 * The menu item to toggle logarithmic scaling on the y-axis.
-	 */
-	ContextMenuCheckBoxItem logYMenu;
-
-	/**
 	 * {@inheritDoc}
 	 * <p>
 	 * Adds buffer size menu and queries the view to add further
@@ -1076,12 +1051,10 @@ public abstract class AbstractGraph<B> extends FocusPanel
 	 */
 	protected void addLogScaleMenu(ContextMenu menu) {
 		if (this instanceof HasLogScaleY) {
-			if (logYMenu == null) {
-				logYMenu = new ContextMenuCheckBoxItem("Logarithmic y-axis", (ScheduledCommand) () -> {
-					setLogY(!style.logScaleY);
-					paint(true);
-				});
-			}
+			ContextMenuCheckBoxItem logYMenu = new ContextMenuCheckBoxItem("Logarithmic y-axis", (ScheduledCommand) () -> {
+				setLogY(!style.logScaleY);
+				paint(true);
+			});
 			logYMenu.setChecked(style.logScaleY);
 			logYMenu.setEnabled(style.yMin >= 0.0);
 			menu.add(logYMenu);
@@ -1096,11 +1069,10 @@ public abstract class AbstractGraph<B> extends FocusPanel
 	protected void addZoomMenu(ContextMenu menu) {
 		if (!(this instanceof Zooming))
 			return;
-		if (zoomMenu == null) {
-			zoomMenu = new ContextMenu(menu, "Zoom");
-			populateZoomMenu(zoomMenu);
-		}
-		menu.add("Zoom", zoomMenu);
+		ContextMenu zoomMenu = new ContextMenu(menu, "Zoom");
+		populateZoomMenu(zoomMenu);
+		if (zoomMenu.getWidgetCount() > 0)
+			menu.add("Zoom", zoomMenu);
 	}
 
 	/**
@@ -1109,15 +1081,9 @@ public abstract class AbstractGraph<B> extends FocusPanel
 	 * @param menu the zoom submenu to populate
 	 */
 	protected void populateZoomMenu(ContextMenu menu) {
-		if (zoomInMenu == null)
-			zoomInMenu = new ContextMenuItem("Zoom in (2x)", new ZoomCommand(2.0));
-		menu.add(zoomInMenu);
-		if (zoomOutMenu == null)
-			zoomOutMenu = new ContextMenuItem("Zoom out (0.5x)", new ZoomCommand(0.5));
-		menu.add(zoomOutMenu);
-		if (zoomResetMenu == null)
-			zoomResetMenu = new ContextMenuItem("Reset zoom", new ZoomCommand(0.0));
-		menu.add(zoomResetMenu);
+		menu.add(new ContextMenuItem("Zoom in (2x)", new ZoomCommand(2.0)));
+		menu.add(new ContextMenuItem("Zoom out (0.5x)", new ZoomCommand(0.5)));
+		menu.add(new ContextMenuItem("Reset zoom", new ZoomCommand(0.0)));
 	}
 
 	/**

@@ -309,11 +309,6 @@ public class Console extends AbstractView<AbstractGraph<?>> implements ContextMe
 		return super.onKeyUp(key);
 	}
 
-	/**
-	 * The context menu item to clear the console.
-	 */
-	private ContextMenuItem clearMenu;
-
 	@Override
 	public int[] getBufferMenuCapacities() {
 		return new int[] { 100, 1000, 10000, 0 };
@@ -340,8 +335,7 @@ public class Console extends AbstractView<AbstractGraph<?>> implements ContextMe
 
 	@Override
 	public void populateContextMenu(ContextMenu menu) {
-		if (clearMenu == null)
-			clearMenu = new ContextMenuItem("Clear", this::clearLog);
+		ContextMenuItem clearMenu = new ContextMenuItem("Clear", this::clearLog);
 		menu.add(clearMenu);
 		super.populateContextMenu(menu);
 	}

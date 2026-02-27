@@ -1008,60 +1008,12 @@ public class LineGraph extends AbstractGraph<double[]>
 		return (1.0 - x) * left + x * right;
 	}
 
-	/**
-	 * The context menu item to clear the graph.
-	 */
-	private ContextMenuItem clearMenu;
-
-	/**
-	 * The context menu for axis-related options.
-	 */
-	private ContextMenu axesMenu;
-
-	/**
-	 * The context menu item to toggle autoscaling of the y-axis.
-	 */
-	private ContextMenuCheckBoxItem autoscaleYMenu;
-
-	/**
-	 * The context menu item to reset percent axes to full range.
-	 */
-	private ContextMenuItem fullYRangeMenu;
-
-	/**
-	 * The context menu item to show the full x-range of the buffer.
-	 */
-	private ContextMenuItem fullXRangeMenu;
-
-	/**
-	 * The context menu item to fit the y-axis to the visible data.
-	 */
-	private ContextMenuItem zoomFitMenu;
-
-	/**
-	 * The context menu item to toggle logarithmic y-axis scaling.
-	 */
-	private ContextMenuCheckBoxItem logYAxesMenu;
-
-	/**
-	 * The context menu item to toggle absolute x-axis tick labels.
-	 */
-	private ContextMenuCheckBoxItem absoluteTimeMenu;
-
-	/**
-	 * The context menu item to toggle the y-axis side.
-	 */
-	private ContextMenuCheckBoxItem rightYAxisMenu;
-
 	@Override
 	public void populateContextMenuAt(ContextMenu menu, int x, int y) {
-		// add menu to clear canvas
-		if (clearMenu == null) {
-			clearMenu = new ContextMenuItem("Clear", () -> {
-				clearHistory();
-				paint(true);
-			});
-		}
+		ContextMenuItem clearMenu = new ContextMenuItem("Clear", () -> {
+			clearHistory();
+			paint(true);
+		});
 		menu.addSeparator();
 		menu.add(clearMenu);
 		addAxesMenu(menu);
@@ -1069,8 +1021,6 @@ public class LineGraph extends AbstractGraph<double[]>
 		if (menu.getWidgetCount() > 0 && tooltip.isVisible())
 			tooltip.close();
 		view.populateContextMenu(menu);
-		zoomInMenu.setText("Zoom in x-axis (2x)");
-		zoomOutMenu.setText("Zoom out x-axis (0.5x)");
 	}
 
 	/**
@@ -1079,52 +1029,42 @@ public class LineGraph extends AbstractGraph<double[]>
 	 * @param menu the context menu to populate
 	 */
 	private void addAxesMenu(ContextMenu menu) {
-		if (axesMenu == null) {
-			axesMenu = new ContextMenu(menu);
-			autoscaleYMenu = new ContextMenuCheckBoxItem("Autoscale", () -> {
-				style.autoscaleY = !style.autoscaleY;
-				autoscaleYMenu.setChecked(style.autoscaleY);
-				if (style.autoscaleY)
-					updateYRangeFromBuffer(false, false);
+		ContextMenu axesMenu = new ContextMenu(menu);
+		ContextMenuCheckBoxItem autoscaleYMenu = new ContextMenuCheckBoxItem("Autoscale", () -> {
+			style.autoscaleY = !style.autoscaleY;
+			if (style.autoscaleY)
+				updateYRangeFromBuffer(false, false);
+			paint(true);
+		});
+		ContextMenuItem fullYRangeMenu = new ContextMenuItem("Full range", () -> {
+			style.autoscaleY = false;
+			if (style.percentY) {
+				style.yMin = 0.0;
+				style.yMax = 1.0;
+				clampLogRange();
+			}
+			paint(true);
+		});
+		ContextMenuItem fullXRangeMenu = new ContextMenuItem("Full range", () -> {
+			if (updateXRangeFromBuffer())
 				paint(true);
-			});
-			fullYRangeMenu = new ContextMenuItem("Full range", () -> {
-				if (style.autoscaleY) {
-					style.autoscaleY = false;
-					autoscaleYMenu.setChecked(false);
-				}
-				if (style.percentY) {
-					style.yMin = 0.0;
-					style.yMax = 1.0;
-					clampLogRange();
-				}
-				paint(true);
-			});
-			fullXRangeMenu = new ContextMenuItem("Full range", () -> {
-				if (updateXRangeFromBuffer())
-					paint(true);
-			});
-			logYAxesMenu = new ContextMenuCheckBoxItem("Logarithmic", () -> {
-				setLogY(!style.logScaleY);
-				logYAxesMenu.setChecked(style.logScaleY);
-				paint(true);
-			});
-			absoluteTimeMenu = new ContextMenuCheckBoxItem("Absolute " + style.xLabel, () -> {
-				style.offsetXTickLabels = !style.offsetXTickLabels;
-				if (style.offsetXTickLabels)
-					updateXTickOffset();
-				else
-					style.xTickOffset = 0.0;
-				absoluteTimeMenu.setChecked(style.offsetXTickLabels);
-				paint(true);
-			});
-			rightYAxisMenu = new ContextMenuCheckBoxItem("Right side", () -> {
-				boolean showOnRight = !style.showYAxisRight;
-				rightYAxisMenu.setChecked(showOnRight);
-				view.setRightYAxis(showOnRight);
-			});
-		}
-		axesMenu.clear();
+		});
+		ContextMenuCheckBoxItem logYAxesMenu = new ContextMenuCheckBoxItem("Logarithmic", () -> {
+			setLogY(!style.logScaleY);
+			paint(true);
+		});
+		ContextMenuCheckBoxItem absoluteTimeMenu = new ContextMenuCheckBoxItem("Absolute " + style.xLabel, () -> {
+			style.offsetXTickLabels = !style.offsetXTickLabels;
+			if (style.offsetXTickLabels)
+				updateXTickOffset();
+			else
+				style.xTickOffset = 0.0;
+			paint(true);
+		});
+		ContextMenuCheckBoxItem rightYAxisMenu = new ContextMenuCheckBoxItem("Right side", () -> {
+			boolean showOnRight = !style.showYAxisRight;
+			view.setRightYAxis(showOnRight);
+		});
 		String axisLabel = style.xLabel == null ? "time" : style.xLabel;
 		autoscaleYMenu.setChecked(style.autoscaleY);
 		logYAxesMenu.setChecked(style.logScaleY);
@@ -1146,29 +1086,26 @@ public class LineGraph extends AbstractGraph<double[]>
 
 	@Override
 	protected void populateZoomMenu(ContextMenu menu) {
-		super.populateZoomMenu(menu);
-		if (zoomFitMenu == null) {
-			zoomFitMenu = new ContextMenuItem("Zoom to fit", () -> {
-				if (style.autoscaleY) {
-					style.autoscaleY = false;
-					autoscaleYMenu.setChecked(false);
-				}
-				boolean addMargin = !style.percentY;
-				if (updateYRangeFromBuffer(true, addMargin)) {
-					if (style.percentY) {
-						style.yMin = Math.max(0.0, style.yMin);
-						style.yMax = Math.min(1.0, style.yMax);
-						if (style.yMin > style.yMax) {
-							style.yMin = 0.0;
-							style.yMax = 1.0;
-						}
-						clampLogRange();
+		menu.add(new ContextMenuItem("Zoom in x-axis (2x)", new ZoomCommand(2.0)));
+		menu.add(new ContextMenuItem("Zoom out x-axis (0.5x)", new ZoomCommand(0.5)));
+		menu.add(new ContextMenuItem("Reset zoom", new ZoomCommand(0.0)));
+		menu.add(new ContextMenuItem("Zoom to fit", () -> {
+			if (style.autoscaleY)
+				style.autoscaleY = false;
+			boolean addMargin = !style.percentY;
+			if (updateYRangeFromBuffer(true, addMargin)) {
+				if (style.percentY) {
+					style.yMin = Math.max(0.0, style.yMin);
+					style.yMax = Math.min(1.0, style.yMax);
+					if (style.yMin > style.yMax) {
+						style.yMin = 0.0;
+						style.yMax = 1.0;
 					}
-					paint(true);
+					clampLogRange();
 				}
-			});
-		}
-		menu.add(zoomFitMenu);
+				paint(true);
+			}
+		}));
 	}
 
 	/**

@@ -360,12 +360,19 @@ public class Phase2D extends AbstractView<ParaGraph> {
 		boolean isMultispecies = nSpecies > 1;
 		// no menu entries if single species and less than 3 traits
 		if (!isMultispecies && module.getNTraits() < 3) {
-			traitXMenu = traitYMenu = null;
-			traitXItems = traitYItems = null;
 			super.populateContextMenu(menu);
 			return;
 		}
-		buildTraitMenus(menu, species, isMultispecies);
+		int totTraits = computeTotalTraits(species, model.isDensity());
+		ContextMenu traitXMenu = new ContextMenu(menu, "X-axis trait");
+		ContextMenu traitYMenu = new ContextMenu(menu, "Y-axis trait");
+		ContextMenuCheckBoxItem[] traitXItems = new ContextMenuCheckBoxItem[totTraits];
+		ContextMenuCheckBoxItem[] traitYItems = new ContextMenuCheckBoxItem[totTraits];
+		populateTraitItems(species, isMultispecies, traitXMenu, traitYMenu, traitXItems, traitYItems);
+		for (int n : map.getTraitsX())
+			traitXItems[n].setChecked(true);
+		for (int n : map.getTraitsY())
+			traitYItems[n].setChecked(true);
 		menu.addSeparator();
 		menu.add("X-axis trait", traitXMenu);
 		menu.add("Y-axis trait", traitYMenu);
@@ -378,38 +385,30 @@ public class Phase2D extends AbstractView<ParaGraph> {
 	 * @param menu the context menu to populate
 	 */
 	private void addAxesMenu(ContextMenu menu) {
-		if (axesMenu == null) {
-			axesMenu = new ContextMenu(menu, "Axes");
-			autoscaleMenu = new ContextMenuCheckBoxItem("Autoscale axes", () -> {
-				GraphStyle style = graph.getStyle();
-				boolean enable = !autoscaleMenu.isChecked();
-				style.autoscaleX = enable;
-				style.autoscaleY = enable;
-				autoscaleMenu.setChecked(enable);
-				graph.autoscale();
-				graph.paint(true);
-			});
-			fullRangeMenu = new ContextMenuItem("Full range", () -> {
-				GraphStyle style = graph.getStyle();
-				if (style.autoscaleX || style.autoscaleY) {
-					style.autoscaleX = false;
-					style.autoscaleY = false;
-					autoscaleMenu.setChecked(false);
-				}
-				style.xMin = 0.0;
-				style.xMax = 1.0;
-				style.yMin = 0.0;
-				style.yMax = 1.0;
-				graph.paint(true);
-			});
-			rightYAxisMenu = new ContextMenuCheckBoxItem("Right Y-axis", () -> {
-				GraphStyle style = graph.getStyle();
-				boolean showOnRight = !style.showYAxisRight;
-				rightYAxisMenu.setChecked(showOnRight);
-				setRightYAxis(showOnRight);
-			});
-		}
-		axesMenu.clear();
+		ContextMenu axesMenu = new ContextMenu(menu, "Axes");
+		ContextMenuCheckBoxItem autoscaleMenu = new ContextMenuCheckBoxItem("Autoscale axes", () -> {
+			GraphStyle style = graph.getStyle();
+			boolean enable = !(style.autoscaleX && style.autoscaleY);
+			style.autoscaleX = enable;
+			style.autoscaleY = enable;
+			graph.autoscale();
+			graph.paint(true);
+		});
+		ContextMenuItem fullRangeMenu = new ContextMenuItem("Full range", () -> {
+			GraphStyle style = graph.getStyle();
+			style.autoscaleX = false;
+			style.autoscaleY = false;
+			style.xMin = 0.0;
+			style.xMax = 1.0;
+			style.yMin = 0.0;
+			style.yMax = 1.0;
+			graph.paint(true);
+		});
+		ContextMenuCheckBoxItem rightYAxisMenu = new ContextMenuCheckBoxItem("Right Y-axis", () -> {
+			GraphStyle style = graph.getStyle();
+			boolean showOnRight = !style.showYAxisRight;
+			setRightYAxis(showOnRight);
+		});
 		axesMenu.addHeader("Axes");
 		GraphStyle style = graph.getStyle();
 		autoscaleMenu.setChecked(style.autoscaleX && style.autoscaleY);
@@ -419,30 +418,6 @@ public class Phase2D extends AbstractView<ParaGraph> {
 			axesMenu.add(fullRangeMenu);
 		axesMenu.add(rightYAxisMenu);
 		menu.add("Axes", axesMenu);
-	}
-
-	/**
-	 * Build or update trait selection sub-menus for the X and Y axes.
-	 * 
-	 * @param parent         the parent context menu
-	 * @param species        the list of species modules
-	 * @param isMultispecies whether multiple species are present
-	 */
-	private void buildTraitMenus(ContextMenu parent, List<? extends Module<?>> species, boolean isMultispecies) {
-		int totTraits = computeTotalTraits(species, model.isDensity());
-		if (traitXMenu == null || traitXItems == null || traitXItems.length != totTraits ||
-				traitYMenu == null || traitYItems == null || traitYItems.length != totTraits) {
-			traitXMenu = new ContextMenu(parent, "X-axis trait");
-			traitYMenu = new ContextMenu(parent, "Y-axis trait");
-			traitXItems = new ContextMenuCheckBoxItem[totTraits];
-			traitYItems = new ContextMenuCheckBoxItem[totTraits];
-			populateTraitItems(species, isMultispecies);
-			// restore checked state from map
-			for (int n : map.getTraitsX())
-				traitXItems[n].setChecked(true);
-			for (int n : map.getTraitsY())
-				traitYItems[n].setChecked(true);
-		}
 	}
 
 	/**
@@ -470,8 +445,13 @@ public class Phase2D extends AbstractView<ParaGraph> {
 	 * 
 	 * @param species        the list of species modules
 	 * @param isMultispecies whether multiple species are present
+	 * @param traitXMenu     the X-axis trait submenu
+	 * @param traitYMenu     the Y-axis trait submenu
+	 * @param traitXItems    the X-axis trait items
+	 * @param traitYItems    the Y-axis trait items
 	 */
-	private void populateTraitItems(List<? extends Module<?>> species, boolean isMultispecies) {
+	private void populateTraitItems(List<? extends Module<?>> species, boolean isMultispecies, ContextMenu traitXMenu,
+			ContextMenu traitYMenu, ContextMenuCheckBoxItem[] traitXItems, ContextMenuCheckBoxItem[] traitYItems) {
 		int idx = 0;
 		for (Module<?> mod : species) {
 			int vidx = mod.getVacantIdx();
@@ -490,10 +470,10 @@ public class Phase2D extends AbstractView<ParaGraph> {
 				if (model.isDensity() && n == vidx)
 					continue;
 				ContextMenuCheckBoxItem traitXItem = new ContextMenuCheckBoxItem(mod.getTraitName(n),
-						new TraitCommand(n, TraitCommand.X_AXIS));
+						new TraitCommand(traitXItems, n, TraitCommand.X_AXIS));
 				traitXMenu.add(traitXItem);
 				ContextMenuCheckBoxItem traitYItem = new ContextMenuCheckBoxItem(mod.getTraitName(n),
-						new TraitCommand(n, TraitCommand.Y_AXIS));
+						new TraitCommand(traitYItems, n, TraitCommand.Y_AXIS));
 				traitYMenu.add(traitYItem);
 				traitXItems[idx] = traitXItem;
 				traitYItems[idx] = traitYItem;
@@ -522,48 +502,6 @@ public class Phase2D extends AbstractView<ParaGraph> {
 	}
 
 	/**
-	 * The context menu for selecting traits to display on the horizontal axis.
-	 */
-	private ContextMenuCheckBoxItem[] traitXItems;
-
-	/**
-	 * The context menu for selecting traits to display on the vertical axis.
-	 */
-	private ContextMenuCheckBoxItem[] traitYItems;
-
-	/**
-	 * The context menu trigger for selecting traits to display on the horizontal
-	 * axis.
-	 */
-	private ContextMenu traitXMenu;
-
-	/**
-	 * The context menu trigger for selecting traits to display on the vertical
-	 * axis.
-	 */
-	private ContextMenu traitYMenu;
-
-	/**
-	 * The context menu for axis-related controls.
-	 */
-	private ContextMenu axesMenu;
-
-	/**
-	 * The context menu item to toggle autoscaling on both axes.
-	 */
-	private ContextMenuCheckBoxItem autoscaleMenu;
-
-	/**
-	 * The context menu item to set the full frequency range.
-	 */
-	private ContextMenuItem fullRangeMenu;
-
-	/**
-	 * The context menu item to toggle the y-axis side.
-	 */
-	private ContextMenuCheckBoxItem rightYAxisMenu;
-
-	/**
 	 * Command to toggle the inclusion of a trait on the phase plane axes.
 	 */
 	public class TraitCommand implements Command {
@@ -589,13 +527,20 @@ public class Phase2D extends AbstractView<ParaGraph> {
 		int axis = -1;
 
 		/**
+		 * The list of traits to toggle.
+		 */
+		ContextMenuCheckBoxItem[] traitItems;
+
+		/**
 		 * Construct a new command to toggle the inclusion of a trait on either one of
 		 * the phase plane axes.
 		 * 
+		 * @param traitItems the list of traits to toggle
 		 * @param trait the index of the trait to show/hide on the axis
 		 * @param axis  the index of the axis
 		 */
-		public TraitCommand(int trait, int axis) {
+		public TraitCommand(ContextMenuCheckBoxItem[] traitItems, int trait, int axis) {
+			this.traitItems = traitItems;
 			this.trait = trait;
 			this.axis = axis;
 		}
@@ -606,9 +551,9 @@ public class Phase2D extends AbstractView<ParaGraph> {
 		@Override
 		public void execute() {
 			if (axis == X_AXIS)
-				map.setTraits(toggleState(map.getTraitsX(), traitXItems), map.getTraitsY());
+				map.setTraits(toggleState(map.getTraitsX(), traitItems), map.getTraitsY());
 			else
-				map.setTraits(map.getTraitsX(), toggleState(map.getTraitsY(), traitYItems));
+				map.setTraits(map.getTraitsX(), toggleState(map.getTraitsY(), traitItems));
 			Phase2D.this.reset(false);
 		}
 

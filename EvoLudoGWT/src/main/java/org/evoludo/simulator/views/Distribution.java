@@ -487,28 +487,22 @@ public class Distribution extends AbstractView<PopGraph2D> implements TooltipPro
 		addBinsMenu(menu, nTraits > 1);
 		// ignore if less than 3 traits
 		if (nTraits < 3) {
-			traitXMenu = traitYMenu = null;
-			traitXItems = traitYItems = null;
 			super.populateContextMenu(menu);
 			return;
 		}
-		if (traitXMenu == null || traitXItems == null || traitXItems.length != nTraits) {
-			traitXMenu = new ContextMenu(menu, "X-axis trait");
-			traitXItems = new ContextMenuCheckBoxItem[nTraits];
-			for (int n = 0; n < nTraits; n++) {
-				traitXItems[n] = new ContextMenuCheckBoxItem(module.getTraitName(n),
-						new TraitCommand(traitXItems, n, TraitCommand.X_AXIS));
-				traitXMenu.add(traitXItems[n]);
-			}
+		ContextMenu traitXMenu = new ContextMenu(menu, "X-axis trait");
+		ContextMenuCheckBoxItem[] traitXItems = new ContextMenuCheckBoxItem[nTraits];
+		for (int n = 0; n < nTraits; n++) {
+			traitXItems[n] = new ContextMenuCheckBoxItem(module.getTraitName(n),
+					new TraitCommand(traitXItems, n, TraitCommand.X_AXIS));
+			traitXMenu.add(traitXItems[n]);
 		}
-		if (traitYMenu == null || traitYItems == null || traitYItems.length != nTraits) {
-			traitYMenu = new ContextMenu(menu, "Y-axis trait");
-			traitYItems = new ContextMenuCheckBoxItem[nTraits];
-			for (int n = 0; n < nTraits; n++) {
-				traitYItems[n] = new ContextMenuCheckBoxItem(module.getTraitName(n),
-						new TraitCommand(traitYItems, n, TraitCommand.Y_AXIS));
-				traitYMenu.add(traitYItems[n]);
-			}
+		ContextMenu traitYMenu = new ContextMenu(menu, "Y-axis trait");
+		ContextMenuCheckBoxItem[] traitYItems = new ContextMenuCheckBoxItem[nTraits];
+		for (int n = 0; n < nTraits; n++) {
+			traitYItems[n] = new ContextMenuCheckBoxItem(module.getTraitName(n),
+					new TraitCommand(traitYItems, n, TraitCommand.Y_AXIS));
+			traitYMenu.add(traitYItems[n]);
 		}
 		// init trait submenus
 		for (int n = 0; n < traitXItems.length; n++)
@@ -531,15 +525,11 @@ public class Distribution extends AbstractView<PopGraph2D> implements TooltipPro
 	private void addAxesMenu(ContextMenu menu) {
 		if (graphs.isEmpty())
 			return;
-		if (axesMenu == null) {
-			axesMenu = new ContextMenu(menu, "Axes");
-			rightYAxisMenu = new ContextMenuCheckBoxItem("Right Y-axis", () -> {
-				boolean showOnRight = !graphs.get(0).getStyle().showYAxisRight;
-				rightYAxisMenu.setChecked(showOnRight);
-				setRightYAxis(showOnRight);
-			});
-		}
-		axesMenu.clear();
+		ContextMenu axesMenu = new ContextMenu(menu, "Axes");
+		ContextMenuCheckBoxItem rightYAxisMenu = new ContextMenuCheckBoxItem("Right Y-axis", () -> {
+			boolean showOnRight = !graphs.get(0).getStyle().showYAxisRight;
+			setRightYAxis(showOnRight);
+		});
 		axesMenu.addHeader("Axes");
 		rightYAxisMenu.setChecked(graphs.get(0).getStyle().showYAxisRight);
 		axesMenu.add(rightYAxisMenu);
@@ -555,34 +545,16 @@ public class Distribution extends AbstractView<PopGraph2D> implements TooltipPro
 	private void addBinsMenu(ContextMenu menu, boolean is2D) {
 		if (graphs.isEmpty())
 			return;
-		if (binsMenu == null) {
-			binsMenu = new ContextMenu(menu, "Bins");
-			binOptionItems = new ContextMenuCheckBoxItem[BIN_OPTIONS.length];
-			for (int i = 0; i < BIN_OPTIONS.length; i++) {
-				final int option = BIN_OPTIONS[i];
-				binOptionItems[i] = new ContextMenuCheckBoxItem(Integer.toString(option), () -> {
-					applyBinsPerAxis(option);
-					updateBinMenuChecks();
-				});
-			}
-		}
-		binsMenu.clear();
+		ContextMenu binsMenu = new ContextMenu(menu, "Bins");
 		binsMenu.addHeader(is2D ? "Bins per axis" : "Bins");
-		for (ContextMenuCheckBoxItem item : binOptionItems)
+		for (int option : BIN_OPTIONS) {
+			ContextMenuCheckBoxItem item = new ContextMenuCheckBoxItem(Integer.toString(option),
+					() -> applyBinsPerAxis(option));
+			item.setChecked(option == nBins);
 			binsMenu.add(item);
-		updateBinMenuChecks();
+		}
 		ContextMenuItem binsTrigger = menu.add("Bins", binsMenu);
 		binsTrigger.setEnabled(!isRunning());
-	}
-
-	/**
-	 * Update checked state of binning menu entries.
-	 */
-	private void updateBinMenuChecks() {
-		if (binOptionItems == null)
-			return;
-		for (int i = 0; i < BIN_OPTIONS.length; i++)
-			binOptionItems[i].setChecked(BIN_OPTIONS[i] == nBins);
 	}
 
 	/**
@@ -612,48 +584,6 @@ public class Distribution extends AbstractView<PopGraph2D> implements TooltipPro
 	protected ExportType[] exportTypes() {
 		return new ExportType[] { ExportType.SVG, ExportType.PNG };
 	}
-
-	/**
-	 * The context menu for selecting traits to display on the horizontal axis.
-	 */
-	private ContextMenuCheckBoxItem[] traitXItems;
-
-	/**
-	 * The context menu for selecting traits to display on the vertical axis.
-	 */
-	private ContextMenuCheckBoxItem[] traitYItems;
-
-	/**
-	 * The context menu trigger for selecting traits to display on the horizontal
-	 * axis.
-	 */
-	private ContextMenu traitXMenu;
-
-	/**
-	 * The context menu trigger for selecting traits to display on the vertical
-	 * axis.
-	 */
-	private ContextMenu traitYMenu;
-
-	/**
-	 * The context menu trigger for axis settings.
-	 */
-	private ContextMenu axesMenu;
-
-	/**
-	 * The context menu trigger for binning settings.
-	 */
-	private ContextMenu binsMenu;
-
-	/**
-	 * The context menu item to toggle the y-axis side.
-	 */
-	private ContextMenuCheckBoxItem rightYAxisMenu;
-
-	/**
-	 * The context menu items to select bin count per axis.
-	 */
-	private ContextMenuCheckBoxItem[] binOptionItems;
 
 	/**
 	 * Command to toggle the inclusion of a trait on the phase plane axes.
