@@ -208,7 +208,6 @@ public class Distribution extends AbstractView<PopGraph2D> implements TooltipPro
 			PopGraph2D graph = module.getNTraits() == 1
 					? new PopGraph1D(this, module)
 					: new DistrGraph2D(this, module);
-			graph.setLayoutMenusEnabled(false);
 			wrapper.add(graph);
 			graphs.add(graph);
 			// even if nGraphs did not change, the geometries associated with the graphs

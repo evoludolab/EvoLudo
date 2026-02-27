@@ -318,11 +318,8 @@ public class Pop2D extends GenericPop<String, Network2D, PopGraph2D> implements 
 	 * @return a graph with matching specialization
 	 */
 	private PopGraph2D createGraph(Module<?> module, AbstractGeometry geometry) {
-		if (isLinearGeometry(geometry)) {
-			PopGraph2D graph = new PopGraph1D(this, module);
-			graph.setLayoutMenusEnabled(false);
-			return graph;
-		}
+		if (isLinearGeometry(geometry))
+			return new PopGraph1D(this, module);
 		return new PopGraph2D(this, module);
 	}
 

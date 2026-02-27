@@ -572,60 +572,22 @@ public abstract class GenericPopGraph<T, N extends Network<?>> extends AbstractG
 		event.preventDefault();
 	}
 
-	/**
-	 * The flag to indicate whether layout-specific context menu entries should be
-	 * shown.
-	 */
-	private boolean showLayoutMenus = true;
-
-	/**
-	 * Set whether layout-specific context menu entries should be shown.
-	 *
-	 * @param enabled {@code true} to show layout entries
-	 */
-	public void setLayoutMenusEnabled(boolean enabled) {
-		showLayoutMenus = enabled;
-	}
-
 	@Override
 	public void populateContextMenuAt(ContextMenu menu, int x, int y) {
 		if (hasMessage) {
-			// skip or disable context menu entries
+			// skip context menu entries
 			super.populateContextMenuAt(menu, x, y);
 			return;
 		}
-		if (showLayoutMenus) {
-			addShakeMenu(menu);
-			addAnimateMenu(menu);
+		if (!hasStaticLayout()) {
+			menu.add(new ContextMenuItem("Shake", () -> network.shake(GenericPopGraph.this, 0.05)));
+			menu.add(new ContextMenuCheckBoxItem("Animate layout", animate, () -> animate = !animate));
 		}
 		addClearMenu(menu);
 		// process debug node update
 		addDebugSubmenu(menu, x, y);
 
 		super.populateContextMenuAt(menu, x, y);
-	}
-
-	/**
-	 * Helper method to process the debug submenu logic for context menu.
-	 * 
-	 * @param menu the context menu to which the shake menu is added
-	 */
-	private void addShakeMenu(ContextMenu menu) {
-		ContextMenuItem shakeMenu = new ContextMenuItem("Shake", () -> network.shake(GenericPopGraph.this, 0.05));
-		menu.add(shakeMenu);
-		shakeMenu.setEnabled(!hasStaticLayout());
-	}
-
-	/**
-	 * Helper method to process the debug submenu logic for context menu.
-	 * 
-	 * @param menu the context menu to which the animate menu is added
-	 */
-	private void addAnimateMenu(ContextMenu menu) {
-		ContextMenuCheckBoxItem animateMenu = new ContextMenuCheckBoxItem("Animate layout", () -> animate = !animate);
-		animateMenu.setChecked(animate);
-		menu.add(animateMenu);
-		animateMenu.setEnabled(!hasMessage && !hasStaticLayout());
 	}
 
 	/**

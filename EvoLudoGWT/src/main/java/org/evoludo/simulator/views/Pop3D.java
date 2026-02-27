@@ -146,7 +146,8 @@ import thothbot.parallax.core.shared.materials.MeshLambertMaterial;
  * @see Network3DGWT
  */
 @SuppressWarnings("java:S110")
-public class Pop3D extends GenericPop<MeshLambertMaterial, Network3DGWT, PopGraph3D> implements HasDebugMenu {
+public class Pop3D extends GenericPop<MeshLambertMaterial, Network3DGWT, PopGraph3D>
+		implements HasDebugMenu {
 
 	/**
 	 * Construct a new view to display the configuration of the current state of the
