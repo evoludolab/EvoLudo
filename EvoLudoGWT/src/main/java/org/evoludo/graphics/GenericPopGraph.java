@@ -582,21 +582,6 @@ public abstract class GenericPopGraph<T, N extends Network<?>> extends AbstractG
 	private ContextMenuItem clearMenu;
 
 	/**
-	 * The context menu for visually exploring (or debugging) the updating process.
-	 */
-	private ContextMenu debugSubmenu;
-
-	/**
-	 * The context menu item for updating the current node.
-	 */
-	private ContextMenuItem debugNodeMenu;
-
-	/**
-	 * The context menu item for attaching the debug submenu.
-	 */
-	private ContextMenuItem debugSubmenuTrigger;
-
-	/**
 	 * The flag to indicate whether the debug submenu is activated. For example,
 	 * debugging does not make sense if the nodes refer to states of PDE
 	 * calculations.
@@ -707,18 +692,15 @@ public abstract class GenericPopGraph<T, N extends Network<?>> extends AbstractG
 			return;
 		}
 		int debugNode = findNodeAt(x, y);
-		if (debugNode >= 0 && debugNode < geometry.getSize()) {
-			if (debugSubmenu == null) {
-				debugSubmenu = new ContextMenu(menu, "Debug");
-				debugNodeMenu = new ContextMenuItem("Update node @ -",
-						() -> module.getIBSPopulation().debugUpdatePopulationAt(debugNode));
-				debugSubmenu.add(debugNodeMenu);
-			}
-			debugNodeMenu.setText("Update node @ " + debugNode);
-			debugNodeMenu.setEnabled(view.getModel() != null && view.getModel().isIBS());
-			debugSubmenuTrigger = menu.add("Debug", debugSubmenu);
-		}
-		if (debugSubmenuTrigger != null)
-			debugSubmenuTrigger.setEnabled(!view.isRunning());
+		if (debugNode < 0 || debugNode >= geometry.getSize())
+			return;
+
+		ContextMenu debugSubmenu = new ContextMenu(menu, "Debug");
+		ContextMenuItem debugNodeMenu = new ContextMenuItem("Update node @ " + debugNode,
+				() -> module.getIBSPopulation().debugUpdatePopulationAt(debugNode));
+		debugNodeMenu.setEnabled(view.getModel() != null && view.getModel().isIBS());
+		debugSubmenu.add(debugNodeMenu);
+		ContextMenuItem debugSubmenuTrigger = menu.add("Debug", debugSubmenu);
+		debugSubmenuTrigger.setEnabled(!view.isRunning());
 	}
 }
