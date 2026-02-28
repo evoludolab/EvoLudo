@@ -381,7 +381,8 @@ public class PopGraph1D extends PopGraph2D {
 		dh = 0;
 		dR = 0.0;
 
-		int bWidth = (int) bounds.getWidth();
+		double plotX = getGraphAreaX();
+		int bWidth = (int) Math.rint(getGraphAreaWidth());
 		dw = bWidth / geometry.getSize();
 		int bHeight = (int) bounds.getHeight();
 		dh = dw;
@@ -396,7 +397,7 @@ public class PopGraph1D extends PopGraph2D {
 		int adjh = bHeight - (bHeight % dh);
 		int dx = (bWidth - adjw) / 2;
 		int dy = (bHeight - adjh) / 2;
-		bounds.set(bounds.getX() + dx, bounds.getY() + dy, adjw, adjh);
+		bounds.set(plotX + dx, bounds.getY() + dy, adjw, adjh);
 		style.setYRange(steps - 1);
 		style.showFrame = true;
 	}

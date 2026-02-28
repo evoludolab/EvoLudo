@@ -219,6 +219,12 @@ public class GraphStyle {
 	public boolean showYAxisRight = true;
 
 	/**
+	 * Position of the fitness legend: {@code -1} left, {@code 0} hidden,
+	 * {@code +1} right.
+	 */
+	public int legendPos = 1;
+
+	/**
 	 * The flag to indicate whether to show the frame of the graph.
 	 */
 	public boolean showFrame = true;
