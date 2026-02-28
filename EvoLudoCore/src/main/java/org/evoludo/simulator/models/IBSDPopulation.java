@@ -958,8 +958,8 @@ public class IBSDPopulation extends IBSPopulation<Discrete, IBSDPopulation> {
 		if (mytype == sampletype)
 			return true;
 		int besttype = getTraitAt(best);
-		int distsample = (mytype - sampletype + nTraits) % nTraits;
-		int distbest = (mytype - besttype + nTraits) % nTraits;
+		int distsample = Math.floorMod(mytype - sampletype, nTraits);
+		int distbest = Math.floorMod(mytype - besttype, nTraits);
 		return (distsample < distbest);
 	}
 

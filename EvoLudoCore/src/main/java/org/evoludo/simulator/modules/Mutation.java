@@ -199,7 +199,7 @@ public abstract class Mutation {
 						break;
 					case RANGE:
 						int irange = (int) range;
-						trait = (trait + rng.random0n(irange * 2 + 1) - irange + nTraits) % nTraits;
+						trait = Math.floorMod(trait + rng.random0n(irange * 2 + 1) - irange, nTraits);
 						break;
 					default:
 						return trait;
@@ -231,7 +231,7 @@ public abstract class Mutation {
 					break;
 				case RANGE:
 					int irange = (int) range;
-					mut = (trait + rng.random0n(irange * 2 + 1) - irange + nTraits) % nTraits;
+					mut = Math.floorMod(trait + rng.random0n(irange * 2 + 1) - irange, nTraits);
 					break;
 				default:
 			}
