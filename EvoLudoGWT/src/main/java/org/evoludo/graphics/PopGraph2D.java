@@ -249,7 +249,7 @@ public class PopGraph2D extends GenericPopGraph<String, Network2D> implements Sh
 	 * @param menu the context menu to populate
 	 */
 	private void addLegendPositionMenu(ContextMenu menu) {
-		if (view.getType() != Data.FITNESS)
+		if (!supportsLegendMenu())
 			return;
 		ContextMenu legendMenu = new ContextMenu(menu);
 		addLegendPositionItem(legendMenu, "None", GraphStyle.Position.NONE);
@@ -372,7 +372,7 @@ public class PopGraph2D extends GenericPopGraph<String, Network2D> implements Sh
 			default:
 				logger.warning("Unsupported geometry: " + type.getTitle());
 		}
-		drawFitnessLegend();
+		drawLegend();
 		g.restore();
 	}
 
@@ -552,16 +552,29 @@ public class PopGraph2D extends GenericPopGraph<String, Network2D> implements Sh
 		g.restore();
 		drawFrame(0, 0, su);
 		g.restore();
-		drawFitnessLegend();
+		drawLegend();
 		g.restore();
 	}
 
 	/**
-	 * Draw a vertical color legend for fitness-based population graphs.
+	 * Draw the active legend.
+	 */
+	private void drawLegend() {
+		if (!hasLegend() || (legendReserveWidth <= 0.0 && legendReserveHeight <= 0.0))
+			return;
+		if (view.getType() == Data.FITNESS) {
+			drawFitnessLegend();
+			return;
+		}
+		if (view.getType() == Data.TRAIT)
+			drawTraitLegend();
+	}
+
+	/**
+	 * Draw a color legend for fitness-based population graphs.
 	 */
 	private void drawFitnessLegend() {
-		if (!hasLegend() || (legendReserveWidth <= 0.0 && legendReserveHeight <= 0.0)
-				|| !(getColorMap() instanceof ColorMap.Gradient1D))
+		if (!(getColorMap() instanceof ColorMap.Gradient1D))
 			return;
 		Model model = view.getModel();
 		double min = model.getMinFitness(module.getId());
@@ -649,6 +662,180 @@ public class PopGraph2D extends GenericPopGraph<String, Network2D> implements Sh
 				barLeft + barWidth - g.measureText(Formatter.formatPretty(max, 2)).getWidth(), labelY);
 	}
 
+	/**
+	 * Draw a color legend for trait-based population graphs.
+	 */
+	private void drawTraitLegend() {
+		if (hasContinuousTraitLegend()) {
+			drawContinuousTraitLegend();
+			return;
+		}
+		if (hasDiscreteTraitLegend())
+			drawDiscreteTraitLegend();
+	}
+
+	/**
+	 * Draw a continuous gradient legend for single continuous traits.
+	 */
+	private void drawContinuousTraitLegend() {
+		ColorMap.Gradient1D<String> gradient = (ColorMap.Gradient1D<String>) getColorMap();
+		if (style.legendPos.isVertical()) {
+			double barHeight = bounds.getHeight() * 0.6;
+			double barTop = (bounds.getHeight() - barHeight) * 0.5;
+			double barX;
+			double labelX;
+			switch (style.legendPos) {
+				case EAST:
+					barX = bounds.getWidth() + FITNESS_LEGEND_GAP;
+					labelX = barX + FITNESS_LEGEND_BAR_WIDTH + FITNESS_LEGEND_LABEL_PAD;
+					break;
+				case WEST:
+					barX = -FITNESS_LEGEND_GAP - FITNESS_LEGEND_BAR_WIDTH;
+					labelX = -legendReserveWidth + FITNESS_LEGEND_OUTER_PAD;
+					break;
+				default:
+					return;
+			}
+			double[] samples = getLegendSamples(0.0, 1.0, barHeight, new ArrayList<>());
+			int steps = samples.length;
+			double stepHeight = barHeight / steps;
+			for (int i = 0; i < steps; i++) {
+				double y0 = Math.floor(barTop + i * stepHeight);
+				double y1 = Math.floor(barTop + (i + 1) * stepHeight);
+				if (i == steps - 1)
+					y1 = barTop + barHeight;
+				if (y1 <= y0)
+					y1 = y0 + 1.0;
+				g.setFillStyle(gradient.translate(samples[i]));
+				fillRect(barX, y0, FITNESS_LEGEND_BAR_WIDTH, y1 - y0);
+			}
+			g.setStrokeStyle(style.frameColor);
+			g.setLineWidth(1.0);
+			g.strokeRect(barX + 0.5, barTop - 0.5, FITNESS_LEGEND_BAR_WIDTH, barHeight + 1.0);
+			g.setFillStyle(style.frameColor);
+			setFont(style.ticksLabelFont);
+			g.fillText("1", labelX, barTop + 4.5);
+			g.fillText("0", labelX, barTop + barHeight + 4.5);
+			return;
+		}
+		double barWidth = bounds.getWidth() * 0.6;
+		double barLeft = (bounds.getWidth() - barWidth) * 0.5;
+		double barY;
+		double labelY;
+		switch (style.legendPos) {
+			case SOUTH:
+				barY = bounds.getHeight() + FITNESS_LEGEND_GAP;
+				labelY = barY + FITNESS_LEGEND_BAR_WIDTH + 11.0;
+				break;
+			case NORTH:
+				barY = -FITNESS_LEGEND_GAP - FITNESS_LEGEND_BAR_WIDTH;
+				labelY = -FITNESS_LEGEND_OUTER_PAD;
+				break;
+			default:
+				return;
+		}
+		double[] samples = getLegendSamples(0.0, 1.0, barWidth, new ArrayList<>());
+		int steps = samples.length;
+		double stepWidth = barWidth / steps;
+		for (int i = 0; i < steps; i++) {
+			double x0 = Math.floor(barLeft + i * stepWidth);
+			double x1 = Math.floor(barLeft + (i + 1) * stepWidth);
+			if (i == steps - 1)
+				x1 = barLeft + barWidth;
+			if (x1 <= x0)
+				x1 = x0 + 1.0;
+			g.setFillStyle(gradient.translate(samples[i]));
+			fillRect(x0, barY, x1 - x0, FITNESS_LEGEND_BAR_WIDTH);
+		}
+		g.setStrokeStyle(style.frameColor);
+		g.setLineWidth(1.0);
+		g.strokeRect(barLeft - 0.5, barY + 0.5, barWidth + 1.0, FITNESS_LEGEND_BAR_WIDTH);
+		g.setFillStyle(style.frameColor);
+		setFont(style.ticksLabelFont);
+		g.fillText("0", barLeft, labelY);
+		g.fillText("1", barLeft + barWidth - g.measureText("1").getWidth(), labelY);
+	}
+
+	/**
+	 * Draw a segmented legend for discrete traits.
+	 */
+	private void drawDiscreteTraitLegend() {
+		String[] colors = getDiscreteTraitLegendColors();
+		String[] labels = getDiscreteTraitLegendLabels();
+		if (colors == null || labels == null)
+			return;
+		int nSegments = Math.min(colors.length, labels.length);
+		if (nSegments <= 0)
+			return;
+		g.setStrokeStyle(style.frameColor);
+		g.setLineWidth(1.0);
+		g.setFillStyle(style.frameColor);
+		setFont(style.ticksLabelFont);
+		if (style.legendPos.isVertical()) {
+			double barHeight = bounds.getHeight() * 0.6;
+			double barTop = (bounds.getHeight() - barHeight) * 0.5;
+			double barX;
+			double labelX;
+			switch (style.legendPos) {
+				case EAST:
+					barX = bounds.getWidth() + FITNESS_LEGEND_GAP;
+					labelX = barX + FITNESS_LEGEND_BAR_WIDTH + FITNESS_LEGEND_LABEL_PAD;
+					break;
+				case WEST:
+					barX = -FITNESS_LEGEND_GAP - FITNESS_LEGEND_BAR_WIDTH;
+					labelX = -legendReserveWidth + FITNESS_LEGEND_OUTER_PAD;
+					break;
+				default:
+					return;
+			}
+			double stepHeight = barHeight / nSegments;
+			for (int i = 0; i < nSegments; i++) {
+				double y0 = Math.floor(barTop + i * stepHeight);
+				double y1 = Math.floor(barTop + (i + 1) * stepHeight);
+				if (i == nSegments - 1)
+					y1 = barTop + barHeight;
+				if (y1 <= y0)
+					y1 = y0 + 1.0;
+				g.setFillStyle(colors[i]);
+				fillRect(barX, y0, FITNESS_LEGEND_BAR_WIDTH, y1 - y0);
+				g.setFillStyle(style.frameColor);
+				g.fillText(labels[i], labelX, 0.5 * (y0 + y1) + 4.5);
+			}
+			g.strokeRect(barX + 0.5, barTop - 0.5, FITNESS_LEGEND_BAR_WIDTH, barHeight + 1.0);
+			return;
+		}
+		double barWidth = getHorizontalDiscreteTraitLegendBarWidth(labels);
+		double barLeft = (bounds.getWidth() - barWidth) * 0.5;
+		double barHeight = getHorizontalDiscreteTraitLegendBarHeight();
+		double barY;
+		switch (style.legendPos) {
+			case SOUTH:
+				barY = bounds.getHeight() + FITNESS_LEGEND_GAP;
+				break;
+			case NORTH:
+				barY = -FITNESS_LEGEND_GAP - barHeight;
+				break;
+			default:
+				return;
+		}
+		double stepWidth = barWidth / nSegments;
+		for (int i = 0; i < nSegments; i++) {
+			double x0 = Math.floor(barLeft + i * stepWidth);
+			double x1 = Math.floor(barLeft + (i + 1) * stepWidth);
+			if (i == nSegments - 1)
+				x1 = barLeft + barWidth;
+			if (x1 <= x0)
+				x1 = x0 + 1.0;
+			g.setFillStyle(colors[i]);
+			fillRect(x0, barY, x1 - x0, barHeight);
+			g.setFillStyle(getContrastingLegendTextColor(colors[i]));
+			double textWidth = g.measureText(labels[i]).getWidth();
+			g.fillText(labels[i], x0 + 0.5 * (x1 - x0 - textWidth), barY + 0.5 * (barHeight + 9.0));
+		}
+		g.setStrokeStyle(style.frameColor);
+		g.strokeRect(barLeft - 0.5, barY + 0.5, barWidth + 1.0, barHeight);
+	}
+
 	@Override
 	public String getTooltipAt(int x, int y) {
 		String tip = getLegendTooltipAt(x, y);
@@ -663,8 +850,24 @@ public class PopGraph2D extends GenericPopGraph<String, Network2D> implements Sh
 	 * @return tooltip HTML or {@code null}
 	 */
 	private String getLegendTooltipAt(int x, int y) {
-		if (!hasLegend() || (legendReserveWidth <= 0.0 && legendReserveHeight <= 0.0)
-				|| !(getColorMap() instanceof ColorMap.Gradient1D))
+		if (!hasLegend() || (legendReserveWidth <= 0.0 && legendReserveHeight <= 0.0))
+			return null;
+		if (view.getType() == Data.FITNESS)
+			return getFitnessLegendTooltipAt(x, y);
+		if (view.getType() == Data.TRAIT)
+			return getTraitLegendTooltipAt(x, y);
+		return null;
+	}
+
+	/**
+	 * Get the tooltip for the fitness legend at screen coordinates {@code (x,y)}.
+	 *
+	 * @param x the screen x-coordinate
+	 * @param y the screen y-coordinate
+	 * @return tooltip HTML or {@code null}
+	 */
+	private String getFitnessLegendTooltipAt(int x, int y) {
+		if (!(getColorMap() instanceof ColorMap.Gradient1D))
 			return null;
 		Model model = view.getModel();
 		double min = model.getMinFitness(module.getId());
@@ -728,6 +931,74 @@ public class PopGraph2D extends GenericPopGraph<String, Network2D> implements Sh
 		element.removeClassName(EVOLUDO_CURSOR_NODE);
 		return "fitness: <span style='color:" + color + ";'>&#x25A0;</span> "
 				+ Formatter.formatPretty(value, 2);
+	}
+
+	/**
+	 * Get the tooltip for the trait legend at screen coordinates {@code (x,y)}.
+	 *
+	 * @param x the screen x-coordinate
+	 * @param y the screen y-coordinate
+	 * @return tooltip HTML or {@code null}
+	 */
+	private String getTraitLegendTooltipAt(int x, int y) {
+		double sx = (viewCorner.getX() + x - bounds.getX()) / zoomFactor;
+		double sy = (viewCorner.getY() + y - bounds.getY()) / zoomFactor;
+		if (hasContinuousTraitLegend()) {
+			ColorMap.Gradient1D<String> gradient = (ColorMap.Gradient1D<String>) getColorMap();
+			double value;
+			if (style.legendPos.isVertical()) {
+				double barHeight = bounds.getHeight() * 0.6;
+				double barTop = (bounds.getHeight() - barHeight) * 0.5;
+				double barX = style.legendPos == GraphStyle.Position.EAST ? bounds.getWidth() + FITNESS_LEGEND_GAP
+						: -FITNESS_LEGEND_GAP - FITNESS_LEGEND_BAR_WIDTH;
+				if (sx < barX || sx > barX + FITNESS_LEGEND_BAR_WIDTH || sy < barTop || sy > barTop + barHeight)
+					return null;
+				double[] samples = getLegendSamples(0.0, 1.0, barHeight, new ArrayList<>());
+				int idx = Math.min(samples.length - 1,
+						Math.max(0, (int) ((sy - barTop) / (barHeight / samples.length))));
+				value = samples[idx];
+			} else {
+				double barWidth = bounds.getWidth() * 0.6;
+				double barLeft = (bounds.getWidth() - barWidth) * 0.5;
+				double barY = style.legendPos == GraphStyle.Position.SOUTH ? bounds.getHeight() + FITNESS_LEGEND_GAP
+						: -FITNESS_LEGEND_GAP - FITNESS_LEGEND_BAR_WIDTH;
+				if (sx < barLeft || sx > barLeft + barWidth || sy < barY || sy > barY + FITNESS_LEGEND_BAR_WIDTH)
+					return null;
+				double[] samples = getLegendSamples(0.0, 1.0, barWidth, new ArrayList<>());
+				int idx = Math.min(samples.length - 1,
+						Math.max(0, (int) ((sx - barLeft) / (barWidth / samples.length))));
+				value = samples[idx];
+			}
+			String color = gradient.translate(value);
+			return "trait: <span style='color:" + color + ";'>&#x25A0;</span> " + Formatter.formatPretty(value, 2);
+		}
+		if (!hasDiscreteTraitLegend())
+			return null;
+		String[] colors = getDiscreteTraitLegendColors();
+		String[] labels = getDiscreteTraitLegendLabels();
+		if (colors == null || labels == null)
+			return null;
+		int nSegments = Math.min(colors.length, labels.length);
+		int idx;
+		if (style.legendPos.isVertical()) {
+			double barHeight = bounds.getHeight() * 0.6;
+			double barTop = (bounds.getHeight() - barHeight) * 0.5;
+			double barX = style.legendPos == GraphStyle.Position.EAST ? bounds.getWidth() + FITNESS_LEGEND_GAP
+					: -FITNESS_LEGEND_GAP - FITNESS_LEGEND_BAR_WIDTH;
+			if (sx < barX || sx > barX + FITNESS_LEGEND_BAR_WIDTH || sy < barTop || sy > barTop + barHeight)
+				return null;
+			idx = Math.min(nSegments - 1, Math.max(0, (int) ((sy - barTop) / (barHeight / nSegments))));
+		} else {
+			double barWidth = getHorizontalDiscreteTraitLegendBarWidth(labels);
+			double barLeft = (bounds.getWidth() - barWidth) * 0.5;
+			double barHeight = getHorizontalDiscreteTraitLegendBarHeight();
+			double barY = style.legendPos == GraphStyle.Position.SOUTH ? bounds.getHeight() + FITNESS_LEGEND_GAP
+					: -FITNESS_LEGEND_GAP - barHeight;
+			if (sx < barLeft || sx > barLeft + barWidth || sy < barY || sy > barY + barHeight)
+				return null;
+			idx = Math.min(nSegments - 1, Math.max(0, (int) ((sx - barLeft) / (barWidth / nSegments))));
+		}
+		return "trait: <span style='color:" + colors[idx] + ";'>&#x25A0;</span> " + labels[idx];
 	}
 
 	/**
@@ -1062,12 +1333,62 @@ public class PopGraph2D extends GenericPopGraph<String, Network2D> implements Sh
 	}
 
 	/**
-	 * Return whether the graph should reserve space for a fitness legend.
+	 * Return whether a legend can be shown for the current graph data.
 	 *
-	 * @return {@code true} if a fitness legend should be shown
+	 * @return {@code true} if a legend should be shown
 	 */
 	protected boolean hasLegend() {
-		return view.getType() == Data.FITNESS && style.legendPos != GraphStyle.Position.NONE;
+		return style.legendPos != GraphStyle.Position.NONE && (hasFitnessLegend() || hasTraitLegend());
+	}
+
+	/**
+	 * Return whether the legend position submenu should be offered.
+	 *
+	 * @return {@code true} if legend placement is configurable
+	 */
+	protected boolean supportsLegendMenu() {
+		return hasFitnessLegend() || hasTraitLegend();
+	}
+
+	/**
+	 * Return whether a fitness legend should be shown.
+	 *
+	 * @return {@code true} for fitness views with a gradient color map
+	 */
+	protected boolean hasFitnessLegend() {
+		return view.getType() == Data.FITNESS && getColorMap() instanceof ColorMap.Gradient1D;
+	}
+
+	/**
+	 * Return whether a trait legend should be shown.
+	 *
+	 * @return {@code true} if the current trait coloring can be represented
+	 */
+	protected boolean hasTraitLegend() {
+		return hasContinuousTraitLegend() || hasDiscreteTraitLegend();
+	}
+
+	/**
+	 * Return whether a continuous trait legend should be shown.
+	 *
+	 * @return {@code true} for a single continuous trait
+	 */
+	protected boolean hasContinuousTraitLegend() {
+		return view.getType() == Data.TRAIT
+				&& module instanceof Continuous
+				&& module.getNTraits() == 1
+				&& getColorMap() instanceof ColorMap.Gradient1D;
+	}
+
+	/**
+	 * Return whether a discrete trait legend should be shown.
+	 *
+	 * @return {@code true} for discrete trait maps
+	 */
+	protected boolean hasDiscreteTraitLegend() {
+		return view.getType() == Data.TRAIT
+				&& module instanceof Discrete
+				&& getColorMap() instanceof ColorMap.Index;
 	}
 
 	/**
@@ -1144,21 +1465,33 @@ public class PopGraph2D extends GenericPopGraph<String, Network2D> implements Sh
 		legendReserveWidth = 0.0;
 		legendReserveHeight = 0.0;
 		legendLabelWidth = 0.0;
-		Model model = view.getModel();
-		if (!hasLegend() || model == null || !(getColorMap() instanceof ColorMap.Gradient1D))
+		if (!hasLegend())
 			return;
-		double min = model.getMinFitness(module.getId());
-		double max = model.getMaxFitness(module.getId());
-		if (!Double.isFinite(min) || !Double.isFinite(max))
-			return;
-		ArrayList<LegendMarker> markers = collectLegendMarkers();
 		String font = g.getFont();
 		setFont(style.ticksLabelFont);
-		legendLabelWidth = Math.max(
-				g.measureText(Formatter.formatPretty(max, 2)).getWidth(),
-				g.measureText(Formatter.formatPretty(min, 2)).getWidth());
-		for (LegendMarker marker : markers)
-			legendLabelWidth = Math.max(legendLabelWidth, g.measureText(marker.label).getWidth());
+		if (hasFitnessLegend()) {
+			Model model = view.getModel();
+			if (model == null) {
+				g.setFont(font);
+				return;
+			}
+			double min = model.getMinFitness(module.getId());
+			double max = model.getMaxFitness(module.getId());
+			if (!Double.isFinite(min) || !Double.isFinite(max)) {
+				g.setFont(font);
+				return;
+			}
+			legendLabelWidth = Math.max(
+					g.measureText(Formatter.formatPretty(max, 2)).getWidth(),
+					g.measureText(Formatter.formatPretty(min, 2)).getWidth());
+			for (LegendMarker marker : collectLegendMarkers())
+				legendLabelWidth = Math.max(legendLabelWidth, g.measureText(marker.label).getWidth());
+		} else if (hasContinuousTraitLegend()) {
+			legendLabelWidth = Math.max(g.measureText("0").getWidth(), g.measureText("1").getWidth());
+		} else if (hasDiscreteTraitLegend()) {
+			for (String label : getDiscreteTraitLegendLabels())
+				legendLabelWidth = Math.max(legendLabelWidth, g.measureText(label).getWidth());
+		}
 		g.setFont(font);
 		if (style.legendPos.isVertical()) {
 			legendReserveWidth = FITNESS_LEGEND_OUTER_PAD + legendLabelWidth + FITNESS_LEGEND_LABEL_PAD
@@ -1172,7 +1505,114 @@ public class PopGraph2D extends GenericPopGraph<String, Network2D> implements Sh
 			}
 			return;
 		}
-		legendReserveHeight = FITNESS_LEGEND_GAP + FITNESS_LEGEND_BAR_WIDTH + 14.0;
+		legendReserveHeight = FITNESS_LEGEND_GAP
+				+ (hasDiscreteTraitLegend() ? getHorizontalDiscreteTraitLegendBarHeight() : FITNESS_LEGEND_BAR_WIDTH)
+				+ (hasDiscreteTraitLegend() ? 4.0 : 14.0);
+	}
+
+	/**
+	 * Get the discrete trait legend labels.
+	 *
+	 * @return labels for the indexed trait colors, or {@code null}
+	 */
+	private String[] getDiscreteTraitLegendLabels() {
+		if (!hasDiscreteTraitLegend())
+			return null;
+		int nTraits = module.getNTraits();
+		String[] names = module.getTraitNames();
+		String[] labels = new String[2 * nTraits];
+		for (int n = 0; n < nTraits; n++) {
+			labels[n] = names[n];
+			labels[nTraits + n] = "New " + names[n];
+		}
+		return labels;
+	}
+
+	/**
+	 * Get the width of a horizontal discrete-trait legend.
+	 *
+	 * @param labels the segment labels
+	 * @return legend width capped at the full graph width
+	 */
+	private double getHorizontalDiscreteTraitLegendBarWidth(String[] labels) {
+		int nSegments = labels == null ? 0 : labels.length;
+		if (nSegments <= 0)
+			return bounds.getWidth() * 0.6;
+		double minWidth = bounds.getWidth() * 0.6;
+		double labelWidth = legendLabelWidth > 0.0 ? legendLabelWidth : 0.0;
+		double targetWidth = nSegments * (labelWidth + 2.0 * FITNESS_LEGEND_LABEL_PAD);
+		return Math.min(bounds.getWidth(), Math.max(minWidth, targetWidth));
+	}
+
+	/**
+	 * Get the bar height of a horizontal discrete-trait legend.
+	 *
+	 * @return legend bar height
+	 */
+	private double getHorizontalDiscreteTraitLegendBarHeight() {
+		return Math.max(FITNESS_LEGEND_BAR_WIDTH, 16.0);
+	}
+
+	/**
+	 * Get a black/white text color with strong contrast against {@code color}.
+	 *
+	 * @param color the CSS background color
+	 * @return CSS color string for text
+	 */
+	private String getContrastingLegendTextColor(String color) {
+		double[] rgb = parseCssColor(color);
+		double r = rgb[0] / 255.0;
+		double g = rgb[1] / 255.0;
+		double b = rgb[2] / 255.0;
+		double luminance = 0.2126 * linearizeColor(r) + 0.7152 * linearizeColor(g) + 0.0722 * linearizeColor(b);
+		return luminance > 0.55 ? "#000000" : "#ffffff";
+	}
+
+	/**
+	 * Convert CSS colors generated by {@code ColorMapCSS} to RGB channels.
+	 *
+	 * @param color the CSS color string
+	 * @return RGB components in {@code [0,255]}
+	 */
+	private double[] parseCssColor(String color) {
+		if (color == null || color.isEmpty())
+			return new double[] { 255.0, 255.0, 255.0 };
+		if (color.charAt(0) == '#' && color.length() == 7) {
+			return new double[] {
+					Integer.parseInt(color.substring(1, 3), 16),
+					Integer.parseInt(color.substring(3, 5), 16),
+					Integer.parseInt(color.substring(5, 7), 16) };
+		}
+		if (color.startsWith("rgba(")) {
+			String[] comps = color.substring(5, color.length() - 1).split(",");
+			double alpha = Double.parseDouble(comps[3]);
+			return new double[] {
+					alpha * Double.parseDouble(comps[0]) + (1.0 - alpha) * 255.0,
+					alpha * Double.parseDouble(comps[1]) + (1.0 - alpha) * 255.0,
+					alpha * Double.parseDouble(comps[2]) + (1.0 - alpha) * 255.0 };
+		}
+		return new double[] { 255.0, 255.0, 255.0 };
+	}
+
+	/**
+	 * Convert a gamma-encoded color component to linear light.
+	 *
+	 * @param value the channel value in {@code [0,1]}
+	 * @return linearized channel value
+	 */
+	private double linearizeColor(double value) {
+		return value <= 0.04045 ? value / 12.92 : Math.pow((value + 0.055) / 1.055, 2.4);
+	}
+
+	/**
+	 * Get the discrete trait legend colors from the graph's current color map.
+	 *
+	 * @return indexed colors used by the graph, or {@code null}
+	 */
+	private String[] getDiscreteTraitLegendColors() {
+		if (!hasDiscreteTraitLegend())
+			return null;
+		return ((ColorMap.Index<String>) getColorMap()).getColors();
 	}
 
 	/**

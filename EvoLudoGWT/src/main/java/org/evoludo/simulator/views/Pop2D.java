@@ -362,6 +362,7 @@ public class Pop2D extends GenericPop<String, Network2D, PopGraph2D> implements 
 	private boolean configureGraph(PopGraph2D graph) {
 		AbstractGeometry geometry = graph.getGeometry();
 		GraphStyle style = graph.getStyle();
+		style.legendPos = (type == Data.TRAIT ? GraphStyle.Position.NONE : GraphStyle.Position.EAST);
 
 		if (geometry.isType(GeometryType.LINEAR)) {
 			// frame, ticks, labels needed
