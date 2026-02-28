@@ -1178,7 +1178,7 @@ public class LineGraph extends AbstractGraph<double[]>
 				tMin = t;
 			tMax = t;
 		}
-		if (!Double.isFinite(tMin) || !Double.isFinite(tMax))
+		if (!Double.isFinite(tMin) || !Double.isFinite(tMax) || !(tMin < tMax))
 			return false;
 		style.xMax = 0.0;
 		style.xMin = tMin - tMax;
