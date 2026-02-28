@@ -219,10 +219,10 @@ public class GraphStyle {
 	public boolean showYAxisRight = true;
 
 	/**
-	 * Position of the fitness legend: {@code -1} left, {@code 0} hidden,
-	 * {@code +1} right.
+	 * Position of the fitness legend: {@code -2} top, {@code -1} left,
+	 * {@code 0} hidden, {@code +1} right, {@code +2} bottom.
 	 */
-	public int legendPos = 1;
+	public int legendPos = 2;
 
 	/**
 	 * The flag to indicate whether to show the frame of the graph.

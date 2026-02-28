@@ -514,7 +514,7 @@ public class PopGraph2D extends GenericPopGraph<String, Network2D> implements Sh
 	 * Draw a vertical color legend for fitness-based population graphs.
 	 */
 	private void drawFitnessLegend() {
-		if (!hasLegend() || legendReserveWidth <= 0.0
+		if (!hasLegend() || (legendReserveWidth <= 0.0 && legendReserveHeight <= 0.0)
 				|| !(getColorMap() instanceof ColorMap.Gradient1D))
 			return;
 		Model model = view.getModel();
@@ -524,34 +524,63 @@ public class PopGraph2D extends GenericPopGraph<String, Network2D> implements Sh
 			return;
 		ColorMap.Gradient1D<String> gradient = (ColorMap.Gradient1D<String>) getColorMap();
 		ArrayList<LegendMarker> markers = collectLegendMarkers();
-		double barHeight = bounds.getHeight() * 0.6;
-		double barTop = (bounds.getHeight() - barHeight) * 0.5;
-		boolean right = style.legendPos > 0;
-		double barX = right ? bounds.getWidth() + FITNESS_LEGEND_GAP
-				: -FITNESS_LEGEND_GAP - FITNESS_LEGEND_BAR_WIDTH;
-		double labelX = right ? barX + FITNESS_LEGEND_BAR_WIDTH + FITNESS_LEGEND_LABEL_PAD
-				: -legendReserveWidth + FITNESS_LEGEND_OUTER_PAD;
-		double[] samples = getLegendSamples(min, max, barHeight, markers);
+		if (Math.abs(style.legendPos) == 1) {
+			double barHeight = bounds.getHeight() * 0.6;
+			double barTop = (bounds.getHeight() - barHeight) * 0.5;
+			boolean right = style.legendPos > 0;
+			double barX = right ? bounds.getWidth() + FITNESS_LEGEND_GAP
+					: -FITNESS_LEGEND_GAP - FITNESS_LEGEND_BAR_WIDTH;
+			double labelX = right ? barX + FITNESS_LEGEND_BAR_WIDTH + FITNESS_LEGEND_LABEL_PAD
+					: -legendReserveWidth + FITNESS_LEGEND_OUTER_PAD;
+			double[] samples = getLegendSamples(min, max, barHeight, markers);
+			int steps = samples.length;
+			double stepHeight = barHeight / steps;
+			for (int i = 0; i < steps; i++) {
+				double y0 = Math.floor(barTop + i * stepHeight);
+				double y1 = Math.floor(barTop + (i + 1) * stepHeight);
+				if (i == steps - 1)
+					y1 = barTop + barHeight;
+				if (y1 <= y0)
+					y1 = y0 + 1.0;
+				g.setFillStyle(gradient.translate(samples[i]));
+				fillRect(barX, y0, FITNESS_LEGEND_BAR_WIDTH, y1 - y0);
+			}
+			g.setStrokeStyle(style.frameColor);
+			g.setLineWidth(1.0);
+			g.strokeRect(barX + 0.5, barTop - 0.5, FITNESS_LEGEND_BAR_WIDTH, barHeight + 1.0);
+			g.setFillStyle(style.frameColor);
+			setFont(style.ticksLabelFont);
+			g.fillText(Formatter.formatPretty(max, 2), labelX, barTop + 4.5);
+			g.fillText(Formatter.formatPretty(min, 2), labelX, barTop + barHeight + 4.5);
+			drawLegendMarkers(markers, min, max, barTop, barHeight, labelX);
+			return;
+		}
+		double barWidth = bounds.getWidth() * 0.6;
+		double barLeft = (bounds.getWidth() - barWidth) * 0.5;
+		boolean bottom = style.legendPos > 0;
+		double barY = bottom ? bounds.getHeight() + FITNESS_LEGEND_GAP : -FITNESS_LEGEND_GAP - FITNESS_LEGEND_BAR_WIDTH;
+		double labelY = bottom ? barY + FITNESS_LEGEND_BAR_WIDTH + 11.0 : -FITNESS_LEGEND_OUTER_PAD;
+		double[] samples = getLegendSamples(min, max, barWidth, markers);
 		int steps = samples.length;
-		double stepHeight = barHeight / steps;
+		double stepWidth = barWidth / steps;
 		for (int i = 0; i < steps; i++) {
-			double y0 = Math.floor(barTop + i * stepHeight);
-			double y1 = Math.floor(barTop + (i + 1) * stepHeight);
+			double x0 = Math.floor(barLeft + i * stepWidth);
+			double x1 = Math.floor(barLeft + (i + 1) * stepWidth);
 			if (i == steps - 1)
-				y1 = barTop + barHeight;
-			if (y1 <= y0)
-				y1 = y0 + 1.0;
+				x1 = barLeft + barWidth;
+			if (x1 <= x0)
+				x1 = x0 + 1.0;
 			g.setFillStyle(gradient.translate(samples[i]));
-			fillRect(barX, y0, FITNESS_LEGEND_BAR_WIDTH, y1 - y0);
+			fillRect(x0, barY, x1 - x0, FITNESS_LEGEND_BAR_WIDTH);
 		}
 		g.setStrokeStyle(style.frameColor);
 		g.setLineWidth(1.0);
-		g.strokeRect(barX + 0.5, barTop - 0.5, FITNESS_LEGEND_BAR_WIDTH, barHeight + 1.0);
+		g.strokeRect(barLeft - 0.5, barY + 0.5, barWidth + 1.0, FITNESS_LEGEND_BAR_WIDTH);
 		g.setFillStyle(style.frameColor);
 		setFont(style.ticksLabelFont);
-		g.fillText(Formatter.formatPretty(max, 2), labelX, barTop + 4.5);
-		g.fillText(Formatter.formatPretty(min, 2), labelX, barTop + barHeight + 4.5);
-		drawLegendMarkers(markers, min, max, barTop, barHeight, labelX);
+		g.fillText(Formatter.formatPretty(min, 2), barLeft, labelY);
+		g.fillText(Formatter.formatPretty(max, 2),
+				barLeft + barWidth - g.measureText(Formatter.formatPretty(max, 2)).getWidth(), labelY);
 	}
 
 	@Override
@@ -568,7 +597,7 @@ public class PopGraph2D extends GenericPopGraph<String, Network2D> implements Sh
 	 * @return tooltip HTML or {@code null}
 	 */
 	private String getLegendTooltipAt(int x, int y) {
-		if (!hasLegend() || legendReserveWidth <= 0.0
+		if (!hasLegend() || (legendReserveWidth <= 0.0 && legendReserveHeight <= 0.0)
 				|| !(getColorMap() instanceof ColorMap.Gradient1D))
 			return null;
 		Model model = view.getModel();
@@ -576,21 +605,39 @@ public class PopGraph2D extends GenericPopGraph<String, Network2D> implements Sh
 		double max = model.getMaxFitness(module.getId());
 		if (!Double.isFinite(min) || !Double.isFinite(max))
 			return null;
-		double barHeight = bounds.getHeight() * 0.6;
-		double barTop = (bounds.getHeight() - barHeight) * 0.5;
-		double barX = (style.legendPos > 0 ? bounds.getWidth() + FITNESS_LEGEND_GAP
-				: -FITNESS_LEGEND_GAP - FITNESS_LEGEND_BAR_WIDTH);
 		double sx = (viewCorner.getX() + x - bounds.getX()) / zoomFactor;
 		double sy = (viewCorner.getY() + y - bounds.getY()) / zoomFactor;
-		if (sx < barX || sx > barX + FITNESS_LEGEND_BAR_WIDTH || sy < barTop || sy > barTop + barHeight) {
-			element.removeClassName(EVOLUDO_CURSOR_NODE);
-			return null;
+		int idx;
+		double value;
+		if (Math.abs(style.legendPos) == 1) {
+			double barHeight = bounds.getHeight() * 0.6;
+			double barTop = (bounds.getHeight() - barHeight) * 0.5;
+			double barX = (style.legendPos > 0 ? bounds.getWidth() + FITNESS_LEGEND_GAP
+					: -FITNESS_LEGEND_GAP - FITNESS_LEGEND_BAR_WIDTH);
+			if (sx < barX || sx > barX + FITNESS_LEGEND_BAR_WIDTH || sy < barTop || sy > barTop + barHeight) {
+				element.removeClassName(EVOLUDO_CURSOR_NODE);
+				return null;
+			}
+			double[] samples = getLegendSamples(min, max, barHeight, collectLegendMarkers());
+			int steps = samples.length;
+			double stepHeight = barHeight / steps;
+			idx = Math.min(steps - 1, Math.max(0, (int) ((sy - barTop) / stepHeight)));
+			value = samples[idx];
+		} else {
+			double barWidth = bounds.getWidth() * 0.6;
+			double barLeft = (bounds.getWidth() - barWidth) * 0.5;
+			double barY = (style.legendPos > 0 ? bounds.getHeight() + FITNESS_LEGEND_GAP
+					: -FITNESS_LEGEND_GAP - FITNESS_LEGEND_BAR_WIDTH);
+			if (sx < barLeft || sx > barLeft + barWidth || sy < barY || sy > barY + FITNESS_LEGEND_BAR_WIDTH) {
+				element.removeClassName(EVOLUDO_CURSOR_NODE);
+				return null;
+			}
+			double[] samples = getLegendSamples(min, max, barWidth, collectLegendMarkers());
+			int steps = samples.length;
+			double stepWidth = barWidth / steps;
+			idx = Math.min(steps - 1, Math.max(0, (int) ((sx - barLeft) / stepWidth)));
+			value = samples[idx];
 		}
-		double[] samples = getLegendSamples(min, max, barHeight, collectLegendMarkers());
-		int steps = samples.length;
-		double stepHeight = barHeight / steps;
-		int idx = Math.min(steps - 1, Math.max(0, (int) ((sy - barTop) / stepHeight)));
-		double value = samples[idx];
 		String color = ((ColorMap.Gradient1D<String>) getColorMap()).translate(value);
 		element.removeClassName(EVOLUDO_CURSOR_NODE);
 		return "fitness: <span style='color:" + color + ";'>&#x25A0;</span> "
@@ -737,6 +784,11 @@ public class PopGraph2D extends GenericPopGraph<String, Network2D> implements Sh
 	protected double legendReserveWidth = 0.0;
 
 	/**
+	 * Height reserved for the fitness legend strip.
+	 */
+	protected double legendReserveHeight = 0.0;
+
+	/**
 	 * Width of the legend labels.
 	 */
 	protected double legendLabelWidth = 0.0;
@@ -809,7 +861,9 @@ public class PopGraph2D extends GenericPopGraph<String, Network2D> implements Sh
 		side = (int) (Math.sqrt(geometry.getSize()) + 0.5);
 		double plotX = getGraphAreaX();
 		double plotW = getGraphAreaWidth();
-		int diameter = (int) Math.min(plotW, bounds.getHeight());
+		double plotY = getGraphAreaY();
+		double plotH = getGraphAreaHeight();
+		int diameter = (int) Math.min(plotW, plotH);
 		dw2 = diameter / (side + 3);
 		int bWidth = dw2 * (side + 1);
 		dw = 2 * dw2;
@@ -820,8 +874,8 @@ public class PopGraph2D extends GenericPopGraph<String, Network2D> implements Sh
 		}
 		int bHeight = dh * side;
 		double dx = (plotW - bWidth) * 0.5;
-		double dy = (bounds.getHeight() - bHeight) * 0.5;
-		bounds.set(plotX + dx, bounds.getY() + dy, bWidth, bHeight);
+		double dy = (plotH - bHeight) * 0.5;
+		bounds.set(plotX + dx, plotY + dy, bWidth, bHeight);
 		style.showFrame = false;
 	}
 
@@ -835,7 +889,9 @@ public class PopGraph2D extends GenericPopGraph<String, Network2D> implements Sh
 		side = (int) (Math.sqrt(geometry.getSize()) + 0.5);
 		double plotX = getGraphAreaX();
 		double plotW = getGraphAreaWidth();
-		int diameter = (int) Math.min(plotW, bounds.getHeight());
+		double plotY = getGraphAreaY();
+		double plotH = getGraphAreaHeight();
+		int diameter = (int) Math.min(plotW, plotH);
 		dw2 = diameter / (2 * side + 1);
 		int bWidth = dw2 * (2 * side + 1);
 		dw = 2 * dw2;
@@ -847,8 +903,8 @@ public class PopGraph2D extends GenericPopGraph<String, Network2D> implements Sh
 		}
 		int bHeight = dh3 * (3 * side + 1);
 		double dx = (plotW - bWidth) * 0.5;
-		double dy = (bounds.getHeight() - bHeight) * 0.5;
-		bounds.set(plotX + dx, bounds.getY() + dy, bWidth, bHeight);
+		double dy = (plotH - bHeight) * 0.5;
+		bounds.set(plotX + dx, plotY + dy, bWidth, bHeight);
 		style.showFrame = false;
 	}
 
@@ -878,8 +934,9 @@ public class PopGraph2D extends GenericPopGraph<String, Network2D> implements Sh
 		}
 
 		double plotX = getGraphAreaX();
+		double plotY = getGraphAreaY();
 		int bWidth = (int) Math.rint(getGraphAreaWidth());
-		int bHeight = (int) Math.rint(bounds.getHeight());
+		int bHeight = (int) Math.rint(getGraphAreaHeight());
 		dw = (Math.min(bWidth, bHeight) - gap) / side;
 		if (dw < MIN_DW) {
 			bounds.setSize(width, height);
@@ -890,7 +947,7 @@ public class PopGraph2D extends GenericPopGraph<String, Network2D> implements Sh
 		int newdim = dw * side + gap;
 		int dx = (bWidth - newdim) / 2;
 		int dy = (bHeight - newdim) / 2;
-		bounds.set(plotX + dx, bounds.getY() + dy, newdim, newdim);
+		bounds.set(plotX + dx, plotY + dy, newdim, newdim);
 		style.showFrame = true;
 	}
 
@@ -903,7 +960,9 @@ public class PopGraph2D extends GenericPopGraph<String, Network2D> implements Sh
 	private void handleNetwork(int width, int height) {
 		double plotX = getGraphAreaX();
 		double plotW = getGraphAreaWidth();
-		int diameter = (int) Math.min(plotW, bounds.getHeight());
+		double plotY = getGraphAreaY();
+		double plotH = getGraphAreaHeight();
+		int diameter = (int) Math.min(plotW, plotH);
 		int radius = diameter / 2;
 		dR = Math.sqrt(radius * radius * 2.0 / geometry.getSize());
 		if (dR < MIN_DR) {
@@ -911,8 +970,8 @@ public class PopGraph2D extends GenericPopGraph<String, Network2D> implements Sh
 			return;
 		}
 		double dx = (plotW - diameter) * 0.5;
-		double dy = (bounds.getHeight() - diameter) * 0.5;
-		bounds.set(plotX + dx, bounds.getY() + dy, diameter, diameter);
+		double dy = (plotH - diameter) * 0.5;
+		bounds.set(plotX + dx, plotY + dy, diameter, diameter);
 		style.showFrame = false;
 	}
 
@@ -997,6 +1056,7 @@ public class PopGraph2D extends GenericPopGraph<String, Network2D> implements Sh
 	 */
 	protected void updateLegendLayout() {
 		legendReserveWidth = 0.0;
+		legendReserveHeight = 0.0;
 		legendLabelWidth = 0.0;
 		Model model = view.getModel();
 		if (!hasLegend() || model == null || !(getColorMap() instanceof ColorMap.Gradient1D))
@@ -1014,15 +1074,19 @@ public class PopGraph2D extends GenericPopGraph<String, Network2D> implements Sh
 		for (LegendMarker marker : markers)
 			legendLabelWidth = Math.max(legendLabelWidth, g.measureText(marker.label).getWidth());
 		g.setFont(font);
-		legendReserveWidth = FITNESS_LEGEND_OUTER_PAD + legendLabelWidth + FITNESS_LEGEND_LABEL_PAD
-				+ FITNESS_LEGEND_BAR_WIDTH + FITNESS_LEGEND_GAP;
-		double maxReserve = Math.max(0.0, bounds.getWidth() * 0.45);
-		if (legendReserveWidth > maxReserve) {
-			legendReserveWidth = maxReserve;
-			legendLabelWidth = Math.max(0.0,
-					legendReserveWidth - FITNESS_LEGEND_OUTER_PAD - FITNESS_LEGEND_LABEL_PAD
-							- FITNESS_LEGEND_BAR_WIDTH - FITNESS_LEGEND_GAP);
+		if (Math.abs(style.legendPos) == 1) {
+			legendReserveWidth = FITNESS_LEGEND_OUTER_PAD + legendLabelWidth + FITNESS_LEGEND_LABEL_PAD
+					+ FITNESS_LEGEND_BAR_WIDTH + FITNESS_LEGEND_GAP;
+			double maxReserve = Math.max(0.0, bounds.getWidth() * 0.45);
+			if (legendReserveWidth > maxReserve) {
+				legendReserveWidth = maxReserve;
+				legendLabelWidth = Math.max(0.0,
+						legendReserveWidth - FITNESS_LEGEND_OUTER_PAD - FITNESS_LEGEND_LABEL_PAD
+								- FITNESS_LEGEND_BAR_WIDTH - FITNESS_LEGEND_GAP);
+			}
+			return;
 		}
+		legendReserveHeight = FITNESS_LEGEND_GAP + FITNESS_LEGEND_BAR_WIDTH + 14.0;
 	}
 
 	/**
@@ -1031,7 +1095,7 @@ public class PopGraph2D extends GenericPopGraph<String, Network2D> implements Sh
 	 * @return graph area width
 	 */
 	protected double getGraphAreaWidth() {
-		return Math.max(0.0, bounds.getWidth() - legendReserveWidth);
+		return Math.max(0.0, bounds.getWidth() - (Math.abs(style.legendPos) == 1 ? legendReserveWidth : 0.0));
 	}
 
 	/**
@@ -1040,9 +1104,29 @@ public class PopGraph2D extends GenericPopGraph<String, Network2D> implements Sh
 	 * @return graph area x-coordinate
 	 */
 	protected double getGraphAreaX() {
-		if (style.legendPos == 0)
+		if (Math.abs(style.legendPos) != 1)
 			return bounds.getX();
 		return bounds.getX() + (style.legendPos > 0 ? 0.0 : legendReserveWidth);
+	}
+
+	/**
+	 * Get the height available for the graph after reserving legend space.
+	 *
+	 * @return graph area height
+	 */
+	protected double getGraphAreaHeight() {
+		return Math.max(0.0, bounds.getHeight() - (Math.abs(style.legendPos) == 2 ? legendReserveHeight : 0.0));
+	}
+
+	/**
+	 * Get the top edge of the graph area after reserving legend space.
+	 *
+	 * @return graph area y-coordinate
+	 */
+	protected double getGraphAreaY() {
+		if (Math.abs(style.legendPos) != 2)
+			return bounds.getY();
+		return bounds.getY() + (style.legendPos < 0 ? legendReserveHeight : 0.0);
 	}
 
 	/**
@@ -1413,7 +1497,9 @@ public class PopGraph2D extends GenericPopGraph<String, Network2D> implements Sh
 		double sx = (viewCorner.getX() + adjX - bounds.getX()) / zoomFactor;
 		double sy = (viewCorner.getY() + adjY - bounds.getY()) / zoomFactor;
 		if (sy < 0.0 || sy > bounds.getHeight())
-			return false;
+			return hasLegend() && legendReserveHeight > 0.0
+					&& (style.legendPos > 0 ? sy <= bounds.getHeight() + legendReserveHeight && sy >= 0.0
+							: sy >= -legendReserveHeight && sy <= bounds.getHeight());
 		if (sx >= 0.0 && sx <= bounds.getWidth())
 			return true;
 		return hasLegend() && legendReserveWidth > 0.0
