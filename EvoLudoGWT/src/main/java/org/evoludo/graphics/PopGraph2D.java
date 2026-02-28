@@ -652,6 +652,16 @@ public class PopGraph2D extends GenericPopGraph<String, Network2D> implements Sh
 		return true;
 	}
 
+	@Override
+	protected double getMaxViewCornerX(double zoom) {
+		return getOffsetWidth() * (zoom - 1.0);
+	}
+
+	@Override
+	protected double getMaxViewCornerY(double zoom) {
+		return getOffsetHeight() * (zoom - 1.0);
+	}
+
 	/**
 	 * The size of the graph for lattices.
 	 */
@@ -1088,11 +1098,12 @@ public class PopGraph2D extends GenericPopGraph<String, Network2D> implements Sh
 		// some heuristic adjustments... cause remains mysterious
 		x = x - (int) (style.frameWidth * zoomFactor + 0.5);
 		y = y - (int) (style.frameWidth * zoomFactor - 0.5);
-		if (!bounds.contains(x, y))
+		double sx = (viewCorner.getX() + x - bounds.getX()) / zoomFactor;
+		double sy = (viewCorner.getY() + y - bounds.getY()) / zoomFactor;
+		if (sx < 0.0 || sx > bounds.getWidth() || sy < 0.0 || sy > bounds.getHeight())
 			return FINDNODEAT_OUT_OF_BOUNDS;
-
-		int sx = (int) ((viewCorner.getX() + x - bounds.getX()) / zoomFactor + 0.5);
-		int sy = (int) ((viewCorner.getY() + y - bounds.getY()) / zoomFactor + 0.5);
+		int isx = (int) (sx + 0.5);
+		int isy = (int) (sy + 0.5);
 
 		GeometryType type = geometry.getType();
 		if (isHierarchy)
@@ -1104,16 +1115,16 @@ public class PopGraph2D extends GenericPopGraph<String, Network2D> implements Sh
 			case LINEAR:
 				return FINDNODEAT_UNIMPLEMENTED;
 			case TRIANGULAR:
-				return findTriangularNode(sx, sy);
+				return findTriangularNode(isx, isy);
 			case HEXAGONAL:
-				return findHoneycombNode(sx, sy);
+				return findHoneycombNode(isx, isy);
 			case SQUARE_NEUMANN:
 			case SQUARE_NEUMANN_2ND:
 			case SQUARE_MOORE:
 			case SQUARE:
-				return findSquareNode(sx, sy);
+				return findSquareNode(isx, isy);
 			default:
-				return findNetworkNode(sx, sy);
+				return findNetworkNode(isx, isy);
 		}
 	}
 
@@ -1399,7 +1410,15 @@ public class PopGraph2D extends GenericPopGraph<String, Network2D> implements Sh
 		// heuristic offset aligns with findNodeAt bounds checks
 		int adjX = x - (int) (style.frameWidth * zoomFactor + 0.5);
 		int adjY = y - (int) (style.frameWidth * zoomFactor - 0.5);
-		return bounds.contains(adjX, adjY);
+		double sx = (viewCorner.getX() + adjX - bounds.getX()) / zoomFactor;
+		double sy = (viewCorner.getY() + adjY - bounds.getY()) / zoomFactor;
+		if (sy < 0.0 || sy > bounds.getHeight())
+			return false;
+		if (sx >= 0.0 && sx <= bounds.getWidth())
+			return true;
+		return hasLegend() && legendReserveWidth > 0.0
+				&& (style.legendPos > 0 ? sx <= bounds.getWidth() + legendReserveWidth && sx >= 0.0
+						: sx >= -legendReserveWidth && sx <= bounds.getWidth());
 	}
 
 	/**

@@ -2101,14 +2101,36 @@ public abstract class AbstractGraph<B> extends FocusPanel
 			return;
 		double w = bounds.getWidth();
 		double h = bounds.getHeight();
-		viewCorner.set(Math.min(w * (newZoomFactor - 1.0), Math.max(0, viewCorner.getX() +
+		viewCorner.set(Math.min(getMaxViewCornerX(newZoomFactor), Math.max(0, viewCorner.getX() +
 				w * dz * fx)),
-				Math.min(h * (newZoomFactor - 1.0), Math.max(0, viewCorner.getY() + h * dz *
+				Math.min(getMaxViewCornerY(newZoomFactor), Math.max(0, viewCorner.getY() + h * dz *
 						fy)));
 		zoomFactor = newZoomFactor;
 		if (zoomInertiaTimer.isRunning())
 			element.addClassName(dz > 0 ? CURSOR_ZOOM_IN_CLASS : CURSOR_ZOOM_OUT_CLASS);
 		paint(true);
+	}
+
+	/**
+	 * Get the maximum horizontal view-corner offset for the zoom factor
+	 * {@code zoom}.
+	 *
+	 * @param zoom the zoom factor
+	 * @return the maximum horizontal offset
+	 */
+	protected double getMaxViewCornerX(double zoom) {
+		return bounds.getWidth() * (zoom - 1.0);
+	}
+
+	/**
+	 * Get the maximum vertical view-corner offset for the zoom factor
+	 * {@code zoom}.
+	 *
+	 * @param zoom the zoom factor
+	 * @return the maximum vertical offset
+	 */
+	protected double getMaxViewCornerY(double zoom) {
+		return bounds.getHeight() * (zoom - 1.0);
 	}
 
 	/**
