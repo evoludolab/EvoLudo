@@ -87,7 +87,12 @@ public interface BasicTooltipProvider {
 	/**
 	 * Table cell separator for tooltips with color.
 	 */
-	static final String TABLE_CELL_NEXT_COLOR = TABLE_CELL_NEXT + "<span style='color:";
+	static final String SPAN_COLOR = "<span style='color:";
+
+	/**
+	 * Table cell separator for tooltips with color.
+	 */
+	static final String TABLE_CELL_NEXT_COLOR = TABLE_CELL_NEXT + SPAN_COLOR;
 
 	/**
 	 * Table cell bullet used to highlight categorical values in tooltips.

@@ -349,7 +349,7 @@ public abstract class GenericPop<T, N extends Network<?>, G extends GenericPopGr
 					.append(TABLE_ROW_END);
 
 		// payoffs / fitness / interactions
-		appendFitnessTip(node, module, tip);
+		appendFitnessTip(node, module, graph, tip);
 
 		// in multi-species modules this points to the other species
 		AbstractGeometry intergeom = module.getIBSPopulation().getInteractionGeometry();
@@ -438,7 +438,8 @@ public abstract class GenericPop<T, N extends Network<?>, G extends GenericPopGr
 				.append(TABLE_CELL_BULLET)
 				.append(s[0]);
 		for (int n = 1; n < s.length; n++)
-			tip.append(", <span style='color:")
+			tip.append(", ")
+					.append(SPAN_COLOR)
 					.append(ColorMapCSS.Color2Css(c[n]))
 					.append(TABLE_CELL_BULLET)
 					.append(s[n]);
@@ -462,9 +463,10 @@ public abstract class GenericPop<T, N extends Network<?>, G extends GenericPopGr
 	 * 
 	 * @param node   the node index
 	 * @param module the module
+	 * @param graph  the graph
 	 * @param tip    the StringBuilder to append to
 	 */
-	private void appendFitnessTip(int node, Module<?> module, StringBuilder tip) {
+	private void appendFitnessTip(int node, Module<?> module, G graph, StringBuilder tip) {
 		if (!(module instanceof Payoffs))
 			return;
 		int id = module.getId();
@@ -481,8 +483,12 @@ public abstract class GenericPop<T, N extends Network<?>, G extends GenericPopGr
 		// report fitness
 		tip.append(TABLE_ROW_START)
 				.append("Fitness")
-				.append(TABLE_CELL_NEXT)
-				.append(model.getFitnessNameAt(id, node))
+				.append(TABLE_CELL_NEXT);
+		if (type == Data.FITNESS)
+			tip.append(SPAN_COLOR)
+					.append(graph.getCSSColorAt(node))
+					.append(TABLE_CELL_BULLET);
+		tip.append(model.getFitnessNameAt(id, node))
 				.append(TABLE_ROW_END);
 
 		IBS ibs = (IBS) model;
@@ -531,7 +537,7 @@ public abstract class GenericPop<T, N extends Network<?>, G extends GenericPopGr
 				.append("Fitness")
 				.append(TABLE_CELL_NEXT);
 		if (type == Data.FITNESS)
-			tip.append("<span style='color:")
+			tip.append(SPAN_COLOR)
 					.append(graph.getCSSColorAt(node)).append(TABLE_CELL_BULLET);
 		appendFormattedValues(tip, fitness, vac, map, false);
 		tip.append(" → ")
@@ -667,12 +673,13 @@ public abstract class GenericPop<T, N extends Network<?>, G extends GenericPopGr
 			return tip.append("[ - ]")
 					.append(TABLE_ROW_END);
 		int[] neigh = geom.out[node];
-		tip.append("[<span style='color:")
+		tip.append("[")
+				.append(SPAN_COLOR)
 				.append(graph.getCSSColorAt(neigh[0]))
 				.append(TABLE_CELL_BULLET);
 		int disp = Math.min(nNeighs, 10);
 		for (int n = 1; n < disp; n++)
-			tip.append("<span style='color:")
+			tip.append(SPAN_COLOR)
 					.append(graph.getCSSColorAt(neigh[n]))
 					.append(TABLE_CELL_BULLET);
 		if (disp < nNeighs)
