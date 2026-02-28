@@ -38,6 +38,35 @@ package org.evoludo.graphics;
 public class GraphStyle {
 
 	/**
+	 * Positioning options for graph decorations such as legends.
+	 */
+	public enum Position {
+		NORTH,
+		SOUTH,
+		EAST,
+		WEST,
+		NONE;
+
+		/**
+		 * Check whether this position is vertical.
+		 *
+		 * @return {@code true} for east/west
+		 */
+		public boolean isVertical() {
+			return this == EAST || this == WEST;
+		}
+
+		/**
+		 * Check whether this position is horizontal.
+		 *
+		 * @return {@code true} for north/south
+		 */
+		public boolean isHorizontal() {
+			return this == NORTH || this == SOUTH;
+		}
+	}
+
+	/**
 	 * Create a style with the default set of axis, label, and tick options.
 	 */
 	public GraphStyle() {
@@ -219,10 +248,9 @@ public class GraphStyle {
 	public boolean showYAxisRight = true;
 
 	/**
-	 * Position of the fitness legend: {@code -2} top, {@code -1} left,
-	 * {@code 0} hidden, {@code +1} right, {@code +2} bottom.
+	 * Position of the fitness legend.
 	 */
-	public int legendPos = 2;
+	public Position legendPos = Position.SOUTH;
 
 	/**
 	 * The flag to indicate whether to show the frame of the graph.
