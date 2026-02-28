@@ -156,6 +156,11 @@ public class Distribution extends AbstractView<PopGraph2D> implements TooltipPro
 	double[] bins;
 
 	/**
+	 * Per-module maxima for the histogram color legend.
+	 */
+	private double[] legendMax = new double[0];
+
+	/**
 	 * The index of the trait to be shown along the x-axis.
 	 */
 	int traitXIdx = 0;
@@ -190,6 +195,11 @@ public class Distribution extends AbstractView<PopGraph2D> implements TooltipPro
 	protected boolean allocateGraphs() {
 		List<? extends Module<?>> species = engine.getModule().getSpecies();
 		int nGraphs = species.size();
+		int maxId = -1;
+		for (Module<?> module : species)
+			maxId = Math.max(maxId, module.getId());
+		if (legendMax.length <= maxId)
+			legendMax = new double[maxId + 1];
 		boolean compatible = graphs.size() == nGraphs;
 		if (compatible) {
 			for (int i = 0; i < nGraphs; i++) {
@@ -323,7 +333,9 @@ public class Distribution extends AbstractView<PopGraph2D> implements TooltipPro
 			((CModel) model).get2DTraitHistogramData(graph.getModule().getId(),
 					bins, traitXIdx, traitYIdx);
 			ColorMap.Gradient1D<String> cMap = (ColorMap.Gradient1D<String>) graph.getColorMap();
-			cMap.setRange(0.0, ArrayMath.max(bins));
+			double max = ArrayMath.max(bins);
+			legendMax[graph.getModule().getId()] = max;
+			cMap.setRange(0.0, max);
 			cMap.translate(bins, graph.getData());
 			graph.update(isNext);
 			updated = true;
@@ -513,6 +525,17 @@ public class Distribution extends AbstractView<PopGraph2D> implements TooltipPro
 		menu.add("X-axis trait", traitXMenu);
 		menu.add("Y-axis trait", traitYMenu);
 		super.populateContextMenu(menu);
+	}
+
+	/**
+	 * Get the maximum histogram frequency for the legend of the module with index
+	 * {@code moduleId}.
+	 *
+	 * @param moduleId the module identifier
+	 * @return the current histogram maximum or {@code 0.0}
+	 */
+	public double getLegendMax(int moduleId) {
+		return moduleId >= 0 && moduleId < legendMax.length ? legendMax[moduleId] : 0.0;
 	}
 
 	/**

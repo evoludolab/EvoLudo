@@ -327,11 +327,7 @@ public class PopGraph1D extends PopGraph2D {
 		double baseYMin = style.yMin;
 		double baseYMax = style.yMax;
 		applyViewportRanges(baseXMin, baseXMax, baseYMin, baseYMax);
-		g.save();
-		g.scale(scale, scale);
-		g.translate(bounds.getX(), bounds.getY());
-		drawFrame(4, 4);
-		g.restore();
+		drawFrameOverlay(true);
 		style.xMin = baseXMin;
 		style.xMax = baseXMax;
 		style.yMin = baseYMin;

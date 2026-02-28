@@ -110,14 +110,7 @@ public class DistrGraph2D extends PopGraph2D {
 		double baseYMin = style.yMin;
 		double baseYMax = style.yMax;
 		applyViewportRanges(baseXMin, baseXMax, baseYMin, baseYMax);
-		g.save();
-		g.scale(scale, scale);
-		g.translate(bounds.getX(), bounds.getY());
-		if (style.showDecoratedFrame)
-			drawFrame(4, 4);
-		else
-			drawFrame(0, 0);
-		g.restore();
+		drawFrameOverlay(style.showDecoratedFrame);
 		style.xMin = baseXMin;
 		style.xMax = baseXMax;
 		style.yMin = baseYMin;
