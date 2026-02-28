@@ -92,7 +92,7 @@ public interface BasicTooltipProvider {
 	/**
 	 * Table cell bullet used to highlight categorical values in tooltips.
 	 */
-	static final String TABLE_CELL_BULLET = "; font-size:175%; line-height:0.57;'>&#x25A0;</span> ";
+	static final String TABLE_CELL_BULLET = "; font-size:120%; line-height:0.7;'>&#x25A0;</span> ";
 
 	/**
 	 * Get the tooltip at the scaled coordinates {@code (x,y)} with the origin in

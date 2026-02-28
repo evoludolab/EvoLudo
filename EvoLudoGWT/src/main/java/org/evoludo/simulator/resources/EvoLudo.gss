@@ -316,15 +316,14 @@
 }
 
 .gwt-Tooltip {
-	background-color: rgba(239, 239, 239, 0.75);
-	border: solid 1px rgba(200, 200, 200, 0.9);
-	/*  box-shadow: 0 0 0 2px rgba(0,0,0,0.3);*/
-	border-radius: 2px;
-	padding-left: 4px;
-	padding-right: 4px;
+	background-color: rgba(248, 248, 250, 0.75);
+	border: 1px solid rgba(60, 60, 67, 0.16);
+	box-shadow: 0 6px 18px rgba(0, 0, 0, 0.14), 0 1px 4px rgba(0, 0, 0, 0.08);
+	border-radius: 7px;
+	padding: 6px;
 	z-index: 100;
-	font-family: Arial, sans-serif;
-	font-size: 9pt;
+	font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Helvetica Neue", sans-serif;
+	font-size: 10pt;
 	line-height: 1.2;
 	pointer-events: none;
 }
