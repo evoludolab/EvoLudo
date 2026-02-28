@@ -1069,25 +1069,26 @@ public class LineGraph extends AbstractGraph<double[]>
 
 	@Override
 	protected void populateZoomMenu(ContextMenu menu) {
-		menu.addHeader("X-axis");
-		super.populateZoomMenu(menu);
 		menu.add(new ContextMenuItem("Zoom to fit", () -> {
 			if (style.autoscaleY)
 				style.autoscaleY = false;
 			boolean addMargin = !style.percentY;
-			if (updateYRangeFromBuffer(true, addMargin)) {
-				if (style.percentY) {
-					style.yMin = Math.max(0.0, style.yMin);
-					style.yMax = Math.min(1.0, style.yMax);
-					if (style.yMin > style.yMax) {
-						style.yMin = 0.0;
-						style.yMax = 1.0;
-					}
-					clampLogRange();
+			boolean updatedX = updateXRangeFromBuffer();
+			boolean updatedY = updateYRangeFromBuffer(true, addMargin);
+			if (updatedY && style.percentY) {
+				style.yMin = Math.max(0.0, style.yMin);
+				style.yMax = Math.min(1.0, style.yMax);
+				if (style.yMin > style.yMax) {
+					style.yMin = 0.0;
+					style.yMax = 1.0;
 				}
-				paint(true);
+				clampLogRange();
 			}
+			if (updatedX || updatedY)
+				paint(true);
 		}));
+		menu.addHeader("X-axis");
+		super.populateZoomMenu(menu);
 	}
 
 	/**
