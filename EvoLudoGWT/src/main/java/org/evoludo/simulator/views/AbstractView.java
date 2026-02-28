@@ -640,7 +640,7 @@ public abstract class AbstractView<G extends AbstractGraph<?>> extends Composite
 		int current = getBufferCapacity();
 		if (current < 0)
 			return;
-		ContextMenu bufferMenu = new ContextMenu(menu, "Buffer");
+		ContextMenu bufferMenu = new ContextMenu(menu);
 		for (int cap : capacities) {
 			ContextMenuCheckBoxItem item = new ContextMenuCheckBoxItem(formatBufferCapacity(cap),
 					() -> setBufferCapacity(cap));
@@ -1016,7 +1016,7 @@ public abstract class AbstractView<G extends AbstractGraph<?>> extends Composite
 		// process exports context menu (suppress in ePub, regardless of whether a
 		// standalone lab or not)
 		if (!NativeJS.isEPub()) {
-			ContextMenu exportSubmenu = new ContextMenu(menu, "Export");
+			ContextMenu exportSubmenu = new ContextMenu(menu);
 			exportSubmenu.add(new ContextMenuItem(ExportType.STATE.toString(), new ExportCommand(ExportType.STATE)));
 			for (ExportType e : exportTypes()) {
 				if (e == ExportType.STATE)

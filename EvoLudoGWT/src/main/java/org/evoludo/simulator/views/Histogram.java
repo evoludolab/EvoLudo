@@ -1714,7 +1714,7 @@ public class Histogram extends AbstractView<HistoGraph> {
 		if (binCounts.length == 0)
 			return;
 		int selected = Math.min(Math.max(histogramBins, binCounts[0]), binCounts[binCounts.length - 1]);
-		ContextMenu binsMenu = new ContextMenu(menu, "Bins");
+		ContextMenu binsMenu = new ContextMenu(menu);
 		for (int bins : binCounts) {
 			ContextMenuCheckBoxItem item = new ContextMenuCheckBoxItem(Integer.toString(bins),
 					() -> applyHistogramBins(bins));

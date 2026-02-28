@@ -488,14 +488,14 @@ public class Distribution extends AbstractView<PopGraph2D> implements TooltipPro
 			super.populateContextMenu(menu);
 			return;
 		}
-		ContextMenu traitXMenu = new ContextMenu(menu, "X-axis trait");
+		ContextMenu traitXMenu = new ContextMenu(menu);
 		ContextMenuCheckBoxItem[] traitXItems = new ContextMenuCheckBoxItem[nTraits];
 		for (int n = 0; n < nTraits; n++) {
 			traitXItems[n] = new ContextMenuCheckBoxItem(module.getTraitName(n),
 					new TraitCommand(traitXItems, n, TraitCommand.X_AXIS));
 			traitXMenu.add(traitXItems[n]);
 		}
-		ContextMenu traitYMenu = new ContextMenu(menu, "Y-axis trait");
+		ContextMenu traitYMenu = new ContextMenu(menu);
 		ContextMenuCheckBoxItem[] traitYItems = new ContextMenuCheckBoxItem[nTraits];
 		for (int n = 0; n < nTraits; n++) {
 			traitYItems[n] = new ContextMenuCheckBoxItem(module.getTraitName(n),
@@ -524,8 +524,7 @@ public class Distribution extends AbstractView<PopGraph2D> implements TooltipPro
 	private void addBinsMenu(ContextMenu menu, boolean is2D) {
 		if (graphs.isEmpty())
 			return;
-		ContextMenu binsMenu = new ContextMenu(menu, "Bins");
-		binsMenu.addHeader(is2D ? "Bins per axis" : "Bins");
+		ContextMenu binsMenu = new ContextMenu(menu);
 		for (int option : BIN_OPTIONS) {
 			ContextMenuCheckBoxItem item = new ContextMenuCheckBoxItem(Integer.toString(option),
 					() -> applyBinsPerAxis(option));

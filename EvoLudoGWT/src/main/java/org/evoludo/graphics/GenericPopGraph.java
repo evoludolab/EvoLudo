@@ -609,7 +609,7 @@ public abstract class GenericPopGraph<T, N extends Network<?>> extends AbstractG
 		if (debugNode < 0 || debugNode >= geometry.getSize())
 			return;
 
-		ContextMenu debugSubmenu = new ContextMenu(menu, "Debug");
+		ContextMenu debugSubmenu = new ContextMenu(menu);
 		debugSubmenu.add(new ContextMenuItem("Update node @ " + debugNode,
 				() -> module.getIBSPopulation().debugUpdatePopulationAt(debugNode)));
 		menu.add("Debug", debugSubmenu);

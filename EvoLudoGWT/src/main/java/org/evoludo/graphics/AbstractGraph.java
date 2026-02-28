@@ -1094,7 +1094,7 @@ public abstract class AbstractGraph<B> extends FocusPanel
 	protected void addZoomMenu(ContextMenu menu) {
 		if (!(this instanceof Zooming))
 			return;
-		ContextMenu zoomMenu = new ContextMenu(menu, "Zoom");
+		ContextMenu zoomMenu = new ContextMenu(menu);
 		populateZoomMenu(zoomMenu);
 		if (zoomMenu.getWidgetCount() > 0)
 			menu.add("Zoom", zoomMenu);

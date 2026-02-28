@@ -365,8 +365,8 @@ public class Phase2D extends AbstractView<ParaGraph> {
 			return;
 		}
 		int totTraits = computeTotalTraits(species, model.isDensity());
-		ContextMenu traitXMenu = new ContextMenu(menu, "X-axis trait");
-		ContextMenu traitYMenu = new ContextMenu(menu, "Y-axis trait");
+		ContextMenu traitXMenu = new ContextMenu(menu);
+		ContextMenu traitYMenu = new ContextMenu(menu);
 		ContextMenuCheckBoxItem[] traitXItems = new ContextMenuCheckBoxItem[totTraits];
 		ContextMenuCheckBoxItem[] traitYItems = new ContextMenuCheckBoxItem[totTraits];
 		populateTraitItems(species, isMultispecies, traitXMenu, traitYMenu, traitXItems, traitYItems);
@@ -400,7 +400,6 @@ public class Phase2D extends AbstractView<ParaGraph> {
 			style.yMax = 1.0;
 			graph.paint(true);
 		});
-		axesMenu.addHeader("Axes");
 		GraphStyle style = graph.getStyle();
 		autoscaleMenu.setChecked(style.autoscaleX && style.autoscaleY);
 		axesMenu.add(autoscaleMenu);

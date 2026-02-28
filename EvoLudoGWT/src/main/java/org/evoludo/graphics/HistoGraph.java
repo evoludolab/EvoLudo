@@ -1032,7 +1032,6 @@ public class HistoGraph extends AbstractGraph<double[]> implements BasicTooltipP
 			applyFullRange();
 			paint(true);
 		});
-		axesMenu.addHeader("Axes");
 		autoscaleYMenu.setChecked(style.autoscaleY);
 		autoscaleYMenu.setEnabled(enableAutoscaleYMenu);
 		axesMenu.add(autoscaleYMenu);

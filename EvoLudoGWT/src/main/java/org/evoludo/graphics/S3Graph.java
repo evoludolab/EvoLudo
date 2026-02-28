@@ -847,7 +847,7 @@ public class S3Graph extends AbstractGraph<double[]> implements Zooming, Shiftin
 		int[] order = map.getOrder();
 		String[] names = map.getNames();
 		int cornerIdx = closestCorner(x, y);
-		ContextMenu setTraitMenu = new ContextMenu(menu, "Set trait");
+		ContextMenu setTraitMenu = new ContextMenu(menu);
 		for (int traitIdx = 0; traitIdx < names.length; traitIdx++) {
 			final int selectedTraitIdx = traitIdx;
 			setTraitMenu.add(new ContextMenuItem(names[traitIdx], () -> {
