@@ -756,7 +756,8 @@ public abstract class Module<T extends Module<T>>
 	 * @return the name of the trait
 	 */
 	public String getTraitName(int trait) {
-		return getTraitNames()[trait % nTraits];
+		String tname = getTraitNames()[Math.floorMod(trait, nTraits)];
+		return trait >= nTraits ? "New " + tname : tname;
 	}
 
 	/**

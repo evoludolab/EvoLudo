@@ -1913,7 +1913,7 @@ public class IBSDPopulation extends IBSPopulation<Discrete, IBSDPopulation> {
 
 	@Override
 	public String getTraitNameAt(int idx) {
-		return module.getTraitName(getTraitAt(idx));
+		return module.getTraitName(traits[idx]);
 	}
 
 	@Override
