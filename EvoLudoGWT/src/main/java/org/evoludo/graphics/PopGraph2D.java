@@ -51,6 +51,8 @@ import org.evoludo.simulator.modules.Map2Fitness;
 import org.evoludo.simulator.modules.Discrete;
 import org.evoludo.simulator.modules.Continuous;
 import org.evoludo.simulator.views.AbstractView;
+import org.evoludo.ui.ContextMenu;
+import org.evoludo.ui.ContextMenuRadioItem;
 import org.evoludo.util.Formatter;
 
 import com.google.gwt.core.client.JsArray;
@@ -239,6 +241,50 @@ public class PopGraph2D extends GenericPopGraph<String, Network2D> implements Sh
 	public void activate() {
 		super.activate();
 		ensureData();
+	}
+
+	/**
+	 * Add submenu to select the legend position.
+	 *
+	 * @param menu the context menu to populate
+	 */
+	private void addLegendPositionMenu(ContextMenu menu) {
+		if (view.getType() != Data.FITNESS)
+			return;
+		ContextMenu legendMenu = new ContextMenu(menu);
+		addLegendPositionItem(legendMenu, "None", GraphStyle.Position.NONE);
+		addLegendPositionItem(legendMenu, "Right", GraphStyle.Position.EAST);
+		addLegendPositionItem(legendMenu, "Bottom", GraphStyle.Position.SOUTH);
+		addLegendPositionItem(legendMenu, "Left", GraphStyle.Position.WEST);
+		addLegendPositionItem(legendMenu, "Top", GraphStyle.Position.NORTH);
+		menu.add("Legend", legendMenu);
+	}
+
+	/**
+	 * Add radio item for selecting legend position.
+	 *
+	 * @param menu     submenu to populate
+	 * @param label    item label
+	 * @param position target legend position
+	 */
+	private void addLegendPositionItem(ContextMenu menu, String label, GraphStyle.Position position) {
+		ContextMenuRadioItem item = new ContextMenuRadioItem(label, () -> {
+			if (style.legendPos == position)
+				return;
+			style.legendPos = position;
+			onResize();
+			if (!hasMessage)
+				paint(true);
+		});
+		item.setSelected(style.legendPos == position);
+		menu.add(item);
+	}
+
+	@Override
+	protected void addZoomMenu(ContextMenu menu) {
+		super.addZoomMenu(menu);
+		// piggy-back on zoom menu... a bit hackish...
+		addLegendPositionMenu(menu);
 	}
 
 	@Override

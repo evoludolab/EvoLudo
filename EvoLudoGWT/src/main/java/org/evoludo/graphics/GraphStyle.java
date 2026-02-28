@@ -250,7 +250,7 @@ public class GraphStyle {
 	/**
 	 * Position of the fitness legend.
 	 */
-	public Position legendPos = Position.SOUTH;
+	public Position legendPos = Position.EAST;
 
 	/**
 	 * The flag to indicate whether to show the frame of the graph.
