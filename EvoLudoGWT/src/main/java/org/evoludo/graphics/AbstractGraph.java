@@ -1649,7 +1649,7 @@ public abstract class AbstractGraph<B> extends FocusPanel
 		}
 		setFont(style.axesLabelFont);
 		String ylabel = style.yLabel + (style.logScaleY ? " (log)" : "");
-		double xpos = style.showYAxisRight ? w + tickskip + style.tickLength : -tickskip - style.tickLength;
+		double xpos = style.showYAxisRight ? w + tickskip + style.tickLength : -tickskip - style.tickLength + 8.0;
 		fillTextVertical(ylabel, xpos, (h + g.measureText(ylabel).getWidth()) / 2);
 	}
 
