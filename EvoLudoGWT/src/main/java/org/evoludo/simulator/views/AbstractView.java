@@ -59,6 +59,7 @@ import org.evoludo.simulator.models.SampleListener;
 import org.evoludo.ui.ContextMenu;
 import org.evoludo.ui.ContextMenuCheckBoxItem;
 import org.evoludo.ui.ContextMenuItem;
+import org.evoludo.ui.ContextMenuRadioItem;
 import org.evoludo.util.Formatter;
 import org.evoludo.util.NativeJS;
 import org.evoludo.util.RingBuffer;
@@ -642,9 +643,9 @@ public abstract class AbstractView<G extends AbstractGraph<?>> extends Composite
 			return;
 		ContextMenu bufferMenu = new ContextMenu(menu);
 		for (int cap : capacities) {
-			ContextMenuCheckBoxItem item = new ContextMenuCheckBoxItem(formatBufferCapacity(cap),
+			ContextMenuRadioItem item = new ContextMenuRadioItem(formatBufferCapacity(cap),
 					() -> setBufferCapacity(cap));
-			item.setChecked(cap == current);
+			item.setSelected(cap == current);
 			bufferMenu.add(item);
 		}
 		ContextMenuItem trigger = menu.add("Buffer size", bufferMenu);
