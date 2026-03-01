@@ -506,7 +506,7 @@ public class Distribution extends AbstractView<PopGraph2D> implements TooltipPro
 		Module<?> module = engine.getModule();
 		int nTraits = module.getNTraits();
 		addAxesMenu(menu, null);
-		addBinsMenu(menu, nTraits > 1);
+		addBinsMenu(menu);
 		// ignore if less than 3 traits
 		if (nTraits < 3) {
 			super.populateContextMenu(menu);
@@ -554,9 +554,8 @@ public class Distribution extends AbstractView<PopGraph2D> implements TooltipPro
 	 * Add binning controls to the context menu.
 	 *
 	 * @param menu the context menu to populate
-	 * @param is2D {@code true} for 2D distributions
 	 */
-	private void addBinsMenu(ContextMenu menu, boolean is2D) {
+	private void addBinsMenu(ContextMenu menu) {
 		if (graphs.isEmpty())
 			return;
 		ContextMenu binsMenu = new ContextMenu(menu);

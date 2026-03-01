@@ -701,6 +701,7 @@ public class PopGraph3D extends GenericPopGraph<MeshLambertMaterial, Network3DGW
 		 * {@link PopGraph3D#drawUniverse()}.
 		 */
 		public Pop3DScene() {
+			// Intentionally empty: no additional initialization needed.
 		}
 
 		/**

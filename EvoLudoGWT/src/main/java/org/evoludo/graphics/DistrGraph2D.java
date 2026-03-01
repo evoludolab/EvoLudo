@@ -38,6 +38,7 @@ import org.evoludo.simulator.views.Distribution;
  * <p>
  * Content is shifted/zoomed, while the frame and axis decorations remain fixed.
  */
+@SuppressWarnings("java:S110")
 public class DistrGraph2D extends PopGraph2D {
 
 	/**
