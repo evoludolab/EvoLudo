@@ -42,6 +42,8 @@ import org.evoludo.simulator.geometries.AbstractGeometry;
 import org.evoludo.simulator.geometries.GeometryType;
 import org.evoludo.simulator.modules.Module;
 import org.evoludo.simulator.views.AbstractView;
+import org.evoludo.ui.ContextMenu;
+import org.evoludo.ui.ContextMenuCheckBoxItem;
 import org.evoludo.util.RingBuffer;
 
 /**
@@ -76,6 +78,7 @@ public class PopGraph1D extends PopGraph2D {
 	public PopGraph1D(AbstractView<?> view, Module<?> module) {
 		super(view, module);
 		buffer = new RingBuffer<String[]>(DEFAULT_BUFFER_CAPACITY);
+		style.showYAxisRight = false;
 	}
 
 	@Override
@@ -326,6 +329,10 @@ public class PopGraph1D extends PopGraph2D {
 		double baseXMax = style.xMax;
 		double baseYMin = style.yMin;
 		double baseYMax = style.yMax;
+		if (style.offsetYTickLabels)
+			updateYTickOffset();
+		else
+			style.yTickOffset = 0.0;
 		applyViewportRanges(baseXMin, baseXMax, baseYMin, baseYMax);
 		drawFrameOverlay(true);
 		style.xMin = baseXMin;
@@ -366,6 +373,25 @@ public class PopGraph1D extends PopGraph2D {
 		style.xMax = baseXMin + fx1 * xRange;
 		style.yMax = baseYMax + topRow * yPerRow;
 		style.yMin = baseYMax + bottomRow * yPerRow;
+	}
+
+	@Override
+	protected void populateGraphContextMenu(ContextMenu menu, int x, int y) {
+		view.addAxesMenu(menu, this);
+	}
+
+	@Override
+	public void populateLocalAxesMenu(ContextMenu axesMenu) {
+		ContextMenuCheckBoxItem absoluteTimeMenu = new ContextMenuCheckBoxItem("Absolute time", () -> {
+			style.offsetYTickLabels = !style.offsetYTickLabels;
+			if (style.offsetYTickLabels)
+				updateYTickOffset();
+			else
+				style.yTickOffset = 0.0;
+			paint(true);
+		});
+		absoluteTimeMenu.setChecked(style.offsetYTickLabels);
+		axesMenu.add(absoluteTimeMenu);
 	}
 
 	@Override
@@ -466,5 +492,16 @@ public class PopGraph1D extends PopGraph2D {
 		if (buffer != null && dh > 0)
 			contentHeight = Math.max(contentHeight, buffer.getSize() * (double) dh);
 		return contentHeight;
+	}
+
+	/**
+	 * Update the y-axis tick label offset to the current model time.
+	 */
+	private void updateYTickOffset() {
+		if (view.getModel() == null) {
+			style.yTickOffset = 0.0;
+			return;
+		}
+		style.yTickOffset = view.getModel().getUpdates();
 	}
 }

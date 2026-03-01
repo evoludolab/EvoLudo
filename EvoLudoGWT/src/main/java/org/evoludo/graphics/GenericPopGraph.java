@@ -586,8 +586,20 @@ public abstract class GenericPopGraph<T, N extends Network<?>> extends AbstractG
 		addClearMenu(menu);
 		// process debug node update
 		addDebugSubmenu(menu, x, y);
+		populateGraphContextMenu(menu, x, y);
 
 		super.populateContextMenuAt(menu, x, y);
+	}
+
+	/**
+	 * Opportunity for subclasses to contribute menu items after graph-local entries
+	 * such as clear/debug and before the generic zoom/view items.
+	 *
+	 * @param menu the context menu to populate
+	 * @param x    the x-coordinate where the menu was invoked
+	 * @param y    the y-coordinate where the menu was invoked
+	 */
+	protected void populateGraphContextMenu(ContextMenu menu, int x, int y) {
 	}
 
 	/**

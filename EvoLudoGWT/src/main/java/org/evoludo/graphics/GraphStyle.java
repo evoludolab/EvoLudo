@@ -238,6 +238,18 @@ public class GraphStyle {
 	public double xTickOffset = 0.0;
 
 	/**
+	 * The flag to indicate whether y-axis tick labels are offset (e.g. to show
+	 * absolute time).
+	 */
+	public boolean offsetYTickLabels = false;
+
+	/**
+	 * The offset added to y-axis tick labels when {@link #offsetYTickLabels} is
+	 * enabled.
+	 */
+	public double yTickOffset = 0.0;
+
+	/**
 	 * The flag to indicate whether to show tick labels along the vertical axis.
 	 */
 	public boolean showYTickLabels = true;

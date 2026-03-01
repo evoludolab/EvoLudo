@@ -1425,8 +1425,10 @@ public abstract class AbstractGraph<B> extends FocusPanel
 	private void drawYLevels(int yLevels, double w, double h) {
 		if (yLevels <= 0)
 			return;
+		double tickMin = style.offsetYTickLabels ? style.yMin + style.yTickOffset : style.yMin;
+		double tickMax = style.offsetYTickLabels ? style.yMax + style.yTickOffset : style.yMax;
 		int digits = (!style.logScaleY)
-				? computeLinearDigits(style.yMin, style.yMax, yLevels, style.percentY, true)
+				? computeLinearDigits(tickMin, tickMax, yLevels, style.percentY, true)
 				: 2;
 		double frac = 1.0 / yLevels;
 		double incr = frac * h;
@@ -1500,9 +1502,10 @@ public abstract class AbstractGraph<B> extends FocusPanel
 	private void drawYTickLabel(double w, double level, int n, double yval, int digits) {
 		setFont(style.ticksLabelFont);
 		g.setFillStyle(style.frameColor);
+		double tickValue = style.offsetYTickLabels ? yval + style.yTickOffset : yval;
 		String tick = style.percentY
-				? Formatter.formatPretty(100.0 * yval, digits)
-				: Formatter.formatPretty(yval, digits);
+				? Formatter.formatPretty(100.0 * tickValue, digits)
+				: Formatter.formatPretty(tickValue, digits);
 		String[] numexp = tick.split("\\^");
 		double xpos;
 		if (style.showYAxisRight) {

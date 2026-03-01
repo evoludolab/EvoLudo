@@ -366,7 +366,6 @@ public class Pop2D extends GenericPop<String, Network2D, PopGraph2D> implements 
 
 		if (geometry.isType(GeometryType.LINEAR)) {
 			// frame, ticks, labels needed
-			style.showYAxisRight = false;
 			style.xLabel = "nodes";
 			style.showXLabel = true;
 			style.showXTickLabels = true;
