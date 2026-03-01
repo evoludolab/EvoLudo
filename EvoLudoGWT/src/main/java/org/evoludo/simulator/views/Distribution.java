@@ -52,6 +52,7 @@ import org.evoludo.simulator.modules.Module;
 import org.evoludo.ui.ContextMenu;
 import org.evoludo.ui.ContextMenuCheckBoxItem;
 import org.evoludo.ui.ContextMenuItem;
+import org.evoludo.ui.ContextMenuRadioItem;
 import org.evoludo.util.RingBuffer;
 import org.evoludo.util.Formatter;
 
@@ -552,9 +553,9 @@ public class Distribution extends AbstractView<PopGraph2D> implements TooltipPro
 			return;
 		ContextMenu binsMenu = new ContextMenu(menu);
 		for (int option : BIN_OPTIONS) {
-			ContextMenuCheckBoxItem item = new ContextMenuCheckBoxItem(Integer.toString(option),
+			ContextMenuRadioItem item = new ContextMenuRadioItem(Integer.toString(option),
 					() -> applyBinsPerAxis(option));
-			item.setChecked(option == nBins);
+			item.setSelected(option == nBins);
 			binsMenu.add(item);
 		}
 		ContextMenuItem binsTrigger = menu.add("Bins", binsMenu);
