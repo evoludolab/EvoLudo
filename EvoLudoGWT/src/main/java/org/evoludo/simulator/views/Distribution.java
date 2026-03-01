@@ -428,7 +428,8 @@ public class Distribution extends AbstractView<PopGraph2D> implements TooltipPro
 			int bar = node % binsAxis;
 			int row = node / binsAxis;
 			double time = -row * model.getTimeStep();
-			tip.append(Formatter.format(style.xMin + bar * (style.xMax - style.xMin) / binsAxis, 2))
+			tip.append("[")
+					.append(Formatter.format(style.xMin + bar * (style.xMax - style.xMin) / binsAxis, 2))
 					.append(", ")
 					.append(Formatter.format(style.xMin + (bar + 1) * (style.xMax - style.xMin) / binsAxis, 2))
 					.append("]")
@@ -459,7 +460,8 @@ public class Distribution extends AbstractView<PopGraph2D> implements TooltipPro
 			int bar1 = node % binsAxis;
 			int bar2 = node / binsAxis;
 			// horizontal trait
-			tip.append(Formatter.format(style.xMin + bar1 * (style.xMax - style.xMin) / binsAxis, 2))
+			tip.append("[")
+					.append(Formatter.format(style.xMin + bar1 * (style.xMax - style.xMin) / binsAxis, 2))
 					.append(", ")
 					.append(Formatter.format(style.xMin + (bar1 + 1) * (style.xMax - style.xMin) / binsAxis, 2))
 					.append("]")
@@ -468,6 +470,7 @@ public class Distribution extends AbstractView<PopGraph2D> implements TooltipPro
 			tip.append(TABLE_ROW_START)
 					.append(style.yLabel)
 					.append(TABLE_CELL_NEXT)
+					.append("[")
 					.append(Formatter.format(style.yMin + bar2 * (style.yMax - style.yMin) / binsAxis, 2))
 					.append(", ")
 					.append(Formatter.format(style.yMin + (bar2 + 1) * (style.yMax - style.yMin) / binsAxis, 2))
