@@ -180,6 +180,18 @@ import com.google.gwt.event.dom.client.TouchMoveEvent;
 public class PopGraph2D extends GenericPopGraph<String, Network2D> implements Shifting {
 
 	/**
+	 * Message shown when the selected binning cannot be rendered in the available
+	 * graph area.
+	 */
+	private static final String INFO_BINNING_TOO_FINE = "Binning too fine!";
+
+	/**
+	 * Message shown when the selected binning cannot be rendered in the available
+	 * graph area.
+	 */
+	private static final String INFO_POPSIZE_TOO_BIG = "Population size too big!";
+
+	/**
 	 * Width of the fitness legend color bar in pixels.
 	 */
 	protected static final double FITNESS_LEGEND_BAR_WIDTH = 10.0;
@@ -1219,7 +1231,10 @@ public class PopGraph2D extends GenericPopGraph<String, Network2D> implements Sh
 		// final sanity checks
 		if (dw < MIN_DW && dh < MIN_DH && dR < MIN_DR) {
 			noGraph = true;
-			displayMessage("Population size to large!");
+			if (view instanceof Distribution)
+				displayMessage(INFO_BINNING_TOO_FINE);
+			else
+				displayMessage(INFO_POPSIZE_TOO_BIG);
 		}
 	}
 

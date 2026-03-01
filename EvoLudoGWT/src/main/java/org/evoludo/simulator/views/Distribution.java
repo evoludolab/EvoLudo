@@ -353,6 +353,14 @@ public class Distribution extends AbstractView<PopGraph2D> implements TooltipPro
 			graph.paint(force);
 	}
 
+	@Override
+	public void onResize() {
+		if (getOffsetWidth() == 0 || getOffsetHeight() == 0)
+			return;
+		super.onResize();
+		updateData(true);
+	}
+
 	/**
 	 * Create a geometry for the given number of traits. Utility method to generate
 	 * a linear geometry (with history) for a single trait and a 2D square lattice
