@@ -34,8 +34,8 @@ import org.evoludo.geom.Node2D;
 import org.evoludo.geom.Path2D;
 import org.evoludo.geom.Point2D;
 import org.evoludo.graphics.AbstractGraph.Shifting;
-import org.evoludo.simulator.ColorMap;
-import org.evoludo.simulator.ColorMapCSS;
+import org.evoludo.graphics.Legend2D.Mode;
+import org.evoludo.graphics.Legend2D.LegendSpecs;
 import org.evoludo.simulator.Network.Status;
 import org.evoludo.simulator.Network2D;
 import org.evoludo.simulator.geometries.AbstractGeometry;
@@ -43,11 +43,9 @@ import org.evoludo.simulator.geometries.GeometryType;
 import org.evoludo.simulator.geometries.HierarchicalGeometry;
 import org.evoludo.simulator.modules.Module;
 import org.evoludo.simulator.views.AbstractView;
-import org.evoludo.simulator.views.BasicTooltipProvider;
 import org.evoludo.simulator.views.Distribution;
 import org.evoludo.ui.ContextMenu;
 import org.evoludo.ui.ContextMenuRadioItem;
-import org.evoludo.util.Formatter;
 
 import com.google.gwt.core.client.JsArray;
 import com.google.gwt.dom.client.NativeEvent;
@@ -173,6 +171,11 @@ import com.google.gwt.event.dom.client.TouchMoveEvent;
 public class PopGraph2D extends GenericPopGraph<String, Network2D> implements Shifting {
 
 	/**
+	 * Helper responsible for drawing and hit-testing the legend.
+	 */
+	protected Legend2D legend;
+
+	/**
 	 * Message shown when the selected binning cannot be rendered in the available
 	 * graph area.
 	 */
@@ -209,6 +212,23 @@ public class PopGraph2D extends GenericPopGraph<String, Network2D> implements Sh
 		super.onLoad();
 		setStylePrimaryName("evoludo-PopGraph2D");
 		label.setStyleName("evoludo-Label2D");
+		legend = new Legend2D(this);
+	}
+
+	@Override
+	protected void onUnload() {
+		super.onUnload();
+		legend = null;
+	}
+
+	/**
+	 * Assign semantic legend data prepared by the view.
+	 *
+	 * @param legendSpecs legend data
+	 */
+	public void setLegendSpecs(LegendSpecs legendSpecs) {
+		legend.setLegendSpecs(legendSpecs);
+		calcBounds();
 	}
 
 	@Override
@@ -230,7 +250,7 @@ public class PopGraph2D extends GenericPopGraph<String, Network2D> implements Sh
 	 * @param menu the context menu to populate
 	 */
 	private void addLegendPositionMenu(ContextMenu menu) {
-		if (legendSpecs.mode == LegendSpecs.Mode.NONE)
+		if (legend.getMode() == Mode.NONE)
 			return;
 		ContextMenu legendMenu = new ContextMenu(menu);
 		addLegendPositionItem(legendMenu, "None", GraphStyle.Position.NONE);
@@ -298,7 +318,7 @@ public class PopGraph2D extends GenericPopGraph<String, Network2D> implements Sh
 	 * @param newBins new number of bins per axis
 	 */
 	public void rebinGraphData(int oldBins, int newBins) {
-		// default no-op
+		// default no-op; used in subclasses with history
 	}
 
 	/**
@@ -353,8 +373,8 @@ public class PopGraph2D extends GenericPopGraph<String, Network2D> implements Sh
 			default:
 				logger.warning("Unsupported geometry: " + type.getTitle());
 		}
-		drawLegend();
 		g.restore();
+		legend.draw();
 	}
 
 	/**
@@ -533,33 +553,8 @@ public class PopGraph2D extends GenericPopGraph<String, Network2D> implements Sh
 		g.restore();
 		drawFrame(0, 0, su);
 		g.restore();
-		drawLegend();
 		g.restore();
-	}
-
-	/**
-	 * Draw the active legend.
-	 */
-	protected void drawLegend() {
-		if (!hasLegend() || (legendReserveWidth <= 0.0 && legendReserveHeight <= 0.0))
-			return;
-		switch (legendSpecs.mode) {
-			case FITNESS_GRADIENT:
-			case DENSITY_GRADIENT:
-				drawGradientLegend();
-				return;
-			case CONTINUOUS_TRAIT:
-				drawGradientLegend((ColorMap.Gradient1D<String>) getColorMap(), legendSpecs.min, legendSpecs.max,
-						legendSpecs.markers, formatGradientLegendValue(legendSpecs.min),
-						formatGradientLegendValue(legendSpecs.max));
-				return;
-			case DISCRETE_TRAIT:
-				drawDiscreteTraitLegend();
-				return;
-			case NONE:
-			default:
-				return;
-		}
+		legend.draw();
 	}
 
 	/**
@@ -574,368 +569,11 @@ public class PopGraph2D extends GenericPopGraph<String, Network2D> implements Sh
 		g.translate(bounds.getX(), bounds.getY());
 		drawFrame(decoratedFrame ? 4 : 0, decoratedFrame ? 4 : 0);
 		g.restore();
-		g.save();
-		g.scale(scale, scale);
-		g.translate(bounds.getX() - viewCorner.getX(), bounds.getY() - viewCorner.getY());
-		g.scale(zoomFactor, zoomFactor);
-		drawLegend();
-		g.restore();
-	}
-
-	/**
-	 * Draw a color legend for gradient-based population graphs.
-	 */
-	private void drawGradientLegend() {
-		if (!(getColorMap() instanceof ColorMap.Gradient1D))
-			return;
-		double min = legendSpecs.min;
-		double max = legendSpecs.max;
-		if (!Double.isFinite(min) || !Double.isFinite(max))
-			return;
-		double[] markers = legendSpecs.markers;
-		drawGradientLegend((ColorMap.Gradient1D<String>) getColorMap(), min, max, markers,
-				formatGradientLegendValue(min), formatGradientLegendValue(max));
-	}
-
-	/**
-	 * Draw a continuous sampled legend with min/max endpoint labels.
-	 *
-	 * @param gradient the color map to sample
-	 * @param min      minimum legend value
-	 * @param max      maximum legend value
-	 * @param markers  any marker annotations to include
-	 * @param minLabel label for the minimum value
-	 * @param maxLabel label for the maximum value
-	 */
-	private void drawGradientLegend(ColorMap.Gradient1D<String> gradient, double min, double max,
-			double[] markers, String minLabel, String maxLabel) {
-		boolean vertical = style.legendPos.isVertical();
-		LegendLayout layout = getLegendLayout(vertical ? LegendLayout.BAR_WIDTH : bounds.getWidth() * 0.6,
-				vertical ? bounds.getHeight() * 0.6 : LegendLayout.BAR_WIDTH);
-		if (layout == null)
-			return;
-		double[] samples = getLegendSamples(min, max, vertical ? layout.barHeight : layout.barWidth, markers);
-		drawGradientLegendBands(layout, samples, gradient);
-		drawLegendFrame(layout);
-		g.setFillStyle(style.frameColor);
-		setFont(style.ticksLabelFont);
-		if (vertical) {
-			g.fillText(maxLabel, getLegendLabelX(maxLabel, layout), layout.barY + 4.5);
-			g.fillText(minLabel, getLegendLabelX(minLabel, layout), layout.barY + layout.barHeight + 4.5);
-			drawLegendMarkers(markers, min, max, layout);
-			return;
-		}
-		double labelY = getHorizontalLegendLabelY(layout, LegendLayout.BAR_WIDTH + 12.5, -style.minPadding);
-		g.fillText(minLabel, layout.barX, labelY);
-		g.fillText(maxLabel, layout.barX + layout.barWidth - g.measureText(maxLabel).getWidth(), labelY);
-	}
-
-	/**
-	 * Fill a sampled gradient legend.
-	 *
-	 * @param layout   legend layout
-	 * @param samples  values mapped onto the bar
-	 * @param gradient color map used to render the samples
-	 */
-	private void drawGradientLegendBands(LegendLayout layout, double[] samples, ColorMap.Gradient1D<String> gradient) {
-		boolean vertical = style.legendPos.isVertical();
-		int steps = samples.length;
-		double stepSpan = (vertical ? layout.barHeight : layout.barWidth) / steps;
-		for (int i = 0; i < steps; i++) {
-			double start = Math.floor((vertical ? layout.barY : layout.barX) + i * stepSpan);
-			double end = Math.floor((vertical ? layout.barY : layout.barX) + (i + 1) * stepSpan);
-			if (i == steps - 1)
-				end = vertical ? layout.barY + layout.barHeight : layout.barX + layout.barWidth;
-			if (end <= start)
-				end = start + 1.0;
-			g.setFillStyle(gradient.translate(samples[i]));
-			if (vertical) {
-				fillRect(layout.barX, start, layout.barWidth, end - start);
-				continue;
-			}
-			fillRect(start, layout.barY, end - start, layout.barHeight);
-		}
-	}
-
-	/**
-	 * Draw the outline around a legend color bar.
-	 *
-	 * @param layout the legend layout
-	 */
-	private void drawLegendFrame(LegendLayout layout) {
-		g.setStrokeStyle(style.frameColor);
-		g.setLineWidth(1.0);
-		if (style.legendPos.isVertical()) {
-			g.strokeRect(layout.barX + 0.5, layout.barY - 0.5, layout.barWidth, layout.barHeight + 1.0);
-			return;
-		}
-		g.strokeRect(layout.barX - 0.5, layout.barY + 0.5, layout.barWidth + 1.0, layout.barHeight);
-	}
-
-	/**
-	 * Draw a segmented legend for discrete traits.
-	 */
-	private void drawDiscreteTraitLegend() {
-		String[] colors = getDiscreteTraitLegendColors();
-		String[] labels = legendSpecs.discreteLabels;
-		if (labels.length == 0)
-			labels = null;
-		if (colors == null || labels == null)
-			return;
-		int nSegments = Math.min(colors.length, labels.length);
-		if (nSegments <= 0)
-			return;
-		g.setStrokeStyle(style.frameColor);
-		g.setLineWidth(1.0);
-		g.setFillStyle(style.frameColor);
-		setFont(style.ticksLabelFont);
-		if (style.legendPos.isVertical()) {
-			LegendLayout layout = getLegendLayout(LegendLayout.BAR_WIDTH, bounds.getHeight() * 0.6);
-			if (layout == null)
-				return;
-			double stepHeight = layout.barHeight / nSegments;
-			for (int i = 0; i < nSegments; i++) {
-				double y0 = Math.floor(layout.barY + i * stepHeight);
-				double y1 = Math.floor(layout.barY + (i + 1) * stepHeight);
-				if (i == nSegments - 1)
-					y1 = layout.barY + layout.barHeight;
-				if (y1 <= y0)
-					y1 = y0 + 1.0;
-				g.setFillStyle(colors[i]);
-				fillRect(layout.barX, y0, layout.barWidth, y1 - y0);
-				g.setFillStyle(style.frameColor);
-				g.fillText(labels[i], getLegendLabelX(labels[i], layout), 0.5 * (y0 + y1) + 4.5);
-			}
-			drawLegendFrame(layout);
-			return;
-		}
-		double barWidth = getHorizontalDiscreteTraitLegendBarWidth(labels);
-		// increase legend bar height to overlay trait names
-		double barHeight = Math.max(LegendLayout.BAR_WIDTH, 16.0);
-		LegendLayout layout = getLegendLayout(barWidth, barHeight);
-		if (layout == null)
-			return;
-		double stepWidth = layout.barWidth / nSegments;
-		for (int i = 0; i < nSegments; i++) {
-			double x0 = Math.floor(layout.barX + i * stepWidth);
-			double x1 = Math.floor(layout.barX + (i + 1) * stepWidth);
-			if (i == nSegments - 1)
-				x1 = layout.barX + layout.barWidth;
-			if (x1 <= x0)
-				x1 = x0 + 1.0;
-			g.setFillStyle(colors[i]);
-			fillRect(x0, layout.barY, x1 - x0, layout.barHeight);
-			g.setFillStyle(ColorMapCSS.luminance(colors[i]) > 0.55 ? "#000000" : "#ffffff");
-			double textWidth = g.measureText(labels[i]).getWidth();
-			g.fillText(labels[i], x0 + 0.5 * (x1 - x0 - textWidth), layout.barY + 0.5 * (layout.barHeight + 9.0));
-		}
-		drawLegendFrame(layout);
 	}
 
 	@Override
 	public String getTooltipAt(int x, int y) {
-		if (bounds.contains(x, y))
-			return super.getTooltipAt(x, y);
-		return getLegendTooltipAt(x, y);
-	}
-
-	/**
-	 * Get the tooltip for the active legend at screen coordinates {@code (x,y)}.
-	 *
-	 * @param x the screen x-coordinate
-	 * @param y the screen y-coordinate
-	 * @return tooltip HTML or {@code null}
-	 */
-	private String getLegendTooltipAt(int x, int y) {
-		element.removeClassName(EVOLUDO_CURSOR_NODE);
-		switch (legendSpecs.mode) {
-			case FITNESS_GRADIENT:
-			case DENSITY_GRADIENT:
-				return getGradientLegendTooltipAt(x, y);
-			case CONTINUOUS_TRAIT:
-			case DISCRETE_TRAIT:
-				return getTraitLegendTooltipAt(x, y);
-			case NONE:
-			default:
-				return null;
-		}
-	}
-
-	/**
-	 * Get the tooltip for the active gradient legend at screen coordinates
-	 * {@code (x,y)}.
-	 *
-	 * @param x the screen x-coordinate
-	 * @param y the screen y-coordinate
-	 * @return tooltip HTML or {@code null}
-	 */
-	private String getGradientLegendTooltipAt(int x, int y) {
-		if (!(getColorMap() instanceof ColorMap.Gradient1D))
-			return null;
-		double min = legendSpecs.min;
-		double max = legendSpecs.max;
-		if (!Double.isFinite(min) || !Double.isFinite(max))
-			return null;
-		double value = getGradientLegendValueAt(x, y, min, max);
-		if (!Double.isFinite(value))
-			return null;
-		String color = ((ColorMap.Gradient1D<String>) getColorMap()).translate(value);
-		String label;
-		switch (legendSpecs.mode) {
-			case FITNESS_GRADIENT:
-				label = "fitness";
-				break;
-			case DENSITY_GRADIENT:
-				label = "frequency";
-				break;
-			default:
-				label = "value";
-				break;
-		}
-		return label + ": " + BasicTooltipProvider.SPAN_COLOR + color
-				+ BasicTooltipProvider.TABLE_CELL_BULLET
-				+ formatGradientLegendValue(value);
-	}
-
-	/**
-	 * Get the tooltip for the trait legend at screen coordinates {@code (x,y)}.
-	 *
-	 * @param x the screen x-coordinate
-	 * @param y the screen y-coordinate
-	 * @return tooltip HTML or {@code null}
-	 */
-	private String getTraitLegendTooltipAt(int x, int y) {
-		String label = legendSpecs.tooltipLabel == null ? "trait" : legendSpecs.tooltipLabel;
-		switch (legendSpecs.mode) {
-			case CONTINUOUS_TRAIT:
-				ColorMap.Gradient1D<String> gradient = (ColorMap.Gradient1D<String>) getColorMap();
-				double value = getGradientLegendValueAt(x, y, legendSpecs.min, legendSpecs.max);
-				if (!Double.isFinite(value))
-					return null;
-				String color = gradient.translate(value);
-				return label + ": " + BasicTooltipProvider.SPAN_COLOR + color + BasicTooltipProvider.TABLE_CELL_BULLET
-						+ Formatter.formatPretty(value, 2);
-			case DISCRETE_TRAIT:
-				String[] colors = getDiscreteTraitLegendColors();
-				String[] labels = legendSpecs.discreteLabels;
-				if (labels.length == 0)
-					labels = null;
-				if (colors == null || labels == null)
-					return null;
-				int nSegments = Math.min(colors.length, labels.length);
-				LegendLayout layout = style.legendPos.isVertical()
-						? getLegendLayout(LegendLayout.BAR_WIDTH, bounds.getHeight() * 0.6)
-						: getLegendLayout(getHorizontalDiscreteTraitLegendBarWidth(labels),
-								Math.max(LegendLayout.BAR_WIDTH, 16.0));
-				int idx = getLegendBandIndexAt(x, y, nSegments, layout);
-				if (idx < 0)
-					return null;
-				return label + ": " + BasicTooltipProvider.SPAN_COLOR + colors[idx]
-						+ BasicTooltipProvider.TABLE_CELL_BULLET + labels[idx];
-			case NONE:
-			case FITNESS_GRADIENT:
-			case DENSITY_GRADIENT:
-			default:
-				return null;
-		}
-	}
-
-	/**
-	 * Get the continuous legend value at screen coordinates {@code (x,y)}.
-	 *
-	 * @param x   the screen x-coordinate
-	 * @param y   the screen y-coordinate
-	 * @param min minimum legend value
-	 * @param max maximum legend value
-	 * @return legend value, or {@link Double#NaN} if outside the legend
-	 */
-	private double getGradientLegendValueAt(int x, int y, double min, double max) {
-		LegendLayout layout = getLegendLayout(
-				style.legendPos.isVertical() ? LegendLayout.BAR_WIDTH : bounds.getWidth() * 0.6,
-				style.legendPos.isVertical() ? bounds.getHeight() * 0.6 : LegendLayout.BAR_WIDTH);
-		if (layout == null)
-			return Double.NaN;
-		double fraction = getLegendAxisFractionAt(x, y, layout);
-		if (!Double.isFinite(fraction))
-			return Double.NaN;
-		return max - fraction * (max - min);
-	}
-
-	/**
-	 * Convert screen coordinates to a normalized position on a legend.
-	 *
-	 * @param x      screen x-coordinate
-	 * @param y      screen y-coordinate
-	 * @param layout legend layout
-	 * @return normalized legend position in {@code [0,1]}, or {@link Double#NaN} if
-	 *         outside
-	 */
-	private double getLegendAxisFractionAt(int x, int y, LegendLayout layout) {
-		if (layout == null)
-			return Double.NaN;
-		double sx = (viewCorner.getX() + x - bounds.getX()) / zoomFactor;
-		double sy = (viewCorner.getY() + y - bounds.getY()) / zoomFactor;
-		if (sx < layout.barX || sx > layout.barX + layout.barWidth || sy < layout.barY
-				|| sy > layout.barY + layout.barHeight)
-			return Double.NaN;
-		if (style.legendPos.isVertical())
-			return Math.max(0.0, Math.min(1.0, (sy - layout.barY) / layout.barHeight));
-		return Math.max(0.0, Math.min(1.0, (sx - layout.barX) / layout.barWidth));
-	}
-
-	/**
-	 * Convert screen coordinates to the corresponding band index on a legend.
-	 *
-	 * @param x      screen x-coordinate
-	 * @param y      screen y-coordinate
-	 * @param nBands number of legend bands
-	 * @param layout legend layout
-	 * @return band index, or {@code -1} if outside the legend
-	 */
-	private int getLegendBandIndexAt(int x, int y, int nBands, LegendLayout layout) {
-		double fraction = getLegendAxisFractionAt(x, y, layout);
-		if (!Double.isFinite(fraction))
-			return -1;
-		return Math.min(nBands - 1, Math.max(0, (int) (fraction * nBands)));
-	}
-
-	/**
-	 * Get the sampled fitness values used to render the legend.
-	 *
-	 * @param min     minimum fitness
-	 * @param max     maximum fitness
-	 * @param height  legend height
-	 * @param markers homogeneous-state markers
-	 * @return sampled fitness values from top to bottom
-	 */
-	private double[] getLegendSamples(double min, double max, double height, double[] markers) {
-		int steps = Math.max(2, (int) Math.floor(height / LegendLayout.MIN_BAND_HEIGHT));
-		double[] samples = new double[steps];
-		for (int i = 0; i < steps; i++)
-			samples[i] = min + (1.0 - (double) i / Math.max(1, steps - 1)) * (max - min);
-		double range = max - min;
-		if (range <= 0.0 || markers.length == 0)
-			return samples;
-		boolean[] used = new boolean[steps];
-		for (double marker : markers) {
-			int target = (int) Math.rint((max - marker) / range * (steps - 1));
-			target = Math.max(0, Math.min(steps - 1, target));
-			for (int delta = 0; delta < steps; delta++) {
-				int lower = target - delta;
-				if (lower >= 0 && !used[lower]) {
-					samples[lower] = marker;
-					used[lower] = true;
-					break;
-				}
-				int upper = target + delta;
-				if (delta > 0 && upper < steps && !used[upper]) {
-					samples[upper] = marker;
-					used[upper] = true;
-					break;
-				}
-			}
-		}
-		return samples;
+		return bounds.contains(x, y) ? super.getTooltipAt(x, y) : legend.getTooltipAt(x, y);
 	}
 
 	/**
@@ -1033,33 +671,6 @@ public class PopGraph2D extends GenericPopGraph<String, Network2D> implements Sh
 	 */
 	static final int HIERARCHY_GAP = 1; // unit gap in pixels
 
-	/**
-	 * Width reserved for the fitness legend strip.
-	 */
-	protected double legendReserveWidth = 0.0;
-
-	/**
-	 * Width removed from the graph area for a vertical legend, excluding any
-	 * y-axis decorations already reserved by {@link AbstractGraph}.
-	 */
-	protected double legendGraphReserveWidth = 0.0;
-
-	/**
-	 * Height reserved for the fitness legend strip.
-	 */
-	protected double legendReserveHeight = 0.0;
-
-	/**
-	 * Height removed from the graph area for a horizontal legend, excluding any
-	 * x-axis decorations already reserved by {@link AbstractGraph}.
-	 */
-	protected double legendGraphReserveHeight = 0.0;
-
-	/**
-	 * Width of the legend labels.
-	 */
-	protected double legendLabelWidth = 0.0;
-
 	@Override
 	public void calcBounds(int width, int height) {
 		super.calcBounds(width, height);
@@ -1069,7 +680,6 @@ public class PopGraph2D extends GenericPopGraph<String, Network2D> implements Sh
 		dw = 0;
 		dh = 0;
 		dR = 0.0;
-		updateLegendLayout();
 
 		GeometryType type = geometry.getType();
 		isHierarchy = (type == GeometryType.HIERARCHY);
@@ -1109,6 +719,15 @@ public class PopGraph2D extends GenericPopGraph<String, Network2D> implements Sh
 			else
 				displayMessage(INFO_POPSIZE_TOO_BIG);
 		}
+		legend.setBounds(width, height, bounds);
+	}
+
+	/**
+	 * Adjust bounds to make room for legend.
+	 */
+	@Override
+	protected void adjustBoundsForLegend() {
+		legend.reserve(bounds);
 	}
 
 	/**
@@ -1129,11 +748,9 @@ public class PopGraph2D extends GenericPopGraph<String, Network2D> implements Sh
 	 */
 	private void handleTriangular(int width, int height) {
 		side = (int) (Math.sqrt(geometry.getSize()) + 0.5);
-		double plotX = getGraphAreaX();
-		double plotW = getGraphAreaWidth();
-		double plotY = getGraphAreaY();
-		double plotH = getGraphAreaHeight();
-		int diameter = (int) Math.min(plotW, plotH);
+		double plotX = bounds.getX();
+		double plotY = bounds.getY();
+		int diameter = (int) Math.min(bounds.getWidth(), bounds.getHeight());
 		dw2 = diameter / (side + 3);
 		int bWidth = dw2 * (side + 1);
 		dw = 2 * dw2;
@@ -1143,8 +760,8 @@ public class PopGraph2D extends GenericPopGraph<String, Network2D> implements Sh
 			return;
 		}
 		int bHeight = dh * side;
-		double dx = (plotW - bWidth) * 0.5;
-		double dy = (plotH - bHeight) * 0.5;
+		double dx = (bounds.getWidth() - bWidth) * 0.5;
+		double dy = (bounds.getHeight() - bHeight) * 0.5;
 		bounds.set(plotX + dx, plotY + dy, bWidth, bHeight);
 		style.showFrame = false;
 	}
@@ -1157,11 +774,9 @@ public class PopGraph2D extends GenericPopGraph<String, Network2D> implements Sh
 	 */
 	private void handleHoneycomb(int width, int height) {
 		side = (int) (Math.sqrt(geometry.getSize()) + 0.5);
-		double plotX = getGraphAreaX();
-		double plotW = getGraphAreaWidth();
-		double plotY = getGraphAreaY();
-		double plotH = getGraphAreaHeight();
-		int diameter = (int) Math.min(plotW, plotH);
+		double plotX = bounds.getX();
+		double plotY = bounds.getY();
+		int diameter = (int) Math.min(bounds.getWidth(), bounds.getHeight());
 		dw2 = diameter / (2 * side + 1);
 		int bWidth = dw2 * (2 * side + 1);
 		dw = 2 * dw2;
@@ -1172,8 +787,8 @@ public class PopGraph2D extends GenericPopGraph<String, Network2D> implements Sh
 			return;
 		}
 		int bHeight = dh3 * (3 * side + 1);
-		double dx = (plotW - bWidth) * 0.5;
-		double dy = (plotH - bHeight) * 0.5;
+		double dx = (bounds.getWidth() - bWidth) * 0.5;
+		double dy = (bounds.getHeight() - bHeight) * 0.5;
 		bounds.set(plotX + dx, plotY + dy, bWidth, bHeight);
 		style.showFrame = false;
 	}
@@ -1203,10 +818,10 @@ public class PopGraph2D extends GenericPopGraph<String, Network2D> implements Sh
 			gap *= HIERARCHY_GAP;
 		}
 
-		double plotX = getGraphAreaX();
-		double plotY = getGraphAreaY();
-		int bWidth = (int) Math.rint(getGraphAreaWidth());
-		int bHeight = (int) Math.rint(getGraphAreaHeight());
+		double plotX = bounds.getX();
+		double plotY = bounds.getY();
+		int bWidth = (int) Math.rint(bounds.getWidth());
+		int bHeight = (int) Math.rint(bounds.getHeight());
 		dw = (Math.min(bWidth, bHeight) - gap) / side;
 		if (dw < MIN_DW) {
 			bounds.setSize(width, height);
@@ -1228,414 +843,19 @@ public class PopGraph2D extends GenericPopGraph<String, Network2D> implements Sh
 	 * @param height the height of the canvas
 	 */
 	private void handleNetwork(int width, int height) {
-		double plotX = getGraphAreaX();
-		double plotW = getGraphAreaWidth();
-		double plotY = getGraphAreaY();
-		double plotH = getGraphAreaHeight();
-		int diameter = (int) Math.min(plotW, plotH);
+		double plotX = bounds.getX();
+		double plotY = bounds.getY();
+		int diameter = (int) Math.min(bounds.getWidth(), bounds.getHeight());
 		int radius = diameter / 2;
 		dR = Math.sqrt(radius * radius * 2.0 / geometry.getSize());
 		if (dR < MIN_DR) {
 			bounds.setSize(width, height);
 			return;
 		}
-		double dx = (plotW - diameter) * 0.5;
-		double dy = (plotH - diameter) * 0.5;
+		double dx = (bounds.getWidth() - diameter) * 0.5;
+		double dy = (bounds.getHeight() - diameter) * 0.5;
 		bounds.set(plotX + dx, plotY + dy, diameter, diameter);
 		style.showFrame = false;
-	}
-
-	/**
-	 * Return whether a legend can be shown for the current graph data.
-	 *
-	 * @return {@code true} if a legend should be shown
-	 */
-	protected boolean hasLegend() {
-		return style.legendPos != GraphStyle.Position.NONE && legendSpecs.mode != LegendSpecs.Mode.NONE;
-	}
-
-	/**
-	 * Format a value shown on the active gradient legend.
-	 *
-	 * @param value the legend value
-	 * @return formatted label
-	 */
-	protected String formatGradientLegendValue(double value) {
-		return (legendSpecs.inPercent ? Formatter.formatPercent(value, 1) : Formatter.formatPretty(value, 2));
-	}
-
-	/**
-	 * Draw marker ticks and labels for homogeneous-state fitness values.
-	 *
-	 * @param markers the markers to draw
-	 * @param min     minimum fitness on legend
-	 * @param max     maximum fitness on legend
-	 * @param layout  legend layout
-	 */
-	private void drawLegendMarkers(double[] markers, double min, double max, LegendLayout layout) {
-		if (markers.length == 0)
-			return;
-		double range = max - min;
-		for (double marker : markers) {
-			double frac = (range <= 0.0 ? 0.5 : (max - marker) / range);
-			double y = Math.max(layout.barY,
-					Math.min(layout.barY + layout.barHeight, layout.barY + frac * layout.barHeight));
-			g.setFillStyle(style.frameColor);
-			String label = Formatter.formatPretty(marker, 2);
-			g.fillText(label, getLegendLabelX(label, layout), y + 4.5);
-		}
-	}
-
-	/**
-	 * Get the x-coordinate for drawing vertical legend text.
-	 *
-	 * @param label  the legend label
-	 * @param layout the legend layout
-	 * @return x-coordinate for drawing the label
-	 */
-	private double getLegendLabelX(String label, LegendLayout layout) {
-		double labelX = (style.legendPos == GraphStyle.Position.EAST
-				? layout.barX + layout.barWidth + getLegendLabelPad(style.legendPos)
-				: -legendReserveWidth + style.minPadding);
-		if (style.legendPos != GraphStyle.Position.WEST)
-			return labelX;
-		return labelX + legendLabelWidth - g.measureText(label).getWidth();
-	}
-
-	/**
-	 * Get the y-coordinate for horizontal legend labels.
-	 *
-	 * @param layout        the legend layout
-	 * @param southLabelGap label offset below the bar for south legends
-	 * @param northLabelY   label y-position for north legends
-	 * @return y-coordinate for drawing the labels
-	 */
-	private double getHorizontalLegendLabelY(LegendLayout layout, double southLabelGap, double northLabelY) {
-		if (style.legendPos == GraphStyle.Position.SOUTH)
-			return layout.barY + southLabelGap;
-		switch (legendSpecs.mode) {
-			case FITNESS_GRADIENT:
-			case DENSITY_GRADIENT:
-				return layout.barY + layout.barHeight + 12.5;
-			default:
-				return northLabelY;
-		}
-	}
-
-	/**
-	 * Update legend sizing based on current font metrics and model range.
-	 */
-	protected void updateLegendLayout() {
-		legendReserveWidth = 0.0;
-		legendGraphReserveWidth = 0.0;
-		legendReserveHeight = 0.0;
-		legendGraphReserveHeight = 0.0;
-		legendLabelWidth = 0.0;
-		if (!hasLegend())
-			return;
-		LegendSpecs.Mode mode = legendSpecs.mode;
-		String font = g.getFont();
-		setFont(style.ticksLabelFont);
-		switch (mode) {
-			case FITNESS_GRADIENT:
-			case DENSITY_GRADIENT:
-				double min = legendSpecs.min;
-				double max = legendSpecs.max;
-				if (!Double.isFinite(min) || !Double.isFinite(max)) {
-					g.setFont(font);
-					return;
-				}
-				legendLabelWidth = Math.max(
-						g.measureText(formatGradientLegendValue(max)).getWidth(),
-						g.measureText(formatGradientLegendValue(min)).getWidth());
-				for (double marker : legendSpecs.markers)
-					legendLabelWidth = Math.max(legendLabelWidth,
-							g.measureText(Formatter.formatPretty(marker, 2)).getWidth());
-				break;
-			case CONTINUOUS_TRAIT:
-				legendLabelWidth = Math.max(g.measureText(formatGradientLegendValue(legendSpecs.min)).getWidth(),
-						g.measureText(formatGradientLegendValue(legendSpecs.max)).getWidth());
-				break;
-			case DISCRETE_TRAIT:
-				if (legendSpecs.discreteLabels.length == 0)
-					break;
-				for (String label : legendSpecs.discreteLabels)
-					legendLabelWidth = Math.max(legendLabelWidth, g.measureText(label).getWidth());
-				break;
-			case NONE:
-			default:
-				break;
-		}
-		g.setFont(font);
-		double offset = 0.0;
-		switch (style.legendPos) {
-			case EAST:
-			case WEST:
-				// add space if y-axis decoration and legend on same side
-				if ((style.legendPos == GraphStyle.Position.EAST) == style.showYAxisRight)
-					offset = getYAxisDecorationWidth();
-
-				legendGraphReserveWidth = style.minPadding + legendLabelWidth
-						+ getLegendLabelPad(style.legendPos) + LegendLayout.BAR_WIDTH + LegendLayout.GAP;
-				legendReserveWidth = offset + legendGraphReserveWidth;
-				double maxReserve = Math.max(0.0, bounds.getWidth() * 0.45);
-				if (legendReserveWidth > maxReserve) {
-					legendReserveWidth = maxReserve;
-					legendGraphReserveWidth = Math.max(0.0, legendReserveWidth - offset);
-					legendLabelWidth = Math.max(0.0, legendGraphReserveWidth - style.minPadding
-							- getLegendLabelPad(style.legendPos) - LegendLayout.BAR_WIDTH
-							- LegendLayout.GAP);
-				}
-				return;
-			case SOUTH:
-				offset = getLegendOffset();
-				// $FALL-THROUGH$
-			case NORTH:
-				legendGraphReserveHeight = 0.6 * LegendLayout.GAP
-						+ (mode == LegendSpecs.Mode.DISCRETE_TRAIT ? Math.max(LegendLayout.BAR_WIDTH, 16.0)
-								: LegendLayout.BAR_WIDTH + 14.0)
-						+ style.minPadding;
-				legendReserveHeight = offset + legendGraphReserveHeight;
-				if (style.legendPos == GraphStyle.Position.NORTH
-						&& (mode == LegendSpecs.Mode.FITNESS_GRADIENT || mode == LegendSpecs.Mode.DENSITY_GRADIENT))
-					legendReserveHeight -= style.minPadding;
-				if (style.legendPos != GraphStyle.Position.SOUTH)
-					legendGraphReserveHeight = legendReserveHeight;
-				return;
-			case NONE:
-			default:
-				return;
-		}
-	}
-
-	/**
-	 * Get the extra space occupied below the plot by x-axis decorations.
-	 *
-	 * @return decoration height in pixels
-	 */
-	private double getLegendOffset() {
-		double offset = 0.0;
-		if (style.showXTicks)
-			offset += style.tickLength + 2.0;
-		if (style.showXTickLabels)
-			offset += 14.0;
-		if (style.showXLabel && style.xLabel != null)
-			offset += 20.0;
-		return offset;
-	}
-
-	/**
-	 * Get the padding between legend labels and the color bar.
-	 *
-	 * @param pos the legend position
-	 * @return label padding in pixels
-	 */
-	protected double getLegendLabelPad(GraphStyle.Position pos) {
-		return (pos == GraphStyle.Position.WEST && !style.showYAxisRight ? 2.0 * LegendLayout.LABEL_PAD
-				: LegendLayout.LABEL_PAD);
-	}
-
-	/**
-	 * Estimate the horizontal space used by y-axis ticks, labels and title.
-	 *
-	 * @return y-axis decoration width in pixels
-	 */
-	private double getYAxisDecorationWidth() {
-		double width = 0.0;
-		if (style.showYLabel && style.yLabel != null)
-			width += 12.0;
-		if (style.showYTickLabels) {
-			String font = g.getFont();
-			setFont(style.ticksLabelFont);
-			if (style.percentY) {
-				int digits = style.yMax <= 1.0 ? 1 : 0;
-				width += g.measureText(Formatter.formatPercent(100, digits)).getWidth();
-			} else {
-				width += g.measureText(
-						Formatter.formatFix(-Math.max(Math.abs(style.yMin), Math.abs(style.yMax)), 2)).getWidth();
-			}
-			width += 4.0;
-			g.setFont(font);
-		}
-		if (style.showYTicks)
-			width += style.tickLength + 2.0;
-		return width;
-	}
-
-	/**
-	 * Compute layout for the legend bar and its labels.
-	 *
-	 * @param barWidth  desired bar width
-	 * @param barHeight desired bar height
-	 * @return legend layout or {@code null} if not applicable
-	 */
-	private LegendLayout getLegendLayout(double barWidth, double barHeight) {
-		double barX;
-		double barY;
-		switch (style.legendPos) {
-			case EAST:
-				barX = bounds.getWidth() + (style.showYAxisRight ? getYAxisDecorationWidth() : 0.0) + LegendLayout.GAP;
-				barY = (bounds.getHeight() - barHeight) * 0.5;
-				break;
-
-			case WEST:
-				barX = (style.showYAxisRight ? 0.0 : getYAxisDecorationWidth())
-						- LegendLayout.GAP - barWidth;
-				barY = (bounds.getHeight() - barHeight) * 0.5;
-				break;
-
-			case SOUTH:
-				barX = (bounds.getWidth() - barWidth) * 0.5;
-				barY = bounds.getHeight() + getLegendOffset() + 0.6 * LegendLayout.GAP;
-				break;
-
-			case NORTH:
-				barX = (bounds.getWidth() - barWidth) * 0.5;
-				// no gap at the top
-				barY = -0.6 * LegendLayout.GAP - barHeight;
-				switch (legendSpecs.mode) {
-					case FITNESS_GRADIENT:
-					case DENSITY_GRADIENT:
-						barY = -legendReserveHeight + style.minPadding;
-						break;
-					default:
-						break;
-				}
-				break;
-
-			default:
-				return null;
-		}
-		return new LegendLayout(barX, barY, barWidth, barHeight);
-	}
-
-	/**
-	 * Get the width of a horizontal discrete-trait legend.
-	 *
-	 * @param labels the segment labels
-	 * @return legend width capped at the full graph width
-	 */
-	private double getHorizontalDiscreteTraitLegendBarWidth(String[] labels) {
-		int nSegments = labels == null ? 0 : labels.length;
-		if (nSegments <= 0)
-			return bounds.getWidth() * 0.6;
-		double minWidth = bounds.getWidth() * 0.6;
-		double labelWidth = legendLabelWidth > 0.0 ? legendLabelWidth : 0.0;
-		double targetWidth = nSegments * (labelWidth + 2.0 * LegendLayout.LABEL_PAD);
-		return Math.min(bounds.getWidth(), Math.max(minWidth, targetWidth));
-	}
-
-	/**
-	 * Get the discrete trait legend colors from the graph's current color map.
-	 *
-	 * @return indexed colors used by the graph, or {@code null}
-	 */
-	private String[] getDiscreteTraitLegendColors() {
-		if (legendSpecs.mode != LegendSpecs.Mode.DISCRETE_TRAIT)
-			return null;
-		return ((ColorMap.Index<String>) getColorMap()).getColors();
-	}
-
-	/**
-	 * Get the width available for the graph after reserving legend space.
-	 *
-	 * @return graph area width
-	 */
-	protected double getGraphAreaWidth() {
-		return Math.max(0.0, bounds.getWidth() - (style.legendPos.isVertical() ? legendGraphReserveWidth : 0.0));
-	}
-
-	/**
-	 * Get the left edge of the graph area after reserving legend space.
-	 *
-	 * @return graph area x-coordinate
-	 */
-	protected double getGraphAreaX() {
-		if (!style.legendPos.isVertical())
-			return bounds.getX();
-		return bounds.getX() + (style.legendPos == GraphStyle.Position.WEST ? legendGraphReserveWidth : 0.0);
-	}
-
-	/**
-	 * Get the height available for the graph after reserving legend space.
-	 *
-	 * @return graph area height
-	 */
-	protected double getGraphAreaHeight() {
-		return Math.max(0.0,
-				bounds.getHeight() - (style.legendPos.isHorizontal() ? legendGraphReserveHeight : 0.0));
-	}
-
-	/**
-	 * Get the top edge of the graph area after reserving legend space.
-	 *
-	 * @return graph area y-coordinate
-	 */
-	protected double getGraphAreaY() {
-		if (!style.legendPos.isHorizontal())
-			return bounds.getY();
-		return bounds.getY() + (style.legendPos == GraphStyle.Position.NORTH ? legendGraphReserveHeight : 0.0);
-	}
-
-	/**
-	 * Legend geometry for drawing and hit-testing.
-	 */
-	private static class LegendLayout {
-
-		/**
-		 * Width of the legend color bar in pixels.
-		 */
-		static final double BAR_WIDTH = 10.0;
-
-		/**
-		 * Gap between graph and legend in pixels.
-		 */
-		static final double GAP = 16.0;
-
-		/**
-		 * Gap between legend labels and color bar in pixels.
-		 */
-		static final double LABEL_PAD = 4.0;
-
-		/**
-		 * Minimum height of one legend color band in pixels.
-		 */
-		static final double MIN_BAND_HEIGHT = 2.0;
-
-		/**
-		 * Legend bar x-coordinate.
-		 */
-		final double barX;
-
-		/**
-		 * Legend bar y-coordinate.
-		 */
-		final double barY;
-
-		/**
-		 * Legend bar width.
-		 */
-		final double barWidth;
-
-		/**
-		 * Legend bar height.
-		 */
-		final double barHeight;
-
-		/**
-		 * Create legend layout.
-		 *
-		 * @param barX      bar x-coordinate
-		 * @param barY      bar y-coordinate
-		 * @param barWidth  bar width
-		 * @param barHeight bar height
-		 */
-		LegendLayout(double barX, double barY, double barWidth, double barHeight) {
-			this.barX = barX;
-			this.barY = barY;
-			this.barWidth = barWidth;
-			this.barHeight = barHeight;
-		}
 	}
 
 	/**
@@ -1979,17 +1199,7 @@ public class PopGraph2D extends GenericPopGraph<String, Network2D> implements Sh
 		int adjY = y - (int) (style.frameWidth * zoomFactor - 0.5);
 		double sx = (viewCorner.getX() + adjX - bounds.getX()) / zoomFactor;
 		double sy = (viewCorner.getY() + adjY - bounds.getY()) / zoomFactor;
-		if (sy < 0.0 || sy > bounds.getHeight())
-			return hasLegend() && legendReserveHeight > 0.0 && style.legendPos.isHorizontal()
-					&& (style.legendPos == GraphStyle.Position.SOUTH
-							? sy <= bounds.getHeight() + legendReserveHeight && sy >= 0.0
-							: sy >= -legendReserveHeight && sy <= bounds.getHeight());
-		if (sx >= 0.0 && sx <= bounds.getWidth())
-			return true;
-		return hasLegend() && legendReserveWidth > 0.0 && style.legendPos.isVertical()
-				&& (style.legendPos == GraphStyle.Position.EAST
-						? sx <= bounds.getWidth() + legendReserveWidth && sx >= 0.0
-						: sx >= -legendReserveWidth && sx <= bounds.getWidth());
+		return sx >= 0.0 && sx <= bounds.getWidth() && sy >= 0.0 && sy <= bounds.getHeight();
 	}
 
 	/**

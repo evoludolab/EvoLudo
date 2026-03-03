@@ -59,6 +59,14 @@ public class DistrGraph2D extends PopGraph2D {
 		drawSquareContent();
 		g.restore();
 		drawFrameOverlay();
+		legend.draw();
+	}
+
+	@Override
+	public String getTooltipAt(int x, int y) {
+		String tip = super.getTooltipAt(x, y);
+		element.removeClassName(EVOLUDO_CURSOR_NODE);
+		return tip;
 	}
 
 	/**

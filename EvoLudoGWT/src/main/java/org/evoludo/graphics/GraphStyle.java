@@ -79,7 +79,7 @@ public class GraphStyle {
 	 * The minimum padding (in pixels) between boundaries of the HTML element and
 	 * the graph.
 	 */
-	public int minPadding = 4;
+	public int minPadding = 2;
 
 	/**
 	 * The tick length in pixels.

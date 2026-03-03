@@ -163,156 +163,6 @@ public abstract class GenericPopGraph<T, N extends Network<?>> extends AbstractG
 		implements Network.LayoutListener, Zooming, DoubleClickHandler {
 
 	/**
-	 * Semantic legend data prepared by views and consumed by graphs for rendering,
-	 * sizing and hit-testing.
-	 * <p>
-	 * A {@code LegendSpecs} instance contains the non-geometric meaning of a
-	 * legend: its mode, numeric range, marker annotations, tooltip prefix and
-	 * optional discrete entry labels. Views compile this information
-	 * from model and module state and push it into graphs via
-	 * {@link #setLegendSpecs(LegendSpecs)}. Graphs then combine it with local
-	 * layout state such as bounds, zoom, padding and the active color map.
-	 * <p>
-	 * For gradient legends, {@link #min}, {@link #max}, {@link #markers} and
-	 * {@link #inPercent} are relevant. Endpoint labels and tooltip labels are
-	 * derived by graphs from the numeric range, formatting flag and
-	 * {@link #mode}. For discrete legends, {@link #discreteLabels} and
-	 * {@link #tooltipLabel} are used. The
-	 * {@link Mode#NONE} singleton returned by {@link #none()} disables legend
-	 * rendering.
-	 */
-	public static final class LegendSpecs {
-
-		/**
-		 * The supported semantic legend modes.
-		 */
-		public enum Mode {
-			/**
-			 * No legend is available for the current graph.
-			 */
-			NONE,
-
-			/**
-			 * A continuous gradient legend for fitness values.
-			 */
-			FITNESS_GRADIENT,
-
-			/**
-			 * A continuous gradient legend for density or frequency values, as used by
-			 * distribution views.
-			 */
-			DENSITY_GRADIENT,
-
-			/**
-			 * A continuous gradient legend for a single continuous trait.
-			 */
-			CONTINUOUS_TRAIT,
-
-			/**
-			 * A segmented legend for indexed discrete trait values.
-			 */
-			DISCRETE_TRAIT
-		}
-
-		/**
-		 * Shared empty marker array for legends without annotations.
-		 */
-		private static final double[] NO_MARKERS = new double[0];
-
-		/**
-		 * Shared empty label array for legends without discrete entries.
-		 */
-		private static final String[] NO_LABELS = new String[0];
-
-		/**
-		 * Singleton legend specs representing the absence of a legend.
-		 */
-		private static final LegendSpecs NONE = new LegendSpecs(Mode.NONE, Double.NaN, Double.NaN, NO_MARKERS, null,
-				false, NO_LABELS);
-
-		/**
-		 * The legend mode.
-		 */
-		public final Mode mode;
-
-		/**
-		 * The minimum value for gradient legends.
-		 */
-		public final double min;
-
-		/**
-		 * The maximum value for gradient legends.
-		 */
-		public final double max;
-
-		/**
-		 * Marker values to annotate on gradient legends.
-		 */
-		public final double[] markers;
-
-		/**
-		 * Tooltip label prefix, such as {@code "fitness"} or {@code "trait"}.
-		 */
-		public final String tooltipLabel;
-
-		/**
-		 * Flag indicating that gradient values should be formatted as percentages.
-		 */
-		public final boolean inPercent;
-
-		/**
-		 * Labels for discrete legend entries.
-		 */
-		public final String[] discreteLabels;
-
-		private LegendSpecs(Mode mode, double min, double max, double[] markers, String tooltipLabel,
-				boolean percentValues, String[] discreteLabels) {
-			this.mode = mode;
-			this.min = min;
-			this.max = max;
-			this.markers = markers == null ? NO_MARKERS : markers.clone();
-			this.tooltipLabel = tooltipLabel;
-			this.inPercent = percentValues;
-			this.discreteLabels = discreteLabels == null ? NO_LABELS : discreteLabels.clone();
-		}
-
-		/**
-		 * Get the empty legend specs.
-		 *
-		 * @return empty legend specs
-		 */
-		public static LegendSpecs none() {
-			return NONE;
-		}
-
-		/**
-		 * Create gradient legend specs.
-		 *
-		 * @param mode         the gradient mode
-		 * @param min          minimum value
-		 * @param max          maximum value
-		 * @param markers      marker values
-		 * @param inPercent    {@code true} to format sampled values as percentages
-		 * @return legend specs
-		 */
-		public static LegendSpecs gradient(Mode mode, double min, double max, double[] markers, boolean inPercent) {
-			return new LegendSpecs(mode, min, max, markers, null, inPercent, null);
-		}
-
-		/**
-		 * Create discrete legend specs.
-		 *
-		 * @param labels       labels for discrete entries
-		 * @param tooltipLabel tooltip label prefix
-		 * @return legend specs
-		 */
-		public static LegendSpecs discrete(String[] labels, String tooltipLabel) {
-			return new LegendSpecs(Mode.DISCRETE_TRAIT, Double.NaN, Double.NaN, null, tooltipLabel, false,
-					labels);
-		}
-	}
-
-	/**
 	 * Views implementing this interface advertise that their population graphs
 	 * should expose the debug submenu.
 	 */
@@ -372,11 +222,6 @@ public abstract class GenericPopGraph<T, N extends Network<?>> extends AbstractG
 	 * The map for translating discrete traits into colors.
 	 */
 	protected ColorMap<T> colorMap;
-
-	/**
-	 * Semantic legend data supplied by the view.
-	 */
-	protected LegendSpecs legendSpecs = LegendSpecs.none();
 
 	/**
 	 * The label of the graph.
@@ -467,25 +312,6 @@ public abstract class GenericPopGraph<T, N extends Network<?>> extends AbstractG
 	 */
 	public void setColorMap(ColorMap<T> colorMap) {
 		this.colorMap = colorMap;
-	}
-
-	/**
-	 * Set the semantic legend data for this graph.
-	 *
-	 * @param legendSpecs legend data prepared by the view
-	 */
-	public void setLegendSpecs(LegendSpecs legendSpecs) {
-		this.legendSpecs = (legendSpecs == null ? LegendSpecs.none() : legendSpecs);
-		calcBounds();
-	}
-
-	/**
-	 * Get the semantic legend data for this graph.
-	 *
-	 * @return the current legend data
-	 */
-	public LegendSpecs getLegendSpecs() {
-		return legendSpecs;
 	}
 
 	/**

@@ -102,6 +102,13 @@ public class PopGraph1D extends PopGraph2D {
 		super.update(isNext);
 	}
 
+	@Override
+	public String getTooltipAt(int x, int y) {
+		String tip = super.getTooltipAt(x, y);
+		element.removeClassName(EVOLUDO_CURSOR_NODE);
+		return tip;
+	}
+
 	/**
 	 * Decode the probability mass for a bin from a color-encoded histogram row.
 	 *
@@ -272,6 +279,7 @@ public class PopGraph1D extends PopGraph2D {
 		drawLinearContent();
 		g.restore();
 		drawFrameOverlay();
+		legend.draw();
 	}
 
 	/**
@@ -403,11 +411,10 @@ public class PopGraph1D extends PopGraph2D {
 		dh = 0;
 		dR = 0.0;
 
-		double plotX = getGraphAreaX();
-		double plotY = getGraphAreaY();
-		int bWidth = (int) Math.rint(getGraphAreaWidth());
+		double plotX = bounds.getX();
+		int bWidth = (int) Math.rint(bounds.getWidth());
 		dw = bWidth / geometry.getSize();
-		int bHeight = (int) Math.rint(getGraphAreaHeight());
+		int bHeight = (int) Math.rint(bounds.getHeight());
 		dh = dw;
 		int steps = (dh == 0) ? 0 : bHeight / dh;
 		if (dw < MIN_DW || steps == 0) {
@@ -420,7 +427,8 @@ public class PopGraph1D extends PopGraph2D {
 		int adjh = bHeight - (bHeight % dh);
 		int dx = (bWidth - adjw) / 2;
 		int dy = (bHeight - adjh) / 2;
-		bounds.set(plotX + dx, plotY + dy, adjw, adjh);
+		bounds.set(plotX + dx, bounds.getY() + dy, adjw, adjh);
+		legend.setBounds(width, height, bounds);
 		style.setYRange(steps - 1);
 		style.showFrame = true;
 	}

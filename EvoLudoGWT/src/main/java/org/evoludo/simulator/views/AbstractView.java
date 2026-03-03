@@ -906,9 +906,11 @@ public abstract class AbstractView<G extends AbstractGraph<?>> extends Composite
 	public void onResize() {
 		if (getOffsetWidth() == 0 || getOffsetHeight() == 0)
 			return;
+		engine.guiReady();
+		if (!isLoaded)
+			return;
 		for (G graph : graphs)
 			graph.onResize();
-		engine.guiReady();
 		if (isActive)
 			scheduleUpdate(true);
 	}

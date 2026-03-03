@@ -1212,6 +1212,7 @@ public abstract class AbstractGraph<B> extends FocusPanel
 		}
 		adjustBoundsForLabels();
 		adjustBoundsForTickLabels();
+		adjustBoundsForLegend();
 		if (style.showXTicks)
 			bounds.adjust(0, 0, 0, -(style.tickLength + 2));
 		if (style.showYTicks)
@@ -1286,6 +1287,10 @@ public abstract class AbstractGraph<B> extends FocusPanel
 			bounds.adjust(0, 0, -padding, 0);
 		else
 			bounds.adjust(padding, 0, -padding, 0);
+	}
+
+	protected void adjustBoundsForLegend() {
+		// hook for subclasses that implement a legend
 	}
 
 	/**

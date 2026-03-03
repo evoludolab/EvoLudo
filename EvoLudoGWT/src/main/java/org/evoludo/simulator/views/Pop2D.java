@@ -35,7 +35,7 @@ import java.util.List;
 
 import org.evoludo.graphics.GraphStyle;
 import org.evoludo.graphics.GenericPopGraph.HasDebugMenu;
-import org.evoludo.graphics.GenericPopGraph.LegendSpecs;
+import org.evoludo.graphics.Legend2D.LegendSpecs;
 import org.evoludo.graphics.PopGraph1D;
 import org.evoludo.graphics.PopGraph2D;
 import org.evoludo.simulator.ColorMap;
@@ -370,17 +370,16 @@ public class Pop2D extends GenericPop<String, Network2D, PopGraph2D> implements 
 					return LegendSpecs.none();
 				double min = model.getMinFitness(module.getId());
 				double max = model.getMaxFitness(module.getId());
-				return LegendSpecs.gradient(LegendSpecs.Mode.FITNESS_GRADIENT, min, max,
-						collectFitnessLegendMarkers(module), false);
+				return LegendSpecs.fitnessGradient(min, max, collectFitnessLegendMarkers(module));
 			case TRAIT:
 				if (module instanceof Discrete) {
 					if (!(colorMap instanceof ColorMap.Index))
 						return LegendSpecs.none();
-					return LegendSpecs.discrete(getDiscreteTraitLegendLabels(module), "trait");
+					return LegendSpecs.discreteTrait(getDiscreteTraitLegendLabels(module));
 				}
 				if (module instanceof Continuous && module.getNTraits() == 1
 						&& colorMap instanceof ColorMap.Gradient1D) {
-					return LegendSpecs.gradient(LegendSpecs.Mode.CONTINUOUS_TRAIT, 0.0, 1.0, new double[0], false);
+					return LegendSpecs.continuousTrait();
 				}
 				return LegendSpecs.none();
 			default:
