@@ -2361,6 +2361,20 @@ public class ArrayMath {
 	/**
 	 * GWT has an aversion to clone()ing - provide alternatives.
 	 * 
+	 * @param <T>  the reference type stored in the array
+	 * @param orig the object array to clone.
+	 * @return the clone of array <code>orig</code>, or {@code null} if
+	 *         <code>orig</code> is {@code null}.
+	 */
+	public static <T> T[] clone(T[] orig) {
+		if (orig == null)
+			return null;
+		return Arrays.copyOf(orig, orig.length);
+	}
+
+	/**
+	 * GWT has an aversion to clone()ing - provide alternatives.
+	 * 
 	 * @param orig the two dimensional array (matrix) to clone.
 	 * @return the clone of matrix <code>orig</code>.
 	 */
