@@ -30,8 +30,6 @@
 
 package org.evoludo.graphics;
 
-import java.util.ArrayList;
-
 import org.evoludo.geom.Node2D;
 import org.evoludo.geom.Path2D;
 import org.evoludo.geom.Point2D;
@@ -43,12 +41,6 @@ import org.evoludo.simulator.Network2D;
 import org.evoludo.simulator.geometries.AbstractGeometry;
 import org.evoludo.simulator.geometries.GeometryType;
 import org.evoludo.simulator.geometries.HierarchicalGeometry;
-import org.evoludo.simulator.models.CModel;
-import org.evoludo.simulator.models.DModel;
-import org.evoludo.simulator.models.Model;
-import org.evoludo.simulator.modules.Continuous;
-import org.evoludo.simulator.modules.Discrete;
-import org.evoludo.simulator.modules.Map2Fitness;
 import org.evoludo.simulator.modules.Module;
 import org.evoludo.simulator.views.AbstractView;
 import org.evoludo.simulator.views.BasicTooltipProvider;
@@ -238,7 +230,7 @@ public class PopGraph2D extends GenericPopGraph<String, Network2D> implements Sh
 	 * @param menu the context menu to populate
 	 */
 	private void addLegendPositionMenu(ContextMenu menu) {
-		if (getLegendMode() == LegendMode.NONE)
+		if (legendSpecs.mode == LegendSpecs.Mode.NONE)
 			return;
 		ContextMenu legendMenu = new ContextMenu(menu);
 		addLegendPositionItem(legendMenu, "None", GraphStyle.Position.NONE);
@@ -551,14 +543,15 @@ public class PopGraph2D extends GenericPopGraph<String, Network2D> implements Sh
 	protected void drawLegend() {
 		if (!hasLegend() || (legendReserveWidth <= 0.0 && legendReserveHeight <= 0.0))
 			return;
-		switch (getLegendMode()) {
+		switch (legendSpecs.mode) {
 			case FITNESS_GRADIENT:
 			case DENSITY_GRADIENT:
 				drawGradientLegend();
 				return;
 			case CONTINUOUS_TRAIT:
-				drawGradientLegend((ColorMap.Gradient1D<String>) getColorMap(), 0.0, 1.0, new double[0],
-						"0", "1");
+				drawGradientLegend((ColorMap.Gradient1D<String>) getColorMap(), legendSpecs.min, legendSpecs.max,
+						legendSpecs.markers, formatGradientLegendValue(legendSpecs.min),
+						formatGradientLegendValue(legendSpecs.max));
 				return;
 			case DISCRETE_TRAIT:
 				drawDiscreteTraitLegend();
@@ -595,11 +588,11 @@ public class PopGraph2D extends GenericPopGraph<String, Network2D> implements Sh
 	private void drawGradientLegend() {
 		if (!(getColorMap() instanceof ColorMap.Gradient1D))
 			return;
-		double min = getGradientLegendMin();
-		double max = getGradientLegendMax();
+		double min = legendSpecs.min;
+		double max = legendSpecs.max;
 		if (!Double.isFinite(min) || !Double.isFinite(max))
 			return;
-		double[] markers = getLegendMode() == LegendMode.FITNESS_GRADIENT ? collectLegendMarkers() : new double[0];
+		double[] markers = legendSpecs.markers;
 		drawGradientLegend((ColorMap.Gradient1D<String>) getColorMap(), min, max, markers,
 				formatGradientLegendValue(min), formatGradientLegendValue(max));
 	}
@@ -684,7 +677,9 @@ public class PopGraph2D extends GenericPopGraph<String, Network2D> implements Sh
 	 */
 	private void drawDiscreteTraitLegend() {
 		String[] colors = getDiscreteTraitLegendColors();
-		String[] labels = getDiscreteTraitLegendLabels();
+		String[] labels = legendSpecs.discreteLabels;
+		if (labels.length == 0)
+			labels = null;
 		if (colors == null || labels == null)
 			return;
 		int nSegments = Math.min(colors.length, labels.length);
@@ -753,7 +748,7 @@ public class PopGraph2D extends GenericPopGraph<String, Network2D> implements Sh
 	 */
 	private String getLegendTooltipAt(int x, int y) {
 		element.removeClassName(EVOLUDO_CURSOR_NODE);
-		switch (getLegendMode()) {
+		switch (legendSpecs.mode) {
 			case FITNESS_GRADIENT:
 			case DENSITY_GRADIENT:
 				return getGradientLegendTooltipAt(x, y);
@@ -777,15 +772,26 @@ public class PopGraph2D extends GenericPopGraph<String, Network2D> implements Sh
 	private String getGradientLegendTooltipAt(int x, int y) {
 		if (!(getColorMap() instanceof ColorMap.Gradient1D))
 			return null;
-		double min = getGradientLegendMin();
-		double max = getGradientLegendMax();
+		double min = legendSpecs.min;
+		double max = legendSpecs.max;
 		if (!Double.isFinite(min) || !Double.isFinite(max))
 			return null;
 		double value = getGradientLegendValueAt(x, y, min, max);
 		if (!Double.isFinite(value))
 			return null;
 		String color = ((ColorMap.Gradient1D<String>) getColorMap()).translate(value);
-		String label = getLegendMode() == LegendMode.FITNESS_GRADIENT ? "fitness" : "frequency";
+		String label;
+		switch (legendSpecs.mode) {
+			case FITNESS_GRADIENT:
+				label = "fitness";
+				break;
+			case DENSITY_GRADIENT:
+				label = "frequency";
+				break;
+			default:
+				label = "value";
+				break;
+		}
 		return label + ": " + BasicTooltipProvider.SPAN_COLOR + color
 				+ BasicTooltipProvider.TABLE_CELL_BULLET
 				+ formatGradientLegendValue(value);
@@ -799,18 +805,21 @@ public class PopGraph2D extends GenericPopGraph<String, Network2D> implements Sh
 	 * @return tooltip HTML or {@code null}
 	 */
 	private String getTraitLegendTooltipAt(int x, int y) {
-		switch (getLegendMode()) {
+		String label = legendSpecs.tooltipLabel == null ? "trait" : legendSpecs.tooltipLabel;
+		switch (legendSpecs.mode) {
 			case CONTINUOUS_TRAIT:
 				ColorMap.Gradient1D<String> gradient = (ColorMap.Gradient1D<String>) getColorMap();
-				double value = getGradientLegendValueAt(x, y, 0.0, 1.0);
+				double value = getGradientLegendValueAt(x, y, legendSpecs.min, legendSpecs.max);
 				if (!Double.isFinite(value))
 					return null;
 				String color = gradient.translate(value);
-				return "trait: " + BasicTooltipProvider.SPAN_COLOR + color + BasicTooltipProvider.TABLE_CELL_BULLET
+				return label + ": " + BasicTooltipProvider.SPAN_COLOR + color + BasicTooltipProvider.TABLE_CELL_BULLET
 						+ Formatter.formatPretty(value, 2);
 			case DISCRETE_TRAIT:
 				String[] colors = getDiscreteTraitLegendColors();
-				String[] labels = getDiscreteTraitLegendLabels();
+				String[] labels = legendSpecs.discreteLabels;
+				if (labels.length == 0)
+					labels = null;
 				if (colors == null || labels == null)
 					return null;
 				int nSegments = Math.min(colors.length, labels.length);
@@ -821,7 +830,7 @@ public class PopGraph2D extends GenericPopGraph<String, Network2D> implements Sh
 				int idx = getLegendBandIndexAt(x, y, nSegments, layout);
 				if (idx < 0)
 					return null;
-				return "trait: " + BasicTooltipProvider.SPAN_COLOR + colors[idx]
+				return label + ": " + BasicTooltipProvider.SPAN_COLOR + colors[idx]
 						+ BasicTooltipProvider.TABLE_CELL_BULLET + labels[idx];
 			case NONE:
 			case FITNESS_GRADIENT:
@@ -1237,108 +1246,12 @@ public class PopGraph2D extends GenericPopGraph<String, Network2D> implements Sh
 	}
 
 	/**
-	 * The different legend contents supported by this graph.
-	 */
-	private enum LegendMode {
-		/**
-		 * No legend is available (or requested) for the current graph data.
-		 */
-		NONE,
-
-		/**
-		 * A gradient legend for fitness values.
-		 */
-		FITNESS_GRADIENT,
-
-		/**
-		 * A gradient legend for density/frequency values in distribution views.
-		 */
-		DENSITY_GRADIENT,
-
-		/**
-		 * A gradient legend for a single continuous trait on {@code [0,1]}.
-		 */
-		CONTINUOUS_TRAIT,
-
-		/**
-		 * A segmented legend for indexed discrete traits.
-		 */
-		DISCRETE_TRAIT
-	}
-
-	/**
 	 * Return whether a legend can be shown for the current graph data.
 	 *
 	 * @return {@code true} if a legend should be shown
 	 */
 	protected boolean hasLegend() {
-		return style.legendPos != GraphStyle.Position.NONE && getLegendMode() != LegendMode.NONE;
-	}
-
-	/**
-	 * Get the currently active legend mode.
-	 *
-	 * @return legend mode
-	 */
-	private LegendMode getLegendMode() {
-		ColorMap<String> cmap = getColorMap();
-		switch (view.getType()) {
-			case FITNESS:
-				if (cmap instanceof ColorMap.Gradient1D)
-					return LegendMode.FITNESS_GRADIENT;
-				return LegendMode.NONE;
-
-			case TRAIT:
-				if (module instanceof Discrete) {
-					if (cmap instanceof ColorMap.Index)
-						return LegendMode.DISCRETE_TRAIT;
-					return LegendMode.NONE;
-				}
-				if (cmap instanceof ColorMap.Gradient1D) {
-					if (view instanceof Distribution)
-						return LegendMode.DENSITY_GRADIENT;
-					if (module instanceof Continuous && module.getNTraits() == 1)
-						return LegendMode.CONTINUOUS_TRAIT;
-					return LegendMode.NONE;
-				}
-				// $FALL-THROUGH$
-			default:
-				return LegendMode.NONE;
-		}
-	}
-
-	/**
-	 * Get the minimum value shown on the active gradient legend.
-	 *
-	 * @return the legend minimum or {@link Double#NaN}
-	 */
-	protected double getGradientLegendMin() {
-		switch (getLegendMode()) {
-			case FITNESS_GRADIENT:
-				Model model = view.getModel();
-				return model == null ? Double.NaN : model.getMinFitness(module.getId());
-			case DENSITY_GRADIENT:
-				return 0.0;
-			default:
-				return Double.NaN;
-		}
-	}
-
-	/**
-	 * Get the maximum value shown on the active gradient legend.
-	 *
-	 * @return the legend maximum or {@link Double#NaN}
-	 */
-	protected double getGradientLegendMax() {
-		switch (getLegendMode()) {
-			case FITNESS_GRADIENT:
-				Model model = view.getModel();
-				return model == null ? Double.NaN : model.getMaxFitness(module.getId());
-			case DENSITY_GRADIENT:
-				return ((Distribution) view).getLegendMax(module.getId());
-			default:
-				return Double.NaN;
-		}
+		return style.legendPos != GraphStyle.Position.NONE && legendSpecs.mode != LegendSpecs.Mode.NONE;
 	}
 
 	/**
@@ -1348,56 +1261,7 @@ public class PopGraph2D extends GenericPopGraph<String, Network2D> implements Sh
 	 * @return formatted label
 	 */
 	protected String formatGradientLegendValue(double value) {
-		return getLegendMode() == LegendMode.FITNESS_GRADIENT
-				? Formatter.formatPretty(value, 2)
-				: Formatter.formatPercent(value, 1);
-	}
-
-	/**
-	 * Collect homogeneous-state markers for the fitness legend.
-	 *
-	 * @return legend marker values
-	 */
-	protected double[] collectLegendMarkers() {
-		ArrayList<Double> markers = new ArrayList<>();
-		Model model = view.getModel();
-		if (!model.isIBS())
-			return new double[0];
-		Map2Fitness map2fit = module.getMap2Fitness();
-		int id = module.getId();
-		if (module instanceof Discrete && model instanceof DModel) {
-			DModel dmodel = (DModel) model;
-			for (int n = 0; n < module.getNTraits(); n++) {
-				double mono = dmodel.getMonoScore(id, n);
-				if (Double.isNaN(mono))
-					continue;
-				addLegendMarker(markers, map2fit.map(mono));
-			}
-		} else if (module instanceof Continuous && model instanceof CModel) {
-			CModel cmodel = (CModel) model;
-			addLegendMarker(markers, map2fit.map(cmodel.getMinMonoScore(id)));
-			addLegendMarker(markers, map2fit.map(cmodel.getMaxMonoScore(id)));
-		}
-		double[] values = new double[markers.size()];
-		for (int i = 0; i < markers.size(); i++)
-			values[i] = markers.get(i);
-		return values;
-	}
-
-	/**
-	 * Add a homogeneous-state marker to the legend.
-	 *
-	 * @param markers list of markers
-	 * @param value   the mapped fitness value
-	 */
-	private void addLegendMarker(ArrayList<Double> markers, double value) {
-		if (!Double.isFinite(value))
-			return;
-		for (double marker : markers) {
-			if (Math.abs(marker - value) <= 1e-8 * Math.max(1.0, Math.abs(value)))
-				return;
-		}
-		markers.add(value);
+		return (legendSpecs.inPercent ? Formatter.formatPercent(value, 1) : Formatter.formatPretty(value, 2));
 	}
 
 	/**
@@ -1449,7 +1313,7 @@ public class PopGraph2D extends GenericPopGraph<String, Network2D> implements Sh
 	private double getHorizontalLegendLabelY(LegendLayout layout, double southLabelGap, double northLabelY) {
 		if (style.legendPos == GraphStyle.Position.SOUTH)
 			return layout.barY + southLabelGap;
-		switch (getLegendMode()) {
+		switch (legendSpecs.mode) {
 			case FITNESS_GRADIENT:
 			case DENSITY_GRADIENT:
 				return layout.barY + layout.barHeight + 12.5;
@@ -1469,14 +1333,14 @@ public class PopGraph2D extends GenericPopGraph<String, Network2D> implements Sh
 		legendLabelWidth = 0.0;
 		if (!hasLegend())
 			return;
-		LegendMode mode = getLegendMode();
+		LegendSpecs.Mode mode = legendSpecs.mode;
 		String font = g.getFont();
 		setFont(style.ticksLabelFont);
 		switch (mode) {
 			case FITNESS_GRADIENT:
 			case DENSITY_GRADIENT:
-				double min = getGradientLegendMin();
-				double max = getGradientLegendMax();
+				double min = legendSpecs.min;
+				double max = legendSpecs.max;
 				if (!Double.isFinite(min) || !Double.isFinite(max)) {
 					g.setFont(font);
 					return;
@@ -1484,15 +1348,18 @@ public class PopGraph2D extends GenericPopGraph<String, Network2D> implements Sh
 				legendLabelWidth = Math.max(
 						g.measureText(formatGradientLegendValue(max)).getWidth(),
 						g.measureText(formatGradientLegendValue(min)).getWidth());
-				for (double marker : mode == LegendMode.FITNESS_GRADIENT ? collectLegendMarkers() : new double[0])
+				for (double marker : legendSpecs.markers)
 					legendLabelWidth = Math.max(legendLabelWidth,
 							g.measureText(Formatter.formatPretty(marker, 2)).getWidth());
 				break;
 			case CONTINUOUS_TRAIT:
-				legendLabelWidth = Math.max(g.measureText("0").getWidth(), g.measureText("1").getWidth());
+				legendLabelWidth = Math.max(g.measureText(formatGradientLegendValue(legendSpecs.min)).getWidth(),
+						g.measureText(formatGradientLegendValue(legendSpecs.max)).getWidth());
 				break;
 			case DISCRETE_TRAIT:
-				for (String label : getDiscreteTraitLegendLabels())
+				if (legendSpecs.discreteLabels.length == 0)
+					break;
+				for (String label : legendSpecs.discreteLabels)
 					legendLabelWidth = Math.max(legendLabelWidth, g.measureText(label).getWidth());
 				break;
 			case NONE:
@@ -1525,12 +1392,12 @@ public class PopGraph2D extends GenericPopGraph<String, Network2D> implements Sh
 				// $FALL-THROUGH$
 			case NORTH:
 				legendGraphReserveHeight = 0.6 * LegendLayout.GAP
-						+ (mode == LegendMode.DISCRETE_TRAIT ? Math.max(LegendLayout.BAR_WIDTH, 16.0)
+						+ (mode == LegendSpecs.Mode.DISCRETE_TRAIT ? Math.max(LegendLayout.BAR_WIDTH, 16.0)
 								: LegendLayout.BAR_WIDTH + 14.0)
 						+ style.minPadding;
 				legendReserveHeight = offset + legendGraphReserveHeight;
 				if (style.legendPos == GraphStyle.Position.NORTH
-						&& (mode == LegendMode.FITNESS_GRADIENT || mode == LegendMode.DENSITY_GRADIENT))
+						&& (mode == LegendSpecs.Mode.FITNESS_GRADIENT || mode == LegendSpecs.Mode.DENSITY_GRADIENT))
 					legendReserveHeight -= style.minPadding;
 				if (style.legendPos != GraphStyle.Position.SOUTH)
 					legendGraphReserveHeight = legendReserveHeight;
@@ -1626,7 +1493,7 @@ public class PopGraph2D extends GenericPopGraph<String, Network2D> implements Sh
 				barX = (bounds.getWidth() - barWidth) * 0.5;
 				// no gap at the top
 				barY = -0.6 * LegendLayout.GAP - barHeight;
-				switch (getLegendMode()) {
+				switch (legendSpecs.mode) {
 					case FITNESS_GRADIENT:
 					case DENSITY_GRADIENT:
 						barY = -legendReserveHeight + style.minPadding;
@@ -1640,24 +1507,6 @@ public class PopGraph2D extends GenericPopGraph<String, Network2D> implements Sh
 				return null;
 		}
 		return new LegendLayout(barX, barY, barWidth, barHeight);
-	}
-
-	/**
-	 * Get the discrete trait legend labels.
-	 *
-	 * @return labels for the indexed trait colors, or {@code null}
-	 */
-	private String[] getDiscreteTraitLegendLabels() {
-		if (getLegendMode() != LegendMode.DISCRETE_TRAIT)
-			return null;
-		int nTraits = module.getNTraits();
-		String[] names = module.getTraitNames();
-		String[] labels = new String[2 * nTraits];
-		for (int n = 0; n < nTraits; n++) {
-			labels[n] = names[n];
-			labels[nTraits + n] = "New " + names[n];
-		}
-		return labels;
 	}
 
 	/**
@@ -1682,7 +1531,7 @@ public class PopGraph2D extends GenericPopGraph<String, Network2D> implements Sh
 	 * @return indexed colors used by the graph, or {@code null}
 	 */
 	private String[] getDiscreteTraitLegendColors() {
-		if (getLegendMode() != LegendMode.DISCRETE_TRAIT)
+		if (legendSpecs.mode != LegendSpecs.Mode.DISCRETE_TRAIT)
 			return null;
 		return ((ColorMap.Index<String>) getColorMap()).getColors();
 	}

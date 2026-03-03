@@ -35,6 +35,7 @@ import java.util.List;
 
 import org.evoludo.graphics.AbstractGraph;
 import org.evoludo.graphics.DistrGraph2D;
+import org.evoludo.graphics.GenericPopGraph.LegendSpecs;
 import org.evoludo.graphics.GraphStyle;
 import org.evoludo.graphics.PopGraph1D;
 import org.evoludo.graphics.PopGraph2D;
@@ -262,6 +263,10 @@ public class Distribution extends AbstractView<PopGraph2D> implements TooltipPro
 		GraphStyle style = graph.getStyle();
 		graph.setColorMap(new ColorMapCSS.Gradient1D(
 				new Color[] { Color.WHITE, Color.BLACK, Color.YELLOW, Color.RED }, 500));
+		graph.setLegendSpecs(
+				LegendSpecs.gradient(LegendSpecs.Mode.DENSITY_GRADIENT,
+						0.0, legendMax[graph.getModule().getId()],
+						new double[0], true));
 		double min = module.getTraitMin()[traitXIdx];
 		double max = module.getTraitMax()[traitXIdx];
 		if (Math.abs(min - style.xMin) > 1e-6 ||
@@ -334,9 +339,12 @@ public class Distribution extends AbstractView<PopGraph2D> implements TooltipPro
 			((CModel) model).get2DTraitHistogramData(graph.getModule().getId(),
 					bins, traitXIdx, traitYIdx);
 			ColorMap.Gradient1D<String> cMap = (ColorMap.Gradient1D<String>) graph.getColorMap();
-			double max = ArrayMath.max(bins);
+			double max = Math.max(ArrayMath.max(bins), 0.0);
 			legendMax[graph.getModule().getId()] = max;
 			cMap.setRange(0.0, max);
+			graph.setLegendSpecs(LegendSpecs.gradient(LegendSpecs.Mode.DENSITY_GRADIENT,
+					0.0, max,
+					new double[0], true));
 			cMap.translate(bins, graph.getData());
 			graph.update(isNext);
 			updated = true;

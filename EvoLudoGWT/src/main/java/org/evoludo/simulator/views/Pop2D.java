@@ -35,6 +35,7 @@ import java.util.List;
 
 import org.evoludo.graphics.GraphStyle;
 import org.evoludo.graphics.GenericPopGraph.HasDebugMenu;
+import org.evoludo.graphics.GenericPopGraph.LegendSpecs;
 import org.evoludo.graphics.PopGraph1D;
 import org.evoludo.graphics.PopGraph2D;
 import org.evoludo.simulator.ColorMap;
@@ -346,11 +347,109 @@ public class Pop2D extends GenericPop<String, Network2D, PopGraph2D> implements 
 			Module<?> module = graph.getModule();
 			ColorMap<String> cMap = createColorMap(module);
 			graph.setColorMap(module.processColorMap(cMap));
+			graph.setLegendSpecs(createLegendSpecs(graph));
 
 			if (hard)
 				graph.reset();
 		}
 		update(hard);
+	}
+
+	/**
+	 * Compile semantic legend data for the given graph.
+	 *
+	 * @param graph the graph to configure
+	 * @return legend specs for the graph
+	 */
+	private LegendSpecs createLegendSpecs(PopGraph2D graph) {
+		Module<?> module = graph.getModule();
+		ColorMap<String> colorMap = graph.getColorMap();
+		switch (type) {
+			case FITNESS:
+				if (!(colorMap instanceof ColorMap.Gradient1D))
+					return LegendSpecs.none();
+				double min = model.getMinFitness(module.getId());
+				double max = model.getMaxFitness(module.getId());
+				return LegendSpecs.gradient(LegendSpecs.Mode.FITNESS_GRADIENT, min, max,
+						collectFitnessLegendMarkers(module), false);
+			case TRAIT:
+				if (module instanceof Discrete) {
+					if (!(colorMap instanceof ColorMap.Index))
+						return LegendSpecs.none();
+					return LegendSpecs.discrete(getDiscreteTraitLegendLabels(module), "trait");
+				}
+				if (module instanceof Continuous && module.getNTraits() == 1
+						&& colorMap instanceof ColorMap.Gradient1D) {
+					return LegendSpecs.gradient(LegendSpecs.Mode.CONTINUOUS_TRAIT, 0.0, 1.0, new double[0], false);
+				}
+				return LegendSpecs.none();
+			default:
+				return LegendSpecs.none();
+		}
+	}
+
+	/**
+	 * Collect marker values for the fitness legend.
+	 *
+	 * @param module the module providing the monomorphic scores
+	 * @return marker values in legend coordinates
+	 */
+	private double[] collectFitnessLegendMarkers(Module<?> module) {
+		if (!model.isIBS())
+			return new double[0];
+		double[] values = new double[module.getNTraits() == 0 ? 0 : module.getNTraits()];
+		int count = 0;
+		Map2Fitness map2fit = module.getMap2Fitness();
+		int id = module.getId();
+		if (module instanceof Discrete && model instanceof DModel) {
+			DModel dmodel = (DModel) model;
+			for (int n = 0; n < module.getNTraits(); n++) {
+				double mono = dmodel.getMonoScore(id, n);
+				if (!Double.isFinite(mono))
+					continue;
+				double marker = map2fit.map(mono);
+				boolean duplicate = false;
+				for (int i = 0; i < count; i++) {
+					if (Math.abs(values[i] - marker) <= 1e-8 * Math.max(1.0, Math.abs(marker))) {
+						duplicate = true;
+						break;
+					}
+				}
+				if (!duplicate)
+					values[count++] = marker;
+			}
+		} else if (module instanceof Continuous && model instanceof CModel) {
+			CModel cmodel = (CModel) model;
+			double minMarker = map2fit.map(cmodel.getMinMonoScore(id));
+			double maxMarker = map2fit.map(cmodel.getMaxMonoScore(id));
+			if (Double.isFinite(minMarker))
+				values[count++] = minMarker;
+			if (Double.isFinite(maxMarker)
+					&& (count == 0 || Math.abs(values[0] - maxMarker) > 1e-8 * Math.max(1.0, Math.abs(maxMarker))))
+				values[count++] = maxMarker;
+		}
+		if (count == values.length)
+			return values;
+		double[] markers = new double[count];
+		System.arraycopy(values, 0, markers, 0, count);
+		return markers;
+	}
+
+	/**
+	 * Build the labels for discrete trait legends.
+	 *
+	 * @param module the discrete module
+	 * @return legend labels
+	 */
+	private String[] getDiscreteTraitLegendLabels(Module<?> module) {
+		int nTraits = module.getNTraits();
+		String[] names = module.getTraitNames();
+		String[] labels = new String[2 * nTraits];
+		for (int n = 0; n < nTraits; n++) {
+			labels[n] = names[n];
+			labels[nTraits + n] = "New " + names[n];
+		}
+		return labels;
 	}
 
 	/**
