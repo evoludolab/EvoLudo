@@ -34,8 +34,6 @@ import org.evoludo.geom.Node2D;
 import org.evoludo.geom.Path2D;
 import org.evoludo.geom.Point2D;
 import org.evoludo.graphics.AbstractGraph.Shifting;
-import org.evoludo.graphics.Legend2D.Mode;
-import org.evoludo.graphics.Legend2D.LegendSpecs;
 import org.evoludo.simulator.Network.Status;
 import org.evoludo.simulator.Network2D;
 import org.evoludo.simulator.geometries.AbstractGeometry;
@@ -224,10 +222,10 @@ public class PopGraph2D extends GenericPopGraph<String, Network2D> implements Sh
 	/**
 	 * Assign semantic legend data prepared by the view.
 	 *
-	 * @param legendSpecs legend data
+	 * @param specs legend data
 	 */
-	public void setLegendSpecs(LegendSpecs legendSpecs) {
-		legend.setLegendSpecs(legendSpecs);
+	public void setLegendSpecs(Legend2D.Specs specs) {
+		legend.setSpecs(specs);
 		calcBounds();
 	}
 
@@ -250,7 +248,7 @@ public class PopGraph2D extends GenericPopGraph<String, Network2D> implements Sh
 	 * @param menu the context menu to populate
 	 */
 	private void addLegendPositionMenu(ContextMenu menu) {
-		if (legend.getMode() == Mode.NONE)
+		if (legend.getMode() == Legend2D.Mode.NONE)
 			return;
 		ContextMenu legendMenu = new ContextMenu(menu);
 		addLegendPositionItem(legendMenu, "None", GraphStyle.Position.NONE);

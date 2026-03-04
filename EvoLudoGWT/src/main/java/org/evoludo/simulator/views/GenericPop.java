@@ -34,6 +34,7 @@ import java.awt.Color;
 
 import org.evoludo.graphics.AbstractGraph;
 import org.evoludo.graphics.GenericPopGraph;
+import org.evoludo.graphics.PopGraph1D;
 import org.evoludo.graphics.TooltipProvider;
 import org.evoludo.math.ArrayMath;
 import org.evoludo.simulator.ColorMap;
@@ -228,7 +229,8 @@ public abstract class GenericPop<T, N extends Network<?>, G extends GenericPopGr
 			boolean doUpdate = (isActive || graph.hasHistory());
 			if (!doUpdate)
 				continue;
-			// inactive history graphs still need data updates to keep their buffers in sync.
+			// inactive history graphs still need data updates to keep their buffers in
+			// sync.
 			if (isActive && graph.hasMessage())
 				continue;
 			switch (type) {
@@ -330,7 +332,7 @@ public abstract class GenericPop<T, N extends Network<?>, G extends GenericPopGr
 		tip.append(TABLE_ROW_START).append("Node").append(TABLE_CELL_NEXT);
 		if (node >= nNodes) {
 			// linear/time slices handled separately
-			appendLinearTip(node, nNodes, tip);
+			appendLinearTip(node, nNodes, module, graph, tip);
 			return tip.append(TABLE_END).toString();
 		}
 		IBS ibs = (IBS) model;
@@ -379,7 +381,7 @@ public abstract class GenericPop<T, N extends Network<?>, G extends GenericPopGr
 	 * @param nNodes the number of nodes per time slice
 	 * @param tip    the StringBuilder to append to
 	 */
-	private void appendLinearTip(int node, int nNodes, StringBuilder tip) {
+	private void appendLinearTip(int node, int nNodes, Module<?> module, G graph, StringBuilder tip) {
 		// this can only happen for AbstractGeometry.LINEAR
 		int idx = node / nNodes;
 		node %= nNodes;
@@ -391,6 +393,73 @@ public abstract class GenericPop<T, N extends Network<?>, G extends GenericPopGr
 				.append(TABLE_CELL_NEXT)
 				.append(Formatter.format(-t, 2))
 				.append(TABLE_ROW_END);
+		if (!(graph instanceof PopGraph1D))
+			return;
+		PopGraph1D graph1d = (PopGraph1D) graph;
+		String color = graph1d.getHistoryColorAt(idx, node);
+		if (color == null)
+			return;
+		switch (type) {
+			case TRAIT:
+				appendLinearHistoryTraitTip(graph1d, module, color, tip);
+				return;
+			case FITNESS:
+				appendLinearHistoryFitnessTip(graph1d, color, tip);
+				return;
+			default:
+				return;
+		}
+	}
+
+	/**
+	 * Append a trait value reconstructed from a history color.
+	 *
+	 * @param graph  the graph used for decoding
+	 * @param module the owning module
+	 * @param color  the encoded color
+	 * @param tip    the StringBuilder to append to
+	 */
+	private void appendLinearHistoryTraitTip(PopGraph1D graph, Module<?> module, String color, StringBuilder tip) {
+		tip.append(TABLE_ROW_START)
+				.append("Trait")
+				.append(TABLE_CELL_NEXT_COLOR)
+				.append(color)
+				.append(TABLE_CELL_BULLET);
+		int trait = graph.decodeColorIndex(color);
+		if (trait >= 0) {
+			tip.append(module.getTraitName(trait))
+					.append(TABLE_ROW_END);
+			return;
+		}
+		double value = graph.decodeColorValue(color);
+		if (Double.isFinite(value))
+			tip.append(Formatter.pretty(value, 2))
+					.append(TABLE_ROW_END);
+	}
+
+	/**
+	 * Append a fitness value reconstructed from a history color.
+	 *
+	 * @param graph the graph used for decoding
+	 * @param color the encoded color
+	 * @param tip   the StringBuilder to append to
+	 */
+	private void appendLinearHistoryFitnessTip(PopGraph1D graph, String color, StringBuilder tip) {
+		tip.append(TABLE_ROW_START)
+				.append("Fitness")
+				.append(TABLE_CELL_NEXT);
+		if (graph.isVacantColor(color)) {
+			tip.append("-")
+					.append(TABLE_ROW_END);
+			return;
+		}
+		double value = graph.decodeColorValue(color);
+		if (Double.isFinite(value))
+			tip.append(SPAN_COLOR)
+					.append(color)
+					.append(TABLE_CELL_BULLET)
+					.append(Formatter.pretty(value, 2))
+					.append(TABLE_ROW_END);
 	}
 
 	/**
@@ -589,7 +658,7 @@ public abstract class GenericPop<T, N extends Network<?>, G extends GenericPopGr
 
 		if (node >= nNodes) {
 			// linear/time slices handled separately
-			appendLinearTip(node, nNodes, tip);
+			appendLinearTip(node, nNodes, module, graph, tip);
 			return tip.append(TABLE_END).toString();
 		}
 

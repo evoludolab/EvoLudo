@@ -90,7 +90,7 @@ public class Legend2D {
 	 * {@link Mode#NONE} singleton returned by {@link #none()} disables legend
 	 * rendering.
 	 */
-	public static final class LegendSpecs {
+	public static final class Specs {
 
 		/**
 		 * Shared empty marker array for legends without annotations.
@@ -105,7 +105,7 @@ public class Legend2D {
 		/**
 		 * Singleton legend specs representing the absence of a legend.
 		 */
-		private static final LegendSpecs NONE = new LegendSpecs(Mode.NONE, Double.NaN, Double.NaN, NO_MARKERS, false,
+		private static final Specs NONE = new Specs(Mode.NONE, Double.NaN, Double.NaN, NO_MARKERS, false,
 				NO_LABELS);
 
 		/**
@@ -149,7 +149,7 @@ public class Legend2D {
 		 *                  percentages
 		 * @param labels    labels for discrete legend entries
 		 */
-		private LegendSpecs(Legend2D.Mode mode, double min, double max, double[] markers, boolean inPercent,
+		private Specs(Legend2D.Mode mode, double min, double max, double[] markers, boolean inPercent,
 				String[] labels) {
 			this.mode = mode;
 			this.min = min;
@@ -164,7 +164,7 @@ public class Legend2D {
 		 *
 		 * @return empty legend specs
 		 */
-		public static LegendSpecs none() {
+		public static Specs none() {
 			return NONE;
 		}
 
@@ -174,8 +174,8 @@ public class Legend2D {
 		 * @param labels labels for discrete entries
 		 * @return legend specs
 		 */
-		public static LegendSpecs discreteTrait(String[] labels) {
-			return new LegendSpecs(Mode.DISCRETE_TRAIT, Double.NaN, Double.NaN, null, false, labels);
+		public static Specs discreteTrait(String[] labels) {
+			return new Specs(Mode.DISCRETE_TRAIT, Double.NaN, Double.NaN, null, false, labels);
 		}
 
 		/**
@@ -183,8 +183,8 @@ public class Legend2D {
 		 *
 		 * @return legend specs
 		 */
-		public static LegendSpecs continuousTrait() {
-			return new LegendSpecs(Mode.CONTINUOUS_TRAIT, 0.0, 1.0, NO_MARKERS, false, null);
+		public static Specs continuousTrait() {
+			return new Specs(Mode.CONTINUOUS_TRAIT, 0.0, 1.0, NO_MARKERS, false, null);
 		}
 
 		/**
@@ -195,8 +195,8 @@ public class Legend2D {
 		 * @param markers marker values
 		 * @return legend specs
 		 */
-		public static LegendSpecs fitnessGradient(double min, double max, double[] markers) {
-			return new LegendSpecs(Mode.FITNESS_GRADIENT, min, max, markers, false, null);
+		public static Specs fitnessGradient(double min, double max, double[] markers) {
+			return new Specs(Mode.FITNESS_GRADIENT, min, max, markers, false, null);
 		}
 
 		/**
@@ -205,8 +205,8 @@ public class Legend2D {
 		 * @param max maximum density or frequency value
 		 * @return legend specs
 		 */
-		public static LegendSpecs densityGradient(double max) {
-			return new LegendSpecs(Mode.DENSITY_GRADIENT, 0.0, max, NO_MARKERS, true, null);
+		public static Specs densityGradient(double max) {
+			return new Specs(Mode.DENSITY_GRADIENT, 0.0, max, NO_MARKERS, true, null);
 		}
 	}
 
@@ -238,13 +238,13 @@ public class Legend2D {
 	/**
 	 * Semantic legend data supplied by the view.
 	 */
-	private LegendSpecs legendSpecs = LegendSpecs.none();
+	private Specs specs = Specs.none();
 
 	/**
 	 * The bounds of the visible legend content, including labels and other legend
 	 * decorations, but excluding the outer reserve gap.
 	 */
-	private final Rectangle2D legendBounds = new Rectangle2D();
+	private final Rectangle2D bounds = new Rectangle2D();
 
 	/**
 	 * Width removed from the graph content area by a vertical legend.
@@ -264,7 +264,7 @@ public class Legend2D {
 	/**
 	 * Current legend bar bounds.
 	 */
-	private final Rectangle2D barBounds = new Rectangle2D();
+	private final Rectangle2D bar = new Rectangle2D();
 
 	/**
 	 * Create a legend helper tied to the given 2D population graph.
@@ -280,8 +280,8 @@ public class Legend2D {
 	 *
 	 * @param legendSpecs legend data prepared by the view
 	 */
-	void setLegendSpecs(LegendSpecs legendSpecs) {
-		this.legendSpecs = (legendSpecs == null ? LegendSpecs.none() : legendSpecs);
+	void setSpecs(Specs legendSpecs) {
+		this.specs = (legendSpecs == null ? Specs.none() : legendSpecs);
 	}
 
 	/**
@@ -290,7 +290,7 @@ public class Legend2D {
 	 * @return legend mode
 	 */
 	Legend2D.Mode getMode() {
-		return legendSpecs.mode;
+		return specs.mode;
 	}
 
 	/**
@@ -299,7 +299,7 @@ public class Legend2D {
 	 * @return {@code true} if legend content and a legend position are available
 	 */
 	boolean hasLegend() {
-		return owner.style.legendPos != GraphStyle.Position.NONE && legendSpecs.mode != Legend2D.Mode.NONE;
+		return owner.style.legendPos != GraphStyle.Position.NONE && specs.mode != Legend2D.Mode.NONE;
 	}
 
 	/**
@@ -317,31 +317,31 @@ public class Legend2D {
 			return;
 		String font = owner.g.getFont();
 		owner.setFont(owner.style.ticksLabelFont);
-		switch (legendSpecs.mode) {
+		switch (specs.mode) {
 			case FITNESS_GRADIENT:
-				if (!Double.isFinite(legendSpecs.min) || !Double.isFinite(legendSpecs.max)) {
+				if (!Double.isFinite(specs.min) || !Double.isFinite(specs.max)) {
 					owner.g.setFont(font);
 					return;
 				}
-				labelWidth = Math.max(owner.g.measureText(formatGradientLegendValue(legendSpecs.max)).getWidth(),
-						owner.g.measureText(formatGradientLegendValue(legendSpecs.min)).getWidth());
-				for (double marker : legendSpecs.markers)
+				labelWidth = Math.max(owner.g.measureText(formatGradientLegend(specs.max)).getWidth(),
+						owner.g.measureText(formatGradientLegend(specs.min)).getWidth());
+				for (double marker : specs.markers)
 					labelWidth = Math.max(labelWidth,
 							owner.g.measureText(Formatter.formatPretty(marker, 2)).getWidth());
 				break;
 			case DENSITY_GRADIENT:
-				if (!Double.isFinite(legendSpecs.min) || !Double.isFinite(legendSpecs.max)) {
+				if (!Double.isFinite(specs.min) || !Double.isFinite(specs.max)) {
 					owner.g.setFont(font);
 					return;
 				}
 				labelWidth = owner.g.measureText(Formatter.formatPercent(0.999, 1)).getWidth();
 				break;
 			case CONTINUOUS_TRAIT:
-				labelWidth = Math.max(owner.g.measureText(formatGradientLegendValue(legendSpecs.min)).getWidth(),
-						owner.g.measureText(formatGradientLegendValue(legendSpecs.max)).getWidth());
+				labelWidth = Math.max(owner.g.measureText(formatGradientLegend(specs.min)).getWidth(),
+						owner.g.measureText(formatGradientLegend(specs.max)).getWidth());
 				break;
 			case DISCRETE_TRAIT:
-				for (String label : legendSpecs.labels)
+				for (String label : specs.labels)
 					labelWidth = Math.max(labelWidth, owner.g.measureText(label).getWidth());
 				break;
 			case NONE:
@@ -357,7 +357,7 @@ public class Legend2D {
 			case SOUTH:
 			case NORTH:
 				reserveHeight = GAP + LABEL_PAD
-						+ (legendSpecs.mode == Legend2D.Mode.DISCRETE_TRAIT ? Math.max(BAR_WIDTH, 16.0)
+						+ (specs.mode == Legend2D.Mode.DISCRETE_TRAIT ? Math.max(BAR_WIDTH, 16.0)
 								: BAR_WIDTH + 14.0);
 				break;
 			case NONE:
@@ -374,34 +374,34 @@ public class Legend2D {
 		switch (owner.style.legendPos) {
 			case EAST:
 				double h = graphBounds.getHeight();
-				legendBounds.setOrigin(width - reserveWidth, graphBounds.getY() + h * 0.2);
-				barBounds.set(legendBounds.getX(), legendBounds.getY(), BAR_WIDTH, h * 0.6);
+				bounds.setOrigin(width - reserveWidth, graphBounds.getY() + h * 0.2);
+				bar.set(bounds.getX(), bounds.getY(), BAR_WIDTH, h * 0.6);
 				break;
 			case WEST:
 				h = graphBounds.getHeight();
-				legendBounds.setOrigin(owner.style.minPadding, graphBounds.getY() + h * 0.2);
-				barBounds.set(legendBounds.getX() + labelWidth + getLegendLabelPad(owner.style.legendPos),
-						legendBounds.getY(), BAR_WIDTH, h * 0.6);
+				bounds.setOrigin(owner.style.minPadding, graphBounds.getY() + h * 0.2);
+				bar.set(bounds.getX() + labelWidth + getLabelPad(owner.style.legendPos),
+						bounds.getY(), BAR_WIDTH, h * 0.6);
 				graphBounds.shift(reserveWidth, 0.0);
 				break;
 			case SOUTH:
-				double barWidth = (legendSpecs.mode == Legend2D.Mode.DISCRETE_TRAIT
-						? getHorizontalDiscreteTraitLegendBarWidth(legendSpecs.labels, graphBounds.getWidth())
+				double barWidth = (specs.mode == Legend2D.Mode.DISCRETE_TRAIT
+						? getHorizontalDiscreteTraitsBarWidth(specs.labels, graphBounds.getWidth())
 						: graphBounds.getWidth() * 0.6);
-				double barHeight = (legendSpecs.mode == Legend2D.Mode.DISCRETE_TRAIT ? Math.max(BAR_WIDTH, 16.0)
+				double barHeight = (specs.mode == Legend2D.Mode.DISCRETE_TRAIT ? Math.max(BAR_WIDTH, 16.0)
 						: BAR_WIDTH);
-				legendBounds.setOrigin(graphBounds.getX() + 0.5 * (graphBounds.getWidth() - barWidth),
+				bounds.setOrigin(graphBounds.getX() + 0.5 * (graphBounds.getWidth() - barWidth),
 						height - reserveHeight);
-				barBounds.set(legendBounds.getX(), legendBounds.getY(), barWidth, barHeight);
+				bar.set(bounds.getX(), bounds.getY(), barWidth, barHeight);
 				break;
 			case NORTH:
-				barWidth = (legendSpecs.mode == Legend2D.Mode.DISCRETE_TRAIT
-						? getHorizontalDiscreteTraitLegendBarWidth(legendSpecs.labels, graphBounds.getWidth())
+				barWidth = (specs.mode == Legend2D.Mode.DISCRETE_TRAIT
+						? getHorizontalDiscreteTraitsBarWidth(specs.labels, graphBounds.getWidth())
 						: graphBounds.getWidth() * 0.6);
-				barHeight = (legendSpecs.mode == Legend2D.Mode.DISCRETE_TRAIT ? Math.max(BAR_WIDTH, 16.0) : BAR_WIDTH);
-				legendBounds.setOrigin(graphBounds.getX() + 0.5 * (graphBounds.getWidth() - barWidth),
+				barHeight = (specs.mode == Legend2D.Mode.DISCRETE_TRAIT ? Math.max(BAR_WIDTH, 16.0) : BAR_WIDTH);
+				bounds.setOrigin(graphBounds.getX() + 0.5 * (graphBounds.getWidth() - barWidth),
 						owner.style.minPadding);
-				barBounds.set(legendBounds.getX(), legendBounds.getY(), barWidth, barHeight);
+				bar.set(bounds.getX(), bounds.getY(), barWidth, barHeight);
 				graphBounds.shift(0.0, reserveHeight);
 				break;
 			case NONE:
@@ -418,7 +418,18 @@ public class Legend2D {
 			return;
 		owner.g.save();
 		owner.g.scale(owner.scale, owner.scale);
-		drawLegend();
+		switch (specs.mode) {
+			case FITNESS_GRADIENT:
+			case DENSITY_GRADIENT:
+			case CONTINUOUS_TRAIT:
+				drawGradient();
+				break;
+			case DISCRETE_TRAIT:
+				drawDiscreteTraits();
+				break;
+			case NONE:
+			default:
+		}
 		owner.g.restore();
 	}
 
@@ -433,13 +444,13 @@ public class Legend2D {
 		if (!hasLegend() || owner.contextMenu.isVisible())
 			return null;
 		owner.element.removeClassName(GenericPopGraph.EVOLUDO_CURSOR_NODE);
-		switch (legendSpecs.mode) {
+		switch (specs.mode) {
 			case FITNESS_GRADIENT:
 			case DENSITY_GRADIENT:
-				return getGradientLegendTooltipAt(x, y);
+				return getGradientTooltipAt(x, y);
 			case CONTINUOUS_TRAIT:
 			case DISCRETE_TRAIT:
-				return getTraitLegendTooltipAt(x, y);
+				return getTraitTooltipAt(x, y);
 			case NONE:
 			default:
 				return null;
@@ -447,55 +458,36 @@ public class Legend2D {
 	}
 
 	/**
-	 * Draw the active legend variant selected by the current specs.
-	 */
-	private void drawLegend() {
-		switch (legendSpecs.mode) {
-			case FITNESS_GRADIENT:
-			case DENSITY_GRADIENT:
-			case CONTINUOUS_TRAIT:
-				drawGradientLegend();
-				return;
-			case DISCRETE_TRAIT:
-				drawDiscreteTraitLegend();
-				return;
-			case NONE:
-			default:
-				return;
-		}
-	}
-
-	/**
 	 * Draw the current gradient-style legend, including endpoint labels and marker
 	 * annotations.
 	 */
-	private void drawGradientLegend() {
+	private void drawGradient() {
 		if (!(owner.getColorMap() instanceof ColorMap.Gradient1D))
 			return;
-		if (!Double.isFinite(legendSpecs.min) || !Double.isFinite(legendSpecs.max))
+		if (!Double.isFinite(specs.min) || !Double.isFinite(specs.max))
 			return;
-		double barWidth = barBounds.getWidth();
-		double barHeight = barBounds.getHeight();
+		double barWidth = bar.getWidth();
+		double barHeight = bar.getHeight();
 		if (barWidth <= 0.0 || barHeight <= 0.0)
 			return;
 		boolean vertical = owner.style.legendPos.isVertical();
-		double[] samples = getLegendSamples(legendSpecs.min, legendSpecs.max, vertical ? barHeight : barWidth,
-				legendSpecs.markers);
-		drawGradientLegendBands(samples, (ColorMap.Gradient1D<String>) owner.getColorMap());
-		drawLegendFrame();
+		double[] samples = getBins(specs.min, specs.max, vertical ? barHeight : barWidth,
+				specs.markers);
+		drawGradientBands(samples, (ColorMap.Gradient1D<String>) owner.getColorMap());
+		drawFrame();
 		owner.g.setFillStyle(owner.style.frameColor);
 		owner.setFont(owner.style.ticksLabelFont);
-		String minLabel = formatGradientLegendValue(legendSpecs.min);
-		String maxLabel = formatGradientLegendValue(legendSpecs.max);
-		double barX = barBounds.getX();
-		double barY = barBounds.getY();
+		String minLabel = formatGradientLegend(specs.min);
+		String maxLabel = formatGradientLegend(specs.max);
+		double barX = bar.getX();
+		double barY = bar.getY();
 		if (vertical) {
-			owner.g.fillText(maxLabel, getLegendLabelX(maxLabel), barY + 4.5);
-			owner.g.fillText(minLabel, getLegendLabelX(minLabel), barY + barHeight + 4.5);
-			drawLegendMarkers(legendSpecs.markers, legendSpecs.min, legendSpecs.max);
+			owner.g.fillText(maxLabel, getLabelX(maxLabel), barY + 4.5);
+			owner.g.fillText(minLabel, getLabelX(minLabel), barY + barHeight + 4.5);
+			drawMarkers(specs.markers, specs.min, specs.max);
 			return;
 		}
-		double labelY = getHorizontalLegendLabelY(BAR_WIDTH + 12.5, -owner.style.minPadding);
+		double labelY = getHorizontalLabelY(BAR_WIDTH + 12.5, -owner.style.minPadding);
 		owner.g.fillText(minLabel, barX, labelY);
 		owner.g.fillText(maxLabel, barX + barWidth - owner.g.measureText(maxLabel).getWidth(), labelY);
 	}
@@ -506,13 +498,13 @@ public class Legend2D {
 	 * @param samples  sampled values along the legend axis
 	 * @param gradient gradient used to translate values into CSS colors
 	 */
-	private void drawGradientLegendBands(double[] samples, ColorMap.Gradient1D<String> gradient) {
+	private void drawGradientBands(double[] samples, ColorMap.Gradient1D<String> gradient) {
 		boolean vertical = owner.style.legendPos.isVertical();
 		int steps = samples.length;
-		double barX = barBounds.getX();
-		double barY = barBounds.getY();
-		double barWidth = barBounds.getWidth();
-		double barHeight = barBounds.getHeight();
+		double barX = bar.getX();
+		double barY = bar.getY();
+		double barWidth = bar.getWidth();
+		double barHeight = bar.getHeight();
 		double stepSpan = (vertical ? barHeight : barWidth) / steps;
 		for (int i = 0; i < steps; i++) {
 			double start = Math.floor((vertical ? barY : barX) + i * stepSpan);
@@ -533,13 +525,13 @@ public class Legend2D {
 	/**
 	 * Stroke the outline around the current legend bar.
 	 */
-	private void drawLegendFrame() {
+	private void drawFrame() {
 		owner.g.setStrokeStyle(owner.style.frameColor);
 		owner.g.setLineWidth(1.0);
-		double barX = barBounds.getX();
-		double barY = barBounds.getY();
-		double barWidth = barBounds.getWidth();
-		double barHeight = barBounds.getHeight();
+		double barX = bar.getX();
+		double barY = bar.getY();
+		double barWidth = bar.getWidth();
+		double barHeight = bar.getHeight();
 		if (owner.style.legendPos.isVertical()) {
 			owner.g.strokeRect(barX + 0.5, barY - 0.5, barWidth, barHeight + 1.0);
 			return;
@@ -550,16 +542,16 @@ public class Legend2D {
 	/**
 	 * Draw the segmented discrete-trait legend.
 	 */
-	private void drawDiscreteTraitLegend() {
-		String[] colors = getDiscreteTraitLegendColors();
-		String[] labels = legendSpecs.labels;
+	private void drawDiscreteTraits() {
+		String[] colors = getDiscreteTraitsColors();
+		String[] labels = specs.labels;
 		int nSegments = Math.min(colors.length, labels.length);
 		if (nSegments <= 0)
 			return;
-		double barX = barBounds.getX();
-		double barY = barBounds.getY();
-		double barWidth = barBounds.getWidth();
-		double barHeight = barBounds.getHeight();
+		double barX = bar.getX();
+		double barY = bar.getY();
+		double barWidth = bar.getWidth();
+		double barHeight = bar.getHeight();
 		owner.g.setStrokeStyle(owner.style.frameColor);
 		owner.g.setLineWidth(1.0);
 		owner.g.setFillStyle(owner.style.frameColor);
@@ -578,9 +570,9 @@ public class Legend2D {
 				owner.g.setFillStyle(colors[i]);
 				owner.fillRect(barX, y0, barWidth, y1 - y0);
 				owner.g.setFillStyle(owner.style.frameColor);
-				owner.g.fillText(labels[i], getLegendLabelX(labels[i]), 0.5 * (y0 + y1) + 4.5);
+				owner.g.fillText(labels[i], getLabelX(labels[i]), 0.5 * (y0 + y1) + 4.5);
 			}
-			drawLegendFrame();
+			drawFrame();
 			return;
 		}
 		if (barWidth <= 0.0 || barHeight <= 0.0)
@@ -599,7 +591,7 @@ public class Legend2D {
 			double textWidth = owner.g.measureText(labels[i]).getWidth();
 			owner.g.fillText(labels[i], x0 + 0.5 * (x1 - x0 - textWidth), barY + 0.5 * (barHeight + 9.0));
 		}
-		drawLegendFrame();
+		drawFrame();
 	}
 
 	/**
@@ -609,15 +601,15 @@ public class Legend2D {
 	 * @param y the y-coordinate in graph widget coordinates
 	 * @return tooltip HTML or {@code null} if the point is outside the legend
 	 */
-	private String getGradientLegendTooltipAt(int x, int y) {
+	private String getGradientTooltipAt(int x, int y) {
 		if (!(owner.getColorMap() instanceof ColorMap.Gradient1D))
 			return null;
-		double value = getGradientLegendValueAt(x, y, legendSpecs.min, legendSpecs.max);
+		double value = getGradientAt(x, y, specs.min, specs.max);
 		if (!Double.isFinite(value))
 			return null;
 		String color = ((ColorMap.Gradient1D<String>) owner.getColorMap()).translate(value);
 		String label;
-		switch (legendSpecs.mode) {
+		switch (specs.mode) {
 			case FITNESS_GRADIENT:
 				label = "Fitness";
 				break;
@@ -629,7 +621,7 @@ public class Legend2D {
 				break;
 		}
 		return label + ": " + BasicTooltipProvider.SPAN_COLOR + color
-				+ BasicTooltipProvider.TABLE_CELL_BULLET + formatGradientLegendValue(value);
+				+ BasicTooltipProvider.TABLE_CELL_BULLET + formatGradientTooltip(value);
 	}
 
 	/**
@@ -639,25 +631,25 @@ public class Legend2D {
 	 * @param y the y-coordinate in graph widget coordinates
 	 * @return tooltip HTML or {@code null} if the point is outside the legend
 	 */
-	private String getTraitLegendTooltipAt(int x, int y) {
-		switch (legendSpecs.mode) {
+	private String getTraitTooltipAt(int x, int y) {
+		switch (specs.mode) {
 			case CONTINUOUS_TRAIT:
 				if (!(owner.getColorMap() instanceof ColorMap.Gradient1D))
 					return null;
-				double value = getGradientLegendValueAt(x, y, legendSpecs.min, legendSpecs.max);
+				double value = getGradientAt(x, y, specs.min, specs.max);
 				if (!Double.isFinite(value))
 					return null;
 				String color = ((ColorMap.Gradient1D<String>) owner.getColorMap()).translate(value);
 				return "Trait: " + BasicTooltipProvider.SPAN_COLOR + color
-						+ BasicTooltipProvider.TABLE_CELL_BULLET + Formatter.formatPretty(value, 2);
+						+ BasicTooltipProvider.TABLE_CELL_BULLET + formatGradientTooltip(value);
 			case DISCRETE_TRAIT:
-				String[] colors = getDiscreteTraitLegendColors();
-				String[] labels = legendSpecs.labels;
+				String[] colors = getDiscreteTraitsColors();
+				String[] labels = specs.labels;
 				int nSegments = Math.min(colors.length, labels.length);
 				if (nSegments == 0)
 					return null;
-				int idx = (barBounds.getWidth() > 0.0 && barBounds.getHeight() > 0.0)
-						? getLegendBandIndexAt(x, y, nSegments)
+				int idx = (bar.getWidth() > 0.0 && bar.getHeight() > 0.0)
+						? getBandIndexAt(x, y, nSegments)
 						: -1;
 				if (idx < 0)
 					return null;
@@ -678,17 +670,23 @@ public class Legend2D {
 	 * @param max the maximum legend value
 	 * @return legend value, or {@link Double#NaN} if the point is outside
 	 */
-	private double getGradientLegendValueAt(int x, int y, double min, double max) {
-		double barWidth = barBounds.getWidth();
-		double barHeight = barBounds.getHeight();
+	private double getGradientAt(int x, int y, double min, double max) {
+		double barWidth = bar.getWidth();
+		double barHeight = bar.getHeight();
 		if (barWidth <= 0.0 || barHeight <= 0.0)
 			return Double.NaN;
-		double fraction = getLegendAxisFractionAt(x, y);
+		double fraction = getFractionAt(x, y);
 		if (!Double.isFinite(fraction))
 			return Double.NaN;
-		if (owner.style.legendPos.isVertical())
-			return max - fraction * (max - min);
-		return min + fraction * (max - min);
+		boolean vertical = owner.style.legendPos.isVertical();
+		double span = vertical ? barHeight : barWidth;
+		double[] samples = getBins(min, max, span, specs.markers);
+		if (samples.length == 0)
+			return Double.NaN;
+		int idx = Math.max(0, Math.min(samples.length - 1, (int) Math.floor(fraction * samples.length)));
+		if (fraction >= 1.0)
+			idx = samples.length - 1;
+		return samples[idx];
 	}
 
 	/**
@@ -700,11 +698,11 @@ public class Legend2D {
 	 * @return normalized position in {@code [0,1]}, or {@link Double#NaN} if
 	 *         outside the legend bar
 	 */
-	private double getLegendAxisFractionAt(int x, int y) {
-		double barX = barBounds.getX();
-		double barY = barBounds.getY();
-		double barWidth = barBounds.getWidth();
-		double barHeight = barBounds.getHeight();
+	private double getFractionAt(int x, int y) {
+		double barX = bar.getX();
+		double barY = bar.getY();
+		double barWidth = bar.getWidth();
+		double barHeight = bar.getHeight();
 		if (x < barX || x > barX + barWidth || y < barY || y > barY + barHeight)
 			return Double.NaN;
 		if (owner.style.legendPos.isVertical())
@@ -720,8 +718,8 @@ public class Legend2D {
 	 * @param nBands number of discrete legend bands
 	 * @return band index, or {@code -1} if outside the legend bar
 	 */
-	private int getLegendBandIndexAt(int x, int y, int nBands) {
-		double fraction = getLegendAxisFractionAt(x, y);
+	private int getBandIndexAt(int x, int y, int nBands) {
+		double fraction = getFractionAt(x, y);
 		if (!Double.isFinite(fraction))
 			return -1;
 		return Math.min(nBands - 1, Math.max(0, (int) (fraction * nBands)));
@@ -737,7 +735,7 @@ public class Legend2D {
 	 * @param markers marker values that should be represented exactly
 	 * @return sampled values from top-to-bottom or left-to-right
 	 */
-	private double[] getLegendSamples(double min, double max, double span, double[] markers) {
+	private double[] getBins(double min, double max, double span, double[] markers) {
 		int steps = Math.max(2, (int) Math.floor(span / MIN_BAND_HEIGHT));
 		double[] samples = new double[steps];
 		boolean vertical = owner.style.legendPos.isVertical();
@@ -777,18 +775,18 @@ public class Legend2D {
 	 * @param min     the minimum legend value
 	 * @param max     the maximum legend value
 	 */
-	private void drawLegendMarkers(double[] markers, double min, double max) {
+	private void drawMarkers(double[] markers, double min, double max) {
 		if (markers.length == 0)
 			return;
-		double barY = barBounds.getY();
-		double barHeight = barBounds.getHeight();
+		double barY = bar.getY();
+		double barHeight = bar.getHeight();
 		double range = max - min;
 		for (double marker : markers) {
 			double frac = (range <= 0.0 ? 0.5 : (max - marker) / range);
 			double y = Math.max(barY, Math.min(barY + barHeight, barY + frac * barHeight));
 			owner.g.setFillStyle(owner.style.frameColor);
 			String markerLabel = Formatter.formatPretty(marker, 2);
-			owner.g.fillText(markerLabel, getLegendLabelX(markerLabel), y + 4.5);
+			owner.g.fillText(markerLabel, getLabelX(markerLabel), y + 4.5);
 		}
 	}
 
@@ -798,11 +796,11 @@ public class Legend2D {
 	 * @param label the label text to position
 	 * @return x-coordinate for the label baseline
 	 */
-	private double getLegendLabelX(String label) {
-		double barWidth = barBounds.getWidth();
+	private double getLabelX(String label) {
+		double barWidth = bar.getWidth();
 		double labelX = (owner.style.legendPos == GraphStyle.Position.EAST
-				? legendBounds.getX() + barWidth + getLegendLabelPad(owner.style.legendPos)
-				: legendBounds.getX());
+				? bounds.getX() + barWidth + getLabelPad(owner.style.legendPos)
+				: bounds.getX());
 		if (owner.style.legendPos != GraphStyle.Position.WEST)
 			return labelX;
 		return labelX + labelWidth - owner.g.measureText(label).getWidth();
@@ -815,12 +813,12 @@ public class Legend2D {
 	 * @param northLabelY   label baseline for north legends without extra padding
 	 * @return y-coordinate for the endpoint labels
 	 */
-	private double getHorizontalLegendLabelY(double southLabelGap, double northLabelY) {
-		double barY = barBounds.getY();
-		double barHeight = barBounds.getHeight();
+	private double getHorizontalLabelY(double southLabelGap, double northLabelY) {
+		double barY = bar.getY();
+		double barHeight = bar.getHeight();
 		if (owner.style.legendPos == GraphStyle.Position.SOUTH)
 			return barY + southLabelGap;
-		switch (legendSpecs.mode) {
+		switch (specs.mode) {
 			case FITNESS_GRADIENT:
 			case DENSITY_GRADIENT:
 				return barY + barHeight + 12.5;
@@ -835,7 +833,7 @@ public class Legend2D {
 	 * @param pos the legend position
 	 * @return label padding in pixels
 	 */
-	private double getLegendLabelPad(GraphStyle.Position pos) {
+	private double getLabelPad(GraphStyle.Position pos) {
 		return (pos == GraphStyle.Position.WEST && !owner.style.showYAxisRight ? 2.0 * LABEL_PAD : LABEL_PAD);
 	}
 
@@ -846,7 +844,7 @@ public class Legend2D {
 	 * @param graphWidth width of the actual graph-content bounds
 	 * @return legend bar width in pixels
 	 */
-	private double getHorizontalDiscreteTraitLegendBarWidth(String[] labels, double graphWidth) {
+	private double getHorizontalDiscreteTraitsBarWidth(String[] labels, double graphWidth) {
 		int nSegments = labels.length;
 		if (nSegments <= 0)
 			return graphWidth * 0.6;
@@ -860,8 +858,8 @@ public class Legend2D {
 	 *
 	 * @return discrete legend colors, or an empty array if unavailable
 	 */
-	private String[] getDiscreteTraitLegendColors() {
-		if (legendSpecs.mode != Legend2D.Mode.DISCRETE_TRAIT || !(owner.getColorMap() instanceof ColorMap.Index))
+	private String[] getDiscreteTraitsColors() {
+		if (specs.mode != Legend2D.Mode.DISCRETE_TRAIT || !(owner.getColorMap() instanceof ColorMap.Index))
 			return new String[0];
 		return ((ColorMap.Index<String>) owner.getColorMap()).getColors();
 	}
@@ -872,7 +870,17 @@ public class Legend2D {
 	 * @param value the value to format
 	 * @return formatted legend text
 	 */
-	private String formatGradientLegendValue(double value) {
-		return legendSpecs.inPercent ? Formatter.formatPercent(value, 1) : Formatter.formatPretty(value, 2);
+	private String formatGradientLegend(double value) {
+		return specs.inPercent ? Formatter.formatPercent(value, 1) : Formatter.formatPretty(value, 2);
+	}
+
+	/**
+	 * Format a numeric gradient value for HTML tooltips.
+	 *
+	 * @param value the value to format
+	 * @return formatted tooltip text
+	 */
+	private String formatGradientTooltip(double value) {
+		return specs.inPercent ? Formatter.formatPercent(value, 1) : Formatter.pretty(value, 2);
 	}
 }

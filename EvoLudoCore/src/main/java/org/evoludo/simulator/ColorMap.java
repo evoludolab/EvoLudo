@@ -697,6 +697,31 @@ public abstract class ColorMap<T extends Object> {
 		}
 
 		/**
+		 * Map a normalized value in {@code [0,1]} back to the represented data value.
+		 *
+		 * @param normalized the normalized value
+		 * @return the corresponding data value, or {@link Double#NaN} if invalid
+		 */
+		public double denormalize(double normalized) {
+			if (!Double.isFinite(normalized))
+				return Double.NaN;
+			if (map == 0.0 || nGradient <= 0)
+				return min;
+			return min + normalized * nGradient / map;
+		}
+
+		/**
+		 * Map gradient {@code color} back to the represented data value.
+		 *
+		 * @param color the color to map
+		 * @return data value corresponding to the color, or {@link Double#NaN} if not
+		 *         found
+		 */
+		public double valueOf(T color) {
+			return denormalize(normalize(color));
+		}
+
+		/**
 		 * Sets the gradient to span the colors in the array {@code colors}.
 		 * 
 		 * @param colors the array of colors for the gradient

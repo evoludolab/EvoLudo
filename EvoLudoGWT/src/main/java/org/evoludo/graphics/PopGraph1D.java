@@ -30,6 +30,7 @@
 
 package org.evoludo.graphics;
 
+import java.awt.Color;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Iterator;
@@ -127,6 +128,63 @@ public class PopGraph1D extends PopGraph2D {
 		if (idx >= masses.length)
 			return -1.0;
 		return masses[idx];
+	}
+
+	/**
+	 * Decode the discrete index represented by {@code color}.
+	 *
+	 * @param color the encoded color
+	 * @return decoded index, or {@code -1} if unavailable
+	 */
+	public int decodeColorIndex(String color) {
+		if (color == null || !(getColorMap() instanceof ColorMap.Index))
+			return -1;
+		String[] colors = ((ColorMap.Index<String>) getColorMap()).getColors();
+		for (int i = 0; i < colors.length; i++) {
+			if (color.equals(colors[i]))
+				return i;
+		}
+		return -1;
+	}
+
+	/**
+	 * Decode the gradient value represented by {@code color}.
+	 *
+	 * @param color the encoded color
+	 * @return decoded value, or {@link Double#NaN} if unavailable
+	 */
+	public double decodeColorValue(String color) {
+		if (color == null || !(getColorMap() instanceof ColorMap.Gradient1D))
+			return Double.NaN;
+		return ((ColorMap.Gradient1D<String>) getColorMap()).valueOf(color);
+	}
+
+	/**
+	 * Check whether {@code color} denotes a vacant site in gradient-based maps.
+	 *
+	 * @param color the encoded color
+	 * @return {@code true} if the color encodes a vacant site
+	 */
+	public boolean isVacantColor(String color) {
+		if (color == null || getColorMap() == null)
+			return false;
+		return color.equals(getColorMap().color2Color(Color.WHITE));
+	}
+
+	/**
+	 * Retrieve the encoded color at the given history row and node.
+	 *
+	 * @param row  the history row, with {@code 0} the most recent one
+	 * @param node the node index in the row
+	 * @return the encoded color, or {@code null} if unavailable
+	 */
+	public String getHistoryColorAt(int row, int node) {
+		if (buffer == null || row < 0 || row >= buffer.getSize())
+			return null;
+		String[] rowData = buffer.get(row);
+		if (rowData == null || node < 0 || node >= rowData.length)
+			return null;
+		return rowData[node];
 	}
 
 	@Override

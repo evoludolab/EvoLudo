@@ -33,17 +33,17 @@ package org.evoludo.simulator.views;
 import java.awt.Color;
 import java.util.List;
 
-import org.evoludo.graphics.GraphStyle;
 import org.evoludo.graphics.GenericPopGraph.HasDebugMenu;
-import org.evoludo.graphics.Legend2D.LegendSpecs;
+import org.evoludo.graphics.GraphStyle;
+import org.evoludo.graphics.Legend2D;
 import org.evoludo.graphics.PopGraph1D;
 import org.evoludo.graphics.PopGraph2D;
 import org.evoludo.simulator.ColorMap;
 import org.evoludo.simulator.ColorMapCSS;
-import org.evoludo.simulator.geometries.AbstractGeometry;
-import org.evoludo.simulator.geometries.GeometryType;
 import org.evoludo.simulator.EvoLudoGWT;
 import org.evoludo.simulator.Network2D;
+import org.evoludo.simulator.geometries.AbstractGeometry;
+import org.evoludo.simulator.geometries.GeometryType;
 import org.evoludo.simulator.models.CModel;
 import org.evoludo.simulator.models.DModel;
 import org.evoludo.simulator.models.Data;
@@ -361,29 +361,31 @@ public class Pop2D extends GenericPop<String, Network2D, PopGraph2D> implements 
 	 * @param graph the graph to configure
 	 * @return legend specs for the graph
 	 */
-	private LegendSpecs createLegendSpecs(PopGraph2D graph) {
+	private Legend2D.Specs createLegendSpecs(PopGraph2D graph) {
 		Module<?> module = graph.getModule();
 		ColorMap<String> colorMap = graph.getColorMap();
 		switch (type) {
 			case FITNESS:
 				if (!(colorMap instanceof ColorMap.Gradient1D))
-					return LegendSpecs.none();
+					return Legend2D.Specs.none();
 				double min = model.getMinFitness(module.getId());
 				double max = model.getMaxFitness(module.getId());
-				return LegendSpecs.fitnessGradient(min, max, collectFitnessLegendMarkers(module));
+				return Legend2D.Specs.fitnessGradient(min, max, collectFitnessLegendMarkers(module));
+
 			case TRAIT:
 				if (module instanceof Discrete) {
 					if (!(colorMap instanceof ColorMap.Index))
-						return LegendSpecs.none();
-					return LegendSpecs.discreteTrait(getDiscreteTraitLegendLabels(module));
+						return Legend2D.Specs.none();
+					return Legend2D.Specs.discreteTrait(getDiscreteTraitLegendLabels(module));
 				}
 				if (module instanceof Continuous && module.getNTraits() == 1
 						&& colorMap instanceof ColorMap.Gradient1D) {
-					return LegendSpecs.continuousTrait();
+					return Legend2D.Specs.continuousTrait();
 				}
-				return LegendSpecs.none();
+				//$FALL-THROUGH$
+
 			default:
-				return LegendSpecs.none();
+				return Legend2D.Specs.none();
 		}
 	}
 

@@ -476,7 +476,7 @@ public class Formatter {
 				if (exp == 1)
 					return myFormatters[digits].format(aDouble);
 				if (exp == -1)
-					return myFormatters[Math.min(digits + 1, MAX_DIGITS)].format(aDouble);
+					return myFormatters[Math.min(digits, MAX_DIGITS)].format(aDouble);
 			}
 			return sci.replace("E", pre) + post;
 		}
