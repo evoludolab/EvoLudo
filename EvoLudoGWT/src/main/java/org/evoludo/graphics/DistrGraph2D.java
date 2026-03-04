@@ -30,6 +30,7 @@
 
 package org.evoludo.graphics;
 
+import org.evoludo.ui.ContextMenu;
 import org.evoludo.simulator.modules.Module;
 import org.evoludo.simulator.views.Distribution;
 
@@ -49,6 +50,11 @@ public class DistrGraph2D extends PopGraph2D {
 	 */
 	public DistrGraph2D(Distribution view, Module<?> module) {
 		super(view, module);
+	}
+
+	@Override
+	protected void populateGraphContextMenu(ContextMenu menu, int x, int y) {
+		view.addAxesMenu(menu, this);
 	}
 
 	@Override

@@ -508,7 +508,6 @@ public class Distribution extends AbstractView<PopGraph2D> implements TooltipPro
 	public void populateContextMenu(ContextMenu menu) {
 		Module<?> module = engine.getModule();
 		int nTraits = module.getNTraits();
-		addAxesMenu(menu, null);
 		addBinsMenu(menu);
 		// ignore if less than 3 traits
 		if (nTraits < 3) {
