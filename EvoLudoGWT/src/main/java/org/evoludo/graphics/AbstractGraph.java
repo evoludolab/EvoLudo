@@ -1208,7 +1208,7 @@ public abstract class AbstractGraph<B> extends FocusPanel
 		if (style.showFrame) {
 			double f = style.frameWidth;
 			double f2 = f + f;
-			bounds.adjust(f, f, -f2, -f2);
+			bounds.adjust(-f, f, -f2, -f2);
 		}
 		adjustBoundsForLabels();
 		adjustBoundsForTickLabels();
@@ -1234,23 +1234,12 @@ public abstract class AbstractGraph<B> extends FocusPanel
 	 * Adjust bounds to make room for tick labels.
 	 */
 	private void adjustBoundsForTickLabels() {
-		// NOTE: must process tick labels because otherwise widths might end up
-		// different in views with multiple graphs
+		// x tick labels are drawn within the frame: first label is pinned to the
+		// left edge and the last label to the right edge.
 		if (style.showXTickLabels)
 			bounds.adjust(0, 0, 0, -14); // 10px for font size plus some padding
 		String font = g.getFont();
 		setFont(style.ticksLabelFont);
-		double xMinLabel = style.xMin;
-		double xMaxLabel = style.xMax;
-		if (style.offsetXTickLabels && !style.percentX) {
-			xMinLabel += style.xTickOffset;
-			xMaxLabel += style.xTickOffset;
-		}
-		double tik2 = Math.max(g.measureText(Formatter.formatFix(xMaxLabel, 2)).getWidth(),
-				g.measureText(Formatter.formatFix(xMinLabel, 2)).getWidth()) * 0.5;
-		if (tik2 > style.minPadding) {
-			bounds.adjust(tik2, 0, -tik2, 0);
-		}
 		if (style.showYTickLabels) {
 			setFont(style.ticksLabelFont);
 			// NOTE: cannot use style.Max or similar because then widths might end up
@@ -1323,10 +1312,12 @@ public abstract class AbstractGraph<B> extends FocusPanel
 	 * @param gscale  the scaling applied to the coordinate transformation
 	 */
 	protected void drawFrame(int xLevels, int yLevels, double gscale) {
+		if (!style.showFrame)
+			return;
+
 		g.save();
 		double w = bounds.getWidth();
 		double h = bounds.getHeight();
-
 		drawFrameBorder(w, h);
 		drawXLevels(xLevels, w, h);
 		drawCustomXLevels(w, h);
@@ -1346,9 +1337,6 @@ public abstract class AbstractGraph<B> extends FocusPanel
 	 * @param h frame height
 	 */
 	private void drawFrameBorder(double w, double h) {
-		if (!style.showFrame)
-			return;
-		g.translate(-style.frameWidth, -style.frameWidth);
 		g.setLineWidth(style.frameWidth);
 		g.setStrokeStyle(style.frameColor);
 		// NOTE: without the 0.5 the lines are at least 2px thick...
