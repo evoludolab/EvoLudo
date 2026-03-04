@@ -266,6 +266,9 @@ public class Pop3D extends GenericPop<MeshLambertMaterial, Network3DGWT, PopGrap
 			graph.setColorMap(module.processColorMap(cMap));
 			graph.reset();
 		}
+		// Reset invalidates network layouts; force one data update so network graphs
+		// immediately schedule and display the rebuilt structure.
+		updateData(true);
 		update(hard);
 	}
 

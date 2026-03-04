@@ -48,7 +48,6 @@ import org.evoludo.util.Formatter;
 
 import com.google.gwt.core.client.Duration;
 import com.google.gwt.core.client.JsArray;
-import com.google.gwt.core.client.Scheduler;
 import com.google.gwt.dom.client.Touch;
 import com.google.gwt.event.dom.client.DoubleClickEvent;
 import com.google.gwt.event.dom.client.DoubleClickHandler;
@@ -360,15 +359,14 @@ public abstract class GenericPopGraph<T, N extends Network<?>> extends AbstractG
 	public void update(boolean isNext) {
 		if (!view.isActive() || noGraph || hasMessage)
 			return;
-		if (invalidated || (isNext && geometry.isType(GeometryType.DYNAMIC))) {
-			// defer layouting to allow 3D view to be up and running
-			Scheduler.get().scheduleDeferred(() -> {
-				if (hasStaticLayout()) {
-					drawLattice();
-					view.layoutComplete();
-				} else
-					layoutNetwork();
-			});
+		boolean needsLayout = (invalidated || (isNext && geometry.isType(GeometryType.DYNAMIC)));
+		if (!needsLayout)
+			return;
+		if (hasStaticLayout()) {
+			drawLattice();
+			view.layoutComplete();
+		} else {
+			layoutNetwork();
 		}
 	}
 
@@ -441,6 +439,8 @@ public abstract class GenericPopGraph<T, N extends Network<?>> extends AbstractG
 	 * @see #hasStaticLayout()
 	 */
 	protected void layoutNetwork() {
+		if (!isAttached() || network == null || geometry == null)
+			return;
 		if (!network.isStatus(Status.HAS_LAYOUT) || geometry.isType(GeometryType.DYNAMIC))
 			network.doLayout(this);
 		network.finishLayout();

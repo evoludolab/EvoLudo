@@ -352,6 +352,9 @@ public class Pop2D extends GenericPop<String, Network2D, PopGraph2D> implements 
 			if (hard)
 				graph.reset();
 		}
+		// Reset invalidates network layouts; force one data update so network graphs
+		// immediately schedule and display the rebuilt structure.
+		updateData(true);
 		update(hard);
 	}
 
