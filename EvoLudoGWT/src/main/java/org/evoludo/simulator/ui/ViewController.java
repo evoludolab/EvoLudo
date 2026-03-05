@@ -305,6 +305,7 @@ public class ViewController {
 
 		if (!oldViews.isEmpty())
 			unloadViews(oldViews);
+		syncSelector();
 		lastModule = module;
 	}
 
@@ -360,12 +361,31 @@ public class ViewController {
 			activeView.deactivate();
 		activeView = newView;
 		deck.showWidget(activeView);
-		int activeIdx = deck.getWidgetIndex(activeView);
-		selector.setSelectedIndex(activeIdx);
+		syncSelector();
 		Scheduler.get().scheduleDeferred(() -> activeView.activate());
 		if (onViewChanged != null)
 			onViewChanged.run();
 		return true;
+	}
+
+	/**
+	 * Synchronize selector entry with the active view.
+	 */
+	private void syncSelector() {
+		if (activeView == null) {
+			selector.setSelectedIndex(-1);
+			return;
+		}
+		int idx = 0;
+		for (AbstractView<?> view : activeViews.values()) {
+			if (view == activeView) {
+				selector.setSelectedIndex(idx);
+				return;
+			}
+			idx++;
+		}
+		// fatal does not return
+		engine.fatal("Invalid EvoLudo state - reload!");
 	}
 
 	/**
