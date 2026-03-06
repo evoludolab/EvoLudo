@@ -414,7 +414,7 @@ public class PDE extends ODE {
 
 	/**
 	 * The generation when the model execution is halted next. This is needed to
-	 * keep track of halting for asynchronous execution in GWT.
+	 * keep track of halting for scheduled execution in GWT.
 	 */
 	double gwtHalt;
 
@@ -438,9 +438,9 @@ public class PDE extends ODE {
 		if (deltat >= 1e-8)
 			step = Math.min(step, deltat);
 		connect = true;
-		// note: returns immediately for asynchronous execution (GWT)
+		// note: returns immediately for scheduled execution in GWT
 		supervisor.next(step);
-		// important: for GWT condition never holds because t unchanged
+		// important: for GWT condition never holds because time unchanged
 		if (Math.abs(gwtHalt - time) < 1e-8)
 			return false;
 		return !converged;

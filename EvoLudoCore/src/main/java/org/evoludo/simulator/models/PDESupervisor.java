@@ -46,8 +46,7 @@ public class PDESupervisor {
 	/**
 	 * Creates a new supervisor to manage the PDE calculations of model
 	 * <strong>charge</strong>. Subclasses may introduce specific optimizations. In
-	 * particular, parallel execution of computations for JRE and scheduling for
-	 * GWT.
+	 * particular, worker-thread execution for JRE and scheduled execution for GWT.
 	 * 
 	 * @param engine the pacemaker for running the model
 	 * @param charge the model to supervise
@@ -111,7 +110,7 @@ public class PDESupervisor {
 	 * scheduling to avoid blocking the GUI.
 	 * 
 	 * @param stepDt the time step to advance the PDE
-	 * @return <code>true</code> if system converged
+	 * @return <code>true</code> if the system converged
 	 * 
 	 * @see org.evoludo.simulator.models.PDESupervisorGWT#next(double)
 	 *      PDESupervisorGWT.next(double)

@@ -1009,13 +1009,13 @@ public abstract class Model implements CLOProvider {
 	}
 
 	/**
-	 * GWT models run asynchronously and long running tasks require scheduling to
-	 * maintain responsive user interface. In contrast, JRE provides a
-	 * multi-threaded environment, which allows to run multiple threads
-	 * synchronously. This parallel execution results in an significant speed-boost
-	 * (for PDE calculations).
+	 * Indicates whether this model advances through the GWT scheduling path.
+	 * Scheduled models return from {@link #next()} before the step is complete and
+	 * later report completion through {@link EvoLudo#modelNextDone(boolean)}.
+	 * Models that return {@code false} use the non-scheduled path, which may
+	 * complete inline or use worker threads on JRE.
 	 *
-	 * @return <code>true</code> if model calculations are asynchronous
+	 * @return <code>true</code> if model advancement uses GWT scheduling
 	 */
 	public boolean useScheduling() {
 		return false;

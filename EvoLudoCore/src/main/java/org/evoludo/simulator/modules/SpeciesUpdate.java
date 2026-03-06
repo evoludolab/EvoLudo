@@ -36,32 +36,10 @@ import org.evoludo.util.CLOption;
 import org.evoludo.util.CLOCategory;
 
 /**
- * The implementation of population updates. Population updates are used to
- * update the population size and composition of individuals.
- * <p>
- * The population update type can be set to one of the following:
- * <dl>
- * <dt>synchronous
- * <dd>Synchronized population updates.
- * <dt>Wright-Fisher
- * <dd>Wright-Fisher process (synchronous)
- * <dt>asynchronous
- * <dd>Asynchronous population updates (default).
- * <dt>Bd
- * <dd>Moran process (birth-death, asynchronous).
- * <dt>dB
- * <dd>Moran process (death-birth, asynchronous).
- * <dt>imitate
- * <dd>Moran process (imitate, asynchronous).
- * <dt>ecology
- * <dd>Asynchronous updates (non-constant population size).
- * </dl>
- * <p>
- * The population update type can be set via the command line option
- * {@code --popupdate <u> [&gt;p&lt;]} where {@code <u>} is the population
- * update type, and {@code &gt;p&lt;} the fraction of individuals that reassess
- * their trait.
- * 
+ * The implementation of species updates for multi-species modules. Species
+ * updates determine how the focal species is selected before the corresponding
+ * population update is applied within that species.
+ *
  * @author Christoph Hauert
  */
 public class SpeciesUpdate {

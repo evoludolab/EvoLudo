@@ -215,9 +215,9 @@ public abstract class EvoLudo
 	/**
 	 * Generate 2D network. This is the factory method to provide different
 	 * implementations for GWT and JRE. More specifically, the layouting process in
-	 * GWT uses scheduling (asynchronous execution) to prevent the GUI from
-	 * stalling, while JRE implementations take advantage of multiple threads for
-	 * significantly faster execution due to parallelization.
+	 * GWT uses scheduled execution on the browser event loop to prevent the GUI
+	 * from stalling, while JRE implementations take advantage of worker threads for
+	 * significantly faster execution through parallelization.
 	 * 
 	 * @param geometry the geometry backing the 2D network
 	 * @return new instance of a 2D network
@@ -227,9 +227,9 @@ public abstract class EvoLudo
 	/**
 	 * Generate 3D network. This is the factory method to provide different
 	 * implementations for GWT and JRE. More specifically, the layouting process in
-	 * GWT uses scheduling (asynchronous execution) to prevent the GUI from
-	 * stalling, while JRE implementations take advantage of multiple threads for
-	 * significantly faster execution due to parallelization.
+	 * GWT uses scheduled execution on the browser event loop to prevent the GUI
+	 * from stalling, while JRE implementations take advantage of worker threads for
+	 * significantly faster execution through parallelization.
 	 * <p>
 	 * <strong>Note:</strong> The {@code java3d} package is obsolete. At present no
 	 * 3D implementation for java exists.
@@ -539,9 +539,9 @@ public abstract class EvoLudo
 
 	/**
 	 * Called after the calculations of the next state of the model have finished.
-	 * For GWT this method serves as a callback for the asynchronous model
-	 * computations. For JRE this runs in a separate thread from the GUI and
-	 * {@link #modelNext()} directly calls this.
+	 * For GWT this method serves as a callback for scheduled model computations.
+	 * For JRE it is invoked after threaded work completes, while
+	 * {@link #modelNext()} calls it directly for models that finish inline.
 	 *
 	 * @param cont <code>false</code> if converged or halting time reached
 	 * @return <code>true</code> if not converged, i.e. if <code>modelNext()</code>
@@ -1026,10 +1026,10 @@ public abstract class EvoLudo
 
 	/**
 	 * Hire supervisor for managing PDE calculations. This is the factory method
-	 * provide different implementations For GWT and JRE. More specifically, GWT
-	 * uses asynchronous execution to prevent the GUI from stalling, while JRE
-	 * implementations take advantage of multiple threads for significantly faster
-	 * execution due to parallelization.
+	 * provide different implementations for GWT and JRE. More specifically, GWT
+	 * uses scheduled execution to prevent the GUI from stalling, while JRE
+	 * implementations take advantage of worker threads for significantly faster
+	 * execution through parallelization.
 	 *
 	 * @param charge the PDE model to supervise
 	 * @return supervisor for coordinating PDE calculations
