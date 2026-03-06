@@ -535,11 +535,8 @@ public abstract class Module<T extends Module<T>>
 			}
 			break;
 		}
-		if (type == null) {
+		if (type == null)
 			type = defaulttype;
-			if (!helpRequested)
-				warnModel("model type unspecified", type);
-		}
 		// NOTE: currently models cannot be mix'n'matched between species
 		engine.loadModel(type);
 		if (engine.getModel() == null) {
