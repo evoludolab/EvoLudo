@@ -363,11 +363,10 @@ public abstract class GenericPopGraph<T, N extends Network<?>> extends AbstractG
 		if (!needsLayout)
 			return;
 		if (hasStaticLayout()) {
-			drawLattice();
 			view.layoutComplete();
-		} else {
-			layoutNetwork();
+			return;
 		}
+		layoutNetwork();
 	}
 
 	/**
