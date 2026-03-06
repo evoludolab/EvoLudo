@@ -1173,9 +1173,9 @@ public abstract class AbstractView<G extends AbstractGraph<?>> extends Composite
 		Canvas canvas = Canvas.createIfSupported();
 		if (canvas == null)
 			return;
-		int scale = NativeJS.getDevicePixelRatio();
-		canvas.setCoordinateSpaceWidth(getOffsetWidth() * scale);
-		canvas.setCoordinateSpaceHeight(getOffsetHeight() * scale);
+		double scale = NativeJS.getDevicePixelRatio();
+		canvas.setCoordinateSpaceWidth((int) (getOffsetWidth() * scale));
+		canvas.setCoordinateSpaceHeight((int) (getOffsetHeight() * scale));
 		MyContext2d ctx = canvas.getContext2d().cast();
 		export(ctx, scale);
 		NativeJS.export(canvas.getCanvasElement().toDataUrl("image/png").replaceFirst("^data:image/[^;]",
@@ -1191,8 +1191,9 @@ public abstract class AbstractView<G extends AbstractGraph<?>> extends Composite
 			ScriptInjector.fromString(Resources.INSTANCE.canvas2SVG().getText()).inject();
 			hasSVGjs = true;
 		}
-		int scale = NativeJS.getDevicePixelRatio();
-		MyContext2d ctx = NativeJS.createSVGContext(getOffsetWidth() * scale, getOffsetHeight() * scale);
+		double scale = NativeJS.getDevicePixelRatio();
+		MyContext2d ctx = NativeJS.createSVGContext((int) Math.round(getOffsetWidth() * scale),
+				(int) Math.round(getOffsetHeight() * scale));
 		export(ctx, scale);
 		NativeJS.exportSVG(ctx);
 	}
@@ -1203,7 +1204,7 @@ public abstract class AbstractView<G extends AbstractGraph<?>> extends Composite
 	 * @param ctx   the graphical context of the canvas to export to
 	 * @param scale the scaling for the export canvas
 	 */
-	protected void export(MyContext2d ctx, int scale) {
+	protected void export(MyContext2d ctx, double scale) {
 		int hOffset = 0;
 		int vOffset = 0;
 		int count = 0;
@@ -1214,9 +1215,9 @@ public abstract class AbstractView<G extends AbstractGraph<?>> extends Composite
 			ctx.restore();
 			if (++count % gCols == 0) {
 				hOffset = 0;
-				vOffset += scale * graph.getOffsetHeight();
+				vOffset += (int) Math.round(scale * graph.getOffsetHeight());
 			} else
-				hOffset += scale * graph.getOffsetWidth();
+				hOffset += (int) Math.round(scale * graph.getOffsetWidth());
 		}
 	}
 
