@@ -134,6 +134,12 @@ public class EvoLudoGWT extends EvoLudo {
 			// no stopping time requested: take snapshot now
 			gui.snapshotReady();
 		}
+		if (isSuspended()) {
+			AbstractView<?> activeView = gui.getActiveView();
+			if (activeView != null)
+				activeView.update(true);
+			Scheduler.get().scheduleDeferred(this::run);
+		}
 		super.layoutComplete();
 	}
 

@@ -790,7 +790,7 @@ public abstract class AbstractGraph<B> extends FocusPanel
 		int width = getOffsetWidth();
 		int height = getOffsetHeight();
 		// canvas is null for PopGraph3D
-		if (canvas == null)
+		if (canvas == null || width == 0 || height == 0)
 			return;
 		int sw = (int) (scale * width);
 		int sh = (int) (scale * height);

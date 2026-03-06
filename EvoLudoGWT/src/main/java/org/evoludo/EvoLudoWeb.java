@@ -1514,8 +1514,6 @@ public class EvoLudoWeb extends Composite
 			currentView.activate();
 		}
 		processCLOSnap();
-		if (currentView != null && currentView.hasLayout() && engine.isSuspended())
-			engine.run();
 		if (deferStatusThresholdReset) {
 			deferStatusThresholdReset = false;
 			resetStatusThreshold();

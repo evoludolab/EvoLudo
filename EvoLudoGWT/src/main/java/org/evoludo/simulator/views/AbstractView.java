@@ -912,7 +912,7 @@ public abstract class AbstractView<G extends AbstractGraph<?>> extends Composite
 		for (G graph : graphs)
 			graph.onResize();
 		if (isActive)
-			scheduleUpdate(true);
+			update(true);
 	}
 
 	/**

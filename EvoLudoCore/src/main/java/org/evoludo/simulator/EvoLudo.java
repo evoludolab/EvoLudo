@@ -778,7 +778,6 @@ public abstract class EvoLudo
 	 * taking snapshots.
 	 */
 	public void layoutComplete() {
-		run();
 	}
 
 	/**

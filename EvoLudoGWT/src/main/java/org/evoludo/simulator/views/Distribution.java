@@ -358,8 +358,6 @@ public class Distribution extends AbstractView<PopGraph2D> implements TooltipPro
 
 	@Override
 	public void onResize() {
-		if (!isLoaded || model == null || getOffsetWidth() == 0 || getOffsetHeight() == 0)
-			return;
 		super.onResize();
 		updateData(true);
 	}
