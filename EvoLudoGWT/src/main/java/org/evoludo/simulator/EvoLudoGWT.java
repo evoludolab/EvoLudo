@@ -184,7 +184,6 @@ public class EvoLudoGWT extends EvoLudo {
 				break;
 			case STATISTICS_UPDATE:
 			case DYNAMICS:
-				// schedule single step
 				scheduleStep();
 				break;
 			default:
@@ -217,7 +216,13 @@ public class EvoLudoGWT extends EvoLudo {
 	 * Schedule the next step.
 	 */
 	private void scheduleStep() {
-		Scheduler.get().scheduleDeferred(() -> modelNext());
+		Scheduler.get().scheduleDeferred(() -> {
+			if (pendingAction != PendingAction.NONE) {
+				processPendingAction();
+				return;
+			}
+			modelNext();
+		});
 	}
 
 	@Override
