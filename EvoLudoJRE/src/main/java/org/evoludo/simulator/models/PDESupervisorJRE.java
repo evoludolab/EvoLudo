@@ -34,6 +34,8 @@ import java.awt.GraphicsEnvironment;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.ListIterator;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 import org.evoludo.simulator.EvoLudo;
 
@@ -62,7 +64,7 @@ public class PDESupervisorJRE extends PDESupervisor {
 	 * 
 	 * @see RDWorker
 	 */
-	protected List<RDWorker> workers = new ArrayList<RDWorker>(0);
+	protected List<RDWorker> workers = new ArrayList<>(0);
 
 	/**
 	 * The total change in state (distance squared between previous and current
@@ -81,7 +83,7 @@ public class PDESupervisorJRE extends PDESupervisor {
 		pending = -1;
 		fireWorkers();
 		synchronized (this) {
-			notify();
+			notifyAll();
 		}
 	}
 
@@ -110,13 +112,13 @@ public class PDESupervisorJRE extends PDESupervisor {
 	 */
 	private void hireWorkers() {
 		int nWorkers = Runtime.getRuntime().availableProcessors();
-		engine.getLogger().info("Total of " + nWorkers + " processors available.");
 		if (nWorkers > 2 && !GraphicsEnvironment.isHeadless())
 			nWorkers--;
-		nWorkers = Math.min(nWorkers, Math.max(1, nUnits / RDWorker.RD_MIN_WORKLOAD));
-		engine.getLogger().info("Using " + nWorkers + " threads for integrating " + nUnits + " PDE units.");
+		nWorkers = Math.clamp(nWorkers, 1, nUnits / RDWorker.RD_MIN_WORKLOAD);
+		logWorkers(nWorkers, nUnits);
 		RDWorker worker;
-		int start, end = 0;
+		int start;
+		int end = 0;
 		int incr = nUnits / nWorkers;
 		for (int i = 0; i < nWorkers - 1; i++) {
 			start = end;
@@ -130,6 +132,19 @@ public class PDESupervisorJRE extends PDESupervisor {
 		worker = new RDWorker(this, charge, end, nUnits);
 		new Thread(worker, "RDWorker-" + nWorkers).start();
 		workers.add(worker);
+	}
+
+	/**
+	 * Helper to log the number of worker threads and their workload.
+	 * 
+	 * @param nWorkers the number of workers
+	 * @param nUnits   the number of units each worker processes
+	 */
+	private void logWorkers(int nWorkers, int nUnits) {
+		Logger logger = engine.getLogger();
+		if (!logger.isLoggable(Level.INFO))
+			return;
+		logger.info("Using " + nWorkers + " threads for integrating " + nUnits + " PDE units.");
 	}
 
 	/**
@@ -147,6 +162,7 @@ public class PDESupervisorJRE extends PDESupervisor {
 			try {
 				wait();
 			} catch (InterruptedException e) {
+				Thread.currentThread().interrupt();
 			}
 		}
 		charge.normalizeMeanFitness();
@@ -167,6 +183,7 @@ public class PDESupervisorJRE extends PDESupervisor {
 			try {
 				wait();
 			} catch (InterruptedException e) {
+				Thread.currentThread().interrupt();
 			}
 		}
 		charge.normalizeMeanDensity();
@@ -184,7 +201,7 @@ public class PDESupervisorJRE extends PDESupervisor {
 	protected synchronized void done() {
 		if (--pending > 0)
 			return;
-		notify();
+		notifyAll();
 	}
 
 	/**
@@ -291,13 +308,6 @@ public class PDESupervisorJRE extends PDESupervisor {
 		public synchronized void run() {
 			while (true) {
 				switch (task) {
-					// case IDLE:
-					default:
-						try {
-							wait();
-						} catch (InterruptedException e) {
-						}
-						break;
 					case REACT:
 						boss.done(charge.react(start, end));
 						task = Task.IDLE;
@@ -309,6 +319,14 @@ public class PDESupervisorJRE extends PDESupervisor {
 						break;
 					case EXIT:
 						return;
+					case IDLE:
+					default:
+						try {
+							wait();
+						} catch (InterruptedException e) {
+							Thread.currentThread().interrupt();
+						}
+						break;
 				}
 			}
 		}
@@ -320,7 +338,7 @@ public class PDESupervisorJRE extends PDESupervisor {
 		 */
 		public synchronized void task(Task tsk) {
 			task = tsk;
-			notify();
+			notifyAll();
 		}
 	}
 }
