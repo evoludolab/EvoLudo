@@ -88,7 +88,6 @@ public class PDESupervisorGWT extends PDESupervisor {
 		double acc = charge.getAccuracy();
 		final double acc2 = acc * acc;
 		final double acc2dt2 = acc2 * dt * dt;
-		charge.initDiffusion(dt);
 		Scheduler.get().scheduleIncremental(() -> {
 			// check if emergency brake was pulled (e.g. when unloading running model)
 			if (!inProgress)
@@ -97,8 +96,10 @@ public class PDESupervisorGWT extends PDESupervisor {
 			boolean cont = true;
 			double change = Double.MAX_VALUE;
 			if (timeRemain > charge.getDt()) {
-				diffuse();
-				change = react();
+				double[] scaledDiffusion = charge.getScaledDiffusion(dt);
+				double[][] scaledAdvection = charge.getScaledAdvection(dt);
+				diffuse(scaledDiffusion, scaledAdvection);
+				change = react(dt);
 				// at this point, fitness and density are synchronized
 				// the new density distribution is in 'next'
 				cont = charge.incrementTime(dt);
@@ -116,9 +117,10 @@ public class PDESupervisorGWT extends PDESupervisor {
 			}
 			// update remainder (if necessary)
 			if (timeRemain > 1e-6) {
-				charge.initDiffusion(timeRemain);
-				diffuse();
-				change = react();
+				double[] scaledDiffusion = charge.getScaledDiffusion(timeRemain);
+				double[][] scaledAdvection = charge.getScaledAdvection(timeRemain);
+				diffuse(scaledDiffusion, scaledAdvection);
+				change = react(timeRemain);
 				cont = charge.incrementTime(timeRemain);
 			}
 			boolean converged = (change <= acc2 * timeRemain * timeRemain);

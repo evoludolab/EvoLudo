@@ -73,6 +73,21 @@ public class PDESupervisorJRE extends PDESupervisor {
 	protected double change;
 
 	/**
+	 * Scaled diffusion coefficients currently processed by the worker pool.
+	 */
+	private double[] scaledD;
+
+	/**
+	 * Scaled advection coefficients currently processed by the worker pool.
+	 */
+	private double[][] scaledA;
+
+	/**
+	 * Integration step currently processed by the worker pool.
+	 */
+	private double reactStep;
+
+	/**
 	 * The number of workers that have not yet finished their task.
 	 */
 	private int pending = -1;
@@ -151,9 +166,12 @@ public class PDESupervisorJRE extends PDESupervisor {
 	 * Perform the reaction step using multiple threads (if available).
 	 */
 	@Override
-	protected synchronized double react() {
+	protected synchronized double react(double stepSize) {
 		change = 0.0;
-		charge.resetFitness();
+		reactStep = stepSize;
+		boolean hasPayoffs = (charge.module instanceof org.evoludo.simulator.modules.Features.Payoffs);
+		if (hasPayoffs)
+			charge.resetFitness();
 		pending = workers.size();
 		for (RDWorker worker : workers)
 			worker.task(RDWorker.Task.REACT);
@@ -165,7 +183,8 @@ public class PDESupervisorJRE extends PDESupervisor {
 				Thread.currentThread().interrupt();
 			}
 		}
-		charge.normalizeMeanFitness();
+		if (hasPayoffs)
+			charge.normalizeMeanFitness();
 		return change;
 	}
 
@@ -173,7 +192,9 @@ public class PDESupervisorJRE extends PDESupervisor {
 	 * Perform the diffusion step using multiple threads (if available).
 	 */
 	@Override
-	protected synchronized void diffuse() {
+	protected synchronized void diffuse(double[] scaledD, double[][] scaledA) {
+		this.scaledD = scaledD;
+		this.scaledA = scaledA;
 		charge.resetDensity();
 		pending = workers.size();
 		for (RDWorker worker : workers)
@@ -309,11 +330,11 @@ public class PDESupervisorJRE extends PDESupervisor {
 			while (true) {
 				switch (task) {
 					case REACT:
-						boss.done(charge.react(start, end));
+						boss.done(charge.react(start, end, boss.reactStep));
 						task = Task.IDLE;
 						break;
 					case DIFFUSE:
-						charge.diffuse(start, end);
+						boss.diffuse(start, end, boss.scaledD, boss.scaledA);
 						boss.done();
 						task = Task.IDLE;
 						break;

@@ -89,7 +89,7 @@ public class PDESupervisor {
 	 * Called after a change of parameters.
 	 */
 	public synchronized void update() {
-		react();
+		react(charge.getDt());
 		charge.setDensity();
 	}
 
@@ -118,15 +118,16 @@ public class PDESupervisor {
 	public boolean next(double stepDt) {
 		final double timeStop = charge.getTime() + stepDt;
 		final double dt = charge.getDt();
+		double[] scaledD = charge.getScaledDiffusion(dt);
+		double[][] scaledA = charge.getScaledAdvection(dt);
 		final double acc = charge.getAccuracy();
 		final double acc2 = acc * acc;
 		final double acc2dt2 = acc2 * dt * dt;
-		charge.initDiffusion(dt);
 		double timeRemain = stepDt;
 		double change = Double.MAX_VALUE;
 		while (timeRemain > dt) {
-			diffuse();
-			change = react();
+			diffuse(scaledD, scaledA);
+			change = react(dt);
 			// at this point, fitness and density are synchronized
 			// the new density distribution is in 'next'
 			charge.incrementTime(dt);
@@ -138,9 +139,10 @@ public class PDESupervisor {
 		}
 		// update remainder (if necessary)
 		if (timeRemain > 1e-6) {
-			charge.initDiffusion(timeRemain);
-			diffuse();
-			change = react();
+			scaledD = charge.getScaledDiffusion(timeRemain);
+			scaledA = charge.getScaledAdvection(timeRemain);
+			diffuse(scaledD, scaledA);
+			change = react(timeRemain);
 			charge.incrementTime(timeRemain);
 		}
 		if (change > acc2 * timeRemain * timeRemain)
@@ -156,14 +158,14 @@ public class PDESupervisor {
 	 * 
 	 * @return the accumulated total change in state
 	 */
-	protected synchronized double react() {
+	protected synchronized double react(double stepSize) {
 		double change;
 		if (charge.module instanceof Payoffs) {
 			charge.resetFitness();
-			change = charge.react(0, nUnits);
+			change = charge.react(0, nUnits, stepSize);
 			charge.normalizeMeanFitness();
 		} else {
-			change = charge.react(0, nUnits);
+			change = charge.react(0, nUnits, stepSize);
 		}
 		return change;
 	}
@@ -173,9 +175,26 @@ public class PDESupervisor {
 	 * <p>
 	 * <strong>Important:</strong> This is not thread-safe.
 	 */
-	protected synchronized void diffuse() {
+	protected synchronized void diffuse(double[] scaledD, double[][] scaledA) {
 		charge.resetDensity();
-		charge.diffuse(0, nUnits);
+		diffuse(0, nUnits, scaledD, scaledA);
 		charge.normalizeMeanDensity();
+	}
+
+	/**
+	 * Dispatch diffusion to the PDE implementation appropriate for the current
+	 * model type.
+	 *
+	 * @param start   the first unit to update
+	 * @param end     the end-exclusive unit to update
+	 * @param scaledD the scaled diffusion coefficients
+	 * @param scaledA the scaled advection coefficients, if any
+	 */
+	protected void diffuse(int start, int end, double[] scaledD, double[][] scaledA) {
+		if (scaledA == null) {
+			charge.diffuse(start, end, scaledD);
+			return;
+		}
+		((Advection) charge).diffuse(start, end, scaledD, scaledA);
 	}
 }

@@ -63,15 +63,6 @@ public class Advection extends PDE {
 	protected double[][] advcoeff;
 
 	/**
-	 * Helper variable to store the effective advection coefficients. This depends
-	 * not only on the advection coefficients {@link #advcoeff} ut also on the time
-	 * increment {@link ODE#dt dt} and the linear extension, {@link #linext}.
-	 *
-	 * @see #initDiffusion(double)
-	 */
-	protected double[][] beta;
-
-	/**
 	 * The flag to indicate whether advection coefficients are non-vanishing. If
 	 * {@code false} simply delegate numerical calculations to {@code super}.
 	 */
@@ -119,10 +110,9 @@ public class Advection extends PDE {
 	//// GWT.log("react: meanDensity="+meanDensity);
 	// }
 
-	@Override
-	public void diffuse(int start, int end) {
+	public void diffuse(int start, int end, double[] scaledD, double[][] scaledA) {
 		if (!doAdvection) {
-			super.diffuse(start, end);
+			super.diffuse(start, end, scaledD);
 			return;
 		}
 
@@ -135,9 +125,9 @@ public class Advection extends PDE {
 		double[] adv = new double[nDim];
 
 		if (isSymmetric) {
-			diffuseSymmetric(start, end, minDens, maxDens, meanDens, delta, adv);
+			diffuseSymmetric(start, end, scaledD, scaledA, minDens, maxDens, meanDens, delta, adv);
 		} else {
-			diffuseStandard(start, end, minDens, maxDens, meanDens, delta, adv);
+			diffuseStandard(start, end, scaledD, scaledA, minDens, maxDens, meanDens, delta, adv);
 		}
 		updateDensity(minDens, maxDens, meanDens);
 	}
@@ -153,8 +143,8 @@ public class Advection extends PDE {
 	 * @param delta    helper array to store differences
 	 * @param adv      helper array to store advection contributions
 	 */
-	private void diffuseSymmetric(int start, int end, double[] minDens, double[] maxDens,
-			double[] meanDens, double[] delta, double[] adv) {
+	private void diffuseSymmetric(int start, int end, double[] scaledD, double[][] scaledA,
+			double[] minDens, double[] maxDens, double[] meanDens, double[] delta, double[] adv) {
 		int[][] in = space.in;
 		GeometryFeatures features = space.getFeatures();
 		double[][] sort = new double[features.maxIn][];
@@ -179,10 +169,10 @@ public class Advection extends PDE {
 				// advection contribution from this neighbour
 				ArrayMath.sub(si, sn, delta); // delta = si-sn
 				ArrayMath.add(delta, 1.0); // delta = 1+si-sn
-				addAdvectionContribution(sn, si, delta, adv);
+				addAdvectionContribution(sn, si, delta, adv, scaledA);
 			}
 			// finalize site
-			ArrayMath.multiply(s, alpha); // s *= alpha
+			ArrayMath.multiply(s, scaledD); // s *= alpha
 			ArrayMath.add(s, sn); // s += sn
 			ArrayMath.add(s, adv); // s += adv
 			if (dependent >= 0)
@@ -202,8 +192,8 @@ public class Advection extends PDE {
 	 * @param delta    helper array to store differences
 	 * @param adv      helper array to store advection contributions
 	 */
-	private void diffuseStandard(int start, int end, double[] minDens, double[] maxDens,
-			double[] meanDens, double[] delta, double[] adv) {
+	private void diffuseStandard(int start, int end, double[] scaledD, double[][] scaledA,
+			double[] minDens, double[] maxDens, double[] meanDens, double[] delta, double[] adv) {
 		int[][] in = space.in;
 		for (int n = start; n < end; n++) {
 			int[] neighs = in[n];
@@ -219,10 +209,10 @@ public class Advection extends PDE {
 				// advection contribution from this neighbour
 				ArrayMath.sub(si, sn, delta); // delta = si-sn
 				ArrayMath.add(delta, 1.0); // delta = 1+si-sn
-				addAdvectionContribution(sn, si, delta, adv);
+				addAdvectionContribution(sn, si, delta, adv, scaledA);
 			}
 			// finalize site
-			ArrayMath.multiply(s, alpha);
+			ArrayMath.multiply(s, scaledD);
 			ArrayMath.add(s, sn);
 			ArrayMath.add(s, adv);
 			if (dependent >= 0)
@@ -240,7 +230,8 @@ public class Advection extends PDE {
 	 * @param delta the precomputed delta = 1 + si - sn
 	 * @param adv   the advection accumulator for the focal site
 	 */
-	private void addAdvectionContribution(double[] sn, double[] si, double[] delta, double[] adv) {
+	private void addAdvectionContribution(double[] sn, double[] si, double[] delta, double[] adv,
+			double[][] scaledA) {
 		int jidx = 0;
 		for (int j = 0; j < nDim; j++) {
 			if (j == dependent)
@@ -251,7 +242,7 @@ public class Advection extends PDE {
 				if (k == dependent)
 					continue;
 				double dk = delta[k] * 0.5;
-				advj += beta[jidx][kidx] * (-sn[j] * dk + si[j] * (1.0 - dk));
+				advj += scaledA[jidx][kidx] * (-sn[j] * dk + si[j] * (1.0 - dk));
 				kidx++;
 			}
 			adv[j] += advj;
@@ -270,18 +261,16 @@ public class Advection extends PDE {
 	}
 
 	@Override
-	public void initDiffusion(double deltat) {
-		super.initDiffusion(deltat);
+	public double[][] getScaledAdvection(double stepSize) {
 		if (!doAdvection)
-			return;
-		// initialize beta
+			return null;
 		int dim = dependent < 0 ? nDim : nDim - 1;
-		if (beta == null || beta.length != dim)
-			beta = new double[dim][dim];
+		double[][] scaledA = new double[dim][dim];
 		double invdx = calcInvDeltaX();
 		double invdx2 = invdx * invdx;
 		for (int r = 0; r < dim; r++)
-			ArrayMath.multiply(advcoeff[r], deltat * invdx2, beta[r]);
+			ArrayMath.multiply(advcoeff[r], stepSize * invdx2, scaledA[r]);
+		return scaledA;
 	}
 
 	@Override

@@ -256,15 +256,6 @@ public class PDE extends ODE {
 	protected int dependent = -1;
 
 	/**
-	 * Helper variable to store the effective diffusion terms. This depends not only
-	 * on the diffusion coefficients {@link #diffcoeff} but also on the time
-	 * increment {@link ODE#dt dt} and the linear extension, {@link #linext}.
-	 * 
-	 * @see #initDiffusion(double)
-	 */
-	protected double[] alpha;
-
-	/**
 	 * In order to preserve symmetry the densities of neighbouring cells in the
 	 * diffusion step need to be sorted. The sorting criteria are essentially
 	 * irrelevant as long as they are consistently applied.
@@ -362,8 +353,6 @@ public class PDE extends ODE {
 		dependent = dependents[0];
 		// some careful checking for suitable time steps is required!
 		checkDt();
-		// initialize scaled diffusion constant
-		initDiffusion(dt);
 		// check if diffusion can and should preserve symmetry
 		// only makes sense on lattices but regardless of boundary conditions
 		// note: here we can only check geometry parameters, features such as
@@ -447,9 +436,10 @@ public class PDE extends ODE {
 	}
 
 	/**
-	 * Reaction step. Update cells with indices between <code>start</code>
-	 * (including) and <code>end</code> (excluding) and return the accumulated/total
-	 * change in state.
+	 * Reaction step with an explicit integration step size {@link #dt}. Update
+	 * cells with indices between <code>start</code> (including) and
+	 * <code>end</code> (excluding) and return the accumulated/total change in
+	 * state.
 	 * <p>
 	 * <strong>Note:</strong> At the end, the state in <code>density</code> is
 	 * unchanged, the new density distribution is in <code>next</code> and the
@@ -458,11 +448,12 @@ public class PDE extends ODE {
 	 * <strong>Important:</strong> must be thread safe for JRE. In particular, no
 	 * memory can be shared with anyone else!
 	 *
-	 * @param start the index of the first cell (including)
-	 * @param end   the index of the last cell (excluding)
+	 * @param start    the index of the first cell (including)
+	 * @param end      the index of the last cell (excluding)
+	 * @param stepSize the integration step to apply
 	 * @return the accumulated change in state
 	 */
-	public double react(int start, int end) {
+	public double react(int start, int end, double stepSize) {
 		boolean hasFit = (module instanceof Payoffs);
 		double[] minFit = null;
 		double[] maxFit = null;
@@ -482,8 +473,8 @@ public class PDE extends ODE {
 			double[] youtn = next[n]; // youtn is only a short-cut - data written to next[]
 			double[] ftn = (hasFit ? fitness[n] : null);
 			getDerivatives(time, ytn, ftn, dytn);
-			ArrayMath.addscale(ytn, dytn, dt, youtn); // youtn = ytn+step*dy
-			change += ArrayMath.dot(dytn, dytn) * dt * dt;
+			ArrayMath.addscale(ytn, dytn, stepSize, youtn); // youtn = ytn+step*dy
+			change += ArrayMath.dot(dytn, dytn) * stepSize * stepSize;
 			if (!isDensity) {
 				normalizeState(youtn);
 			}
@@ -548,7 +539,7 @@ public class PDE extends ODE {
 	 * @param start the index of the first cell (including)
 	 * @param end   the index of the last cell (excluding)
 	 */
-	public void diffuse(int start, int end) {
+	public void diffuse(int start, int end, double[] scaledD) {
 		double[] minDens = new double[nDim];
 		Arrays.fill(minDens, Double.MAX_VALUE);
 		double[] maxDens = new double[nDim];
@@ -556,9 +547,9 @@ public class PDE extends ODE {
 		double[] meanDens = new double[nDim];
 
 		if (isSymmetric) {
-			diffuseSymmetric(start, end, minDens, maxDens, meanDens);
+			diffuseSymmetric(start, end, scaledD, minDens, maxDens, meanDens);
 		} else {
-			diffuseStandard(start, end, minDens, maxDens, meanDens);
+			diffuseStandard(start, end, scaledD, minDens, maxDens, meanDens);
 		}
 		updateDensity(minDens, maxDens, meanDens);
 	}
@@ -573,7 +564,8 @@ public class PDE extends ODE {
 	 * @param maxDens  the array to store the maximum densities
 	 * @param meanDens the array to store the mean densities
 	 */
-	private void diffuseSymmetric(int start, int end, double[] minDens, double[] maxDens, double[] meanDens) {
+	private void diffuseSymmetric(int start, int end, double[] scaledD, double[] minDens, double[] maxDens,
+			double[] meanDens) {
 		int[][] in = space.in;
 		GeometryFeatures features = space.getFeatures();
 		double[][] sort = new double[features.maxIn][];
@@ -594,7 +586,7 @@ public class PDE extends ODE {
 			// loop over neighbours
 			for (int i = 0; i < nIn; i++)
 				ArrayMath.add(s, sort[i]); // s += si
-			ArrayMath.multiply(s, alpha); // s *= alpha
+			ArrayMath.multiply(s, scaledD); // s *= alpha
 			ArrayMath.add(s, sn); // s += sn
 			if (dependent >= 0)
 				s[dependent] = Math.max(0.0, 1.0 + s[dependent] - ArrayMath.norm(s));
@@ -613,7 +605,8 @@ public class PDE extends ODE {
 	 * @param maxDens  the array to store the maximum densities
 	 * @param meanDens the array to store the mean densities
 	 */
-	private void diffuseStandard(int start, int end, double[] minDens, double[] maxDens, double[] meanDens) {
+	private void diffuseStandard(int start, int end, double[] scaledD, double[] minDens, double[] maxDens,
+			double[] meanDens) {
 		int[][] in = space.in;
 		for (int n = start; n < end; n++) {
 			int[] neighs = in[n];
@@ -623,7 +616,7 @@ public class PDE extends ODE {
 			ArrayMath.multiply(ds, -space.kout[n], s); // s = -kout*ds[n], current density in ds
 			for (int i = 0; i < nIn; i++)
 				ArrayMath.add(s, next[neighs[i]]); // s += sum ds[i], where i are neighbours of n
-			ArrayMath.multiply(s, alpha); // s *= alpha, s is change in density
+			ArrayMath.multiply(s, scaledD); // s *= alpha, s is change in density
 			ArrayMath.add(s, ds); // s += ds, new density now in s
 			if (dependent >= 0)
 				s[dependent] = Math.max(0.0, 1.0 + s[dependent] - ArrayMath.norm(s));
@@ -1113,17 +1106,26 @@ public class PDE extends ODE {
 	 * Helper method to initialize the effective rate of diffusion for the time
 	 * increment <code>dt</code>.
 	 * <p>
-	 * <strong>Note:</strong> This method needs to be public to permit access by
-	 * {@link org.evoludo.simulator.models.PDESupervisorGWT PDESupervisorGWT} and
-	 * {@link org.evoludo.simulator.models.PDESupervisorJRE PDESupervisorJRE}
 	 * 
-	 * @param deltat the time increment for diffusion
+	 * @param stepSize the time increment for diffusion
 	 */
-	public void initDiffusion(double deltat) {
-		if (alpha == null || alpha.length != nDim)
-			alpha = new double[nDim];
+	public double[] getScaledDiffusion(double stepSize) {
+		double[] scaledD = new double[nDim];
 		double invdx = calcInvDeltaX();
-		ArrayMath.multiply(diffcoeff, deltat * invdx * invdx, alpha);
+		ArrayMath.multiply(diffcoeff, stepSize * invdx * invdx, scaledD);
+		return scaledD;
+	}
+
+	/**
+	 * Compute advection scaling terms for the supplied time increment. Plain PDEs
+	 * do
+	 * not use advection and therefore return {@code null}.
+	 *
+	 * @param stepSize the time increment for advection
+	 * @return the scaled advection coefficients or {@code null}
+	 */
+	public double[][] getScaledAdvection(double stepSize) {
+		return null;
 	}
 
 	/**
