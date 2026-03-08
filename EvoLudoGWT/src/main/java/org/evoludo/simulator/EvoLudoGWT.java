@@ -36,9 +36,11 @@ import org.evoludo.graphics.Network3DGWT;
 import org.evoludo.math.ArrayMath;
 import org.evoludo.simulator.geometries.AbstractGeometry;
 import org.evoludo.simulator.models.ChangeListener.PendingAction;
+import org.evoludo.simulator.models.IBS;
 import org.evoludo.simulator.models.PDE;
 import org.evoludo.simulator.models.PDESupervisor;
 import org.evoludo.simulator.models.PDESupervisorGWT;
+import org.evoludo.simulator.modules.Module;
 import org.evoludo.simulator.views.AbstractView;
 import org.evoludo.util.CLOCategory;
 import org.evoludo.util.CLODelegate;
@@ -57,6 +59,16 @@ import com.google.gwt.user.client.Timer;
  * @author Christoph Hauert
  */
 public class EvoLudoGWT extends EvoLudo {
+
+	/**
+	 * Target number of microscopic IBS updates processed in one hidden GWT chunk.
+	 */
+	private static final int IBS_CHUNK_TARGET = 10000;
+
+	/**
+	 * Tolerance for floating point comparisons of update milestones.
+	 */
+	private static final double IBS_EPS = 1e-8;
 
 	/**
 	 * Create timer to measure execution times since instantiation.
@@ -158,6 +170,11 @@ public class EvoLudoGWT extends EvoLudo {
 			case STATISTICS_UPDATE:
 			case DYNAMICS:
 				// start with an update not the delay
+				if (isChunkedIBS()) {
+					scheduleIBSStep();
+					timer.scheduleRepeating(getDelay());
+					break;
+				}
 				if (modelNext())
 					timer.scheduleRepeating(getDelay());
 				break;
@@ -174,6 +191,17 @@ public class EvoLudoGWT extends EvoLudo {
 		}
 	};
 
+	/**
+	 * The original report interval while scheduled, chunked updates are in
+	 * progress.
+	 */
+	private double timeStepOrig = Double.NaN;
+
+	/**
+	 * The update milestone at which the current visible IBS step is complete.
+	 */
+	private double ibsTargetUpdates = Double.NaN;
+
 	@Override
 	public void next() {
 		switch (activeModel.getMode()) {
@@ -184,6 +212,10 @@ public class EvoLudoGWT extends EvoLudo {
 				break;
 			case STATISTICS_UPDATE:
 			case DYNAMICS:
+				if (isChunkedIBS()) {
+					scheduleIBSStep();
+					break;
+				}
 				scheduleStep();
 				break;
 			default:
@@ -225,8 +257,120 @@ public class EvoLudoGWT extends EvoLudo {
 		});
 	}
 
+	/**
+	 * Check whether the active model should be advanced in hidden IBS chunks.
+	 * 
+	 * @return <code>true</code> if GWT-local IBS chunking should be used
+	 */
+	private boolean isChunkedIBS() {
+		return activeModel instanceof IBS && activeModel.getTimeStep() > 0.0;
+	}
+
+	/**
+	 * Check whether a hidden IBS step is already scheduled or in progress.
+	 * 
+	 * @return <code>true</code> if the current IBS report step is chunked
+	 */
+	private boolean hasScheduledIBSStep() {
+		return !Double.isNaN(ibsTargetUpdates);
+	}
+
+	/**
+	 * Schedule a visible IBS report step as a sequence of hidden substeps.
+	 */
+	private void scheduleIBSStep() {
+		if (hasScheduledIBSStep() || activeModel == null)
+			return;
+		timeStepOrig = activeModel.getTimeStep();
+		ibsTargetUpdates = getNextIBSReport();
+		runController.startCPUSample();
+		Scheduler.get().scheduleIncremental(() -> {
+			if (!hasScheduledIBSStep())
+				return false;
+			if (activeModel == null) {
+				resetIBSChunking();
+				return false;
+			}
+			if (pendingAction != PendingAction.NONE) {
+				resetIBSChunking();
+				processPendingAction();
+				return false;
+			}
+			double remaining = ibsTargetUpdates - activeModel.getUpdates();
+			if (remaining <= IBS_EPS) {
+				finishIBSStep(activeModel.getUpdates() + IBS_EPS < activeModel.getNextHalt());
+				return false;
+			}
+			double chunk = Math.min(getIBSChunkStep(), remaining);
+			activeModel.setTimeStep(chunk);
+			boolean cont = activeModel.next();
+			activeModel.setTimeStep(timeStepOrig);
+			double updates = activeModel.getUpdates();
+			boolean reachedTarget = (updates + IBS_EPS >= ibsTargetUpdates);
+			if (!cont) {
+				finishIBSStep(false);
+				return false;
+			}
+			if (reachedTarget) {
+				finishIBSStep(activeModel.getUpdates() + IBS_EPS < activeModel.getNextHalt());
+				return false;
+			}
+			return true;
+		});
+	}
+
+	/**
+	 * Calculate the next regular report boundary for the active IBS model.
+	 * 
+	 * @return the update milestone for the next visible IBS step
+	 */
+	private double getNextIBSReport() {
+		double updates = activeModel.getUpdates();
+		double nextHalt = activeModel.getNextHalt();
+		double nextReport = (Math.floor((updates + IBS_EPS) / timeStepOrig) + 1.0) * timeStepOrig;
+		return Math.min(nextReport, nextHalt);
+	}
+
+	/**
+	 * Convert the IBS chunk budget from microscopic updates to generations.
+	 * <p>
+	 * This mirrors the main-branch IBS check interval logic, which counts work in
+	 * microscopic updates rather than fixed generation fractions.
+	 * 
+	 * @return the hidden IBS substep size measured in generations
+	 */
+	private double getIBSChunkStep() {
+		int nTotal = 0;
+		for (Module<?> mod : activeModule.getSpecies())
+			nTotal += mod.getNPopulation();
+		if (nTotal <= 0)
+			return timeStepOrig;
+		return IBS_CHUNK_TARGET / (double) nTotal;
+	}
+
+	/**
+	 * Complete the current hidden IBS step and forward the visible-step result.
+	 * 
+	 * @param cont <code>true</code> if the model should continue after this step
+	 */
+	private void finishIBSStep(boolean cont) {
+		resetIBSChunking();
+		modelNextDone(cont);
+	}
+
+	/**
+	 * Reset temporary state used for hidden IBS chunking.
+	 */
+	private void resetIBSChunking() {
+		if (activeModel != null && !Double.isNaN(timeStepOrig))
+			activeModel.setTimeStep(timeStepOrig);
+		timeStepOrig = Double.NaN;
+		ibsTargetUpdates = Double.NaN;
+	}
+
 	@Override
 	public synchronized void fireModuleUnloaded() {
+		resetIBSChunking();
 		isRunning = false;
 		timer.cancel();
 		super.fireModuleUnloaded();
@@ -234,6 +378,7 @@ public class EvoLudoGWT extends EvoLudo {
 
 	@Override
 	public synchronized void fireModelStopped() {
+		resetIBSChunking();
 		// model may already have been unloaded
 		if (activeModel == null)
 			return;
