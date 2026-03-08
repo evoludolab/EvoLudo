@@ -543,6 +543,11 @@ public class ODE extends Model implements DModel {
 	}
 
 	@Override
+	public double getTimeStep() {
+		return (timeStep > 0.0 ? timeStep : dt);
+	}
+
+	@Override
 	public boolean setInitialTraits(double[] init) {
 		if (init.length != nDim)
 			return false;

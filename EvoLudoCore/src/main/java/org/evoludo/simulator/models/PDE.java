@@ -422,7 +422,7 @@ public class PDE extends ODE {
 	public boolean next() {
 		gwtHalt = getNextHalt();
 		// continue if milestone reached in previous step, i.e. deltat < 1e-8
-		double step = timeStep;
+		double step = getTimeStep();
 		double deltat = Math.abs(gwtHalt - time);
 		if (deltat >= 1e-8)
 			step = Math.min(step, deltat);
