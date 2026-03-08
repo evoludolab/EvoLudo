@@ -695,6 +695,8 @@ public abstract class AbstractGeometry {
 	public final boolean check() {
 		boolean doReset = checkSettings();
 		validateRewiring();
+		if (doReset)
+			isValid = false;
 		alloc();
 		return doReset;
 	}
@@ -781,14 +783,25 @@ public abstract class AbstractGeometry {
 	protected void alloc() {
 		if (size <= 0)
 			throw new IllegalStateException("size must be set before allocating geometry");
+		boolean resized = false;
 		if (in == null || in.length != size) {
 			in = new int[size][];
 			kin = new int[size];
+			resized = true;
+		} else if (kin == null || kin.length != size) {
+			kin = new int[size];
+			resized = true;
 		}
 		if (out == null || out.length != size) {
 			out = new int[size][];
 			kout = new int[size];
+			resized = true;
+		} else if (kout == null || kout.length != size) {
+			kout = new int[size];
+			resized = true;
 		}
+		if (!resized && isValid)
+			return;
 		if (isUndirected && isRegular && connectivity >= 0.0) {
 			int k = (int) (connectivity + 0.5);
 			for (int i = 0; i < size; i++) {
