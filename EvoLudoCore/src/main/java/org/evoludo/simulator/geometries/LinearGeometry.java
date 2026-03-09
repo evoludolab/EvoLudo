@@ -155,19 +155,13 @@ public class LinearGeometry extends AbstractLattice {
 	}
 
 	@Override
-	public int hashCode() {
-		int result = super.hashCode();
-		result = 31 * result + Integer.hashCode(linearAsymmetry);
-		return result;
+	protected boolean equalParameters(AbstractGeometry other) {
+		LinearGeometry linear = (LinearGeometry) other;
+		return Double.compare(linearAsymmetry, linear.linearAsymmetry) == 0;
 	}
 
 	@Override
-	public boolean equals(Object obj) {
-		if (this == obj)
-			return true;
-		if (!super.equals(obj))
-			return false;
-		LinearGeometry other = (LinearGeometry) obj;
-		return Double.compare(linearAsymmetry, other.linearAsymmetry) == 0;
+	protected int hashParameters() {
+		return Integer.hashCode(linearAsymmetry);
 	}
 }

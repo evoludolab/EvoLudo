@@ -1742,8 +1742,10 @@ public abstract class AbstractGeometry {
 
 	@Override
 	public int hashCode() {
-		int result = Objects.hash(engine, specs, name, type, size, isUndirected, isRegular, isRewired,
-				isInterspecies, isSingle, isValid, features, connectivity, pRewire, pAddwire);
+		int result = Objects.hash(specs, type, size, isUndirected, isRegular, isRewired,
+				isInterspecies, isSingle, connectivity, pRewire, pAddwire);
+		result = 31 * result + hashParameters();
+		result = 31 * result + Objects.hash(engine, name, isValid, features);
 		result = 31 * result + Arrays.hashCode(kin);
 		result = 31 * result + Arrays.hashCode(kout);
 		result = 31 * result + Arrays.deepHashCode(in);
@@ -1758,16 +1760,54 @@ public abstract class AbstractGeometry {
 		if (obj == null || getClass() != obj.getClass())
 			return false;
 		AbstractGeometry other = (AbstractGeometry) obj;
+		if (!similar(other))
+			return false;
+		return isValid == other.isValid && Objects.equals(features, other.features)
+				&& Objects.equals(engine, other.engine) && Objects.equals(name, other.name)
+				&& Arrays.equals(kin, other.kin) && Arrays.equals(kout, other.kout)
+				&& Arrays.deepEquals(in, other.in) && Arrays.deepEquals(out, other.out);
+	}
+
+	/**
+	 * Compare geometry configuration while ignoring realized adjacency/layout
+	 * state.
+	 *
+	 * @param other the geometry to compare against
+	 * @return {@code true} if both geometries describe effectively the same
+	 *         structure
+	 */
+	public boolean similar(AbstractGeometry other) {
+		if (this == other)
+			return true;
+		if (other == null || getClass() != other.getClass())
+			return false;
 		return size == other.size && isUndirected == other.isUndirected && isRegular == other.isRegular
-				&& isRewired == other.isRewired && isInterspecies == other.isInterspecies && isSingle == other.isSingle
-				&& isValid == other.isValid && Objects.equals(features, other.features)
+				&& isRewired == other.isRewired && isInterspecies == other.isInterspecies
+				&& isSingle == other.isSingle
 				&& Double.doubleToLongBits(connectivity) == Double.doubleToLongBits(other.connectivity)
 				&& Double.doubleToLongBits(pRewire) == Double.doubleToLongBits(other.pRewire)
 				&& Double.doubleToLongBits(pAddwire) == Double.doubleToLongBits(other.pAddwire)
-				&& Objects.equals(engine, other.engine) && Objects.equals(specs, other.specs)
-				&& Objects.equals(name, other.name) && type == other.type && Arrays.equals(kin, other.kin)
-				&& Arrays.equals(kout, other.kout) && Arrays.deepEquals(in, other.in)
-				&& Arrays.deepEquals(out, other.out);
+				&& Objects.equals(specs, other.specs) && type == other.type
+				&& equalParameters(other);
+	}
+
+	/**
+	 * Compare subclass-specific geometry parameters for semantic equivalence.
+	 *
+	 * @param other the geometry to compare against
+	 * @return {@code true} if subclass-specific settings are equivalent
+	 */
+	protected boolean equalParameters(AbstractGeometry other) {
+		return true;
+	}
+
+	/**
+	 * Hash subclass-specific geometry parameters used by {@link #similar(AbstractGeometry)}.
+	 *
+	 * @return the hash contribution of subclass-specific settings
+	 */
+	protected int hashParameters() {
+		return 0;
 	}
 
 	/**

@@ -183,19 +183,13 @@ public class KlemmEguiluzGeometry extends AbstractNetwork {
 	}
 
 	@Override
-	public int hashCode() {
-		int result = super.hashCode();
-		result = 31 * result + Double.hashCode(pSmallWorld);
-		return result;
+	protected boolean equalParameters(AbstractGeometry other) {
+		KlemmEguiluzGeometry klemm = (KlemmEguiluzGeometry) other;
+		return Double.compare(pSmallWorld, klemm.pSmallWorld) == 0;
 	}
 
 	@Override
-	public boolean equals(Object obj) {
-		if (this == obj)
-			return true;
-		if (!super.equals(obj))
-			return false;
-		KlemmEguiluzGeometry other = (KlemmEguiluzGeometry) obj;
-		return Double.compare(pSmallWorld, other.pSmallWorld) == 0;
+	protected int hashParameters() {
+		return Double.hashCode(pSmallWorld);
 	}
 }

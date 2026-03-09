@@ -294,19 +294,13 @@ public class ScalefreeGeometry extends AbstractNetwork {
 	}
 
 	@Override
-	public int hashCode() {
-		int result = super.hashCode();
-		result = 31 * result + Double.hashCode(sfExponent);
-		return result;
+	protected boolean equalParameters(AbstractGeometry other) {
+		ScalefreeGeometry scalefree = (ScalefreeGeometry) other;
+		return Double.compare(sfExponent, scalefree.sfExponent) == 0;
 	}
 
 	@Override
-	public boolean equals(Object obj) {
-		if (this == obj)
-			return true;
-		if (!super.equals(obj))
-			return false;
-		ScalefreeGeometry other = (ScalefreeGeometry) obj;
-		return Double.compare(sfExponent, other.sfExponent) == 0;
+	protected int hashParameters() {
+		return Double.hashCode(sfExponent);
 	}
 }

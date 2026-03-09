@@ -125,19 +125,13 @@ public abstract class AbstractLattice extends AbstractGeometry {
 	}
 
 	@Override
-	public int hashCode() {
-		int result = super.hashCode();
-		result = 31 * result + Boolean.hashCode(fixedBoundary);
-		return result;
+	protected boolean equalParameters(AbstractGeometry other) {
+		AbstractLattice lattice = (AbstractLattice) other;
+		return fixedBoundary == lattice.fixedBoundary;
 	}
 
 	@Override
-	public boolean equals(Object obj) {
-		if (this == obj)
-			return true;
-		if (!super.equals(obj))
-			return false;
-		AbstractLattice other = (AbstractLattice) obj;
-		return fixedBoundary == other.fixedBoundary;
+	protected int hashParameters() {
+		return Boolean.hashCode(fixedBoundary);
 	}
 }

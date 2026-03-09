@@ -144,20 +144,15 @@ public class SuperstarGeometry extends AbstractGeometry {
 	}
 
 	@Override
-	public int hashCode() {
-		int result = super.hashCode();
-		result = 31 * result + petals;
-		result = 31 * result + amplification;
-		return result;
+	protected boolean equalParameters(AbstractGeometry other) {
+		SuperstarGeometry superstar = (SuperstarGeometry) other;
+		return petals == superstar.petals && amplification == superstar.amplification;
 	}
 
 	@Override
-	public boolean equals(Object obj) {
-		if (this == obj)
-			return true;
-		if (!super.equals(obj))
-			return false;
-		SuperstarGeometry other = (SuperstarGeometry) obj;
-		return petals == other.petals && amplification == other.amplification;
+	protected int hashParameters() {
+		int result = petals;
+		result = 31 * result + amplification;
+		return result;
 	}
 }
