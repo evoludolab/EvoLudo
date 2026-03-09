@@ -44,7 +44,6 @@ import org.evoludo.simulator.ColorMap;
 import org.evoludo.simulator.EvoLudo;
 import org.evoludo.simulator.geometries.AbstractGeometry;
 import org.evoludo.simulator.geometries.GeometryType;
-import org.evoludo.simulator.models.Advection;
 import org.evoludo.simulator.models.ChangeListener;
 import org.evoludo.simulator.models.IBS;
 import org.evoludo.simulator.models.IBSPopulation;
@@ -53,10 +52,8 @@ import org.evoludo.simulator.models.Model;
 import org.evoludo.simulator.models.Model.HasDE;
 import org.evoludo.simulator.models.Model.HasIBS;
 import org.evoludo.simulator.models.ModelType;
-import org.evoludo.simulator.models.RunListener;
-import org.evoludo.simulator.models.ODE;
 import org.evoludo.simulator.models.PDE;
-import org.evoludo.simulator.models.RungeKutta;
+import org.evoludo.simulator.models.RunListener;
 import org.evoludo.simulator.models.SDE;
 import org.evoludo.simulator.views.HasPhase2D;
 import org.evoludo.simulator.views.HasPhase2D.Data2Phase;
@@ -229,36 +226,7 @@ public abstract class Module<T extends Module<T>>
 			return model;
 		if (!getModelTypes().contains(type))
 			return null;
-		// return default model for type
-		switch (type) {
-			case IBS:
-				// let subclasses handle IBS
-				return null;
-			case SDE:
-				if (!(this instanceof HasDE.SDE))
-					return null;
-				return new SDE(engine);
-			case ODE: // defaults to RK5
-			case RK5:
-				if (!(this instanceof HasDE.ODE))
-					return null;
-				return new RungeKutta(engine);
-			case EM:
-				if (!(this instanceof HasDE.ODE))
-					return null;
-				return new ODE(engine);
-			case PDEADV:
-				if (!(this instanceof HasDE.PDEADV))
-					return null;
-				return new Advection(engine);
-			case PDE: // defaults to PDERD
-			case PDERD:
-				if (!(this instanceof HasDE.PDERD))
-					return null;
-				return new PDE(engine);
-			default:
-				return null;
-		}
+		return engine.createModel(type);
 	}
 
 	/**

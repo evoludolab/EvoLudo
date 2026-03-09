@@ -39,16 +39,21 @@ import java.util.logging.Logger;
 import org.evoludo.math.MersenneTwister;
 import org.evoludo.math.RNGDistribution;
 import org.evoludo.simulator.geometries.AbstractGeometry;
+import org.evoludo.simulator.models.Advection;
 import org.evoludo.simulator.models.ChangeListener;
 import org.evoludo.simulator.models.ChangeListener.PendingAction;
 import org.evoludo.simulator.models.IBSPopulation;
 import org.evoludo.simulator.models.LifecycleListener;
 import org.evoludo.simulator.models.Model;
+import org.evoludo.simulator.models.Model.HasDE;
 import org.evoludo.simulator.models.ModelType;
+import org.evoludo.simulator.models.ODE;
 import org.evoludo.simulator.models.PDE;
 import org.evoludo.simulator.models.PDESupervisor;
+import org.evoludo.simulator.models.RungeKutta;
 import org.evoludo.simulator.models.RunListener;
 import org.evoludo.simulator.models.SampleListener;
+import org.evoludo.simulator.models.SDE;
 import org.evoludo.simulator.modules.ATBT;
 import org.evoludo.simulator.modules.CDL;
 import org.evoludo.simulator.modules.CDLP;
@@ -211,6 +216,45 @@ public abstract class EvoLudo
 	 * The lookup table for all available modules.
 	 */
 	protected HashMap<String, Module<?>> modules = new HashMap<>();
+
+	/**
+	 * Create the default model implementation for {@code module} and {@code type}.
+	 *
+	 * @param type the requested model type
+	 * @return new instance of the default model implementation, or {@code null} if
+	 *         the module does not support the requested type
+	 */
+	public Model createModel(ModelType type) {
+		switch (type) {
+			case IBS:
+				// let module subclasses handle IBS
+				return null;
+			case SDE:
+				if (!(activeModule instanceof HasDE.SDE))
+					return null;
+				return new SDE(this);
+			case ODE: // defaults to RK5
+			case RK5:
+				if (!(activeModule instanceof HasDE.ODE))
+					return null;
+				return new RungeKutta(this);
+			case EM:
+				if (!(activeModule instanceof HasDE.ODE))
+					return null;
+				return new ODE(this);
+			case PDEADV:
+				if (!(activeModule instanceof HasDE.PDEADV))
+					return null;
+				return new Advection(this);
+			case PDE: // defaults to PDERD
+			case PDERD:
+				if (!(activeModule instanceof HasDE.PDERD))
+					return null;
+				return new PDE(this);
+			default:
+				return null;
+		}
+	}
 
 	/**
 	 * Generate 2D network. This is the factory method to provide different
