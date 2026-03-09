@@ -63,8 +63,11 @@ import org.evoludo.simulator.models.IBSDPopulation;
 import org.evoludo.simulator.models.IBSMCPopulation;
 import org.evoludo.simulator.models.IBSPopulation;
 import org.evoludo.simulator.models.Mode;
+import org.evoludo.simulator.models.AdvectionJRE;
 import org.evoludo.simulator.models.Model;
+import org.evoludo.simulator.models.ModelType;
 import org.evoludo.simulator.models.PDE;
+import org.evoludo.simulator.models.PDEJRE;
 import org.evoludo.simulator.models.PDESupervisor;
 import org.evoludo.simulator.models.PDESupervisorJRE;
 import org.evoludo.simulator.modules.Module;
@@ -194,6 +197,15 @@ public class EvoLudoJRE extends EvoLudo implements Runnable {
 			return;
 		engineThread = new Thread(this, "Engine");
 		engineThread.start();
+	}
+
+	@Override
+	public Model createModel(ModelType type) {
+		if (type == ModelType.PDEADV && activeModule instanceof Model.HasDE.PDEADV)
+			return new AdvectionJRE(this);
+		if ((type == ModelType.PDE || type == ModelType.PDERD) && activeModule instanceof Model.HasDE.PDERD)
+			return new PDEJRE(this);
+		return super.createModel(type);
 	}
 
 	@Override

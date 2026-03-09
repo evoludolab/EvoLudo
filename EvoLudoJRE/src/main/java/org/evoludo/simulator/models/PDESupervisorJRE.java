@@ -377,7 +377,10 @@ public class PDESupervisorJRE extends PDESupervisor {
 						task = Task.IDLE;
 						break;
 					case DIFFUSE:
-						boss.diffuse(start, end, boss.scaledD, boss.scaledA);
+						if (boss.scaledA == null)
+							charge.diffuse(start, end, boss.scaledD);
+						else
+							((Advection) charge).diffuse(start, end, boss.scaledD, boss.scaledA);
 						boss.done();
 						task = Task.IDLE;
 						break;

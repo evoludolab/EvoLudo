@@ -299,10 +299,20 @@ public class PDE extends ODE {
 		return space;
 	}
 
+	/**
+	 * Indicates whether PDE execution should be delegated to a supervisor.
+	 * Subclasses may override this to keep execution logic within the model.
+	 *
+	 * @return <code>true</code> if PDE execution should use a supervisor
+	 */
+	protected boolean usesPDESupervisor() {
+		return true;
+	}
+
 	@Override
 	public void load() {
 		super.load();
-		if (supervisor == null)
+		if (usesPDESupervisor() && supervisor == null)
 			supervisor = engine.hirePDESupervisor(this);
 		module = engine.getModule();
 		sorting = (o1, o2) -> (int) Math.signum(o1[0] - o2[0]);
@@ -310,7 +320,8 @@ public class PDE extends ODE {
 
 	@Override
 	public synchronized void unload() {
-		supervisor.unload();
+		if (supervisor != null)
+			supervisor.unload();
 		supervisor = null;
 		space = null;
 		density = null;
@@ -386,7 +397,8 @@ public class PDE extends ODE {
 			// scaleAuto = new boolean[d];
 			// Arrays.fill(scaleAuto, true);
 		}
-		supervisor.reset();
+		if (usesPDESupervisor() && supervisor != null)
+			supervisor.reset();
 	}
 
 	/**
@@ -398,7 +410,12 @@ public class PDE extends ODE {
 	 */
 	@Override
 	public void update() {
-		supervisor.update();
+		if (usesPDESupervisor()) {
+			supervisor.update();
+			return;
+		}
+		react(getDt());
+		setDensity();
 	}
 
 	/**
@@ -409,7 +426,7 @@ public class PDE extends ODE {
 
 	@Override
 	public boolean useScheduling() {
-		return supervisor.useScheduling();
+		return usesPDESupervisor() && supervisor.useScheduling();
 	}
 
 	/**
@@ -427,9 +444,10 @@ public class PDE extends ODE {
 		if (deltat >= 1e-8)
 			step = Math.min(step, deltat);
 		connect = true;
-		// note: returns immediately for scheduled execution in GWT
-		supervisor.next(step);
-		// important: for GWT condition never holds because time unchanged
+		if (usesPDESupervisor())
+			supervisor.next(step);
+		else
+			next(step);
 		if (Math.abs(gwtHalt - time) < 1e-8)
 			return false;
 		return !converged;
@@ -500,11 +518,26 @@ public class PDE extends ODE {
 	 * Perform the diffusion step across the entire PDE domain.
 	 *
 	 * @param scaledD the scaled diffusion coefficients
+	 */
+	public synchronized void diffuse(double[] scaledD) {
+		resetDensity();
+		diffuse(0, space.getSize(), scaledD);
+		normalizeMeanDensity();
+	}
+
+	/**
+	 * Perform the diffusion step across the entire PDE domain.
+	 *
+	 * @param scaledD the scaled diffusion coefficients
 	 * @param scaledA the scaled advection coefficients, if any
 	 */
 	public synchronized void diffuse(double[] scaledD, double[][] scaledA) {
+		if (scaledA == null) {
+			diffuse(scaledD);
+			return;
+		}
 		resetDensity();
-		diffuse(0, space.getSize(), scaledD, scaledA);
+		((Advection) this).diffuse(0, space.getSize(), scaledD, scaledA);
 		normalizeMeanDensity();
 	}
 

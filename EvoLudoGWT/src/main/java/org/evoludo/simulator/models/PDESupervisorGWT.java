@@ -98,7 +98,10 @@ public class PDESupervisorGWT extends PDESupervisor {
 			if (timeRemain > charge.getDt()) {
 				double[] scaledDiffusion = charge.getScaledDiffusion(dt);
 				double[][] scaledAdvection = charge.getScaledAdvection(dt);
-				diffuse(scaledDiffusion, scaledAdvection);
+				if (scaledAdvection == null)
+					charge.diffuse(scaledDiffusion);
+				else
+					charge.diffuse(scaledDiffusion, scaledAdvection);
 				change = react(dt);
 				// at this point, fitness and density are synchronized
 				// the new density distribution is in 'next'
@@ -119,7 +122,10 @@ public class PDESupervisorGWT extends PDESupervisor {
 			if (timeRemain > 1e-6) {
 				double[] scaledDiffusion = charge.getScaledDiffusion(timeRemain);
 				double[][] scaledAdvection = charge.getScaledAdvection(timeRemain);
-				diffuse(scaledDiffusion, scaledAdvection);
+				if (scaledAdvection == null)
+					charge.diffuse(scaledDiffusion);
+				else
+					charge.diffuse(scaledDiffusion, scaledAdvection);
 				change = react(timeRemain);
 				cont = charge.incrementTime(timeRemain);
 			}
