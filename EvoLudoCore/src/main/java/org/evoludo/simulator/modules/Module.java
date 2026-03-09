@@ -1012,20 +1012,19 @@ public abstract class Module<T extends Module<T>>
 	/**
 	 * Sets the population size. For models with vacancies this is the maximum
 	 * population size. Currently this only affects IBS and SDE models. For SDE's it
-	 * determines the magnitude of noise. For IBS this is a fundamental change,
-	 * which mandates requesting to reset the model.
+	 * determines the magnitude of noise. For IBS the reset decision is deferred to
+	 * geometry/model checks because some geometries normalize the requested size
+	 * without changing the effective population.
 	 * 
 	 * @param size the population size
 	 * @return {@code true} if population size changed
 	 * 
-	 * @see EvoLudo#requiresReset(boolean)
+	 * @see IBS#check()
 	 */
 	public boolean setNPopulation(int size) {
 		int oldNPopulation = nPopulation;
 		nPopulation = Math.max(1, size);
-		boolean changed = (nPopulation != oldNPopulation);
-		engine.requiresReset(changed && model instanceof IBS);
-		return changed;
+		return (nPopulation != oldNPopulation);
 	}
 
 	/**

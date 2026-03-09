@@ -522,7 +522,7 @@ public class ViewController {
 			return;
 		}
 		if (deck.getWidgetIndex(view) >= 0)
-			deck.remove(view);
+			return;
 		int consoleIdx = deck.getWidgetIndex(console);
 		if (consoleIdx < 0)
 			deck.add(view);

@@ -3488,17 +3488,15 @@ public abstract class IBSPopulation<M extends Module<?>, P extends IBSPopulation
 		// Warning: there is a small chance that the interaction and competition
 		// geometries require different population sizes, which does not make sense
 		// and would most likely result in a never ending initialization loop...
-		doReset |= interaction.setSize(nPopulation);
-		doReset |= interaction.check();
+		doReset |= updateGeometry(interaction, nPopulation);
 		if (!interaction.isSingle()) {
 			module.setNPopulation(interaction.getSize());
 			nPopulation = interaction.getSize(); // keep local copy in sync
-			doReset |= competition.setSize(nPopulation);
-			doReset |= competition.check();
+			doReset |= updateGeometry(competition, nPopulation);
 			if (competition.getSize() != nPopulation) {
 				// try checking interaction geometry again
-				doReset |= interaction.setSize(competition.getSize());
-				if (interaction.check()) {
+				doReset |= updateGeometry(interaction, competition.getSize());
+				if (interaction.getSize() != competition.getSize()) {
 					logger.severe("incompatible interaction and competition geometries!");
 				}
 			}
@@ -3507,6 +3505,17 @@ public abstract class IBSPopulation<M extends Module<?>, P extends IBSPopulation
 		module.setNPopulation(interaction.getSize());
 		nPopulation = interaction.getSize(); // keep local copy in sync
 		return doReset;
+	}
+
+	private boolean updateGeometry(AbstractGeometry geometry, int populationSize) {
+		AbstractGeometry updated = geometry.clone();
+		updated.setSize(populationSize);
+		updated.check();
+		if (geometry.similar(updated))
+			return false;
+		geometry.setSize(populationSize);
+		geometry.check();
+		return true;
 	}
 
 	/**
