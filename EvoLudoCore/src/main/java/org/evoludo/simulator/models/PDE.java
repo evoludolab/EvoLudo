@@ -436,6 +436,96 @@ public class PDE extends ODE {
 	}
 
 	/**
+	 * Advances the PDE model by the time increment {@code stepDt} using the
+	 * default serial integration path.
+	 *
+	 * @param stepDt the time step to advance the PDE
+	 * @return <code>true</code> if the model should continue
+	 */
+	public boolean next(double stepDt) {
+		final double timeStop = getTime() + stepDt;
+		final double dt = getDt();
+		double[] scaledD = getScaledDiffusion(dt);
+		double[][] scaledA = getScaledAdvection(dt);
+		final double acc = getAccuracy();
+		final double acc2 = acc * acc;
+		final double acc2dt2 = acc2 * dt * dt;
+		double timeRemain = stepDt;
+		double change = Double.MAX_VALUE;
+		while (timeRemain > dt) {
+			diffuse(scaledD, scaledA);
+			change = react(dt);
+			// at this point, fitness and density are synchronized
+			// the new density distribution is in 'next'
+			incrementTime(dt);
+			timeRemain = timeStop - getTime();
+			if (change > acc2dt2)
+				continue;
+			setConverged();
+			return true;
+		}
+		// update remainder (if necessary)
+		if (timeRemain > 1e-6) {
+			scaledD = getScaledDiffusion(timeRemain);
+			scaledA = getScaledAdvection(timeRemain);
+			diffuse(scaledD, scaledA);
+			change = react(timeRemain);
+			incrementTime(timeRemain);
+		}
+		if (change > acc2 * timeRemain * timeRemain)
+			return true;
+		setConverged();
+		return false;
+	}
+
+	/**
+	 * Perform the reaction step across the entire PDE domain.
+	 *
+	 * @param stepSize the integration step to apply
+	 * @return the accumulated total change in state
+	 */
+	public synchronized double react(double stepSize) {
+		double change;
+		if (module instanceof Payoffs) {
+			resetFitness();
+			change = react(0, space.getSize(), stepSize);
+			normalizeMeanFitness();
+		} else {
+			change = react(0, space.getSize(), stepSize);
+		}
+		return change;
+	}
+
+	/**
+	 * Perform the diffusion step across the entire PDE domain.
+	 *
+	 * @param scaledD the scaled diffusion coefficients
+	 * @param scaledA the scaled advection coefficients, if any
+	 */
+	public synchronized void diffuse(double[] scaledD, double[][] scaledA) {
+		resetDensity();
+		diffuse(0, space.getSize(), scaledD, scaledA);
+		normalizeMeanDensity();
+	}
+
+	/**
+	 * Dispatch diffusion to the PDE implementation appropriate for the current
+	 * model type.
+	 *
+	 * @param start   the first unit to update
+	 * @param end     the end-exclusive unit to update
+	 * @param scaledD the scaled diffusion coefficients
+	 * @param scaledA the scaled advection coefficients, if any
+	 */
+	public void diffuse(int start, int end, double[] scaledD, double[][] scaledA) {
+		if (scaledA == null) {
+			diffuse(start, end, scaledD);
+			return;
+		}
+		((Advection) this).diffuse(start, end, scaledD, scaledA);
+	}
+
+	/**
 	 * Reaction step with an explicit integration step size {@link #dt}. Update
 	 * cells with indices between <code>start</code> (including) and
 	 * <code>end</code> (excluding) and return the accumulated/total change in

@@ -89,7 +89,7 @@ public class PDESupervisor {
 	 * Called after a change of parameters.
 	 */
 	public synchronized void update() {
-		react(charge.getDt());
+		charge.react(charge.getDt());
 		charge.setDensity();
 	}
 
@@ -116,39 +116,7 @@ public class PDESupervisor {
 	 *      PDESupervisorGWT.next(double)
 	 */
 	public boolean next(double stepDt) {
-		final double timeStop = charge.getTime() + stepDt;
-		final double dt = charge.getDt();
-		double[] scaledD = charge.getScaledDiffusion(dt);
-		double[][] scaledA = charge.getScaledAdvection(dt);
-		final double acc = charge.getAccuracy();
-		final double acc2 = acc * acc;
-		final double acc2dt2 = acc2 * dt * dt;
-		double timeRemain = stepDt;
-		double change = Double.MAX_VALUE;
-		while (timeRemain > dt) {
-			diffuse(scaledD, scaledA);
-			change = react(dt);
-			// at this point, fitness and density are synchronized
-			// the new density distribution is in 'next'
-			charge.incrementTime(dt);
-			timeRemain = timeStop - charge.getTime();
-			if (change > acc2dt2)
-				continue;
-			charge.setConverged();
-			return true;
-		}
-		// update remainder (if necessary)
-		if (timeRemain > 1e-6) {
-			scaledD = charge.getScaledDiffusion(timeRemain);
-			scaledA = charge.getScaledAdvection(timeRemain);
-			diffuse(scaledD, scaledA);
-			change = react(timeRemain);
-			charge.incrementTime(timeRemain);
-		}
-		if (change > acc2 * timeRemain * timeRemain)
-			return true;
-		charge.setConverged();
-		return false;
+		return charge.next(stepDt);
 	}
 
 	/**
