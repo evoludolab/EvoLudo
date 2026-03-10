@@ -68,6 +68,7 @@ import org.evoludo.simulator.models.Model;
 import org.evoludo.simulator.models.ModelType;
 import org.evoludo.simulator.models.PDE;
 import org.evoludo.simulator.models.PDEJRE;
+import org.evoludo.simulator.models.SDEN;
 import org.evoludo.simulator.modules.Module;
 import org.evoludo.simulator.modules.Traits;
 import org.evoludo.simulator.views.MultiView;
@@ -199,10 +200,25 @@ public class EvoLudoJRE extends EvoLudo implements Runnable {
 
 	@Override
 	public Model createModel(ModelType type) {
-		if (type == ModelType.PDEADV && activeModule instanceof Model.HasDE.PDEADV)
-			return new AdvectionJRE(this);
-		if ((type == ModelType.PDE || type == ModelType.PDERD) && activeModule instanceof Model.HasDE.PDERD)
-			return new PDEJRE(this);
+		switch (type) {
+			case PDEADV:
+				if (activeModule instanceof Model.HasDE.PDEADV)
+					return new AdvectionJRE(this);
+				break;
+			case PDE, PDERD:
+				if (activeModule instanceof Model.HasDE.PDERD)
+					return new PDEJRE(this);
+				break;
+			case SDE:
+				if (activeModule instanceof Model.HasDE.SDE) {
+					int nt = activeModule.getNTraits();
+					int dim = (((Model.HasDE) activeModule).getDependent() < 0 ? nt : nt - 1);
+					if (dim > 2)
+						return new SDEN(this);
+				}
+				break;
+			default:
+		}
 		return super.createModel(type);
 	}
 

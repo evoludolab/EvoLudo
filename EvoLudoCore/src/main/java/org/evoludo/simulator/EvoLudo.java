@@ -229,30 +229,33 @@ public abstract class EvoLudo
 				// let module subclasses handle IBS
 				return null;
 			case SDE:
-				if (!(activeModule instanceof HasDE.SDE))
-					return null;
-				return new SDE(this);
+				if (activeModule instanceof HasDE.SDE) {
+					int nDim = activeModule.getNTraits() + (((HasDE) activeModule).getDependent() < 0 ? 0 : -1);
+					if (nDim <= 2)
+						return new SDE(this);
+				}
+				break;
 			case ODE: // defaults to RK5
 			case RK5:
-				if (!(activeModule instanceof HasDE.ODE))
-					return null;
-				return new RungeKutta(this);
+				if (activeModule instanceof HasDE.ODE)
+					return new RungeKutta(this);
+				break;
 			case EM:
-				if (!(activeModule instanceof HasDE.ODE))
-					return null;
-				return new ODE(this);
+				if (activeModule instanceof HasDE.ODE)
+					return new ODE(this);
+				break;
 			case PDEADV:
-				if (!(activeModule instanceof HasDE.PDEADV))
-					return null;
-				return new Advection(this);
+				if (activeModule instanceof HasDE.PDEADV)
+					return new Advection(this);
+				break;
 			case PDE: // defaults to PDERD
 			case PDERD:
-				if (!(activeModule instanceof HasDE.PDERD))
-					return null;
-				return new PDE(this);
+				if (activeModule instanceof HasDE.PDERD)
+					return new PDE(this);
+				break;
 			default:
-				return null;
 		}
+		return null;
 	}
 
 	/**

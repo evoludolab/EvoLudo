@@ -33,20 +33,17 @@ package org.evoludo.simulator.modules;
 import org.evoludo.math.ArrayMath;
 import org.evoludo.math.RNGDistribution;
 import org.evoludo.simulator.EvoLudo;
-import org.evoludo.simulator.models.Model;
 import org.evoludo.simulator.models.Model.HasDE;
 import org.evoludo.simulator.models.Model.HasIBS;
-import org.evoludo.simulator.models.SDEN;
-import org.evoludo.simulator.models.ModelType;
 import org.evoludo.simulator.modules.Features.Payoffs;
 import org.evoludo.simulator.views.HasHistogram;
 import org.evoludo.simulator.views.HasMean;
 import org.evoludo.simulator.views.HasPop2D;
 import org.evoludo.simulator.views.HasPop3D;
+import org.evoludo.util.CLOCategory;
 import org.evoludo.util.CLODelegate;
 import org.evoludo.util.CLOParser;
 import org.evoludo.util.CLOption;
-import org.evoludo.util.CLOCategory;
 import org.evoludo.util.Formatter;
 
 /**
@@ -282,14 +279,5 @@ public class Traits extends Discrete implements Payoffs,
 		parser.addCLO(cloTraits);
 		parser.addCLO(cloPayoff);
 		super.collectCLO(parser);
-	}
-
-	@Override
-	public Model createModel(ModelType type) {
-		if (model == null || !model.isSDE())
-			return super.createModel(type);
-		if (model.isSDE())
-			return model;
-		return new SDEN(engine);
 	}
 }
