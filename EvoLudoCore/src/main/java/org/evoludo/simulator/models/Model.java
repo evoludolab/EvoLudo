@@ -1008,19 +1008,6 @@ public abstract class Model implements CLOProvider {
 	}
 
 	/**
-	 * Indicates whether this model advances through the GWT scheduling path.
-	 * Scheduled models return from {@link #next()} before the step is complete and
-	 * later report completion through {@link EvoLudo#modelNextDone(boolean)}.
-	 * Models that return {@code false} use the non-scheduled path, which may
-	 * complete inline or use worker threads on JRE.
-	 *
-	 * @return <code>true</code> if model advancement uses GWT scheduling
-	 */
-	public boolean useScheduling() {
-		return false;
-	}
-
-	/**
 	 * Return the logger for reporting information.
 	 *
 	 * @return the logger

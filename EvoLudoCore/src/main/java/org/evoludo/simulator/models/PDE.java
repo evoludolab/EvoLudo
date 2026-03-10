@@ -376,11 +376,6 @@ public class PDE extends ODE {
 	 */
 	double gwtHalt;
 
-	@Override
-	public boolean useScheduling() {
-		return false;
-	}
-
 	/**
 	 * Advances the PDE model by one visible step.
 	 */
