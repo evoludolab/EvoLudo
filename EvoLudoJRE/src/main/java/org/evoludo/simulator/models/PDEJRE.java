@@ -30,11 +30,8 @@
 
 package org.evoludo.simulator.models;
 
-import java.awt.GraphicsEnvironment;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 
 import org.evoludo.simulator.EvoLudo;
 import org.evoludo.simulator.modules.Features.Payoffs;
@@ -83,67 +80,19 @@ public class PDEJRE extends PDE {
 	@Override
 	public void reset() {
 		super.reset();
-		fireWorkers();
-		hireWorkers();
+		PDEWorkerPool.fireWorkers(workers);
+		PDEWorkerPool.hireWorkers(engine, workers, getGeometry().getSize(), RDWorker.RD_MIN_WORKLOAD,
+				(start, end) -> new RDWorker(this, start, end));
 	}
 
 	@Override
 	public synchronized void unload() {
 		pending = -1;
-		fireWorkers();
+		PDEWorkerPool.fireWorkers(workers);
 		synchronized (this) {
 			notifyAll();
 		}
 		super.unload();
-	}
-
-	/**
-	 * Tell worker threads to abort calculations.
-	 */
-	public void fireWorkers() {
-		for (RDWorker worker : workers)
-			worker.task(RDWorker.Task.EXIT);
-		workers.clear();
-	}
-
-	/**
-	 * Hire workforce. The number of worker threads depends on the number of
-	 * available processors. With more than two processors and when sporting a GUI
-	 * (as opposed to running simulations), one processor is reserved for updating
-	 * the GUI for a smoother user experience.
-	 */
-	private void hireWorkers() {
-		int nUnits = getGeometry().getSize();
-		int nWorkers = Runtime.getRuntime().availableProcessors();
-		if (nWorkers > 2 && !GraphicsEnvironment.isHeadless())
-			nWorkers--;
-		nWorkers = Math.clamp(nWorkers, 1, nUnits / RDWorker.RD_MIN_WORKLOAD);
-		logWorkers(nWorkers, nUnits);
-		int end = 0;
-		int incr = nUnits / nWorkers;
-		for (int i = 0; i < nWorkers - 1; i++) {
-			int start = end;
-			end = start + incr;
-			RDWorker worker = new RDWorker(this, start, end);
-			new Thread(worker, "RDWorker-" + (i + 1)).start();
-			workers.add(worker);
-		}
-		RDWorker worker = new RDWorker(this, end, nUnits);
-		new Thread(worker, "RDWorker-" + nWorkers).start();
-		workers.add(worker);
-	}
-
-	/**
-	 * Helper to log the number of worker threads and their workload.
-	 *
-	 * @param nWorkers the number of workers
-	 * @param nUnits   the number of PDE units
-	 */
-	private void logWorkers(int nWorkers, int nUnits) {
-		Logger logger = engine.getLogger();
-		if (!logger.isLoggable(Level.INFO))
-			return;
-		logger.info("Using " + nWorkers + " threads for integrating " + nUnits + " PDE units.");
 	}
 
 	@Override
@@ -154,7 +103,7 @@ public class PDEJRE extends PDE {
 			resetFitness();
 		pending = workers.size();
 		for (RDWorker worker : workers)
-			worker.task(RDWorker.Task.REACT);
+			worker.task(PDEWorkerPool.Task.REACT);
 		while (pending > 0) {
 			try {
 				wait();
@@ -173,7 +122,7 @@ public class PDEJRE extends PDE {
 		resetDensity();
 		pending = workers.size();
 		for (RDWorker worker : workers)
-			worker.task(RDWorker.Task.DIFFUSE);
+			worker.task(PDEWorkerPool.Task.DIFFUSE);
 		while (pending > 0) {
 			try {
 				wait();
@@ -188,9 +137,9 @@ public class PDEJRE extends PDE {
 	 * Called after the diffusion step completed.
 	 */
 	protected synchronized void done() {
-		if (--pending > 0)
-			return;
-		notifyAll();
+		pending = PDEWorkerPool.done(pending);
+		if (pending <= 0)
+			notifyAll();
 	}
 
 	/**
@@ -199,35 +148,19 @@ public class PDEJRE extends PDE {
 	 * @param incr the cumulative change of state in the reaction step
 	 */
 	protected synchronized void done(double incr) {
-		change += incr;
+		change = PDEWorkerPool.done(change, incr);
 		done();
 	}
 
 	/**
 	 * Worker class for processing PDE updates.
 	 */
-	static class RDWorker implements Runnable {
+	static class RDWorker implements Runnable, PDEWorkerPool.WorkerControl {
 
 		/**
 		 * The minimum number of units to process by one worker.
 		 */
 		public static final int RD_MIN_WORKLOAD = 1000;
-
-		/**
-		 * The list of possible tasks that {@link RDWorker}s can carry out:
-		 * <ul>
-		 * <li>The idle task. Await further instructions.
-		 * <li>The reaction task. Process one reaction step.
-		 * <li>The diffuse task. Process one diffusion step.
-		 * <li>The exit task. Stop working.
-		 * </ul>
-		 */
-		enum Task {
-			IDLE,
-			REACT,
-			DIFFUSE,
-			EXIT
-		}
 
 		/**
 		 * The reference to the worker manager.
@@ -247,7 +180,7 @@ public class PDEJRE extends PDE {
 		/**
 		 * The next task to address by the worker.
 		 */
-		private Task task = Task.IDLE;
+		private PDEWorkerPool.Task task = PDEWorkerPool.Task.IDLE;
 
 		/**
 		 * Create a new worker, which deals with PDE units {@code start} through
@@ -269,12 +202,12 @@ public class PDEJRE extends PDE {
 				switch (task) {
 					case REACT:
 						boss.done(boss.react(start, end, boss.reactStep));
-						task = Task.IDLE;
+						task = PDEWorkerPool.Task.IDLE;
 						break;
 					case DIFFUSE:
 						boss.diffuse(start, end, boss.scaledD);
 						boss.done();
-						task = Task.IDLE;
+						task = PDEWorkerPool.Task.IDLE;
 						break;
 					case EXIT:
 						return;
@@ -295,9 +228,14 @@ public class PDEJRE extends PDE {
 		 *
 		 * @param task the new task
 		 */
-		public synchronized void task(Task task) {
+		public synchronized void task(PDEWorkerPool.Task task) {
 			this.task = task;
 			notifyAll();
+		}
+
+		@Override
+		public void exit() {
+			task(PDEWorkerPool.Task.EXIT);
 		}
 	}
 }
