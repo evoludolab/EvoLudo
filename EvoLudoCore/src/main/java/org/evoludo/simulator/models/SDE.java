@@ -150,7 +150,7 @@ public class SDE extends ODE {
 	}
 
 	@Override
-	public boolean next() {
+	public boolean next(double step) {
 		// start new statistics sample if required
 		if (mode == Mode.STATISTICS_SAMPLE && statisticsSampleNew) {
 			reset();
@@ -159,7 +159,7 @@ public class SDE extends ODE {
 			update();
 			return true;
 		}
-		return super.next();
+		return super.next(step);
 	}
 
 	@Override

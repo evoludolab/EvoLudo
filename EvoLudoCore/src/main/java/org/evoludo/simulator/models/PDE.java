@@ -385,36 +385,21 @@ public class PDE extends ODE {
 	 * Advances the PDE model by one visible step.
 	 */
 	@Override
-	public boolean next() {
+	public boolean next(double step) {
 		gwtHalt = getNextHalt();
 		// continue if milestone reached in previous step, i.e. deltat < 1e-8
-		double step = getTimeStep();
 		double deltat = Math.abs(gwtHalt - time);
 		if (deltat >= 1e-8)
 			step = Math.min(step, deltat);
 		connect = true;
-		next(step);
-		if (Math.abs(gwtHalt - time) < 1e-8)
-			return false;
-		return !converged;
-	}
-
-	/**
-	 * Advances the PDE model by the time increment {@code stepDt} using the
-	 * default serial integration path.
-	 *
-	 * @param stepDt the time step to advance the PDE
-	 * @return <code>true</code> if the model should continue
-	 */
-	public boolean next(double stepDt) {
-		final double timeStop = getTime() + stepDt;
+		final double timeStop = getTime() + step;
 		final double dt = getDt();
 		double[] scaledD = getScaledDiffusion(dt);
 		double[][] scaledA = getScaledAdvection(dt);
 		final double acc = getAccuracy();
 		final double acc2 = acc * acc;
 		final double acc2dt2 = acc2 * dt * dt;
-		double timeRemain = stepDt;
+		double timeRemain = step;
 		double change = Double.MAX_VALUE;
 		while (timeRemain > dt) {
 			diffuse(scaledD, scaledA);
@@ -426,7 +411,7 @@ public class PDE extends ODE {
 			if (change > acc2dt2)
 				continue;
 			setConverged();
-			return true;
+			return false;
 		}
 		// update remainder (if necessary)
 		if (timeRemain > 1e-6) {
@@ -436,10 +421,13 @@ public class PDE extends ODE {
 			change = react(timeRemain);
 			incrementTime(timeRemain);
 		}
-		if (change > acc2 * timeRemain * timeRemain)
-			return true;
-		setConverged();
-		return false;
+		if (change <= acc2 * timeRemain * timeRemain) {
+			setConverged();
+			return false;
+		}
+		if (Math.abs(gwtHalt - time) < 1e-8)
+			return false;
+		return !converged;
 	}
 
 	/**

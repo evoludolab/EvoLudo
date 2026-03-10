@@ -247,7 +247,7 @@ public class EvoLudoGWT extends EvoLudo {
 				processPendingAction();
 				return false;
 			}
-			if (activeModel.next())
+			if (activeModel.next(activeModel.getTimeStep()))
 				return true; // continue sampling
 			// sample completed
 			boolean failed = (activeModel.getFixationData().mutantNode < 0);
@@ -324,15 +324,13 @@ public class EvoLudoGWT extends EvoLudo {
 				return false;
 			}
 			double remaining = chunkTargetUpdates - activeModel.getUpdates();
-			if (remaining <= IBS_EPS) {
-				finishChunkedStep(activeModel.getUpdates() + IBS_EPS < activeModel.getNextHalt());
-				return false;
-			}
-			double chunk = Math.min(chunkStep, remaining);
-			activeModel.setTimeStep(chunk);
-			boolean cont = activeModel.next();
-			activeModel.setTimeStep(chunkTimeStepOrig);
-			double updates = activeModel.getUpdates();
+				if (remaining <= IBS_EPS) {
+					finishChunkedStep(activeModel.getUpdates() + IBS_EPS < activeModel.getNextHalt());
+					return false;
+				}
+				double chunk = Math.min(chunkStep, remaining);
+				boolean cont = activeModel.next(chunk);
+				double updates = activeModel.getUpdates();
 			boolean reachedTarget = (updates + IBS_EPS >= chunkTargetUpdates);
 			if (!cont) {
 				finishChunkedStep(false);
@@ -373,8 +371,6 @@ public class EvoLudoGWT extends EvoLudo {
 	 * Reset temporary state used for hidden chunking.
 	 */
 	private void resetChunking() {
-		if (activeModel != null)
-			activeModel.setTimeStep(chunkTimeStepOrig);
 		chunkedStepScheduled = false;
 		chunkTimeStepOrig = 0.0;
 		chunkTargetUpdates = 0.0;

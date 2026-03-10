@@ -485,16 +485,16 @@ class RunController {
 	 * 
 	 * @see EvoLudo#modelNext()
 	 */
-	public boolean modelNext() {
-		startCPUSample();
-		if (engine.activeModel == null)
-			return false;
-		if (engine.activeModel.useScheduling()) {
-			engine.activeModel.next();
-			return true;
+		public boolean modelNext() {
+			startCPUSample();
+			if (engine.activeModel == null)
+				return false;
+			if (engine.activeModel.useScheduling()) {
+				engine.activeModel.next(engine.activeModel.getTimeStep());
+				return true;
+			}
+			return modelNextDone(engine.activeModel.next(engine.activeModel.getTimeStep()));
 		}
-		return modelNextDone(engine.activeModel.next());
-	}
 
 	/**
 	 * Called after model next step finished to handle continuation or stop.

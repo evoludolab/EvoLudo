@@ -635,10 +635,12 @@ public abstract class Model implements CLOProvider {
 	public abstract void update();
 
 	/**
-	 * Advance model by one step. The details of what happens during one step
-	 * depends on the models {@link ModelType} as well as its {@link Mode}.
+	 * Advance model by one step of size {@code step}. The details of what happens
+	 * during one step depends on the models {@link ModelType} as well as its
+	 * {@link Mode}.
 	 * 
-	 * @return <code>true</code> if <code>next()</code> can be called again.
+	 * @param step the requested step size in generations (or fractions thereof)
+	 * @return <code>true</code> if <code>next(double)</code> can be called again.
 	 *         Typically <code>false</code> is returned if the model requires
 	 *         attention, such as the following conditions:
 	 *         <ul>
@@ -651,7 +653,7 @@ public abstract class Model implements CLOProvider {
 	 * @see ChangeListener#modelChanged(ChangeListener.PendingAction)
 	 * @see org.evoludo.simulator.modules.Discrete#setMonoStop(boolean)
 	 */
-	public abstract boolean next();
+	public abstract boolean next(double step);
 
 	/**
 	 * The flag to indicate whether the model is currently relaxing the initial
@@ -667,7 +669,7 @@ public abstract class Model implements CLOProvider {
 	 * @return {@code true} if converged during relaxation
 	 * 
 	 * @see #isRelaxing()
-	 * @see #next()
+	 * @see #next(double)
 	 * @see #cloTimeRelax
 	 */
 	public boolean relax() {
@@ -678,18 +680,15 @@ public abstract class Model implements CLOProvider {
 		double updt = getUpdates();
 		if (timeRelax > 0.0 && updt < timeRelax) {
 			isRelaxing = true;
-			double rf = timeStep;
-			timeStep = timeRelax - updt;
-			next();
-			timeStep = rf;
+			next(timeRelax - updt);
 			isRelaxing = false;
-			if (type == ModelType.IBS) {
-				// reset traits after relaxation in IBS models
-				for (Module<?> mod : species) {
-					IBSPopulation<?, ?> pop = mod.getIBSPopulation();
-					pop.resetTraits();
+				if (type == ModelType.IBS) {
+					// reset traits after relaxation in IBS models
+					for (Module<?> mod : species) {
+						IBSPopulation<?, ?> pop = mod.getIBSPopulation();
+						pop.resetTraits();
+					}
 				}
-			}
 		}
 		if (hasConverged()) {
 			// no point in reporting failed initializations for statistics

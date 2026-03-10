@@ -1550,13 +1550,10 @@ public class EvoLudoWeb extends Composite
 		double tStop = activeModel.getTimeStop();
 		double nSamples = activeModel.getNSamples();
 		double deltat = (tStop - activeModel.getTime()) * (activeModel.isTimeReversed() ? -1.0 : 1.0);
-		if (Double.isFinite(tStop) && deltat > 0.0) {
-			// run to specified time
-			if (Math.abs(deltat) < activeModel.getTimeStep())
-				activeModel.setTimeStep(deltat);
-			// start running - even without --run
-			engine.setSuspended(true);
-		}
+			if (Double.isFinite(tStop) && deltat > 0.0) {
+				// start running - even without --run
+				engine.setSuspended(true);
+			}
 		if (nSamples > 0.0)
 			logger.warning("--samples found: wrong mode for statistics, use --view option.");
 	}

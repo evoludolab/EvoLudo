@@ -785,9 +785,9 @@ public class EvoLudoJRE extends EvoLudo implements Runnable {
 				processPendingAction();
 				return fix;
 			}
-			while (activeModel.next()) {
-				fireModelChanged();
-			}
+				while (activeModel.next(activeModel.getTimeStep())) {
+					fireModelChanged();
+				}
 			success = (fix.mutantNode >= 0);
 			fireModelSample(success);
 		} while (!success);

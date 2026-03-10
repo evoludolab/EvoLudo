@@ -397,7 +397,7 @@ public abstract class IBS extends Model {
 	}
 
 	@Override
-	public boolean next() {
+	public boolean next(double step) {
 		// start new statistics sample if required
 		if (mode == Mode.STATISTICS_SAMPLE && statisticsSampleNew && !isRelaxing) {
 			if (statisticsSettings.resetInterval > 0 &&
@@ -419,7 +419,6 @@ public abstract class IBS extends Model {
 		}
 		double nextHalt = getNextHalt();
 		// continue if milestone reached in previous step, i.e. deltat < 1e-8
-		double step = timeStep;
 		double incr = Math.abs(nextHalt - updates);
 		if (incr < 1e-8)
 			return false;
