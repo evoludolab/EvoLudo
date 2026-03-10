@@ -49,7 +49,6 @@ import org.evoludo.simulator.models.Model.HasDE;
 import org.evoludo.simulator.models.ModelType;
 import org.evoludo.simulator.models.ODE;
 import org.evoludo.simulator.models.PDE;
-import org.evoludo.simulator.models.PDESupervisor;
 import org.evoludo.simulator.models.RungeKutta;
 import org.evoludo.simulator.models.RunListener;
 import org.evoludo.simulator.models.SampleListener;
@@ -1067,26 +1066,6 @@ public abstract class EvoLudo
 	public Logger getLogger() {
 		return logger;
 	}
-
-	/**
-	 * Hire supervisor for managing PDE calculations. This is the factory method
-	 * provide different implementations for GWT and JRE. More specifically, GWT
-	 * uses scheduled execution to prevent the GUI from stalling, while JRE
-	 * implementations take advantage of worker threads for significantly faster
-	 * execution through parallelization.
-	 *
-	 * @param charge the PDE model to supervise
-	 * @return supervisor for coordinating PDE calculations
-	 * 
-	 * @see org.evoludo.simulator.EvoLudoGWT#hirePDESupervisor(org.evoludo.simulator.models.PDE)
-	 *      EvoLudoGWT#hirePDESupervisor(PDERD)
-	 * @see org.evoludo.simulator.EvoLudoJRE#hirePDESupervisor(org.evoludo.simulator.models.PDE)
-	 *      EvoLudoJRE#hirePDESupervisor(PDERD)
-	 * @see org.evoludo.simulator.models.PDESupervisor
-	 * @see org.evoludo.simulator.models.PDESupervisorGWT
-	 * @see org.evoludo.simulator.models.PDESupervisorJRE
-	 */
-	public abstract PDESupervisor hirePDESupervisor(PDE charge);
 
 	/**
 	 * The copyright string.

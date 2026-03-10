@@ -68,8 +68,6 @@ import org.evoludo.simulator.models.Model;
 import org.evoludo.simulator.models.ModelType;
 import org.evoludo.simulator.models.PDE;
 import org.evoludo.simulator.models.PDEJRE;
-import org.evoludo.simulator.models.PDESupervisor;
-import org.evoludo.simulator.models.PDESupervisorJRE;
 import org.evoludo.simulator.modules.Module;
 import org.evoludo.simulator.modules.Traits;
 import org.evoludo.simulator.views.MultiView;
@@ -206,11 +204,6 @@ public class EvoLudoJRE extends EvoLudo implements Runnable {
 		if ((type == ModelType.PDE || type == ModelType.PDERD) && activeModule instanceof Model.HasDE.PDERD)
 			return new PDEJRE(this);
 		return super.createModel(type);
-	}
-
-	@Override
-	public PDESupervisor hirePDESupervisor(PDE charge) {
-		return new PDESupervisorJRE(this, charge);
 	}
 
 	@Override

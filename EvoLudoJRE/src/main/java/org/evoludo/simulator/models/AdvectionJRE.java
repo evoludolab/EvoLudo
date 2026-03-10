@@ -87,11 +87,6 @@ public class AdvectionJRE extends Advection {
 	}
 
 	@Override
-	protected boolean usesPDESupervisor() {
-		return false;
-	}
-
-	@Override
 	public void reset() {
 		super.reset();
 		fireWorkers();

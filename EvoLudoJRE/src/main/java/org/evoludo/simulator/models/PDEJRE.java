@@ -81,11 +81,6 @@ public class PDEJRE extends PDE {
 	}
 
 	@Override
-	protected boolean usesPDESupervisor() {
-		return false;
-	}
-
-	@Override
 	public void reset() {
 		super.reset();
 		fireWorkers();

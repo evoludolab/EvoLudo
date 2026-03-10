@@ -69,17 +69,6 @@ public class PDE extends ODE {
 	protected Module<?> module;
 
 	/**
-	 * The supervisor for the integration of the reaction-diffusion process. This
-	 * abstraction is required due to incompatibilities between JRE and GWT
-	 * implementations. In particular, JRE allows for parallel execution of certain
-	 * steps, while GWT uses a scheduling mechanism.
-	 * 
-	 * @see org.evoludo.simulator.models.PDESupervisorJRE
-	 * @see org.evoludo.simulator.models.PDESupervisorGWT
-	 */
-	protected PDESupervisor supervisor;
-
-	/**
 	 * AbstractGeometry representing the spatial dimensions of this PDE.
 	 */
 	protected AbstractGeometry space;
@@ -89,33 +78,24 @@ public class PDE extends ODE {
 	 * index of the node (e.g. location on lattice) and the second entry refers to
 	 * the different traits at that location. {@link #space} defines the geometric
 	 * arrangement of the nodes.
-	 * <p>
-	 * <strong>Note:</strong> this variable is <code>protected</code> to allow
-	 * direct access from {@link PDESupervisor} for efficiency reasons.
 	 */
-	protected double[][] density;
+	double[][] density;
 
 	/**
 	 * The next density/frequency distribution of traits as a 2D array. The first
 	 * entry refers to the index of the node (e.g. location on lattice) and the
 	 * second entry refers to the different traits at that location. {@link #space}
 	 * defines the geometric arrangement of the nodes.
-	 * <p>
-	 * <strong>Note:</strong> this variable is <code>protected</code> to allow
-	 * direct access from {@link PDESupervisor} for efficiency reasons.
 	 */
-	protected double[][] next;
+	double[][] next;
 
 	/**
 	 * Fitness distribution of traits as a 2D array. The first entry refers to the
 	 * index of the node (e.g. location on lattice) and the second entry refers to
 	 * the different traits at that location. {@link #space} defines the geometric
 	 * arrangement of the nodes.
-	 * <p>
-	 * <strong>Note:</strong> this variable is <code>protected</code> to allow
-	 * direct access from {@link PDESupervisor} for efficiency reasons.
 	 */
-	protected double[][] fitness;
+	double[][] fitness;
 
 	/**
 	 * The background densities for each trait at initialization.
@@ -274,15 +254,10 @@ public class PDE extends ODE {
 	 * generator should be used (in PDE's only used to generate random initial
 	 * configurations).
 	 * <p>
-	 * <strong>Note:</strong> requires a supervisor that matches the implementation,
-	 * i.e. JRE or GWT, respectively, to properly deal with multiple threads or
-	 * scheduling.
 	 * 
 	 * @param engine the pacemaker for running the model
 	 * 
 	 * @see EvoLudo#getRNG()
-	 * @see org.evoludo.simulator.models.PDESupervisorGWT PDESupervisorGWT
-	 * @see org.evoludo.simulator.models.PDESupervisorJRE PDESupervisorJRE
 	 */
 	public PDE(EvoLudo engine) {
 		super(engine);
@@ -299,30 +274,15 @@ public class PDE extends ODE {
 		return space;
 	}
 
-	/**
-	 * Indicates whether PDE execution should be delegated to a supervisor.
-	 * Subclasses may override this to keep execution logic within the model.
-	 *
-	 * @return <code>true</code> if PDE execution should use a supervisor
-	 */
-	protected boolean usesPDESupervisor() {
-		return true;
-	}
-
 	@Override
 	public void load() {
 		super.load();
-		if (usesPDESupervisor() && supervisor == null)
-			supervisor = engine.hirePDESupervisor(this);
 		module = engine.getModule();
 		sorting = (o1, o2) -> (int) Math.signum(o1[0] - o2[0]);
 	}
 
 	@Override
 	public synchronized void unload() {
-		if (supervisor != null)
-			supervisor.unload();
-		supervisor = null;
 		space = null;
 		density = null;
 		next = null;
@@ -397,23 +357,15 @@ public class PDE extends ODE {
 			// scaleAuto = new boolean[d];
 			// Arrays.fill(scaleAuto, true);
 		}
-		if (usesPDESupervisor() && supervisor != null)
-			supervisor.reset();
 	}
 
 	/**
 	 * {@inheritDoc}
 	 * <p>
-	 * For PDEs simply delegate to supervisor for dealing with multiple threads
-	 * (JRE) or scheduling (GWT).
-	 *
+	 * Updates the densities and fitness values for the current PDE state.
 	 */
 	@Override
 	public void update() {
-		if (usesPDESupervisor()) {
-			supervisor.update();
-			return;
-		}
 		react(getDt());
 		setDensity();
 	}
@@ -426,14 +378,11 @@ public class PDE extends ODE {
 
 	@Override
 	public boolean useScheduling() {
-		return usesPDESupervisor() && supervisor.useScheduling();
+		return false;
 	}
 
 	/**
-	 * {@inheritDoc}
-	 * <p>
-	 * For PDEs simply delegate to supervisor for dealing with multiple threads
-	 * (JRE) or scheduling (GWT).
+	 * Advances the PDE model by one visible step.
 	 */
 	@Override
 	public boolean next() {
@@ -444,10 +393,7 @@ public class PDE extends ODE {
 		if (deltat >= 1e-8)
 			step = Math.min(step, deltat);
 		connect = true;
-		if (usesPDESupervisor())
-			supervisor.next(step);
-		else
-			next(step);
+		next(step);
 		if (Math.abs(gwtHalt - time) < 1e-8)
 			return false;
 		return !converged;
@@ -1048,8 +994,7 @@ public class PDE extends ODE {
 	}
 
 	/**
-	 * Increments time by <code>incr</code>. This is used by the
-	 * {@link PDESupervisor} to report back on the progress.
+	 * Increments time by <code>incr</code>.
 	 *
 	 * @param incr the time that has elapsed
 	 * @return {@code true} to continue and {@code false} to request a stop
@@ -1061,8 +1006,7 @@ public class PDE extends ODE {
 
 	/**
 	 * Indicates that the numerical integration has converged to a homogeneous
-	 * state. This is used by the {@link PDESupervisor} to report back on the
-	 * progress.
+	 * state.
 	 */
 	public void setConverged() {
 		converged = true;

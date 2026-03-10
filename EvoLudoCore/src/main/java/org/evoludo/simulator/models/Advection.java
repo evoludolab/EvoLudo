@@ -79,16 +79,10 @@ public class Advection extends PDE {
 	 * <strong>Important:</strong> for reproducibility the shared random number
 	 * generator should be used (here only used to generate random initial
 	 * configurations).
-	 * <p>
-	 * <strong>Note:</strong> requires a supervisor that matches the implementation,
-	 * i.e. JRE or GWT, respectively, to properly deal with multiple threads or
-	 * scheduling.
-	 *
+	 * 
 	 * @param engine the pacemaker for running the model
 	 *
 	 * @see EvoLudo#getRNG()
-	 * @see org.evoludo.simulator.models.PDESupervisorGWT PDESupervisorGWT
-	 * @see org.evoludo.simulator.models.PDESupervisorJRE PDESupervisorJRE
 	 */
 	public Advection(EvoLudo engine) {
 		super(engine);
@@ -107,9 +101,10 @@ public class Advection extends PDE {
 	// updateFitness(dummy, dummy, dummy);
 	// // NOTE: in the absence of reactions, the total/mean density of each type
 	// should not change
-	//// GWT.log("react: meanDensity="+meanDensity);
+	// // GWT.log("react: meanDensity="+meanDensity);
 	// }
 
+	@Override
 	public void diffuse(int start, int end, double[] scaledD, double[][] scaledA) {
 		if (!doAdvection) {
 			super.diffuse(start, end, scaledD);

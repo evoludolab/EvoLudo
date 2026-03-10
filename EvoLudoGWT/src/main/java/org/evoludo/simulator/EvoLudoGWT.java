@@ -40,8 +40,6 @@ import org.evoludo.simulator.models.IBS;
 import org.evoludo.simulator.models.Model;
 import org.evoludo.simulator.models.ODE;
 import org.evoludo.simulator.models.PDE;
-import org.evoludo.simulator.models.PDESupervisor;
-import org.evoludo.simulator.models.PDESupervisorGWT;
 import org.evoludo.simulator.views.AbstractView;
 import org.evoludo.util.CLOCategory;
 import org.evoludo.util.CLODelegate;
@@ -287,6 +285,11 @@ public class EvoLudoGWT extends EvoLudo {
 				return model.getTimeStep();
 			return IBS_CHUNK_TARGET / (double) nTotal;
 		}
+		if (model instanceof PDE) {
+			double dt = ((PDE) model).getDt();
+			if (dt > 0.0)
+				return dt;
+		}
 		if (model instanceof ODE && !(model instanceof PDE)) {
 			double dt = ((ODE) model).getDt();
 			if (dt > 0.0) {
@@ -443,11 +446,6 @@ public class EvoLudoGWT extends EvoLudo {
 	@Override
 	public int elapsedTimeMsec() {
 		return elapsedTime.elapsedMillis();
-	}
-
-	@Override
-	public PDESupervisor hirePDESupervisor(PDE charge) {
-		return new PDESupervisorGWT(this, charge);
 	}
 
 	@Override
