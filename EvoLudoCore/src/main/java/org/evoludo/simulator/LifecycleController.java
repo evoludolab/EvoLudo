@@ -238,6 +238,11 @@ class LifecycleController {
 			}
 			return;
 		}
+		// Model aliases such as PDE/ODE may resolve to the already loaded concrete
+		// implementation. Avoid unloading and reloading in that case to preserve
+		// state across parameter-only updates.
+		if (engine.activeModel != null && engine.activeModel.getType() == newModel.getType())
+			return;
 		if (engine.activeModel != newModel)
 			unloadModel();
 		engine.activeModel = newModel;
