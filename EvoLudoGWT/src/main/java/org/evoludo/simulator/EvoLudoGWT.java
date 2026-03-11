@@ -86,6 +86,12 @@ public class EvoLudoGWT extends EvoLudo {
 	EvoLudoWeb gui;
 
 	/**
+	 * <code>true</code> while a one-off scheduled calculation is in progress and
+	 * should drive the busy spinner even though the model is not in running mode.
+	 */
+	private boolean scheduledBusy = false;
+
+	/**
 	 * Construct EvoLudo controller for GWT applications (web or ePub).
 	 * 
 	 * @param gui the reference to the GUI
@@ -160,6 +166,18 @@ public class EvoLudoGWT extends EvoLudo {
 		super.layoutComplete();
 	}
 
+	/**
+	 * Track whether one-off scheduled calculations are in progress.
+	 *
+	 * @param busy <code>true</code> while deferred work is scheduled or running
+	 */
+	private void setScheduledBusy(boolean busy) {
+		if (scheduledBusy == busy)
+			return;
+		scheduledBusy = busy;
+		gui.setBusy(isRunning || busy);
+	}
+
 	@Override
 	public void run() {
 		// ignore if already running or not suspended
@@ -215,6 +233,7 @@ public class EvoLudoGWT extends EvoLudo {
 
 	@Override
 	public void next() {
+		setScheduledBusy(true);
 		switch (activeModel.getMode()) {
 			case STATISTICS_SAMPLE:
 				// non-blocking way for running an arbitrary number of update
@@ -244,6 +263,7 @@ public class EvoLudoGWT extends EvoLudo {
 			// times. stop/init/reset need to be able to interrupt.
 			// make sure active model has not been unloaded in the meantime
 			if (activeModel == null || pendingAction != PendingAction.NONE) {
+				setScheduledBusy(false);
 				processPendingAction();
 				return false;
 			}
@@ -252,7 +272,10 @@ public class EvoLudoGWT extends EvoLudo {
 			// sample completed
 			boolean failed = (activeModel.getFixationData().mutantNode < 0);
 			// continue if running multiple samples or sampling failed
-			return fireModelSample(!failed) || failed;
+			boolean cont = fireModelSample(!failed) || failed;
+			if (!cont)
+				setScheduledBusy(false);
+			return cont;
 		});
 	}
 
@@ -262,10 +285,13 @@ public class EvoLudoGWT extends EvoLudo {
 	private void scheduleStep() {
 		Scheduler.get().scheduleDeferred(() -> {
 			if (pendingAction != PendingAction.NONE) {
+				setScheduledBusy(false);
 				processPendingAction();
 				return;
 			}
 			modelNext();
+			if (!isRunning)
+				setScheduledBusy(false);
 		});
 	}
 
@@ -316,10 +342,12 @@ public class EvoLudoGWT extends EvoLudo {
 				return false;
 			if (activeModel == null) {
 				resetChunking();
+				setScheduledBusy(false);
 				return false;
 			}
 			if (pendingAction != PendingAction.NONE) {
 				resetChunking();
+				setScheduledBusy(false);
 				processPendingAction();
 				return false;
 			}
@@ -365,6 +393,8 @@ public class EvoLudoGWT extends EvoLudo {
 	private void finishChunkedStep(boolean cont) {
 		resetChunking();
 		modelNextDone(cont);
+		if (!isRunning)
+			setScheduledBusy(false);
 	}
 
 	/**
@@ -377,21 +407,42 @@ public class EvoLudoGWT extends EvoLudo {
 	}
 
 	@Override
+	public synchronized void fireModelRunning() {
+		super.fireModelRunning();
+		gui.setBusy(true);
+	}
+
+	@Override
+	public synchronized void fireModelUnloaded() {
+		setScheduledBusy(false);
+		isRunning = false;
+		gui.setBusy(false);
+		super.fireModelUnloaded();
+	}
+
+	@Override
 	public synchronized void fireModuleUnloaded() {
+		setScheduledBusy(false);
 		resetChunking();
 		isRunning = false;
 		timer.cancel();
+		gui.setBusy(false);
 		super.fireModuleUnloaded();
 	}
 
 	@Override
 	public synchronized void fireModelStopped() {
+		setScheduledBusy(false);
 		resetChunking();
 		// model may already have been unloaded
-		if (activeModel == null)
+		if (activeModel == null) {
+			isRunning = false;
+			gui.setBusy(false);
 			return;
+		}
 		super.fireModelStopped();
 		timer.cancel();
+		gui.setBusy(false);
 		if (cloSnap.isSet()) {
 			// take snapshot
 			gui.snapshotReady();

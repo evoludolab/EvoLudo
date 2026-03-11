@@ -55,6 +55,7 @@ import org.evoludo.simulator.views.Console;
 import org.evoludo.ui.ContextMenu;
 import org.evoludo.ui.InputEvent;
 import org.evoludo.ui.Slider;
+import org.evoludo.ui.Spinner;
 import org.evoludo.util.CLOParser;
 import org.evoludo.util.CLOProvider;
 import org.evoludo.util.NativeJS;
@@ -349,6 +350,11 @@ public class EvoLudoWeb extends Composite
 	private static EvoLudoWebBinder uiBinder = GWT.create(EvoLudoWebBinder.class);
 
 	/**
+	 * Delay before the busy spinner becomes visible.
+	 */
+	private static final int BUSY_SPINNER_DELAY_MS = 1000;
+
+	/**
 	 * Time of last GUI update
 	 */
 	protected double updatetime = -1.0;
@@ -480,6 +486,7 @@ public class EvoLudoWeb extends Composite
 		initWidget(uiBinder.createAndBindUi(this));
 		// hide overlay
 		evoludoOverlay.setVisible(false);
+		evoludoSpinner.setDelay(BUSY_SPINNER_DELAY_MS);
 
 		// create canvas
 		if (Canvas.createIfSupported() == null) {
@@ -1703,6 +1710,12 @@ public class EvoLudoWeb extends Composite
 	HTML evoludoStatus;
 
 	/**
+	 * Small spinner shown while the model remains busy.
+	 */
+	@UiField
+	Spinner evoludoSpinner;
+
+	/**
 	 * Displays a message in the status line of the EvoLudo GUI with the default
 	 * level {@link Level#INFO}.
 	 * 
@@ -1754,6 +1767,15 @@ public class EvoLudoWeb extends Composite
 		}
 		displayStatusThresholdLevel = Math.max(level, displayStatusThresholdLevel);
 		evoludoStatus.setHTML(msg);
+	}
+
+	/**
+	 * Set whether the status spinner should indicate model activity.
+	 *
+	 * @param busy <code>true</code> if the model is busy
+	 */
+	public void setBusy(boolean busy) {
+		evoludoSpinner.setSpinning(busy);
 	}
 
 	/**
