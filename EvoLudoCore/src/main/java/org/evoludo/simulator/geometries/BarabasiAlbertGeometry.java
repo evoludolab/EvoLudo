@@ -32,6 +32,8 @@ package org.evoludo.simulator.geometries;
 
 import org.evoludo.math.RNGDistribution;
 import org.evoludo.simulator.EvoLudo;
+import org.evoludo.util.CLOParser;
+import org.evoludo.util.Formatter;
 
 /**
  * Scale-free network following the Barabási &amp; Albert preferential
@@ -52,11 +54,11 @@ public class BarabasiAlbertGeometry extends AbstractNetwork {
 	@Override
 	public boolean parse(String arg) {
 		if (arg == null || arg.isEmpty()) {
-			if (connectivity < 2)
-				connectivity = 2;
-			warn("requires connectivity argument - using " + (int) connectivity + ".");
+			if (connectivity < 2.0)
+				connectivity = 2.0;
+			warn("requires connectivity argument - using " + Formatter.format(connectivity, 3) + ".");
 		} else {
-			connectivity = Math.max(2, Integer.parseInt(arg));
+			connectivity = Math.max(2.0, CLOParser.parseDouble(arg));
 		}
 		return true;
 	}
