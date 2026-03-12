@@ -34,6 +34,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.evoludo.simulator.EvoLudo;
+import org.evoludo.simulator.models.PDEWorkerPool.Task;
 import org.evoludo.simulator.modules.Features.Payoffs;
 
 /**
@@ -103,7 +104,7 @@ public class PDEJRE extends PDE {
 			resetFitness();
 		pending = workers.size();
 		for (RDWorker worker : workers)
-			worker.task(PDEWorkerPool.Task.REACT);
+			worker.task(Task.REACT);
 		while (pending > 0) {
 			try {
 				wait();
@@ -122,7 +123,7 @@ public class PDEJRE extends PDE {
 		resetDensity();
 		pending = workers.size();
 		for (RDWorker worker : workers)
-			worker.task(PDEWorkerPool.Task.DIFFUSE);
+			worker.task(Task.DIFFUSE);
 		while (pending > 0) {
 			try {
 				wait();
@@ -180,7 +181,7 @@ public class PDEJRE extends PDE {
 		/**
 		 * The next task to address by the worker.
 		 */
-		private PDEWorkerPool.Task task = PDEWorkerPool.Task.IDLE;
+		private Task task = Task.IDLE;
 
 		/**
 		 * Create a new worker, which deals with PDE units {@code start} through
@@ -202,12 +203,12 @@ public class PDEJRE extends PDE {
 				switch (task) {
 					case REACT:
 						boss.done(boss.react(start, end, boss.reactStep));
-						task = PDEWorkerPool.Task.IDLE;
+						task = Task.IDLE;
 						break;
 					case DIFFUSE:
 						boss.diffuse(start, end, boss.scaledD);
 						boss.done();
-						task = PDEWorkerPool.Task.IDLE;
+						task = Task.IDLE;
 						break;
 					case EXIT:
 						return;
@@ -228,14 +229,14 @@ public class PDEJRE extends PDE {
 		 *
 		 * @param task the new task
 		 */
-		public synchronized void task(PDEWorkerPool.Task task) {
+		public synchronized void task(Task task) {
 			this.task = task;
 			notifyAll();
 		}
 
 		@Override
 		public void exit() {
-			task(PDEWorkerPool.Task.EXIT);
+			task(Task.EXIT);
 		}
 	}
 }
