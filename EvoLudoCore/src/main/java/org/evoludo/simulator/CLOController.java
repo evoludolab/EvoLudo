@@ -31,6 +31,7 @@
 package org.evoludo.simulator;
 
 import java.awt.Color;
+import java.util.Locale;
 import java.util.logging.Level;
 
 import org.evoludo.math.ArrayMath;
@@ -146,10 +147,10 @@ public class CLOController {
 	/**
 	 * Command line option to set verbosity level of logging.
 	 */
-	public final CLOption cloVerbose = new CLOption("verbose", "info", CLOCategory.Global,
+	public final CLOption cloVerbose = new CLOption("verbose", "warning", CLOCategory.Global,
 			"--verbose <l>   level of verbosity with l one of\n" //
 					+ "                all, debug/finest, finer, fine, config,\n" //
-					+ "                info, warning, error, or none",
+					+ "                info, warning, error, severe, or none",
 			new CLODelegate() {
 				@Override
 				public boolean parse(String arg) {
@@ -158,11 +159,7 @@ public class CLOController {
 						engine.logger.setLevel(Level.ALL);
 						return true;
 					}
-					if ("debug".startsWith(larg)) {
-						engine.logger.setLevel(Level.FINEST);
-						return true;
-					}
-					if ("finest".startsWith(larg)) {
+					if ("debug".startsWith(larg) || "finest".startsWith(larg)) {
 						engine.logger.setLevel(Level.FINEST);
 						return true;
 					}
@@ -174,8 +171,12 @@ public class CLOController {
 						engine.logger.setLevel(Level.FINE);
 						return true;
 					}
-					if ("debug".startsWith(larg)) {
+					if ("config".startsWith(larg)) {
 						engine.logger.setLevel(Level.CONFIG);
+						return true;
+					}
+					if ("info".startsWith(larg)) {
+						engine.logger.setLevel(Level.INFO);
 						return true;
 					}
 					if ("warning".startsWith(larg)) {
@@ -188,10 +189,6 @@ public class CLOController {
 					}
 					if ("none".startsWith(larg) || "off".startsWith(larg)) {
 						engine.logger.setLevel(Level.OFF);
-						return true;
-					}
-					if ("info".startsWith(larg)) {
-						engine.logger.setLevel(Level.INFO);
 						return true;
 					}
 					return false;
@@ -521,9 +518,9 @@ public class CLOController {
 	public void collectCLO(CLOParser prsr) {
 		prsr.addCLO(cloHelp);
 		prsr.addCLO(cloVerbose);
-		if (!EvoLudo.isGWT)
-			// default verbosity if running as java application is warning
-			cloVerbose.setDefault("warning");
+		Level vLevel = engine.logger.getLevel();
+		String defaultVerbose = (vLevel == null ? cloVerbose.getDefault() : vLevel.getName());
+		cloVerbose.setDefault(defaultVerbose.toLowerCase(Locale.ROOT));
 		prsr.addCLO(cloModule);
 		prsr.addCLO(cloSeed);
 		prsr.addCLO(cloRun);
