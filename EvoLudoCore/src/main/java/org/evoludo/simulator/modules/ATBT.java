@@ -31,7 +31,9 @@
 package org.evoludo.simulator.modules;
 
 import java.awt.Color;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
 
 import org.evoludo.geom.Point2D;
 import org.evoludo.math.ArrayMath;
@@ -608,8 +610,15 @@ public class ATBT extends TBT implements HasS3, HasPhase2D {
 	}
 
 	@Override
+	public List<ModelType> getModelTypes() {
+		List<ModelType> types = new ArrayList<>(super.getModelTypes());
+		types.remove(ModelType.EM);
+		return types;
+	}
+
+	@Override
 	public Model createModel(ModelType type) {
-		if (!(type == ModelType.ODE || type == ModelType.RK5 || type == ModelType.EM))
+		if (!(type == ModelType.ODE || type == ModelType.RK5))
 			return super.createModel(type);
 		if (model != null && model.isODE())
 			return model;
