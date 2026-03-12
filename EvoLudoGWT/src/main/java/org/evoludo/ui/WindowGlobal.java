@@ -52,4 +52,13 @@ public class WindowGlobal {
 	 * @param listener callback invoked for events
 	 */
 	public static native void addEventListener(String type, EventListener listener);
+
+	/**
+	 * Remove a previously registered JS event listener from the global window
+	 * object.
+	 * 
+	 * @param type     event type
+	 * @param listener callback to remove
+	 */
+	public static native void removeEventListener(String type, EventListener listener);
 }

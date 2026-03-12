@@ -92,6 +92,11 @@ public class EvoLudoGWT extends EvoLudo {
 	private boolean scheduledBusy = false;
 
 	/**
+	 * <code>true</code> after a fatal execution error has disabled the lab.
+	 */
+	private boolean fatalExecutionError = false;
+
+	/**
 	 * Construct EvoLudo controller for GWT applications (web or ePub).
 	 * 
 	 * @param gui the reference to the GUI
@@ -110,7 +115,7 @@ public class EvoLudoGWT extends EvoLudo {
 
 	@Override
 	public void execute(Directive directive) {
-		Scheduler.get().scheduleDeferred(directive::execute);
+		Scheduler.get().scheduleDeferred(() -> runGuarded("executing a deferred directive", directive::execute));
 	}
 
 	/**
@@ -160,7 +165,7 @@ public class EvoLudoGWT extends EvoLudo {
 			AbstractView<?> activeView = gui.getActiveView();
 			if (activeView != null)
 				activeView.update(true);
-			Scheduler.get().scheduleDeferred(this::run);
+			Scheduler.get().scheduleDeferred(() -> runGuarded("resuming the model", this::run));
 		}
 		super.layoutComplete();
 	}
@@ -177,8 +182,80 @@ public class EvoLudoGWT extends EvoLudo {
 		gui.setBusy(isRunning || busy);
 	}
 
+	/**
+	 * Execute work behind a fatal error boundary.
+	 *
+	 * @param context the description of the operation
+	 * @param action  the action to execute
+	 */
+	private void runGuarded(String context, Runnable action) {
+		if (fatalExecutionError)
+			return;
+		gui.enterGuardedExecution();
+		try {
+			action.run();
+		} catch (RuntimeException error) {
+			gui.exitGuardedExecution();
+			handleFatalExecutionError(context, error);
+			return;
+		}
+		gui.exitGuardedExecution();
+	}
+
+	/**
+	 * Execute a scheduled command behind a fatal error boundary.
+	 *
+	 * @param context the description of the operation
+	 * @param action  the action to execute
+	 * @return <code>false</code> if execution should stop
+	 */
+	private boolean runGuarded(String context, Scheduler.RepeatingCommand action) {
+		if (fatalExecutionError)
+			return false;
+		gui.enterGuardedExecution();
+		try {
+			boolean again = action.execute();
+			gui.exitGuardedExecution();
+			return again;
+		} catch (RuntimeException error) {
+			gui.exitGuardedExecution();
+			handleFatalExecutionError(context, error);
+			return false;
+		}
+	}
+
+	/**
+	 * Disable further execution after a fatal error and notify the GUI.
+	 *
+	 * @param context the description of the failing operation
+	 * @param error   the underlying exception
+	 */
+	private void handleFatalExecutionError(String context, Throwable error) {
+		if (fatalExecutionError)
+			return;
+		abortFatalExecution();
+		gui.handleFatalError(context, error);
+	}
+
+	/**
+	 * Stop all execution paths after a fatal error, without reporting it again.
+	 */
+	public void abortFatalExecution() {
+		if (fatalExecutionError)
+			return;
+		fatalExecutionError = true;
+		setScheduledBusy(false);
+		resetChunking();
+		timer.cancel();
+		isRunning = false;
+		isSuspended = false;
+		gui.setBusy(false);
+	}
+
 	@Override
 	public void run() {
+		if (fatalExecutionError)
+			return;
 		// ignore if already running or not suspended
 		if (isRunning || !isSuspended())
 			return;
@@ -210,7 +287,7 @@ public class EvoLudoGWT extends EvoLudo {
 	Timer timer = new Timer() {
 		@Override
 		public void run() {
-			next();
+			runGuarded("running the model", EvoLudoGWT.this::next);
 		}
 	};
 
@@ -232,6 +309,8 @@ public class EvoLudoGWT extends EvoLudo {
 
 	@Override
 	public void next() {
+		if (fatalExecutionError)
+			return;
 		setScheduledBusy(true);
 		switch (activeModel.getMode()) {
 			case STATISTICS_SAMPLE:
@@ -257,7 +336,7 @@ public class EvoLudoGWT extends EvoLudo {
 	 * Schedule the next sample.
 	 */
 	private void scheduleSample() {
-		Scheduler.get().scheduleIncremental(() -> {
+		Scheduler.get().scheduleIncremental(() -> runGuarded("running a statistics sample", () -> {
 			// in unfortunate cases even a single sample can take exceedingly long
 			// times. stop/init/reset need to be able to interrupt.
 			// make sure active model has not been unloaded in the meantime
@@ -275,14 +354,14 @@ public class EvoLudoGWT extends EvoLudo {
 			if (!cont)
 				setScheduledBusy(false);
 			return cont;
-		});
+		}));
 	}
 
 	/**
 	 * Schedule the next step.
 	 */
 	private void scheduleStep() {
-		Scheduler.get().scheduleDeferred(() -> {
+		Scheduler.get().scheduleDeferred(() -> runGuarded("advancing the model", () -> {
 			if (pendingAction != PendingAction.NONE) {
 				setScheduledBusy(false);
 				processPendingAction();
@@ -291,7 +370,7 @@ public class EvoLudoGWT extends EvoLudo {
 			modelNext();
 			if (!isRunning)
 				setScheduledBusy(false);
-		});
+		}));
 	}
 
 	/**
@@ -336,7 +415,7 @@ public class EvoLudoGWT extends EvoLudo {
 		chunkTimeStepOrig = activeModel.getTimeStep();
 		chunkTargetUpdates = getNextChunkedReport();
 		runController.startCPUSample();
-		Scheduler.get().scheduleIncremental(() -> {
+		Scheduler.get().scheduleIncremental(() -> runGuarded("running a chunked model step", () -> {
 			if (!chunkedStepScheduled)
 				return false;
 			if (activeModel == null) {
@@ -351,13 +430,13 @@ public class EvoLudoGWT extends EvoLudo {
 				return false;
 			}
 			double remaining = chunkTargetUpdates - activeModel.getUpdates();
-				if (remaining <= IBS_EPS) {
-					finishChunkedStep(activeModel.getUpdates() + IBS_EPS < activeModel.getNextHalt());
-					return false;
-				}
-				double chunk = Math.min(chunkStep, remaining);
-				boolean cont = activeModel.next(chunk);
-				double updates = activeModel.getUpdates();
+			if (remaining <= IBS_EPS) {
+				finishChunkedStep(activeModel.getUpdates() + IBS_EPS < activeModel.getNextHalt());
+				return false;
+			}
+			double chunk = Math.min(chunkStep, remaining);
+			boolean cont = activeModel.next(chunk);
+			double updates = activeModel.getUpdates();
 			boolean reachedTarget = (updates + IBS_EPS >= chunkTargetUpdates);
 			if (!cont) {
 				finishChunkedStep(false);
@@ -368,7 +447,7 @@ public class EvoLudoGWT extends EvoLudo {
 				return false;
 			}
 			return true;
-		});
+		}));
 	}
 
 	/**

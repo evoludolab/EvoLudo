@@ -1289,7 +1289,7 @@ public abstract class EvoLudo
 			pendingAction = PendingAction.NONE;
 		}
 		logger.severe(msg);
-			throw new Error(msg);
+		throw new IllegalStateException(msg);
 	}
 
 	/**

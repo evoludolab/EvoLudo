@@ -785,9 +785,9 @@ public class EvoLudoJRE extends EvoLudo implements Runnable {
 				processPendingAction();
 				return fix;
 			}
-				while (activeModel.next(activeModel.getTimeStep())) {
-					fireModelChanged();
-				}
+			while (activeModel.next(activeModel.getTimeStep())) {
+				fireModelChanged();
+			}
 			success = (fix.mutantNode >= 0);
 			fireModelSample(success);
 		} while (!success);
@@ -1632,8 +1632,14 @@ public class EvoLudoJRE extends EvoLudo implements Runnable {
 
 	@Override
 	public void fatal(String msg) {
-		super.fatal(msg);
-		exit(1);
+		try {
+			// super throws an IllegalStateException. let JRE exit cleanly
+			// with an error code of 1.
+			super.fatal(msg);
+		} catch (IllegalStateException e) {
+			exit(1);
+			throw e;
+		}
 	}
 
 	/*
