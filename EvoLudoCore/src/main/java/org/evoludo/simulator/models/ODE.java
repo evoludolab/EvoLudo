@@ -1000,9 +1000,11 @@ public class ODE extends Model implements DModel {
 				System.arraycopy(staticfit, skip, fitness, skip, nTraits);
 				continue;
 			}
+			// models that implement HasDE may neither implement DGroups nor DPairs
+			// and, instead, provide getDerivatives(...) to integrate the DE-model
 			if (mod instanceof HasDE.DGroups)
 				((HasDE.DGroups) mod).avgScores(state, nGroup, fitness);
-			else
+			else if (mod instanceof HasDE.DPairs)
 				((HasDE.DPairs) mod).avgScores(state, fitness);
 			Map2Fitness map2fit = mod.getMap2Fitness();
 			for (int n = skip; n < skip + nTraits; n++)
