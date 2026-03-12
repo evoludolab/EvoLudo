@@ -98,7 +98,6 @@ public class EvoLudoGWT extends EvoLudo {
 	 */
 	public EvoLudoGWT(EvoLudoWeb gui) {
 		this.gui = gui;
-		isGWT = true;
 	}
 
 	/**
