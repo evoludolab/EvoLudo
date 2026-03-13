@@ -688,8 +688,11 @@ public class PopGraph2D extends GenericPopGraph<String, Network2D> implements Sh
 
 		// dispatch to concise handlers for each geometry
 		switch (type) {
-			case CUBE:
 			case LINEAR:
+				if (this instanceof PopGraph1D)
+					return;
+				//$FALL-THROUGH$
+			case CUBE:
 				handleNoRepresentation(type);
 				return;
 			case TRIANGULAR:
