@@ -644,7 +644,7 @@ public class LineGraph extends AbstractGraph<double[]>
 	 * @param nLines the number of lines to draw
 	 */
 	private void drawMarkers(double width, double[] yinfo, int nLines) {
-		if (nLines <= 0)
+		if (nLines <= 0 || markers.isEmpty())
 			return;
 		double ymin = yinfo[0];
 		double yScale = yinfo[1];

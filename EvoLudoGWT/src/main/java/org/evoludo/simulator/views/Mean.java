@@ -32,6 +32,7 @@ package org.evoludo.simulator.views;
 
 import java.awt.Color;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 import org.evoludo.graphics.AbstractGraph.Shifter;
@@ -237,6 +238,7 @@ public class Mean extends AbstractView<LineGraph> implements Shifter, Zoomer {
 		traitcolors[1] = ColorMapCSS.Color2Css(color == Color.BLACK ? Color.LIGHT_GRAY : color.darker()); // min
 		traitcolors[2] = traitcolors[1]; // max
 		graph.setColors(traitcolors);
+		graph.setMarkers(Collections.emptyList());
 	}
 
 	/**
@@ -304,6 +306,7 @@ public class Mean extends AbstractView<LineGraph> implements Shifter, Zoomer {
 		// hardcoded color: black for mean, light gray for mean +/- sdev
 		Color[] fitcolors = new Color[] { Color.BLACK, Color.LIGHT_GRAY, Color.LIGHT_GRAY };
 		graph.setColors(ColorMapCSS.Color2Css(fitcolors));
+		graph.setMarkers(Collections.emptyList());
 	}
 
 	/**

@@ -30,6 +30,7 @@
 
 package org.evoludo.graphics;
 
+import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 import java.util.logging.Logger;
@@ -553,7 +554,7 @@ public abstract class AbstractGraph<B> extends FocusPanel
 	/**
 	 * Markers for decorating the graph.
 	 */
-	protected List<double[]> markers;
+	protected List<double[]> markers = Collections.emptyList();
 
 	/**
 	 * The array of colors used for markers.
@@ -865,7 +866,7 @@ public abstract class AbstractGraph<B> extends FocusPanel
 	public void setMarkers(List<double[]> markers, String[] colors) {
 		if (colors == null)
 			colors = new String[] { "rgb(0,0,0,0.4)" };
-		this.markers = markers;
+		this.markers = (markers == null ? Collections.emptyList() : markers);
 		markerColors = colors;
 	}
 
