@@ -357,8 +357,7 @@ public class Distribution extends AbstractView<PopGraph2D> implements TooltipPro
 	}
 
 	@Override
-	public void onResize() {
-		super.onResize();
+	protected void afterResize() {
 		updateData(true);
 	}
 

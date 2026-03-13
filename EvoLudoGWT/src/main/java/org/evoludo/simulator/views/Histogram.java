@@ -279,11 +279,10 @@ public class Histogram extends AbstractView<HistoGraph> {
 	}
 
 	@Override
-	public void onResize() {
+	protected void beforeResize() {
 		if (getOffsetWidth() == 0 || getOffsetHeight() == 0)
 			return;
 		layoutGraphs();
-		super.onResize();
 	}
 
 	/**

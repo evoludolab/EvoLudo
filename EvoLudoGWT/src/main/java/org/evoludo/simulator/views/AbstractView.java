@@ -903,16 +903,31 @@ public abstract class AbstractView<G extends AbstractGraph<?>> extends Composite
 	}
 
 	@Override
-	public void onResize() {
+	public final void onResize() {
 		if (getOffsetWidth() == 0 || getOffsetHeight() == 0)
 			return;
 		engine.guiReady();
 		if (!isLoaded)
 			return;
+		beforeResize();
 		for (G graph : graphs)
 			graph.onResize();
+		afterResize();
 		if (isActive)
 			update(true);
+	}
+
+	/**
+	 * Hook for resize work that needs to happen before the graphs are resized.
+	 */
+	protected void beforeResize() {
+	}
+
+	/**
+	 * Hook for resize work that needs to happen after the graphs are resized but
+	 * before the view is repainted.
+	 */
+	protected void afterResize() {
 	}
 
 	/**
@@ -944,6 +959,7 @@ public abstract class AbstractView<G extends AbstractGraph<?>> extends Composite
 	protected void scheduleUpdate(boolean force) {
 		if (updateScheduled)
 			return;
+		updateScheduled = true;
 		Scheduler.get().scheduleDeferred(() -> {
 			// deferred updates can cause issues if in the mean time the model
 			// has changed and this view is no longer supported. if this is the
@@ -957,7 +973,6 @@ public abstract class AbstractView<G extends AbstractGraph<?>> extends Composite
 			}
 			updateScheduled = false;
 		});
-		updateScheduled = true;
 	}
 
 	/**
