@@ -367,11 +367,41 @@ public class Mean extends AbstractView<LineGraph> implements Shifter, Zoomer {
 	@Override
 	protected void updateData() {
 		double newtime = model.getUpdates();
-		Module<?> module = null;
 		if (Math.abs(timestamp - newtime) > 1e-8) {
+			Module<?> module = null;
 			int idx = 0;
-			for (LineGraph graph : graphs)
-				idx = updateGraph(graph, module, idx, newtime);
+			for (LineGraph graph : graphs) {
+				Module<?> nod = graph.getModule();
+				boolean newmod = module != nod;
+				module = nod;
+				int id = module.getId();
+				int nState = model.getNMean(id);
+				double[] data;
+				switch (type) {
+					case TRAIT:
+						if (newmod) {
+							model.getMeanTraits(id, state);
+							idx = 0;
+						}
+						if (model.isContinuous())
+							data = updateCTraitGraph(nState, idx++);
+						else
+							data = updateDTraitGraph(nState);
+						break;
+					case FITNESS:
+						if (newmod)
+							model.getMeanFitness(id, state);
+						if (model.isContinuous())
+							data = updateCFitGraph();
+						else
+							data = updateDFitGraph(nState);
+						break;
+					default:
+						throw new IllegalArgumentException("Unknown data type: " + type);
+				}
+				data[0] = newtime;
+				graph.addData(data);
+			}
 			timestamp = newtime;
 		}
 	}
@@ -383,50 +413,6 @@ public class Mean extends AbstractView<LineGraph> implements Shifter, Zoomer {
 			return;
 		for (LineGraph graph : graphs)
 			graph.paint(force);
-	}
-
-	/**
-	 * Pull updated mean data for the supplied graph and append it to the data
-	 * buffer.
-	 * 
-	 * @param graph   graph to update
-	 * @param module  module currently being processed
-	 * @param idx     index offset used when processing multiple traits
-	 * @param newtime latest simulation time
-	 * @return updated index offset for subsequent graphs
-	 */
-	private int updateGraph(LineGraph graph, Module<?> module, int idx, double newtime) {
-		Module<?> nod = graph.getModule();
-		boolean newmod = module != nod;
-		module = nod;
-		int id = module.getId();
-		int nState = model.getNMean(id);
-		double[] data;
-		switch (type) {
-			case TRAIT:
-				if (newmod) {
-					model.getMeanTraits(id, state);
-					idx = 0;
-				}
-				if (model.isContinuous())
-					data = updateCTraitGraph(nState, idx++);
-				else
-					data = updateDTraitGraph(nState);
-				break;
-			case FITNESS:
-				if (newmod)
-					model.getMeanFitness(id, state);
-				if (model.isContinuous())
-					data = updateCFitGraph();
-				else
-					data = updateDFitGraph(nState);
-				break;
-			default:
-				throw new IllegalArgumentException("Unknown data type: " + type);
-		}
-		data[0] = newtime;
-		graph.addData(data);
-		return idx;
 	}
 
 	/**
