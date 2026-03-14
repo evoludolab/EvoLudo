@@ -47,6 +47,8 @@ import org.evoludo.ui.ContextMenuRadioItem;
 
 import com.google.gwt.core.client.JsArray;
 import com.google.gwt.dom.client.NativeEvent;
+import com.google.gwt.dom.client.Style;
+import com.google.gwt.dom.client.Style.Unit;
 import com.google.gwt.dom.client.Touch;
 import com.google.gwt.event.dom.client.MouseDownEvent;
 import com.google.gwt.event.dom.client.MouseMoveEvent;
@@ -186,6 +188,16 @@ public class PopGraph2D extends GenericPopGraph<String, Network2D> implements Sh
 	private static final String INFO_POPSIZE_TOO_BIG = "Population size too big!";
 
 	/**
+	 * Cached font size of the last displayed message.
+	 */
+	private double msgFontSize = 12.0;
+
+	/**
+	 * Cached line height of the last displayed message.
+	 */
+	private double msgLineHeight = 16.8;
+
+	/**
 	 * Create a graph for graphically visualizing the structure of a network (or
 	 * population). Allocates the canvas and the label and retrieves the shared
 	 * tooltip and context menu.
@@ -210,6 +222,8 @@ public class PopGraph2D extends GenericPopGraph<String, Network2D> implements Sh
 		super.onLoad();
 		setStylePrimaryName("evoludo-PopGraph2D");
 		label.setStyleName("evoludo-Label2D");
+		msgLabel.setStyleName("evoludo-Message2D");
+		wrapper.setWidgetLeftRight(msgLabel, 0.0, Unit.PX, 0.0, Unit.PX);
 		legend = new Legend2D(this);
 	}
 
@@ -217,6 +231,50 @@ public class PopGraph2D extends GenericPopGraph<String, Network2D> implements Sh
 	protected void onUnload() {
 		super.onUnload();
 		legend = null;
+	}
+
+	@Override
+	public boolean displayMessage(String msg) {
+		return displayMessage(msg, true);
+	}
+
+	@Override
+	public boolean displayMessage(String msg, boolean autoscale) {
+		if (msg == null || msg.isEmpty()) {
+			clearMessage();
+			return false;
+		}
+		message = msg;
+		hasMessage = true;
+		g.save();
+		g.setFont("12px sans-serif");
+		msgLabel.setText(msg);
+		Style msgStyle = msgLabel.getElement().getStyle();
+		double height = Math.max(1.0, getOffsetHeight());
+		if (autoscale) {
+			double textWidth = g.measureText(msg).getWidth();
+			double width = Math.max(1.0, getOffsetWidth());
+			int fontSize = Math.min((int) (12.0 * 0.666 * width / textWidth), 24);
+			msgFontSize = Math.max(fontSize, 12);
+			msgLineHeight = msgFontSize * 1.4;
+		}
+		msgStyle.setFontSize(msgFontSize, Unit.PX);
+		msgStyle.setLineHeight(msgLineHeight, Unit.PX);
+		wrapper.setWidgetTopHeight(msgLabel, Math.max(0.0, (height - msgLineHeight) * 0.5), Unit.PX,
+				msgLineHeight, Unit.PX);
+		g.restore();
+		msgLabel.setVisible(true);
+		return true;
+	}
+
+	@Override
+	public void clearMessage() {
+		if (!hasMessage)
+			return;
+		message = null;
+		hasMessage = false;
+		if (msgLabel != null)
+			msgLabel.setVisible(false);
 	}
 
 	/**

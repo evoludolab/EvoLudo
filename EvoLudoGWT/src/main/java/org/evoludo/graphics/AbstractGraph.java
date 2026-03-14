@@ -776,9 +776,18 @@ public abstract class AbstractGraph<B> extends FocusPanel
 	public void onResize() {
 		tooltip.close();
 		contextMenu.close();
+		String layoutMessage = null;
+		if (hasMessage && this instanceof GenericPopGraph<?, ?>) {
+			GenericPopGraph<?, ?> graph = (GenericPopGraph<?, ?>) this;
+			if (graph.network != null
+					&& graph.network.isStatus(org.evoludo.simulator.Network.Status.LAYOUT_IN_PROGRESS))
+				layoutMessage = message;
+		}
 		updateCanvas();
 		// check bounds and update messages if necessary
 		calcBounds();
+		if (layoutMessage != null && !hasMessage)
+			displayMessage(layoutMessage);
 	}
 
 	/**
@@ -1982,6 +1991,11 @@ public abstract class AbstractGraph<B> extends FocusPanel
 	protected boolean hasMessage = false;
 
 	/**
+	 * The last message displayed on the graph.
+	 */
+	protected String message = null;
+
+	/**
 	 * Display message {@code msg} on the graph (no HTML formatting).
 	 * 
 	 * <h3>Implementation note:</h3>
@@ -1992,10 +2006,23 @@ public abstract class AbstractGraph<B> extends FocusPanel
 	 * @return {@code true} if message displayed
 	 */
 	public boolean displayMessage(String msg) {
+		return displayMessage(msg, true);
+	}
+
+	/**
+	 * Display message {@code msg} on the graph (no HTML formatting), optionally
+	 * autoscaling the text to the available width.
+	 * 
+	 * @param msg       the message to display
+	 * @param autoscale {@code true} to scale the text to the available width
+	 * @return {@code true} if message displayed
+	 */
+	public boolean displayMessage(String msg, boolean autoscale) {
 		if (msg == null || msg.isEmpty()) {
 			clearMessage();
 			return false;
 		}
+		message = msg;
 		g.save();
 		g.scale(scale, scale);
 		clearCanvas();
@@ -2004,7 +2031,9 @@ public abstract class AbstractGraph<B> extends FocusPanel
 		// center text in bounds
 		double w = bounds.getWidth();
 		// size font to fill approx 80% of linewidth (max. 20px)
-		int fontSize = Math.min((int) (12.0 * 0.8 * w / g.measureText(msg).getWidth()), 20);
+		int fontSize = 12;
+		if (autoscale)
+			fontSize = Math.min((int) (12.0 * 0.8 * w / g.measureText(msg).getWidth()), 20);
 		g.setFont(fontSize + "px sans-serif");
 		g.fillText(msg, (bounds.getX() + w - g.measureText(msg).getWidth()) * 0.5,
 				bounds.getY() + bounds.getHeight() * 0.5 - fontSize * 0.333);
@@ -2017,6 +2046,7 @@ public abstract class AbstractGraph<B> extends FocusPanel
 	 * Clear the message.
 	 */
 	public void clearMessage() {
+		message = null;
 		hasMessage = false;
 	}
 

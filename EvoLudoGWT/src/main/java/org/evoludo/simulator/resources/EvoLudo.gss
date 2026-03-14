@@ -148,12 +148,18 @@
 	pointer-events: none;
 }
 
-.evoludo-Label2D, .evoludo-Label3D, .evoludo-Message3D {
+.evoludo-Label2D, .evoludo-Label3D, .evoludo-Message2D, .evoludo-Message3D {
 	width: 100%;
 	font-family: Arial, sans-serif;
 	font-weight: bold;
 	font-size: smaller;
 	pointer-events: none;
+}
+
+.evoludo-Label2D, .evoludo-Message2D {
+	color: #000;
+	text-shadow: -1px -1px 0 #fff, 1px -1px 0 #fff, -1px 1px 0 #fff, 1px 1px
+		0 #fff;
 }
 
 .evoludo-Label3D, .evoludo-Message3D {
@@ -170,17 +176,23 @@
 	position: absolute;
 	top: 0;
 	left: 0;
-	text-shadow: -1px -1px 0 #fff, 1px -1px 0 #fff, -1px 1px 0 #fff, 1px 1px
-		0 #fff;
+}
+
+.evoludo-Message2D, .evoludo-Message3D {
+	text-align: center;
+	width: 100%;
+}
+
+.evoludo-Message2D {
+	z-index: 2;
+	font-size: large;
 }
 
 .evoludo-Message3D {
 	position: relative;
-	text-align: center;
 	/* placing the message label sets top:0; override */
 	top: 47% !important;
 	z-index: 1;
-	width: 100%;
 }
 
 .evoludo-Params {

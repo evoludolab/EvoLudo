@@ -48,6 +48,7 @@ import org.evoludo.util.Formatter;
 
 import com.google.gwt.core.client.Duration;
 import com.google.gwt.core.client.JsArray;
+import com.google.gwt.core.client.Scheduler;
 import com.google.gwt.dom.client.Touch;
 import com.google.gwt.event.dom.client.DoubleClickEvent;
 import com.google.gwt.event.dom.client.DoubleClickHandler;
@@ -228,6 +229,16 @@ public abstract class GenericPopGraph<T, N extends Network<?>> extends AbstractG
 	protected Label label;
 
 	/**
+	 * Overlay label used to display transient graph messages.
+	 */
+	protected Label msgLabel;
+
+	/**
+	 * Timestamp when the current non-animated layout started.
+	 */
+	private double layoutStartedAt = Double.NaN;
+
+	/**
 	 * Create the base class for population graphs.
 	 * 
 	 * @param view   the view of this graph
@@ -244,12 +255,18 @@ public abstract class GenericPopGraph<T, N extends Network<?>> extends AbstractG
 		label.getElement().getStyle().setZIndex(1);
 		label.setVisible(false);
 		wrapper.add(label);
+		msgLabel = new Label("Gugus");
+		msgLabel.getElement().getStyle().setZIndex(2);
+		msgLabel.setVisible(false);
+		wrapper.add(msgLabel);
 		if (view instanceof TooltipProvider.Index)
 			setTooltipProvider((TooltipProvider.Index) view);
 	}
 
 	@Override
 	protected void onUnload() {
+		wrapper.remove(msgLabel);
+		msgLabel = null;
 		wrapper.remove(label);
 		label = null;
 		super.onUnload();
@@ -266,7 +283,7 @@ public abstract class GenericPopGraph<T, N extends Network<?>> extends AbstractG
 	@Override
 	public void onResize() {
 		super.onResize();
-		if (hasMessage)
+		if (hasMessage && (network == null || !network.isStatus(Status.LAYOUT_IN_PROGRESS)))
 			view.layoutComplete();
 	}
 
@@ -402,6 +419,7 @@ public abstract class GenericPopGraph<T, N extends Network<?>> extends AbstractG
 		// geometry (and network) may be null for ODE or SDE models
 		if (network != null)
 			network.reset();
+		layoutStartedAt = Double.NaN;
 		clearMessage();
 		invalidated = true;
 		if (hasMessage)
@@ -415,14 +433,35 @@ public abstract class GenericPopGraph<T, N extends Network<?>> extends AbstractG
 				layoutNetwork();
 			return;
 		}
-		displayMessage("Laying out network...  " + Formatter.formatPercent(progress, 0) + " completed.");
+		if (Double.isNaN(layoutStartedAt))
+			layoutStartedAt = Duration.currentTimeMillis();
+		double elapsed = Duration.currentTimeMillis() - layoutStartedAt;
+		double remaining = Math.max(0.0, (network.getLayoutTimout() - elapsed) / 1000.0);
+		double displayProgress = progress > 0.0 ? Math.max(progress, 0.00005) : 0.0;
+		String message;
+		if (remaining <= 0.0) {
+			message = "Rendering network...";
+		} else {
+			message = "Laying out network...  " + Formatter.formatPercent(displayProgress, 2) + " relaxed, "
+					+ Formatter.formatFix(remaining, 1) + " s remaining.";
+		}
+		displayMessage(message, false);
 	}
 
 	@Override
 	public synchronized void layoutComplete() {
-		clearMessage();
-		layoutNetwork();
-		view.layoutComplete();
+		layoutStartedAt = Double.NaN;
+		if (!isAttached() || network == null || geometry == null) {
+			clearMessage();
+			view.layoutComplete();
+			return;
+		}
+		Scheduler.get().scheduleDeferred(() -> {
+			clearMessage();
+			if (isAttached() && network != null && geometry != null)
+				drawNetwork();
+			view.layoutComplete();
+		});
 	}
 
 	/**

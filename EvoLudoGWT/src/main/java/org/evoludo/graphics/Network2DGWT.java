@@ -111,10 +111,18 @@ public class Network2DGWT extends Network2D {
 	 * The minimum number of links to process in one step. After
 	 * {@code MAX_LINKS_PER_STEP} links have been processed the next node to
 	 * continue is stored in {@link #nextLayoutNode} and control is returned to the
-	 * event loop, which prevents the GUI from becoming unresponsive. As a welcome
-	 * side effect, this parcelling resulted in a dramatic speed increase.
+	 * event loop, which prevents the GUI from becoming unresponsive. With
+	 * wall-clock slicing this acts as a secondary guard against very cheap large
+	 * batches.
 	 */
-	protected static final int MAX_LINKS_PER_STEP = 200;
+	protected static final int MAX_LINKS_PER_STEP = 2000;
+
+	/**
+	 * Maximum time in milliseconds spent in a single scheduler slice. Bounding
+	 * layout work by wall-clock time keeps browser input responsive even for very
+	 * large networks.
+	 */
+	protected static final double MAX_LAYOUT_SLICE_MSEC = 20.0;
 
 	/**
 	 * Perform a single step in the layouting process by relaxing nodes
@@ -126,12 +134,18 @@ public class Network2DGWT extends Network2D {
 	protected boolean doLayoutStep() {
 		if (!isRunning)
 			return false;
+		double sliceStart = Duration.currentTimeMillis();
 		int nLinksDone = 0;
 		for (int n = nextLayoutNode; n < nNodes; n++) {
 			potential += relax(n);
 			nLinksDone += geometry.kout[n];
-			if (nLinksDone > MAX_LINKS_PER_STEP) {
+			if (nLinksDone > MAX_LINKS_PER_STEP || Duration.currentTimeMillis() - sliceStart > MAX_LAYOUT_SLICE_MSEC) {
 				nextLayoutNode = n + 1;
+				int elapsed = layout.elapsedMillis();
+				if (elapsed - prevLayout > MIN_DELAY_ANIMATE_MSEC) {
+					listener.layoutUpdate(layoutProgress);
+					prevLayout = elapsed;
+				}
 				return isRunning;
 			}
 		}
@@ -142,6 +156,7 @@ public class Network2DGWT extends Network2D {
 		prevPotential = potential;
 		potential = 0.0;
 		prevAdjust = Math.min(prevAdjust, adjust);
+		updateLayoutProgress(adjust);
 		int elapsed = layout.elapsedMillis();
 		if (adjust < accuracy || elapsed > layoutTimeout) { // layoutTimeout provides emergency exit
 			finishLayout();
@@ -156,7 +171,7 @@ public class Network2DGWT extends Network2D {
 			return false;
 		}
 		if (elapsed - prevLayout > MIN_DELAY_ANIMATE_MSEC) {
-			listener.layoutUpdate(accuracy / prevAdjust);
+			listener.layoutUpdate(layoutProgress);
 			prevLayout = layout.elapsedMillis();
 		}
 		return isRunning;

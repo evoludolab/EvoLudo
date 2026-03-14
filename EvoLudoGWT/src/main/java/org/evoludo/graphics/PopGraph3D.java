@@ -136,9 +136,9 @@ public class PopGraph3D extends GenericPopGraph<MeshLambertMaterial, Network3DGW
 	AmbientLight ambient;
 
 	/**
-	 * The label for displaying messages.
+	 * Cached font size of the last displayed message.
 	 */
-	Label msgLabel;
+	private double msgFontSize = 12.0;
 
 	/**
 	 * Create a graph for graphically visualizing the structure of a network (or
@@ -186,11 +186,7 @@ public class PopGraph3D extends GenericPopGraph<MeshLambertMaterial, Network3DGW
 			graph3DScene = new Pop3DScene();
 		graph3DPanel.setAnimatedScene(graph3DScene);
 		label.setStyleName("evoludo-Label3D");
-		// adding message label on demand later on causes trouble...
-		msgLabel = new Label("Gugus");
 		msgLabel.setStyleName("evoludo-Message3D");
-		msgLabel.setVisible(false);
-		graph3DPanel.add(msgLabel);
 		add(graph3DPanel);
 		element = graph3DPanel.getElement();
 	}
@@ -198,8 +194,6 @@ public class PopGraph3D extends GenericPopGraph<MeshLambertMaterial, Network3DGW
 	@Override
 	protected void onUnload() {
 		releaseRenderer();
-		graph3DPanel.remove(msgLabel);
-		msgLabel = null;
 		remove(graph3DPanel);
 		graph3DScene = null;
 		graph3DPanel = null;
@@ -974,17 +968,25 @@ public class PopGraph3D extends GenericPopGraph<MeshLambertMaterial, Network3DGW
 
 	@Override
 	public boolean displayMessage(String msg) {
+		return displayMessage(msg, true);
+	}
+
+	@Override
+	public boolean displayMessage(String msg, boolean autoscale) {
 		if (msg == null || msg.isEmpty()) {
 			clearMessage();
 			return false;
 		}
+		message = msg;
 		hasMessage = true;
 		g.save();
 		g.setFont("12px sans-serif");
 		msgLabel.setText(msg);
 		msgLabel.setVisible(true);
 		Style msgStyle = msgLabel.getElement().getStyle();
-		msgStyle.setFontSize(12.0 * 0.666 * getOffsetWidth() / g.measureText(msg).getWidth(), Unit.PX);
+		if (autoscale)
+			msgFontSize = 12.0 * 0.666 * getOffsetWidth() / g.measureText(msg).getWidth();
+		msgStyle.setFontSize(msgFontSize, Unit.PX);
 		g.restore();
 		spheres.clear();
 		return true;
@@ -993,6 +995,7 @@ public class PopGraph3D extends GenericPopGraph<MeshLambertMaterial, Network3DGW
 	@Override
 	public void clearMessage() {
 		if (hasMessage) {
+			message = null;
 			msgLabel.setVisible(false);
 			hasMessage = false;
 			if (graph3DScene != null)
