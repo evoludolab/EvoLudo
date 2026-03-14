@@ -61,8 +61,11 @@ public class Network2DGWT extends Network2D {
 
 	@Override
 	public void reset() {
-		if (isStatus(Status.LAYOUT_IN_PROGRESS))
-			return;
+		cancelLayout();
+		nextLayoutNode = 0;
+		layout = null;
+		prevLayout = Integer.MIN_VALUE;
+		links.reset();
 		super.reset();
 	}
 
@@ -121,6 +124,8 @@ public class Network2DGWT extends Network2D {
 	 * @return {@code true} if the layouting process should continue
 	 */
 	protected boolean doLayoutStep() {
+		if (!isRunning)
+			return false;
 		int nLinksDone = 0;
 		for (int n = nextLayoutNode; n < nNodes; n++) {
 			potential += relax(n);
