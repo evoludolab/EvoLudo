@@ -45,6 +45,7 @@ import org.evoludo.simulator.views.Pop3D;
 import org.evoludo.ui.TrackballControls;
 
 import com.google.gwt.core.client.Duration;
+import com.google.gwt.core.client.JavaScriptObject;
 import com.google.gwt.dom.client.CanvasElement;
 import com.google.gwt.dom.client.NativeEvent;
 import com.google.gwt.dom.client.Style;
@@ -196,12 +197,83 @@ public class PopGraph3D extends GenericPopGraph<MeshLambertMaterial, Network3DGW
 
 	@Override
 	protected void onUnload() {
+		releaseRenderer();
 		graph3DPanel.remove(msgLabel);
 		msgLabel = null;
 		remove(graph3DPanel);
+		graph3DScene = null;
 		graph3DPanel = null;
+		graph3DCamera = null;
+		effect = null;
+		ambient = null;
+		light = null;
+		linkstyle = null;
+		spheres.clear();
 		element = null;
 		super.onUnload();
+	}
+
+	/**
+	 * Release WebGL-related resources when the widget is unloaded. Browsers limit
+	 * the number of live WebGL contexts per page, so detaching the widget is not
+	 * sufficient when popup labs get opened repeatedly.
+	 */
+	private void releaseRenderer() {
+		if (!hasRenderer())
+			return;
+		graph3DScene.stop();
+		if (graph3DScene.control != null) {
+			graph3DScene.control.unload();
+			graph3DScene.control = null;
+		}
+		if (effect != null) {
+			graph3DPanel.getRenderer().deletePlugin(effect);
+			effect = null;
+		}
+		loseContext(graph3DPanel.getRenderer().getGL());
+	}
+
+	/**
+	 * Ask the browser to release the WebGL context if the extension is available.
+	 *
+	 * @param gl the WebGL context backing the renderer
+	 */
+	private static native void loseContext(JavaScriptObject gl) /*-{
+		if (!gl)
+			return;
+		var ext = gl.getExtension("WEBGL_lose_context")
+				|| gl.getExtension("WEBKIT_WEBGL_lose_context")
+				|| gl.getExtension("MOZ_WEBGL_lose_context");
+		if (ext && ext.loseContext)
+			ext.loseContext();
+	}-*/;
+
+	/**
+	 * Check whether the 3D panel and renderer are ready for effect or animation
+	 * updates.
+	 * 
+	 * @return {@code true} if the renderer is available
+	 */
+	private boolean hasRenderer() {
+		return (graph3DPanel != null && graph3DScene != null && graph3DPanel.getRenderer() != null);
+	}
+
+	/**
+	 * Ensure that the shared scene camera is available. This may lazily adopt the
+	 * current network camera or trigger camera positioning if the scene has just
+	 * been initialized.
+	 * 
+	 * @return {@code true} if a camera is available for rendering
+	 */
+	private boolean ensureCamera() {
+		if (graph3DCamera != null)
+			return true;
+		if (network == null || graph3DScene == null)
+			return false;
+		graph3DCamera = network.getWorldView();
+		if (graph3DCamera == null)
+			graph3DScene.positionCamera();
+		return (graph3DCamera != null);
 	}
 
 	@Override
@@ -220,8 +292,12 @@ public class PopGraph3D extends GenericPopGraph<MeshLambertMaterial, Network3DGW
 		// 3D graphs do not implement Shifting interface. Add mouse listeners here.
 		mouseDownHandler = addMouseDownHandler(this);
 		mouseUpHandler = addMouseUpHandler(this);
-		if (graph3DPanel.getRenderer() != null)
+		if (hasRenderer()) {
+			graph3DPanel.forceLayout();
+			onResize();
 			graph3DScene.run();
+			paint(true);
+		}
 	}
 
 	@Override
@@ -234,6 +310,12 @@ public class PopGraph3D extends GenericPopGraph<MeshLambertMaterial, Network3DGW
 	public boolean paint(boolean force) {
 		if (super.paint(force))
 			return true;
+		if (hasStaticLayout()) {
+			drawLattice();
+			return false;
+		}
+		if (invalidated)
+			return false;
 		int k = 0;
 		for (Mesh sphere : spheres)
 			sphere.setMaterial(data[k++]);
@@ -475,13 +557,15 @@ public class PopGraph3D extends GenericPopGraph<MeshLambertMaterial, Network3DGW
 	 * Adds the nodes, links, lights and camera to the scene.
 	 */
 	protected void drawUniverse() {
+		if (graph3DScene == null)
+			return;
 		Scene scene = graph3DScene.getScene();
 		if (scene == null)
 			return;
 		scene.getChildren().clear();
 		scene.add(new Object3D().add(spheres));
-		if (graph3DCamera == null)
-			graph3DCamera = network.getWorldView();
+		if (!ensureCamera())
+			return;
 		scene.add(graph3DCamera);
 		if (ambient == null)
 			ambient = new AmbientLight(0x666666);
@@ -510,6 +594,8 @@ public class PopGraph3D extends GenericPopGraph<MeshLambertMaterial, Network3DGW
 
 	@Override
 	public void calcBounds(int width, int height) {
+		if (graph3DScene == null)
+			return;
 		Canvas3d canvas = graph3DScene.getCanvas();
 		if (canvas == null)
 			return;
@@ -623,6 +709,8 @@ public class PopGraph3D extends GenericPopGraph<MeshLambertMaterial, Network3DGW
 	 *                     the camera
 	 */
 	public void setOrthographic(boolean orthographic) {
+		if (graph3DScene == null)
+			return;
 		graph3DScene.setOrtho(orthographic);
 		drawUniverse();
 		paint(true);
@@ -643,6 +731,8 @@ public class PopGraph3D extends GenericPopGraph<MeshLambertMaterial, Network3DGW
 	 * @param anaglyph {@code true} enable the anaglyph effect
 	 */
 	public void setAnaglyph(boolean anaglyph) {
+		if (!hasRenderer())
+			return;
 		if (!anaglyph || isVR()) {
 			graph3DPanel.getRenderer().deletePlugin(effect);
 			effect = null;
@@ -666,6 +756,8 @@ public class PopGraph3D extends GenericPopGraph<MeshLambertMaterial, Network3DGW
 	 * @param vr {@code true} to enable the stereo effect
 	 */
 	public void setVR(boolean vr) {
+		if (!hasRenderer())
+			return;
 		if (!vr || isAnaglyph()) {
 			graph3DPanel.getRenderer().deletePlugin(effect);
 			effect = null;
@@ -756,7 +848,7 @@ public class PopGraph3D extends GenericPopGraph<MeshLambertMaterial, Network3DGW
 		 * @see Network3DGWT#getWorldView()
 		 */
 		public void positionCamera() {
-			if (geometry == null)
+			if (geometry == null || network == null)
 				return;
 			Camera newWorldView = network.getWorldView();
 			if (graph3DCamera != null && control != null && newWorldView == graph3DCamera)
@@ -788,28 +880,30 @@ public class PopGraph3D extends GenericPopGraph<MeshLambertMaterial, Network3DGW
 				return;
 			if (doOrthographic) {
 				// orthographic projection
-				if (graph3DCamera instanceof OrthographicCamera)
-					return;
-				graph3DCamera = new OrthographicCamera(c3d.getWidth(), c3d.getHeight(),
-						-10000, // near
-						10000 // far
-				);
+				if (!(graph3DCamera instanceof OrthographicCamera)) {
+					graph3DCamera = new OrthographicCamera(c3d.getWidth(), c3d.getHeight(),
+							-10000, // near
+							10000 // far
+					);
+				}
 			} else {
-				if (graph3DCamera instanceof PerspectiveCamera)
-					return;
-				graph3DCamera = new PerspectiveCamera(60, // field of view
-						getRenderer().getAbsoluteAspectRation(), // aspect ratio
-						1, // near
-						10000 // far
-				);
+				if (!(graph3DCamera instanceof PerspectiveCamera)) {
+					graph3DCamera = new PerspectiveCamera(60, // field of view
+							getRenderer().getAbsoluteAspectRation(), // aspect ratio
+							1, // near
+							10000 // far
+					);
+				}
 			}
 			// adding the light to the camera makes it static
 			if (light == null) {
 				light = new PointLight(0xffffff, 1, 0.0);
 				light.getPosition().set(-1000, 1000, 1000);
 			}
-			graph3DCamera.add(light);
-			graph3DCamera.getPosition().setZ(400);
+			if (light.getParent() != graph3DCamera)
+				graph3DCamera.add(light);
+			if (network.getWorldView() != graph3DCamera)
+				graph3DCamera.getPosition().setZ(400);
 			network.setWorldView(graph3DCamera);
 			if (control != null)
 				control.unload();
@@ -823,6 +917,8 @@ public class PopGraph3D extends GenericPopGraph<MeshLambertMaterial, Network3DGW
 		public void onResize() {
 			if (control == null)
 				positionCamera();
+			if (control == null)
+				return;
 			control.onResize();
 		}
 
@@ -870,7 +966,7 @@ public class PopGraph3D extends GenericPopGraph<MeshLambertMaterial, Network3DGW
 	@Override
 	public void onResize() {
 		super.onResize();
-		if (graph3DScene.getCanvas() == null)
+		if (!hasRenderer() || graph3DScene.getCanvas() == null)
 			return;
 		graph3DScene.onResize();
 		graph3DPanel.forceLayout();
@@ -899,7 +995,8 @@ public class PopGraph3D extends GenericPopGraph<MeshLambertMaterial, Network3DGW
 		if (hasMessage) {
 			msgLabel.setVisible(false);
 			hasMessage = false;
-			graph3DScene.run();
+			if (graph3DScene != null)
+				graph3DScene.run();
 		}
 	}
 }
