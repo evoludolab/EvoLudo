@@ -1262,14 +1262,11 @@ public abstract class AbstractGraph<B> extends FocusPanel
 					digits = 1;
 				else
 					digits = 0;
-				adjustBoundsForYSide(g.measureText(Formatter.formatPercent(100, digits)).getWidth());
 			} else {
-				adjustBoundsForYSide(
-						g.measureText(
-								Formatter.formatFix(-Math.max(Math.abs(style.yMin), Math.abs(style.yMax)), digits))
-								.getWidth());
+				digits = computeYTickDigits(4);
 			}
-			adjustBoundsForYSide(4);
+			adjustBoundsForYSide(measureMidYTickLabelWidth(digits));
+			adjustBoundsForYSide(6);
 		}
 		g.setFont(font);
 	}
@@ -1506,9 +1503,7 @@ public abstract class AbstractGraph<B> extends FocusPanel
 		setFont(style.ticksLabelFont);
 		g.setFillStyle(style.frameColor);
 		double tickValue = style.offsetYTickLabels ? yval + style.yTickOffset : yval;
-		String tick = style.percentY
-				? Formatter.formatPretty(100.0 * tickValue, digits)
-				: Formatter.formatPretty(tickValue, digits);
+		String tick = formatYTickLabel(tickValue, digits);
 		String[] numexp = tick.split("\\^");
 		double xpos;
 		if (style.showYAxisRight) {
@@ -1578,6 +1573,35 @@ public abstract class AbstractGraph<B> extends FocusPanel
 	}
 
 	/**
+	 * Compute the number of decimal digits needed for y-axis tick labels.
+	 *
+	 * @param levels number of y-axis intervals
+	 * @return decimal digits for y tick labels
+	 */
+	private int computeYTickDigits(int levels) {
+		if (style.percentY)
+			return style.yMax <= 1.0 ? 1 : 0;
+		double tickMin = style.offsetYTickLabels ? style.yMin + style.yTickOffset : style.yMin;
+		double tickMax = style.offsetYTickLabels ? style.yMax + style.yTickOffset : style.yMax;
+		return (!style.logScaleY)
+				? computeLinearDigits(tickMin, tickMax, levels, style.percentY, true)
+				: 2;
+	}
+
+	/**
+	 * Format a y-axis tick label using the same pretty formatting as the renderer.
+	 *
+	 * @param tickValue the y value represented by the tick
+	 * @param digits    decimal digits for pretty formatting
+	 * @return the formatted tick label
+	 */
+	private String formatYTickLabel(double tickValue, int digits) {
+		return style.percentY
+				? Formatter.formatPretty(100.0 * tickValue, digits)
+				: Formatter.formatPretty(tickValue, digits);
+	}
+
+	/**
 	 * Measure the width of a y-axis tick label including exponent and percent.
 	 * 
 	 * @param numexp  the tick label split into base and exponent parts
@@ -1596,6 +1620,22 @@ public abstract class AbstractGraph<B> extends FocusPanel
 		if (percent)
 			width += g.measureText("%").getWidth();
 		return width;
+	}
+
+	/**
+	 * Measure the width of the midpoint y-axis tick label using the same pretty
+	 * formatting as the renderer. This is the label most likely to interfere with
+	 * the vertical axis label.
+	 *
+	 * @param digits decimal digits for pretty formatting
+	 * @return measured midpoint tick label width
+	 */
+	private double measureMidYTickLabelWidth(int digits) {
+		double tickMin = style.offsetYTickLabels ? style.yMin + style.yTickOffset : style.yMin;
+		double tickMax = style.offsetYTickLabels ? style.yMax + style.yTickOffset : style.yMax;
+		double sample = 0.5 * (tickMin + tickMax);
+		String tick = formatYTickLabel(sample, digits);
+		return measureYTickLabelWidth(tick.split("\\^"), style.percentY);
 	}
 
 	/**
@@ -1640,16 +1680,8 @@ public abstract class AbstractGraph<B> extends FocusPanel
 		// y-axis label
 		if (!style.showYLabel || style.yLabel == null)
 			return;
-		setFont(style.ticksLabelFont);
-		int digits = 2;
-		double tickskip;
-		if (style.percentY) {
-			digits = style.yMax <= 1.0 ? 1 : 0;
-			tickskip = g.measureText(Formatter.formatPercent(100, digits)).getWidth();
-		} else {
-			String sample = Formatter.formatFix(-Math.max(Math.abs(style.yMin), Math.abs(style.yMax)), digits);
-			tickskip = g.measureText(sample).getWidth() + 16.0;
-		}
+		int digits = computeYTickDigits(4);
+		double tickskip = measureMidYTickLabelWidth(digits) + 18.0;
 		setFont(style.axesLabelFont);
 		String ylabel = style.yLabel + (style.logScaleY ? " (log)" : "");
 		double xpos = style.showYAxisRight ? w + tickskip + style.tickLength : -tickskip - style.tickLength + 8.0;
