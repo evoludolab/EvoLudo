@@ -36,6 +36,7 @@ import org.evoludo.graphics.Network3DGWT;
 import org.evoludo.math.ArrayMath;
 import org.evoludo.simulator.geometries.AbstractGeometry;
 import org.evoludo.simulator.models.ChangeListener.PendingAction;
+import org.evoludo.simulator.models.FixationData;
 import org.evoludo.simulator.models.IBS;
 import org.evoludo.simulator.models.Model;
 import org.evoludo.simulator.models.ODE;
@@ -340,15 +341,26 @@ public class EvoLudoGWT extends EvoLudo {
 			// in unfortunate cases even a single sample can take exceedingly long
 			// times. stop/init/reset need to be able to interrupt.
 			// make sure active model has not been unloaded in the meantime
-			if (activeModel == null || pendingAction != PendingAction.NONE) {
+			if (activeModel == null || pendingAction != PendingAction.NONE
+					|| activeModel.getMode() != org.evoludo.simulator.models.Mode.STATISTICS_SAMPLE) {
 				setScheduledBusy(false);
 				processPendingAction();
 				return false;
 			}
 			if (activeModel.next(activeModel.getTimeStep()))
 				return true; // continue sampling
+			if (pendingAction != PendingAction.NONE
+					|| activeModel.getMode() != org.evoludo.simulator.models.Mode.STATISTICS_SAMPLE) {
+				setScheduledBusy(false);
+				processPendingAction();
+				return false;
+			}
 			// sample completed
-			boolean failed = (activeModel.getFixationData().mutantNode < 0);
+			FixationData fixData = activeModel.getFixationData();
+			if (fixData == null)
+				// invalid sample, discard
+				return false;
+			boolean failed = fixData.mutantNode < 0;
 			// continue if running multiple samples or sampling failed
 			boolean cont = fireModelSample(!failed) || failed;
 			if (!cont)
