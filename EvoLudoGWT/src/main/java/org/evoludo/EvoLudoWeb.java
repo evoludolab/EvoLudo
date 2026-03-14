@@ -1741,6 +1741,9 @@ public class EvoLudoWeb extends Composite
 		Module<?> newModule = engine.getModule();
 		Model newModel = engine.getModel();
 		boolean moduleChanged = (newModule == null || newModule != guiState.module || newModel != guiState.model);
+		AbstractView<?> activeView = viewController.getActiveView();
+		if (activeView != null)
+			activeView.deactivate();
 		if (moduleChanged) {
 			deferStatusThresholdReset = true;
 			engine.modelReset(true);
