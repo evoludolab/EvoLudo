@@ -361,8 +361,8 @@ public class EvoLudoGWT extends EvoLudo {
 				// invalid sample, discard
 				return false;
 			boolean failed = fixData.mutantNode < 0;
-			// continue if running multiple samples or sampling failed
-			boolean cont = fireModelSample(!failed) || failed;
+			// continue only when the model is actually running in batch mode
+			boolean cont = fireModelSample(!failed);
 			if (!cont)
 				setScheduledBusy(false);
 			return cont;
