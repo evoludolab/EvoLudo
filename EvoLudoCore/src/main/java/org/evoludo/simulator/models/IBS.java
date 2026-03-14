@@ -406,8 +406,8 @@ public abstract class IBS extends Model {
 			init();
 			if (fixData.mutantNode < 0) {
 				initStatisticsFailed();
-				// check if STOP has been requested
-				return engine.isRunning();
+				// notify listeners so counters/status reflect failed samples immediately
+				return engine.fireModelSample(false);
 			}
 			initStatisticsSample();
 			update();
