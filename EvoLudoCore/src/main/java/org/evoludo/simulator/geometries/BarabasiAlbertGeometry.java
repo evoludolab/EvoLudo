@@ -82,6 +82,7 @@ public class BarabasiAlbertGeometry extends AbstractNetwork {
 		isRewired = false;
 		isUndirected = true;
 		isRegular = false;
+		clear();
 
 		RNGDistribution rng = engine.getRNG();
 		// Each new node contributes m links. To realize odd target connectivities,

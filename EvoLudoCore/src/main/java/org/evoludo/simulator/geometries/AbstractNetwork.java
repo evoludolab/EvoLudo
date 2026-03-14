@@ -80,6 +80,7 @@ public abstract class AbstractNetwork extends AbstractGeometry {
 	protected boolean initGeometryDegreeDistr(int[] degree) {
 		isRewired = false;
 		isUndirected = true;
+		clear();
 
 		int[] core = initializeCore();
 		int[] full = new int[size];

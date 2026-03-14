@@ -786,36 +786,72 @@ public abstract class AbstractGeometry {
 		boolean resized = false;
 		if (in == null || in.length != size) {
 			in = new int[size][];
-			kin = new int[size];
 			resized = true;
-		} else if (kin == null || kin.length != size) {
+		}
+		if (kin == null || kin.length != size) {
 			kin = new int[size];
 			resized = true;
 		}
 		if (out == null || out.length != size) {
 			out = new int[size][];
-			kout = new int[size];
 			resized = true;
-		} else if (kout == null || kout.length != size) {
+		}
+		if (kout == null || kout.length != size) {
 			kout = new int[size];
 			resized = true;
 		}
-		if (!resized && isValid)
-			return;
-		if (isUndirected && isRegular && connectivity >= 0.0) {
-			int k = (int) (connectivity + 0.5);
-			for (int i = 0; i < size; i++) {
-				in[i] = new int[k];
-				out[i] = new int[k];
-			}
-		} else {
-			Arrays.fill(in, EMPTY_LINKS);
-			Arrays.fill(out, EMPTY_LINKS);
+		allocInOut(false);
+		if (resized) {
+			isValid = false;
+			features = null;
 		}
+	}
+
+	/**
+	 * Clear the network structure while reusing allocated storage whenever
+	 * possible.
+	 */
+	protected void clear() {
+		alloc();
+		allocInOut(true);
 		Arrays.fill(kin, 0);
 		Arrays.fill(kout, 0);
 		isValid = false;
 		features = null;
+	}
+
+	/**
+	 * Ensure the incoming/outgoing adjacency arrays are allocated consistently with
+	 * the current geometry. When {@code clear} is {@code false}, only missing
+	 * storage is initialized. When {@code clear} is {@code true}, non-regular
+	 * geometries are reset to empty link lists while regular geometries keep their
+	 * fixed-size per-node buffers.
+	 * 
+	 * @param clear {@code true} to reset non-regular adjacency slots to empty link
+	 *              lists
+	 */
+	private void allocInOut(boolean clear) {
+		if (isUndirected && isRegular && connectivity >= 0.0) {
+			int k = (int) (connectivity + 0.5);
+			for (int i = 0; i < size; i++) {
+				if (in[i] == null || in[i].length != k)
+					in[i] = new int[k];
+				if (out[i] == null || out[i].length != k)
+					out[i] = new int[k];
+			}
+			return;
+		}
+		if (clear) {
+			Arrays.fill(in, EMPTY_LINKS);
+			Arrays.fill(out, EMPTY_LINKS);
+			return;
+		}
+		for (int i = 0; i < size; i++) {
+			if (in[i] == null)
+				in[i] = EMPTY_LINKS;
+			if (out[i] == null)
+				out[i] = EMPTY_LINKS;
+		}
 	}
 
 	/**

@@ -72,6 +72,7 @@ public class RandomDirectedGeometry extends AbstractGeometry {
 			isValid = true;
 			return;
 		}
+		clear();
 
 		RNGDistribution rng = engine.getRNG();
 

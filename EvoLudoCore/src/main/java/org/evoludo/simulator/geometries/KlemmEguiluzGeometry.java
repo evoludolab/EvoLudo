@@ -114,6 +114,7 @@ public class KlemmEguiluzGeometry extends AbstractNetwork {
 		isRewired = false;
 		isUndirected = true;
 		isRegular = false;
+		clear();
 
 		RNGDistribution rng = engine.getRNG();
 		int nActive = Math.min((int) (connectivity / 2.0 + 0.5), size);
