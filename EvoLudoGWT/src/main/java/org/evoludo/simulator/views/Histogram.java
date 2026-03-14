@@ -852,6 +852,7 @@ public class Histogram extends AbstractView<HistoGraph> {
 		style.yLabel = "visits";
 		style.autoscaleY = true;
 		style.showLabel = true;
+		style.percentX = false;
 		Module<?> module = graph.getModule();
 		int nPop = module.getNPopulation();
 		if (model.isDE()) {
@@ -1095,9 +1096,12 @@ public class Histogram extends AbstractView<HistoGraph> {
 			if (newPop)
 				data = graph.getData();
 			int nTraits = module.getNTraits();
-			int nBins = Math.min(module.getNPopulation(), graph.getMaxBins());
-			if (data == null || data.length != nTraits || data[0].length != HistoGraph.DEFAULT_BINS)
-				data = new double[nTraits][HistoGraph.DEFAULT_BINS];
+			int maxBins = graph.getMaxBins();
+			if (maxBins <= 0)
+				maxBins = HistoGraph.DEFAULT_BINS;
+			int nBins = Math.max(1, Math.min(module.getNPopulation(), maxBins));
+			if (data == null || data.length != nTraits || data[0].length != nBins)
+				data = new double[nTraits][nBins];
 			scale2bins = nBins;
 			graph.setData(data);
 			applyStationaryStyle(graph, idx);
