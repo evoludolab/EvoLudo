@@ -1448,11 +1448,13 @@ public class Histogram extends AbstractView<HistoGraph> {
 					((Discrete) module).getMonoStop()) {
 				idx++;
 			}
-			if (doFixtimeDistr(module))
-				sb.append(formatDistributionMean(data[idx], graph.getStyle()));
+			boolean isDistribution = doFixtimeDistr(module);
+			if (isDistribution)
+				sb.append(graph.getSamples() <= 0.0 ? "0.00 ± 0.00"
+						: formatDistributionMean(data[idx], graph.getStyle()));
 			else
-				// weighted average over nodes
-				sb.append(formatWeightedMean(data[idx], data[idx + nTraits + 1]));
+				sb.append(graph.getSamples() <= 0.0 ? "0.0000 ± 0.0000"
+						: formatWeightedMean(data[idx], data[idx + nTraits + 1]));
 			idx++;
 		}
 		return sb.toString();
