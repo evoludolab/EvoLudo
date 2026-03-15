@@ -132,6 +132,8 @@ public class Advection extends PDE {
 	 * 
 	 * @param start    the starting site index
 	 * @param end      the ending site index
+	 * @param scaledD  the diffusion coefficients scaled for the current time step
+	 * @param scaledA  the advection coefficients scaled for the current time step
 	 * @param minDens  the minimum densities (updated)
 	 * @param maxDens  the maximum densities (updated)
 	 * @param meanDens the mean densities (updated)
@@ -181,6 +183,8 @@ public class Advection extends PDE {
 	 * 
 	 * @param start    the starting site index
 	 * @param end      the ending site index
+	 * @param scaledD  the diffusion coefficients scaled for the current time step
+	 * @param scaledA  the advection coefficients scaled for the current time step
 	 * @param minDens  the minimum densities (updated)
 	 * @param maxDens  the maximum densities (updated)
 	 * @param meanDens the mean densities (updated)
@@ -224,6 +228,7 @@ public class Advection extends PDE {
 	 * @param si    the state of the neighboring site
 	 * @param delta the precomputed delta = 1 + si - sn
 	 * @param adv   the advection accumulator for the focal site
+	 * @param scaledA the advection coefficients scaled for the current time step
 	 */
 	private void addAdvectionContribution(double[] sn, double[] si, double[] delta, double[] adv,
 			double[][] scaledA) {

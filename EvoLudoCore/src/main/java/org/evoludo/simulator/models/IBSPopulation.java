@@ -3507,6 +3507,14 @@ public abstract class IBSPopulation<M extends Module<?>, P extends IBSPopulation
 		return doReset;
 	}
 
+	/**
+	 * Update a geometry to the requested population size if this changes its
+	 * effective structure.
+	 *
+	 * @param geometry the geometry to validate and update
+	 * @param populationSize the requested population size
+	 * @return {@code true} if the geometry changed and a reset is required
+	 */
 	private boolean updateGeometry(AbstractGeometry geometry, int populationSize) {
 		AbstractGeometry updated = geometry.clone();
 		updated.setSize(populationSize);

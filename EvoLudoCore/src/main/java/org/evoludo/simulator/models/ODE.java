@@ -92,7 +92,7 @@ public class ODE extends Model implements DModel {
 	 * <strong>Important:</strong> always positive regardless of direction of
 	 * integration.
 	 * 
-	 * @see #next()
+	 * @see #next(double)
 	 * @see #deStep(double)
 	 */
 	double dtTry;

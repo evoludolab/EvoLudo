@@ -367,6 +367,13 @@ public class Legend2D {
 		graphBounds.setSize(graphBounds.getWidth() - reserveWidth, graphBounds.getHeight() - reserveHeight);
 	}
 
+	/**
+	 * Position the legend within the available graph area.
+	 *
+	 * @param width the total graph width
+	 * @param height the total graph height
+	 * @param graphBounds the drawable graph bounds, adjusted as needed
+	 */
 	void setBounds(int width, int height, Rectangle2D graphBounds) {
 		if (!hasLegend())
 			return;

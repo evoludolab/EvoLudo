@@ -1256,7 +1256,7 @@ public abstract class AbstractGraph<B> extends FocusPanel
 			// different in views with multiple graphs
 			// bounds.width -= g.measureText("100%").getWidth()+(int)(4); // tick label
 			// width plus some padding
-			int digits = 2;
+			int digits;
 			if (style.percentY) {
 				if (style.yMax <= 1.0)
 					digits = 1;
@@ -1285,6 +1285,12 @@ public abstract class AbstractGraph<B> extends FocusPanel
 			bounds.adjust(padding, 0, -padding, 0);
 	}
 
+	/**
+	 * Adjust bounds to make room for an optional legend.
+	 * <p>
+	 * The base implementation is a no-op and serves as a hook for subclasses that
+	 * render legends.
+	 */
 	protected void adjustBoundsForLegend() {
 		// hook for subclasses that implement a legend
 	}

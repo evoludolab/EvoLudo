@@ -41,10 +41,29 @@ public class GraphStyle {
 	 * Positioning options for graph decorations such as legends.
 	 */
 	public enum Position {
+		/**
+		 * Top edge of the graph.
+		 */
 		NORTH,
+
+		/**
+		 * Bottom edge of the graph.
+		 */
 		SOUTH,
+
+		/**
+		 * Right edge of the graph.
+		 */
 		EAST,
+
+		/**
+		 * Left edge of the graph.
+		 */
 		WEST,
+
+		/**
+		 * Decoration disabled.
+		 */
 		NONE;
 
 		/**

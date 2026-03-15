@@ -419,6 +419,8 @@ public class EvoLudoGWT extends EvoLudo {
 
 	/**
 	 * Schedule a visible report step as a sequence of hidden substeps.
+	 *
+	 * @param chunkStep the maximum model-time increment per hidden substep
 	 */
 	private void scheduleChunkedStep(double chunkStep) {
 		if (chunkedStepScheduled || activeModel == null)

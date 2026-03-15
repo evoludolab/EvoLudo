@@ -520,7 +520,6 @@ public abstract class Module<T extends Module<T>>
 	 * 
 	 * @param prefix the prefix of the warning
 	 * @param type   the model type
-	 * @return the message
 	 */
 	private void warnModel(String prefix, ModelType type) {
 		if (logger.isLoggable(Level.WARNING))

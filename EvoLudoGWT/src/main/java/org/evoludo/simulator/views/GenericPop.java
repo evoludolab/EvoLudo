@@ -379,6 +379,8 @@ public abstract class GenericPop<T, N extends Network<?>, G extends GenericPopGr
 	 * 
 	 * @param node   the node index
 	 * @param nNodes the number of nodes per time slice
+	 * @param module the module that provides the tooltip data
+	 * @param graph  the graph that provides view-specific history data
 	 * @param tip    the StringBuilder to append to
 	 */
 	private void appendLinearTip(int node, int nNodes, Module<?> module, G graph, StringBuilder tip) {

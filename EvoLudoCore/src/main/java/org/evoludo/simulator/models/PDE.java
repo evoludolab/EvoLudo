@@ -253,7 +253,6 @@ public class PDE extends ODE {
 	 * <strong>Important:</strong> for reproducibility the shared random number
 	 * generator should be used (in PDE's only used to generate random initial
 	 * configurations).
-	 * <p>
 	 * 
 	 * @param engine the pacemaker for running the model
 	 * 
@@ -588,8 +587,9 @@ public class PDE extends ODE {
 	 * <strong>Important:</strong> must be thread safe for JRE. In particular, no
 	 * memory can be shared with anyone else!
 	 *
-	 * @param start the index of the first cell (including)
-	 * @param end   the index of the last cell (excluding)
+	 * @param start   the index of the first cell (including)
+	 * @param end     the index of the last cell (excluding)
+	 * @param scaledD the diffusion coefficients scaled for the current time step
 	 */
 	public void diffuse(int start, int end, double[] scaledD) {
 		double[] minDens = new double[nDim];
@@ -612,6 +612,7 @@ public class PDE extends ODE {
 	 * 
 	 * @param start    the index of the first cell (including)
 	 * @param end      the index of the last cell (excluding)
+	 * @param scaledD  the diffusion coefficients scaled for the current time step
 	 * @param minDens  the array to store the minimum densities
 	 * @param maxDens  the array to store the maximum densities
 	 * @param meanDens the array to store the mean densities
@@ -653,6 +654,7 @@ public class PDE extends ODE {
 	 * 
 	 * @param start    the index of the first cell (including)
 	 * @param end      the index of the last cell (excluding)
+	 * @param scaledD  the diffusion coefficients scaled for the current time step
 	 * @param minDens  the array to store the minimum densities
 	 * @param maxDens  the array to store the maximum densities
 	 * @param meanDens the array to store the mean densities
@@ -1155,9 +1157,9 @@ public class PDE extends ODE {
 	/**
 	 * Helper method to initialize the effective rate of diffusion for the time
 	 * increment <code>dt</code>.
-	 * <p>
 	 * 
 	 * @param stepSize the time increment for diffusion
+	 * @return the diffusion coefficients scaled for the supplied time increment
 	 */
 	public double[] getScaledDiffusion(double stepSize) {
 		double[] scaledD = new double[nDim];
