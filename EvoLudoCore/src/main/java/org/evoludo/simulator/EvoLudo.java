@@ -65,6 +65,7 @@ import org.evoludo.simulator.modules.EcoPGG;
 import org.evoludo.simulator.modules.LV;
 import org.evoludo.simulator.modules.Module;
 import org.evoludo.simulator.modules.Moran;
+import org.evoludo.simulator.modules.Mutualism;
 import org.evoludo.simulator.modules.NetGames;
 import org.evoludo.simulator.modules.RSP;
 import org.evoludo.simulator.modules.SIR;
@@ -1313,5 +1314,6 @@ public abstract class EvoLudo
 		addModule(new NetGames(this));
 		addModule(new SIR(this));
 		addModule(new LV(this));
+		addModule(new Mutualism(this));
 	}
 }
