@@ -84,9 +84,10 @@ public abstract class ColorMap3D extends ColorMap<MeshLambertMaterial> {
 	public static final Color BLACK = Color2Color(java.awt.Color.BLACK);
 
 	/**
-	 * The color of undirected links.
+	 * The color of undirected links. A very dark grey keeps the links visible
+	 * against black node/link accents without pulling too much attention.
 	 */
-	public static final Color UNDIRECTED = Color2Color(java.awt.Color.BLACK);
+	public static final Color UNDIRECTED = Color2Color(new java.awt.Color(0x10, 0x10, 0x10));
 
 	/**
 	 * The baseline color of directed links.
@@ -94,14 +95,16 @@ public abstract class ColorMap3D extends ColorMap<MeshLambertMaterial> {
 	public static final Color DIRECTED = Color2Color(java.awt.Color.GRAY);
 
 	/**
-	 * The color of directed links at the origin.
+	 * The color of directed links at the origin. Directed link gradients start at
+	 * black to avoid coupling to the undirected link palette.
 	 */
-	public static final Color DIRECTED_SRC = Color2Color(java.awt.Color.GREEN);
+	public static final Color DIRECTED_SRC = BLACK;
 
 	/**
-	 * The color of directed links at the destination.
+	 * The color of directed links at the destination. Directed link gradients fade
+	 * to grey at the arrow target.
 	 */
-	public static final Color DIRECTED_DST = Color2Color(java.awt.Color.RED);
+	public static final Color DIRECTED_DST = Color2Color(java.awt.Color.GRAY);
 
 	/**
 	 * Convert a java.awt.Color object to a Color object.
