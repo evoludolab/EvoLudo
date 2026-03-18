@@ -314,7 +314,6 @@ public abstract class Network2D extends Network<Node2D> {
 			if (fLinks >= 1.0) {
 				// draw all links
 				for (int n = 0; n < nNodes; n++) {
-					Node2D nodeA = nodes[n];
 					int[] neigh = geometry.out[n];
 					int len = geometry.kout[n];
 					for (int i = 0; i < len; i++) {
@@ -322,9 +321,7 @@ public abstract class Network2D extends Network<Node2D> {
 						int b = neigh[i];
 						if (b < n)
 							continue;
-						Node2D nodeB = nodes[b];
-						links.moveTo(nodeA);
-						links.lineTo(nodeB);
+						addEdge(n, b);
 					}
 				}
 				return;
@@ -360,10 +357,7 @@ public abstract class Network2D extends Network<Node2D> {
 				idxs[idxsidx] = idxs[edgeCount - l - 1];
 				int a = edgeSources[edgeidx];
 				int b = edgeTargets[edgeidx];
-				Node2D nodeA = nodes[a];
-				Node2D nodeB = nodes[b];
-				links.moveTo(nodeA);
-				links.lineTo(nodeB);
+				addEdge(a, b);
 			}
 			return;
 		}
@@ -374,7 +368,6 @@ public abstract class Network2D extends Network<Node2D> {
 		if (fLinks >= 1.0) {
 			// draw all links
 			for (int n = 0; n < nNodes; n++) {
-				Node2D nodeA = nodes[n];
 				int[] neigh = geometry.out[n];
 				int len = geometry.kout[n];
 				for (int i = 0; i < len; i++) {
@@ -383,25 +376,11 @@ public abstract class Network2D extends Network<Node2D> {
 						// undirected link - check if already drawn
 						if (b < n)
 							continue;
-						Node2D nodeB = nodes[b];
-						links.moveTo(nodeA);
-						links.lineTo(nodeB);
+						addEdge(n, b);
 						continue;
 					}
 					// directed link - add arrow
-					Node2D nodeB = nodes[b];
-					links.moveTo(nodeA);
-					links.lineTo(nodeB);
-					link.set(nodeB, nodeA);
-					link.normalize(0.5 * nodeB.getR());
-					tip.add(nodeB, link);
-					// note: arrows that scale with size of tail node are a bit confusing
-					link.normalize(arrowsize);
-					links.moveTo(tip.getX() + link.getX() - 0.3 * link.getY(),
-							tip.getY() + link.getY() + 0.3 * link.getX());
-					links.lineTo(tip);
-					links.lineTo(tip.getX() + link.getX() + 0.3 * link.getY(),
-							tip.getY() + link.getY() - 0.3 * link.getX());
+					addArc(n, b, link, tip, arrowsize);
 				}
 			}
 			return;
@@ -436,21 +415,48 @@ public abstract class Network2D extends Network<Node2D> {
 			idxs[idxsidx] = idxs[edgeCount - l - 1];
 			int a = edgeSources[edgeidx];
 			int b = edgeTargets[edgeidx];
-			Node2D nodeA = nodes[a];
-			Node2D nodeB = nodes[b];
-			links.moveTo(nodeA);
-			links.lineTo(nodeB);
 			if (edgeIsUndirected[edgeidx])
-				continue;
-			link.set(nodeB, nodeA);
-			link.normalize(0.5 * nodeB.getR());
-			tip.add(nodeB, link);
-			// note: arrows that scale with size of tail node are a bit confusing
-			link.normalize(arrowsize);
-			links.moveTo(tip.getX() + link.getX() - 0.3 * link.getY(), tip.getY() + link.getY() + 0.3 * link.getX());
-			links.lineTo(tip);
-			links.lineTo(tip.getX() + link.getX() + 0.3 * link.getY(), tip.getY() + link.getY() - 0.3 * link.getX());
+				addEdge(a, b);
+			else
+				addArc(a, b, link, tip, arrowsize);
 		}
+	}
+
+	/**
+	 * Add an undirected edge to the link path.
+	 * 
+	 * @param source the source node index
+	 * @param target the target node index
+	 */
+	private void addEdge(int source, int target) {
+		Node2D sourceNode = nodes[source];
+		Node2D targetNode = nodes[target];
+		links.moveTo(sourceNode);
+		links.lineTo(targetNode);
+	}
+
+	/**
+	 * Add a directed arc, including its arrowhead, to the link path.
+	 * 
+	 * @param source    the source node index
+	 * @param target    the target node index
+	 * @param link      helper vector aligned with the arc
+	 * @param tip       helper vector storing the arrow tip position
+	 * @param arrowsize the normalized arrow size
+	 */
+	private void addArc(int source, int target, Vector2D link, Vector2D tip, double arrowsize) {
+		Node2D sourceNode = nodes[source];
+		Node2D targetNode = nodes[target];
+		links.moveTo(sourceNode);
+		links.lineTo(targetNode);
+		link.set(targetNode, sourceNode);
+		link.normalize(0.5 * targetNode.getR());
+		tip.add(targetNode, link);
+		// note: arrows that scale with size of tail node are a bit confusing
+		link.normalize(arrowsize);
+		links.moveTo(tip.getX() + link.getX() - 0.3 * link.getY(), tip.getY() + link.getY() + 0.3 * link.getX());
+		links.lineTo(tip);
+		links.lineTo(tip.getX() + link.getX() + 0.3 * link.getY(), tip.getY() + link.getY() - 0.3 * link.getX());
 	}
 
 	@Override

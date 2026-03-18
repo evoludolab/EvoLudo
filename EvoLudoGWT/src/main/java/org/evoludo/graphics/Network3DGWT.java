@@ -129,6 +129,11 @@ public class Network3DGWT extends Network3D {
 			engine.getLogger().warning("Too many links to draw - skipping!");
 			return;
 		}
+		Vector3[] positions = new Vector3[nNodes];
+		for (int i = 0; i < nNodes; i++) {
+			Node3D node = nodes[i];
+			positions[i] = new Vector3(node.getX(), node.getY(), node.getZ());
+		}
 		ArrayList<Vector3> lines;
 		ArrayList<Color> colors = null;
 		if (geometry.isUndirected()) {
@@ -139,16 +144,12 @@ public class Network3DGWT extends Network3D {
 				for (int i = 0; i < nNodes; i++) {
 					int[] neighs = geometry.out[i];
 					int nn = geometry.kout[i];
-					Node3D fp = nodes[i];
-					Vector3 focal = new Vector3(fp.getX(), fp.getY(), fp.getZ());
 					for (int j = 0; j < nn; j++) {
 						int k = neighs[j];
 						// check if link was already drawn
 						if (k < i)
 							continue;
-						lines.add(focal);
-						Node3D np = nodes[k];
-						lines.add(new Vector3(np.getX(), np.getY(), np.getZ()));
+						addEdge(lines, positions, i, k);
 					}
 				}
 			} else {
@@ -180,10 +181,7 @@ public class Network3DGWT extends Network3D {
 					idxs[idxsidx] = idxs[edgeCount - l - 1];
 					int a = edgeSources[edgeidx];
 					int b = edgeTargets[edgeidx];
-					Node3D ap = nodes[a];
-					lines.add(new Vector3(ap.getX(), ap.getY(), ap.getZ()));
-					Node3D bp = nodes[b];
-					lines.add(new Vector3(bp.getX(), bp.getY(), bp.getZ()));
+					addEdge(lines, positions, a, b);
 				}
 			}
 		} else {
@@ -195,28 +193,17 @@ public class Network3DGWT extends Network3D {
 				for (int i = 0; i < nNodes; i++) {
 					int[] neighs = geometry.out[i];
 					int nn = geometry.kout[i];
-					Node3D fp = nodes[i];
-					Vector3 focal = new Vector3(fp.getX(), fp.getY(), fp.getZ());
 					for (int j = 0; j < nn; j++) {
 						int k = neighs[j];
 						if (geometry.isNeighborOf(k, i)) {
 							// undirected link - check if already drawn
 							if (k < i)
 								continue;
-							// draw link in black
-							lines.add(focal);
-							Node3D np = nodes[k];
-							lines.add(new Vector3(np.getX(), np.getY(), np.getZ()));
-							colors.add(ColorMap3D.UNDIRECTED);
-							colors.add(ColorMap3D.UNDIRECTED);
+							addEdge(lines, colors, positions, i, k);
 							continue;
 						}
 						// directed link - draw link with bright tip
-						lines.add(focal);
-						Node3D np = nodes[k];
-						lines.add(new Vector3(np.getX(), np.getY(), np.getZ()));
-						colors.add(ColorMap3D.DIRECTED_SRC);
-						colors.add(ColorMap3D.DIRECTED_DST);
+						addArc(lines, colors, positions, i, k);
 					}
 				}
 			} else {
@@ -252,17 +239,10 @@ public class Network3DGWT extends Network3D {
 					idxs[idxsidx] = idxs[edgeCount - l - 1];
 					int a = edgeSources[edgeidx];
 					int b = edgeTargets[edgeidx];
-					Node3D ap = nodes[a];
-					lines.add(new Vector3(ap.getX(), ap.getY(), ap.getZ()));
-					Node3D bp = nodes[b];
-					lines.add(new Vector3(bp.getX(), bp.getY(), bp.getZ()));
-					if (edgeIsUndirected[edgeidx]) {
-						colors.add(ColorMap3D.UNDIRECTED);
-						colors.add(ColorMap3D.UNDIRECTED);
-					} else {
-						colors.add(ColorMap3D.DIRECTED_SRC);
-						colors.add(ColorMap3D.DIRECTED_DST);
-					}
+					if (edgeIsUndirected[edgeidx])
+						addEdge(lines, colors, positions, a, b);
+					else
+						addArc(lines, colors, positions, a, b);
 				}
 			}
 		}
@@ -270,6 +250,49 @@ public class Network3DGWT extends Network3D {
 		links.setVertices(lines);
 		if (colors != null)
 			links.setColors(colors);
+	}
+
+	/**
+	 * Add an undirected edge to the line geometry.
+	 * 
+	 * @param lines     the list receiving the edge endpoints
+	 * @param positions the cached node positions
+	 * @param source    the source node index
+	 * @param target    the target node index
+	 */
+	private void addEdge(ArrayList<Vector3> lines, Vector3[] positions, int source, int target) {
+		lines.add(positions[source]);
+		lines.add(positions[target]);
+	}
+
+	/**
+	 * Add an undirected edge with matching endpoint colors to the line geometry.
+	 * 
+	 * @param lines     the list receiving the edge endpoints
+	 * @param colors    the list receiving the edge colors
+	 * @param positions the cached node positions
+	 * @param source    the source node index
+	 * @param target    the target node index
+	 */
+	private void addEdge(ArrayList<Vector3> lines, ArrayList<Color> colors, Vector3[] positions, int source, int target) {
+		addEdge(lines, positions, source, target);
+		colors.add(ColorMap3D.UNDIRECTED);
+		colors.add(ColorMap3D.UNDIRECTED);
+	}
+
+	/**
+	 * Add a directed arc with gradient endpoint colors to the line geometry.
+	 * 
+	 * @param lines     the list receiving the arc endpoints
+	 * @param colors    the list receiving the arc colors
+	 * @param positions the cached node positions
+	 * @param source    the source node index
+	 * @param target    the target node index
+	 */
+	private void addArc(ArrayList<Vector3> lines, ArrayList<Color> colors, Vector3[] positions, int source, int target) {
+		addEdge(lines, positions, source, target);
+		colors.add(ColorMap3D.DIRECTED_SRC);
+		colors.add(ColorMap3D.DIRECTED_DST);
 	}
 
 	/**
