@@ -285,11 +285,6 @@ public class HistoGraph extends AbstractGraph<double[]> implements BasicTooltipP
 	int row;
 
 	/**
-	 * The message to display if no histogram is available.
-	 */
-	String message;
-
-	/**
 	 * The flag to indicate whether the data is normalized.
 	 */
 	private boolean isNormalized = true;
@@ -621,14 +616,8 @@ public class HistoGraph extends AbstractGraph<double[]> implements BasicTooltipP
 	}
 
 	@Override
-	public void clearMessage() {
-		super.clearMessage();
-		message = null;
-	}
-
-	@Override
 	public boolean paint(boolean force) {
-		if (super.paint(force))
+		if (super.paint(force) || data == null)
 			return true;
 
 		g.save();
@@ -637,7 +626,7 @@ public class HistoGraph extends AbstractGraph<double[]> implements BasicTooltipP
 		g.translate(bounds.getX(), bounds.getY());
 		g.setFillStyle(style.graphColor);
 
-		double[] norm = (normIdx >= 0 && data != null && normIdx < data.length) ? data[normIdx] : null;
+		double[] norm = (normIdx >= 0 && normIdx < data.length) ? data[normIdx] : null;
 		double[] myData = data[row];
 		if (style.autoscaleY) {
 			double yMin;
