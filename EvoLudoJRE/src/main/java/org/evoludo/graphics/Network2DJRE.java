@@ -90,11 +90,12 @@ public class Network2DJRE extends Network2D implements Runnable {
 			adjust = Math.abs(potential - prevPotential);
 			prevPotential = potential;
 			prevAdjust = Math.min(prevAdjust, adjust);
-			if (adjust < accuracy || (System.currentTimeMillis() - start) > layoutTimeout) {
+			double threshold = getConvergenceAccuracy();
+			if (adjust < threshold || (System.currentTimeMillis() - start) > layoutTimeout) {
 				isRunning = false;
 				break;
 			}
-			listener.layoutUpdate(accuracy / adjust);
+			listener.layoutUpdate(threshold / adjust);
 		} while (isRunning);
 
 		// finish layout (center and scale network)

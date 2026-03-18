@@ -166,6 +166,25 @@ public abstract class Network<N extends Node> extends AbstractList<N> implements
 	protected static final int MAX_LINK_COUNT = 10000;
 
 	/**
+	 * Smallest admissible center-to-center distance during layout calculations.
+	 * This avoids divisions by zero for coincident nodes.
+	 */
+	protected static final double MIN_DISTANCE = 1.0e-4;
+
+	/**
+	 * Smallest admissible normalized distance used by the long-range repulsion.
+	 */
+	protected static final double MIN_SCALED_DISTANCE = 1.0e-4;
+
+	/**
+	 * Stiffness of the hard-core penalty that separates overlapping nodes. The
+	 * penalty is quadratic in the overlap depth measured in units of the baseline
+	 * universe size. The value remains moderate because dense graphs may require a
+	 * small amount of residual overlap.
+	 */
+	protected static final double HARD_CORE_STIFFNESS = 400.0;
+
+	/**
 	 * The array with all nodes of this network.
 	 */
 	protected N[] nodes = null;
@@ -470,18 +489,30 @@ public abstract class Network<N extends Node> extends AbstractList<N> implements
 	 * @return the updated progress estimate in {@code [0, 1]}
 	 */
 	protected double updateLayoutProgress(double adjust) {
-		if (adjust <= accuracy)
+		double threshold = getConvergenceAccuracy();
+		if (adjust <= threshold)
 			return layoutProgress = 1.0;
 		if (initialAdjust < 0.0)
 			initialAdjust = adjust;
-		double span = Math.log(initialAdjust / accuracy);
+		double span = Math.log(initialAdjust / threshold);
 		if (!Double.isFinite(span) || span <= 0.0)
 			return layoutProgress = 0.0;
-		double bestAdjust = Math.max(prevAdjust, accuracy);
+		double bestAdjust = Math.max(prevAdjust, threshold);
 		double raw = Math.log(initialAdjust / bestAdjust) / span;
 		raw = Math.max(0.0, Math.min(1.0, raw));
 		layoutProgress = Math.max(layoutProgress, Math.sqrt(raw));
 		return layoutProgress;
+	}
+
+	/**
+	 * Get the effective convergence threshold for the layouting process. The base
+	 * implementation returns {@link #accuracy}, but subclasses may tighten or
+	 * relax the criterion when their layout energies use a different natural scale.
+	 * 
+	 * @return the effective convergence threshold
+	 */
+	protected double getConvergenceAccuracy() {
+		return accuracy;
 	}
 
 	/**
@@ -522,7 +553,9 @@ public abstract class Network<N extends Node> extends AbstractList<N> implements
 	/**
 	 * Calculate the potential energy based on repulsion for the node with index
 	 * {@code nodeidx}. Return the net repulsion (overall direction and magnitude)
-	 * acting on it in {@link #repulsion}.
+	 * acting on it in {@link #repulsion}. Implementations may include additional
+	 * short-range penalties here, for example to discourage overlap between nodes
+	 * with finite size.
 	 * 
 	 * <h3>Note:</h3>
 	 * To prevent disjoint parts of a network (and unstructured populations, in
@@ -539,8 +572,6 @@ public abstract class Network<N extends Node> extends AbstractList<N> implements
 	 * Calculate the potential energy based on attraction to its neighbours for the
 	 * node with index {@code nodeidx}. Return the net attraction (overall direction
 	 * and magnitude) acting on it in {@link #attraction}.
-	 * <p>
-	 * TODO: Prevent nodes from overlapping.
 	 * 
 	 * @param nodeidx the index of the node to relax
 	 * @return the potential energy of the node

@@ -133,6 +133,13 @@ public abstract class Network2D extends Network<Node2D> {
 	 */
 	protected static final double IR2 = IR * IR;
 
+	/**
+	 * Scale factor applied to the nominal 2D accuracy. The contact-based spring
+	 * energy is smaller than the former center-distance energy, so 2D layouts use
+	 * a tighter effective threshold to avoid terminating too early.
+	 */
+	private static final double CONVERGENCE_ACCURACY_SCALE = 0.1;
+
 	@Override
 	public double relax(int nodeidx) {
 		return relax(nodeidx, 0.25);
@@ -161,6 +168,11 @@ public abstract class Network2D extends Network<Node2D> {
 	}
 
 	@Override
+	protected double getConvergenceAccuracy() {
+		return accuracy * CONVERGENCE_ACCURACY_SCALE;
+	}
+
+	@Override
 	protected double repulsion(int nodeidx) {
 		repulsion.set(0.0, 0.0);
 		double npot = 0.0;
@@ -169,29 +181,26 @@ public abstract class Network2D extends Network<Node2D> {
 			if (i == nodeidx)
 				continue;
 			Node2D nodei = nodes[i];
-			vec.set(nodei, node);
+			double dist = pairDistance(nodei, node, i, nodeidx);
+			double overlapDepth = node.getR() + nodei.getR() - dist;
 			// ensure positive distance to avoid divisions by zero
-			// note: any merit in special treatment of overlapping spheres?
-			// for reasonably sized circles the layout process gets worse if distance is
-			// adjusted.
-			// add charges to reduce chances of overlap? (see below - challenge to find
-			// proper scale)
-			// double dist = Math.max(0.0001, (vec.length()-0.5*(radius+node.radius))*IR);
-			double dist = Math.max(0.0001, vec.length() * IR);
-			// double dist = Math.max(0.0001,
-			// vec.length()*radius*radius*node.radius*node.radius*R*R);
-			// alt double dist = (vec.length()-node.radius-radius)*IR;
-			// dist = Math.signum(dist)*Math.max(0.0001, Math.abs(dist));
+			double scaledDist = Math.max(MIN_SCALED_DISTANCE, dist * IR);
 			// force becomes attractive if (scaled) distance exceeds 1 to prevent
 			// disconnected graphs from flying apart.
 			// zero is set at distance 1. assumes equal charges of 1.
 			// XXX what is -dist term? potential should depend on charge, i.e. on size of
 			// node
-			npot -= 2.0 - 1.0 / dist - dist;
+			npot -= 2.0 - 1.0 / scaledDist - scaledDist;
+			double force = 1.0 / (scaledDist * scaledDist) - 1.0;
+			if (overlapDepth > 0.0) {
+				double normalizedOverlap = overlapDepth * IR;
+				npot += 0.5 * HARD_CORE_STIFFNESS * normalizedOverlap * normalizedOverlap;
+				force += HARD_CORE_STIFFNESS * overlapDepth * IR2 / dist;
+			}
 			// ok potential -= 2.0-1.0/dist;
 			// potential -= 2.0-node.radius*radius*R*R/dist;
 			// alt potential -= 2.0-1.0/(dist*node.radius*radius);
-			vec.scale(1.0 / (dist * dist) - 1.0);
+			vec.scale(force);
 			// double charge = radius*node.radius;
 			// vec.scale(charge/(dist*dist)-charge);
 			// large nodes have larger charge - does not work properly
@@ -212,16 +221,10 @@ public abstract class Network2D extends Network<Node2D> {
 		int[] neighs = geometry.out[nodeidx];
 		for (int i = 0; i < nOut; i++) {
 			Node2D nodei = nodes[neighs[i]];
-			vec.set(node, nodei);
-			// force increases linearly with distance - correct for size of spheres (if
-			// spheres overlap attraction is negative).
-			// note: for reasonably sized circles the layout process gets worse if distance
-			// is adjusted.
-			// double dist = vec.length();
-			// double distadj = dist-0.5*(radius+node.radius);
-			// vec.scale(distadj/dist);
-			// potential += distadj>0?distadj*distadj*IR2:-distadj*distadj*IR2;
-			npot += vec.length2() * IR2;
+			double dist = pairDistance(node, nodei, nodeidx, neighs[i]);
+			double gap = dist - node.getR() - nodei.getR();
+			npot += gap * gap * IR2;
+			vec.scale(gap / dist);
 			attraction.add(vec);
 		}
 		if (geometry.isUndirected()) {
@@ -235,16 +238,10 @@ public abstract class Network2D extends Network<Node2D> {
 		neighs = geometry.in[nodeidx];
 		for (int i = 0; i < nIn; i++) {
 			Node2D nodei = nodes[neighs[i]];
-			vec.set(node, nodei);
-			// force increases linearly with distance - correct for size of spheres (if
-			// spheres overlap attraction is negative).
-			// note: (same as above) for reasonably sized circles the layout process gets
-			// worse if distance is adjusted.
-			// double dist = vec.length();
-			// double distadj = dist-0.5*(radius+node.radius);
-			// vec.scale(distadj/dist);
-			// potential += distadj>0?distadj*distadj*IR2:-distadj*distadj*IR2;
-			npot += vec.length2() * IR2;
+			double dist = pairDistance(node, nodei, nodeidx, neighs[i]);
+			double gap = dist - node.getR() - nodei.getR();
+			npot += gap * gap * IR2;
+			vec.scale(gap / dist);
 			attraction.add(vec);
 		}
 		int nTot = nOut + nIn;
@@ -252,6 +249,33 @@ public abstract class Network2D extends Network<Node2D> {
 			return 0.0;
 		attraction.scale(1.0 / nTot);
 		return npot;
+	}
+
+	/**
+	 * Set {@link #vec} to the directional vector from {@code from} to {@code to}
+	 * and return the corresponding center-to-center distance. Coincident nodes are
+	 * separated by a deterministic fallback direction to keep layouting stable and
+	 * reproducible.
+	 * 
+	 * @param from    the source node
+	 * @param to      the target node
+	 * @param fromidx the index of the source node
+	 * @param toidx   the index of the target node
+	 * @return the center-to-center distance
+	 */
+	private double pairDistance(Node2D from, Node2D to, int fromidx, int toidx) {
+		vec.set(from, to);
+		double dist2 = vec.length2();
+		if (dist2 >= MIN_DISTANCE * MIN_DISTANCE)
+			return Math.sqrt(dist2);
+		int low = Math.min(fromidx, toidx);
+		int high = Math.max(fromidx, toidx);
+		double angle = ((low + 1.0) * 0.7548776662466927 + (high + 1.0) * 0.5698402909980532) * 2.0 * Math.PI;
+		vec.set(Math.cos(angle), Math.sin(angle));
+		if (fromidx > toidx)
+			vec.negate();
+		vec.scale(MIN_DISTANCE);
+		return MIN_DISTANCE;
 	}
 
 	@Override

@@ -125,6 +125,12 @@ public abstract class Network3D extends Network<Node3D> {
 	 */
 	private static final double IR2 = IR * IR;
 
+	/**
+	 * Smallest admissible squared center-to-center distance during layout
+	 * calculations.
+	 */
+	private static final double MIN_DISTANCE2 = MIN_DISTANCE * MIN_DISTANCE;
+
 	@Override
 	public double relax(int nodeidx) {
 		return relax(nodeidx, 1.6);
@@ -159,15 +165,22 @@ public abstract class Network3D extends Network<Node3D> {
 			if (i == nodeidx)
 				continue;
 			Node3D nodei = nodes[i];
-			vec.set(nodei, node);
+			double dist = pairDistance(nodei, node, i, nodeidx);
+			double overlapDepth = node.getR() + nodei.getR() - dist;
 			// force decreases with 1/distance^2 - correct for size of spheres
 			// double dist = Math.max(0.0001, (vec.length()-(radius+node.radius))*IR);
-			double dist = Math.max(0.0001, vec.length() * IR);
+			double scaledDist = Math.max(MIN_SCALED_DISTANCE, dist * IR);
 			// force becomes attractive if (scaled) distance exceeds 1 to prevent
 			// disconnected graphs from flying apart.
 			// zero is set at distance 1. assumes equal charges of 1.
-			npot -= 2.0 - 1.0 / dist - dist;
-			vec.scale(1.0 / (dist * dist) - 1.0);
+			npot -= 2.0 - 1.0 / scaledDist - scaledDist;
+			double force = 1.0 / (scaledDist * scaledDist) - 1.0;
+			if (overlapDepth > 0.0) {
+				double normalizedOverlap = overlapDepth * IR;
+				npot += 0.5 * HARD_CORE_STIFFNESS * normalizedOverlap * normalizedOverlap;
+				force += HARD_CORE_STIFFNESS * overlapDepth * IR2 / dist;
+			}
+			vec.scale(force);
 			repulsion.add(vec);
 		}
 		return npot;
@@ -182,15 +195,11 @@ public abstract class Network3D extends Network<Node3D> {
 		int[] neighs = geometry.out[nodeidx];
 		for (int i = 0; i < nOut; i++) {
 			Node3D nodei = nodes[neighs[i]];
-			vec.set(node, nodei);
+			double dist = pairDistance(node, nodei, nodeidx, neighs[i]);
+			double gap = dist - node.getR() - nodei.getR();
 			// force increases linearly with distance - correct for size of spheres
-			// double dist = vec.length();
-			// double distadj = dist-(radius+node.radius);
-			// vec.scale(distadj/dist);
-			// potential += distadj>0?distadj*distadj*IR2:-distadj*distadj*IR2;
-			npot += vec.length2() * IR2;
-			// if( index<2 || index==nNodes-1 ) System.out.println(index+":
-			// dist="+(dist*IR)+", ("+(distadj*IR)+"), potential="+potential);
+			npot += gap * gap * IR2;
+			vec.scale(gap / dist);
 			attraction.add(vec);
 		}
 		if (geometry.isUndirected()) {
@@ -204,15 +213,11 @@ public abstract class Network3D extends Network<Node3D> {
 		neighs = geometry.in[nodeidx];
 		for (int i = 0; i < nIn; i++) {
 			Node3D nodei = nodes[neighs[i]];
-			vec.set(node, nodei);
+			double dist = pairDistance(node, nodei, nodeidx, neighs[i]);
+			double gap = dist - node.getR() - nodei.getR();
 			// force increases linearly with distance - correct for size of spheres
-			// double dist = vec.length();
-			// double distadj = dist-(radius+node.radius);
-			// vec.scale(distadj/dist);
-			// potential += distadj>0?distadj*distadj*IR2:-distadj*distadj*IR2;
-			npot += vec.length2() * IR2;
-			// if( index<2 || index==nNodes-1 ) System.out.println(index+":
-			// dist="+(dist*IR)+", ("+(distadj*IR)+"), potential="+potential);
+			npot += gap * gap * IR2;
+			vec.scale(gap / dist);
 			attraction.add(vec);
 		}
 		int nTot = nOut + nIn;
@@ -220,6 +225,52 @@ public abstract class Network3D extends Network<Node3D> {
 			return 0.0;
 		attraction.scale(1.0 / nTot);
 		return npot;
+	}
+
+	/**
+	 * Set {@link #vec} to the directional vector from {@code from} to {@code to}
+	 * and return the corresponding center-to-center distance. Coincident nodes are
+	 * separated by a deterministic fallback direction to keep layouting stable and
+	 * reproducible.
+	 * 
+	 * @param from    the source node
+	 * @param to      the target node
+	 * @param fromidx the index of the source node
+	 * @param toidx   the index of the target node
+	 * @return the center-to-center distance
+	 */
+	private double pairDistance(Node3D from, Node3D to, int fromidx, int toidx) {
+		vec.set(from, to);
+		double dist2 = vec.length2();
+		if (dist2 >= MIN_DISTANCE2)
+			return Math.sqrt(dist2);
+		int low = Math.min(fromidx, toidx);
+		int high = Math.max(fromidx, toidx);
+		double dx = fractional((low + 1.0) * 0.7548776662466927 + (high + 1.0) * 0.5698402909980532) - 0.5;
+		double dy = fractional((low + 1.0) * 0.4389396481197804 + (high + 1.0) * 0.9132452716531554) - 0.5;
+		double dz = fractional((low + 1.0) * 0.2873179542797946 + (high + 1.0) * 0.6710436067037892) - 0.5;
+		double fallbackNorm2 = dx * dx + dy * dy + dz * dz;
+		if (fallbackNorm2 < MIN_DISTANCE2) {
+			dx = 1.0;
+			dy = 0.0;
+			dz = 0.0;
+			fallbackNorm2 = 1.0;
+		}
+		double scale = MIN_DISTANCE / Math.sqrt(fallbackNorm2);
+		if (fromidx > toidx)
+			scale = -scale;
+		vec.set(dx * scale, dy * scale, dz * scale);
+		return MIN_DISTANCE;
+	}
+
+	/**
+	 * Return the fractional part of {@code value}.
+	 * 
+	 * @param value the value to reduce to its fractional part
+	 * @return the fractional part in the interval {@code [0,1)}
+	 */
+	private static double fractional(double value) {
+		return value - Math.floor(value);
 	}
 
 	/**

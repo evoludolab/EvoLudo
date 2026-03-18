@@ -157,8 +157,9 @@ public class Network2DGWT extends Network2D {
 		potential = 0.0;
 		prevAdjust = Math.min(prevAdjust, adjust);
 		updateLayoutProgress(adjust);
+		double threshold = getConvergenceAccuracy();
 		int elapsed = layout.elapsedMillis();
-		if (adjust < accuracy || elapsed > layoutTimeout) { // layoutTimeout provides emergency exit
+		if (adjust < threshold || elapsed > layoutTimeout) { // layoutTimeout provides emergency exit
 			finishLayout();
 			setStatus(Status.HAS_LAYOUT);
 			isRunning = false;
