@@ -337,6 +337,81 @@ public abstract class Network<N extends Node> extends AbstractList<N> implements
 	public abstract void doLayout(LayoutListener nll);
 
 	/**
+	 * Collect all unique undirected edges that can be rendered for the current
+	 * geometry.
+	 * 
+	 * @param sources the array receiving the source node index of each edge
+	 * @param targets the array receiving the target node index of each edge
+	 * @return the number of collected edges
+	 */
+	protected int collectEdges(int[] sources, int[] targets) {
+		int edgeCount = 0;
+		for (int i = 0; i < nNodes; i++) {
+			int[] neighs = geometry.out[i];
+			int nn = geometry.kout[i];
+			for (int j = 0; j < nn; j++) {
+				int k = neighs[j];
+				if (k < i)
+					continue;
+				sources[edgeCount] = i;
+				targets[edgeCount] = k;
+				edgeCount++;
+			}
+		}
+		return edgeCount;
+	}
+
+	/**
+	 * Collect all renderable links of a directed geometry, collapsing reciprocal
+	 * pairs into a single undirected edge.
+	 * 
+	 * @param sources      the array receiving the source node index of each link
+	 * @param targets      the array receiving the target node index of each link
+	 * @param isUndirected the array receiving whether the collected link is
+	 *                     undirected
+	 * @return the number of collected renderable links
+	 */
+	protected int collectLinks(int[] sources, int[] targets, boolean[] isUndirected) {
+		int linkCount = 0;
+		for (int i = 0; i < nNodes; i++) {
+			int[] neighs = geometry.out[i];
+			int nn = geometry.kout[i];
+			for (int j = 0; j < nn; j++) {
+				int k = neighs[j];
+				boolean reciprocal = geometry.isNeighborOf(k, i);
+				if (reciprocal && k < i)
+					continue;
+				sources[linkCount] = i;
+				targets[linkCount] = k;
+				isUndirected[linkCount] = reciprocal;
+				linkCount++;
+			}
+		}
+		return linkCount;
+	}
+
+	/**
+	 * Draw a random sample without replacement from the integer range
+	 * {@code [0, itemCount)}.
+	 * 
+	 * @param itemCount   the number of available items
+	 * @param sampleCount the number of requested samples
+	 * @return the sampled indices in randomized order
+	 */
+	protected int[] sampleIndices(int itemCount, int sampleCount) {
+		int[] idxs = new int[itemCount];
+		for (int i = 0; i < itemCount; i++)
+			idxs[i] = i;
+		for (int i = 0; i < sampleCount; i++) {
+			int swap = i + rng.random0n(itemCount - i);
+			int tmp = idxs[i];
+			idxs[i] = idxs[swap];
+			idxs[swap] = tmp;
+		}
+		return Arrays.copyOf(idxs, sampleCount);
+	}
+
+	/**
 	 * Prepare for the layouting process.
 	 */
 	public void doLayoutPrep() {

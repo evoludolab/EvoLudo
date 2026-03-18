@@ -310,109 +310,30 @@ public abstract class Network2D extends Network<Node2D> {
 			engine.getLogger().warning("Too many links to draw - skipping!");
 			return;
 		}
-		if (geometry.isUndirected()) {
-			if (fLinks >= 1.0) {
-				// draw all links
-				for (int n = 0; n < nNodes; n++) {
-					int[] neigh = geometry.out[n];
-					int len = geometry.kout[n];
-					for (int i = 0; i < len; i++) {
-						// check if link was already drawn
-						int b = neigh[i];
-						if (b < n)
-							continue;
-						addEdge(n, b);
-					}
-				}
-				return;
-			}
-			// TODO: the procedure below looks dangerous. randomly pick nodes and neighbours
-			// probably not worth worrying about double picking of links because this
-			// should apply only if there are many to begin with...
-			// add context menu to adjust fraction of visible links
-			// draw only fraction of undirected links
-			// this is pretty memory intensive - hopefully it works...
-			int[] edgeSources = new int[nLinks];
-			int[] edgeTargets = new int[nLinks];
-			int edgeCount = 0;
-			for (int i = 0; i < nNodes; i++) {
-				int[] neigh = geometry.out[i];
-				int len = geometry.kout[i];
-				for (int j = 0; j < len; j++) {
-					int b = neigh[j];
-					if (b < i)
-						continue;
-					edgeSources[edgeCount] = i;
-					edgeTargets[edgeCount] = b;
-					edgeCount++;
-				}
-			}
-			int[] idxs = new int[edgeCount];
-			for (int n = 0; n < edgeCount; n++)
-				idxs[n] = n;
-			int toDraw = (int) (fLinks * edgeCount);
-			for (int l = 0; l < toDraw; l++) {
-				int idxsidx = rng.random0n(edgeCount - l);
-				int edgeidx = idxs[idxsidx];
-				idxs[idxsidx] = idxs[edgeCount - l - 1];
+		boolean isDirected = !geometry.isUndirected();
+		int[] edgeSources = new int[nLinks];
+		int[] edgeTargets = new int[nLinks];
+		if (!isDirected) {
+			int edgeCount = collectEdges(edgeSources, edgeTargets);
+			int toDraw = fLinks >= 1.0 ? edgeCount : (int) (fLinks * edgeCount);
+			int[] sampled = toDraw < edgeCount ? sampleIndices(edgeCount, toDraw) : null;
+			for (int i = 0; i < toDraw; i++) {
+				int edgeidx = sampled == null ? i : sampled[i];
 				int a = edgeSources[edgeidx];
 				int b = edgeTargets[edgeidx];
 				addEdge(a, b);
 			}
 			return;
 		}
-		// directed network
+		boolean[] edgeIsUndirected = new boolean[nLinks];
+		int edgeCount = collectLinks(edgeSources, edgeTargets, edgeIsUndirected);
+		int toDraw = fLinks >= 1.0 ? edgeCount : (int) (fLinks * edgeCount);
+		int[] sampled = toDraw < edgeCount ? sampleIndices(edgeCount, toDraw) : null;
 		Vector2D link = new Vector2D();
 		Vector2D tip = new Vector2D();
 		double arrowsize = Math.pow(0.8 / nNodes, 0.25);
-		if (fLinks >= 1.0) {
-			// draw all links
-			for (int n = 0; n < nNodes; n++) {
-				int[] neigh = geometry.out[n];
-				int len = geometry.kout[n];
-				for (int i = 0; i < len; i++) {
-					int b = neigh[i];
-					if (geometry.isNeighborOf(b, n)) {
-						// undirected link - check if already drawn
-						if (b < n)
-							continue;
-						addEdge(n, b);
-						continue;
-					}
-					// directed link - add arrow
-					addArc(n, b, link, tip, arrowsize);
-				}
-			}
-			return;
-		}
-		// draw only fraction of directed links
-		// this is pretty memory intensive - hopefully it works...
-		int[] edgeSources = new int[nLinks];
-		int[] edgeTargets = new int[nLinks];
-		boolean[] edgeIsUndirected = new boolean[nLinks];
-		int edgeCount = 0;
-		for (int n = 0; n < nNodes; n++) {
-			int[] neigh = geometry.out[n];
-			int len = geometry.kout[n];
-			for (int i = 0; i < len; i++) {
-				int b = neigh[i];
-				boolean isUndirected = geometry.isNeighborOf(b, n);
-				if (isUndirected && b < n)
-					continue;
-				edgeSources[edgeCount] = n;
-				edgeTargets[edgeCount] = b;
-				edgeIsUndirected[edgeCount] = isUndirected;
-				edgeCount++;
-			}
-		}
-		int[] idxs = new int[edgeCount];
-		for (int n = 0; n < edgeCount; n++)
-			idxs[n] = n;
-		int toDraw = (int) (fLinks * edgeCount);
-		for (int l = 0; l < toDraw; l++) {
-			int idxsidx = rng.random0n(edgeCount - l);
-			int edgeidx = idxs[idxsidx];
-			idxs[idxsidx] = idxs[edgeCount - l - 1];
+		for (int i = 0; i < toDraw; i++) {
+			int edgeidx = sampled == null ? i : sampled[i];
 			int a = edgeSources[edgeidx];
 			int b = edgeTargets[edgeidx];
 			if (edgeIsUndirected[edgeidx])

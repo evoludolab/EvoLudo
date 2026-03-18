@@ -134,122 +134,42 @@ public class Network3DGWT extends Network3D {
 			Node3D node = nodes[i];
 			positions[i] = new Vector3(node.getX(), node.getY(), node.getZ());
 		}
-		ArrayList<Vector3> lines;
-		ArrayList<Color> colors = null;
-		if (geometry.isUndirected()) {
-			// draw undirected links
-			if (fLinks >= 1.0) {
-				// draw all links
-				lines = new ArrayList<>(nLinks + nLinks);
-				for (int i = 0; i < nNodes; i++) {
-					int[] neighs = geometry.out[i];
-					int nn = geometry.kout[i];
-					for (int j = 0; j < nn; j++) {
-						int k = neighs[j];
-						// check if link was already drawn
-						if (k < i)
-							continue;
-						addEdge(lines, positions, i, k);
-					}
-				}
-			} else {
-				// draw only fraction of undirected links
-				// this is pretty memory intensive - hopefully it works...
-				int[] edgeSources = new int[nLinks];
-				int[] edgeTargets = new int[nLinks];
-				int edgeCount = 0;
-				for (int i = 0; i < nNodes; i++) {
-					int[] neighs = geometry.out[i];
-					int nn = geometry.kout[i];
-					for (int j = 0; j < nn; j++) {
-						int k = neighs[j];
-						if (k < i)
-							continue;
-						edgeSources[edgeCount] = i;
-						edgeTargets[edgeCount] = k;
-						edgeCount++;
-					}
-				}
-				int[] idxs = new int[edgeCount];
-				for (int n = 0; n < edgeCount; n++)
-					idxs[n] = n;
-				int toDraw = (int) (fLinks * edgeCount);
-				lines = new ArrayList<>(toDraw + toDraw);
-				for (int l = 0; l < toDraw; l++) {
-					int idxsidx = rng.random0n(edgeCount - l);
-					int edgeidx = idxs[idxsidx];
-					idxs[idxsidx] = idxs[edgeCount - l - 1];
-					int a = edgeSources[edgeidx];
-					int b = edgeTargets[edgeidx];
-					addEdge(lines, positions, a, b);
-				}
+		boolean isDirected = !geometry.isUndirected();
+		int[] edgeSources = new int[nLinks];
+		int[] edgeTargets = new int[nLinks];
+		if (!isDirected) {
+			int edgeCount = collectEdges(edgeSources, edgeTargets);
+			int toDraw = fLinks >= 1.0 ? edgeCount : (int) (fLinks * edgeCount);
+			int[] sampled = toDraw < edgeCount ? sampleIndices(edgeCount, toDraw) : null;
+			ArrayList<Vector3> lines = new ArrayList<>(toDraw + toDraw);
+			for (int i = 0; i < toDraw; i++) {
+				int edgeidx = sampled == null ? i : sampled[i];
+				int a = edgeSources[edgeidx];
+				int b = edgeTargets[edgeidx];
+				addEdge(lines, positions, a, b);
 			}
-		} else {
-			// draw directed links
-			if (fLinks >= 1.0) {
-				// draw all links
-				lines = new ArrayList<>(nLinks + nLinks);
-				colors = new ArrayList<>(nLinks + nLinks);
-				for (int i = 0; i < nNodes; i++) {
-					int[] neighs = geometry.out[i];
-					int nn = geometry.kout[i];
-					for (int j = 0; j < nn; j++) {
-						int k = neighs[j];
-						if (geometry.isNeighborOf(k, i)) {
-							// undirected link - check if already drawn
-							if (k < i)
-								continue;
-							addEdge(lines, colors, positions, i, k);
-							continue;
-						}
-						// directed link - draw link with bright tip
-						addArc(lines, colors, positions, i, k);
-					}
-				}
-			} else {
-				// draw only fraction of directed links
-				// this is pretty memory intensive - hopefully it works...
-				int[] edgeSources = new int[nLinks];
-				int[] edgeTargets = new int[nLinks];
-				boolean[] edgeIsUndirected = new boolean[nLinks];
-				int edgeCount = 0;
-				for (int i = 0; i < nNodes; i++) {
-					int[] neighs = geometry.out[i];
-					int nn = geometry.kout[i];
-					for (int j = 0; j < nn; j++) {
-						int k = neighs[j];
-						boolean isUndirected = geometry.isNeighborOf(k, i);
-						if (isUndirected && k < i)
-							continue;
-						edgeSources[edgeCount] = i;
-						edgeTargets[edgeCount] = k;
-						edgeIsUndirected[edgeCount] = isUndirected;
-						edgeCount++;
-					}
-				}
-				int[] idxs = new int[edgeCount];
-				for (int n = 0; n < edgeCount; n++)
-					idxs[n] = n;
-				int toDraw = (int) (fLinks * edgeCount);
-				lines = new ArrayList<>(toDraw + toDraw);
-				colors = new ArrayList<>(toDraw + toDraw);
-				for (int l = 0; l < toDraw; l++) {
-					int idxsidx = rng.random0n(edgeCount - l);
-					int edgeidx = idxs[idxsidx];
-					idxs[idxsidx] = idxs[edgeCount - l - 1];
-					int a = edgeSources[edgeidx];
-					int b = edgeTargets[edgeidx];
-					if (edgeIsUndirected[edgeidx])
-						addEdge(lines, colors, positions, a, b);
-					else
-						addArc(lines, colors, positions, a, b);
-				}
-			}
+			links = new thothbot.parallax.core.shared.core.Geometry();
+			links.setVertices(lines);
+			return;
+		}
+		boolean[] edgeIsUndirected = new boolean[nLinks];
+		int edgeCount = collectLinks(edgeSources, edgeTargets, edgeIsUndirected);
+		int toDraw = fLinks >= 1.0 ? edgeCount : (int) (fLinks * edgeCount);
+		int[] sampled = toDraw < edgeCount ? sampleIndices(edgeCount, toDraw) : null;
+		ArrayList<Vector3> lines = new ArrayList<>(toDraw + toDraw);
+		ArrayList<Color> colors = new ArrayList<>(toDraw + toDraw);
+		for (int i = 0; i < toDraw; i++) {
+			int edgeidx = sampled == null ? i : sampled[i];
+			int a = edgeSources[edgeidx];
+			int b = edgeTargets[edgeidx];
+			if (edgeIsUndirected[edgeidx])
+				addEdge(lines, colors, positions, a, b);
+			else
+				addArc(lines, colors, positions, a, b);
 		}
 		links = new thothbot.parallax.core.shared.core.Geometry();
 		links.setVertices(lines);
-		if (colors != null)
-			links.setColors(colors);
+		links.setColors(colors);
 	}
 
 	/**
