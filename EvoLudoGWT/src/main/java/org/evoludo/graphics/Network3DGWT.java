@@ -220,35 +220,49 @@ public class Network3DGWT extends Network3D {
 					}
 				}
 			} else {
-				// draw only fraction of undirected links
+				// draw only fraction of directed links
 				// this is pretty memory intensive - hopefully it works...
-				int[] idxs = new int[nLinks];
-				for (int n = 0; n < nLinks; n++)
+				int[] edgeSources = new int[nLinks];
+				int[] edgeTargets = new int[nLinks];
+				boolean[] edgeIsUndirected = new boolean[nLinks];
+				int edgeCount = 0;
+				for (int i = 0; i < nNodes; i++) {
+					int[] neighs = geometry.out[i];
+					int nn = geometry.kout[i];
+					for (int j = 0; j < nn; j++) {
+						int k = neighs[j];
+						boolean isUndirected = geometry.isNeighborOf(k, i);
+						if (isUndirected && k < i)
+							continue;
+						edgeSources[edgeCount] = i;
+						edgeTargets[edgeCount] = k;
+						edgeIsUndirected[edgeCount] = isUndirected;
+						edgeCount++;
+					}
+				}
+				int[] idxs = new int[edgeCount];
+				for (int n = 0; n < edgeCount; n++)
 					idxs[n] = n;
-				int toDraw = (int) (fLinks * nLinks);
+				int toDraw = (int) (fLinks * edgeCount);
 				lines = new ArrayList<>(toDraw + toDraw);
 				colors = new ArrayList<>(toDraw + toDraw);
 				for (int l = 0; l < toDraw; l++) {
-					int idxsidx = rng.random0n(nLinks - l);
-					int nodeidx = idxs[idxsidx];
-					idxs[idxsidx] = idxs[nLinks - l - 1];
-					// find node
-					int a = -1;
-					for (int n = 0; n < nNodes; n++) {
-						int k = geometry.kout[n];
-						if (nodeidx < k) {
-							a = n;
-							break;
-						}
-						nodeidx -= k;
-					}
-					// draw all links as directed ones
+					int idxsidx = rng.random0n(edgeCount - l);
+					int edgeidx = idxs[idxsidx];
+					idxs[idxsidx] = idxs[edgeCount - l - 1];
+					int a = edgeSources[edgeidx];
+					int b = edgeTargets[edgeidx];
 					Node3D ap = nodes[a];
 					lines.add(new Vector3(ap.getX(), ap.getY(), ap.getZ()));
-					Node3D bp = nodes[geometry.out[a][nodeidx]];
+					Node3D bp = nodes[b];
 					lines.add(new Vector3(bp.getX(), bp.getY(), bp.getZ()));
-					colors.add(ColorMap3D.DIRECTED_SRC);
-					colors.add(ColorMap3D.DIRECTED_DST);
+					if (edgeIsUndirected[edgeidx]) {
+						colors.add(ColorMap3D.UNDIRECTED);
+						colors.add(ColorMap3D.UNDIRECTED);
+					} else {
+						colors.add(ColorMap3D.DIRECTED_SRC);
+						colors.add(ColorMap3D.DIRECTED_DST);
+					}
 				}
 			}
 		}
