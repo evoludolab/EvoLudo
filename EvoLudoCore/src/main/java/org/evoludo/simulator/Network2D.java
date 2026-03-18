@@ -335,27 +335,33 @@ public abstract class Network2D extends Network<Node2D> {
 			// add context menu to adjust fraction of visible links
 			// draw only fraction of undirected links
 			// this is pretty memory intensive - hopefully it works...
-			int[] idxs = new int[nLinks];
-			for (int n = 0; n < nLinks; n++)
-				idxs[n] = n;
-			int toDraw = (int) (fLinks * nLinks);
-			for (int l = 0; l < toDraw; l++) {
-				int idxsidx = rng.random0n(nLinks - l);
-				int idx = idxs[idxsidx];
-				idxs[idxsidx] = idxs[nLinks - l - 1];
-				// find node
-				int a = -1;
-				for (int n = 0; n < nNodes; n++) {
-					int k = geometry.kout[n];
-					if (idx < k) {
-						a = n;
-						break;
-					}
-					idx -= k;
+			int[] edgeSources = new int[nLinks];
+			int[] edgeTargets = new int[nLinks];
+			int edgeCount = 0;
+			for (int i = 0; i < nNodes; i++) {
+				int[] neigh = geometry.out[i];
+				int len = geometry.kout[i];
+				for (int j = 0; j < len; j++) {
+					int b = neigh[j];
+					if (b < i)
+						continue;
+					edgeSources[edgeCount] = i;
+					edgeTargets[edgeCount] = b;
+					edgeCount++;
 				}
+			}
+			int[] idxs = new int[edgeCount];
+			for (int n = 0; n < edgeCount; n++)
+				idxs[n] = n;
+			int toDraw = (int) (fLinks * edgeCount);
+			for (int l = 0; l < toDraw; l++) {
+				int idxsidx = rng.random0n(edgeCount - l);
+				int edgeidx = idxs[idxsidx];
+				idxs[idxsidx] = idxs[edgeCount - l - 1];
+				int a = edgeSources[edgeidx];
+				int b = edgeTargets[edgeidx];
 				Node2D nodeA = nodes[a];
-				int[] neigh = geometry.out[a];
-				Node2D nodeB = nodes[neigh[idx]];
+				Node2D nodeB = nodes[b];
 				links.moveTo(nodeA);
 				links.lineTo(nodeB);
 			}
