@@ -71,12 +71,8 @@ import thothbot.parallax.core.shared.geometries.BoxGeometry;
 import thothbot.parallax.core.shared.geometries.SphereGeometry;
 import thothbot.parallax.core.shared.lights.AmbientLight;
 import thothbot.parallax.core.shared.lights.PointLight;
-import thothbot.parallax.core.shared.materials.LineBasicMaterial;
-import thothbot.parallax.core.shared.materials.Material;
 import thothbot.parallax.core.shared.materials.MeshLambertMaterial;
 import thothbot.parallax.core.shared.math.Vector3;
-import thothbot.parallax.core.shared.objects.Line;
-import thothbot.parallax.core.shared.objects.Line.MODE;
 import thothbot.parallax.core.shared.objects.Mesh;
 import thothbot.parallax.core.shared.scenes.Scene;
 import thothbot.parallax.plugins.effects.Anaglyph;
@@ -98,11 +94,6 @@ import thothbot.parallax.plugins.effects.Stereo;
  */
 @SuppressWarnings("java:S110")
 public class PopGraph3D extends GenericPopGraph<MeshLambertMaterial, Network3DGWT> implements Context3dErrorHandler {
-
-	/**
-	 * Toggle for using the experimental thick-link renderer.
-	 */
-	private static final boolean USE_THICK_LINKS = true;
 
 	/**
 	 * Baseline width of thick links before camera zoom scaling is applied.
@@ -135,14 +126,9 @@ public class PopGraph3D extends GenericPopGraph<MeshLambertMaterial, Network3DGW
 	ArrayList<Mesh> spheres = new ArrayList<>();
 
 	/**
-	 * The line style for the links.
+	 * Link renderer used to draw wide network links.
 	 */
-	LineBasicMaterial linkstyle;
-
-	/**
-	 * Thick-link renderer used to prototype wide network links.
-	 */
-	Link3D thickLinks;
+	Link3D linkRenderer;
 
 	/**
 	 * The directed light source illuminating the scene.
@@ -220,8 +206,7 @@ public class PopGraph3D extends GenericPopGraph<MeshLambertMaterial, Network3DGW
 		effect = null;
 		ambient = null;
 		light = null;
-		linkstyle = null;
-		thickLinks = null;
+		linkRenderer = null;
 		spheres.clear();
 		element = null;
 		super.onUnload();
@@ -323,9 +308,9 @@ public class PopGraph3D extends GenericPopGraph<MeshLambertMaterial, Network3DGW
 	@Override
 	public void reset() {
 		super.reset();
-		// Recreate the thick-link mesh after reset. Reusing the old mesh kept stale
+		// Recreate the link mesh after reset. Reusing the old mesh kept stale
 		// direct-buffer state alive across layout rebuilds.
-		thickLinks = null;
+		linkRenderer = null;
 	}
 
 	@Override
@@ -419,12 +404,7 @@ public class PopGraph3D extends GenericPopGraph<MeshLambertMaterial, Network3DGW
 		if (ambient == null)
 			ambient = new AmbientLight(0x666666);
 		scene.add(ambient);
-		thothbot.parallax.core.shared.core.Geometry lines = network.getLinks();
-		if (USE_THICK_LINKS) {
-			addThickLinks(scene, lines);
-			return;
-		}
-		addThinLinks(scene, lines);
+		addLinks(scene, network.getLinks());
 	}
 
 	/**
@@ -433,57 +413,29 @@ public class PopGraph3D extends GenericPopGraph<MeshLambertMaterial, Network3DGW
 	 * @param scene the scene receiving the links
 	 * @param lines the link geometry
 	 */
-	private void addThickLinks(Scene scene, thothbot.parallax.core.shared.core.Geometry lines) {
+	private void addLinks(Scene scene, thothbot.parallax.core.shared.core.Geometry lines) {
 		if (lines == null) {
 			// Drop the cached mesh while the network is being rebuilt so the next
 			// successful layout starts from a fresh renderer state.
-			thickLinks = null;
+			linkRenderer = null;
 			return;
 		}
-		if (thickLinks == null)
-			thickLinks = new Link3D();
-		updateThickLinkAppearance();
-		thickLinks.setLinks(lines, geometry.isUndirected() ? ColorMap3D.UNDIRECTED : ColorMap3D.DIRECTED);
-		scene.add(thickLinks);
+		if (linkRenderer == null)
+			linkRenderer = new Link3D();
+		updateLinkAppearance();
+		linkRenderer.setLinks(lines, geometry.isUndirected() ? ColorMap3D.UNDIRECTED : ColorMap3D.DIRECTED);
+		scene.add(linkRenderer);
 	}
 
 	/**
-	 * Add links using the original thin-line renderer.
-	 *
-	 * @param scene the scene receiving the links
-	 * @param lines the link geometry
+	 * Synchronize the link shader with the canvas size.
 	 */
-	private void addThinLinks(Scene scene, thothbot.parallax.core.shared.core.Geometry lines) {
-		if (lines == null)
-			return;
-		// this does not work - seems to be a bug (works but does not update the number
-		// of line segments drawn)
-		// ((thothbot.parallax.core.shared.core.Geometry)links.getGeometry()).setVertices(lines);
-		// links.getGeometry().setVerticesNeedUpdate(true);
-		// geometry can only be attached to one Canvas3d - clone geometry if not network
-		// founder
-		if (linkstyle == null) {
-			linkstyle = new LineBasicMaterial();
-			linkstyle.setOpacity(1.0);
-			// XXX linewidth is ignored...
-			linkstyle.setLinewidth(2);
-		}
-		linkstyle.setColor(geometry.isUndirected() ? ColorMap3D.UNDIRECTED : ColorMap3D.DIRECTED);
-		linkstyle.setVertexColors(Material.COLORS.VERTEX);
-		Line links = new Line(lines, linkstyle, MODE.PIECES);
-		links.setMatrixAutoUpdate(false);
-		scene.add(links);
-	}
-
-	/**
-	 * Synchronize the thick-link shader with the canvas size.
-	 */
-	private void updateThickLinkAppearance() {
-		if (thickLinks == null || graph3DScene == null || graph3DScene.getCanvas() == null)
+	private void updateLinkAppearance() {
+		if (linkRenderer == null || graph3DScene == null || graph3DScene.getCanvas() == null)
 			return;
 		Canvas3d canvas3d = graph3DScene.getCanvas();
-		thickLinks.setResolution(canvas3d.getWidth(), canvas3d.getHeight());
-		thickLinks.setLineWidth(THICK_LINK_WIDTH * getThickLinkZoomFactor());
+		linkRenderer.setResolution(canvas3d.getWidth(), canvas3d.getHeight());
+		linkRenderer.setLineWidth(THICK_LINK_WIDTH * getLinkZoomFactor());
 	}
 
 	/**
@@ -491,12 +443,12 @@ public class PopGraph3D extends GenericPopGraph<MeshLambertMaterial, Network3DGW
 	 *
 	 * @return the multiplier for the baseline link width
 	 */
-	private double getThickLinkZoomFactor() {
+	private double getLinkZoomFactor() {
 		if (graph3DCamera == null)
 			return 1.0;
 		if (graph3DCamera instanceof OrthographicCamera)
 			return Math.max(0.05, graph3DCamera.getScale().getZ());
-		double distance = Math.max(1.0, getThickLinkCameraDistance());
+		double distance = Math.max(1.0, getLinkCameraDistance());
 		return Math.max(0.1, REFERENCE_CAMERA_DISTANCE / distance);
 	}
 
@@ -507,7 +459,7 @@ public class PopGraph3D extends GenericPopGraph<MeshLambertMaterial, Network3DGW
 	 *
 	 * @return the current camera-to-target distance
 	 */
-	private double getThickLinkCameraDistance() {
+	private double getLinkCameraDistance() {
 		if (graph3DCamera == null)
 			return 1.0;
 		if (graph3DScene != null && graph3DScene.control != null && graph3DScene.control.getTarget() != null)
@@ -744,11 +696,9 @@ public class PopGraph3D extends GenericPopGraph<MeshLambertMaterial, Network3DGW
 		spheres.clear();
 		// allocate elements of universe - place them later
 		// NOTE: must rely on geometry.getSize() (instead of network.nNodes) because
-		// network
-		// may not yet have been properly
-		// synchronized (Network.doLayoutPrep will take care of this)
-		// No need to check whether network is null because ODE/SDE models
-		// would never get here.
+		// network may not yet have been properly synchronized (Network.doLayoutPrep
+		// will take care of this) No need to check whether network is null because
+		// ODE/SDE models would never get here.
 		for (int k = 0; k < geometry.getSize(); k++) {
 			Mesh mesh = new Mesh(unit);
 			mesh.setMaterial(data[k]);
@@ -1100,7 +1050,7 @@ public class PopGraph3D extends GenericPopGraph<MeshLambertMaterial, Network3DGW
 			if (view.isActive()) {
 				if (control != null) {
 					control.update();
-					updateThickLinkAppearance();
+					updateLinkAppearance();
 					getRenderer().render(getScene(), graph3DCamera);
 				}
 				return;
@@ -1137,7 +1087,7 @@ public class PopGraph3D extends GenericPopGraph<MeshLambertMaterial, Network3DGW
 		if (!hasRenderer() || graph3DScene.getCanvas() == null)
 			return;
 		graph3DScene.onResize();
-		updateThickLinkAppearance();
+		updateLinkAppearance();
 		graph3DPanel.forceLayout();
 	}
 
