@@ -37,9 +37,9 @@ import java.util.List;
 import org.evoludo.geom.Node3D;
 import org.evoludo.simulator.ColorMap3D;
 import org.evoludo.simulator.Network.Status;
+import org.evoludo.simulator.Network3D;
 import org.evoludo.simulator.geometries.GeometryType;
 import org.evoludo.simulator.geometries.HierarchicalGeometry;
-import org.evoludo.simulator.Network3D;
 import org.evoludo.simulator.modules.Module;
 import org.evoludo.simulator.views.Pop3D;
 import org.evoludo.ui.TrackballControls;
@@ -53,7 +53,6 @@ import com.google.gwt.dom.client.Style.Unit;
 import com.google.gwt.event.dom.client.MouseDownEvent;
 import com.google.gwt.event.dom.client.MouseUpEvent;
 import com.google.gwt.event.dom.client.TouchEndEvent;
-import com.google.gwt.user.client.ui.Label;
 import com.google.gwt.user.client.ui.RequiresResize;
 import com.google.gwt.user.client.ui.Widget;
 
@@ -325,200 +324,27 @@ public class PopGraph3D extends GenericPopGraph<MeshLambertMaterial, Network3DGW
 		// geometries that have special/fixed layout
 		switch (type) {
 			case CUBE:
-				int side;
-				int zdim;
-				// NOVA settings
-				if (geometry.getSize() == 25000) {
-					zdim = 10;
-					side = 50;
-				} else {
-					side = (int) (Math.pow(geometry.getSize(), 1.0 / 3.0) + 0.5);
-					zdim = side;
-				}
-				double incr = (Network3D.UNIVERSE_RADIUS + Network3D.UNIVERSE_RADIUS) / side;
-				double radius = Math.max(1.0, incr * 0.3);
-				double shift = (side - 1) * 0.5 * incr;
-				double zshift = (zdim - 1) * 0.5 * incr;
-				initUniverse(new BoxGeometry(1.75 * radius, 1.75 * radius, 1.75 * radius));
-				Iterator<Mesh> meshes = spheres.iterator();
-				double posk = -zshift;
-				for (int k = 0; k < zdim; k++) {
-					double posj = -shift;
-					for (int j = 0; j < side; j++) {
-						double posi = -shift;
-						for (int i = 0; i < side; i++) {
-							Mesh mesh = meshes.next();
-							mesh.setPosition(new Vector3(posi, posj, posk));
-							mesh.updateMatrix();
-							posi += incr;
-						}
-						posj += incr;
-					}
-					posk += incr;
-				}
+				drawLatticeCube();
 				break;
 			case SQUARE_NEUMANN:
 			case SQUARE_MOORE:
 			case SQUARE:
-				side = (int) Math.sqrt(geometry.getSize()); // data.size does not seem to be set at this point
-				incr = (Network3D.UNIVERSE_RADIUS + Network3D.UNIVERSE_RADIUS) / side;
-				radius = Math.max(1.0, incr * 0.4);
-				shift = (side - 1) * 0.5 * incr;
-				int hLevels = 0;
-				int[] hPeriods = new int[0];
-				final int HIERARCHY_GAP = 8; // unit gap in units?
-				// for hierarchical structures add gap between units
-				if (isHierarchy) {
-					int[] hierarchy = ((HierarchicalGeometry) geometry).getHierarchyLevels();
-					hLevels = hierarchy.length - 1;
-					hPeriods = new int[hLevels];
-					hPeriods[0] = (int) Math.sqrt(hierarchy[hLevels]);
-					int totGap = side / hPeriods[0] - 1;
-					for (int i = 1; i < hLevels; i++) {
-						hPeriods[i] = hPeriods[i - 1] * (int) Math.sqrt(hierarchy[hLevels - i]);
-						totGap += side / hPeriods[i] - 1;
-					}
-					shift += totGap * HIERARCHY_GAP * 0.5;
-				}
-				initUniverse(new BoxGeometry(1.75 * radius, 1.75 * radius, 1.75 * radius));
-				meshes = spheres.iterator();
-				double posj = -shift;
-				for (int j = 0; j < side; j++) {
-					if (isHierarchy && j > 0) {
-						for (int l = 0; l < hLevels; l++) {
-							if (j % hPeriods[l] != 0)
-								break;
-							posj += HIERARCHY_GAP;
-						}
-					}
-					double posi = -shift;
-					for (int i = 0; i < side; i++) {
-						if (isHierarchy && i > 0) {
-							for (int l = 0; l < hLevels; l++) {
-								if (i % hPeriods[l] != 0)
-									break;
-								posi += HIERARCHY_GAP;
-							}
-						}
-						Mesh mesh = meshes.next();
-						mesh.setPosition(new Vector3(posi, posj, 0));
-						mesh.updateMatrix();
-						posi += incr;
-					}
-					posj += incr;
-				}
+				drawLatticeSquare();
 				break;
 			case SQUARE_NEUMANN_2ND:
-				side = (int) Math.sqrt(geometry.getSize()); // data.size does not seem to be set at this point
-				incr = (Network3D.UNIVERSE_RADIUS + Network3D.UNIVERSE_RADIUS) / side;
-				radius = Math.max(1.0, incr * 0.4);
-				shift = (side - 1) * 0.5 * incr;
-				initUniverse(new BoxGeometry(1.75 * radius, 1.75 * radius, 1.75 * radius));
-				meshes = spheres.iterator();
-				posj = -shift;
-				double posz = 0.4375 * radius;
-				for (int j = 0; j < side; j++) {
-					double posi = -shift;
-					for (int i = 0; i < side; i++) {
-						Mesh mesh = meshes.next();
-						mesh.setPosition(new Vector3(posi, posj, posz));
-						mesh.updateMatrix();
-						posi += incr;
-						posz = -posz;
-					}
-					posz = -posz;
-					posj += incr;
-				}
+				drawLatticeSquareNeumann2nd();
 				break;
 			case HEXAGONAL:
-				side = (int) Math.sqrt(geometry.getSize()); // data.size does not seem to be set at this point
-				double hincr = (Network3D.UNIVERSE_RADIUS + Network3D.UNIVERSE_RADIUS) / side;
-				double hincr2 = hincr * 0.5;
-				double vincr = hincr * 0.5 * Math.sqrt(3.0);
-				radius = Math.max(1.0, hincr * 0.4);
-				shift = (side - 0.5) * 0.5 * hincr;
-				initUniverse(new SphereGeometry(radius, 16, 12));
-				meshes = spheres.iterator();
-				posj = -(side - 1) * 0.5 * vincr;
-				for (int j = 0; j < side; j++) {
-					double posi = -shift + (j % 2) * hincr2;
-					for (int i = 0; i < side; i++) {
-						Mesh mesh = meshes.next();
-						mesh.setPosition(new Vector3(posi, posj, 0));
-						mesh.updateMatrix();
-						posi += hincr;
-					}
-					posj += vincr;
-				}
+				drawLatticeHexagonal();
 				break;
 			case TRIANGULAR:
-				side = (int) Math.sqrt(geometry.getSize()); // data.size does not seem to be set at this point
-				int size2 = side / 2;
-				vincr = (Network3D.UNIVERSE_RADIUS + Network3D.UNIVERSE_RADIUS) / side;
-				double vincr2 = vincr * 0.5;
-				hincr = vincr * Math.sqrt(3.0);
-				hincr2 = hincr * 0.5;
-				radius = Math.max(1.0, vincr * 0.4);
-				shift = (size2 - 0.5) * 0.5 * hincr;
-				double vshift = (side - 1.25) * 0.75 * vincr;
-				initUniverse(new SphereGeometry(radius, 16, 12));
-				// initUniverse(new TetrahedronGeometry(radius * 2, 0))
-				meshes = spheres.iterator();
-				// even nodes
-				posj = -vshift;
-				for (int j = 0; j < side; j++) {
-					double posi = -shift;
-					for (int i = 0; i < size2; i++) {
-						Mesh mesh = meshes.next();
-						mesh.setPosition(new Vector3(posi, posj, 0));
-						mesh.updateMatrix();
-						posi += hincr;
-					}
-					posj += (1 + (j % 2)) * vincr;
-				}
-				// odd nodes
-				posj = -vshift - vincr2;
-				for (int j = 0; j < side; j++) {
-					double posi = -shift + hincr2;
-					for (int i = 0; i < size2; i++) {
-						Mesh mesh = meshes.next();
-						mesh.setPosition(new Vector3(posi, posj, 0));
-						mesh.updateMatrix();
-						posi += hincr;
-					}
-					posj += (2 - (j % 2)) * vincr;
-				}
+				drawLatticeTriangular();
 				break;
 			default:
 				displayMessage("No representation for " + type.getTitle() + "!");
 				break;
 		}
 		drawUniverse();
-	}
-
-	/**
-	 * Initialize the universe of the 3D graph. Allocate the spheres and set their
-	 * material (colour).
-	 * 
-	 * @param unit the geometry of the unit (sphere) representing a node
-	 */
-	protected void initUniverse(thothbot.parallax.core.shared.core.Geometry unit) {
-		spheres.clear();
-		// allocate elements of universe - place them later
-		// NOTE: must rely on geometry.getSize() (instead of network.nNodes) because
-		// network
-		// may not yet have been properly
-		// synchronized (Network.doLayoutPrep will take care of this)
-		// No need to check whether network is null because ODE/SDE models
-		// would never get here.
-		for (int k = 0; k < geometry.getSize(); k++) {
-			Mesh mesh = new Mesh(unit);
-			mesh.setMaterial(data[k]);
-			mesh.setName(Integer.toString(k));
-			mesh.setMatrixAutoUpdate(false);
-			spheres.add(mesh);
-		}
-		invalidated = false;
 	}
 
 	@Override
@@ -584,6 +410,250 @@ public class PopGraph3D extends GenericPopGraph<MeshLambertMaterial, Network3DGW
 			links.setMatrixAutoUpdate(false);
 			scene.add(links);
 		}
+	}
+
+	/**
+	 * Layout nodes in a cubic arrangement. Handles both NOVA-specific and generic
+	 * cube configurations.
+	 */
+	private void drawLatticeCube() {
+		int side;
+		int zdim;
+		// NOVA settings
+		if (geometry.getSize() == 25000) {
+			zdim = 10;
+			side = 50;
+		} else {
+			side = (int) (Math.pow(geometry.getSize(), 1.0 / 3.0) + 0.5);
+			zdim = side;
+		}
+		double incr = (Network3D.UNIVERSE_RADIUS + Network3D.UNIVERSE_RADIUS) / side;
+		double radius = Math.max(1.0, incr * 0.3);
+		double shift = (side - 1) * 0.5 * incr;
+		double zshift = (zdim - 1) * 0.5 * incr;
+		initUniverse(new BoxGeometry(1.75 * radius, 1.75 * radius, 1.75 * radius));
+		Iterator<Mesh> meshes = spheres.iterator();
+		double posk = -zshift;
+		for (int k = 0; k < zdim; k++) {
+			double posj = -shift;
+			for (int j = 0; j < side; j++) {
+				double posi = -shift;
+				for (int i = 0; i < side; i++) {
+					Mesh mesh = meshes.next();
+					mesh.setPosition(new Vector3(posi, posj, posk));
+					mesh.updateMatrix();
+					posi += incr;
+				}
+				posj += incr;
+			}
+			posk += incr;
+		}
+	}
+
+	/**
+	 * Layout nodes in a square arrangement (Neumann, Moore, or standard). Supports
+	 * hierarchical structures with gaps.
+	 */
+	private void drawLatticeSquare() {
+		int side = (int) Math.sqrt(geometry.getSize());
+		double incr = (Network3D.UNIVERSE_RADIUS + Network3D.UNIVERSE_RADIUS) / side;
+		double radius = Math.max(1.0, incr * 0.4);
+		double shift = (side - 1) * 0.5 * incr;
+
+		boolean isHierarchy = (geometry.getType() == GeometryType.HIERARCHY);
+		int hLevels = 0;
+		int[] hPeriods = new int[0];
+
+		if (isHierarchy) {
+			shift += computeHierarchyShift(side);
+			HierarchicalGeometry hGeom = (HierarchicalGeometry) geometry;
+			int[] hierarchy = hGeom.getHierarchyLevels();
+			hLevels = hierarchy.length - 1;
+			hPeriods = new int[hLevels];
+			hPeriods[0] = (int) Math.sqrt(hierarchy[hLevels]);
+			for (int i = 1; i < hLevels; i++) {
+				hPeriods[i] = hPeriods[i - 1] * (int) Math.sqrt(hierarchy[hLevels - i]);
+			}
+		}
+
+		initUniverse(new BoxGeometry(1.75 * radius, 1.75 * radius, 1.75 * radius));
+		Iterator<Mesh> meshes = spheres.iterator();
+		double posj = -shift;
+
+		for (int j = 0; j < side; j++) {
+			if (isHierarchy && j > 0) {
+				posj += applyHierarchyGap(j, hLevels, hPeriods);
+			}
+			double posi = -shift;
+			for (int i = 0; i < side; i++) {
+				if (isHierarchy && i > 0) {
+					posi += applyHierarchyGap(i, hLevels, hPeriods);
+				}
+				Mesh mesh = meshes.next();
+				mesh.setPosition(new Vector3(posi, posj, 0));
+				mesh.updateMatrix();
+				posi += incr;
+			}
+			posj += incr;
+		}
+	}
+
+	/**
+	 * Compute the total shift needed for hierarchical structures.
+	 * 
+	 * @param side  the side length of the grid
+	 * @param shift the initial shift
+	 * @return the additional shift for hierarchy
+	 */
+	private double computeHierarchyShift(int side) {
+		final int HIERARCHY_GAP = 8;
+		HierarchicalGeometry hGeom = (HierarchicalGeometry) geometry;
+		int[] hierarchy = hGeom.getHierarchyLevels();
+		int hLevels = hierarchy.length - 1;
+		int[] hPeriods = new int[hLevels];
+		hPeriods[0] = (int) Math.sqrt(hierarchy[hLevels]);
+		int totGap = side / hPeriods[0] - 1;
+		for (int i = 1; i < hLevels; i++) {
+			hPeriods[i] = hPeriods[i - 1] * (int) Math.sqrt(hierarchy[hLevels - i]);
+			totGap += side / hPeriods[i] - 1;
+		}
+		return totGap * HIERARCHY_GAP * 0.5;
+	}
+
+	/**
+	 * Apply hierarchical gap at the specified position.
+	 * 
+	 * @param pos      the current position (row or column)
+	 * @param hLevels  the number of hierarchy levels
+	 * @param hPeriods the period array for each hierarchy level
+	 * @return the gap to apply
+	 */
+	private double applyHierarchyGap(int pos, int hLevels, int[] hPeriods) {
+		final int HIERARCHY_GAP = 8;
+		double gap = 0;
+		for (int l = 0; l < hLevels; l++) {
+			if (pos % hPeriods[l] != 0)
+				break;
+			gap += HIERARCHY_GAP;
+		}
+		return gap;
+	}
+
+	/**
+	 * Layout nodes in a square arrangement with 2nd order Neumann neighborhood.
+	 */
+	private void drawLatticeSquareNeumann2nd() {
+		int side = (int) Math.sqrt(geometry.getSize());
+		double incr = (Network3D.UNIVERSE_RADIUS + Network3D.UNIVERSE_RADIUS) / side;
+		double radius = Math.max(1.0, incr * 0.4);
+		double shift = (side - 1) * 0.5 * incr;
+		initUniverse(new BoxGeometry(1.75 * radius, 1.75 * radius, 1.75 * radius));
+		Iterator<Mesh> meshes = spheres.iterator();
+		double posj = -shift;
+		double posz = 0.4375 * radius;
+		for (int j = 0; j < side; j++) {
+			double posi = -shift;
+			for (int i = 0; i < side; i++) {
+				Mesh mesh = meshes.next();
+				mesh.setPosition(new Vector3(posi, posj, posz));
+				mesh.updateMatrix();
+				posi += incr;
+				posz = -posz;
+			}
+			posz = -posz;
+			posj += incr;
+		}
+	}
+
+	/**
+	 * Layout nodes in a hexagonal arrangement.
+	 */
+	private void drawLatticeHexagonal() {
+		int side = (int) Math.sqrt(geometry.getSize());
+		double hincr = (Network3D.UNIVERSE_RADIUS + Network3D.UNIVERSE_RADIUS) / side;
+		double hincr2 = hincr * 0.5;
+		double vincr = hincr * 0.5 * Math.sqrt(3.0);
+		double radius = Math.max(1.0, hincr * 0.4);
+		double shift = (side - 0.5) * 0.5 * hincr;
+		initUniverse(new SphereGeometry(radius, 16, 12));
+		Iterator<Mesh> meshes = spheres.iterator();
+		double posj = -(side - 1) * 0.5 * vincr;
+		for (int j = 0; j < side; j++) {
+			double posi = -shift + (j % 2) * hincr2;
+			for (int i = 0; i < side; i++) {
+				Mesh mesh = meshes.next();
+				mesh.setPosition(new Vector3(posi, posj, 0));
+				mesh.updateMatrix();
+				posi += hincr;
+			}
+			posj += vincr;
+		}
+	}
+
+	/**
+	 * Layout nodes in a triangular arrangement.
+	 */
+	private void drawLatticeTriangular() {
+		int side = (int) Math.sqrt(geometry.getSize());
+		int size2 = side / 2;
+		double vincr = (Network3D.UNIVERSE_RADIUS + Network3D.UNIVERSE_RADIUS) / side;
+		double vincr2 = vincr * 0.5;
+		double hincr = vincr * Math.sqrt(3.0);
+		double hincr2 = hincr * 0.5;
+		double radius = Math.max(1.0, vincr * 0.4);
+		double shift = (size2 - 0.5) * 0.5 * hincr;
+		double vshift = (side - 1.25) * 0.75 * vincr;
+		initUniverse(new SphereGeometry(radius, 16, 12));
+		Iterator<Mesh> meshes = spheres.iterator();
+		// even nodes
+		double posj = -vshift;
+		for (int j = 0; j < side; j++) {
+			double posi = -shift;
+			for (int i = 0; i < size2; i++) {
+				Mesh mesh = meshes.next();
+				mesh.setPosition(new Vector3(posi, posj, 0));
+				mesh.updateMatrix();
+				posi += hincr;
+			}
+			posj += (1 + (j % 2)) * vincr;
+		}
+		// odd nodes
+		posj = -vshift - vincr2;
+		for (int j = 0; j < side; j++) {
+			double posi = -shift + hincr2;
+			for (int i = 0; i < size2; i++) {
+				Mesh mesh = meshes.next();
+				mesh.setPosition(new Vector3(posi, posj, 0));
+				mesh.updateMatrix();
+				posi += hincr;
+			}
+			posj += (2 - (j % 2)) * vincr;
+		}
+	}
+
+	/**
+	 * Initialize the universe of the 3D graph. Allocate the spheres and set their
+	 * material (colour).
+	 * 
+	 * @param unit the geometry of the unit (sphere) representing a node
+	 */
+	protected void initUniverse(thothbot.parallax.core.shared.core.Geometry unit) {
+		spheres.clear();
+		// allocate elements of universe - place them later
+		// NOTE: must rely on geometry.getSize() (instead of network.nNodes) because
+		// network
+		// may not yet have been properly
+		// synchronized (Network.doLayoutPrep will take care of this)
+		// No need to check whether network is null because ODE/SDE models
+		// would never get here.
+		for (int k = 0; k < geometry.getSize(); k++) {
+			Mesh mesh = new Mesh(unit);
+			mesh.setMaterial(data[k]);
+			mesh.setName(Integer.toString(k));
+			mesh.setMatrixAutoUpdate(false);
+			spheres.add(mesh);
+		}
+		invalidated = false;
 	}
 
 	@Override
