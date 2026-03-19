@@ -37,45 +37,52 @@ import org.evoludo.simulator.ColorMap3D;
 import thothbot.parallax.core.client.gl2.arrays.Float32Array;
 import thothbot.parallax.core.client.shaders.Attribute;
 import thothbot.parallax.core.client.shaders.Shader;
-import thothbot.parallax.core.client.shaders.Uniform;
 import thothbot.parallax.core.shared.core.BufferAttribute;
 import thothbot.parallax.core.shared.core.BufferGeometry;
 import thothbot.parallax.core.shared.materials.Material;
 import thothbot.parallax.core.shared.materials.ShaderMaterial;
 import thothbot.parallax.core.shared.math.Color;
-import thothbot.parallax.core.shared.math.Vector2;
 import thothbot.parallax.core.shared.math.Vector3;
 import thothbot.parallax.core.shared.objects.Mesh;
 
 /**
- * Prototype renderer for thick 3D links. The implementation batches all links
- * into a single quad mesh and extrudes each segment in screen space with a
- * custom shader. This keeps the representation specific to EvoLudo's use case:
- * disjoint, independently colored link segments without line joins.
+ * Renderer for thick 3D links. Each link segment is expanded into a small open
+ * prism in world coordinates, which gives links a proper depth relationship to
+ * spheres and to other links while keeping the appearance unlit and simple.
  *
  * @author Christoph Hauert
  */
 public class Link3D extends Mesh {
 
 	/**
+	 * Number of rectangular side faces per link prism.
+	 */
+	private static final int FACES_PER_LINK = 4;
+
+	/**
+	 * Number of triangle vertices used per rectangular side face.
+	 */
+	private static final int VERTICES_PER_FACE = 6;
+
+	/**
 	 * Number of triangle vertices used per link segment.
 	 */
-	private static final int VERTICES_PER_LINK = 6;
+	private static final int VERTICES_PER_LINK = FACES_PER_LINK * VERTICES_PER_FACE;
 
 	/**
-	 * Default line width in screen pixels.
+	 * Smallest admissible link width in world coordinates.
 	 */
-	private static final double DEFAULT_LINE_WIDTH = 0.8;
+	private static final double MIN_LINK_WIDTH = 0.05;
 
 	/**
-	 * Default opacity for rendered links.
+	 * Smallest admissible squared link length.
 	 */
-	private static final double DEFAULT_OPACITY = 0.8;
+	private static final double MIN_AXIS_LENGTH2 = 1.0e-8;
 
 	/**
-	 * Default viewport resolution before the first resize.
+	 * Threshold used when choosing a helper axis for constructing the prism basis.
 	 */
-	private static final Vector2 DEFAULT_RESOLUTION = new Vector2(1.0, 1.0);
+	private static final double HELPER_AXIS_Z_THRESHOLD = 0.9;
 
 	/**
 	 * Fallback color used when link geometry does not provide vertex colors.
@@ -88,39 +95,35 @@ public class Link3D extends Mesh {
 	private BufferAttribute positionAttribute;
 
 	/**
-	 * Start point of each link segment.
-	 */
-	private BufferAttribute lineStartAttribute;
-
-	/**
-	 * End point of each link segment.
-	 */
-	private BufferAttribute lineEndAttribute;
-
-	/**
-	 * Side marker used for screen-space extrusion.
-	 */
-	private BufferAttribute sideAttribute;
-
-	/**
-	 * Marker selecting the segment start or end point.
-	 */
-	private BufferAttribute alongAttribute;
-
-	/**
 	 * Per-vertex colors used to support directional gradients.
 	 */
 	private BufferAttribute colorAttribute;
 
 	/**
-	 * Shader driving the thick-link rendering.
-	 */
-	private final LinkShader shader;
-
-	/**
 	 * Material wrapping the custom shader.
 	 */
 	private final ShaderMaterial shaderMaterial;
+
+	/**
+	 * Temporary storage for the link axis.
+	 */
+	private final Vector3 axis = new Vector3();
+
+	/**
+	 * Temporary helper axis used to construct an orthonormal basis around the
+	 * link axis.
+	 */
+	private final Vector3 axisHelper = new Vector3();
+
+	/**
+	 * Temporary first basis vector spanning the prism cross-section.
+	 */
+	private final Vector3 radialU = new Vector3();
+
+	/**
+	 * Temporary second basis vector spanning the prism cross-section.
+	 */
+	private final Vector3 radialV = new Vector3();
 
 	/**
 	 * Number of link segments stored in the current geometry.
@@ -133,19 +136,21 @@ public class Link3D extends Mesh {
 	private int geometryLinkCount;
 
 	/**
-	 * Create an empty thick-link mesh.
+	 * Current link width in world coordinates.
+	 */
+	private double lineWidth = MIN_LINK_WIDTH;
+
+	/**
+	 * Create an empty 3D link mesh.
 	 */
 	public Link3D() {
 		super(new BufferGeometry(), new ShaderMaterial(new LinkShader()));
 		shaderMaterial = (ShaderMaterial) getMaterial();
-		shader = (LinkShader) shaderMaterial.getShader();
-		shaderMaterial.setTransparent(true);
-		shaderMaterial.setDepthWrite(false);
+		shaderMaterial.setTransparent(false);
+		shaderMaterial.setDepthWrite(true);
+		shaderMaterial.setOpacity(1.0);
 		shaderMaterial.setSide(Material.SIDE.DOUBLE);
 		setFrustumCulled(false);
-		setLineWidth(DEFAULT_LINE_WIDTH);
-		setOpacity(DEFAULT_OPACITY);
-		setResolution((int) DEFAULT_RESOLUTION.getX(), (int) DEFAULT_RESOLUTION.getY());
 	}
 
 	/**
@@ -197,10 +202,7 @@ public class Link3D extends Mesh {
 	}
 
 	/**
-	 * Hide all links from this mesh while keeping the allocated buffers intact. The
-	 * reset path relies on reusing or replacing the mesh object rather than
-	 * swapping in an empty geometry, because Parallax does not reliably recover the
-	 * updated direct buffers after such a geometry reset.
+	 * Hide all links from this mesh while keeping the allocated buffers intact.
 	 */
 	public void clear() {
 		linkCount = 0;
@@ -208,45 +210,12 @@ public class Link3D extends Mesh {
 	}
 
 	/**
-	 * Set the viewport resolution used by the shader for screen-space extrusion.
+	 * Set the thickness of the rendered links in world coordinates.
 	 *
-	 * @param width  the viewport width in pixels
-	 * @param height the viewport height in pixels
-	 */
-	public void setResolution(int width, int height) {
-		double safeWidth = Math.max(1.0, width);
-		double safeHeight = Math.max(1.0, height);
-		shader.setResolution(safeWidth, safeHeight);
-	}
-
-	/**
-	 * Set the thickness of the rendered links in pixels.
-	 *
-	 * @param lineWidth the desired line width
+	 * @param lineWidth the desired link width
 	 */
 	public void setLineWidth(double lineWidth) {
-		shader.setLineWidth(Math.max(1.0, lineWidth));
-	}
-
-	/**
-	 * Set the opacity of the rendered links.
-	 *
-	 * @param opacity the desired opacity
-	 */
-	public void setOpacity(double opacity) {
-		double alpha = Math.max(0.0, Math.min(1.0, opacity));
-		shader.setOpacity(alpha);
-		shaderMaterial.setOpacity(alpha);
-		shaderMaterial.setTransparent(alpha < 1.0);
-	}
-
-	/**
-	 * Get the number of links currently stored in the geometry.
-	 *
-	 * @return the number of rendered links
-	 */
-	public int getLinkCount() {
-		return linkCount;
+		this.lineWidth = Math.max(MIN_LINK_WIDTH, lineWidth);
 	}
 
 	/**
@@ -258,16 +227,8 @@ public class Link3D extends Mesh {
 		int vertices = Math.max(0, links * VERTICES_PER_LINK);
 		BufferGeometry geometry = new BufferGeometry();
 		positionAttribute = createAttribute(vertices, 3);
-		lineStartAttribute = createAttribute(vertices, 3);
-		lineEndAttribute = createAttribute(vertices, 3);
-		sideAttribute = createAttribute(vertices, 1);
-		alongAttribute = createAttribute(vertices, 1);
 		colorAttribute = createAttribute(vertices, 3);
 		geometry.addAttribute("position", positionAttribute);
-		geometry.addAttribute("lineStart", lineStartAttribute);
-		geometry.addAttribute("lineEnd", lineEndAttribute);
-		geometry.addAttribute("side", sideAttribute);
-		geometry.addAttribute("along", alongAttribute);
 		geometry.addAttribute("color", colorAttribute);
 		setGeometry(geometry);
 		geometryLinkCount = links;
@@ -279,7 +240,7 @@ public class Link3D extends Mesh {
 	 * @param links the number of link segments to render
 	 */
 	private void ensureGeometry(int links) {
-		if (lineStartAttribute != null && lineEndAttribute != null && geometryLinkCount == links)
+		if (positionAttribute != null && geometryLinkCount == links)
 			return;
 		createGeometry(links);
 	}
@@ -298,7 +259,7 @@ public class Link3D extends Mesh {
 	}
 
 	/**
-	 * Write one thick-link segment into the underlying buffers.
+	 * Write one thick-link prism into the underlying buffers.
 	 *
 	 * @param vertexOffset the first vertex index of the segment
 	 * @param start        the segment start position
@@ -307,31 +268,83 @@ public class Link3D extends Mesh {
 	 * @param endColor     the color at the end point
 	 */
 	private void writeLink(int vertexOffset, Vector3 start, Vector3 end, Color startColor, Color endColor) {
-		writeVertex(vertexOffset, start, end, -1.0, 0.0, startColor);
-		writeVertex(vertexOffset + 1, start, end, 1.0, 0.0, startColor);
-		writeVertex(vertexOffset + 2, start, end, -1.0, 1.0, endColor);
-		writeVertex(vertexOffset + 3, start, end, -1.0, 1.0, endColor);
-		writeVertex(vertexOffset + 4, start, end, 1.0, 0.0, startColor);
-		writeVertex(vertexOffset + 5, start, end, 1.0, 1.0, endColor);
+		axis.sub(end, start);
+		if (axis.lengthSq() < MIN_AXIS_LENGTH2) {
+			double x = start.getX();
+			double y = start.getY();
+			double z = start.getZ();
+			for (int idx = 0; idx < VERTICES_PER_LINK; idx++)
+				writeVertex(vertexOffset + idx, x, y, z, startColor);
+			return;
+		}
+		axis.normalize();
+		if (Math.abs(axis.getZ()) < HELPER_AXIS_Z_THRESHOLD)
+			axisHelper.set(0.0, 0.0, 1.0);
+		else
+			axisHelper.set(0.0, 1.0, 0.0);
+		radialU.cross(axis, axisHelper).normalize().multiply(0.5 * lineWidth);
+		radialV.cross(axis, radialU).normalize().multiply(0.5 * lineWidth);
+		int offset = vertexOffset;
+		offset = writeFace(offset, start, end, startColor, endColor, 1.0, 1.0, -1.0, 1.0);
+		offset = writeFace(offset, start, end, startColor, endColor, -1.0, 1.0, -1.0, -1.0);
+		offset = writeFace(offset, start, end, startColor, endColor, -1.0, -1.0, 1.0, -1.0);
+		writeFace(offset, start, end, startColor, endColor, 1.0, -1.0, 1.0, 1.0);
+	}
+
+	/**
+	 * Write one rectangular side face of the link prism.
+	 *
+	 * @param vertexOffset the first vertex index of the face
+	 * @param start        the segment start position
+	 * @param end          the segment end position
+	 * @param startColor   the color at the start point
+	 * @param endColor     the color at the end point
+	 * @param uA           the first corner coefficient along {@link #radialU}
+	 * @param vA           the first corner coefficient along {@link #radialV}
+	 * @param uB           the second corner coefficient along {@link #radialU}
+	 * @param vB           the second corner coefficient along {@link #radialV}
+	 * @return the next free vertex index
+	 */
+	private int writeFace(int vertexOffset, Vector3 start, Vector3 end, Color startColor, Color endColor, double uA,
+			double vA, double uB, double vB) {
+		double oxA = uA * radialU.getX() + vA * radialV.getX();
+		double oyA = uA * radialU.getY() + vA * radialV.getY();
+		double ozA = uA * radialU.getZ() + vA * radialV.getZ();
+		double oxB = uB * radialU.getX() + vB * radialV.getX();
+		double oyB = uB * radialU.getY() + vB * radialV.getY();
+		double ozB = uB * radialU.getZ() + vB * radialV.getZ();
+		double sxA = start.getX() + oxA;
+		double syA = start.getY() + oyA;
+		double szA = start.getZ() + ozA;
+		double exA = end.getX() + oxA;
+		double eyA = end.getY() + oyA;
+		double ezA = end.getZ() + ozA;
+		double sxB = start.getX() + oxB;
+		double syB = start.getY() + oyB;
+		double szB = start.getZ() + ozB;
+		double exB = end.getX() + oxB;
+		double eyB = end.getY() + oyB;
+		double ezB = end.getZ() + ozB;
+		writeVertex(vertexOffset, sxA, syA, szA, startColor);
+		writeVertex(vertexOffset + 1, sxB, syB, szB, startColor);
+		writeVertex(vertexOffset + 2, exB, eyB, ezB, endColor);
+		writeVertex(vertexOffset + 3, sxA, syA, szA, startColor);
+		writeVertex(vertexOffset + 4, exB, eyB, ezB, endColor);
+		writeVertex(vertexOffset + 5, exA, eyA, ezA, endColor);
+		return vertexOffset + VERTICES_PER_FACE;
 	}
 
 	/**
 	 * Write one triangle vertex to the underlying buffers.
 	 *
 	 * @param index the vertex index
-	 * @param start the segment start position
-	 * @param end   the segment end position
-	 * @param side  the extrusion side
-	 * @param along the segment coordinate in {@code [0, 1]}
+	 * @param x     the x-coordinate
+	 * @param y     the y-coordinate
+	 * @param z     the z-coordinate
 	 * @param color the vertex color
 	 */
-	private void writeVertex(int index, Vector3 start, Vector3 end, double side, double along, Color color) {
-		Vector3 point = (along <= 0.0 ? start : end);
-		positionAttribute.setXYZ(index, point.getX(), point.getY(), point.getZ());
-		lineStartAttribute.setXYZ(index, start.getX(), start.getY(), start.getZ());
-		lineEndAttribute.setXYZ(index, end.getX(), end.getY(), end.getZ());
-		sideAttribute.setX(index, side);
-		alongAttribute.setX(index, along);
+	private void writeVertex(int index, double x, double y, double z, Color color) {
+		positionAttribute.setXYZ(index, x, y, z);
 		colorAttribute.setXYZ(index, color.getR(), color.getG(), color.getB());
 	}
 
@@ -354,17 +367,13 @@ public class Link3D extends Mesh {
 	 */
 	private void markGeometryDirty() {
 		positionAttribute.setNeedsUpdate(true);
-		lineStartAttribute.setNeedsUpdate(true);
-		lineEndAttribute.setNeedsUpdate(true);
-		sideAttribute.setNeedsUpdate(true);
-		alongAttribute.setNeedsUpdate(true);
 		colorAttribute.setNeedsUpdate(true);
 		((BufferGeometry) getGeometry()).computeBoundingBox();
 		((BufferGeometry) getGeometry()).computeBoundingSphere();
 	}
 
 	/**
-	 * Minimal shader for screen-space extrusion of link quads.
+	 * Minimal unlit shader for world-space link prisms.
 	 */
 	private static class LinkShader extends Shader {
 
@@ -372,32 +381,10 @@ public class Link3D extends Mesh {
 		 * Vertex shader source.
 		 */
 		private static final String VERTEX_SHADER = String.join("\n",
-				"uniform vec2 resolution;",
-				"uniform float linewidth;",
-				"attribute vec3 lineStart;",
-				"attribute vec3 lineEnd;",
-				"attribute float side;",
-				"attribute float along;",
 				"attribute vec3 color;",
 				"varying vec3 vColor;",
 				"void main() {",
-				"  vec4 startClip = projectionMatrix * modelViewMatrix * vec4(lineStart, 1.0);",
-				"  vec4 endClip = projectionMatrix * modelViewMatrix * vec4(lineEnd, 1.0);",
-				"  vec2 startNdc = startClip.xy / startClip.w;",
-				"  vec2 endNdc = endClip.xy / endClip.w;",
-				"  vec2 dir = endNdc - startNdc;",
-				"  float dirLen = length(dir);",
-				"  if (dirLen > 0.0) {",
-				"    dir /= dirLen;",
-				"  } else {",
-				"    dir = vec2(1.0, 0.0);",
-				"  }",
-				"  vec2 normal = vec2(-dir.y, dir.x);",
-				"  vec2 pixelOffset = normal * side * linewidth * 0.5;",
-				"  vec2 clipOffset = vec2(2.0 * pixelOffset.x / resolution.x, 2.0 * pixelOffset.y / resolution.y);",
-				"  vec4 clip = mix(startClip, endClip, along);",
-				"  clip.xy += clipOffset * clip.w;",
-				"  gl_Position = clip;",
+				"  gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);",
 				"  vColor = color;",
 				"}");
 
@@ -405,10 +392,9 @@ public class Link3D extends Mesh {
 		 * Fragment shader source.
 		 */
 		private static final String FRAGMENT_SHADER = String.join("\n",
-				"uniform float opacity;",
 				"varying vec3 vColor;",
 				"void main() {",
-				"  gl_FragColor = vec4(vColor, opacity);",
+				"  gl_FragColor = vec4(vColor, 1.0);",
 				"}");
 
 		/**
@@ -416,45 +402,15 @@ public class Link3D extends Mesh {
 		 */
 		LinkShader() {
 			super(VERTEX_SHADER, FRAGMENT_SHADER);
-			addAttributes("lineStart", new Attribute(Attribute.TYPE.V3, null));
-			addAttributes("lineEnd", new Attribute(Attribute.TYPE.V3, null));
-			addAttributes("side", new Attribute(Attribute.TYPE.F, null));
-			addAttributes("along", new Attribute(Attribute.TYPE.F, null));
+			addAttributes("color", new Attribute(Attribute.TYPE.V3, null));
 		}
 
+		/**
+		 * Initialize shader uniforms.
+		 */
 		@Override
 		protected void initUniforms() {
-			addUniform("resolution", new Uniform(Uniform.TYPE.V2, DEFAULT_RESOLUTION.clone()));
-			addUniform("linewidth", new Uniform(Uniform.TYPE.F, DEFAULT_LINE_WIDTH));
-			addUniform("opacity", new Uniform(Uniform.TYPE.F, DEFAULT_OPACITY));
-		}
-
-		/**
-		 * Set the resolution uniform.
-		 *
-		 * @param width  the viewport width
-		 * @param height the viewport height
-		 */
-		void setResolution(double width, double height) {
-			getUniforms().get("resolution").setValue(new Vector2(width, height));
-		}
-
-		/**
-		 * Set the line width uniform.
-		 *
-		 * @param lineWidth the desired width
-		 */
-		void setLineWidth(double lineWidth) {
-			getUniforms().get("linewidth").setValue(lineWidth);
-		}
-
-		/**
-		 * Set the opacity uniform.
-		 *
-		 * @param opacity the desired opacity
-		 */
-		void setOpacity(double opacity) {
-			getUniforms().get("opacity").setValue(opacity);
+			// This shader is fully driven by vertex attributes and built-in matrices.
 		}
 	}
 }

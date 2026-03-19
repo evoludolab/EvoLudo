@@ -96,9 +96,10 @@ import thothbot.parallax.plugins.effects.Stereo;
 public class PopGraph3D extends GenericPopGraph<MeshLambertMaterial, Network3DGWT> implements Context3dErrorHandler {
 
 	/**
-	 * Baseline width of thick links before camera zoom scaling is applied.
+	 * Baseline width of 3D links before camera zoom scaling is applied. This is
+	 * the primary view-level width setting for network links.
 	 */
-	private static final double THICK_LINK_WIDTH = 2.0;
+	private static final double LINK_WIDTH = 0.5;
 
 	/**
 	 * Reference camera distance for perspective zoom scaling.
@@ -428,14 +429,12 @@ public class PopGraph3D extends GenericPopGraph<MeshLambertMaterial, Network3DGW
 	}
 
 	/**
-	 * Synchronize the link shader with the canvas size.
+	 * Synchronize the world-space link width with the current zoom level.
 	 */
 	private void updateLinkAppearance() {
-		if (linkRenderer == null || graph3DScene == null || graph3DScene.getCanvas() == null)
+		if (linkRenderer == null)
 			return;
-		Canvas3d canvas3d = graph3DScene.getCanvas();
-		linkRenderer.setResolution(canvas3d.getWidth(), canvas3d.getHeight());
-		linkRenderer.setLineWidth(THICK_LINK_WIDTH * getLinkZoomFactor());
+		linkRenderer.setLineWidth(LINK_WIDTH * getLinkZoomFactor());
 	}
 
 	/**
