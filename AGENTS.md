@@ -7,5 +7,5 @@
 
 ## Documentation
 
-- Always write Javadoc for all Java classes, enums, methods, and fields, including `private` ones.
+- Always write Javadoc for all Java classes, enums, methods, and fields, including `private` ones, except overridden methods.
 - When adding or changing Java code, update the corresponding Javadoc at the same time.
