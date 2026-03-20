@@ -36,7 +36,6 @@ import org.evoludo.math.RNGDistribution;
 import org.evoludo.simulator.ColorMap;
 import org.evoludo.simulator.EvoLudo;
 import org.evoludo.simulator.geometries.AbstractGeometry;
-import org.evoludo.simulator.geometries.GeometryType;
 import org.evoludo.simulator.modules.Features.Payoffs;
 import org.evoludo.simulator.modules.Map2Fitness;
 import org.evoludo.simulator.modules.Module;

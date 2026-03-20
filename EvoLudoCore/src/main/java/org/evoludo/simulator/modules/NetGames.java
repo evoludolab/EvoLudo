@@ -493,6 +493,11 @@ public class NetGames extends Discrete implements Payoffs,
 		}
 
 		@Override
+		protected void checkLimitedTesting() {
+			// suppress warning about directed links - ok here.
+		}
+
+		@Override
 		public int step() {
 			int focal = random0n(nPopulation);
 			// switch( populationUpdateType ) {

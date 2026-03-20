@@ -3435,12 +3435,7 @@ public abstract class IBSPopulation<M extends Module<?>, P extends IBSPopulation
 			tags = new double[nPopulation];
 
 		// check for scenarios that are untested or work in progress
-		if (!interaction.isUndirected() && !module.isStatic())
-			logger.warning("interactions on directed graphs have received very limited testing...");
-
-		if (vacantIdx >= 0 && nGroup > 2)
-			logger.warning("group interactions with vacant sites have NOT been tested...");
-
+		checkLimitedTesting();
 		return doReset || checkOptimizations();
 	}
 
@@ -3511,7 +3506,7 @@ public abstract class IBSPopulation<M extends Module<?>, P extends IBSPopulation
 	 * Update a geometry to the requested population size if this changes its
 	 * effective structure.
 	 *
-	 * @param geometry the geometry to validate and update
+	 * @param geometry       the geometry to validate and update
 	 * @param populationSize the requested population size
 	 * @return {@code true} if the geometry changed and a reset is required
 	 */
@@ -3889,6 +3884,24 @@ public abstract class IBSPopulation<M extends Module<?>, P extends IBSPopulation
 			doReset = true;
 		}
 		return doReset;
+	}
+
+	/**
+	 * Emit warnings for configurations whose support status is limited.
+	 * <p>
+	 * Subclasses may override this hook to suppress or refine warnings for
+	 * configurations that are expected and exercised in a particular population
+	 * implementation.
+	 */
+	protected void checkLimitedTesting() {
+		if (!logger.isLoggable(Level.WARNING))
+			return;
+		if (!interaction.isUndirected()
+				&& !module.isStatic())
+			logger.warning((isMultispecies ? module.getName() + ": " : "")
+					+ "interactions on directed graphs have received very limited testing...");
+		if (vacantIdx >= 0 && module.getNGroup() > 2)
+			logger.warning("group interactions with vacant sites have NOT been tested...");
 	}
 
 	/**
