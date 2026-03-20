@@ -219,19 +219,27 @@ public class Link3D extends Mesh {
 	}
 
 	/**
-	 * Allocate the buffer geometry used for the current link count.
+	 * Allocate or resize the buffer geometry used for the current link count while
+	 * keeping the mesh and geometry instances stable.
 	 *
 	 * @param links the number of link segments
 	 */
 	private void createGeometry(int links) {
 		int vertices = Math.max(0, links * VERTICES_PER_LINK);
-		BufferGeometry geometry = new BufferGeometry();
-		positionAttribute = createAttribute(vertices, 3);
-		colorAttribute = createAttribute(vertices, 3);
-		geometry.addAttribute("position", positionAttribute);
-		geometry.addAttribute("color", colorAttribute);
-		setGeometry(geometry);
+		if (positionAttribute == null || colorAttribute == null) {
+			BufferGeometry geometry = (BufferGeometry) getGeometry();
+			positionAttribute = createAttribute(vertices, 3);
+			colorAttribute = createAttribute(vertices, 3);
+			geometry.addAttribute("position", positionAttribute);
+			geometry.addAttribute("color", colorAttribute);
+		} else {
+			positionAttribute.setArray(Float32Array.create(vertices * 3));
+			positionAttribute.setNumItems(vertices);
+			colorAttribute.setArray(Float32Array.create(vertices * 3));
+			colorAttribute.setNumItems(vertices);
+		}
 		geometryLinkCount = links;
+		invalidateGpuBuffers();
 	}
 
 	/**
@@ -240,9 +248,23 @@ public class Link3D extends Mesh {
 	 * @param links the number of link segments to render
 	 */
 	private void ensureGeometry(int links) {
-		if (positionAttribute != null && geometryLinkCount == links)
+		if (positionAttribute != null && geometryLinkCount == links) {
+			invalidateGpuBuffers();
 			return;
+		}
 		createGeometry(links);
+	}
+
+	/**
+	 * Force the renderer to upload fresh GPU buffers for the current attributes.
+	 * Parallax caches WebGL buffers behind each attribute, so dynamic link updates
+	 * must invalidate those handles explicitly.
+	 */
+	private void invalidateGpuBuffers() {
+		positionAttribute.setBuffer(null);
+		positionAttribute.setNeedsUpdate(true);
+		colorAttribute.setBuffer(null);
+		colorAttribute.setNeedsUpdate(true);
 	}
 
 	/**

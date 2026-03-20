@@ -588,7 +588,7 @@ public class PopGraph2D extends GenericPopGraph<String, Network2D> implements Sh
 		g.scale(su, su);
 		g.save();
 		g.translate(r, r);
-		g.setFillStyle(style.linkColor);
+		g.setStrokeStyle(style.linkColor);
 		Path2D links = network.getLinks();
 		if (!links.isEmpty()) {
 			g.setLineWidth(style.linkWidth);

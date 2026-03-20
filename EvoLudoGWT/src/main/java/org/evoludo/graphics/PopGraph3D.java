@@ -385,6 +385,7 @@ public class PopGraph3D extends GenericPopGraph<MeshLambertMaterial, Network3DGW
 			mesh.updateMatrix();
 			k++;
 		}
+		network.linkNodes();
 		drawUniverse();
 	}
 

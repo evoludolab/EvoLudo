@@ -123,10 +123,12 @@ public class Network3DGWT extends Network3D {
 	@Override
 	public void linkNodes() {
 		if (nLinks <= 0 || fLinks <= 0.0) {
+			links = null;
 			return;
 		}
 		if (nLinks > MAX_LINK_COUNT) {
 			engine.getLogger().warning("Too many links to draw - skipping!");
+			links = null;
 			return;
 		}
 		Vector3[] positions = new Vector3[nNodes];
