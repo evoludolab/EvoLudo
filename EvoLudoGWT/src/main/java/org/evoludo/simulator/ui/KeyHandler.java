@@ -78,9 +78,14 @@ public class KeyHandler {
 	public static final String KEY_ENTER = "Enter";
 
 	/**
-	 * String value emitted when the Space key is pressed.
+	 * String value emitted when the Arrow-Up key is pressed.
 	 */
-	public static final String KEY_SPACE = " ";
+	public static final String KEY_ARROW_UP = "ArrowUp";
+
+	/**
+	 * String value emitted when the Arrow-Down key is pressed.
+	 */
+	public static final String KEY_ARROW_DOWN = "ArrowDown";
 
 	/**
 	 * String value emitted when the Escape key is pressed.
@@ -298,6 +303,9 @@ public class KeyHandler {
 	 * <dt>{@code Shift}</dt>
 	 * <dd>Toggles the mode for some keys, see {@code Enter} below for an
 	 * example.</dd>
+	 * <dt>{@code ArrowUp, ArrowDown}</dt>
+	 * <dd>Reserved so the browser does not scroll the page while EvoLudo handles
+	 * view switching on key release.</dd>
 	 * <dt>{@code ArrowRight, n}</dt>
 	 * <dd>Advance the model by a single step. Same as pressing the
 	 * {@code Step}-button.</dd>
@@ -336,6 +344,9 @@ public class KeyHandler {
 			return true;
 		EvoLudoGWT engine = gui.getEngine();
 		switch (key) {
+			case KEY_ARROW_UP:
+			case KEY_ARROW_DOWN:
+				break;
 			case "ArrowRight":
 			case "n":
 				engine.next();
@@ -357,7 +368,6 @@ public class KeyHandler {
 				gui.syncDelaySlider();
 				break;
 			case KEY_ENTER:
-			case KEY_SPACE:
 				return true;
 			default:
 				return false;
@@ -413,7 +423,10 @@ public class KeyHandler {
 	 * <dt>{@code 1-9}</dt>
 	 * <dd>Quick view selector. Switches to data view with the selected index if it
 	 * exists. {@code 1} is the first view etc.</dd>
-	 * <dt>{@code Enter, Space}</dt>
+	 * <dt>{@code ArrowUp, ArrowDown}</dt>
+	 * <dd>Cycles through the active views. {@code ArrowUp} selects the previous
+	 * view, {@code ArrowDown} the next.</dd>
+	 * <dt>{@code Enter}</dt>
 	 * <dd>Starts (or stops) the current model. Note, {@code Shift-Enter} applies
 	 * the new parameter settings if the field is visible and has the keyboard
 	 * focus. Same as pressing the {@code Apply}-button.</dd>
@@ -506,6 +519,10 @@ public class KeyHandler {
 			case "0":
 				gui.toggleSettings();
 				return true;
+			case KEY_ARROW_UP:
+				return handleViewCycle(false);
+			case KEY_ARROW_DOWN:
+				return handleViewCycle(true);
 			case "1":
 			case "2":
 			case "3":
@@ -519,7 +536,6 @@ public class KeyHandler {
 			case "c":
 				return handleConsoleToggle();
 			case KEY_ENTER:
-			case KEY_SPACE:
 				gui.getEngine().startStop();
 				return true;
 			case KEY_ESCAPE:
@@ -550,6 +566,24 @@ public class KeyHandler {
 		int idx = CLOParser.parseInteger(key);
 		if (idx <= views.size())
 			gui.changeView(views.get(idx - 1));
+		return true;
+	}
+
+	/**
+	 * Handles cycling through active views.
+	 *
+	 * @param forward {@code true} to select the next view, {@code false} to
+	 *                select the previous view
+	 * @return {@code true} if key has been handled
+	 */
+	private boolean handleViewCycle(boolean forward) {
+		List<AbstractView<?>> views = gui.getActiveViews();
+		if (views.isEmpty())
+			return false;
+		AbstractView<?> active = gui.getActiveView();
+		int idx = views.indexOf(active);
+		int next = Math.floorMod(idx + (forward ? 1 : -1), views.size());
+		gui.changeView(views.get(next));
 		return true;
 	}
 

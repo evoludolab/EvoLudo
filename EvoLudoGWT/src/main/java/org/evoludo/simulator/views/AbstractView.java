@@ -1022,7 +1022,7 @@ public abstract class AbstractView<G extends AbstractGraph<?>> extends Composite
 
 		// process fullscreen context menu
 		if (NativeJS.isFullscreenSupported()) {
-			ContextMenuCheckBoxItem fullscreenMenu = new ContextMenuCheckBoxItem("Full screen",
+			ContextMenuCheckBoxItem fullscreenMenu = new ContextMenuCheckBoxItem("Full screen (⇧F)",
 					() -> engine.setFullscreen(!NativeJS.isFullscreen()));
 			menu.addSeparator();
 			menu.add(fullscreenMenu);
@@ -1035,11 +1035,11 @@ public abstract class AbstractView<G extends AbstractGraph<?>> extends Composite
 		// standalone lab or not)
 		if (!NativeJS.isEPub()) {
 			ContextMenu exportSubmenu = new ContextMenu(menu);
-			exportSubmenu.add(new ContextMenuItem(ExportType.STATE.toString(), new ExportCommand(ExportType.STATE)));
+			exportSubmenu.add(new ContextMenuItem(getExportMenuLabel(ExportType.STATE), new ExportCommand(ExportType.STATE)));
 			for (ExportType e : exportTypes()) {
 				if (e == ExportType.STATE)
 					continue; // always included
-				exportSubmenu.add(new ContextMenuItem(e.toString(), new ExportCommand(e)));
+				exportSubmenu.add(new ContextMenuItem(getExportMenuLabel(e), new ExportCommand(e)));
 			}
 			menu.addSeparator();
 			exportSubmenuTrigger = menu.add("Export", exportSubmenu);
@@ -1145,6 +1145,27 @@ public abstract class AbstractView<G extends AbstractGraph<?>> extends Composite
 	 */
 	protected ExportType[] exportTypes() {
 		return new ExportType[0];
+	}
+
+	/**
+	 * Builds the export menu label including keyboard accelerators when available.
+	 *
+	 * @param type the export type shown in the menu
+	 * @return menu label for the export type
+	 */
+	private String getExportMenuLabel(ExportType type) {
+		switch (type) {
+			case SVG:
+				return type + " (⇧S)";
+			case PNG:
+				return type + " (⇧P)";
+			case CSV_STAT:
+				return type + " (⇧C)";
+			case STATE:
+				return type + " (⇧E)";
+			default:
+				return type.toString();
+		}
 	}
 
 	/**

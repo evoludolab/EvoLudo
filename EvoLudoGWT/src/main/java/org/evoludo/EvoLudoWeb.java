@@ -2138,7 +2138,7 @@ public class EvoLudoWeb extends Composite
 			evoludoInitReset.setText(BUTTON_RESET);
 			evoludoInitReset.setTitle("Reset statistics");
 			evoludoStep.setText(BUTTON_SAMPLE);
-			evoludoStep.setTitle("Calculate single sample");
+			evoludoStep.setTitle("Calculate single sample (→ or N)");
 			return;
 		}
 		if (keyController.isAltDown()) {
@@ -2146,18 +2146,18 @@ public class EvoLudoWeb extends Composite
 			evoludoInitReset.setTitle("Initialize population and regenerate structure");
 			if (model.permitsTimeReversal()) {
 				evoludoStep.setText(BUTTON_PREV);
-				evoludoStep.setTitle("Backtrack single simulation step");
+				evoludoStep.setTitle("Backtrack single simulation step (← or P)");
 			}
 			if (model.permitsDebugStep()) {
 				evoludoStep.setText(BUTTON_DEBUG);
-				evoludoStep.setTitle("Single update event");
+				evoludoStep.setTitle("Single update event (⇧D)");
 			}
 			return;
 		}
 		evoludoInitReset.setText(BUTTON_INIT);
 		evoludoInitReset.setTitle("Initialize population (preserve structure)");
 		evoludoStep.setText(BUTTON_STEP);
-		evoludoStep.setTitle("Advance single simulation step");
+		evoludoStep.setTitle("Advance single simulation step (→ or N)");
 	}
 
 	/**

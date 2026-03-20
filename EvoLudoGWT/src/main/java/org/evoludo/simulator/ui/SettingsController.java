@@ -271,13 +271,14 @@ public class SettingsController {
 	 * @param editCLO {@code true} when editing is permitted
 	 */
 	private void updateCLOControls(boolean editCLO) {
-		cloField.setTitle(editCLO ? "Specify simulation parameters"
+		cloField.setTitle(editCLO ? "Specify simulation parameters (⇧↵ to apply)"
 				: "Current simulation parameters (open standalone lab to modify)");
 		applyButton.setText(editCLO ? BUTTON_APPLY : BUTTON_STANDALONE);
-		applyButton.setTitle(editCLO ? "Apply parameters" : "Open standalone lab");
+		applyButton.setTitle(editCLO ? "Apply parameters (⇧↵)" : "Open standalone lab");
 		defaultButton.setEnabled(editCLO);
 		helpButton.setEnabled(editCLO);
-		settingsButton.setTitle(editCLO ? "Change simulation parameters" : "Review simulation parameters");
+		helpButton.setTitle("Help on parameter settings (⇧H)");
+		settingsButton.setTitle(editCLO ? "Change simulation parameters (0)" : "Review simulation parameters (0)");
 	}
 
 	/**
