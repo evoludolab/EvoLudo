@@ -395,7 +395,8 @@ public abstract class Network2D extends Network<Node2D> {
 		links.moveTo(sourceNode);
 		links.lineTo(targetNode);
 		link.set(targetNode, sourceNode);
-		link.normalize(0.5 * targetNode.getR());
+		// Place the arrow tip on the surface of the target disk.
+		link.normalize(targetNode.getR());
 		tip.add(targetNode, link);
 		// note: arrows that scale with size of tail node are a bit confusing
 		link.normalize(arrowsize);
