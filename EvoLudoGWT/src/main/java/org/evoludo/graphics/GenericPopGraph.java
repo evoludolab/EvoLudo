@@ -618,7 +618,7 @@ public abstract class GenericPopGraph<T, N extends Network<?>> extends AbstractG
 			return;
 		}
 		if (!hasStaticLayout()) {
-			menu.add(new ContextMenuItem("Shake", () -> network.shake(GenericPopGraph.this, 0.05)));
+			menu.add(new ContextMenuItem("Shake", () -> network.shake(GenericPopGraph.this, 0.05), "S"));
 			menu.add(new ContextMenuCheckBoxItem("Animate layout", animate, () -> animate = !animate));
 		}
 		addClearMenu(menu);

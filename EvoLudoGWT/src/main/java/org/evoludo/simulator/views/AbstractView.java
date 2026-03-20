@@ -1022,8 +1022,8 @@ public abstract class AbstractView<G extends AbstractGraph<?>> extends Composite
 
 		// process fullscreen context menu
 		if (NativeJS.isFullscreenSupported()) {
-			ContextMenuCheckBoxItem fullscreenMenu = new ContextMenuCheckBoxItem("Full screen (⇧F)",
-					() -> engine.setFullscreen(!NativeJS.isFullscreen()));
+			ContextMenuCheckBoxItem fullscreenMenu = new ContextMenuCheckBoxItem("Full screen",
+					() -> engine.setFullscreen(!NativeJS.isFullscreen()), "⇧F");
 			menu.addSeparator();
 			menu.add(fullscreenMenu);
 			fullscreenMenu.setChecked(NativeJS.isFullscreen());
@@ -1035,11 +1035,11 @@ public abstract class AbstractView<G extends AbstractGraph<?>> extends Composite
 		// standalone lab or not)
 		if (!NativeJS.isEPub()) {
 			ContextMenu exportSubmenu = new ContextMenu(menu);
-			exportSubmenu.add(new ContextMenuItem(getExportMenuLabel(ExportType.STATE), new ExportCommand(ExportType.STATE)));
+			exportSubmenu.add(createExportMenuItem(ExportType.STATE));
 			for (ExportType e : exportTypes()) {
 				if (e == ExportType.STATE)
 					continue; // always included
-				exportSubmenu.add(new ContextMenuItem(getExportMenuLabel(e), new ExportCommand(e)));
+				exportSubmenu.add(createExportMenuItem(e));
 			}
 			menu.addSeparator();
 			exportSubmenuTrigger = menu.add("Export", exportSubmenu);
@@ -1148,23 +1148,23 @@ public abstract class AbstractView<G extends AbstractGraph<?>> extends Composite
 	}
 
 	/**
-	 * Builds the export menu label including keyboard accelerators when available.
+	 * Creates the export menu item including keyboard accelerators when available.
 	 *
 	 * @param type the export type shown in the menu
-	 * @return menu label for the export type
+	 * @return menu item for the export type
 	 */
-	private String getExportMenuLabel(ExportType type) {
+	private ContextMenuItem createExportMenuItem(ExportType type) {
 		switch (type) {
 			case SVG:
-				return type + " (⇧S)";
+				return new ContextMenuItem(type.toString(), new ExportCommand(type), "⇧S");
 			case PNG:
-				return type + " (⇧P)";
+				return new ContextMenuItem(type.toString(), new ExportCommand(type), "⇧P");
 			case CSV_STAT:
-				return type + " (⇧C)";
+				return new ContextMenuItem(type.toString(), new ExportCommand(type), "⇧C");
 			case STATE:
-				return type + " (⇧E)";
+				return new ContextMenuItem(type.toString(), new ExportCommand(type), "⇧E");
 			default:
-				return type.toString();
+				return new ContextMenuItem(type.toString(), new ExportCommand(type));
 		}
 	}
 

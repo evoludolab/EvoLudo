@@ -1104,7 +1104,9 @@ public class EvoLudoWeb extends Composite
 	 */
 	@UiHandler("evoludoViews")
 	public void onViewChange(ChangeEvent event) {
-		changeViewTo(viewController.getViewByName(evoludoViews.getSelectedItemText()));
+		int selectedIndex = evoludoViews.getSelectedIndex();
+		if (selectedIndex >= 0)
+			changeViewTo(viewController.getViewByName(evoludoViews.getValue(selectedIndex)));
 		evoludoViews.setFocus(false);
 	}
 
@@ -2136,28 +2138,28 @@ public class EvoLudoWeb extends Composite
 		// only 'reset' in statistics mode
 		if (statistics) {
 			evoludoInitReset.setText(BUTTON_RESET);
-			evoludoInitReset.setTitle("Reset statistics");
+			evoludoInitReset.setTitle("Reset statistics [Esc]");
 			evoludoStep.setText(BUTTON_SAMPLE);
-			evoludoStep.setTitle("Calculate single sample (→ or N)");
+			evoludoStep.setTitle("Calculate single sample [→ or N]");
 			return;
 		}
 		if (keyController.isAltDown()) {
 			evoludoInitReset.setText(BUTTON_RESET);
-			evoludoInitReset.setTitle("Initialize population and regenerate structure");
+			evoludoInitReset.setTitle("Initialize population [Esc] and regenerate structure [⎇ Esc]");
 			if (model.permitsTimeReversal()) {
 				evoludoStep.setText(BUTTON_PREV);
-				evoludoStep.setTitle("Backtrack single simulation step (← or P)");
+				evoludoStep.setTitle("Backtrack single simulation step [← or P]");
 			}
 			if (model.permitsDebugStep()) {
 				evoludoStep.setText(BUTTON_DEBUG);
-				evoludoStep.setTitle("Single update event (⇧D)");
+				evoludoStep.setTitle("Single update event [⇧D]");
 			}
 			return;
 		}
 		evoludoInitReset.setText(BUTTON_INIT);
-		evoludoInitReset.setTitle("Initialize population (preserve structure)");
+		evoludoInitReset.setTitle("Initialize population [Esc]");
 		evoludoStep.setText(BUTTON_STEP);
-		evoludoStep.setTitle("Advance single simulation step (→ or N)");
+		evoludoStep.setTitle("Advance single simulation step [→ or N]");
 	}
 
 	/**

@@ -302,6 +302,7 @@ public class ViewController {
 		}
 
 		addView(console, oldViews);
+		rebuildSelectorItems();
 
 		if (!oldViews.isEmpty())
 			unloadViews(oldViews);
@@ -386,6 +387,52 @@ public class ViewController {
 		}
 		// fatal does not return
 		engine.fatal("Invalid EvoLudo state - reload!");
+	}
+
+	/**
+	 * Formats the selector label with a simple prefixed shortcut.
+	 *
+	 * @param viewName          the visible view name
+	 * @param shortcut          the shortcut text, or {@code null} if none is shown
+	 * @param hasExtraViews     {@code true} if there are more than nine active
+	 *                          views
+	 * @return formatted selector label
+	 */
+	private String formatSelectorLabel(String viewName, String shortcut, boolean hasExtraViews) {
+		String prefix = hasExtraViews ? "\u00A0\u00A0\u00A0\u00A0" : "";
+		if (shortcut != null && !shortcut.isEmpty())
+			prefix = shortcut + (hasExtraViews ? "\u00A0\u00A0" : "\u00A0");
+		return prefix + viewName;
+	}
+
+	/**
+	 * Determines the direct-selection shortcut shown for the selector entry.
+	 *
+	 * @param view  the view represented by the selector entry
+	 * @param index zero-based selector index
+	 * @return shortcut text, or {@code null} when no direct shortcut is available
+	 */
+	private String getSelectorShortcut(AbstractView<?> view, int index) {
+		if (view == console)
+			return "C";
+		int shortcut = index + 1;
+		if (shortcut <= 9)
+			return Integer.toString(shortcut);
+		return null;
+	}
+
+	/**
+	 * Rebuilds the selector labels after the active view list has been refreshed.
+	 */
+	private void rebuildSelectorItems() {
+		selector.clear();
+		boolean hasExtraViews = activeViews.size() > 9;
+		int index = 0;
+		for (AbstractView<?> view : activeViews.values()) {
+			String label = formatSelectorLabel(view.getName(), getSelectorShortcut(view, index), hasExtraViews);
+			selector.addItem(label, view.getName());
+			index++;
+		}
 	}
 
 	/**
@@ -515,7 +562,6 @@ public class ViewController {
 		if (oldViews.containsKey(name))
 			view = oldViews.remove(name);
 		activeViews.put(view.getName(), view);
-		selector.addItem(view.getName());
 		if (view == console) {
 			if (deck.getWidgetIndex(view) < 0)
 				deck.add(view);

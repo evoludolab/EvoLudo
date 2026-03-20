@@ -450,6 +450,8 @@ public class KeyHandler {
 	 * <dt>{@code E}</dt>
 	 * <dd>Export the current state of the model (as a modified {@code plist}).
 	 * Ignored if model is running and in ePubs.</dd>
+	 * <dt>{@code c}</dt>
+	 * <dd>Toggle the console view.</dd>
 	 * <dt>{@code H}</dt>
 	 * <dd>Show the help screen with brief descriptions of all parameters in the
 	 * console view.</dd>

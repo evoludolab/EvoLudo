@@ -156,7 +156,7 @@ removed. -->
 					<g:Label ui:field='evoludoTime' styleName='{style.header_half}'
 						title="Number of generations elapsed">time: -</g:Label>
 					<g:ListBox ui:field='evoludoViews' visibleItemCount='1'
-						title="Select view (↑/↓ to cycle, 1-9 for direct selection, C for console)"
+						title="Select view [↑/↓ prev/next, 1-9 direct selection, C console]"
 						styleName='{style.header_half}'/>
 				</g:FlowPanel>
 
@@ -173,15 +173,15 @@ removed. -->
 					<!-- control buttons -->
 					<g:FlowPanel styleName='{style.controls}'>
 						<g:Button ui:field='evoludoSettings'
-							title="Change simulation parameters (0)"
+							title="Change simulation parameters [0]"
 							addStyleNames='{style.control_button}'>Settings</g:Button>
 						<g:Button ui:field='evoludoInitReset'
-							title="Initialize population (press ⎇ to re-initialize structure)"
+							title="Initialize population [Esc; ⎇ Esc to re-initialize structure]"
 							addStyleNames='{style.control_button}'>Init</g:Button>
 						<g:Button ui:field='evoludoStartStop'
-							title="Start/stop simulations (↵)" addStyleNames='{style.control_button}'>Start</g:Button>
+							title="Start/stop simulations [↵]" addStyleNames='{style.control_button}'>Start</g:Button>
 						<g:Button ui:field='evoludoStep'
-							title="Advance single simulation step (→ or N)"
+							title="Advance single simulation step [→ or N]"
 							addStyleNames='{style.control_button}'>Step</g:Button>
 					</g:FlowPanel>
 
@@ -194,17 +194,17 @@ removed. -->
 				 			visibleLines='5'
 				 			styleName='evoludo-CLO {style.threequarter} {style.clotext}'></g:TextArea> -->
 						<g:Label ui:field='evoludoCLO'
-							title="Specify simulation parameters (⇧↵ to apply)"
+							title="Specify simulation parameters [⇧↵ to apply]"
 							styleName='{style.parameter_options}'></g:Label>
 						<g:FlowPanel styleName='{style.parameter_controls}'>
 							<g:Button ui:field='evoludoApply'
-								title="Apply parameters (⇧↵)"
+								title="Apply parameters [⇧↵]"
 								addStyleNames='{style.parameter_button}'>Apply</g:Button>
 							<g:Button ui:field='evoludoDefault'
 								title="Restore default parameters"
 								addStyleNames='{style.parameter_button}'>Default</g:Button>
 							<g:Button ui:field='evoludoHelp'
-								title="Help on parameter settings (⇧H)"
+								title="Help on parameter settings [⇧H]"
 								addStyleNames='{style.parameter_button}'>Help</g:Button>
 						</g:FlowPanel>
 					</g:FlowPanel>
