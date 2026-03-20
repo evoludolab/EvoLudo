@@ -2388,9 +2388,8 @@ public abstract class AbstractGraph<B> extends FocusPanel
 		if (hasMessage || dz == 0.0)
 			return;
 		double zoom = Math.pow(Zooming.ZOOM_INCR, -dz);
+		zoomInertiaTimer.schedule(100);
 		zoomer.zoom(zoom, x, y);
-		if (!zoomInertiaTimer.isRunning())
-			zoomInertiaTimer.schedule(100);
 	}
 
 	/**

@@ -773,6 +773,8 @@ public class LineGraph extends AbstractGraph<double[]>
 	public void zoom(double zoom, double x, double y) {
 		if (zoom <= 0.0 || Math.abs(zoom - 1.0) < 1e-6)
 			return;
+		double oldXMin = style.xMin;
+		double oldXMax = style.xMax;
 		double xMax = style.xMax;
 		double xMin = xMax - (style.xMax - style.xMin) / zoom;
 		int nSteps = (int) ((xMax - xMin) / style.xIncr);
@@ -790,6 +792,10 @@ public class LineGraph extends AbstractGraph<double[]>
 				return;
 			style.xMin = style.xMax - style.xIncr;
 		}
+		if (Math.abs(style.xMin - oldXMin) < 1e-8 && Math.abs(style.xMax - oldXMax) < 1e-8)
+			return;
+		if (zoomInertiaTimer != null && zoomInertiaTimer.isRunning())
+			element.addClassName(zoom > 1.0 ? CURSOR_ZOOM_IN_CLASS : CURSOR_ZOOM_OUT_CLASS);
 		schedulePaint();
 	}
 
