@@ -112,7 +112,7 @@ public abstract class Network3D extends Network<Node3D> {
 	/**
 	 * The baseline size of the 3D universe.
 	 */
-	public static final double UNIVERSE_RADIUS = 120.0;
+	public static final double UNIVERSE_RADIUS = 150.0;
 
 	/**
 	 * The inverse size of the baseline 3D universe. Convenience constant.

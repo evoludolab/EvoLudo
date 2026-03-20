@@ -96,15 +96,10 @@ import thothbot.parallax.plugins.effects.Stereo;
 public class PopGraph3D extends GenericPopGraph<MeshLambertMaterial, Network3DGWT> implements Context3dErrorHandler {
 
 	/**
-	 * Baseline width of 3D links before camera zoom scaling is applied. This is
-	 * the primary view-level width setting for network links.
+	 * Width of 3D links in world coordinates. Keeping the value fixed preserves the
+	 * visual ratio between node diameters and link thickness while zooming.
 	 */
-	private static final double LINK_WIDTH = 0.5;
-
-	/**
-	 * Reference camera distance for perspective zoom scaling.
-	 */
-	private static final double REFERENCE_CAMERA_DISTANCE = 400.0;
+	private static final double LINK_WIDTH = 1.2;
 
 	/**
 	 * The panel for rendering the 3D graph.
@@ -430,41 +425,12 @@ public class PopGraph3D extends GenericPopGraph<MeshLambertMaterial, Network3DGW
 	}
 
 	/**
-	 * Synchronize the world-space link width with the current zoom level.
+	 * Synchronize the world-space link width with the renderer.
 	 */
 	private void updateLinkAppearance() {
 		if (linkRenderer == null)
 			return;
-		linkRenderer.setLineWidth(LINK_WIDTH * getLinkZoomFactor());
-	}
-
-	/**
-	 * Derive a zoom-dependent scale factor for thick links.
-	 *
-	 * @return the multiplier for the baseline link width
-	 */
-	private double getLinkZoomFactor() {
-		if (graph3DCamera == null)
-			return 1.0;
-		if (graph3DCamera instanceof OrthographicCamera)
-			return Math.max(0.05, graph3DCamera.getScale().getZ());
-		double distance = Math.max(1.0, getLinkCameraDistance());
-		return Math.max(0.1, REFERENCE_CAMERA_DISTANCE / distance);
-	}
-
-	/**
-	 * Determine the effective camera distance that controls perspective zoom.
-	 * Measure the distance to the current trackball target when available so link
-	 * widths respond to zoom rather than panning across the origin.
-	 *
-	 * @return the current camera-to-target distance
-	 */
-	private double getLinkCameraDistance() {
-		if (graph3DCamera == null)
-			return 1.0;
-		if (graph3DScene != null && graph3DScene.control != null && graph3DScene.control.getTarget() != null)
-			return graph3DCamera.getPosition().distanceTo(graph3DScene.control.getTarget());
-		return graph3DCamera.getPosition().length();
+		linkRenderer.setLineWidth(LINK_WIDTH);
 	}
 
 	/**

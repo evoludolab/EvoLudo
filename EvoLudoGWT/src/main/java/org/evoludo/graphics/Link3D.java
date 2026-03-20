@@ -141,6 +141,16 @@ public class Link3D extends Mesh {
 	private double lineWidth = MIN_LINK_WIDTH;
 
 	/**
+	 * Source line geometry used to rebuild thick-link prisms after width changes.
+	 */
+	private thothbot.parallax.core.shared.core.Geometry linkGeometry;
+
+	/**
+	 * Fallback color used when rebuilding links without explicit vertex colors.
+	 */
+	private Color linkFallbackColor = DEFAULT_COLOR;
+
+	/**
 	 * Create an empty 3D link mesh.
 	 */
 	public Link3D() {
@@ -171,40 +181,17 @@ public class Link3D extends Mesh {
 	 * @param fallbackColor the color to use when vertex colors are absent
 	 */
 	public void setLinks(thothbot.parallax.core.shared.core.Geometry lineGeometry, Color fallbackColor) {
-		if (lineGeometry == null) {
-			clear();
-			return;
-		}
-		List<Vector3> vertices = lineGeometry.getVertices();
-		if (vertices == null || vertices.size() < 2) {
-			clear();
-			return;
-		}
-		List<Color> colors = lineGeometry.getColors();
-		int nextLinkCount = vertices.size() / 2;
-		ensureGeometry(nextLinkCount);
-		linkCount = nextLinkCount;
-		int vertexOffset = 0;
-		for (int idx = 0; idx + 1 < vertices.size(); idx += 2) {
-			Vector3 start = vertices.get(idx);
-			Vector3 end = vertices.get(idx + 1);
-			Color startColor = getVertexColor(colors, idx, fallbackColor);
-			Color endColor = getVertexColor(colors, idx + 1, startColor);
-			if (!startColor.equals(endColor)) {
-				startColor = ColorMap3D.DIRECTED_SRC;
-				endColor = ColorMap3D.DIRECTED_DST;
-			}
-			writeLink(vertexOffset, start, end, startColor, endColor);
-			vertexOffset += VERTICES_PER_LINK;
-		}
-		markGeometryDirty();
-		setVisible(linkCount > 0);
+		linkGeometry = lineGeometry;
+		linkFallbackColor = fallbackColor;
+		rebuildLinks();
 	}
 
 	/**
 	 * Hide all links from this mesh while keeping the allocated buffers intact.
 	 */
 	public void clear() {
+		linkGeometry = null;
+		linkFallbackColor = DEFAULT_COLOR;
 		linkCount = 0;
 		setVisible(false);
 	}
@@ -215,7 +202,46 @@ public class Link3D extends Mesh {
 	 * @param lineWidth the desired link width
 	 */
 	public void setLineWidth(double lineWidth) {
-		this.lineWidth = Math.max(MIN_LINK_WIDTH, lineWidth);
+		double safeWidth = Math.max(MIN_LINK_WIDTH, lineWidth);
+		if (Math.abs(this.lineWidth - safeWidth) < 1.0e-12)
+			return;
+		this.lineWidth = safeWidth;
+		if (linkGeometry != null)
+			rebuildLinks();
+	}
+
+	/**
+	 * Rebuild the prism geometry from the cached source lines and current width.
+	 */
+	private void rebuildLinks() {
+		if (linkGeometry == null) {
+			clear();
+			return;
+		}
+		List<Vector3> vertices = linkGeometry.getVertices();
+		if (vertices == null || vertices.size() < 2) {
+			clear();
+			return;
+		}
+		List<Color> colors = linkGeometry.getColors();
+		int nextLinkCount = vertices.size() / 2;
+		ensureGeometry(nextLinkCount);
+		linkCount = nextLinkCount;
+		int vertexOffset = 0;
+		for (int idx = 0; idx + 1 < vertices.size(); idx += 2) {
+			Vector3 start = vertices.get(idx);
+			Vector3 end = vertices.get(idx + 1);
+			Color startColor = getVertexColor(colors, idx, linkFallbackColor);
+			Color endColor = getVertexColor(colors, idx + 1, startColor);
+			if (!startColor.equals(endColor)) {
+				startColor = ColorMap3D.DIRECTED_SRC;
+				endColor = ColorMap3D.DIRECTED_DST;
+			}
+			writeLink(vertexOffset, start, end, startColor, endColor);
+			vertexOffset += VERTICES_PER_LINK;
+		}
+		markGeometryDirty();
+		setVisible(linkCount > 0);
 	}
 
 	/**
