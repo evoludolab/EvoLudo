@@ -68,6 +68,16 @@ public class ContextMenuItem extends Label
 		implements HasEnabled, MouseOverHandler, MouseOutHandler, ClickHandler, ContextMenuHandler {
 
 	/**
+	 * Prefix indicating that the keyboard key requires the Shift modifier.
+	 */
+	private static final String KEY_SHIFT_PREFIX = "⇧";
+
+	/**
+	 * Prefix indicating that the keyboard key requires the Alt modifier.
+	 */
+	private static final String KEY_ALT_PREFIX = "⎇";
+
+	/**
 	 * Attribute used to expose keyboard keys to CSS.
 	 */
 	private static final String ATTR_KEY = "data-key";
@@ -115,6 +125,11 @@ public class ContextMenuItem extends Label
 	private String key;
 
 	/**
+	 * Normalized keyboard key used for comparisons during key handling.
+	 */
+	private String normalizedKey = "";
+
+	/**
 	 * Create a new context menu item with the title <code>name</code> and triggers
 	 * the command <code>cmd</code> when selected.
 	 * 
@@ -122,8 +137,22 @@ public class ContextMenuItem extends Label
 	 * @param cmd  command to execute when selected
 	 */
 	public ContextMenuItem(String name, Scheduler.ScheduledCommand cmd) {
+		this(name, cmd, null);
+	}
+
+	/**
+	 * Create a new context menu item with the title <code>name</code>, triggers
+	 * the command <code>cmd</code> when selected and displays the keyboard
+	 * <code>key</code>.
+	 * 
+	 * @param name title of context menu item
+	 * @param cmd  command to execute when selected
+	 * @param key  keyboard key label shown in the trailing column
+	 */
+	public ContextMenuItem(String name, Scheduler.ScheduledCommand cmd, String key) {
 		super(name, false);
 		this.cmd = cmd;
+		this.key = key;
 	}
 
 	/**
@@ -145,7 +174,7 @@ public class ContextMenuItem extends Label
 	protected void onLoad() {
 		super.onLoad();
 		setStyleName("gwt-ContextMenuItem");
-		applyKey();
+		setKey(key);
 		if (!isEnabled)
 			setStyleDependentName("disabled", true);
 		clickHandler = addClickHandler(this);
@@ -175,8 +204,8 @@ public class ContextMenuItem extends Label
 	/**
 	 * Entry method when context menu item is selected. Nothing happens if the
 	 * context menu item is disabled. If it controls a submenu then the submenu is
-	 * opened or closed, respectively. Finally, if a command is assigned then the
-	 * command is executed.
+	 * opened or closed, respectively. Otherwise, the assigned command is executed
+	 * and the surrounding menu hierarchy is closed.
 	 */
 	public void action() {
 		if (!isEnabled)
@@ -193,6 +222,8 @@ public class ContextMenuItem extends Label
 		}
 		if (cmd != null)
 			Scheduler.get().scheduleFinally(cmd);
+		if (!hasSubmenu())
+			((ContextMenu) getParent()).closeAll();
 	}
 
 	/**
@@ -225,26 +256,78 @@ public class ContextMenuItem extends Label
 
 	/**
 	 * Sets the keyboard key label shown on the right side of the menu item.
+	 * Menu items controlling submenus ignore keys.
 	 *
 	 * @param key the key label, or {@code null} to clear it
 	 */
 	public void setKey(String key) {
-		this.key = key;
-		applyKey();
-	}
-
-	/**
-	 * Applies the keyboard key attribute used by CSS to render the key column.
-	 */
-	private void applyKey() {
-		String normalizedKey = (key == null ? "" : key.trim());
-		if (normalizedKey.isEmpty()) {
+		this.key = (hasSubmenu() || key == null ? null : key.trim());
+		normalizedKey = normalizeKey(this.key, false, false);
+		if (this.key == null || this.key.isEmpty()) {
 			getElement().removeAttribute(ATTR_KEY);
 			removeStyleName("has-key");
 			return;
 		}
-		getElement().setAttribute(ATTR_KEY, normalizedKey);
+		getElement().setAttribute(ATTR_KEY, this.key);
 		addStyleName("has-key");
+	}
+
+	/**
+	 * Checks whether this menu item handles the supplied normalized key.
+	 *
+	 * @param normalizedKey the normalized key string to compare against
+	 * @return {@code true} if this item handles the key
+	 */
+	public boolean handlesKey(String normalizedKey) {
+		return isEnabled && !this.normalizedKey.isEmpty() && this.normalizedKey.equals(normalizedKey);
+	}
+
+	/**
+	 * Normalizes keyboard key labels and pressed browser keys to a common
+	 * comparison format.
+	 *
+	 * @param key       the displayed or pressed key
+	 * @param shiftDown {@code true} if Shift is currently pressed
+	 * @param altDown   {@code true} if Alt is currently pressed
+	 * @return normalized key representation
+	 */
+	static String normalizeKey(String key, boolean shiftDown, boolean altDown) {
+		if (key == null)
+			return "";
+		String normalizedKey = key.trim();
+		if (normalizedKey.isEmpty())
+			return "";
+		boolean requiresShift = shiftDown || normalizedKey.contains(KEY_SHIFT_PREFIX);
+		boolean requiresAlt = altDown || normalizedKey.contains(KEY_ALT_PREFIX);
+		normalizedKey = normalizedKey.replace(KEY_SHIFT_PREFIX, "");
+		normalizedKey = normalizedKey.replace(KEY_ALT_PREFIX, "");
+		switch (normalizedKey.trim()) {
+			case "Enter":
+				normalizedKey = "↵";
+				break;
+			case "ArrowUp":
+				normalizedKey = "↑";
+				break;
+			case "ArrowDown":
+				normalizedKey = "↓";
+				break;
+			case "ArrowLeft":
+				normalizedKey = "←";
+				break;
+			case "ArrowRight":
+				normalizedKey = "→";
+				break;
+			case "Escape":
+			case "Esc":
+				normalizedKey = "Esc";
+				break;
+			default:
+				normalizedKey = normalizedKey.trim();
+				if (normalizedKey.length() == 1)
+					normalizedKey = normalizedKey.toUpperCase();
+				break;
+		}
+		return (requiresShift ? KEY_SHIFT_PREFIX : "") + (requiresAlt ? KEY_ALT_PREFIX : "") + normalizedKey;
 	}
 
 	/**
@@ -339,8 +422,6 @@ public class ContextMenuItem extends Label
 	@Override
 	public void onClick(ClickEvent event) {
 		action();
-		if (!hasSubmenu())
-			((ContextMenu) getParent()).closeAll();
 		// needed to prevent page flips in ePubs
 		event.stopPropagation();
 		event.preventDefault();

@@ -37,6 +37,7 @@ import org.evoludo.EvoLudoWeb;
 import org.evoludo.simulator.EvoLudoGWT;
 import org.evoludo.simulator.EvoLudoTrigger;
 import org.evoludo.simulator.views.AbstractView;
+import org.evoludo.ui.ContextMenu;
 import org.evoludo.util.CLOParser;
 import org.evoludo.util.NativeJS;
 
@@ -390,6 +391,8 @@ public class KeyHandler {
 	 * <li>this EvoLudo model is not visible.
 	 * <li>the command line options field has the focus. With
 	 * the exception of {@code Shift-Enter} to apply the new settings to the model.
+	 * <li>when a context menu is open, visible menu items get priority before view
+	 * and global shortcuts.
 	 * <li>in an ePub, except when on a standalone page.
 	 * </ol>
 	 * <li>{@code keyup} events do not propagate further ({@code stopPropagation()}
@@ -470,6 +473,8 @@ public class KeyHandler {
 		if (gui.isEPub() && !gui.isEPubStandalone())
 			return false;
 		if (handleCLOActiveKeys(key))
+			return true;
+		if (ContextMenu.handleKey(key, isShiftDown, isAltDown))
 			return true;
 		AbstractView<?> activeView = gui.getActiveView();
 		if (activeView != null && activeView.onKeyUp(key))

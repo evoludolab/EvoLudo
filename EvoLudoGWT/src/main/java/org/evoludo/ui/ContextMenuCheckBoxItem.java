@@ -71,7 +71,7 @@ public class ContextMenuCheckBoxItem extends ContextMenuItem {
 	 * @param cmd  command to execute when clicked
 	 */
 	public ContextMenuCheckBoxItem(String text, ScheduledCommand cmd) {
-		this(text, false, cmd);
+		this(text, false, cmd, null);
 	}
 
 	/**
@@ -84,7 +84,34 @@ public class ContextMenuCheckBoxItem extends ContextMenuItem {
 	 * @param cmd       command to execute when clicked
 	 */
 	public ContextMenuCheckBoxItem(String text, boolean isChecked, ScheduledCommand cmd) {
-		super(text, cmd);
+		this(text, isChecked, cmd, null);
+	}
+
+	/**
+	 * Create new menu item with check box and the title <code>text</code>.
+	 * Initially the menu item is not checked. Clicking the menu item executes
+	 * <code>cmd</code> and shows <code>key</code> as the keyboard hint.
+	 * 
+	 * @param text title of menu item
+	 * @param cmd  command to execute when clicked
+	 * @param key  keyboard key label shown in the trailing column
+	 */
+	public ContextMenuCheckBoxItem(String text, ScheduledCommand cmd, String key) {
+		this(text, false, cmd, key);
+	}
+
+	/**
+	 * Create new menu item with check box and the title <code>text</code>.
+	 * Initially the menu item is not checked. Clicking the menu item executes
+	 * <code>cmd</code> and shows <code>key</code> as the keyboard hint.
+	 * 
+	 * @param text      title of menu item
+	 * @param isChecked {@code true} for checked menu item
+	 * @param cmd       command to execute when clicked
+	 * @param key       keyboard key label shown in the trailing column
+	 */
+	public ContextMenuCheckBoxItem(String text, boolean isChecked, ScheduledCommand cmd, String key) {
+		super(text, cmd, key);
 		this.isChecked = isChecked;
 	}
 
