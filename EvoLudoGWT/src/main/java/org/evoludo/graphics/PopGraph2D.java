@@ -1092,6 +1092,19 @@ public class PopGraph2D extends GenericPopGraph<String, Network2D> implements Sh
 	protected boolean hitDragged = false;
 
 	/**
+	 * Check whether the current graph state supports dragging individual nodes.
+	 *
+	 * Only non-lattice network layouts with established node positions are
+	 * draggable. Static lattice layouts should fall back to the inherited shifter
+	 * instead.
+	 *
+	 * @return {@code true} if node dragging is available
+	 */
+	protected boolean supportsNodeDragging() {
+		return network != null && !hasStaticLayout() && network.isStatus(Status.HAS_LAYOUT);
+	}
+
+	/**
 	 * {@inheritDoc}
 	 * <p>
 	 * If a node has been hit by a left-click, remember the node's index and the
@@ -1110,7 +1123,7 @@ public class PopGraph2D extends GenericPopGraph<String, Network2D> implements Sh
 	public void onMouseDown(MouseDownEvent event) {
 		// super sets mouse coordinates and leftMouseButton when inside
 		super.onMouseDown(event);
-		if (!leftMouseButton) {
+		if (!leftMouseButton || !supportsNodeDragging()) {
 			hitNode = -1;
 			element.removeClassName(CURSOR_GRAB_NODE_CLASS);
 			return;
@@ -1166,7 +1179,7 @@ public class PopGraph2D extends GenericPopGraph<String, Network2D> implements Sh
 	 */
 	@Override
 	public void onMouseMove(MouseMoveEvent event) {
-		if (hitNode >= 0) {
+		if (supportsNodeDragging() && hitNode >= 0) {
 			event.preventDefault();
 			int x = event.getX();
 			int y = event.getY();
@@ -1226,7 +1239,7 @@ public class PopGraph2D extends GenericPopGraph<String, Network2D> implements Sh
 	@Override
 	public void onTouchMove(TouchMoveEvent event) {
 		JsArray<Touch> touches = event.getTouches();
-		if (touches.length() == 1 && hitNode >= 0) {
+		if (touches.length() == 1 && supportsNodeDragging() && hitNode >= 0) {
 			// shift node
 			Touch touch = touches.get(0);
 			int x = touch.getRelativeX(element);
