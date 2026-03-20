@@ -492,6 +492,18 @@ public class NetGames extends Discrete implements Payoffs,
 					+ ", max: " + Formatter.formatFix(performance[2], 3);
 		}
 
+		/**
+		 * {@inheritDoc}
+		 * <p>
+		 * Node states in network games are encoded in the current link structure
+		 * rather than in discrete trait arrays, so the generic node-editing shortcut
+		 * is disabled for this population.
+		 */
+		@Override
+		public boolean mouseHitNode(int hit, boolean alt) {
+			return false;
+		}
+
 		@Override
 		protected void checkLimitedTesting() {
 			// suppress warning about directed links - ok here.
