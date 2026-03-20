@@ -68,6 +68,11 @@ public class ContextMenuItem extends Label
 		implements HasEnabled, MouseOverHandler, MouseOutHandler, ClickHandler, ContextMenuHandler {
 
 	/**
+	 * Attribute used to expose keyboard keys to CSS.
+	 */
+	private static final String ATTR_KEY = "data-key";
+
+	/**
 	 * Command that gets executed when selecting this menu item and
 	 * <code>null</code> if this menu item controls a submenu.
 	 */
@@ -105,6 +110,11 @@ public class ContextMenuItem extends Label
 	private boolean isEnabled = true;
 
 	/**
+	 * Keyboard key text rendered in the trailing column of the menu item.
+	 */
+	private String key;
+
+	/**
 	 * Create a new context menu item with the title <code>name</code> and triggers
 	 * the command <code>cmd</code> when selected.
 	 * 
@@ -135,6 +145,7 @@ public class ContextMenuItem extends Label
 	protected void onLoad() {
 		super.onLoad();
 		setStyleName("gwt-ContextMenuItem");
+		applyKey();
 		if (!isEnabled)
 			setStyleDependentName("disabled", true);
 		clickHandler = addClickHandler(this);
@@ -210,6 +221,30 @@ public class ContextMenuItem extends Label
 		if (hasSubmenu() && childMenu.isAutoOpen())
 			openSubmenu();
 		return true;
+	}
+
+	/**
+	 * Sets the keyboard key label shown on the right side of the menu item.
+	 *
+	 * @param key the key label, or {@code null} to clear it
+	 */
+	public void setKey(String key) {
+		this.key = key;
+		applyKey();
+	}
+
+	/**
+	 * Applies the keyboard key attribute used by CSS to render the key column.
+	 */
+	private void applyKey() {
+		String normalizedKey = (key == null ? "" : key.trim());
+		if (normalizedKey.isEmpty()) {
+			getElement().removeAttribute(ATTR_KEY);
+			removeStyleName("has-key");
+			return;
+		}
+		getElement().setAttribute(ATTR_KEY, normalizedKey);
+		addStyleName("has-key");
 	}
 
 	/**
