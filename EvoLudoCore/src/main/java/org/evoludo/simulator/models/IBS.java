@@ -36,6 +36,7 @@ import org.evoludo.math.RNGDistribution;
 import org.evoludo.simulator.ColorMap;
 import org.evoludo.simulator.EvoLudo;
 import org.evoludo.simulator.geometries.AbstractGeometry;
+import org.evoludo.simulator.geometries.GeometryType;
 import org.evoludo.simulator.modules.Features.Payoffs;
 import org.evoludo.simulator.modules.Map2Fitness;
 import org.evoludo.simulator.modules.Module;
@@ -307,7 +308,12 @@ public abstract class IBS extends Model {
 	protected void resetState() {
 		super.resetState();
 		updates = 0.0;
-		time = (!(species.get(0) instanceof Payoffs) || positiveMinFitness()) ? 0.0 : Double.POSITIVE_INFINITY;
+		// time != Double.POSITIVE_INFINITY enables stochastic, rate based advancement
+		// of time either through total fitness of population or maximum rates of events
+		// occurring (birth, death, competition, synergy)
+		Module<?> module = species.get(0);
+		time = ((module.hasVacant() || (module instanceof Payoffs && positiveMinFitness())) ? 0.0
+				: Double.POSITIVE_INFINITY);
 	}
 
 	/**
