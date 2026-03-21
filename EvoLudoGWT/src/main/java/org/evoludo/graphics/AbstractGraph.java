@@ -578,10 +578,39 @@ public abstract class AbstractGraph<B> extends FocusPanel
 	protected GraphStyle style = new GraphStyle();
 
 	/**
+	 * Horizontal gap between y ticks and their labels.
+	 */
+	private static final double Y_TICK_LABEL_GAP = 4.0;
+
+	/**
+	 * Minimum horizontal gap between y tick labels and the y-axis label.
+	 */
+	private static final double Y_AXIS_LABEL_MIN_GAP = 8.0;
+
+	/**
+	 * Default horizontal gap reserved between y tick labels and the y-axis label.
+	 * This exceeds {@link #Y_AXIS_LABEL_MIN_GAP} so modest tick-label width changes
+	 * can be absorbed without moving the axis label.
+	 */
+	private static final double Y_AXIS_LABEL_RESERVED_GAP = 12.0;
+
+	/**
+	 * Approximate horizontal thickness reserved for the rotated y-axis label.
+	 */
+	private static final double Y_AXIS_LABEL_THICKNESS = 12.0;
+
+	/**
 	 * Optional override for the horizontal offset of the y-axis label. When this is
-	 * not set, the offset is derived from the current y-axis tick labels.
+	 * not set, the offset is derived from the cached y-axis tick-label width and
+	 * the configured label gap.
 	 */
 	protected double yAxisLabelTickSkip = Double.NaN;
+
+	/**
+	 * Cached width of the midpoint y tick label from the most recent bounds
+	 * calculation.
+	 */
+	private double cachedMidYTickLabelWidth = Double.NaN;
 
 	/**
 	 * The buffer to store historical data, if applicable.
@@ -1220,6 +1249,7 @@ public abstract class AbstractGraph<B> extends FocusPanel
 	 * @param height the height of the drawing area
 	 */
 	public void calcBounds(int width, int height) {
+		cachedMidYTickLabelWidth = Double.NaN;
 		bounds.set(style.minPadding, style.minPadding, width - 2.0 * style.minPadding, height - 2.0 * style.minPadding);
 		if (style.showFrame) {
 			double f = style.frameWidth;
@@ -1241,9 +1271,9 @@ public abstract class AbstractGraph<B> extends FocusPanel
 	private void adjustBoundsForLabels() {
 		if (style.showXLabel && style.xLabel != null)
 			bounds.adjust(0, 0, 0, -20); // 14px for font size plus some padding
-		// something does not add up but at least this improves results
 		if (style.showYLabel && style.yLabel != null)
-			adjustBoundsForYSide(12);
+			adjustBoundsForYSide(Y_AXIS_LABEL_THICKNESS
+					+ (style.showYTickLabels ? Y_AXIS_LABEL_RESERVED_GAP : Y_AXIS_LABEL_MIN_GAP));
 	}
 
 	/**
@@ -1271,8 +1301,9 @@ public abstract class AbstractGraph<B> extends FocusPanel
 			} else {
 				digits = computeYTickDigits(4);
 			}
-			adjustBoundsForYSide(measureMidYTickLabelWidth(digits));
-			adjustBoundsForYSide(6);
+			cachedMidYTickLabelWidth = measureMidYTickLabelWidth(digits);
+			adjustBoundsForYSide(cachedMidYTickLabelWidth);
+			adjustBoundsForYSide(Y_TICK_LABEL_GAP + 2.0);
 		}
 		g.setFont(font);
 	}
@@ -1519,10 +1550,10 @@ public abstract class AbstractGraph<B> extends FocusPanel
 		String[] numexp = tick.split("\\^");
 		double xpos;
 		if (style.showYAxisRight) {
-			xpos = w + 0.5 + (style.tickLength + 4);
+			xpos = w + 0.5 + (style.tickLength + Y_TICK_LABEL_GAP);
 		} else {
 			double labelWidth = measureYTickLabelWidth(numexp, style.percentY);
-			xpos = 0.5 - (style.tickLength + 4) - labelWidth;
+			xpos = 0.5 - (style.tickLength + Y_TICK_LABEL_GAP) - labelWidth;
 		}
 		double ypos = level + (n == 0 ? 9 : 4.5);
 		g.fillText(numexp[0], xpos, ypos);
@@ -1695,20 +1726,37 @@ public abstract class AbstractGraph<B> extends FocusPanel
 		double tickskip = getYAxisLabelTickSkip();
 		setFont(style.axesLabelFont);
 		String ylabel = style.yLabel + (style.logScaleY ? " (log)" : "");
-		double xpos = style.showYAxisRight ? w + tickskip + style.tickLength : -tickskip - style.tickLength + 8.0;
+		double xpos = style.showYAxisRight ? w + tickskip + style.tickLength + Y_TICK_LABEL_GAP
+				: -(tickskip + style.tickLength + Y_TICK_LABEL_GAP);
 		fillTextVertical(ylabel, xpos, (h + g.measureText(ylabel).getWidth()) / 2);
 	}
 
 	/**
 	 * Get the horizontal offset to use for the y-axis label.
 	 *
-	 * @return the y-axis label offset
+	 * @return the y-axis label offset, including reserved whitespace beyond the y
+	 *         tick labels
 	 */
 	protected double getYAxisLabelTickSkip() {
 		if (!Double.isNaN(yAxisLabelTickSkip))
 			return yAxisLabelTickSkip;
-		int digits = computeYTickDigits(4);
-		return measureMidYTickLabelWidth(digits) + 18.0;
+		if (style.showYTickLabels) {
+			double labelWidth = cachedMidYTickLabelWidth;
+			if (Double.isNaN(labelWidth)) {
+				int digits;
+				if (style.percentY) {
+					if (style.yMax <= 1.0)
+						digits = 1;
+					else
+						digits = 0;
+				} else {
+					digits = computeYTickDigits(4);
+				}
+				labelWidth = measureMidYTickLabelWidth(digits);
+			}
+			return labelWidth + Y_AXIS_LABEL_RESERVED_GAP;
+		}
+		return Y_AXIS_LABEL_MIN_GAP;
 	}
 
 	/**
