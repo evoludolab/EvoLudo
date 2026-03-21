@@ -795,8 +795,10 @@ public class HistoGraph extends AbstractGraph<double[]> implements BasicTooltipP
 			g.setStrokeStyle(mark.color == null ? markerColors[n++ % nMarkers] : mark.color);
 			if (mark.linestyle != null)
 				g.setLineDash(mark.linestyle);
-			strokeLine(x, 0.0, x, h);
-			strokeLine(x + barwidth, 0.0, x + barwidth, h);
+			if (bin > 0)
+				strokeLine(x, 0.0, x, h);
+			if (bin < nBins - 1)
+				strokeLine(x + barwidth, 0.0, x + barwidth, h);
 			g.setLineDash(style.solidLine);
 		}
 	}
