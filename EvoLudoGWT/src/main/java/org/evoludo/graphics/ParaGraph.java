@@ -374,6 +374,7 @@ public class ParaGraph extends AbstractGraph<double[]> implements Zooming, Shift
 		double plotX = 0.5 * (state.w - plotW);
 		double plotY = 0.5 * (state.h - plotH);
 		Rectangle2D boundsBase = new Rectangle2D(bounds);
+		double yAxisLabelTickSkipBase = getYAxisLabelTickSkip();
 		applyVisibleRanges(state);
 		if (clampX) {
 			style.xMin = domain.getX();
@@ -384,10 +385,12 @@ public class ParaGraph extends AbstractGraph<double[]> implements Zooming, Shift
 			style.yMax = domain.getY() + domain.getHeight();
 		}
 		bounds.set(0.0, 0.0, plotW, plotH);
+		yAxisLabelTickSkip = yAxisLabelTickSkipBase;
 		g.save();
 		g.translate(plotX, plotY);
 		drawFrame(xLevels, yLevels);
 		g.restore();
+		yAxisLabelTickSkip = Double.NaN;
 		bounds.set(boundsBase.getX(), boundsBase.getY(), boundsBase.getWidth(), boundsBase.getHeight());
 		style.xMin = baseXMin;
 		style.xMax = baseXMax;

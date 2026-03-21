@@ -578,6 +578,12 @@ public abstract class AbstractGraph<B> extends FocusPanel
 	protected GraphStyle style = new GraphStyle();
 
 	/**
+	 * Optional override for the horizontal offset of the y-axis label. When this is
+	 * not set, the offset is derived from the current y-axis tick labels.
+	 */
+	protected double yAxisLabelTickSkip = Double.NaN;
+
+	/**
 	 * The buffer to store historical data, if applicable.
 	 */
 	protected RingBuffer<B> buffer;
@@ -1686,12 +1692,23 @@ public abstract class AbstractGraph<B> extends FocusPanel
 		// y-axis label
 		if (!style.showYLabel || style.yLabel == null)
 			return;
-		int digits = computeYTickDigits(4);
-		double tickskip = measureMidYTickLabelWidth(digits) + 18.0;
+		double tickskip = getYAxisLabelTickSkip();
 		setFont(style.axesLabelFont);
 		String ylabel = style.yLabel + (style.logScaleY ? " (log)" : "");
 		double xpos = style.showYAxisRight ? w + tickskip + style.tickLength : -tickskip - style.tickLength + 8.0;
 		fillTextVertical(ylabel, xpos, (h + g.measureText(ylabel).getWidth()) / 2);
+	}
+
+	/**
+	 * Get the horizontal offset to use for the y-axis label.
+	 *
+	 * @return the y-axis label offset
+	 */
+	protected double getYAxisLabelTickSkip() {
+		if (!Double.isNaN(yAxisLabelTickSkip))
+			return yAxisLabelTickSkip;
+		int digits = computeYTickDigits(4);
+		return measureMidYTickLabelWidth(digits) + 18.0;
 	}
 
 	/**
