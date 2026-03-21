@@ -188,22 +188,6 @@ public abstract class Model implements CLOProvider {
 	public interface HasIBS {
 
 		/**
-		 * Provides opportunity for module to supply custom implementation of individual
-		 * based simulations, IBS.
-		 * <p>
-		 * <strong>Important:</strong> if the custom IBS implementation involves random
-		 * numbers, the shared random number generator must be used for reproducibility.
-		 * 
-		 * @return the custom implementation of the IBS or <code>null</code> to use the
-		 *         default
-		 * 
-		 * @see EvoLudo#getRNG()
-		 */
-		public default Model createIBS() {
-			return null;
-		}
-
-		/**
 		 * Modules that offer individual based simulation models with discrete traits
 		 * and pairwise interactions must implement this interface.
 		 */
@@ -682,13 +666,13 @@ public abstract class Model implements CLOProvider {
 			isRelaxing = true;
 			next(timeRelax - updt);
 			isRelaxing = false;
-				if (type == ModelType.IBS) {
-					// reset traits after relaxation in IBS models
-					for (Module<?> mod : species) {
-						IBSPopulation<?, ?> pop = mod.getIBSPopulation();
-						pop.resetTraits();
-					}
+			if (type == ModelType.IBS) {
+				// reset traits after relaxation in IBS models
+				for (Module<?> mod : species) {
+					IBSPopulation<?, ?> pop = mod.getIBSPopulation();
+					pop.resetTraits();
 				}
+			}
 		}
 		if (hasConverged()) {
 			// no point in reporting failed initializations for statistics
