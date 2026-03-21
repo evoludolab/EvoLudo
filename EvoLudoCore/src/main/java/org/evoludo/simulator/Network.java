@@ -185,6 +185,11 @@ public abstract class Network<N extends Node> extends AbstractList<N> implements
 	protected static final double HARD_CORE_STIFFNESS = 400.0;
 
 	/**
+	 * Golden-angle increment used by deterministic phyllotactic seed layouts.
+	 */
+	protected static final double GOLDEN_ANGLE = Math.PI * (3.0 - Math.sqrt(5.0));
+
+	/**
 	 * The array with all nodes of this network.
 	 */
 	protected N[] nodes = null;
@@ -354,6 +359,25 @@ public abstract class Network<N extends Node> extends AbstractList<N> implements
 	 * @see org.evoludo.graphics.Network3DGWT#doLayout(LayoutListener nll)
 	 */
 	public abstract void doLayout(LayoutListener nll);
+
+	/**
+	 * Compute the radius of a node from its total degree relative to the average
+	 * degree of the geometry. Positive deviations use {@code pnorm}, negative
+	 * deviations use {@code nnorm}.
+	 * 
+	 * @param nodeidx     the index of the node
+	 * @param avgTot      the average total degree of the geometry
+	 * @param pnorm       the scaling for nodes above the average degree
+	 * @param nnorm       the scaling for nodes below the average degree
+	 * @param unitradius  the baseline node radius
+	 * @return the radius assigned to the node
+	 */
+	protected double scaledNodeRadius(int nodeidx, double avgTot, double pnorm, double nnorm, double unitradius) {
+		int kin = geometry.kin[nodeidx];
+		int kout = geometry.kout[nodeidx];
+		double diff = kout + kin - avgTot;
+		return unitradius * (1.0 + diff * (diff > 0.0 ? pnorm : nnorm));
+	}
 
 	/**
 	 * Collect all unique undirected edges that can be rendered for the current

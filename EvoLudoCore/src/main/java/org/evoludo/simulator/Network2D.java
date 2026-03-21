@@ -47,6 +47,24 @@ import org.evoludo.simulator.geometries.GeometryType;
 public abstract class Network2D extends Network<Node2D> {
 
 	/**
+	 * Compression applied to the nominal nearest-neighbour spacing at the center of
+	 * the well-mixed Fibonacci seed. A plain area-uniform disk leaves the first few
+	 * nodes slightly too far from the center; compressing the initial radius
+	 * reduces
+	 * that whitespace and better matches the relaxed layout.
+	 */
+	private static final double FIBONACCI_INNER_RADIUS_SCALE = 0.6;
+
+	/**
+	 * Radial growth exponent of the deterministic well-mixed phyllotactic seed.
+	 * The value {@code 0.5} reproduces Vogel's area-uniform law, while larger
+	 * values move the layout towards an Archimedean-looking spiral with a denser
+	 * center. Convenient values to compare are {@code 0.5}, {@code 0.7},
+	 * {@code 0.8}, and {@code 1.0}.
+	 */
+	private static final double FIBONACCI_RADIAL_EXPONENT = 0.6;
+
+	/**
 	 * The links in this network.
 	 */
 	protected Path2D links = new Path2D();
@@ -80,23 +98,38 @@ public abstract class Network2D extends Network<Node2D> {
 				nodes[k] = new Node2D();
 		}
 		GeometryFeatures gFeats = geometry.getFeatures();
-		int kin = geometry.kin[0];
-		int kout = geometry.kout[0];
-		double diff = kout + kin - gFeats.avgTot;
-		double myr = unitradius * (1.0 + diff * (diff > 0.0 ? pnorm : nnorm));
-		nodes[0].set(0.0, 0.0, myr);
-		double scaledquake = 0.05 * radius;
-		double angle = 0.0;
-		double dangle = 2.0 * Math.PI / nNodes;
+		if (geometry.isType(GeometryType.WELLMIXED)) {
+			double layoutRadius = R - unitradius;
+			double targetSpacing = layoutRadius * Math.sqrt(2.0 * Math.PI / (Math.sqrt(3.0) * nNodes));
+			nodes[0].set(0.0, 0.0, unitradius);
+			if (nNodes == 1) {
+				return;
+			}
+			double spiralBaseRadius = Math.min(layoutRadius, targetSpacing * FIBONACCI_INNER_RADIUS_SCALE);
+			int outerCount = nNodes - 1;
+			double radialPower = 1.0 / FIBONACCI_RADIAL_EXPONENT;
+			double baseRadiusPower = Math.pow(spiralBaseRadius, radialPower);
+			double layoutRadiusPower = Math.pow(layoutRadius, radialPower);
+			for (int k = 1; k < nNodes; k++) {
+				Node2D node = nodes[k];
+				double fraction = (k - 0.5) / outerCount;
+				double spiralRadius = Math.pow(baseRadiusPower
+						+ (layoutRadiusPower - baseRadiusPower) * fraction, FIBONACCI_RADIAL_EXPONENT);
+				double angle = k * GOLDEN_ANGLE;
+				node.set(spiralRadius * Math.sin(angle), spiralRadius * Math.cos(angle), unitradius);
+			}
+			return;
+		}
+		nodes[0].set(0.0, 0.0, scaledNodeRadius(0, gFeats.avgTot, pnorm, nnorm, unitradius));
+		final double maxSeedRadius = 0.95;
 		for (int k = 1; k < nNodes; k++) {
-			kin = geometry.kin[k];
-			kout = geometry.kout[k];
 			Node2D node = nodes[k];
-			diff = kout + kin - gFeats.avgTot;
-			myr = unitradius * (1.0 + diff * (diff > 0.0 ? pnorm : nnorm));
-			double perturb = scaledquake * (rng.random01() - 0.5);
-			node.set(Math.sin(angle) + perturb, Math.cos(angle) + perturb, myr);
-			angle += dangle;
+			// Use a deterministic Vogel spiral to seed nodes close to a uniform disk
+			// while keeping low indices near the center.
+			double spiralRadius = maxSeedRadius * Math.sqrt((k - 0.5) / (nNodes - 0.5));
+			double angle = k * GOLDEN_ANGLE;
+			node.set(spiralRadius * Math.sin(angle), spiralRadius * Math.cos(angle),
+					scaledNodeRadius(k, gFeats.avgTot, pnorm, nnorm, unitradius));
 		}
 	}
 
@@ -283,8 +316,6 @@ public abstract class Network2D extends Network<Node2D> {
 		if (geometry.isType(GeometryType.DYNAMIC)) {
 			// on dynamic networks radius needs to be set as well
 			// the radius of the nodes is scaled by their degree
-			int kin;
-			int kout;
 			double unitradius = Math.pow(0.8 / nNodes, 0.25);
 			double pnorm = 0.0;
 			double nnorm = 0.0;
@@ -296,11 +327,7 @@ public abstract class Network2D extends Network<Node2D> {
 			}
 			for (int k = 0; k < nNodes; k++) {
 				Node2D node = nodes[k];
-				kin = geometry.kin[k];
-				kout = geometry.kout[k];
-				double diff = kout + kin - avgTot;
-				double myr = unitradius * (1.0 + diff * (diff > 0.0 ? pnorm : nnorm));
-				node.setR(myr);
+				node.setR(scaledNodeRadius(k, avgTot, pnorm, nnorm, unitradius));
 			}
 		}
 		// prepare graph for display:
