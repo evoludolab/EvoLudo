@@ -328,9 +328,13 @@ public class HierarchicalGeometry extends AbstractLattice {
 	 * size).
 	 */
 	private void parseHierarchy() {
+		String hierarchySpecs = (specs == null ? "" : specs);
 		CLOption clo = engine.getModule().cloGeometry;
-		subType = (GeometryType) clo.match(specs);
-		subType = (subType == null ? GeometryType.WELLMIXED : subType);
+		GeometryType matchedSubType = null;
+		if (!hierarchySpecs.isEmpty() && !Character.isDigit(hierarchySpecs.charAt(0))
+				&& !GeometryType.isFixedBoundaryToken(hierarchySpecs.charAt(0)))
+			matchedSubType = (GeometryType) clo.match(hierarchySpecs);
+		subType = (matchedSubType == null ? GeometryType.WELLMIXED : matchedSubType);
 		switch (subType) {
 			case SQUARE_NEUMANN:
 			case SQUARE_NEUMANN_2ND:
@@ -338,23 +342,24 @@ public class HierarchicalGeometry extends AbstractLattice {
 			case SQUARE:
 			case WELLMIXED:
 			case COMPLETE:
+				if (matchedSubType != null)
+					hierarchySpecs = CLOption.stripKey(subType, hierarchySpecs);
 				break;
 			default:
-				warn("invalid sub-geometry for hierarchical structure: " + subType
-						+ " - reset to well-mixed.");
+				warn("invalid sub-geometry for hierarchical structure: " + subType + " - reset to well-mixed.");
+				hierarchySpecs = CLOption.stripKey(subType, hierarchySpecs);
 				subType = GeometryType.WELLMIXED;
 		}
-		specs = CLOption.stripKey(subType, specs);
 		fixedBoundary = false;
-		if (!specs.isEmpty() && GeometryType.isFixedBoundaryToken(specs.charAt(0))) {
+		if (!hierarchySpecs.isEmpty() && GeometryType.isFixedBoundaryToken(hierarchySpecs.charAt(0))) {
 			fixedBoundary = true;
-			specs = specs.substring(1);
+			hierarchySpecs = hierarchySpecs.substring(1);
 		}
-		int weightIdx = specs.lastIndexOf('w');
-		String levels = specs;
+		int weightIdx = hierarchySpecs.lastIndexOf('w');
+		String levels = hierarchySpecs;
 		if (weightIdx >= 0) {
-			hierarchyWeight = CLOParser.parseDouble(specs.substring(weightIdx + 1));
-			levels = specs.substring(0, weightIdx);
+			hierarchyWeight = CLOParser.parseDouble(hierarchySpecs.substring(weightIdx + 1));
+			levels = hierarchySpecs.substring(0, weightIdx);
 		} else {
 			hierarchyWeight = 0.0;
 		}
