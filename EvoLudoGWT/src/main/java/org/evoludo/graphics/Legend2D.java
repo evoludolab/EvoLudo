@@ -315,30 +315,32 @@ public class Legend2D {
 		labelWidth = 0.0;
 		if (!hasLegend() || owner.g == null)
 			return;
+		double min = getGradientMin();
+		double max = getGradientMax();
 		String font = owner.g.getFont();
 		owner.setFont(owner.style.ticksLabelFont);
 		switch (specs.mode) {
 			case FITNESS_GRADIENT:
-				if (!Double.isFinite(specs.min) || !Double.isFinite(specs.max)) {
+				if (!Double.isFinite(min) || !Double.isFinite(max)) {
 					owner.g.setFont(font);
 					return;
 				}
-				labelWidth = Math.max(owner.g.measureText(formatGradientLegend(specs.max)).getWidth(),
-						owner.g.measureText(formatGradientLegend(specs.min)).getWidth());
+				labelWidth = Math.max(owner.g.measureText(formatGradientLegend(max)).getWidth(),
+						owner.g.measureText(formatGradientLegend(min)).getWidth());
 				for (double marker : specs.markers)
 					labelWidth = Math.max(labelWidth,
 							owner.g.measureText(Formatter.formatPretty(marker, 2)).getWidth());
 				break;
 			case DENSITY_GRADIENT:
-				if (!Double.isFinite(specs.min) || !Double.isFinite(specs.max)) {
+				if (!Double.isFinite(min) || !Double.isFinite(max)) {
 					owner.g.setFont(font);
 					return;
 				}
 				labelWidth = owner.g.measureText(Formatter.formatPercent(0.999, 1)).getWidth();
 				break;
 			case CONTINUOUS_TRAIT:
-				labelWidth = Math.max(owner.g.measureText(formatGradientLegend(specs.min)).getWidth(),
-						owner.g.measureText(formatGradientLegend(specs.max)).getWidth());
+				labelWidth = Math.max(owner.g.measureText(formatGradientLegend(min)).getWidth(),
+						owner.g.measureText(formatGradientLegend(max)).getWidth());
 				break;
 			case DISCRETE_TRAIT:
 				for (String label : specs.labels)
@@ -370,8 +372,8 @@ public class Legend2D {
 	/**
 	 * Position the legend within the available graph area.
 	 *
-	 * @param width the total graph width
-	 * @param height the total graph height
+	 * @param width       the total graph width
+	 * @param height      the total graph height
 	 * @param graphBounds the drawable graph bounds, adjusted as needed
 	 */
 	void setBounds(int width, int height, Rectangle2D graphBounds) {
@@ -381,7 +383,7 @@ public class Legend2D {
 		switch (owner.style.legendPos) {
 			case EAST:
 				double h = graphBounds.getHeight();
-				bounds.setOrigin(width - reserveWidth, graphBounds.getY() + h * 0.2);
+				bounds.setOrigin(width - reserveWidth + GAP * 0.5, graphBounds.getY() + h * 0.2);
 				bar.set(bounds.getX(), bounds.getY(), BAR_WIDTH, h * 0.6);
 				break;
 			case WEST:
@@ -471,27 +473,29 @@ public class Legend2D {
 	private void drawGradient() {
 		if (!(owner.getColorMap() instanceof ColorMap.Gradient1D))
 			return;
-		if (!Double.isFinite(specs.min) || !Double.isFinite(specs.max))
+		double min = getGradientMin();
+		double max = getGradientMax();
+		if (!Double.isFinite(min) || !Double.isFinite(max))
 			return;
 		double barWidth = bar.getWidth();
 		double barHeight = bar.getHeight();
 		if (barWidth <= 0.0 || barHeight <= 0.0)
 			return;
 		boolean vertical = owner.style.legendPos.isVertical();
-		double[] samples = getBins(specs.min, specs.max, vertical ? barHeight : barWidth,
+		double[] samples = getBins(min, max, vertical ? barHeight : barWidth,
 				specs.markers);
 		drawGradientBands(samples, (ColorMap.Gradient1D<String>) owner.getColorMap());
 		drawFrame();
 		owner.g.setFillStyle(owner.style.frameColor);
 		owner.setFont(owner.style.ticksLabelFont);
-		String minLabel = formatGradientLegend(specs.min);
-		String maxLabel = formatGradientLegend(specs.max);
+		String minLabel = formatGradientLegend(min);
+		String maxLabel = formatGradientLegend(max);
 		double barX = bar.getX();
 		double barY = bar.getY();
 		if (vertical) {
 			owner.g.fillText(maxLabel, getLabelX(maxLabel), barY + 4.5);
 			owner.g.fillText(minLabel, getLabelX(minLabel), barY + barHeight + 4.5);
-			drawMarkers(specs.markers, specs.min, specs.max);
+			drawMarkers(specs.markers, min, max);
 			return;
 		}
 		double labelY = getHorizontalLabelY(BAR_WIDTH + 12.5, -owner.style.minPadding);
@@ -611,7 +615,7 @@ public class Legend2D {
 	private String getGradientTooltipAt(int x, int y) {
 		if (!(owner.getColorMap() instanceof ColorMap.Gradient1D))
 			return null;
-		double value = getGradientAt(x, y, specs.min, specs.max);
+		double value = getGradientAt(x, y, getGradientMin(), getGradientMax());
 		if (!Double.isFinite(value))
 			return null;
 		String color = ((ColorMap.Gradient1D<String>) owner.getColorMap()).translate(value);
@@ -643,7 +647,7 @@ public class Legend2D {
 			case CONTINUOUS_TRAIT:
 				if (!(owner.getColorMap() instanceof ColorMap.Gradient1D))
 					return null;
-				double value = getGradientAt(x, y, specs.min, specs.max);
+				double value = getGradientAt(x, y, getGradientMin(), getGradientMax());
 				if (!Double.isFinite(value))
 					return null;
 				String color = ((ColorMap.Gradient1D<String>) owner.getColorMap()).translate(value);
@@ -694,6 +698,28 @@ public class Legend2D {
 		if (fraction >= 1.0)
 			idx = samples.length - 1;
 		return samples[idx];
+	}
+
+	/**
+	 * Resolve the minimum value represented by the current gradient legend.
+	 *
+	 * @return the minimum gradient value
+	 */
+	private double getGradientMin() {
+		if (owner.getColorMap() instanceof ColorMap.Gradient1D)
+			return ((ColorMap.Gradient1D<String>) owner.getColorMap()).getMin();
+		return specs.min;
+	}
+
+	/**
+	 * Resolve the maximum value represented by the current gradient legend.
+	 *
+	 * @return the maximum gradient value
+	 */
+	private double getGradientMax() {
+		if (owner.getColorMap() instanceof ColorMap.Gradient1D)
+			return ((ColorMap.Gradient1D<String>) owner.getColorMap()).getMax();
+		return specs.max;
 	}
 
 	/**

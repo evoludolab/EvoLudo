@@ -755,6 +755,24 @@ public abstract class ColorMap<T extends Object> {
 			map = max <= min ? 0.0 : nGradient / (max - min);
 		}
 
+		/**
+		 * Get the current minimum value covered by this gradient.
+		 *
+		 * @return the minimum value of the current gradient range
+		 */
+		public double getMin() {
+			return min;
+		}
+
+		/**
+		 * Get the current maximum value covered by this gradient.
+		 *
+		 * @return the maximum value of the current gradient range
+		 */
+		public double getMax() {
+			return map <= 0.0 ? min : min + nGradient / map;
+		}
+
 		@Override
 		public T translate(double data) {
 			return gradient[binOf(data)];
