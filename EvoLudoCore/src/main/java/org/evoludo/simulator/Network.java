@@ -41,6 +41,7 @@ import org.evoludo.simulator.geometries.AbstractGeometry;
 import org.evoludo.simulator.geometries.GeometryFeatures;
 import org.evoludo.simulator.geometries.GeometryType;
 import org.evoludo.simulator.geometries.HierarchicalGeometry;
+import org.evoludo.simulator.models.Model;
 
 /**
  * Abstract graphical representation for generic population geometries. A
@@ -499,6 +500,22 @@ public abstract class Network<N extends Node> extends AbstractList<N> implements
 			default:
 				break;
 		}
+	}
+
+	/**
+	 * Finalize the current layout synchronously. This helper is used when a layout
+	 * is already in its final configuration and therefore does not need any
+	 * relaxation sweeps before being presented.
+	 */
+	protected void completeLayout() {
+		finishLayout();
+		layoutProgress = 1.0;
+		setStatus(Status.HAS_LAYOUT);
+		isRunning = false;
+		Model model = engine.getModel();
+		if (model != null)
+			timestamp = model.getUpdates();
+		listener.layoutComplete();
 	}
 
 	/**

@@ -37,6 +37,7 @@ import org.evoludo.simulator.ColorMap3D;
 import org.evoludo.simulator.EvoLudo;
 import org.evoludo.simulator.Network3D;
 import org.evoludo.simulator.geometries.AbstractGeometry;
+import org.evoludo.simulator.geometries.GeometryType;
 
 import com.google.gwt.core.client.Duration;
 import com.google.gwt.core.client.Scheduler;
@@ -244,6 +245,10 @@ public class Network3DGWT extends Network3D {
 			return;
 		this.listener = ll;
 		doLayoutPrep();
+		if (stat == Status.NEEDS_LAYOUT && geometry.isType(GeometryType.WELLMIXED)) {
+			completeLayout();
+			return;
+		}
 		layout = new Duration();
 		prevLayout = Integer.MIN_VALUE;
 		Scheduler.get().scheduleFixedDelay(this::doLayoutStep, 5);
@@ -311,11 +316,7 @@ public class Network3DGWT extends Network3D {
 
 		int elapsed = layout.elapsedMillis();
 		if (adjust < accuracy || elapsed > layoutTimeout) { // layoutTimeout provides emergency exit
-			finishLayout();
-			setStatus(Status.HAS_LAYOUT);
-			isRunning = false;
-			timestamp = engine.getModel().getUpdates();
-			listener.layoutComplete();
+			completeLayout();
 			return false;
 		}
 		if (elapsed - prevLayout > MIN_DELAY_ANIMATE_MSEC) {
