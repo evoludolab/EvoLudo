@@ -31,6 +31,7 @@
 package org.evoludo.graphics;
 
 import java.awt.Color;
+import java.util.Arrays;
 import java.util.Iterator;
 
 import org.evoludo.geom.Point2D;
@@ -286,12 +287,25 @@ public class LineGraph extends AbstractGraph<double[]>
 	}
 
 	/**
-	 * Flag indicating that a new time series has been started and the next sample must be appended.
+	 * Flag indicating that the next sample starts a new time series because the
+	 * model was re-initialized.
 	 */
 	private boolean newTimeseries = false;
 
+	/**
+	 * The time value used to separate distinct time series in the history buffer.
+	 */
+	private static final double TIME_SERIES_BREAK = Double.NaN;
+
+	/**
+	 * Flag indicating that the next sample must be appended to anchor a new run
+	 * after a restart or a change in time direction.
+	 */
+	private boolean appendNextSample = false;
+
 	@Override
 	public void reset() {
+		appendNextSample = false;
 		newTimeseries = false;
 		if (style.autoscaleY) {
 			style.yMin = Double.MAX_VALUE;
@@ -303,6 +317,11 @@ public class LineGraph extends AbstractGraph<double[]>
 		if (buffer == null || buffer.getCapacity() < MIN_BUFFER_SIZE)
 			buffer = new RingBuffer<double[]>(Math.max((int) bounds.getWidth(), DEFAULT_BUFFER_SIZE));
 		setSteps(steps * (style.xMax - style.xMin) / (style.xMax - oldXMin));
+	}
+
+	@Override
+	public void init() {
+		newTimeseries = true;
 	}
 
 	/**
@@ -325,33 +344,55 @@ public class LineGraph extends AbstractGraph<double[]>
 	 * @evoludo.impl If the change relative to the latest buffered sample is
 	 *               negligible, only the latest sample's time entry is updated
 	 *               unless the new sample is needed to anchor the beginning of a
-	 *               flat segment. Samples with decreasing time are always appended
-	 *               to start a new time series. Otherwise the data array is
-	 *               directly
-	 *               added to the buffer. It is the caller's responsibility to
-	 *               ensure
-	 *               that the first entry represents time and the data remains
-	 *               unmodified.
+	 *               flat segment. Model initialization inserts a separator and
+	 *               starts a new buffered time series. Changes in the direction of
+	 *               time are always appended, and the following sample is retained
+	 *               once to anchor the new direction. Otherwise the data array is
+	 *               directly added to the buffer. It is the caller's
+	 *               responsibility to ensure that the first entry represents time
+	 *               and the data remains unmodified.
 	 * 
 	 * @param data the data to add
 	 */
 	public void addData(double[] data) {
+		if (newTimeseries) {
+			newTimeseries = false;
+			if (!buffer.isEmpty()) {
+				appendSeparator(data.length);
+				appendData(data);
+				appendNextSample = true;
+				return;
+			}
+		}
 		if (!buffer.isEmpty()) {
 			double[] last = buffer.last();
-			if (data[0] < last[0]) {
-				buffer.append(data);
-				newTimeseries = true;
-				updateAutoscale(data);
-				return;
-			}
-			if (newTimeseries) {
-				buffer.append(data);
-				newTimeseries = false;
-				updateAutoscale(data);
-				return;
-			}
-			if (Math.abs(data[0] - last[0]) < 1e-8) {
+			double dt = data[0] - last[0];
+			if (Math.abs(dt) < 1e-8) {
 				System.arraycopy(data, 0, last, 0, last.length);
+				return;
+			}
+			if (appendNextSample) {
+				appendData(data);
+				appendNextSample = false;
+				return;
+			}
+			int direction = dt > 0.0 ? 1 : -1;
+			int recentDirection = 0;
+			Iterator<double[]> iter = buffer.iterator();
+			if (iter.hasNext()) {
+				iter.next();
+				while (iter.hasNext()) {
+					double[] previous = iter.next();
+					if (!Double.isFinite(previous[0]))
+						break;
+					recentDirection = timeStepDirection(last[0], previous[0]);
+					if (recentDirection != 0)
+						break;
+				}
+			}
+			if (recentDirection != 0 && direction != recentDirection) {
+				appendData(data);
+				appendNextSample = true;
 				return;
 			}
 			if (updateTimeOnly(data, last)) {
@@ -360,9 +401,29 @@ public class LineGraph extends AbstractGraph<double[]>
 			}
 		}
 		// add new sample
+		appendData(data);
+	}
+
+	/**
+	 * Append a sample to the history and update autoscaling metadata.
+	 *
+	 * @param data the sample to append
+	 */
+	private void appendData(double[] data) {
 		buffer.append(data);
-		newTimeseries = false;
 		updateAutoscale(data);
+	}
+
+	/**
+	 * Append an in-buffer separator that marks the beginning of a new time series.
+	 *
+	 * @param length the length of the separator sample
+	 */
+	private void appendSeparator(int length) {
+		double[] separator = new double[length];
+		Arrays.fill(separator, Double.NaN);
+		separator[0] = TIME_SERIES_BREAK;
+		buffer.append(separator);
 	}
 
 	/**
@@ -409,10 +470,41 @@ public class LineGraph extends AbstractGraph<double[]>
 			return false;
 		double t = current[0];
 		double lastt = last[0];
-		// Preserve segment markers and non-monotonic inputs.
-		if (!Double.isFinite(t) || !Double.isFinite(lastt) || t < lastt)
+		// non-finite times serve as timeseries separators.
+		if (!Double.isFinite(t) || !Double.isFinite(lastt))
 			return false;
 		return !keepSample(buffer, current, last);
+	}
+
+	/**
+	 * Get the direction of a time step.
+	 *
+	 * @param newerTime the newer time value
+	 * @param olderTime the older time value
+	 * @return {@code +1} for forward time, {@code -1} for backward time, or
+	 *         {@code 0} if no finite direction can be inferred
+	 */
+	private int timeStepDirection(double newerTime, double olderTime) {
+		double dt = newerTime - olderTime;
+		if (!Double.isFinite(dt) || Math.abs(dt) < 1e-8)
+			return 0;
+		return dt > 0.0 ? 1 : -1;
+	}
+
+	/**
+	 * Return whether a step between buffered samples should contribute to the
+	 * displayed history.
+	 *
+	 * @param current the current newer sample
+	 * @param prev    the adjacent older sample
+	 * @return the displayed width of this history step, or {@code 0.0} if the step
+	 *         should be hidden
+	 */
+	private double historyStepWidth(double[] current, double[] prev) {
+		double dt = Math.abs(current[0] - prev[0]);
+		if (!Double.isFinite(dt) || dt == 0.0)
+			return 0.0;
+		return dt;
 	}
 
 	@Override
@@ -583,16 +675,19 @@ public class LineGraph extends AbstractGraph<double[]>
 			return;
 
 		double[] current = it.next();
+		if (!it.hasNext())
+			return;
+		double[] prev = it.next();
+		double[] older = it.hasNext() ? it.next() : null;
 		g.setLineWidth(style.lineWidth);
 		double xScale = width / (style.xMax - style.xMin);
 		double start = -style.xMax * xScale;
 
 		double end = start;
-		while (it.hasNext()) {
-			double[] prev = it.next();
-			if (current[0] > prev[0]) {
-				double delta = (prev[0] - current[0]) * xScale;
-				start += delta;
+		while (true) {
+			double span = historyStepWidth(current, prev);
+			if (span > 0.0) {
+				start -= span * xScale;
 				if (start < 0.0) {
 					drawSegmentClipped(start, end, prev, current, nLines, yinfo, width);
 					if (start <= -width)
@@ -600,7 +695,11 @@ public class LineGraph extends AbstractGraph<double[]>
 				}
 				end = start;
 			}
+			if (older == null)
+				break;
 			current = prev;
+			prev = older;
+			older = it.hasNext() ? it.next() : null;
 		}
 	}
 
@@ -646,8 +745,10 @@ public class LineGraph extends AbstractGraph<double[]>
 			double[] prev, double[] current, int nLines,
 			double[] yinfo, double width) {
 		double ymin = yinfo[0];
+		boolean reverse = current[0] < prev[0];
 		for (int n = 0; n < nLines; n++) {
 			setStrokeStyleAt(n);
+			g.setLineDash(reverse ? style.dottedLine : style.solidLine);
 			double pi;
 			double ci;
 			if (style.logScaleY) {
@@ -676,6 +777,7 @@ public class LineGraph extends AbstractGraph<double[]>
 				strokeLine(s, mapY(pi + m * (s - start), yinfo), e, mapY(ci - m * (end - e), yinfo));
 			}
 		}
+		g.setLineDash(style.solidLine);
 	}
 
 	/**
@@ -941,21 +1043,31 @@ public class LineGraph extends AbstractGraph<double[]>
 		if (!it.hasNext())
 			return new double[0];
 		double[] current = it.next();
-		while (it.hasNext()) {
-			double[] prev = it.next();
+		if (!it.hasNext())
+			return new double[0];
+		double[] prev = it.next();
+		double[] older = it.hasNext() ? it.next() : null;
+		while (true) {
 			double dt = current[0] - prev[0];
-			accum -= Math.max(0.0, dt);
-			if (accum <= mouset) {
-				double fx = 1.0 - (mouset - accum) / dt;
-				double[] inter = new double[current.length];
-				inter[0] = current[0] - fx * dt;
-				for (int n = 1; n < inter.length; n++) {
-					inter[n] = interpolate(current[n], prev[n], fx);
+			double span = historyStepWidth(current, prev);
+			if (span > 0.0) {
+				accum -= span;
+				if (accum <= mouset) {
+					double fx = 1.0 - (mouset - accum) / span;
+					double[] inter = new double[current.length];
+					inter[0] = current[0] - fx * dt;
+					for (int n = 1; n < inter.length; n++) {
+						inter[n] = interpolate(current[n], prev[n], fx);
+					}
+					return inter;
+					// return new InterpResult(current, prev, fx, time);
 				}
-				return inter;
-				// return new InterpResult(current, prev, fx, time);
 			}
+			if (older == null)
+				break;
 			current = prev;
+			prev = older;
+			older = it.hasNext() ? it.next() : null;
 		}
 		return new double[0];
 	}
@@ -1211,25 +1323,27 @@ public class LineGraph extends AbstractGraph<double[]>
 	private boolean updateXRangeFromBuffer() {
 		if (buffer == null || buffer.isEmpty())
 			return false;
-		double tMin = Double.NaN;
-		double tMax = Double.NaN;
-		Iterator<double[]> it = buffer.ordered();
-		while (it.hasNext()) {
-			double t = it.next()[0];
-			if (Double.isNaN(t)) {
-				tMin = Double.NaN;
-				continue;
-			}
-			if (!Double.isFinite(t))
-				continue;
-			if (Double.isNaN(tMin))
-				tMin = t;
-			tMax = t;
+		double span = 0.0;
+		Iterator<double[]> it = buffer.iterator();
+		if (!it.hasNext())
+			return false;
+		double[] current = it.next();
+		if (!it.hasNext())
+			return false;
+		double[] prev = it.next();
+		double[] older = it.hasNext() ? it.next() : null;
+		while (true) {
+			span += historyStepWidth(current, prev);
+			if (older == null)
+				break;
+			current = prev;
+			prev = older;
+			older = it.hasNext() ? it.next() : null;
 		}
-		if (!Double.isFinite(tMin) || !Double.isFinite(tMax) || tMin >= tMax)
+		if (!Double.isFinite(span) || span <= 0.0)
 			return false;
 		style.xMax = 0.0;
-		style.xMin = tMin - tMax;
+		style.xMin = -span;
 		return true;
 	}
 

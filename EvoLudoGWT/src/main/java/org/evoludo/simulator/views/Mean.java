@@ -364,6 +364,8 @@ public class Mean extends AbstractView<LineGraph> implements Shifter, Zoomer {
 	@Override
 	public void modelDidInit() {
 		super.modelDidInit();
+		for (LineGraph graph : graphs)
+			graph.init();
 		update(true);
 	}
 
