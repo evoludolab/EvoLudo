@@ -515,10 +515,10 @@ public class LineGraph extends AbstractGraph<double[]>
 	}
 
 	/**
-	 * Compute y-axis scale info: [ymin, yrange, yScale]
+	 * Compute y-axis scale info: [ymin, yScale, yInset]
 	 * 
 	 * @param h the height of the plotting area
-	 * @return an array containing [ymin, yScale]
+	 * @return an array containing [ymin, yScale, yInset]
 	 */
 	private double[] computeYScale(double h) {
 		double ymin;
@@ -530,8 +530,21 @@ public class LineGraph extends AbstractGraph<double[]>
 			ymin = style.yMin;
 			yrange = style.yMax - ymin;
 		}
-		double yScale = (yrange == 0.0) ? 1.0 : h / yrange;
-		return new double[] { ymin, yScale };
+		double yInset = Math.max(1.0, Math.max(style.markerSize, 0.5 * Math.max(style.frameWidth, style.lineWidth)));
+		double usableHeight = Math.max(0.0, h - 2.0 * yInset);
+		double yScale = (yrange == 0.0) ? 1.0 : usableHeight / yrange;
+		return new double[] { ymin, yScale, yInset };
+	}
+
+	/**
+	 * Map a normalized y-value into the inset plotting area.
+	 *
+	 * @param y     the y-value relative to the lower graph bound
+	 * @param yinfo the y-axis transform info
+	 * @return the mapped y-coordinate inside the plotting area
+	 */
+	private double mapY(double y, double[] yinfo) {
+		return yinfo[2] + y * yinfo[1];
 	}
 
 	/**
@@ -590,7 +603,7 @@ public class LineGraph extends AbstractGraph<double[]>
 				continue;
 			g.setFillStyle(colors[n]);
 			double y = (style.logScaleY ? Math.log10(current[n + 1]) : current[n + 1]) - yinfo[0];
-			fillCircle(start, y * yinfo[1], style.markerSize);
+			fillCircle(start, mapY(y, yinfo), style.markerSize);
 		}
 	}
 
@@ -610,7 +623,6 @@ public class LineGraph extends AbstractGraph<double[]>
 			double[] prev, double[] current, int nLines,
 			double[] yinfo, double width) {
 		double ymin = yinfo[0];
-		double yScale = yinfo[1];
 		for (int n = 0; n < nLines; n++) {
 			setStrokeStyleAt(n);
 			double pi;
@@ -630,7 +642,7 @@ public class LineGraph extends AbstractGraph<double[]>
 			}
 			// fully inside visible area
 			if (start >= -width && end <= 0.0) {
-				strokeLine(start, pi * yScale, end, ci * yScale);
+				strokeLine(start, mapY(pi, yinfo), end, mapY(ci, yinfo));
 			} else {
 				double s = Math.max(-width, start);
 				double e = Math.min(0, end);
@@ -638,7 +650,7 @@ public class LineGraph extends AbstractGraph<double[]>
 				double m = (denom == 0.0) ? 0.0 : (ci - pi) / denom;
 				if (style.logScaleY && m > 0.0)
 					m = Math.log10(m);
-				strokeLine(s, (pi + m * (s - start)) * yScale, e, (ci - m * (end - e)) * yScale);
+				strokeLine(s, mapY(pi + m * (s - start), yinfo), e, mapY(ci - m * (end - e), yinfo));
 			}
 		}
 	}
@@ -654,14 +666,13 @@ public class LineGraph extends AbstractGraph<double[]>
 		if (nLines <= 0 || markers.isEmpty())
 			return;
 		double ymin = yinfo[0];
-		double yScale = yinfo[1];
 		for (double[] mark : markers) {
 			g.setLineDash(mark[0] > 0.0 ? style.dashedLine : style.dottedLine);
 			for (int n = 0; n < nLines; n++) {
 				double mn1 = mark[n + 1];
 				if (style.logScaleY && mn1 <= 0.0)
 					continue;
-				double myn = ((style.logScaleY ? Math.log10(mn1) : mn1) - ymin) * yScale;
+				double myn = mapY((style.logScaleY ? Math.log10(mn1) : mn1) - ymin, yinfo);
 				g.setStrokeStyle(markerColors[n % markerColors.length]);
 				strokeLine(-width, myn, 0.0, myn);
 			}
