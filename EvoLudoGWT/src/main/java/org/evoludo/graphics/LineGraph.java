@@ -285,8 +285,14 @@ public class LineGraph extends AbstractGraph<double[]>
 		return nLines;
 	}
 
+	/**
+	 * Flag indicating that a new time series has been started and the next sample must be appended.
+	 */
+	private boolean newTimeseries = false;
+
 	@Override
 	public void reset() {
+		newTimeseries = false;
 		if (style.autoscaleY) {
 			style.yMin = Double.MAX_VALUE;
 			style.yMax = -Double.MAX_VALUE;
@@ -319,15 +325,31 @@ public class LineGraph extends AbstractGraph<double[]>
 	 * @evoludo.impl If the change relative to the latest buffered sample is
 	 *               negligible, only the latest sample's time entry is updated
 	 *               unless the new sample is needed to anchor the beginning of a
-	 *               flat segment. Otherwise the data array is directly added to the
-	 *               buffer. It is the caller's responsibility to ensure that the
-	 *               first entry represents time and the data remains unmodified.
+	 *               flat segment. Samples with decreasing time are always appended
+	 *               to start a new time series. Otherwise the data array is
+	 *               directly
+	 *               added to the buffer. It is the caller's responsibility to
+	 *               ensure
+	 *               that the first entry represents time and the data remains
+	 *               unmodified.
 	 * 
 	 * @param data the data to add
 	 */
 	public void addData(double[] data) {
 		if (!buffer.isEmpty()) {
 			double[] last = buffer.last();
+			if (data[0] < last[0]) {
+				buffer.append(data);
+				newTimeseries = true;
+				updateAutoscale(data);
+				return;
+			}
+			if (newTimeseries) {
+				buffer.append(data);
+				newTimeseries = false;
+				updateAutoscale(data);
+				return;
+			}
 			if (Math.abs(data[0] - last[0]) < 1e-8) {
 				System.arraycopy(data, 0, last, 0, last.length);
 				return;
@@ -339,6 +361,7 @@ public class LineGraph extends AbstractGraph<double[]>
 		}
 		// add new sample
 		buffer.append(data);
+		newTimeseries = false;
 		updateAutoscale(data);
 	}
 
