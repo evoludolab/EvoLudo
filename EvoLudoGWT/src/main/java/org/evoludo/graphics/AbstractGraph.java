@@ -985,7 +985,7 @@ public abstract class AbstractGraph<B> extends FocusPanel
 	 * @return {@code true} if sample should be kept
 	 */
 	protected boolean keepSample(RingBuffer<double[]> history, double[] current, double[] last) {
-		if (normalizedDistSq(current, last) > MIN_NORM_DIST_SQ)
+		if (normDeltaSq(current, last) > MIN_NORM_DIST_SQ)
 			return true;
 		if (history == null || history.getSize() < 2)
 			return false;
@@ -1001,27 +1001,66 @@ public abstract class AbstractGraph<B> extends FocusPanel
 	}
 
 	/**
-	 * Compute mean squared distance in normalized state space, excluding time.
+	 * Compute the normalized difference between two values.
+	 *
+	 * @param current the current value
+	 * @param last    the reference value
+	 * @return the normalized difference
+	 */
+	protected final double normDelta(double current, double last) {
+		double norm = Math.max(1.0, Math.max(Math.abs(current), Math.abs(last)));
+		return (current - last) / norm;
+	}
+
+	/**
+	 * Compute the maximum absolute normalized difference between two samples,
+	 * excluding time.
 	 *
 	 * @param current current sample including prepended time
-	 * @param last    last sample including prepended time
-	 * @return mean squared normalized distance
+	 * @param last    reference sample including prepended time
+	 * @return the maximum absolute normalized difference, or
+	 *         {@link Double#POSITIVE_INFINITY} if the samples are invalid or
+	 *         contain
+	 *         non-finite entries
 	 */
-	protected final double normalizedDistSq(double[] current, double[] last) {
+	protected final double maxDelta(double[] current, double[] last) {
 		if (current == null || last == null || current.length != last.length || current.length < 2)
 			return Double.POSITIVE_INFINITY;
-		int dim = current.length - 1;
+		double max = 0.0;
+		for (int n = 1; n < current.length; n++) {
+			double a = current[n];
+			double b = last[n];
+			if (!Double.isFinite(a) || !Double.isFinite(b))
+				return Double.POSITIVE_INFINITY;
+			max = Math.max(max, Math.abs(normDelta(a, b)));
+		}
+		return max;
+	}
+
+	/**
+	 * Compute the mean squared normalized difference between two samples,
+	 * excluding time.
+	 *
+	 * @param current current sample including prepended time
+	 * @param last    reference sample including prepended time
+	 * @return the mean squared normalized difference, or
+	 *         {@link Double#POSITIVE_INFINITY} if the samples are invalid or
+	 *         contain
+	 *         non-finite entries
+	 */
+	protected final double normDeltaSq(double[] current, double[] last) {
+		if (current == null || last == null || current.length != last.length || current.length < 2)
+			return Double.POSITIVE_INFINITY;
 		double dist2 = 0.0;
 		for (int n = 1; n < current.length; n++) {
 			double a = current[n];
 			double b = last[n];
 			if (!Double.isFinite(a) || !Double.isFinite(b))
 				return Double.POSITIVE_INFINITY;
-			double norm = Math.max(1.0, Math.max(Math.abs(a), Math.abs(b)));
-			double d = (a - b) / norm;
+			double d = normDelta(a, b);
 			dist2 += d * d;
 		}
-		return dist2 / dim;
+		return dist2 / (current.length - 1);
 	}
 
 	/**

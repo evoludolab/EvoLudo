@@ -317,10 +317,11 @@ public class LineGraph extends AbstractGraph<double[]>
 	 * Add data to the graph.
 	 * 
 	 * @evoludo.impl If the change relative to the latest buffered sample is
-	 *               negligible, only the latest sample's time entry is updated.
-	 *               Otherwise the data array is directly added to the buffer. It is
-	 *               the caller's responsibility to ensure that the first entry
-	 *               represents time and the data remains unmodified.
+	 *               negligible, only the latest sample's time entry is updated
+	 *               unless the new sample is needed to anchor the beginning of a
+	 *               flat segment. Otherwise the data array is directly added to the
+	 *               buffer. It is the caller's responsibility to ensure that the
+	 *               first entry represents time and the data remains unmodified.
 	 * 
 	 * @param data the data to add
 	 */
@@ -393,19 +394,25 @@ public class LineGraph extends AbstractGraph<double[]>
 
 	@Override
 	protected boolean keepSample(RingBuffer<double[]> buffer, double[] current, double[] last) {
-		if (current == null || last == null || current.length != last.length || current.length < 2)
+		double max = maxDelta(current, last);
+		if (!Double.isFinite(max))
 			return true;
-		double max = 0.0;
-		for (int n = 1; n < current.length; n++) {
-			double a = current[n];
-			double b = last[n];
-			if (!Double.isFinite(a) || !Double.isFinite(b))
-				return true;
-			double norm = Math.max(1.0, Math.max(Math.abs(a), Math.abs(b)));
-			double d = Math.abs(a - b) / norm;
-			max = Math.max(max, d);
-		}
-		return max > MIN_NORM_DELTA;
+		if (max > MIN_NORM_DELTA)
+			return true;
+		if (buffer == null)
+			return false;
+		if (buffer.getSize() == 1)
+			return true;
+		if (buffer.getSize() < 2)
+			return false;
+		Iterator<double[]> iter = buffer.iterator();
+		if (!iter.hasNext())
+			return false;
+		iter.next();
+		if (!iter.hasNext())
+			return false;
+		double[] prev = iter.next();
+		return maxDelta(last, prev) > MIN_NORM_DELTA;
 	}
 
 	@Override
