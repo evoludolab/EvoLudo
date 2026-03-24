@@ -59,6 +59,7 @@ import com.google.gwt.core.client.Scheduler.ScheduledCommand;
 import com.google.gwt.dom.client.Document;
 import com.google.gwt.dom.client.Element;
 import com.google.gwt.dom.client.NativeEvent;
+import com.google.gwt.dom.client.Style;
 import com.google.gwt.dom.client.Style.Unit;
 import com.google.gwt.dom.client.Touch;
 import com.google.gwt.event.dom.client.ContextMenuEvent;
@@ -84,6 +85,7 @@ import com.google.gwt.event.shared.HandlerRegistration;
 import com.google.gwt.user.client.Command;
 import com.google.gwt.user.client.Timer;
 import com.google.gwt.user.client.ui.FocusPanel;
+import com.google.gwt.user.client.ui.Label;
 import com.google.gwt.user.client.ui.LayoutPanel;
 import com.google.gwt.user.client.ui.RequiresResize;
 
@@ -254,10 +256,10 @@ import com.google.gwt.user.client.ui.RequiresResize;
  *
  * <h2>Messages</h2>
  * <p>
- * displayMessage(String) can be used to render a centered textual message on
- * the graph (e.g. "No Data" or "Paused"). When a message is displayed most
- * interaction handlers become inert and painting/updates are suppressed until
- * the message is cleared via clearMessage().
+ * displayMessage(String) can be used to show a centered textual message as an
+ * overlay on the graph (e.g. "No Data" or "Paused"). When a message is
+ * displayed most interaction handlers become inert and painting/updates are
+ * suppressed until the message is cleared via clearMessage().
  * </p>
  *
  * <h2>Utilities &amp; Helper classes</h2>
@@ -527,6 +529,11 @@ public abstract class AbstractGraph<B> extends FocusPanel
 	LayoutPanel wrapper;
 
 	/**
+	 * Overlay label used to display graph messages.
+	 */
+	protected Label msgLabel;
+
+	/**
 	 * Logger for keeping track of and reporting events and issues.
 	 */
 	protected Logger logger;
@@ -696,6 +703,12 @@ public abstract class AbstractGraph<B> extends FocusPanel
 		wrapper = new LayoutPanel();
 		add(wrapper);
 		element = getElement();
+		msgLabel = new Label();
+		msgLabel.setStyleName("evoludo-Message");
+		msgLabel.getElement().getStyle().setZIndex(2);
+		msgLabel.setVisible(false);
+		wrapper.add(msgLabel);
+		wrapper.setWidgetLeftRight(msgLabel, 0.0, Unit.PX, 0.0, Unit.PX);
 		// most graphs use canvas - allocate it here (this is unnecessary for e.g.
 		// PopGraph3D but since this is the only exception so far it will have to remove
 		// canvas again)
@@ -719,6 +732,9 @@ public abstract class AbstractGraph<B> extends FocusPanel
 
 	@Override
 	protected void onUnload() {
+		if (msgLabel != null)
+			msgLabel.removeFromParent();
+		msgLabel = null;
 		if (canvas != null)
 			canvas.removeFromParent();
 		canvas = null;
@@ -2138,11 +2154,17 @@ public abstract class AbstractGraph<B> extends FocusPanel
 	protected String message = null;
 
 	/**
+	 * Cached font size of the last displayed message.
+	 */
+	protected double msgFontSize = 12.0;
+
+	/**
+	 * Cached line height of the last displayed message.
+	 */
+	protected double msgLineHeight = 16.8;
+
+	/**
 	 * Display message {@code msg} on the graph (no HTML formatting).
-	 * 
-	 * <h3>Implementation note:</h3>
-	 * The message is centered and scaled such that it fills approximately two
-	 * thirds of the width of the graph.
 	 * 
 	 * @param msg the message to display
 	 * @return {@code true} if message displayed
@@ -2165,22 +2187,29 @@ public abstract class AbstractGraph<B> extends FocusPanel
 			return false;
 		}
 		message = msg;
-		g.save();
-		g.scale(scale, scale);
-		clearCanvas();
-		g.setFillStyle("#000");
-		g.setFont("12px sans-serif");
-		// center text in bounds
-		double w = bounds.getWidth();
-		// size font to fill approx 80% of linewidth (max. 20px)
-		int fontSize = 12;
-		if (autoscale)
-			fontSize = Math.min((int) (12.0 * 0.8 * w / g.measureText(msg).getWidth()), 20);
-		g.setFont(fontSize + "px sans-serif");
-		g.fillText(msg, (bounds.getX() + w - g.measureText(msg).getWidth()) * 0.5,
-				bounds.getY() + bounds.getHeight() * 0.5 - fontSize * 0.333);
-		g.restore();
 		hasMessage = true;
+		clearGraph();
+		if (g != null) {
+			g.save();
+			g.setFont("12px sans-serif");
+			if (autoscale) {
+				double textWidth = g.measureText(msg).getWidth();
+				double width = Math.max(1.0, getOffsetWidth());
+				int fontSize = Math.min((int) (12.0 * 0.666 * width / Math.max(1.0, textWidth)), 24);
+				msgFontSize = Math.max(fontSize, 12);
+				msgLineHeight = msgFontSize * 1.4;
+			}
+			g.restore();
+		}
+		msgLabel.setText(msg);
+		Style msgStyle = msgLabel.getElement().getStyle();
+		double height = Math.max(1.0, getOffsetHeight());
+		msgStyle.setFontSize(msgFontSize, Unit.PX);
+		msgStyle.setLineHeight(msgLineHeight, Unit.PX);
+		wrapper.setWidgetTopHeight(msgLabel, Math.max(0.0, (height - msgLineHeight) * 0.5), Unit.PX,
+				msgLineHeight, Unit.PX);
+		msgLabel.setVisible(true);
+		onMessageDisplayed();
 		return true;
 	}
 
@@ -2188,8 +2217,25 @@ public abstract class AbstractGraph<B> extends FocusPanel
 	 * Clear the message.
 	 */
 	public void clearMessage() {
+		if (!hasMessage)
+			return;
 		message = null;
 		hasMessage = false;
+		if (msgLabel != null)
+			msgLabel.setVisible(false);
+		onMessageCleared();
+	}
+
+	/**
+	 * Hook invoked after a message has been displayed.
+	 */
+	protected void onMessageDisplayed() {
+	}
+
+	/**
+	 * Hook invoked after a message has been cleared.
+	 */
+	protected void onMessageCleared() {
 	}
 
 	/**

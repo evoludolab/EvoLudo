@@ -148,7 +148,7 @@
 	pointer-events: none;
 }
 
-.evoludo-Label2D, .evoludo-Label3D, .evoludo-Message2D, .evoludo-Message3D {
+.evoludo-Label2D, .evoludo-Label3D, .evoludo-Message {
 	width: 100%;
 	font-family: Arial, sans-serif;
 	font-weight: bold;
@@ -178,21 +178,19 @@
 	left: 0;
 }
 
-.evoludo-Message2D, .evoludo-Message3D {
+.evoludo-Message {
 	text-align: center;
 	width: 100%;
-}
-
-.evoludo-Message2D {
 	z-index: 2;
 	font-size: large;
 }
 
 .evoludo-Message3D {
-	position: relative;
-	/* placing the message label sets top:0; override */
-	top: 47% !important;
-	z-index: 1;
+	color: #fff;
+}
+
+.evoludo-Message2D {
+	color: #000;
 }
 
 .evoludo-Params {

@@ -229,11 +229,6 @@ public abstract class GenericPopGraph<T, N extends Network<?>> extends AbstractG
 	protected Label label;
 
 	/**
-	 * Overlay label used to display transient graph messages.
-	 */
-	protected Label msgLabel;
-
-	/**
 	 * Timestamp when the current non-animated layout started.
 	 */
 	private double layoutStartedAt = Double.NaN;
@@ -255,18 +250,12 @@ public abstract class GenericPopGraph<T, N extends Network<?>> extends AbstractG
 		label.getElement().getStyle().setZIndex(1);
 		label.setVisible(false);
 		wrapper.add(label);
-		msgLabel = new Label("Gugus");
-		msgLabel.getElement().getStyle().setZIndex(2);
-		msgLabel.setVisible(false);
-		wrapper.add(msgLabel);
 		if (view instanceof TooltipProvider.Index)
 			setTooltipProvider((TooltipProvider.Index) view);
 	}
 
 	@Override
 	protected void onUnload() {
-		wrapper.remove(msgLabel);
-		msgLabel = null;
 		wrapper.remove(label);
 		label = null;
 		super.onUnload();

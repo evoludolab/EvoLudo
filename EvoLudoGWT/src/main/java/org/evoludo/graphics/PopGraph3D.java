@@ -48,8 +48,6 @@ import com.google.gwt.core.client.Duration;
 import com.google.gwt.core.client.JavaScriptObject;
 import com.google.gwt.dom.client.CanvasElement;
 import com.google.gwt.dom.client.NativeEvent;
-import com.google.gwt.dom.client.Style;
-import com.google.gwt.dom.client.Style.Unit;
 import com.google.gwt.event.dom.client.MouseDownEvent;
 import com.google.gwt.event.dom.client.MouseUpEvent;
 import com.google.gwt.event.dom.client.TouchEndEvent;
@@ -137,11 +135,6 @@ public class PopGraph3D extends GenericPopGraph<MeshLambertMaterial, Network3DGW
 	AmbientLight ambient;
 
 	/**
-	 * Cached font size of the last displayed message.
-	 */
-	private double msgFontSize = 12.0;
-
-	/**
 	 * Create a graph for graphically visualizing the structure of a network (or
 	 * population). Allocates the canvas and the label and retrieves the shared
 	 * tooltip and context menu.
@@ -187,7 +180,7 @@ public class PopGraph3D extends GenericPopGraph<MeshLambertMaterial, Network3DGW
 			graph3DScene = new Pop3DScene();
 		graph3DPanel.setAnimatedScene(graph3DScene);
 		label.setStyleName("evoludo-Label3D");
-		msgLabel.setStyleName("evoludo-Message3D");
+		msgLabel.addStyleName("evoludo-Message3D");
 		add(graph3DPanel);
 		element = graph3DPanel.getElement();
 	}
@@ -1058,39 +1051,23 @@ public class PopGraph3D extends GenericPopGraph<MeshLambertMaterial, Network3DGW
 	}
 
 	@Override
-	public boolean displayMessage(String msg) {
-		return displayMessage(msg, true);
+	public void clearGraph() {
+		if (graph3DScene == null || graph3DScene.getScene() == null)
+			return;
+		graph3DScene.getScene().getChildren().clear();
 	}
 
 	@Override
-	public boolean displayMessage(String msg, boolean autoscale) {
-		if (msg == null || msg.isEmpty()) {
-			clearMessage();
-			return false;
-		}
-		message = msg;
-		hasMessage = true;
-		g.save();
-		g.setFont("12px sans-serif");
-		msgLabel.setText(msg);
-		msgLabel.setVisible(true);
-		Style msgStyle = msgLabel.getElement().getStyle();
-		if (autoscale)
-			msgFontSize = 12.0 * 0.666 * getOffsetWidth() / g.measureText(msg).getWidth();
-		msgStyle.setFontSize(msgFontSize, Unit.PX);
-		g.restore();
-		spheres.clear();
-		return true;
+	protected void onMessageDisplayed() {
+		if (!hasRenderer() || graph3DScene == null || graph3DScene.getScene() == null || !ensureCamera())
+			return;
+		graph3DScene.stop();
+		graph3DScene.getRenderer().render(graph3DScene.getScene(), graph3DCamera);
 	}
 
 	@Override
-	public void clearMessage() {
-		if (hasMessage) {
-			message = null;
-			msgLabel.setVisible(false);
-			hasMessage = false;
-			if (graph3DScene != null)
-				graph3DScene.run();
-		}
+	protected void onMessageCleared() {
+		if (graph3DScene != null)
+			graph3DScene.run();
 	}
 }
