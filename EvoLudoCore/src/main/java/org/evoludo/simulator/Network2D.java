@@ -47,15 +47,6 @@ import org.evoludo.simulator.geometries.GeometryType;
 public abstract class Network2D extends Network<Node2D> {
 
 	/**
-	 * Compression applied to the nominal nearest-neighbour spacing at the center of
-	 * the well-mixed Fibonacci seed. A plain area-uniform disk leaves the first few
-	 * nodes slightly too far from the center; compressing the initial radius
-	 * reduces
-	 * that whitespace and better matches the relaxed layout.
-	 */
-	private static final double FIBONACCI_INNER_RADIUS_SCALE = 0.6;
-
-	/**
 	 * Radial growth exponent of the deterministic well-mixed phyllotactic seed.
 	 * The value {@code 0.5} reproduces Vogel's area-uniform law, while larger
 	 * values move the layout towards an Archimedean-looking spiral with a denser
@@ -105,7 +96,7 @@ public abstract class Network2D extends Network<Node2D> {
 			if (nNodes == 1) {
 				return;
 			}
-			double spiralBaseRadius = Math.min(layoutRadius, targetSpacing * FIBONACCI_INNER_RADIUS_SCALE);
+			double spiralBaseRadius = Math.min(layoutRadius, Math.max(targetSpacing, 2.0 * unitradius));
 			int outerCount = nNodes - 1;
 			double radialPower = 1.0 / FIBONACCI_RADIAL_EXPONENT;
 			double baseRadiusPower = Math.pow(spiralBaseRadius, radialPower);
@@ -316,7 +307,7 @@ public abstract class Network2D extends Network<Node2D> {
 		if (geometry.isType(GeometryType.DYNAMIC)) {
 			// on dynamic networks radius needs to be set as well
 			// the radius of the nodes is scaled by their degree
-			double unitradius = Math.pow(0.8 / nNodes, 0.25);
+			double unitradius = getUnitRadius();
 			double pnorm = 0.0;
 			double nnorm = 0.0;
 			GeometryFeatures gFeats = geometry.getFeatures();
@@ -382,7 +373,7 @@ public abstract class Network2D extends Network<Node2D> {
 		int[] sampled = toDraw < edgeCount ? sampleIndices(edgeCount, toDraw) : null;
 		Vector2D link = new Vector2D();
 		Vector2D tip = new Vector2D();
-		double arrowsize = Math.pow(0.8 / nNodes, 0.25);
+		double arrowsize = getUnitRadius();
 		for (int i = 0; i < toDraw; i++) {
 			int edgeidx = sampled == null ? i : sampled[i];
 			int a = edgeSources[edgeidx];

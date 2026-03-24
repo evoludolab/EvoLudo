@@ -191,6 +191,26 @@ public abstract class Network<N extends Node> extends AbstractList<N> implements
 	protected static final double GOLDEN_ANGLE = Math.PI * (3.0 - Math.sqrt(5.0));
 
 	/**
+	 * Reference population size for the baseline node radius law.
+	 */
+	private static final double UNIT_RADIUS_REFERENCE_SIZE = 1000.0;
+
+	/**
+	 * Baseline radius at {@link #UNIT_RADIUS_REFERENCE_SIZE}. This preserves the
+	 * former visual scale around medium-sized populations while allowing the size
+	 * law to become slightly steeper overall.
+	 */
+	private static final double UNIT_RADIUS_AT_REFERENCE = Math.pow(0.8 / UNIT_RADIUS_REFERENCE_SIZE, 0.25);
+
+	/**
+	 * Exponent of the baseline node radius law. The value is moderately steeper
+	 * than the former inverse-fourth-root scaling so small populations get
+	 * noticeably larger nodes and very large populations get a bit smaller still
+	 * while the reference size remains unchanged.
+	 */
+	private static final double UNIT_RADIUS_EXPONENT = 0.45;
+
+	/**
 	 * The array with all nodes of this network.
 	 */
 	protected N[] nodes = null;
@@ -381,6 +401,19 @@ public abstract class Network<N extends Node> extends AbstractList<N> implements
 	}
 
 	/**
+	 * Compute the baseline node radius used when initializing layouts. The default
+	 * is anchored at a medium population size and then scales slightly more
+	 * strongly than inverse-square-root with population size.
+	 * 
+	 * @return the baseline node radius
+	 */
+	protected double getUnitRadius() {
+		if (nNodes <= 0)
+			return 0.0;
+		return UNIT_RADIUS_AT_REFERENCE * Math.pow(UNIT_RADIUS_REFERENCE_SIZE / nNodes, UNIT_RADIUS_EXPONENT);
+	}
+
+	/**
 	 * Collect all unique undirected edges that can be rendered for the current
 	 * geometry.
 	 * 
@@ -469,7 +502,7 @@ public abstract class Network<N extends Node> extends AbstractList<N> implements
 		listener.layoutUpdate(0.0);
 		boolean needsLayout = status.equals(Status.NEEDS_LAYOUT);
 		setStatus(Status.LAYOUT_IN_PROGRESS);
-		double unitradius = Math.pow(0.8 / nNodes, 0.25);
+		double unitradius = getUnitRadius();
 		double pnorm = 0.0;
 		double nnorm = 0.0;
 		GeometryFeatures gFeats = geometry.getFeatures();
