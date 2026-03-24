@@ -89,13 +89,20 @@ removed. -->
 		flex-direction: column;
 	}
 	.parameter_options {
+		box-sizing: border-box;
 		border: 1px solid #ccc;
 		border-radius: 3px;
-		display: flex;
+		display: block;
 		flex: 3;
 		font-size: small;
+		height: 6.5em;
 		margin: 2px;
+		max-height: 6.5em;
+		overflow: auto;
+		overflow-wrap: anywhere;
 		padding: 4px;
+		white-space: pre-wrap;
+		width: 100%;
 	}
 	.deck {
 		clear: both;

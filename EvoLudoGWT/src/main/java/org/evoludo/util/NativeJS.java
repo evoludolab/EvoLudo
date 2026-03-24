@@ -133,6 +133,49 @@ public class NativeJS {
 	}-*/;
 
 	/**
+	 * JSNI method: install a paste handler on the editable {@code element} that
+	 * inserts plain text only. This strips any clipboard formatting before it
+	 * reaches the DOM.
+	 * 
+	 * @param element the editable element that should receive plain-text pastes
+	 */
+	public static final native void installPlainTextPasteHandler(Element element)
+	/*-{
+		if (!element || element.__evoludoPlainTextPasteInstalled)
+			return;
+		element.__evoludoPlainTextPasteInstalled = true;
+		element.addEventListener("paste", function(event) {
+			if (!event)
+				return;
+			var clipboard = event.clipboardData || $wnd.clipboardData;
+			if (!clipboard)
+				return;
+			event.preventDefault();
+			var text = clipboard.getData("text/plain");
+			if (text == null)
+				text = "";
+			text = text.replace(/\u00A0/g, " ");
+			if ($doc.queryCommandSupported && $doc.queryCommandSupported("insertText")) {
+				$doc.execCommand("insertText", false, text);
+				return;
+			}
+			var selection = $wnd.getSelection ? $wnd.getSelection() : null;
+			if (!selection || selection.rangeCount === 0) {
+				element.textContent = (element.textContent || "") + text;
+				return;
+			}
+			var range = selection.getRangeAt(0);
+			range.deleteContents();
+			var node = $doc.createTextNode(text);
+			range.insertNode(node);
+			range.setStartAfter(node);
+			range.collapse(true);
+			selection.removeAllRanges();
+			selection.addRange(range);
+		});
+	}-*/;
+
+	/**
 	 * JSNI method: Check if document has focus. This is important to avoid showing
 	 * tooltips when the browser window is not in focus.
 	 * 

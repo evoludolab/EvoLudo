@@ -519,6 +519,7 @@ public class EvoLudoWeb extends Composite
 		}
 		// set command line options
 		evoludoCLO.getElement().setAttribute("contenteditable", "true");
+		NativeJS.installPlainTextPasteHandler(evoludoCLO.getElement());
 		evoludoCLO.setText(clo != null ? clo : "");
 		evoludoCLO.addDomHandler(event -> keyController.onCLOFocusGained(), FocusEvent.getType());
 		evoludoCLO.addDomHandler(event -> keyController.onCLOFocusLost(), BlurEvent.getType());
