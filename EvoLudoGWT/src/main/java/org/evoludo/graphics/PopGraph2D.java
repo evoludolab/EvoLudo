@@ -289,16 +289,25 @@ public class PopGraph2D extends GenericPopGraph<String, Network2D> implements Sh
 
 	@Override
 	public void onResize() {
+		boolean wasBlocked = hasMessage();
 		super.onResize();
 		ensureData();
+		if (!wasBlocked || hasMessage || geometry == null)
+			return;
+		if (invalidated && !hasStaticLayout()) {
+			update(true);
+			return;
+		}
+		paint(true);
 	}
 
 	/**
 	 * Ensure that the data array is properly initialized based on the current
-	 * geometry.
+	 * geometry. Temporary display constraints do not discard the backing colour
+	 * data so the graph can immediately redraw when more space becomes available.
 	 */
 	protected void ensureData() {
-		if (noGraph || geometry == null) {
+		if (geometry == null) {
 			data = null;
 		} else {
 			int size = geometry.getSize();
@@ -538,10 +547,14 @@ public class PopGraph2D extends GenericPopGraph<String, Network2D> implements Sh
 			stroke(links);
 		}
 		String current = data[0];
+		if (current == null)
+			current = style.frameColor;
 		g.setFillStyle(current);
 		Node2D[] nodes = network.toArray();
 		for (int k = 0; k < nNodes; k++) {
 			String next = data[k];
+			if (next == null)
+				next = current;
 			// potential optimization of drawing
 			if (!next.equals(current)) {
 				g.setFillStyle(next);

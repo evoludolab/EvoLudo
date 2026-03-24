@@ -229,9 +229,8 @@ public abstract class GenericPop<T, N extends Network<?>, G extends GenericPopGr
 			boolean doUpdate = (isActive || graph.hasHistory());
 			if (!doUpdate)
 				continue;
-			// inactive history graphs still need data updates to keep their buffers in
-			// sync.
-			if (isActive && graph.hasMessage())
+			Object[] graphData = graph.getData();
+			if (graphData == null || graph.getColorMap() == null)
 				continue;
 			switch (type) {
 				case TRAIT:
