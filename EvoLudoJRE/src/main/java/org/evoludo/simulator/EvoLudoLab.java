@@ -129,12 +129,13 @@ public class EvoLudoLab extends JFrame
 		// instantiate engine
 		this.engine = engine;
 		logger = engine.getLogger();
+		logger.setLevel(Level.WARNING);
 		// allocate console early to catch all log messages
 		console = new MVConsole(this);
 		logger.addHandler(new Handler() {
 			@Override
-			public void publish(LogRecord record) {
-				console.log(record.getLevel(), record.getMessage());
+			public void publish(LogRecord log) {
+				console.log(log.getLevel(), log.getMessage());
 			}
 
 			@Override

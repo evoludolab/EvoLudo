@@ -87,7 +87,7 @@ public class simCDLPQ extends CDLPQ implements ChangeListener {
 
 	@Override
 	public void run() {
-		if (!model.getType().isIBS()) {
+		if (model == null || !model.isIBS()) {
 			System.err.print("ERROR: IBS model expected!");
 			return;
 		}

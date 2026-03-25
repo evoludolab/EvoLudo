@@ -32,6 +32,7 @@ package org.evoludo.simulator;
 
 import org.evoludo.EvoLudoWeb;
 import org.evoludo.ui.ContextMenu;
+import org.evoludo.ui.EventListener;
 import org.evoludo.ui.WindowGlobal;
 import org.evoludo.util.NativeJS;
 
@@ -131,12 +132,22 @@ public class EvoLudoTrigger extends PushButton {
 		private boolean justFocussed;
 
 		/**
+		 * Window focus listener used to suppress accidental close events.
+		 */
+		private final EventListener focusListener = e -> justFocussed = true;
+
+		/**
+		 * Window blur listener used to reset the focus guard.
+		 */
+		private final EventListener blurListener = e -> justFocussed = false;
+
+		/**
 		 * Create a new lightbox panel.
 		 */
 		public LightboxPanel() {
 			// track window focus
-			WindowGlobal.addEventListener("focus", e -> justFocussed = true);
-			WindowGlobal.addEventListener("blur", e -> justFocussed = false);
+			WindowGlobal.addEventListener("focus", focusListener);
+			WindowGlobal.addEventListener("blur", blurListener);
 
 			DOM.sinkEvents(getElement(), Event.ONKEYDOWN);
 			addBitlessDomHandler(event -> {
@@ -192,7 +203,11 @@ public class EvoLudoTrigger extends PushButton {
 		 * Close the overlay.
 		 */
 		public void close() {
+			WindowGlobal.removeEventListener("focus", focusListener);
+			WindowGlobal.removeEventListener("blur", blurListener);
 			popup.removeFromParent();
+			popup = null;
+			mouseOverLab = false;
 			RootPanel.get().getElement().getStyle().setProperty("overflow", "auto");
 		}
 	}

@@ -316,15 +316,37 @@ public class LineGraph extends AbstractGraph<double[]>
 	/**
 	 * Add data to the graph.
 	 * 
-	 * @evoludo.impl The data array is directly added to the buffer. It is the
-	 *               caller's responsibility to ensure that the first entry
+	 * @evoludo.impl If the change relative to the latest buffered sample is
+	 *               negligible, only the latest sample's time entry is updated.
+	 *               Otherwise the data array is directly added to the buffer. It is
+	 *               the caller's responsibility to ensure that the first entry
 	 *               represents time and the data remains unmodified.
 	 * 
 	 * @param data the data to add
 	 */
 	public void addData(double[] data) {
-		// always add data
+		if (!buffer.isEmpty()) {
+			double[] last = buffer.last();
+			if (Math.abs(data[0] - last[0]) < 1e-8) {
+				System.arraycopy(data, 0, last, 0, last.length);
+				return;
+			}
+			if (updateTimeOnly(data, last)) {
+				last[0] = data[0];
+				return;
+			}
+		}
+		// add new sample
 		buffer.append(data);
+		updateAutoscale(data);
+	}
+
+	/**
+	 * Update autoscaled {@code y}-range from a newly appended sample.
+	 * 
+	 * @param data the latest buffered sample (time prepended)
+	 */
+	private void updateAutoscale(double[] data) {
 		// time does not count for min/max
 		double t = data[0];
 		data[0] = style.yMin;
@@ -347,6 +369,43 @@ public class LineGraph extends AbstractGraph<double[]>
 				style.yMax = Math.max(style.yMax, Functions.roundUp(max));
 		}
 		data[0] = t;
+	}
+
+	/**
+	 * Return whether the latest buffered sample should only update its time entry.
+	 *
+	 * @param current candidate sample
+	 * @param last    latest buffered sample
+	 * @return {@code true} if only time should be updated
+	 */
+	private boolean updateTimeOnly(double[] current, double[] last) {
+		if (current == null || last == null)
+			return false;
+		if (current.length != last.length)
+			return false;
+		double t = current[0];
+		double lastt = last[0];
+		// Preserve segment markers and non-monotonic inputs.
+		if (!Double.isFinite(t) || !Double.isFinite(lastt) || t < lastt)
+			return false;
+		return !keepSample(buffer, current, last);
+	}
+
+	@Override
+	protected boolean keepSample(RingBuffer<double[]> buffer, double[] current, double[] last) {
+		if (current == null || last == null || current.length != last.length || current.length < 2)
+			return true;
+		double max = 0.0;
+		for (int n = 1; n < current.length; n++) {
+			double a = current[n];
+			double b = last[n];
+			if (!Double.isFinite(a) || !Double.isFinite(b))
+				return true;
+			double norm = Math.max(1.0, Math.max(Math.abs(a), Math.abs(b)));
+			double d = Math.abs(a - b) / norm;
+			max = Math.max(max, d);
+		}
+		return max > MIN_NORM_DELTA;
 	}
 
 	@Override
@@ -434,7 +493,7 @@ public class LineGraph extends AbstractGraph<double[]>
 		g.rect(style.markerSize, 0.0, -(w + 3.0), h);
 		g.clip();
 		drawLines(w, yinfo, nLines);
-		drawMarkers(w, yinfo[0], nLines);
+		drawMarkers(w, yinfo, nLines);
 		g.restore();
 
 		drawLatestMarkers(w, yinfo, nLines);
@@ -581,18 +640,23 @@ public class LineGraph extends AbstractGraph<double[]>
 	 * Draw horizontal marker lines (if any) using the same y transform.
 	 * 
 	 * @param width  the width of the plotting area
-	 * @param ymin   the minimum y-value
+	 * @param yinfo  the y-axis transform info
 	 * @param nLines the number of lines to draw
 	 */
-	private void drawMarkers(double width, double ymin, int nLines) {
-		if (markers == null || nLines <= 0)
+	private void drawMarkers(double width, double[] yinfo, int nLines) {
+		if (nLines <= 0 || markers.isEmpty())
 			return;
+		double ymin = yinfo[0];
+		double yScale = yinfo[1];
 		for (double[] mark : markers) {
 			g.setLineDash(mark[0] > 0.0 ? style.dashedLine : style.dottedLine);
 			for (int n = 0; n < nLines; n++) {
-				double mn = (style.logScaleY ? Math.log10(mark[n + 1]) : mark[n + 1]) - ymin;
+				double mn1 = mark[n + 1];
+				if (style.logScaleY && mn1 <= 0.0)
+					continue;
+				double myn = ((style.logScaleY ? Math.log10(mn1) : mn1) - ymin) * yScale;
 				g.setStrokeStyle(markerColors[n % markerColors.length]);
-				strokeLine(-width, mn, 0.0, mn);
+				strokeLine(-width, myn, 0.0, myn);
 			}
 			g.setLineDash(style.solidLine);
 		}
@@ -944,132 +1008,55 @@ public class LineGraph extends AbstractGraph<double[]>
 		return (1.0 - x) * left + x * right;
 	}
 
-	/**
-	 * The context menu item to clear the graph.
-	 */
-	private ContextMenuItem clearMenu;
-
-	/**
-	 * The context menu for axis-related options.
-	 */
-	private ContextMenu axesMenu;
-
-	/**
-	 * The context menu item to toggle autoscaling of the y-axis.
-	 */
-	private ContextMenuCheckBoxItem autoscaleYMenu;
-
-	/**
-	 * The context menu item to reset percent axes to full range.
-	 */
-	private ContextMenuItem fullYRangeMenu;
-
-	/**
-	 * The context menu item to show the full x-range of the buffer.
-	 */
-	private ContextMenuItem fullXRangeMenu;
-
-	/**
-	 * The context menu item to fit the y-axis to the visible data.
-	 */
-	private ContextMenuItem zoomFitMenu;
-
-	/**
-	 * The context menu item to toggle logarithmic y-axis scaling.
-	 */
-	private ContextMenuCheckBoxItem logYAxesMenu;
-
-	/**
-	 * The context menu item to toggle absolute x-axis tick labels.
-	 */
-	private ContextMenuCheckBoxItem absoluteTimeMenu;
-
-	/**
-	 * The context menu item to toggle the y-axis side.
-	 */
-	private ContextMenuCheckBoxItem rightYAxisMenu;
-
 	@Override
 	public void populateContextMenuAt(ContextMenu menu, int x, int y) {
-		// add menu to clear canvas
-		if (clearMenu == null) {
-			clearMenu = new ContextMenuItem("Clear", () -> {
-				clearHistory();
-				paint(true);
-			});
-		}
-		menu.addSeparator();
-		menu.add(clearMenu);
-		addBufferSizeMenu(menu);
-		addAxesMenu(menu);
+		addClearMenu(menu);
+		view.addAxesMenu(menu, this);
 		addZoomMenu(menu);
 		if (menu.getWidgetCount() > 0 && tooltip.isVisible())
 			tooltip.close();
 		view.populateContextMenu(menu);
-		zoomInMenu.setText("Zoom in x-axis (2x)");
-		zoomOutMenu.setText("Zoom out x-axis (0.5x)");
 	}
 
-	/**
-	 * Add the axes submenu with autoscale, full-range, log, and side controls.
-	 * 
-	 * @param menu the context menu to populate
-	 */
-	private void addAxesMenu(ContextMenu menu) {
-		if (axesMenu == null) {
-			axesMenu = new ContextMenu(menu);
-			autoscaleYMenu = new ContextMenuCheckBoxItem("Autoscale", () -> {
-				style.autoscaleY = !style.autoscaleY;
-				autoscaleYMenu.setChecked(style.autoscaleY);
-				if (style.autoscaleY)
-					updateYRangeFromBuffer(false, false);
+	@Override
+	public void populateLocalAxesMenu(ContextMenu axesMenu) {
+		ContextMenuCheckBoxItem autoscaleYMenu = new ContextMenuCheckBoxItem("Autoscale", () -> {
+			style.autoscaleY = !style.autoscaleY;
+			if (style.autoscaleY)
+				updateYRangeFromBuffer(false, false);
+			paint(true);
+		});
+		ContextMenuItem fullYRangeMenu = new ContextMenuItem("Full range", () -> {
+			style.autoscaleY = false;
+			if (style.percentY) {
+				style.yMin = 0.0;
+				style.yMax = 1.0;
+				clampLogRange();
+			}
+			paint(true);
+		});
+		ContextMenuItem fullXRangeMenu = new ContextMenuItem("Full range", () -> {
+			if (updateXRangeFromBuffer())
 				paint(true);
-			});
-			fullYRangeMenu = new ContextMenuItem("Full range", () -> {
-				if (style.autoscaleY) {
-					style.autoscaleY = false;
-					autoscaleYMenu.setChecked(false);
-				}
-				if (style.percentY) {
-					style.yMin = 0.0;
-					style.yMax = 1.0;
-					clampLogRange();
-				}
-				paint(true);
-			});
-			fullXRangeMenu = new ContextMenuItem("Full range", () -> {
-				if (updateXRangeFromBuffer())
-					paint(true);
-			});
-			logYAxesMenu = new ContextMenuCheckBoxItem("Logarithmic", () -> {
-				setLogY(!style.logScaleY);
-				logYAxesMenu.setChecked(style.logScaleY);
-				paint(true);
-			});
-			absoluteTimeMenu = new ContextMenuCheckBoxItem("Absolute " + style.xLabel, () -> {
-				style.offsetXTickLabels = !style.offsetXTickLabels;
-				if (style.offsetXTickLabels)
-					updateXTickOffset();
-				else
-					style.xTickOffset = 0.0;
-				absoluteTimeMenu.setChecked(style.offsetXTickLabels);
-				paint(true);
-			});
-			rightYAxisMenu = new ContextMenuCheckBoxItem("Right side", () -> {
-				style.showYAxisRight = !style.showYAxisRight;
-				rightYAxisMenu.setChecked(style.showYAxisRight);
-				onResize();
-				paint(true);
-			});
-		}
-		axesMenu.clear();
+		});
+		ContextMenuCheckBoxItem logYAxesMenu = new ContextMenuCheckBoxItem("Logarithmic", () -> {
+			setLogY(!style.logScaleY);
+			paint(true);
+		});
+		ContextMenuCheckBoxItem absoluteTimeMenu = new ContextMenuCheckBoxItem("Absolute " + style.xLabel, () -> {
+			style.offsetXTickLabels = !style.offsetXTickLabels;
+			if (style.offsetXTickLabels)
+				updateXTickOffset();
+			else
+				style.xTickOffset = 0.0;
+			paint(true);
+		});
 		String axisLabel = style.xLabel == null ? "time" : style.xLabel;
 		autoscaleYMenu.setChecked(style.autoscaleY);
 		logYAxesMenu.setChecked(style.logScaleY);
 		logYAxesMenu.setEnabled(style.yMin >= 0.0);
 		absoluteTimeMenu.setText("Absolute " + axisLabel);
 		absoluteTimeMenu.setChecked(style.offsetXTickLabels);
-		rightYAxisMenu.setChecked(style.showYAxisRight);
 		axesMenu.addHeader("X-axis");
 		axesMenu.add(fullXRangeMenu);
 		axesMenu.add(absoluteTimeMenu);
@@ -1078,35 +1065,30 @@ public class LineGraph extends AbstractGraph<double[]>
 		fullYRangeMenu.setEnabled(style.percentY);
 		axesMenu.add(fullYRangeMenu);
 		axesMenu.add(logYAxesMenu);
-		axesMenu.add(rightYAxisMenu);
-		menu.add("Axes", axesMenu);
 	}
 
 	@Override
 	protected void populateZoomMenu(ContextMenu menu) {
+		menu.add(new ContextMenuItem("Zoom to fit", () -> {
+			if (style.autoscaleY)
+				style.autoscaleY = false;
+			boolean addMargin = !style.percentY;
+			boolean updatedX = updateXRangeFromBuffer();
+			boolean updatedY = updateYRangeFromBuffer(true, addMargin);
+			if (updatedY && style.percentY) {
+				style.yMin = Math.max(0.0, style.yMin);
+				style.yMax = Math.min(1.0, style.yMax);
+				if (style.yMin > style.yMax) {
+					style.yMin = 0.0;
+					style.yMax = 1.0;
+				}
+				clampLogRange();
+			}
+			if (updatedX || updatedY)
+				paint(true);
+		}));
+		menu.addHeader("X-axis");
 		super.populateZoomMenu(menu);
-		if (zoomFitMenu == null) {
-			zoomFitMenu = new ContextMenuItem("Zoom to fit", () -> {
-				if (style.autoscaleY) {
-					style.autoscaleY = false;
-					autoscaleYMenu.setChecked(false);
-				}
-				boolean addMargin = !style.percentY;
-				if (updateYRangeFromBuffer(true, addMargin)) {
-					if (style.percentY) {
-						style.yMin = Math.max(0.0, style.yMin);
-						style.yMax = Math.min(1.0, style.yMax);
-						if (style.yMin > style.yMax) {
-							style.yMin = 0.0;
-							style.yMax = 1.0;
-						}
-						clampLogRange();
-					}
-					paint(true);
-				}
-			});
-		}
-		menu.add(zoomFitMenu);
 	}
 
 	/**
@@ -1197,7 +1179,7 @@ public class LineGraph extends AbstractGraph<double[]>
 				tMin = t;
 			tMax = t;
 		}
-		if (!Double.isFinite(tMin) || !Double.isFinite(tMax))
+		if (!Double.isFinite(tMin) || !Double.isFinite(tMax) || tMin >= tMax)
 			return false;
 		style.xMax = 0.0;
 		style.xMin = tMin - tMax;

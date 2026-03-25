@@ -266,8 +266,10 @@ public class IBSD extends IBS implements DModel {
 								initargs = CLOParser.parseVector(typeargs[1]);
 							// only uniform or kaleidoscope initializations do not require additional
 							// arguments
-							if (newtype == null || (initargs == null && !(newtype.equals(Init.Type.UNIFORM)
-									|| newtype.equals(Init.Type.KALEIDOSCOPE))))
+							if (newtype == null
+									|| ((initargs == null || initargs.length == 0)
+											&& !(newtype.equals(Init.Type.UNIFORM)
+													|| newtype.equals(Init.Type.KALEIDOSCOPE))))
 								return false;
 							init.type = newtype;
 							init.args = initargs;

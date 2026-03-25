@@ -32,6 +32,8 @@ package org.evoludo.simulator.geometries;
 
 import org.evoludo.math.RNGDistribution;
 import org.evoludo.simulator.EvoLudo;
+import org.evoludo.util.CLOParser;
+import org.evoludo.util.Formatter;
 
 /**
  * Scale-free network following the Barabási &amp; Albert preferential
@@ -52,11 +54,11 @@ public class BarabasiAlbertGeometry extends AbstractNetwork {
 	@Override
 	public boolean parse(String arg) {
 		if (arg == null || arg.isEmpty()) {
-			if (connectivity < 2)
-				connectivity = 2;
-			warn("requires connectivity argument - using " + (int) connectivity + ".");
+			if (connectivity < 2.0)
+				connectivity = 2.0;
+			warn("requires connectivity argument - using " + Formatter.format(connectivity, 3) + ".");
 		} else {
-			connectivity = Math.max(2, Integer.parseInt(arg));
+			connectivity = Math.max(2.0, CLOParser.parseDouble(arg));
 		}
 		return true;
 	}
@@ -73,20 +75,33 @@ public class BarabasiAlbertGeometry extends AbstractNetwork {
 			isValid = true;
 			return;
 		}
+		if (connectivity > size - 1.0) {
+			connectivity = size - 1.0;
+			warn("invalid connectivity - reduced to " + (size - 1));
+		}
 		isRewired = false;
 		isUndirected = true;
 		isRegular = false;
+		clear();
 
 		RNGDistribution rng = engine.getRNG();
+		// Each new node contributes m links. To realize odd target connectivities,
+		// sample m between floor(k/2) and ceil(k/2).
+		double k2 = Math.max(1.0, connectivity * 0.5);
+		int m = (int) k2;
+		double pExtra = k2 - m;
 
-		int myLinks = Math.max(1, Math.min((int) (connectivity / 2.0 + 0.5), size - 1));
-		int nStart = Math.max(myLinks, 2);
-		for (int i = 1; i < nStart; i++)
+		// Start from a seed clique with m+1 nodes (common BA convention).
+		int nCore = Math.max(m + 1, 2);
+		for (int i = 1; i < nCore; i++)
 			for (int j = 0; j < i; j++)
 				addEdgeAt(i, j);
 
-		int nLinks = nStart * (nStart - 1);
-		for (int n = nStart; n < size; n++) {
+		int nLinks = nCore * (nCore - 1);
+		for (int n = nCore; n < size; n++) {
+			int myLinks = m;
+			if (pExtra > 0.0 && rng.random01() < pExtra)
+				myLinks++;
 			for (int i = 0; i < myLinks; i++) {
 				int[] myNeigh = out[n];
 				int nl = 0;

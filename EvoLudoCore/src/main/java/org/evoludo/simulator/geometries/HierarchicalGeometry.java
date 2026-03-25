@@ -308,23 +308,18 @@ public class HierarchicalGeometry extends AbstractLattice {
 	}
 
 	@Override
-	public int hashCode() {
-		int result = super.hashCode();
-		result = 31 * result + (subType == null ? 0 : subType.hashCode());
-		result = 31 * result + Arrays.hashCode(hierarchy);
-		result = 31 * result + Double.hashCode(hierarchyWeight);
-		return result;
+	protected boolean equalParameters(AbstractGeometry other) {
+		HierarchicalGeometry hierarchyGeometry = (HierarchicalGeometry) other;
+		return subType == hierarchyGeometry.subType && Arrays.equals(hierarchy, hierarchyGeometry.hierarchy)
+				&& Double.compare(hierarchyWeight, hierarchyGeometry.hierarchyWeight) == 0;
 	}
 
 	@Override
-	public boolean equals(Object obj) {
-		if (this == obj)
-			return true;
-		if (!super.equals(obj))
-			return false;
-		HierarchicalGeometry other = (HierarchicalGeometry) obj;
-		return subType == other.subType && Arrays.equals(hierarchy, other.hierarchy)
-				&& Double.compare(hierarchyWeight, other.hierarchyWeight) == 0;
+	protected int hashParameters() {
+		int result = (subType == null ? 0 : subType.hashCode());
+		result = 31 * result + Arrays.hashCode(hierarchy);
+		result = 31 * result + Double.hashCode(hierarchyWeight);
+		return result;
 	}
 
 	/**

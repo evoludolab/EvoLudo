@@ -149,9 +149,9 @@ public class NativeJS {
 	 *
 	 * @return the pixel ratio of device
 	 */
-	public static final native int getDevicePixelRatio()
+	public static final native double getDevicePixelRatio()
 	/*-{
-		return $wnd.devicePixelRatio || 1;
+		return $wnd.devicePixelRatio || 1.0;
 	}-*/;
 
 	/**

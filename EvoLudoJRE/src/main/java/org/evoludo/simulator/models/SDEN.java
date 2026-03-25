@@ -30,6 +30,9 @@
 
 package org.evoludo.simulator.models;
 
+import java.util.logging.Logger;
+import java.util.logging.Level;
+
 import org.evoludo.math.ArrayMath;
 import org.evoludo.simulator.EvoLudo;
 import org.evoludo.simulator.modules.Module;
@@ -129,6 +132,17 @@ public class SDEN extends SDE {
 		super.unload();
 	}
 
+	@Override
+	protected boolean hasRequiredDependentTrait() {
+		if (((HasDE) module).getDependent() < 0 && module.getNTraits() >= 3) {
+			Logger logger = engine.getLogger();
+			if (logger.isLoggable(Level.WARNING))
+				logger.warning("SDEN without a dependent trait not yet implemented");
+			return false;
+		}
+		return true;
+	}
+
 	private void destroy() {
 		matB = null;
 		matU = matL = matC = matTmp = null;
@@ -171,11 +185,13 @@ public class SDEN extends SDE {
 		// super may change the model to ODE
 		if (engine.getModel() != this)
 			return doReset;
-		if (nDim > 3 && (mutation[0].type == Mutation.Discrete.Type.NONE || mutation[0].getProbability() <= 0.0)) {
+		if (nDim > 2 && (mutation[0].type == Mutation.Discrete.Type.NONE || mutation[0].getProbability() <= 0.0)) {
 			mutation[0].type = Mutation.Discrete.Type.OTHER;
 			mutation[0].setProbability(1.0 / module.getNPopulation());
-			engine.getLogger().warning("non-zero mutation rate required for n>3 traits, changed to "
-					+ Formatter.formatSci(mutation[0].getProbability(), 2) + ".");
+			Logger logger = engine.getLogger();
+			if (logger.isLoggable(Level.WARNING))
+				logger.warning("non-zero mutation rate required for n>2 traits, changed to "
+						+ Formatter.formatSci(mutation[0].getProbability(), 2) + ".");
 		}
 		return doReset;
 	}
@@ -189,7 +205,7 @@ public class SDEN extends SDE {
 	 */
 	@Override
 	protected double deStep(double step) {
-		if (nDim < 4)
+		if (nDim < 3)
 			return super.deStep(step);
 
 		double stepSize = Math.abs(step);

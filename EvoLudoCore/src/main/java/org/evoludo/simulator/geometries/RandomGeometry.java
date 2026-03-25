@@ -73,6 +73,7 @@ public class RandomGeometry extends AbstractGeometry {
 			isValid = true;
 			return;
 		}
+		clear();
 
 		RNGDistribution rng = engine.getRNG();
 

@@ -44,7 +44,6 @@ import org.evoludo.simulator.ColorMap;
 import org.evoludo.simulator.EvoLudo;
 import org.evoludo.simulator.geometries.AbstractGeometry;
 import org.evoludo.simulator.geometries.GeometryType;
-import org.evoludo.simulator.models.Advection;
 import org.evoludo.simulator.models.ChangeListener;
 import org.evoludo.simulator.models.IBS;
 import org.evoludo.simulator.models.IBSPopulation;
@@ -53,10 +52,8 @@ import org.evoludo.simulator.models.Model;
 import org.evoludo.simulator.models.Model.HasDE;
 import org.evoludo.simulator.models.Model.HasIBS;
 import org.evoludo.simulator.models.ModelType;
-import org.evoludo.simulator.models.RunListener;
-import org.evoludo.simulator.models.ODE;
 import org.evoludo.simulator.models.PDE;
-import org.evoludo.simulator.models.RungeKutta;
+import org.evoludo.simulator.models.RunListener;
 import org.evoludo.simulator.models.SDE;
 import org.evoludo.simulator.views.HasPhase2D;
 import org.evoludo.simulator.views.HasPhase2D.Data2Phase;
@@ -229,36 +226,7 @@ public abstract class Module<T extends Module<T>>
 			return model;
 		if (!getModelTypes().contains(type))
 			return null;
-		// return default model for type
-		switch (type) {
-			case IBS:
-				// let subclasses handle IBS
-				return null;
-			case SDE:
-				if (!(this instanceof HasDE.SDE))
-					return null;
-				return new SDE(engine);
-			case ODE: // defaults to RK5
-			case RK5:
-				if (!(this instanceof HasDE.ODE))
-					return null;
-				return new RungeKutta(engine);
-			case EM:
-				if (!(this instanceof HasDE.ODE))
-					return null;
-				return new ODE(engine);
-			case PDEADV:
-				if (!(this instanceof HasDE.PDEADV))
-					return null;
-				return new Advection(engine);
-			case PDE: // defaults to PDERD
-			case PDERD:
-				if (!(this instanceof HasDE.PDERD))
-					return null;
-				return new PDE(engine);
-			default:
-				return null;
-		}
+		return engine.createModel(type);
 	}
 
 	/**
@@ -516,7 +484,7 @@ public abstract class Module<T extends Module<T>>
 			if (newModel.isEmpty()) {
 				type = defaulttype;
 				if (!helpRequested)
-					logger.warning("model key missing - use default type " + type.getKey() + ".");
+					warnModel("model key missing " + newModel, type);
 				break;
 			}
 			type = ModelType.parse(newModel);
@@ -524,30 +492,39 @@ public abstract class Module<T extends Module<T>>
 				Model activeModel = engine.getModel();
 				if (activeModel != null) {
 					type = activeModel.getType();
-					if (!helpRequested)
+					if (!helpRequested && logger.isLoggable(Level.WARNING))
 						logger.warning(
 								"invalid model type " + newModel + " - keep current type " + type.getKey() + ".");
 				} else {
 					type = defaulttype;
 					if (!helpRequested)
-						logger.warning("invalid model type " + newModel + " - use default type " + type.getKey() + ".");
+						warnModel("invalid model type " + newModel, type);
 				}
 			}
 			break;
 		}
-		if (type == null) {
+		if (type == null)
 			type = defaulttype;
-			if (keys.size() > 1 && !defaulttype.getKey().equals(cloModel.getDefault()) && !helpRequested)
-				logger.warning("model type unspecified - use default type " + type.getKey() + ".");
-		}
 		// NOTE: currently models cannot be mix'n'matched between species
 		engine.loadModel(type);
 		if (engine.getModel() == null) {
-			if (!helpRequested)
-				logger.severe("model type '" + type.getKey() + "' not supported!");
+			if (!helpRequested && logger.isLoggable(Level.SEVERE))
+				logger.severe("model type " + (type == null ? "" : "'" + type.getKey() + "' not supported!"));
 			return helpCLO;
 		}
 		return cloarray;
+	}
+
+	/**
+	 * Helper method to warn about model type.
+	 * 
+	 * @param prefix the prefix of the warning
+	 * @param type   the model type
+	 */
+	private void warnModel(String prefix, ModelType type) {
+		if (logger.isLoggable(Level.WARNING))
+			logger.warning(
+					prefix + " - " + (type == null ? "no default type." : "use default type " + type.getKey() + "."));
 	}
 
 	/**
@@ -743,7 +720,8 @@ public abstract class Module<T extends Module<T>>
 	 * @return the name of the trait
 	 */
 	public String getTraitName(int trait) {
-		return getTraitNames()[trait % nTraits];
+		String tname = getTraitNames()[Math.floorMod(trait, nTraits)];
+		return trait >= nTraits ? "New " + tname : tname;
 	}
 
 	/**
@@ -1001,20 +979,19 @@ public abstract class Module<T extends Module<T>>
 	/**
 	 * Sets the population size. For models with vacancies this is the maximum
 	 * population size. Currently this only affects IBS and SDE models. For SDE's it
-	 * determines the magnitude of noise. For IBS this is a fundamental change,
-	 * which mandates requesting to reset the model.
+	 * determines the magnitude of noise. For IBS the reset decision is deferred to
+	 * geometry/model checks because some geometries normalize the requested size
+	 * without changing the effective population.
 	 * 
 	 * @param size the population size
 	 * @return {@code true} if population size changed
 	 * 
-	 * @see EvoLudo#requiresReset(boolean)
+	 * @see IBS#check()
 	 */
 	public boolean setNPopulation(int size) {
 		int oldNPopulation = nPopulation;
 		nPopulation = Math.max(1, size);
-		boolean changed = (nPopulation != oldNPopulation);
-		engine.requiresReset(changed && model instanceof IBS);
-		return changed;
+		return (nPopulation != oldNPopulation);
 	}
 
 	/**

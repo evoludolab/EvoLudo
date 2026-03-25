@@ -71,7 +71,21 @@ public class ContextMenuCheckBoxItem extends ContextMenuItem {
 	 * @param cmd  command to execute when clicked
 	 */
 	public ContextMenuCheckBoxItem(String text, ScheduledCommand cmd) {
+		this(text, false, cmd);
+	}
+
+	/**
+	 * Create new menu item with check box and the title <code>text</code>.
+	 * Initially the menu item is not checked. Clicking the menu item executes
+	 * <code>cmd</code>.
+	 * 
+	 * @param text      title of menu item
+	 * @param isChecked {@code true} for checked menu item
+	 * @param cmd       command to execute when clicked
+	 */
+	public ContextMenuCheckBoxItem(String text, boolean isChecked, ScheduledCommand cmd) {
 		super(text, cmd);
+		this.isChecked = isChecked;
 	}
 
 	@Override

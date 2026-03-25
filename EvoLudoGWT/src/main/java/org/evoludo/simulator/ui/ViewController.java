@@ -41,7 +41,6 @@ import org.evoludo.simulator.EvoLudoGWT;
 import org.evoludo.simulator.models.Data;
 import org.evoludo.simulator.models.Mode;
 import org.evoludo.simulator.models.Model;
-import org.evoludo.simulator.models.ModelType;
 import org.evoludo.simulator.modules.Module;
 import org.evoludo.simulator.views.AbstractView;
 import org.evoludo.simulator.views.Console;
@@ -294,8 +293,7 @@ public class ViewController {
 		if (module != null && model != null) {
 			if (module != lastModule)
 				unloadViews(oldViews);
-			ModelType mt = model.getType();
-			boolean isODESDE = mt.isODE() || mt.isSDE();
+			boolean isODESDE = model.isODE() || model.isSDE();
 
 			addStrategyViews(module, isODESDE, oldViews);
 			addFitnessViews(module, isODESDE, oldViews);
@@ -307,6 +305,7 @@ public class ViewController {
 
 		if (!oldViews.isEmpty())
 			unloadViews(oldViews);
+		syncSelector();
 		lastModule = module;
 	}
 
@@ -362,12 +361,31 @@ public class ViewController {
 			activeView.deactivate();
 		activeView = newView;
 		deck.showWidget(activeView);
-		int activeIdx = deck.getWidgetIndex(activeView);
-		selector.setSelectedIndex(activeIdx);
+		syncSelector();
 		Scheduler.get().scheduleDeferred(() -> activeView.activate());
 		if (onViewChanged != null)
 			onViewChanged.run();
 		return true;
+	}
+
+	/**
+	 * Synchronize selector entry with the active view.
+	 */
+	private void syncSelector() {
+		if (activeView == null) {
+			selector.setSelectedIndex(-1);
+			return;
+		}
+		int idx = 0;
+		for (AbstractView<?> view : activeViews.values()) {
+			if (view == activeView) {
+				selector.setSelectedIndex(idx);
+				return;
+			}
+			idx++;
+		}
+		// fatal does not return
+		engine.fatal("Invalid EvoLudo state - reload!");
 	}
 
 	/**
@@ -504,7 +522,7 @@ public class ViewController {
 			return;
 		}
 		if (deck.getWidgetIndex(view) >= 0)
-			deck.remove(view);
+			return;
 		int consoleIdx = deck.getWidgetIndex(console);
 		if (consoleIdx < 0)
 			deck.add(view);

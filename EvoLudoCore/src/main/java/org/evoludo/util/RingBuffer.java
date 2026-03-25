@@ -115,24 +115,19 @@ public class RingBuffer<T> implements Iterable<T> {
 	 * @param capacity the new capacity
 	 */
 	private void shrinkBuffer(int capacity) {
-		if (bufferPtr + capacity < bufferCapacity) {
-			// remove oldest entries
-			for (int n = 0; n < bufferPtr; n++)
-				buffer.remove(0);
-			// remove excess entries
-			if (capacity < buffer.size()) {
-				int count = buffer.size() - capacity;
-				for (int n = 0; n < count; n++)
-					buffer.remove(capacity);
-			}
-			bufferPtr = -1;
-		} else {
-			int idx = (bufferPtr + capacity) % bufferCapacity;
-			int count = bufferPtr - idx;
-			for (int n = 0; n < count; n++)
-				buffer.remove(idx);
-			bufferPtr = idx;
+		int keep = Math.min(capacity, buffer.size());
+		if (keep == buffer.size()) {
+			bufferCapacity = capacity;
+			return;
 		}
+		ArrayList<T> resized = new ArrayList<>(capacity);
+		// keep newest 'keep' entries in chronological order (oldest -> newest)
+		for (int n = keep - 1; n >= 0; n--)
+			resized.add(get(n));
+		buffer = resized;
+		bufferPtr = keep - 1;
+		if (keep == 0)
+			bufferDepth = 0;
 		buffer.trimToSize();
 		bufferCapacity = capacity;
 	}

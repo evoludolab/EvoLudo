@@ -38,6 +38,11 @@ import org.evoludo.simulator.EvoLudo;
 public class VonNeumannGeometry extends SquareGeometry {
 
 	/**
+	 * Row/column offsets for von Neumann neighbours.
+	 */
+	private static final int[][] NEUMANN_DELTAS = { { -1, 0 }, { 0, 1 }, { 1, 0 }, { 0, -1 } };
+
+	/**
 	 * Create a von Neumann square lattice geometry tied to the given engine.
 	 *
 	 * @param engine EvoLudo pacemaker
@@ -108,82 +113,38 @@ public class VonNeumannGeometry extends SquareGeometry {
 			}
 		}
 		if (fixedBoundary) {
-			adjustBoundaries(geometry, side, fullside, offset, interspecies);
+			for (int i = 0; i < side; i++) {
+				adjustBoundaryAt(geometry, side, fullside, offset, 0, i);
+				adjustBoundaryAt(geometry, side, fullside, offset, side - 1, i);
+				adjustBoundaryAt(geometry, side, fullside, offset, i, 0);
+				adjustBoundaryAt(geometry, side, fullside, offset, i, side - 1);
+			}
 			geometry.isRegular = false;
 		}
 	}
 
 	/**
-	 * Adjust von Neumann neighbourhoods when fixed boundaries are requested.
+	 * Remove wrapped von Neumann links for one boundary node.
 	 *
-	 * @param geometry     geometry receiving the links
-	 * @param side         side length of the (sub) lattice
-	 * @param fullside     global side length
-	 * @param offset       index offset into the population
-	 * @param interspecies {@code true} if self-links are required
+	 * @param geometry geometry receiving the links
+	 * @param side     side length of the (sub) lattice
+	 * @param fullside global side length
+	 * @param offset   index offset into the population
+	 * @param row      boundary row
+	 * @param col      boundary column
 	 */
-	private static void adjustBoundaries(AbstractGeometry geometry, int side, int fullside, int offset,
-			boolean interspecies) {
-		int aPlayer = offset;
-		geometry.clearLinksFrom(aPlayer);
-		if (interspecies)
-			geometry.addLinkAt(aPlayer, aPlayer);
-		geometry.addLinkAt(aPlayer, aPlayer + 1);
-		geometry.addLinkAt(aPlayer, aPlayer + fullside);
-
-		aPlayer = offset + side - 1;
-		geometry.clearLinksFrom(aPlayer);
-		if (interspecies)
-			geometry.addLinkAt(aPlayer, aPlayer);
-		geometry.addLinkAt(aPlayer, aPlayer - 1);
-		geometry.addLinkAt(aPlayer, aPlayer + fullside);
-
-		aPlayer = offset + (side - 1) * fullside;
-		geometry.clearLinksFrom(aPlayer);
-		if (interspecies)
-			geometry.addLinkAt(aPlayer, aPlayer);
-		geometry.addLinkAt(aPlayer, aPlayer + 1);
-		geometry.addLinkAt(aPlayer, aPlayer - fullside);
-
-		aPlayer = offset + (side - 1) * (fullside + 1);
-		geometry.clearLinksFrom(aPlayer);
-		if (interspecies)
-			geometry.addLinkAt(aPlayer, aPlayer);
-		geometry.addLinkAt(aPlayer, aPlayer - 1);
-		geometry.addLinkAt(aPlayer, aPlayer - fullside);
-
-		for (int i = 1; i < side - 1; i++) {
-			aPlayer = offset + i;
-			geometry.clearLinksFrom(aPlayer);
-			if (interspecies)
-				geometry.addLinkAt(aPlayer, aPlayer);
-			geometry.addLinkAt(aPlayer, aPlayer - 1);
-			geometry.addLinkAt(aPlayer, aPlayer + 1);
-			geometry.addLinkAt(aPlayer, aPlayer + fullside);
-
-			aPlayer = offset + (side - 1) * fullside + i;
-			geometry.clearLinksFrom(aPlayer);
-			if (interspecies)
-				geometry.addLinkAt(aPlayer, aPlayer);
-			geometry.addLinkAt(aPlayer, aPlayer - 1);
-			geometry.addLinkAt(aPlayer, aPlayer + 1);
-			geometry.addLinkAt(aPlayer, aPlayer - fullside);
-
-			aPlayer = offset + fullside * i;
-			geometry.clearLinksFrom(aPlayer);
-			if (interspecies)
-				geometry.addLinkAt(aPlayer, aPlayer);
-			geometry.addLinkAt(aPlayer, aPlayer + 1);
-			geometry.addLinkAt(aPlayer, aPlayer - fullside);
-			geometry.addLinkAt(aPlayer, aPlayer + fullside);
-
-			aPlayer = offset + fullside * i + side - 1;
-			geometry.clearLinksFrom(aPlayer);
-			if (interspecies)
-				geometry.addLinkAt(aPlayer, aPlayer);
-			geometry.addLinkAt(aPlayer, aPlayer - 1);
-			geometry.addLinkAt(aPlayer, aPlayer - fullside);
-			geometry.addLinkAt(aPlayer, aPlayer + fullside);
+	private static void adjustBoundaryAt(AbstractGeometry geometry, int side, int fullside, int offset, int row,
+			int col) {
+		int aPlayer = offset + row * fullside + col;
+		for (int[] delta : NEUMANN_DELTAS) {
+			int u = row + delta[0];
+			int v = col + delta[1];
+			if (u >= 0 && u < side && v >= 0 && v < side)
+				continue;
+			int wrappedRow = (u + side) % side;
+			int wrappedCol = (v + side) % side;
+			int bPlayer = offset + wrappedRow * fullside + wrappedCol;
+			geometry.removeLinkAt(aPlayer, bPlayer);
 		}
 	}
 

@@ -216,6 +216,20 @@ public abstract class Network<N extends Node> extends AbstractList<N> implements
 	protected double prevAdjust;
 
 	/**
+	 * The first observed layout adjustment after the current layout started. This
+	 * provides the reference scale for estimating how close the current state is to
+	 * a fully relaxed configuration.
+	 */
+	protected double initialAdjust = -1.0;
+
+	/**
+	 * Estimate of how close the current state is to a relaxed layout. Values range
+	 * from 0 for the initial configuration to 1 once the desired accuracy is
+	 * reached.
+	 */
+	protected double layoutProgress = 0.0;
+
+	/**
 	 * The normalization factor for the network potential.
 	 */
 	protected double norm;
@@ -329,6 +343,8 @@ public abstract class Network<N extends Node> extends AbstractList<N> implements
 		isRunning = true;
 		prevPotential = 0.0;
 		prevAdjust = 1.0;
+		initialAdjust = -1.0;
+		layoutProgress = 0.0;
 		nNodes = geometry.getSize();
 		norm = 1.0 / (nNodes * nNodes);
 		listener.layoutUpdate(0.0);
@@ -365,6 +381,32 @@ public abstract class Network<N extends Node> extends AbstractList<N> implements
 			default:
 				break;
 		}
+	}
+
+	/**
+	 * Update the estimate of how close the current layout is to a fully relaxed
+	 * state. The estimate is based on the logarithmic distance between the best
+	 * adjustment reached so far and the target accuracy relative to the first
+	 * observed adjustment. A square-root easing spreads out the early part of the
+	 * curve so progress becomes visible earlier while remaining monotone.
+	 *
+	 * @param adjust the current change in potential energy after a full relaxation
+	 *               sweep
+	 * @return the updated progress estimate in {@code [0, 1]}
+	 */
+	protected double updateLayoutProgress(double adjust) {
+		if (adjust <= accuracy)
+			return layoutProgress = 1.0;
+		if (initialAdjust < 0.0)
+			initialAdjust = adjust;
+		double span = Math.log(initialAdjust / accuracy);
+		if (!Double.isFinite(span) || span <= 0.0)
+			return layoutProgress = 0.0;
+		double bestAdjust = Math.max(prevAdjust, accuracy);
+		double raw = Math.log(initialAdjust / bestAdjust) / span;
+		raw = Math.max(0.0, Math.min(1.0, raw));
+		layoutProgress = Math.max(layoutProgress, Math.sqrt(raw));
+		return layoutProgress;
 	}
 
 	/**

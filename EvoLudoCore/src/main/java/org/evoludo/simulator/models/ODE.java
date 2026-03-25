@@ -92,7 +92,7 @@ public class ODE extends Model implements DModel {
 	 * <strong>Important:</strong> always positive regardless of direction of
 	 * integration.
 	 * 
-	 * @see #next()
+	 * @see #next(double)
 	 * @see #deStep(double)
 	 */
 	double dtTry;
@@ -499,7 +499,7 @@ public class ODE extends Model implements DModel {
 	public void init() {
 		super.init();
 		dtTry = dt;
-		if (type.isPDE())
+		if (isPDE())
 			return; // PDE models handle initialization themselves
 		init(true);
 	}
@@ -540,6 +540,11 @@ public class ODE extends Model implements DModel {
 	 */
 	public double getDt() {
 		return dt;
+	}
+
+	@Override
+	public double getTimeStep() {
+		return (timeStep > 0.0 ? timeStep : dt);
 	}
 
 	@Override
@@ -718,7 +723,7 @@ public class ODE extends Model implements DModel {
 		if (maxFit - minFit < 1e-8) {
 			// close enough to neutral
 			map = nBins * 0.5;
-			minFit--;
+			minFit -= 1.0;
 		} else
 			map = nBins / (maxFit - minFit);
 		int idx = 0;
@@ -759,13 +764,12 @@ public class ODE extends Model implements DModel {
 	 * </ol>
 	 */
 	@Override
-	public boolean next() {
+	public boolean next(double step) {
 		if (converged)
 			return false;
 		connect = true;
 		double nextHalt = getNextHalt();
 		// continue if milestone reached in previous step, i.e. deltat < 1e-8
-		double step = timeStep;
 		double deltat = Math.abs(nextHalt - time);
 		if (deltat >= 1e-8)
 			step = Math.min(step, deltat);
@@ -996,10 +1000,12 @@ public class ODE extends Model implements DModel {
 				System.arraycopy(staticfit, skip, fitness, skip, nTraits);
 				continue;
 			}
-			if (nGroup == 2)
-				((HasDE.DPairs) mod).avgScores(state, fitness);
-			else
+			// models that implement HasDE may neither implement DGroups nor DPairs
+			// and, instead, provide getDerivatives(...) to integrate the DE-model
+			if (mod instanceof HasDE.DGroups)
 				((HasDE.DGroups) mod).avgScores(state, nGroup, fitness);
+			else if (mod instanceof HasDE.DPairs)
+				((HasDE.DPairs) mod).avgScores(state, fitness);
 			Map2Fitness map2fit = mod.getMap2Fitness();
 			for (int n = skip; n < skip + nTraits; n++)
 				fitness[n] = map2fit.map(fitness[n]);
@@ -1127,7 +1133,7 @@ public class ODE extends Model implements DModel {
 			z = state[skip + vacant];
 		if (fitness != null && vacant >= 0)
 			fitness[skip + vacant] = 0.0;
-		double[] effRates = type.isPDE() ? new double[2] : effRate;
+		double[] effRates = isPDE() ? new double[2] : effRate;
 		computeEffRates(mod, index, state, effRates);
 		double effBirth = effRates[0];
 		double effDeath = effRates[1];

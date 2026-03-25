@@ -30,24 +30,25 @@
 
 package org.evoludo.graphics;
 
-import java.util.Arrays;
-import java.util.Iterator;
-
 import org.evoludo.geom.Node2D;
 import org.evoludo.geom.Path2D;
 import org.evoludo.geom.Point2D;
 import org.evoludo.graphics.AbstractGraph.Shifting;
 import org.evoludo.simulator.Network.Status;
+import org.evoludo.simulator.Network2D;
 import org.evoludo.simulator.geometries.AbstractGeometry;
 import org.evoludo.simulator.geometries.GeometryType;
 import org.evoludo.simulator.geometries.HierarchicalGeometry;
-import org.evoludo.simulator.Network2D;
 import org.evoludo.simulator.modules.Module;
 import org.evoludo.simulator.views.AbstractView;
-import org.evoludo.util.RingBuffer;
+import org.evoludo.simulator.views.Distribution;
+import org.evoludo.ui.ContextMenu;
+import org.evoludo.ui.ContextMenuRadioItem;
 
 import com.google.gwt.core.client.JsArray;
 import com.google.gwt.dom.client.NativeEvent;
+import com.google.gwt.dom.client.Style;
+import com.google.gwt.dom.client.Style.Unit;
 import com.google.gwt.dom.client.Touch;
 import com.google.gwt.event.dom.client.MouseDownEvent;
 import com.google.gwt.event.dom.client.MouseMoveEvent;
@@ -58,8 +59,8 @@ import com.google.gwt.event.dom.client.TouchMoveEvent;
 /**
  * The graphical representation of lattices and network structures in 2D. This
  * class adapts a generic population graph view to a 2D canvas, supporting
- * multiple geometry types (triangular, honeycomb, square variants, linear, and
- * generic network layouts) and providing custom drawing, hit-testing and user
+ * multiple geometry types (triangular, honeycomb, square variants, and generic
+ * network layouts) and providing custom drawing, hit-testing and user
  * interaction behavior.
  *
  * <h3>Responsibilities</h3>
@@ -68,8 +69,6 @@ import com.google.gwt.event.dom.client.TouchMoveEvent;
  * types based on the current canvas size and configuration.</li>
  * <li>Render lattice cells or network nodes and links to a canvas using an
  * internal graphics context.</li>
- * <li>Maintain an optional history buffer for linear (time-series) lattices,
- * enabling visualization of past states.</li>
  * <li>Map input coordinates (mouse/touch) to node indices for selection and
  * dragging, with geometry-specific hit-test logic.</li>
  * <li>Allow interactive shifting of individual network nodes (dragging) and
@@ -85,8 +84,6 @@ import com.google.gwt.event.dom.client.TouchMoveEvent;
  * <li>SQUARE, SQUARE_MOORE, SQUARE_NEUMANN, SQUARE_NEUMANN_2ND — drawn as
  * square grids with several decoration/neighbor variations; supports
  * hierarchical gaps when geometry describes a HIERARCHY</li>
- * <li>LINEAR — drawn as rows of cells where the vertical axis can represent
- * time; uses an internal RingBuffer to store historical states</li>
  * <li>Generic network — uses Node2D positions and a radius-based scaling to
  * draw nodes and links; supports manual node shifting</li>
  * </ul>
@@ -95,9 +92,6 @@ import com.google.gwt.event.dom.client.TouchMoveEvent;
  * <ul>
  * <li>data: a String[] holding per-node CSS color values used to paint each
  * cell/node.</li>
- * <li>buffer: an optional RingBuffer&lt;String[]&gt; used by linear geometry to
- * retain previous states for history visualization. Capacity is based on
- * visible steps and MAX_LINEAR_SIZE.</li>
  * <li>Bounds and sizing: internal fields such as side, dw, dw2, dh, dh3 and
  * dR compute per-cell/node sizes and are recalculated in calcBounds.</li>
  * <li>Hierarchy support: when geometry indicates a HIERARCHY, the component
@@ -123,7 +117,7 @@ import com.google.gwt.event.dom.client.TouchMoveEvent;
  * <ul>
  * <li>When a static lattice layout is available it delegates to dedicated
  * drawXxx methods (drawTriangular, drawHoneycomb, drawSquareLattice,
- * drawSquareNeumann2nd, drawLinearLattice).</li>
+ * drawSquareNeumann2nd).</li>
  * <li>For arbitrary networks the drawNetwork method scales the universe,
  * draws links and nodes (with per-node color optimization) and supports
  * node diameter computation (dR).</li>
@@ -136,16 +130,12 @@ import com.google.gwt.event.dom.client.TouchMoveEvent;
  * <li>MIN_DW, MIN_DH and MIN_DR define minimum drawable dimensions; if elements
  * would be smaller than these thresholds, the graph is disabled and a
  * message is displayed.</li>
- * <li>MAX_LINEAR_SIZE controls the maximum retained history length for linear
- * geometries; callers must ensure MAX_LINEAR_SIZE is adequate for their
- * configured canvas/steps, otherwise an exception is thrown during setup.</li>
  * </ul>
  *
  * <h3>Performance</h3>
  * Drawing operations use batching and occasional optimizations (e.g., reusing
  * fill style until it changes) but may still be expensive for very large
- * populations or frequent updates. For linear geometries the history buffer
- * size is chosen to balance memory and visible steps; it is lazily allocated.
+ * populations or frequent updates.
  *
  * <h3>Extensibility &amp; Limitations</h3>
  * <ul>
@@ -173,14 +163,39 @@ import com.google.gwt.event.dom.client.TouchMoveEvent;
  * Instantiate via the view/module infrastructure this project provides. Ensure
  * to call {@link #activate()} and allow {@link #calcBounds()} to run with the
  * appropriate canvas size; {@link #update()} should be invoked whenever the
- * underlying population state changes to refresh the visualization. For linear
- * geometries, ensure the {@code MAX_LINEAR_SIZE} accommodates the expected
- * width of the viewport.
+ * underlying population state changes to refresh the visualization.
  * 
  * @author Christoph Hauert
  */
 @SuppressWarnings("java:S110")
 public class PopGraph2D extends GenericPopGraph<String, Network2D> implements Shifting {
+
+	/**
+	 * Helper responsible for drawing and hit-testing the legend.
+	 */
+	protected Legend2D legend;
+
+	/**
+	 * Message shown when the selected binning cannot be rendered in the available
+	 * graph area.
+	 */
+	private static final String INFO_BINNING_TOO_FINE = "Binning too fine!";
+
+	/**
+	 * Message shown when the selected binning cannot be rendered in the available
+	 * graph area.
+	 */
+	private static final String INFO_POPSIZE_TOO_BIG = "Population size too big!";
+
+	/**
+	 * Cached font size of the last displayed message.
+	 */
+	private double msgFontSize = 12.0;
+
+	/**
+	 * Cached line height of the last displayed message.
+	 */
+	private double msgLineHeight = 16.8;
 
 	/**
 	 * Create a graph for graphically visualizing the structure of a network (or
@@ -207,49 +222,159 @@ public class PopGraph2D extends GenericPopGraph<String, Network2D> implements Sh
 		super.onLoad();
 		setStylePrimaryName("evoludo-PopGraph2D");
 		label.setStyleName("evoludo-Label2D");
+		msgLabel.setStyleName("evoludo-Message2D");
+		wrapper.setWidgetLeftRight(msgLabel, 0.0, Unit.PX, 0.0, Unit.PX);
+		legend = new Legend2D(this);
+	}
+
+	@Override
+	protected void onUnload() {
+		super.onUnload();
+		legend = null;
+	}
+
+	@Override
+	public boolean displayMessage(String msg) {
+		return displayMessage(msg, true);
+	}
+
+	@Override
+	public boolean displayMessage(String msg, boolean autoscale) {
+		if (msg == null || msg.isEmpty()) {
+			clearMessage();
+			return false;
+		}
+		message = msg;
+		hasMessage = true;
+		g.save();
+		g.setFont("12px sans-serif");
+		msgLabel.setText(msg);
+		Style msgStyle = msgLabel.getElement().getStyle();
+		double height = Math.max(1.0, getOffsetHeight());
+		if (autoscale) {
+			double textWidth = g.measureText(msg).getWidth();
+			double width = Math.max(1.0, getOffsetWidth());
+			int fontSize = Math.min((int) (12.0 * 0.666 * width / textWidth), 24);
+			msgFontSize = Math.max(fontSize, 12);
+			msgLineHeight = msgFontSize * 1.4;
+		}
+		msgStyle.setFontSize(msgFontSize, Unit.PX);
+		msgStyle.setLineHeight(msgLineHeight, Unit.PX);
+		wrapper.setWidgetTopHeight(msgLabel, Math.max(0.0, (height - msgLineHeight) * 0.5), Unit.PX,
+				msgLineHeight, Unit.PX);
+		g.restore();
+		msgLabel.setVisible(true);
+		return true;
+	}
+
+	@Override
+	public void clearMessage() {
+		if (!hasMessage)
+			return;
+		message = null;
+		hasMessage = false;
+		if (msgLabel != null)
+			msgLabel.setVisible(false);
 	}
 
 	/**
-	 * The maximum size of a linear graph. This affects memory allocation to retain
-	 * the history of the graph.
+	 * Assign semantic legend data prepared by the view.
+	 *
+	 * @param specs legend data
 	 */
-	public static final int MAX_LINEAR_SIZE = 500;
+	public void setLegendSpecs(Legend2D.Specs specs) {
+		legend.setSpecs(specs);
+		calcBounds();
+	}
 
 	@Override
 	public void setGeometry(AbstractGeometry geometry) {
 		super.setGeometry(geometry);
-		int size = geometry.getSize();
-		if (geometry.isType(GeometryType.LINEAR) && size <= MAX_LINEAR_SIZE) {
-			// linear graphs maintain history; allocate generously
-			if (buffer == null)
-				buffer = new RingBuffer<String[]>(2 * MAX_LINEAR_SIZE);
-			// with a buffer we need to make sure colors is initialized as well
-			if (data == null || data.length != size)
-				data = new String[size];
-		}
 		calcBounds();
+		ensureData();
 	}
 
 	@Override
 	public void activate() {
 		super.activate();
-		// lazy allocation of memory for colors
-		if (!hasMessage && (data == null || data.length != geometry.getSize()))
-			data = new String[geometry.getSize()];
+		ensureData();
+	}
+
+	/**
+	 * Add submenu to select the legend position.
+	 *
+	 * @param menu the context menu to populate
+	 */
+	private void addLegendPositionMenu(ContextMenu menu) {
+		if (legend.getMode() == Legend2D.Mode.NONE)
+			return;
+		ContextMenu legendMenu = new ContextMenu(menu);
+		addLegendPositionItem(legendMenu, "None", GraphStyle.Position.NONE);
+		addLegendPositionItem(legendMenu, "Right", GraphStyle.Position.EAST);
+		addLegendPositionItem(legendMenu, "Bottom", GraphStyle.Position.SOUTH);
+		addLegendPositionItem(legendMenu, "Left", GraphStyle.Position.WEST);
+		addLegendPositionItem(legendMenu, "Top", GraphStyle.Position.NORTH);
+		menu.add("Legend", legendMenu);
+	}
+
+	/**
+	 * Add radio item for selecting legend position.
+	 *
+	 * @param menu     submenu to populate
+	 * @param label    item label
+	 * @param position target legend position
+	 */
+	private void addLegendPositionItem(ContextMenu menu, String label, GraphStyle.Position position) {
+		ContextMenuRadioItem item = new ContextMenuRadioItem(label, () -> {
+			if (style.legendPos == position)
+				return;
+			style.legendPos = position;
+			onResize();
+			if (!hasMessage)
+				paint(true);
+		});
+		item.setSelected(style.legendPos == position);
+		menu.add(item);
 	}
 
 	@Override
-	public void update(boolean isNext) {
-		if (buffer != null) {
-			// add copy of data array to buffer
-			// note: cannot be reliably done in RingBuffer class without reflection
-			String[] copy = Arrays.copyOf(data, data.length);
-			if (isNext || buffer.isEmpty())
-				buffer.append(copy);
-			else
-				buffer.replace(copy);
+	protected void addZoomMenu(ContextMenu menu) {
+		super.addZoomMenu(menu);
+		// piggy-back on zoom menu... a bit hackish...
+		addLegendPositionMenu(menu);
+	}
+
+	@Override
+	public void onResize() {
+		super.onResize();
+		ensureData();
+	}
+
+	/**
+	 * Ensure that the data array is properly initialized based on the current
+	 * geometry.
+	 */
+	protected void ensureData() {
+		if (noGraph || geometry == null) {
+			data = null;
+		} else {
+			int size = geometry.getSize();
+			if (data == null || data.length != size)
+				data = new String[size];
 		}
-		super.update(isNext);
+	}
+
+	/**
+	 * Rebin graph data when the number of bins changes.
+	 * <p>
+	 * Default implementation does nothing. Subclasses can override to preserve
+	 * rendered state/history across bin changes.
+	 *
+	 * @param oldBins previous number of bins per axis
+	 * @param newBins new number of bins per axis
+	 */
+	public void rebinGraphData(int oldBins, int newBins) {
+		// default no-op; used in subclasses with history
 	}
 
 	/**
@@ -301,13 +426,11 @@ public class PopGraph2D extends GenericPopGraph<String, Network2D> implements Sh
 			case SQUARE_NEUMANN_2ND:
 				drawSquareNeumann2nd();
 				break;
-			case LINEAR:
-				drawLinearLattice();
-				break;
 			default:
 				logger.warning("Unsupported geometry: " + type.getTitle());
 		}
 		g.restore();
+		legend.draw();
 	}
 
 	/**
@@ -452,26 +575,6 @@ public class PopGraph2D extends GenericPopGraph<String, Network2D> implements Sh
 			drawFrame(0, 0);
 	}
 
-	/**
-	 * Draw linear lattice with history.
-	 */
-	private void drawLinearLattice() {
-		int nSteps = (int) (bounds.getHeight() / dh);
-		int yshift = 0;
-		Iterator<String[]> it = buffer.iterator();
-		while (it.hasNext() && nSteps-- > 0) {
-			int xshift = 0;
-			String[] state = it.next();
-			for (int n = 0; n < geometry.getSize(); n++) {
-				g.setFillStyle(state[n]);
-				fillRect(xshift, yshift, dw, dh);
-				xshift += dw;
-			}
-			yshift += dh;
-		}
-		drawFrame(4, 4);
-	}
-
 	@Override
 	protected void drawNetwork() {
 		if (!prepCanvas())
@@ -481,6 +584,7 @@ public class PopGraph2D extends GenericPopGraph<String, Network2D> implements Sh
 		// scale universe
 		double r = network.getRadius();
 		double su = bounds.getWidth() / (r + r); // same as height in this case
+		g.save();
 		g.scale(su, su);
 		g.save();
 		g.translate(r, r);
@@ -505,6 +609,27 @@ public class PopGraph2D extends GenericPopGraph<String, Network2D> implements Sh
 		g.restore();
 		drawFrame(0, 0, su);
 		g.restore();
+		g.restore();
+		legend.draw();
+	}
+
+	/**
+	 * Draw frame and legend overlays without the content clip. Subclasses that keep
+	 * content pan/zoom separate can reuse this after mapping viewport ranges.
+	 *
+	 * @param decoratedFrame {@code true} to draw the decorated frame
+	 */
+	protected void drawFrameOverlay(boolean decoratedFrame) {
+		g.save();
+		g.scale(scale, scale);
+		g.translate(bounds.getX(), bounds.getY());
+		drawFrame(decoratedFrame ? 4 : 0, decoratedFrame ? 4 : 0);
+		g.restore();
+	}
+
+	@Override
+	public String getTooltipAt(int x, int y) {
+		return bounds.contains(x, y) ? super.getTooltipAt(x, y) : legend.getTooltipAt(x, y);
 	}
 
 	/**
@@ -521,6 +646,16 @@ public class PopGraph2D extends GenericPopGraph<String, Network2D> implements Sh
 		g.translate(bounds.getX() - viewCorner.getX(), bounds.getY() - viewCorner.getY());
 		g.scale(zoomFactor, zoomFactor);
 		return true;
+	}
+
+	@Override
+	protected double getMaxViewCornerX(double zoom) {
+		return getOffsetWidth() * (zoom - 1.0);
+	}
+
+	@Override
+	protected double getMaxViewCornerY(double zoom) {
+		return getOffsetHeight() * (zoom - 1.0);
 	}
 
 	/**
@@ -611,6 +746,10 @@ public class PopGraph2D extends GenericPopGraph<String, Network2D> implements Sh
 
 		// dispatch to concise handlers for each geometry
 		switch (type) {
+			case LINEAR:
+				if (this instanceof PopGraph1D)
+					return;
+				//$FALL-THROUGH$
 			case CUBE:
 				handleNoRepresentation(type);
 				return;
@@ -626,24 +765,28 @@ public class PopGraph2D extends GenericPopGraph<String, Network2D> implements Sh
 			case SQUARE:
 				handleSquare(width, height);
 				break;
-			case LINEAR:
-				handleLinear(width, height);
-				break;
 			default:
 				handleNetwork(width, height);
 				break;
 		}
 
-		// final sanity checks and lazy allocation
+		// final sanity checks
 		if (dw < MIN_DW && dh < MIN_DH && dR < MIN_DR) {
-			buffer = null;
-			data = null;
 			noGraph = true;
-			displayMessage("Population size to large!");
-		} else {
-			if (view.isActive() && (data == null || data.length != geometry.getSize()))
-				data = new String[geometry.getSize()];
+			if (view instanceof Distribution)
+				displayMessage(INFO_BINNING_TOO_FINE);
+			else
+				displayMessage(INFO_POPSIZE_TOO_BIG);
 		}
+		legend.setBounds(width, height, bounds);
+	}
+
+	/**
+	 * Adjust bounds to make room for legend.
+	 */
+	@Override
+	protected void adjustBoundsForLegend() {
+		legend.reserve(bounds);
 	}
 
 	/**
@@ -652,8 +795,6 @@ public class PopGraph2D extends GenericPopGraph<String, Network2D> implements Sh
 	 * @param type the geometry type
 	 */
 	private void handleNoRepresentation(GeometryType type) {
-		buffer = null;
-		data = null;
 		noGraph = true;
 		displayMessage("No representation for " + type.getTitle() + "!");
 	}
@@ -665,9 +806,10 @@ public class PopGraph2D extends GenericPopGraph<String, Network2D> implements Sh
 	 * @param height the height of the canvas
 	 */
 	private void handleTriangular(int width, int height) {
-		buffer = null;
 		side = (int) (Math.sqrt(geometry.getSize()) + 0.5);
-		int diameter = Math.min(width, height);
+		double plotX = bounds.getX();
+		double plotY = bounds.getY();
+		int diameter = (int) Math.min(bounds.getWidth(), bounds.getHeight());
 		dw2 = diameter / (side + 3);
 		int bWidth = dw2 * (side + 1);
 		dw = 2 * dw2;
@@ -677,9 +819,9 @@ public class PopGraph2D extends GenericPopGraph<String, Network2D> implements Sh
 			return;
 		}
 		int bHeight = dh * side;
-		int dx = (width - bWidth) / 2;
-		int dy = (height - bHeight) / 2;
-		bounds.set(dx, dy, bWidth, bHeight);
+		double dx = (bounds.getWidth() - bWidth) * 0.5;
+		double dy = (bounds.getHeight() - bHeight) * 0.5;
+		bounds.set(plotX + dx, plotY + dy, bWidth, bHeight);
 		style.showFrame = false;
 	}
 
@@ -690,9 +832,10 @@ public class PopGraph2D extends GenericPopGraph<String, Network2D> implements Sh
 	 * @param height the height of the canvas
 	 */
 	private void handleHoneycomb(int width, int height) {
-		buffer = null;
 		side = (int) (Math.sqrt(geometry.getSize()) + 0.5);
-		int diameter = Math.min(width, height);
+		double plotX = bounds.getX();
+		double plotY = bounds.getY();
+		int diameter = (int) Math.min(bounds.getWidth(), bounds.getHeight());
 		dw2 = diameter / (2 * side + 1);
 		int bWidth = dw2 * (2 * side + 1);
 		dw = 2 * dw2;
@@ -703,9 +846,9 @@ public class PopGraph2D extends GenericPopGraph<String, Network2D> implements Sh
 			return;
 		}
 		int bHeight = dh3 * (3 * side + 1);
-		int dx = (width - bWidth) / 2;
-		int dy = (height - bHeight) / 2;
-		bounds.set(dx, dy, bWidth, bHeight);
+		double dx = (bounds.getWidth() - bWidth) * 0.5;
+		double dy = (bounds.getHeight() - bHeight) * 0.5;
+		bounds.set(plotX + dx, plotY + dy, bWidth, bHeight);
 		style.showFrame = false;
 	}
 
@@ -716,15 +859,6 @@ public class PopGraph2D extends GenericPopGraph<String, Network2D> implements Sh
 	 * @param height the height of the canvas
 	 */
 	private void handleSquare(int width, int height) {
-		buffer = null;
-		if (style.showDecoratedFrame) {
-			super.calcBounds(width, height);
-		} else {
-			int bWidth = width - 2 * style.minPadding;
-			int bHeight = height - 2 * style.minPadding;
-			bounds.set(style.minPadding, style.minPadding, bWidth, bHeight);
-		}
-
 		side = (int) (Math.sqrt(geometry.getSize()) + 0.5);
 
 		int gap = 0;
@@ -743,8 +877,10 @@ public class PopGraph2D extends GenericPopGraph<String, Network2D> implements Sh
 			gap *= HIERARCHY_GAP;
 		}
 
-		int bWidth = (int) bounds.getWidth();
-		int bHeight = (int) bounds.getHeight();
+		double plotX = bounds.getX();
+		double plotY = bounds.getY();
+		int bWidth = (int) Math.rint(bounds.getWidth());
+		int bHeight = (int) Math.rint(bounds.getHeight());
 		dw = (Math.min(bWidth, bHeight) - gap) / side;
 		if (dw < MIN_DW) {
 			bounds.setSize(width, height);
@@ -755,36 +891,7 @@ public class PopGraph2D extends GenericPopGraph<String, Network2D> implements Sh
 		int newdim = dw * side + gap;
 		int dx = (bWidth - newdim) / 2;
 		int dy = (bHeight - newdim) / 2;
-		bounds.set(dx, dy, newdim, newdim);
-		style.showFrame = true;
-	}
-
-	/**
-	 * Handle linear lattice geometry with history.
-	 * 
-	 * @param width  the width of the canvas
-	 * @param height the height of the canvas
-	 */
-	private void handleLinear(int width, int height) {
-		int bWidth = (int) bounds.getWidth();
-		dw = bWidth / geometry.getSize();
-		int bHeight = (int) bounds.getHeight();
-		dh = dw;
-		int steps = (dh == 0) ? 0 : bHeight / dh;
-		if (dw < MIN_DW || steps == 0) {
-			bounds.setSize(width, height);
-			return;
-		}
-		int adjw = dw * geometry.getSize();
-		int adjh = bHeight - (bHeight % dh);
-		int dx = (bWidth - adjw) / 2;
-		int dy = (bHeight - adjh) / 2;
-		bounds.set(dx, dy, adjw, adjh);
-		if (buffer == null)
-			throw new IllegalStateException("Increase MAX_LINEAR_SIZE (" + MAX_LINEAR_SIZE + ")!");
-		int capacity = 2 * steps;
-		buffer.setCapacity(capacity);
-		style.setYRange(steps - 1);
+		bounds.set(plotX + dx, plotY + dy, newdim, newdim);
 		style.showFrame = true;
 	}
 
@@ -795,15 +902,18 @@ public class PopGraph2D extends GenericPopGraph<String, Network2D> implements Sh
 	 * @param height the height of the canvas
 	 */
 	private void handleNetwork(int width, int height) {
-		int diameter = Math.min(width, height);
+		double plotX = bounds.getX();
+		double plotY = bounds.getY();
+		int diameter = (int) Math.min(bounds.getWidth(), bounds.getHeight());
 		int radius = diameter / 2;
 		dR = Math.sqrt(radius * radius * 2.0 / geometry.getSize());
 		if (dR < MIN_DR) {
 			bounds.setSize(width, height);
 			return;
 		}
-		buffer = null;
-		bounds.set((width - diameter) / 2.0, (height - diameter) / 2.0, diameter, diameter);
+		double dx = (bounds.getWidth() - diameter) * 0.5;
+		double dy = (bounds.getHeight() - diameter) * 0.5;
+		bounds.set(plotX + dx, plotY + dy, diameter, diameter);
 		style.showFrame = false;
 	}
 
@@ -834,11 +944,12 @@ public class PopGraph2D extends GenericPopGraph<String, Network2D> implements Sh
 		// some heuristic adjustments... cause remains mysterious
 		x = x - (int) (style.frameWidth * zoomFactor + 0.5);
 		y = y - (int) (style.frameWidth * zoomFactor - 0.5);
-		if (!bounds.contains(x, y))
+		double sx = (viewCorner.getX() + x - bounds.getX()) / zoomFactor;
+		double sy = (viewCorner.getY() + y - bounds.getY()) / zoomFactor;
+		if (sx < 0.0 || sx > bounds.getWidth() || sy < 0.0 || sy > bounds.getHeight())
 			return FINDNODEAT_OUT_OF_BOUNDS;
-
-		int sx = (int) ((viewCorner.getX() + x - bounds.getX()) / zoomFactor + 0.5);
-		int sy = (int) ((viewCorner.getY() + y - bounds.getY()) / zoomFactor + 0.5);
+		int isx = (int) (sx + 0.5);
+		int isy = (int) (sy + 0.5);
 
 		GeometryType type = geometry.getType();
 		if (isHierarchy)
@@ -847,20 +958,19 @@ public class PopGraph2D extends GenericPopGraph<String, Network2D> implements Sh
 		switch (type) {
 			// 3D views must deal with this
 			case CUBE:
+			case LINEAR:
 				return FINDNODEAT_UNIMPLEMENTED;
 			case TRIANGULAR:
-				return findTriangularNode(sx, sy);
+				return findTriangularNode(isx, isy);
 			case HEXAGONAL:
-				return findHoneycombNode(sx, sy);
+				return findHoneycombNode(isx, isy);
 			case SQUARE_NEUMANN:
 			case SQUARE_NEUMANN_2ND:
 			case SQUARE_MOORE:
 			case SQUARE:
-				return findSquareNode(sx, sy);
-			case LINEAR:
-				return findLinearNode(sx, sy);
+				return findSquareNode(isx, isy);
 			default:
-				return findNetworkNode(sx, sy);
+				return findNetworkNode(isx, isy);
 		}
 	}
 
@@ -949,20 +1059,6 @@ public class PopGraph2D extends GenericPopGraph<String, Network2D> implements Sh
 			r = side - 1 - (y - hgap * HIERARCHY_GAP) / dh;
 		}
 		return r * side + c;
-	}
-
-	/**
-	 * Find the index of the node at the location with coordinates {@code (x, y)} in
-	 * a linear lattice.
-	 * 
-	 * @param x the {@code x}-coordinate of the location
-	 * @param y the {@code y}-coordinate of the location
-	 * @return the index of the node
-	 */
-	private int findLinearNode(int x, int y) {
-		int c = x / dw;
-		int r = y / dh;
-		return r * geometry.getSize() + c;
 	}
 
 	/**
@@ -1071,6 +1167,7 @@ public class PopGraph2D extends GenericPopGraph<String, Network2D> implements Sh
 	@Override
 	public void onMouseMove(MouseMoveEvent event) {
 		if (hitNode >= 0) {
+			event.preventDefault();
 			int x = event.getX();
 			int y = event.getY();
 			if (!inside(x, y)) {
@@ -1159,7 +1256,9 @@ public class PopGraph2D extends GenericPopGraph<String, Network2D> implements Sh
 		// heuristic offset aligns with findNodeAt bounds checks
 		int adjX = x - (int) (style.frameWidth * zoomFactor + 0.5);
 		int adjY = y - (int) (style.frameWidth * zoomFactor - 0.5);
-		return bounds.contains(adjX, adjY);
+		double sx = (viewCorner.getX() + adjX - bounds.getX()) / zoomFactor;
+		double sy = (viewCorner.getY() + adjY - bounds.getY()) / zoomFactor;
+		return sx >= 0.0 && sx <= bounds.getWidth() && sy >= 0.0 && sy <= bounds.getHeight();
 	}
 
 	/**

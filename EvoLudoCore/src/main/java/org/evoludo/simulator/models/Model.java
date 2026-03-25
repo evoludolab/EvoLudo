@@ -115,7 +115,12 @@ public abstract class Model implements CLOProvider {
 		 * Interface for differential equation models with interactions in groups of
 		 * arbitrary size.
 		 */
-		public interface DGroups extends Features.Groups {
+		public interface DGroups extends DPairs, Features.Groups {
+
+			@Override
+			public default void avgScores(double[] state, double[] scores) {
+				avgScores(state, 2, scores);
+			}
 
 			/**
 			 * Calculate the average payoff for the frequency of traits specified in
@@ -630,10 +635,12 @@ public abstract class Model implements CLOProvider {
 	public abstract void update();
 
 	/**
-	 * Advance model by one step. The details of what happens during one step
-	 * depends on the models {@link ModelType} as well as its {@link Mode}.
+	 * Advance model by one step of size {@code step}. The details of what happens
+	 * during one step depends on the models {@link ModelType} as well as its
+	 * {@link Mode}.
 	 * 
-	 * @return <code>true</code> if <code>next()</code> can be called again.
+	 * @param step the requested step size in generations (or fractions thereof)
+	 * @return <code>true</code> if <code>next(double)</code> can be called again.
 	 *         Typically <code>false</code> is returned if the model requires
 	 *         attention, such as the following conditions:
 	 *         <ul>
@@ -646,7 +653,7 @@ public abstract class Model implements CLOProvider {
 	 * @see ChangeListener#modelChanged(ChangeListener.PendingAction)
 	 * @see org.evoludo.simulator.modules.Discrete#setMonoStop(boolean)
 	 */
-	public abstract boolean next();
+	public abstract boolean next(double step);
 
 	/**
 	 * The flag to indicate whether the model is currently relaxing the initial
@@ -662,7 +669,7 @@ public abstract class Model implements CLOProvider {
 	 * @return {@code true} if converged during relaxation
 	 * 
 	 * @see #isRelaxing()
-	 * @see #next()
+	 * @see #next(double)
 	 * @see #cloTimeRelax
 	 */
 	public boolean relax() {
@@ -673,18 +680,15 @@ public abstract class Model implements CLOProvider {
 		double updt = getUpdates();
 		if (timeRelax > 0.0 && updt < timeRelax) {
 			isRelaxing = true;
-			double rf = timeStep;
-			timeStep = timeRelax - updt;
-			next();
-			timeStep = rf;
+			next(timeRelax - updt);
 			isRelaxing = false;
-			if (type == ModelType.IBS) {
-				// reset traits after relaxation in IBS models
-				for (Module<?> mod : species) {
-					IBSPopulation<?, ?> pop = mod.getIBSPopulation();
-					pop.resetTraits();
+				if (type == ModelType.IBS) {
+					// reset traits after relaxation in IBS models
+					for (Module<?> mod : species) {
+						IBSPopulation<?, ?> pop = mod.getIBSPopulation();
+						pop.resetTraits();
+					}
 				}
-			}
 		}
 		if (hasConverged()) {
 			// no point in reporting failed initializations for statistics
@@ -747,8 +751,6 @@ public abstract class Model implements CLOProvider {
 	 * @return the list of markers
 	 */
 	public List<double[]> getMarkers() {
-		if (markers == null)
-			return null;
 		return markers.getMarkers();
 	}
 
@@ -961,16 +963,48 @@ public abstract class Model implements CLOProvider {
 	}
 
 	/**
-	 * GWT models run asynchronously and long running tasks require scheduling to
-	 * maintain responsive user interface. In contrast, JRE provides a
-	 * multi-threaded environment, which allows to run multiple threads
-	 * synchronously. This parallel execution results in an significant speed-boost
-	 * (for PDE calculations).
+	 * Check if this model is based on differential equations.
 	 *
-	 * @return <code>true</code> if model calculations are asynchronous
+	 * @return {@code true} if this is an ODE, SDE, or PDE model
 	 */
-	public boolean useScheduling() {
-		return false;
+	public boolean isDE() {
+		return isODE() || isSDE() || isPDE();
+	}
+
+	/**
+	 * Check if this model is an ordinary differential equations model.
+	 *
+	 * @return {@code true} if this is an ODE model
+	 */
+	public boolean isODE() {
+		return type.isType(ModelType.ODE);
+	}
+
+	/**
+	 * Check if this model is a stochastic differential equations model.
+	 *
+	 * @return {@code true} if this is an SDE model
+	 */
+	public boolean isSDE() {
+		return type.isType(ModelType.SDE);
+	}
+
+	/**
+	 * Check if this model is a partial differential equations model.
+	 *
+	 * @return {@code true} if this is a PDE model
+	 */
+	public boolean isPDE() {
+		return type.isType(ModelType.PDE);
+	}
+
+	/**
+	 * Check if this model is an individual based simulation model.
+	 *
+	 * @return {@code true} if this is an IBS model
+	 */
+	public boolean isIBS() {
+		return type.isType(ModelType.IBS);
 	}
 
 	/**

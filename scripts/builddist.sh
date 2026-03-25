@@ -33,6 +33,8 @@
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "${SCRIPT_DIR}/vars.sh"
 
+MAVEN_PUBLIC_ARGS=(-P public,-private)
+
 echo "Building EvoLudo distribution..."
 
 if [ -d ${EVOLUDO_DIST} ]; then
@@ -59,28 +61,13 @@ if [[ ! $REPLY =~ ^[Nn]$ ]]; then
 	fi
 fi
 
-# build API documentation (if needed) - places javadoc in docs/api
-# note: some say compile goal is necessary to resolve cross-module dependencies of the javadoc but seems ok now
-if [[ ! -d ${EVOLUDO_API} || (-d ${EVOLUDO_API} && ${LATEST_JAVA} -nt ${LATEST_DOC}) ]]; then
-	echo "Building public API documentation..."
-	mvn -P public,-private javadoc:aggregate
-	passed=$?
-
-	if [ $passed -ne 0 ]; then
-		echo "Building javadoc failed - aborting!"
-		exit $passed
-	fi
-else
-	echo "Building public API documentation skipped..."
-fi
-
 # create distribution directory
 mkdir -p dist/war
 
 # building GWT app (if needed)
 if [[ ${LATEST_JAVA} -nt ${LATEST_GWT} ]]; then
 	echo "Building EvoLudo GWT application..."
-	mvn -pl EvoLudoGWT -am install
+	mvn "${MAVEN_PUBLIC_ARGS[@]}" -pl EvoLudoGWT -am clean install
 	passed=$?
 	if [ $passed -ne 0 ]; then
 		echo "Building EvoLudo GWT files failed - aborting!"
@@ -96,7 +83,7 @@ cp -a "$EVOLUDO_GWT_HOME"/src/main/webapp/* dist/war/
 # building JRE executable (if needed)
 if [[ ${LATEST_JAVA} -nt ${LATEST_GWT} ]]; then
 	echo "Building EvoLudo JRE executable..."
-	mvn -pl EvoLudoJRE -am install
+	mvn "${MAVEN_PUBLIC_ARGS[@]}" -pl EvoLudoJRE -am clean install
 	passed=$?
 	if [ $passed -ne 0 ]; then
 		echo "Building EvoLudo JRE files failed - aborting!"
@@ -107,6 +94,21 @@ fi
 # copy JRE executable
 echo "Copying EvoLudo JRE executable..."
 cp -a "$EVOLUDO_JRE_HOME"/target/EvoLudo.*.jar dist/
+
+# build API documentation (if needed) - places javadoc in docs/api
+# note: some say compile goal is necessary to resolve cross-module dependencies of the javadoc but seems ok now
+if [[ ! -d ${EVOLUDO_API} || (-d ${EVOLUDO_API} && ${LATEST_JAVA} -nt ${LATEST_DOC}) ]]; then
+	echo "Building public API documentation..."
+	mvn "${MAVEN_PUBLIC_ARGS[@]}" javadoc:aggregate
+	passed=$?
+
+	if [ $passed -ne 0 ]; then
+		echo "Building javadoc failed - aborting!"
+		exit $passed
+	fi
+else
+	echo "Building public API documentation skipped..."
+fi
 
 # copy API documentation
 echo "Copying EvoLudo API documentation..."

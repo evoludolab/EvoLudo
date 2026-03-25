@@ -34,7 +34,10 @@ import java.awt.Color;
 import java.util.List;
 
 import org.evoludo.graphics.AbstractGraph;
+import org.evoludo.graphics.DistrGraph2D;
 import org.evoludo.graphics.GraphStyle;
+import org.evoludo.graphics.Legend2D;
+import org.evoludo.graphics.PopGraph1D;
 import org.evoludo.graphics.PopGraph2D;
 import org.evoludo.graphics.TooltipProvider;
 import org.evoludo.math.ArrayMath;
@@ -49,6 +52,9 @@ import org.evoludo.simulator.modules.Continuous;
 import org.evoludo.simulator.modules.Module;
 import org.evoludo.ui.ContextMenu;
 import org.evoludo.ui.ContextMenuCheckBoxItem;
+import org.evoludo.ui.ContextMenuItem;
+import org.evoludo.ui.ContextMenuRadioItem;
+import org.evoludo.util.RingBuffer;
 import org.evoludo.util.Formatter;
 
 import com.google.gwt.user.client.Command;
@@ -68,7 +74,8 @@ import com.google.gwt.user.client.Command;
  * <li>Create and manage one PopGraph2D per species module returned by the
  * engine.
  * <li>Allocate and maintain a shared bin storage array sized to the current
- * geometry ({@code MAX_BINS} for 1D, {@code MAX_BINS * MAX_BINS} for 2D).</li>
+ * geometry ({@code nBins} for 1D, {@code nBins * nBins} for
+ * 2D).</li>
  * <li>Configure graph appearance (axis labels, ranges, ticks, color map) based
  * on the underlying Continuous module trait metadata.</li>
  * <li>Request 1D/2D trait histogram data from the CModel implementation and
@@ -80,10 +87,11 @@ import com.google.gwt.user.client.Command;
  *
  * <h3>Behavioral notes</h3>
  * <ul>
- * <li>{@code MAX_BINS} (100) controls the resolution along each trait axis. For
- * single-trait modules a LINEAR geometry of size {@code MAX_BINS} is used (with
- * history rows), for multi-trait modules a square lattice with
- * {@code MAX_BINS * MAX_BINS} bins is used.</li>
+ * <li>The number of bins per axis is configurable from the context menu
+ * (100/200/500), with {@code DEFAULT_BINS} (100) as the initial value. For
+ * single-trait modules a LINEAR geometry of size {@code nBins} is used
+ * (with history rows), for multi-trait modules a square lattice with
+ * {@code nBins * nBins} bins is used.</li>
  * <li>The shared {@code bins} array is reallocated when the geometry size
  * changes.</li>
  * <li>When initializing or resetting, the view updates axis ranges from the
@@ -125,14 +133,34 @@ import com.google.gwt.user.client.Command;
 public class Distribution extends AbstractView<PopGraph2D> implements TooltipProvider.Index {
 
 	/**
-	 * The maximum number of bins for the trait histograms.
+	 * Default number of bins per trait axis for histograms.
 	 */
-	protected static final int MAX_BINS = 100;
+	protected static final int DEFAULT_BINS = 100;
+
+	/**
+	 * Available bin counts per axis.
+	 */
+	private static final int[] BIN_OPTIONS = new int[] { 100, 200, 500 };
+
+	/**
+	 * Sentinel for unavailable frequency values.
+	 */
+	private static final double INVALID_FREQUENCY = -1.0;
+
+	/**
+	 * Active number of bins per axis.
+	 */
+	private int nBins = DEFAULT_BINS;
 
 	/**
 	 * The storage to accommodate the trait histograms.
 	 */
 	double[] bins;
+
+	/**
+	 * Per-module maxima for the histogram color legend.
+	 */
+	private double[] legendMax = new double[0];
 
 	/**
 	 * The index of the trait to be shown along the x-axis.
@@ -161,15 +189,37 @@ public class Distribution extends AbstractView<PopGraph2D> implements TooltipPro
 	}
 
 	@Override
+	public int[] getBufferMenuCapacities() {
+		return new int[] { 1000, 2000, 5000, 10000 };
+	}
+
+	@Override
 	protected boolean allocateGraphs() {
 		List<? extends Module<?>> species = engine.getModule().getSpecies();
 		int nGraphs = species.size();
-		if (graphs.size() == nGraphs)
+		int maxId = -1;
+		for (Module<?> module : species)
+			maxId = Math.max(maxId, module.getId());
+		if (legendMax.length <= maxId)
+			legendMax = new double[maxId + 1];
+		boolean compatible = graphs.size() == nGraphs;
+		if (compatible) {
+			for (int i = 0; i < nGraphs; i++) {
+				boolean linear = species.get(i).getNTraits() == 1;
+				PopGraph2D graph = graphs.get(i);
+				if (linear != (graph instanceof PopGraph1D)) {
+					compatible = false;
+					break;
+				}
+			}
+		}
+		if (compatible)
 			return false;
 		destroyGraphs();
 		for (Module<?> module : species) {
-			PopGraph2D graph = new PopGraph2D(this, module);
-			graph.setDebugEnabled(false);
+			PopGraph2D graph = module.getNTraits() == 1
+					? new PopGraph1D(this, module)
+					: new DistrGraph2D(this, module);
 			wrapper.add(graph);
 			graphs.add(graph);
 			// even if nGraphs did not change, the geometries associated with the graphs
@@ -213,6 +263,7 @@ public class Distribution extends AbstractView<PopGraph2D> implements TooltipPro
 		GraphStyle style = graph.getStyle();
 		graph.setColorMap(new ColorMapCSS.Gradient1D(
 				new Color[] { Color.WHITE, Color.BLACK, Color.YELLOW, Color.RED }, 500));
+		graph.setLegendSpecs(Legend2D.Specs.densityGradient(legendMax[graph.getModule().getId()]));
 		double min = module.getTraitMin()[traitXIdx];
 		double max = module.getTraitMax()[traitXIdx];
 		if (Math.abs(min - style.xMin) > 1e-6 ||
@@ -253,6 +304,7 @@ public class Distribution extends AbstractView<PopGraph2D> implements TooltipPro
 		style.showYLabel = true;
 		style.showYTickLabels = true;
 		style.showYTicks = true;
+		style.showYAxisRight = false;
 		if (hard)
 			graph.reset();
 	}
@@ -262,19 +314,19 @@ public class Distribution extends AbstractView<PopGraph2D> implements TooltipPro
 		super.modelDidInit();
 		for (PopGraph2D graph : graphs)
 			graph.init();
+		updateData(true);
 		update();
 	}
 
 	@Override
-	public void update(boolean force) {
+	protected void updateData(boolean force) {
+		// force intentionally ignored; update policy depends on active/history state.
 		// always read data - some nodes may have changed due to user actions
 		double newtime = model.getUpdates();
 		boolean isNext = (Math.abs(timestamp - newtime) > 1e-8);
-		timestamp = newtime;
+		boolean updated = false;
 		for (PopGraph2D graph : graphs) {
-			boolean doUpdate = isActive || graph.hasHistory();
-			// if graph is neither active nor has history, force can be safely ignored
-			// otherwise may lead to problems if graph has never been activated
+			boolean doUpdate = (isActive || graph.hasHistory());
 			if (!doUpdate)
 				continue;
 			if (!type.equals(Data.TRAIT)) {
@@ -284,11 +336,29 @@ public class Distribution extends AbstractView<PopGraph2D> implements TooltipPro
 			((CModel) model).get2DTraitHistogramData(graph.getModule().getId(),
 					bins, traitXIdx, traitYIdx);
 			ColorMap.Gradient1D<String> cMap = (ColorMap.Gradient1D<String>) graph.getColorMap();
-			cMap.setRange(0.0, ArrayMath.max(bins));
+			double max = Math.max(ArrayMath.max(bins), 0.0);
+			legendMax[graph.getModule().getId()] = max;
+			cMap.setRange(0.0, max);
+			graph.setLegendSpecs(Legend2D.Specs.densityGradient(max));
 			cMap.translate(bins, graph.getData());
 			graph.update(isNext);
-			graph.paint(force);
+			updated = true;
 		}
+		if (updated)
+			timestamp = newtime;
+	}
+
+	@Override
+	public void update(boolean force) {
+		if (!isActive)
+			return;
+		for (PopGraph2D graph : graphs)
+			graph.paint(force);
+	}
+
+	@Override
+	protected void afterResize() {
+		updateData(true);
 	}
 
 	/**
@@ -306,11 +376,11 @@ public class Distribution extends AbstractView<PopGraph2D> implements TooltipPro
 		// geometry.name = module.getTraitName(n);
 		if (nTraits == 1) {
 			geometry = AbstractGeometry.create(engine, GeometryType.LINEAR);
-			geometry.setSize(MAX_BINS);
+			geometry.setSize(nBins);
 		} else {
-			geometry = AbstractGeometry.create(engine, GeometryType.SQUARE);
+			geometry = AbstractGeometry.create(engine, GeometryType.SQUARE_NEUMANN);
 			geometry.setConnectivity(4);
-			geometry.setSize(MAX_BINS * MAX_BINS);
+			geometry.setSize(nBins * nBins);
 		}
 		if (bins == null || bins.length != geometry.getSize())
 			bins = new double[geometry.getSize()];
@@ -351,7 +421,8 @@ public class Distribution extends AbstractView<PopGraph2D> implements TooltipPro
 		if (node < 0)
 			return null;
 		GraphStyle style = graph.getStyle();
-		int nBins = MAX_BINS;
+		int binsAxis = nBins;
+		PopGraph2D popGraph = (graph instanceof PopGraph2D ? (PopGraph2D) graph : null);
 		StringBuilder tip = new StringBuilder(TABLE_STYLE);
 		if (style.label != null)
 			tip.append("<b>")
@@ -363,21 +434,30 @@ public class Distribution extends AbstractView<PopGraph2D> implements TooltipPro
 		Module<?> module = engine.getModule();
 		int nTraits = module.getNTraits();
 		if (nTraits == 1) {
-			int bar = node % nBins;
-			int row = node / nBins;
+			int bar = node % binsAxis;
+			int row = node / binsAxis;
 			double time = -row * model.getTimeStep();
-			tip.append(Formatter.format(style.xMin + bar * (style.xMax - style.xMin) / nBins, 2))
+			tip.append("[")
+					.append(Formatter.format(style.xMin + bar * (style.xMax - style.xMin) / binsAxis, 2))
 					.append(", ")
-					.append(Formatter.format(style.xMin + (bar + 1) * (style.xMax - style.xMin) / nBins, 2))
+					.append(Formatter.format(style.xMin + (bar + 1) * (style.xMax - style.xMin) / binsAxis, 2))
 					.append("]")
 					.append(TABLE_ROW_END);
-			if (node < nBins) {
-				// report frequency for most recent row
-				// all historical data is stored in terms of colors only...
+			double frequency = INVALID_FREQUENCY;
+			if (popGraph instanceof PopGraph1D) {
+				RingBuffer<String[]> history = popGraph.getBuffer();
+				if (history != null && row < history.getSize()) {
+					String[] rowData = history.get(row);
+					frequency = ((PopGraph1D) popGraph).decodeBin(rowData, bar, binsAxis);
+				}
+			}
+			if (frequency < 0.0 && !(popGraph instanceof PopGraph1D) && bar < bins.length)
+				frequency = bins[bar];
+			if (frequency >= 0.0) {
 				tip.append(TABLE_ROW_START)
 						.append("frequency")
 						.append(TABLE_CELL_NEXT)
-						.append(Formatter.formatPercent(bins[bar], 1))
+						.append(Formatter.formatPercent(frequency, 1))
 						.append(TABLE_ROW_END);
 			}
 			// + 0.0: silly trick to avoid -0 display
@@ -386,28 +466,35 @@ public class Distribution extends AbstractView<PopGraph2D> implements TooltipPro
 					.append(TABLE_CELL_NEXT)
 					.append(Formatter.format(time + 0.0, 2));
 		} else {
-			int bar1 = node % MAX_BINS;
-			int bar2 = node / MAX_BINS;
+			int bar1 = node % binsAxis;
+			int bar2 = node / binsAxis;
 			// horizontal trait
-			tip.append(Formatter.format(style.xMin + bar1 * (style.xMax - style.xMin) / nBins, 2))
+			tip.append("[")
+					.append(Formatter.format(style.xMin + bar1 * (style.xMax - style.xMin) / binsAxis, 2))
 					.append(", ")
-					.append(Formatter.format(style.xMin + (bar1 + 1) * (style.xMax - style.xMin) / nBins, 2))
+					.append(Formatter.format(style.xMin + (bar1 + 1) * (style.xMax - style.xMin) / binsAxis, 2))
 					.append("]")
 					.append(TABLE_ROW_END);
 			// vertical trait
 			tip.append(TABLE_ROW_START)
 					.append(style.yLabel)
 					.append(TABLE_CELL_NEXT)
-					.append(Formatter.format(style.yMin + bar2 * (style.yMax - style.yMin) / nBins, 2))
+					.append("[")
+					.append(Formatter.format(style.yMin + bar2 * (style.yMax - style.yMin) / binsAxis, 2))
 					.append(", ")
-					.append(Formatter.format(style.yMin + (bar2 + 1) * (style.yMax - style.yMin) / nBins, 2))
+					.append(Formatter.format(style.yMin + (bar2 + 1) * (style.yMax - style.yMin) / binsAxis, 2))
 					.append("]");
 			// report frequency
-			tip.append(TABLE_ROW_START)
-					.append("frequency")
-					.append(TABLE_CELL_NEXT)
-					.append(Formatter.formatPercent(bins[node], 1))
-					.append(TABLE_ROW_END);
+			double frequency = INVALID_FREQUENCY;
+			if (node < bins.length)
+				frequency = bins[node];
+			if (frequency >= 0.0) {
+				tip.append(TABLE_ROW_START)
+						.append("frequency")
+						.append(TABLE_CELL_NEXT)
+						.append(Formatter.formatPercent(frequency, 1))
+						.append(TABLE_ROW_END);
+			}
 		}
 		tip.append(TABLE_ROW_END)
 				.append(TABLE_END);
@@ -415,33 +502,28 @@ public class Distribution extends AbstractView<PopGraph2D> implements TooltipPro
 	}
 
 	@Override
-	public void populateContextMenuAt(ContextMenu menu, int node) {
+	public void populateContextMenu(ContextMenu menu) {
 		Module<?> module = engine.getModule();
 		int nTraits = module.getNTraits();
+		addBinsMenu(menu);
 		// ignore if less than 3 traits
 		if (nTraits < 3) {
-			traitXMenu = traitYMenu = null;
-			traitXItems = traitYItems = null;
-			populateContextMenu(menu);
+			super.populateContextMenu(menu);
 			return;
 		}
-		if (traitXMenu == null || traitXItems == null || traitXItems.length != nTraits) {
-			traitXMenu = new ContextMenu(menu, "X-axis trait");
-			traitXItems = new ContextMenuCheckBoxItem[nTraits];
-			for (int n = 0; n < nTraits; n++) {
-				traitXItems[n] = new ContextMenuCheckBoxItem(module.getTraitName(n),
-						new TraitCommand(traitXItems, n, TraitCommand.X_AXIS));
-				traitXMenu.add(traitXItems[n]);
-			}
+		ContextMenu traitXMenu = new ContextMenu(menu);
+		ContextMenuCheckBoxItem[] traitXItems = new ContextMenuCheckBoxItem[nTraits];
+		for (int n = 0; n < nTraits; n++) {
+			traitXItems[n] = new ContextMenuCheckBoxItem(module.getTraitName(n),
+					new TraitCommand(traitXItems, n, TraitCommand.X_AXIS));
+			traitXMenu.add(traitXItems[n]);
 		}
-		if (traitYMenu == null || traitYItems == null || traitYItems.length != nTraits) {
-			traitYMenu = new ContextMenu(menu, "Y-axis trait");
-			traitYItems = new ContextMenuCheckBoxItem[nTraits];
-			for (int n = 0; n < nTraits; n++) {
-				traitYItems[n] = new ContextMenuCheckBoxItem(module.getTraitName(n),
-						new TraitCommand(traitYItems, n, TraitCommand.Y_AXIS));
-				traitYMenu.add(traitYItems[n]);
-			}
+		ContextMenu traitYMenu = new ContextMenu(menu);
+		ContextMenuCheckBoxItem[] traitYItems = new ContextMenuCheckBoxItem[nTraits];
+		for (int n = 0; n < nTraits; n++) {
+			traitYItems[n] = new ContextMenuCheckBoxItem(module.getTraitName(n),
+					new TraitCommand(traitYItems, n, TraitCommand.Y_AXIS));
+			traitYMenu.add(traitYItems[n]);
 		}
 		// init trait submenus
 		for (int n = 0; n < traitXItems.length; n++)
@@ -453,35 +535,66 @@ public class Distribution extends AbstractView<PopGraph2D> implements TooltipPro
 		menu.addSeparator();
 		menu.add("X-axis trait", traitXMenu);
 		menu.add("Y-axis trait", traitYMenu);
-		populateContextMenu(menu);
+		super.populateContextMenu(menu);
+	}
+
+	/**
+	 * Get the maximum histogram frequency for the legend of the module with index
+	 * {@code moduleId}.
+	 *
+	 * @param moduleId the module identifier
+	 * @return the current histogram maximum or {@code 0.0}
+	 */
+	public double getLegendMax(int moduleId) {
+		return moduleId >= 0 && moduleId < legendMax.length ? legendMax[moduleId] : 0.0;
+	}
+
+	/**
+	 * Add binning controls to the context menu.
+	 *
+	 * @param menu the context menu to populate
+	 */
+	private void addBinsMenu(ContextMenu menu) {
+		if (graphs.isEmpty())
+			return;
+		ContextMenu binsMenu = new ContextMenu(menu);
+		for (int option : BIN_OPTIONS) {
+			ContextMenuRadioItem item = new ContextMenuRadioItem(Integer.toString(option),
+					() -> applyBinsPerAxis(option));
+			item.setSelected(option == nBins);
+			binsMenu.add(item);
+		}
+		ContextMenuItem binsTrigger = menu.add("Bins", binsMenu);
+		binsTrigger.setEnabled(!isRunning());
+	}
+
+	/**
+	 * Apply a new number of bins per axis and preserve existing rendered data.
+	 *
+	 * @param newBins the new number of bins per axis
+	 */
+	private void applyBinsPerAxis(int newBins) {
+		if (newBins <= 0 || newBins == nBins)
+			return;
+		int oldBins = nBins;
+		nBins = newBins;
+		boolean is2D = (bins != null
+				? bins.length == oldBins * oldBins
+				: (!graphs.isEmpty() && graphs.get(0).getModule().getNTraits() > 1));
+		bins = new double[is2D ? newBins * newBins : newBins];
+		for (PopGraph2D graph : graphs) {
+			graph.rebinGraphData(oldBins, newBins);
+			if (graph.getModule().getNTraits() > 1)
+				graph.setGeometry(createGeometry(graph.getModule().getNTraits()));
+		}
+		updateData(true);
+		update(true);
 	}
 
 	@Override
 	protected ExportType[] exportTypes() {
 		return new ExportType[] { ExportType.SVG, ExportType.PNG };
 	}
-
-	/**
-	 * The context menu for selecting traits to display on the horizontal axis.
-	 */
-	private ContextMenuCheckBoxItem[] traitXItems;
-
-	/**
-	 * The context menu for selecting traits to display on the vertical axis.
-	 */
-	private ContextMenuCheckBoxItem[] traitYItems;
-
-	/**
-	 * The context menu trigger for selecting traits to display on the horizontal
-	 * axis.
-	 */
-	private ContextMenu traitXMenu;
-
-	/**
-	 * The context menu trigger for selecting traits to display on the vertical
-	 * axis.
-	 */
-	private ContextMenu traitYMenu;
 
 	/**
 	 * Command to toggle the inclusion of a trait on the phase plane axes.

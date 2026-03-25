@@ -152,6 +152,8 @@ public class Markers {
 						boolean filled = true;
 						for (int n = 0; n < nSpecies; n++) {
 							double[] smk = CLOParser.parseVector(mk[n]);
+							if (smk.length == 0)
+								return false;
 							if (ArrayMath.min(smk) < 0.0) {
 								filled = false;
 								ArrayMath.abs(smk);

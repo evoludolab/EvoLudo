@@ -33,19 +33,22 @@ package org.evoludo.simulator.views;
 import java.awt.Color;
 import java.util.List;
 
+import org.evoludo.graphics.GenericPopGraph.HasDebugMenu;
 import org.evoludo.graphics.GraphStyle;
+import org.evoludo.graphics.Legend2D;
+import org.evoludo.graphics.PopGraph1D;
 import org.evoludo.graphics.PopGraph2D;
 import org.evoludo.simulator.ColorMap;
 import org.evoludo.simulator.ColorMapCSS;
-import org.evoludo.simulator.geometries.AbstractGeometry;
-import org.evoludo.simulator.geometries.GeometryType;
 import org.evoludo.simulator.EvoLudoGWT;
 import org.evoludo.simulator.Network2D;
+import org.evoludo.simulator.geometries.AbstractGeometry;
+import org.evoludo.simulator.geometries.GeometryType;
 import org.evoludo.simulator.models.CModel;
 import org.evoludo.simulator.models.DModel;
 import org.evoludo.simulator.models.Data;
 import org.evoludo.simulator.models.Model.HasDE;
-import org.evoludo.simulator.models.ModelType;
+import org.evoludo.simulator.models.PDE;
 import org.evoludo.simulator.modules.Continuous;
 import org.evoludo.simulator.modules.Continuous.ColorModelType;
 import org.evoludo.simulator.modules.Discrete;
@@ -151,7 +154,7 @@ import org.evoludo.simulator.modules.Module;
  * @see EvoLudoGWT
  */
 @SuppressWarnings("java:S110")
-public class Pop2D extends GenericPop<String, Network2D, PopGraph2D> {
+public class Pop2D extends GenericPop<String, Network2D, PopGraph2D> implements HasDebugMenu {
 
 	/**
 	 * Construct a new view to display the configuration of the current state of the
@@ -165,12 +168,16 @@ public class Pop2D extends GenericPop<String, Network2D, PopGraph2D> {
 	}
 
 	@Override
+	public int[] getBufferMenuCapacities() {
+		return new int[] { 1000, 2000, 5000, 10000 };
+	}
+
+	@Override
 	protected boolean allocateGraphs() {
-		ModelType mt = getModelType();
-		if (mt.isIBS())
+		if (model.isIBS())
 			return allocateIBSGraphs();
 
-		if (mt.isPDE())
+		if (model.isPDE())
 			return allocatePDEGraph();
 		return false;
 	}
@@ -194,17 +201,47 @@ public class Pop2D extends GenericPop<String, Network2D, PopGraph2D> {
 		for (Module<?> mod : species)
 			nGraphs += mod.getIBSPopulation().getInteractionGeometry().isSingle() ? 1 : 2;
 
-		if (graphs.size() == nGraphs)
+		boolean compatible = graphs.size() == nGraphs;
+		if (compatible) {
+			int idx = 0;
+			boolean inter = true;
+			for (Module<?> mod : species) {
+				AbstractGeometry geometry = resolveIBSGeometry(mod, inter);
+				if (isLinearGeometry(geometry) != (graphs.get(idx) instanceof PopGraph1D)) {
+					compatible = false;
+					break;
+				}
+				idx++;
+				inter = !inter;
+				if (!mod.getIBSPopulation().getInteractionGeometry().isSingle()) {
+					geometry = resolveIBSGeometry(mod, inter);
+					if (isLinearGeometry(geometry) != (graphs.get(idx) instanceof PopGraph1D)) {
+						compatible = false;
+						break;
+					}
+					idx++;
+					inter = !inter;
+				}
+			}
+		}
+		if (compatible)
 			return false;
+
 		destroyGraphs();
+		gCols = 1;
+		boolean inter = true;
 		for (Module<?> mod : species) {
-			PopGraph2D graph = new PopGraph2D(this, mod);
+			AbstractGeometry geometry = resolveIBSGeometry(mod, inter);
+			PopGraph2D graph = createGraph(mod, geometry);
 			wrapper.add(graph);
 			graphs.add(graph);
+			inter = !inter;
 			if (!mod.getIBSPopulation().getInteractionGeometry().isSingle()) {
-				graph = new PopGraph2D(this, mod);
+				geometry = resolveIBSGeometry(mod, inter);
+				graph = createGraph(mod, geometry);
 				wrapper.add(graph);
 				graphs.add(graph);
+				inter = !inter;
 				// arrange graphs horizontally
 				gCols = 2;
 			}
@@ -217,11 +254,11 @@ public class Pop2D extends GenericPop<String, Network2D, PopGraph2D> {
 		}
 		int width = 100 / gCols;
 		int height = 100 / gRows;
-		boolean inter = true;
+		boolean interLayout = true;
 		for (PopGraph2D graph : graphs) {
 			graph.setSize(width + "%", height + "%");
-			setGraphGeometry(graph, inter);
-			inter = !inter;
+			setGraphGeometry(graph, interLayout);
+			interLayout = !interLayout;
 		}
 		return true;
 	}
@@ -232,20 +269,59 @@ public class Pop2D extends GenericPop<String, Network2D, PopGraph2D> {
 	 * @return {@code true} if graphs were reallocated
 	 */
 	private boolean allocatePDEGraph() {
+		Module<?> module = engine.getModule();
+		AbstractGeometry geometry = ((PDE) model).getGeometry();
 		// PDEs currently restricted to single species
-		if (graphs.size() == 1)
+		if (graphs.size() == 1 && (isLinearGeometry(geometry) == (graphs.get(0) instanceof PopGraph1D)))
 			return false;
 
 		destroyGraphs();
-		Module<?> module = engine.getModule();
-		PopGraph2D graph = new PopGraph2D(this, module);
-		// debugging not available for DE's
-		graph.setDebugEnabled(false);
+		PopGraph2D graph = createGraph(module, geometry);
 		wrapper.add(graph);
 		graphs.add(graph);
 		graph.setSize("100%", "100%");
 		setGraphGeometry(graph, true);
 		return true;
+	}
+
+	/**
+	 * Resolve the geometry shown for an IBS graph slot.
+	 *
+	 * @param module the module backing the graph
+	 * @param inter  {@code true} for interaction geometry, {@code false} for
+	 *               competition geometry
+	 * @return the geometry used for the graph
+	 */
+	private AbstractGeometry resolveIBSGeometry(Module<?> module, boolean inter) {
+		AbstractGeometry igeom = module.getIBSPopulation().getInteractionGeometry();
+		AbstractGeometry cgeom = module.getIBSPopulation().getCompetitionGeometry();
+		AbstractGeometry geometry = inter ? igeom : cgeom;
+		if (!igeom.isSingle() && AbstractGeometry.displaySingle(igeom, cgeom))
+			geometry = cgeom;
+		return geometry;
+	}
+
+	/**
+	 * Return whether the geometry should be rendered with a linear graph.
+	 *
+	 * @param geometry the candidate geometry
+	 * @return {@code true} if a linear graph is required
+	 */
+	private boolean isLinearGeometry(AbstractGeometry geometry) {
+		return geometry != null && geometry.isType(GeometryType.LINEAR);
+	}
+
+	/**
+	 * Create a graph instance for the given geometry.
+	 *
+	 * @param module   the module backing the graph
+	 * @param geometry the target geometry
+	 * @return a graph with matching specialization
+	 */
+	private PopGraph2D createGraph(Module<?> module, AbstractGeometry geometry) {
+		if (isLinearGeometry(geometry))
+			return new PopGraph1D(this, module);
+		return new PopGraph2D(this, module);
 	}
 
 	@Override
@@ -271,11 +347,113 @@ public class Pop2D extends GenericPop<String, Network2D, PopGraph2D> {
 			Module<?> module = graph.getModule();
 			ColorMap<String> cMap = createColorMap(module);
 			graph.setColorMap(module.processColorMap(cMap));
+			graph.setLegendSpecs(createLegendSpecs(graph));
 
 			if (hard)
 				graph.reset();
 		}
+		// Reset invalidates network layouts; force one data update so network graphs
+		// immediately schedule and display the rebuilt structure.
+		updateData(true);
 		update(hard);
+	}
+
+	/**
+	 * Compile semantic legend data for the given graph.
+	 *
+	 * @param graph the graph to configure
+	 * @return legend specs for the graph
+	 */
+	private Legend2D.Specs createLegendSpecs(PopGraph2D graph) {
+		Module<?> module = graph.getModule();
+		ColorMap<String> colorMap = graph.getColorMap();
+		switch (type) {
+			case FITNESS:
+				if (!(colorMap instanceof ColorMap.Gradient1D))
+					return Legend2D.Specs.none();
+				double min = model.getMinFitness(module.getId());
+				double max = model.getMaxFitness(module.getId());
+				return Legend2D.Specs.fitnessGradient(min, max, collectFitnessLegendMarkers(module));
+
+			case TRAIT:
+				if (module instanceof Discrete) {
+					if (!(colorMap instanceof ColorMap.Index))
+						return Legend2D.Specs.none();
+					return Legend2D.Specs.discreteTrait(getDiscreteTraitLegendLabels(module));
+				}
+				if (module instanceof Continuous && module.getNTraits() == 1
+						&& colorMap instanceof ColorMap.Gradient1D) {
+					return Legend2D.Specs.continuousTrait();
+				}
+				//$FALL-THROUGH$
+
+			default:
+				return Legend2D.Specs.none();
+		}
+	}
+
+	/**
+	 * Collect marker values for the fitness legend.
+	 *
+	 * @param module the module providing the monomorphic scores
+	 * @return marker values in legend coordinates
+	 */
+	private double[] collectFitnessLegendMarkers(Module<?> module) {
+		if (!model.isIBS())
+			return new double[0];
+		double[] values = new double[module.getNTraits() == 0 ? 0 : module.getNTraits()];
+		int count = 0;
+		Map2Fitness map2fit = module.getMap2Fitness();
+		int id = module.getId();
+		if (module instanceof Discrete && model instanceof DModel) {
+			DModel dmodel = (DModel) model;
+			for (int n = 0; n < module.getNTraits(); n++) {
+				double mono = dmodel.getMonoScore(id, n);
+				if (!Double.isFinite(mono))
+					continue;
+				double marker = map2fit.map(mono);
+				boolean duplicate = false;
+				for (int i = 0; i < count; i++) {
+					if (Math.abs(values[i] - marker) <= 1e-8 * Math.max(1.0, Math.abs(marker))) {
+						duplicate = true;
+						break;
+					}
+				}
+				if (!duplicate)
+					values[count++] = marker;
+			}
+		} else if (module instanceof Continuous && model instanceof CModel) {
+			CModel cmodel = (CModel) model;
+			double minMarker = map2fit.map(cmodel.getMinMonoScore(id));
+			double maxMarker = map2fit.map(cmodel.getMaxMonoScore(id));
+			if (Double.isFinite(minMarker))
+				values[count++] = minMarker;
+			if (Double.isFinite(maxMarker)
+					&& (count == 0 || Math.abs(values[0] - maxMarker) > 1e-8 * Math.max(1.0, Math.abs(maxMarker))))
+				values[count++] = maxMarker;
+		}
+		if (count == values.length)
+			return values;
+		double[] markers = new double[count];
+		System.arraycopy(values, 0, markers, 0, count);
+		return markers;
+	}
+
+	/**
+	 * Build the labels for discrete trait legends.
+	 *
+	 * @param module the discrete module
+	 * @return legend labels
+	 */
+	private String[] getDiscreteTraitLegendLabels(Module<?> module) {
+		int nTraits = module.getNTraits();
+		String[] names = module.getTraitNames();
+		String[] labels = new String[2 * nTraits];
+		for (int n = 0; n < nTraits; n++) {
+			labels[n] = names[n];
+			labels[nTraits + n] = "New " + names[n];
+		}
+		return labels;
 	}
 
 	/**
@@ -287,6 +465,7 @@ public class Pop2D extends GenericPop<String, Network2D, PopGraph2D> {
 	private boolean configureGraph(PopGraph2D graph) {
 		AbstractGeometry geometry = graph.getGeometry();
 		GraphStyle style = graph.getStyle();
+		style.legendPos = (type == Data.TRAIT ? GraphStyle.Position.NONE : GraphStyle.Position.EAST);
 
 		if (geometry.isType(GeometryType.LINEAR)) {
 			// frame, ticks, labels needed
@@ -390,7 +569,7 @@ public class Pop2D extends GenericPop<String, Network2D, PopGraph2D> {
 	 * @return configured color map
 	 */
 	private ColorMap<String> createTraitColorMapDiscreteOrPDE(Module<?> module) {
-		if (getModelType().isPDE()) {
+		if (model.isPDE()) {
 			int nTraits = module.getNTraits();
 			Color[] colors = module.getTraitColors();
 			int dep = ((HasDE) module).getDependent();
@@ -424,7 +603,7 @@ public class Pop2D extends GenericPop<String, Network2D, PopGraph2D> {
 		int tag = module.getId();
 		cMap1D.setRange(model.getMinFitness(tag), model.getMaxFitness(tag));
 
-		if (!getModelType().isIBS())
+		if (!model.isIBS())
 			return cMap;
 
 		Map2Fitness map2fit = module.getMap2Fitness();

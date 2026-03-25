@@ -52,11 +52,11 @@ import org.evoludo.simulator.models.Data;
 import org.evoludo.simulator.models.FixationData;
 import org.evoludo.simulator.models.IBSPopulation;
 import org.evoludo.simulator.models.Mode;
-import org.evoludo.simulator.models.ModelType;
 import org.evoludo.simulator.modules.Continuous;
 import org.evoludo.simulator.modules.Discrete;
 import org.evoludo.simulator.modules.Module;
 import org.evoludo.ui.ContextMenu;
+import org.evoludo.ui.ContextMenuCheckBoxItem;
 import org.evoludo.ui.ContextMenuItem;
 import org.evoludo.util.Formatter;
 import org.evoludo.util.NativeJS;
@@ -135,11 +135,11 @@ import org.evoludo.util.NativeJS;
  * or node indices) to histogram bins. Their values depend on the Data type
  * and the population/graph size.</li>
  * <li>For stationary and fixation statistics the view chooses a sensible bin
- * count that honors {@code HistoGraph.MAX_BINS} and per-graph max bin
+ * count that honors {@code HistoGraph.DEFAULT_BINS} and per-graph max bin
  * limits.</li>
  * <li>For degree distributions, the view computes a displayable maximum degree
  * with maxDegree(int) (rounding up to human-friendly magnitudes) and
- * limits the resulting bin count to {@code HistoGraph.MAX_BINS}.</li>
+ * limits the resulting bin count to {@code HistoGraph.DEFAULT_BINS}.</li>
  * <li>Directed graphs create separate histograms for in-degree, out-degree,
  * and total degree. When interaction and competition geometries differ,
  * histograms are created for both structures.</li>
@@ -192,6 +192,11 @@ import org.evoludo.util.NativeJS;
 public class Histogram extends AbstractView<HistoGraph> {
 
 	/**
+	 * Available bin counts for trait/fitness histograms.
+	 */
+	private static final int[] HISTOGRAM_BIN_OPTIONS = new int[] { 25, 50, 100, 200, 500 };
+
+	/**
 	 * The scaling factor to map the data onto bins.
 	 */
 	double scale2bins = 1.0;
@@ -217,6 +222,11 @@ public class Histogram extends AbstractView<HistoGraph> {
 	 * been processed.
 	 */
 	protected boolean degreeProcessed;
+
+	/**
+	 * Active number of bins for trait/fitness histograms.
+	 */
+	private int histogramBins = HistoGraph.DEFAULT_BINS;
 
 	/**
 	 * Construct a new view to display the histogram of various quantities.
@@ -269,11 +279,10 @@ public class Histogram extends AbstractView<HistoGraph> {
 	}
 
 	@Override
-	public void onResize() {
+	protected void beforeResize() {
 		if (getOffsetWidth() == 0 || getOffsetHeight() == 0)
 			return;
 		layoutGraphs();
-		super.onResize();
 	}
 
 	/**
@@ -370,7 +379,7 @@ public class Histogram extends AbstractView<HistoGraph> {
 					}
 					break;
 				case DEGREE:
-					if (getModelType().isIBS()) {
+					if (model.isIBS()) {
 						IBSPopulation<?, ?> ibspop = mod.getIBSPopulation();
 						nGraphs += getDegreeGraphs(ibspop.getInteractionGeometry(), ibspop.getCompetitionGeometry());
 					} else {
@@ -481,17 +490,16 @@ public class Histogram extends AbstractView<HistoGraph> {
 	 * @param nGraphs total number of graphs being created
 	 */
 	private void addDegreeGraphs(List<? extends Module<?>> species, int nGraphs) {
-		ModelType mt = getModelType();
 		int idx = 0;
 		for (Module<?> module : species) {
-			if (mt.isODE() || mt.isSDE()) {
+			if (model.isODE() || model.isSDE()) {
 				HistoGraph graph = new HistoGraph(this, module, 0);
 				wrapper.add(graph);
 				graphs.add(graph);
 				continue;
 			}
 			int nHisto = 1;
-			if (mt.isIBS()) {
+			if (model.isIBS()) {
 				IBSPopulation<?, ?> ibspop = module.getIBSPopulation();
 				nHisto = getDegreeGraphs(ibspop.getInteractionGeometry(), ibspop.getCompetitionGeometry());
 			}
@@ -744,7 +752,7 @@ public class Histogram extends AbstractView<HistoGraph> {
 
 		AbstractGeometry inter;
 		AbstractGeometry comp;
-		if (getModelType().isPDE()) {
+		if (model.isPDE()) {
 			inter = comp = module.getGeometry();
 		} else {
 			IBSPopulation<?, ?> ibspop = module.getIBSPopulation();
@@ -785,7 +793,7 @@ public class Histogram extends AbstractView<HistoGraph> {
 		style.yMin = 0.0;
 		style.yMax = 1.0;
 		style.xMin = 0;
-		style.xMax = (getModelType().isSDE() ? 1 : module.getNPopulation() - 1);
+		style.xMax = (model.isSDE() ? 1 : module.getNPopulation() - 1);
 		style.label = module.getTraitName(n);
 		Color[] colors = module.getTraitColors();
 		style.graphColor = ColorMapCSS.Color2Css(colors[n]);
@@ -844,9 +852,10 @@ public class Histogram extends AbstractView<HistoGraph> {
 		style.yLabel = "visits";
 		style.autoscaleY = true;
 		style.showLabel = true;
+		style.percentX = false;
 		Module<?> module = graph.getModule();
 		int nPop = module.getNPopulation();
-		if (getModelType().isDE()) {
+		if (model.isDE()) {
 			if (model.isDensity()) {
 				style.xLabel = "density";
 				style.xMin = 0.0;
@@ -896,6 +905,7 @@ public class Histogram extends AbstractView<HistoGraph> {
 			for (HistoGraph graph : graphs)
 				graph.reset();
 		}
+		update(hard);
 	}
 
 	/**
@@ -919,13 +929,11 @@ public class Histogram extends AbstractView<HistoGraph> {
 			int nTraits = module.getNTraits();
 			Color[] colors = module.getTraitColors();
 			List<double[]> markers = model.getMarkers();
-			if (markers != null) {
-				for (double[] mark : markers)
-					graph.addMarker(mark[idx + 1], ColorMapCSS.Color2Css(colors[idx]), null,
-							mark[0] > 0.0 ? style.dashedLine : style.dottedLine);
-			}
-			if (newPop || data == null || data.length != nTraits || data[0].length != HistoGraph.MAX_BINS)
-				data = new double[nTraits][HistoGraph.MAX_BINS];
+			for (double[] mark : markers)
+				graph.addMarker(mark[idx + 1], ColorMapCSS.Color2Css(colors[idx]), null,
+						mark[0] > 0.0 ? style.dashedLine : style.dottedLine);
+			if (newPop || data == null || data.length != nTraits || data[0].length != histogramBins)
+				data = new double[nTraits][histogramBins];
 			graph.setData(data);
 			hard |= applyTraitStyle(graph, idx);
 			idx++;
@@ -954,8 +962,8 @@ public class Histogram extends AbstractView<HistoGraph> {
 			int vacant = module.getVacantIdx();
 			if (vacant >= 0)
 				nTraits--;
-			if (newPop || data == null || data.length != nTraits || data[0].length != HistoGraph.MAX_BINS)
-				data = new double[nTraits][HistoGraph.MAX_BINS];
+			if (newPop || data == null || data.length != nTraits || data[0].length != histogramBins)
+				data = new double[nTraits][histogramBins];
 			graph.setData(data);
 			hard |= applyFitnessStyle(graph, idx);
 			idx++;
@@ -970,9 +978,8 @@ public class Histogram extends AbstractView<HistoGraph> {
 		Module<?> oldmod = null;
 		double[][] data = null;
 		int idx = 0;
-		ModelType mt = getModelType();
-		boolean isOSDE = mt.isODE() || mt.isSDE();
-		boolean isPDE = mt.isPDE();
+		boolean isOSDE = model.isODE() || model.isSDE();
+		boolean isPDE = model.isPDE();
 		for (HistoGraph graph : graphs) {
 			Module<?> module = graph.getModule();
 			if (oldmod != module)
@@ -1008,7 +1015,7 @@ public class Histogram extends AbstractView<HistoGraph> {
 		Module<?> oldmod = null;
 		double[][] data = null;
 		int idx = 0;
-		boolean isSDE = getModelType().isSDE();
+		boolean isSDE = model.isSDE();
 		for (HistoGraph graph : graphs) {
 			Module<?> module = graph.getModule();
 			boolean newPop = (oldmod != module);
@@ -1019,7 +1026,7 @@ public class Histogram extends AbstractView<HistoGraph> {
 			int nPop = (isSDE ? 1 : module.getNPopulation());
 			int maxBins = graph.getMaxBins();
 			if (maxBins <= 0)
-				maxBins = Math.min(nPop, HistoGraph.MAX_BINS);
+				maxBins = Math.min(nPop, HistoGraph.DEFAULT_BINS);
 			binSize = 1;
 			int bins = nPop;
 			while (bins > maxBins) {
@@ -1063,7 +1070,7 @@ public class Histogram extends AbstractView<HistoGraph> {
 				graph.setNormalized(false);
 				graph.setNormalized(-1);
 			} else {
-				// doFixtimeDistr is responsible that nPop > HistoGraph.MAX_BINS cannot happen
+				// doFixtimeDistr must ensure nPop <= HistoGraph.DEFAULT_BINS
 				int nPop = module.getNPopulation();
 				if (data == null || data.length != 2 * (nTraits + 1) || data[0].length != nPop)
 					data = new double[2 * (nTraits + 1)][nPop];
@@ -1089,9 +1096,12 @@ public class Histogram extends AbstractView<HistoGraph> {
 			if (newPop)
 				data = graph.getData();
 			int nTraits = module.getNTraits();
-			int nBins = Math.min(module.getNPopulation(), graph.getMaxBins());
-			if (data == null || data.length != nTraits || data[0].length != HistoGraph.MAX_BINS)
-				data = new double[nTraits][HistoGraph.MAX_BINS];
+			int maxBins = graph.getMaxBins();
+			if (maxBins <= 0)
+				maxBins = HistoGraph.DEFAULT_BINS;
+			int nBins = Math.max(1, Math.min(module.getNPopulation(), maxBins));
+			if (data == null || data.length != nTraits || data[0].length != nBins)
+				data = new double[nTraits][nBins];
 			scale2bins = nBins;
 			graph.setData(data);
 			applyStationaryStyle(graph, idx);
@@ -1240,7 +1250,6 @@ public class Histogram extends AbstractView<HistoGraph> {
 	 */
 	private void updateDegree() {
 		double[][] data = null;
-		ModelType mt = getModelType();
 		for (HistoGraph graph : graphs) {
 			Module<?> module = graph.getModule();
 			IBSPopulation<?, ?> ibspop = module.getIBSPopulation();
@@ -1252,7 +1261,7 @@ public class Histogram extends AbstractView<HistoGraph> {
 					|| (comp != null && comp.isType(GeometryType.DYNAMIC));
 
 			double[][] graphdata = graph.getData();
-			if ((mt.isDE() && handleDEGraph(graph, mt, module))
+			if ((model.isDE() && handleDEGraph(graph, module))
 					|| !needsUpdate
 					|| graphdata == null
 					|| inter == null
@@ -1272,12 +1281,11 @@ public class Histogram extends AbstractView<HistoGraph> {
 	 * graph and further processing should be skipped.
 	 * 
 	 * @param graph  target histogram
-	 * @param mt     current model type
 	 * @param module module owning the histogram
 	 * @return {@code true} if the graph now displays a message
 	 */
-	private boolean handleDEGraph(HistoGraph graph, ModelType mt, Module<?> module) {
-		if (mt.isPDE()) {
+	private boolean handleDEGraph(HistoGraph graph, Module<?> module) {
+		if (model.isPDE()) {
 			AbstractGeometry inter = module.getGeometry();
 			if (inter.isRegular()) {
 				graph.displayMessage("PDE model: regular structure with degree "
@@ -1288,7 +1296,7 @@ public class Histogram extends AbstractView<HistoGraph> {
 						(inter.isRegular() ? " (periodic)" : " (fixed)") + " boundaries).");
 			}
 		} else {
-			graph.displayMessage(getModelType().getKey() + " model: well-mixed population.");
+			graph.displayMessage(model.getType().getKey() + " model: well-mixed population.");
 		}
 		return graph.hasMessage();
 	}
@@ -1315,7 +1323,7 @@ public class Histogram extends AbstractView<HistoGraph> {
 			bincount = maxDegree(Math.max(interFeatures.maxTot, compFeatures.maxTot));
 		double min = 0.0;
 		double max = bincount;
-		bincount = Math.min(bincount, HistoGraph.MAX_BINS);
+		bincount = Math.min(bincount, HistoGraph.DEFAULT_BINS);
 		if (bincount != data[0].length) {
 			data = new double[data.length][bincount];
 			graph.setData(data);
@@ -1347,7 +1355,7 @@ public class Histogram extends AbstractView<HistoGraph> {
 	 * @return {@code true} to show the fixation time distribution
 	 */
 	private boolean doFixtimeDistr(Module<?> module) {
-		if (getModelType().isSDE())
+		if (model.isSDE())
 			return true;
 		int maxBins = graphs.get(0).getMaxBins();
 		return (maxBins > 0 && module.getNPopulation() > maxBins);
@@ -1440,11 +1448,13 @@ public class Histogram extends AbstractView<HistoGraph> {
 					((Discrete) module).getMonoStop()) {
 				idx++;
 			}
-			if (doFixtimeDistr(module))
-				sb.append(formatDistributionMean(data[idx], graph.getStyle()));
+			boolean isDistribution = doFixtimeDistr(module);
+			if (isDistribution)
+				sb.append(graph.getSamples() <= 0.0 ? "0.00 ± 0.00"
+						: formatDistributionMean(data[idx], graph.getStyle()));
 			else
-				// weighted average over nodes
-				sb.append(formatWeightedMean(data[idx], data[idx + nTraits + 1]));
+				sb.append(graph.getSamples() <= 0.0 ? "0.0000 ± 0.0000"
+						: formatWeightedMean(data[idx], data[idx + nTraits + 1]));
 			idx++;
 		}
 		return sb.toString();
@@ -1618,7 +1628,7 @@ public class Histogram extends AbstractView<HistoGraph> {
 		if (inter == null)
 			return 0;
 		GeometryFeatures interFeatures = inter.getFeatures();
-		GeometryFeatures compFeatures = comp == null ? interFeatures : comp.getFeatures();
+		GeometryFeatures compFeatures = comp.getFeatures();
 		int nBins = maxDegree(interFeatures.maxOut);
 		if (!inter.isUndirected())
 			nBins = Math.max(maxDegree(interFeatures.maxTot) + 1, nBins);
@@ -1626,7 +1636,7 @@ public class Histogram extends AbstractView<HistoGraph> {
 			nBins = Math.max(maxDegree(compFeatures.maxOut) + 1, nBins);
 		if (!comp.isUndirected())
 			nBins = Math.max(maxDegree(compFeatures.maxTot) + 1, nBins);
-		return Math.max(2, Math.min(nBins, HistoGraph.MAX_BINS));
+		return Math.max(2, Math.min(nBins, HistoGraph.DEFAULT_BINS));
 	}
 
 	/**
@@ -1664,28 +1674,108 @@ public class Histogram extends AbstractView<HistoGraph> {
 	}
 
 	/**
-	 * The clear context menu.
+	 * Populate context menu with histogram-specific actions.
+	 *
+	 * @param menu the context menu to populate
 	 */
-	private ContextMenuItem clearMenu;
-
 	@Override
 	public void populateContextMenu(ContextMenu menu) {
-		if (type == Data.STATISTICS_STATIONARY) {
+		if (hasHistogramBinsMenu()) {
+			addHistogramBinsMenu(menu);
+		} else if (type == Data.STATISTICS_STATIONARY) {
 			// add menu to clear canvas
-			if (clearMenu == null) {
-				clearMenu = new ContextMenuItem("Clear", () -> {
-					for (HistoGraph graph : graphs)
-						graph.clearData();
-					timestamp = -1.0;
-					update();
-				});
-			}
+			ContextMenuItem clearMenu = new ContextMenuItem("Clear", () -> {
+				for (HistoGraph graph : graphs)
+					graph.clearData();
+				timestamp = -1.0;
+				update();
+			});
 			menu.addSeparator();
 			menu.add(clearMenu);
-		} else {
-			clearMenu = null;
 		}
 		super.populateContextMenu(menu);
+	}
+
+	/**
+	 * Check whether the histogram-bins submenu is applicable.
+	 *
+	 * @return {@code true} if current histograms support manual bin selection
+	 */
+	private boolean hasHistogramBinsMenu() {
+		if (graphs.isEmpty())
+			return false;
+		if (type == Data.TRAIT)
+			return model != null && model.isContinuous();
+		return type == Data.FITNESS;
+	}
+
+	/**
+	 * Add submenu for selecting the number of bins in trait/fitness histograms.
+	 *
+	 * @param menu context menu to populate
+	 */
+	private void addHistogramBinsMenu(ContextMenu menu) {
+		int[] binCounts = getBinCounts();
+		if (binCounts.length == 0)
+			return;
+		int selected = Math.min(Math.max(histogramBins, binCounts[0]), binCounts[binCounts.length - 1]);
+		ContextMenu binsMenu = new ContextMenu(menu);
+		for (int bins : binCounts) {
+			ContextMenuCheckBoxItem item = new ContextMenuCheckBoxItem(Integer.toString(bins),
+					() -> applyHistogramBins(bins));
+			item.setChecked(bins == selected);
+			binsMenu.add(item);
+		}
+		menu.addSeparator();
+		ContextMenuItem binsTrigger = menu.add("Bins", binsMenu);
+		binsTrigger.setEnabled(!isRunning());
+	}
+
+	/**
+	 * Return the feasible bin counts for trait/fitness histogram menus.
+	 * <p>
+	 * Feasible entries are the prefix of {@link #HISTOGRAM_BIN_OPTIONS} that fit
+	 * the current graph widths.
+	 *
+	 * @return feasible bin counts
+	 */
+	public int[] getBinCounts() {
+		if (graphs.isEmpty())
+			return HISTOGRAM_BIN_OPTIONS;
+		int maxFeasible = HISTOGRAM_BIN_OPTIONS[HISTOGRAM_BIN_OPTIONS.length - 1];
+		for (HistoGraph graph : graphs) {
+			int max = graph.getMaxBins();
+			if (max > 0)
+				maxFeasible = Math.min(maxFeasible, max);
+		}
+		int count = 0;
+		for (int option : HISTOGRAM_BIN_OPTIONS) {
+			if (option > maxFeasible)
+				break;
+			count++;
+		}
+		return Arrays.copyOf(HISTOGRAM_BIN_OPTIONS, count);
+	}
+
+	/**
+	 * Apply a new number of bins for trait/fitness histograms.
+	 *
+	 * @param newBins requested number of bins
+	 */
+	private void applyHistogramBins(int newBins) {
+		int[] binCounts = getBinCounts();
+		if (binCounts.length == 0)
+			return;
+		int clamped = binCounts[0];
+		for (int bins : binCounts) {
+			if (bins > newBins)
+				break;
+			clamped = bins;
+		}
+		if (clamped == histogramBins)
+			return;
+		histogramBins = clamped;
+		reset(true);
 	}
 
 	@Override

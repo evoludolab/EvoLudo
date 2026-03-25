@@ -66,7 +66,6 @@ import org.evoludo.simulator.models.IBS;
 import org.evoludo.simulator.models.Model;
 import org.evoludo.simulator.models.Model.HasDE;
 import org.evoludo.simulator.models.PDE;
-import org.evoludo.simulator.models.ModelType;
 import org.evoludo.simulator.modules.Map2Fitness;
 import org.evoludo.simulator.modules.Module;
 import org.evoludo.util.Formatter;
@@ -169,10 +168,9 @@ public class MVPop2D extends MVAbstract implements PopListener {
 	public void initColor(int tag) {
 		Color[] tColors = module.getTraitColors();
 		Model model = engine.getModel();
-		ModelType mt = model.getType();
 		switch (type) {
 			case DSTRAT:
-				if (mt.isPDE()) {
+				if (model.isPDE()) {
 					int dep = ((HasDE) module).getDependent();
 					switch (module.getNTraits()) {
 						case 1:
@@ -224,7 +222,7 @@ public class MVPop2D extends MVAbstract implements PopListener {
 				// cMap1D.setRange(module.getMinFitness(), module.getMaxFitness());
 				cMap1D.setRange(model.getMinScore(tag), model.getMaxScore(tag));
 				// DEBUG
-				if (mt.isIBS()) {
+				if (model.isIBS()) {
 					Map2Fitness map2fit = module.getMap2Fitness();
 					if (model.isContinuous()) {
 						// cast is save because pop is Continuous

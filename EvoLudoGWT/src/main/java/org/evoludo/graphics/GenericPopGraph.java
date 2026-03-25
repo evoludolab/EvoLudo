@@ -38,6 +38,7 @@ import org.evoludo.simulator.geometries.AbstractGeometry;
 import org.evoludo.simulator.geometries.GeometryFeatures;
 import org.evoludo.simulator.geometries.GeometryType;
 import org.evoludo.simulator.geometries.HierarchicalGeometry;
+import org.evoludo.simulator.models.Model;
 import org.evoludo.simulator.modules.Module;
 import org.evoludo.simulator.views.AbstractView;
 import org.evoludo.ui.ContextMenu;
@@ -102,7 +103,7 @@ import com.google.gwt.user.client.ui.Label;
  * <li>Context menu population is centralized here. Implementations add
  * graph-specific menu items but benefit from the common items provided
  * (shake, animate, clear history and debug/update options). The debug
- * submenu is gated by isDebugEnabled and the model type.</li>
+ * submenu is gated by view capabilities and model type.</li>
  * <li>Invalidation resets the network (if present) and marks the view for
  * redraw; {@link #update(boolean isNext)} defers layout work using a scheduler
  * to allow dependent views (3D rendering) to become ready.</li>
@@ -160,6 +161,13 @@ import com.google.gwt.user.client.ui.Label;
 @SuppressWarnings("java:S110")
 public abstract class GenericPopGraph<T, N extends Network<?>> extends AbstractGraph<T[]>
 		implements Network.LayoutListener, Zooming, DoubleClickHandler {
+
+	/**
+	 * Views implementing this interface advertise that their population graphs
+	 * should expose the debug submenu.
+	 */
+	public interface HasDebugMenu {
+	}
 
 	/**
 	 * The CSS class name for changing the cursor when hovering over a node.
@@ -221,6 +229,16 @@ public abstract class GenericPopGraph<T, N extends Network<?>> extends AbstractG
 	protected Label label;
 
 	/**
+	 * Overlay label used to display transient graph messages.
+	 */
+	protected Label msgLabel;
+
+	/**
+	 * Timestamp when the current non-animated layout started.
+	 */
+	private double layoutStartedAt = Double.NaN;
+
+	/**
 	 * Create the base class for population graphs.
 	 * 
 	 * @param view   the view of this graph
@@ -237,12 +255,18 @@ public abstract class GenericPopGraph<T, N extends Network<?>> extends AbstractG
 		label.getElement().getStyle().setZIndex(1);
 		label.setVisible(false);
 		wrapper.add(label);
+		msgLabel = new Label("Gugus");
+		msgLabel.getElement().getStyle().setZIndex(2);
+		msgLabel.setVisible(false);
+		wrapper.add(msgLabel);
 		if (view instanceof TooltipProvider.Index)
 			setTooltipProvider((TooltipProvider.Index) view);
 	}
 
 	@Override
 	protected void onUnload() {
+		wrapper.remove(msgLabel);
+		msgLabel = null;
 		wrapper.remove(label);
 		label = null;
 		super.onUnload();
@@ -259,7 +283,7 @@ public abstract class GenericPopGraph<T, N extends Network<?>> extends AbstractG
 	@Override
 	public void onResize() {
 		super.onResize();
-		if (hasMessage)
+		if (hasMessage && (network == null || !network.isStatus(Status.LAYOUT_IN_PROGRESS)))
 			view.layoutComplete();
 	}
 
@@ -352,16 +376,14 @@ public abstract class GenericPopGraph<T, N extends Network<?>> extends AbstractG
 	public void update(boolean isNext) {
 		if (!view.isActive() || noGraph || hasMessage)
 			return;
-		if (invalidated || (isNext && geometry.isType(GeometryType.DYNAMIC))) {
-			// defer layouting to allow 3D view to be up and running
-			Scheduler.get().scheduleDeferred(() -> {
-				if (hasStaticLayout()) {
-					drawLattice();
-					view.layoutComplete();
-				} else
-					layoutNetwork();
-			});
+		boolean needsLayout = (invalidated || (isNext && geometry.isType(GeometryType.DYNAMIC)));
+		if (!needsLayout)
+			return;
+		if (hasStaticLayout()) {
+			view.layoutComplete();
+			return;
 		}
+		layoutNetwork();
 	}
 
 	/**
@@ -397,6 +419,7 @@ public abstract class GenericPopGraph<T, N extends Network<?>> extends AbstractG
 		// geometry (and network) may be null for ODE or SDE models
 		if (network != null)
 			network.reset();
+		layoutStartedAt = Double.NaN;
 		clearMessage();
 		invalidated = true;
 		if (hasMessage)
@@ -410,14 +433,35 @@ public abstract class GenericPopGraph<T, N extends Network<?>> extends AbstractG
 				layoutNetwork();
 			return;
 		}
-		displayMessage("Laying out network...  " + Formatter.formatPercent(progress, 0) + " completed.");
+		if (Double.isNaN(layoutStartedAt))
+			layoutStartedAt = Duration.currentTimeMillis();
+		double elapsed = Duration.currentTimeMillis() - layoutStartedAt;
+		double remaining = Math.max(0.0, (network.getLayoutTimout() - elapsed) / 1000.0);
+		double displayProgress = progress > 0.0 ? Math.max(progress, 0.00005) : 0.0;
+		String message;
+		if (remaining <= 0.0) {
+			message = "Rendering network...";
+		} else {
+			message = "Laying out network...  " + Formatter.formatPercent(displayProgress, 2) + " relaxed, "
+					+ Formatter.formatFix(remaining, 1) + " s remaining.";
+		}
+		displayMessage(message, false);
 	}
 
 	@Override
 	public synchronized void layoutComplete() {
-		clearMessage();
-		layoutNetwork();
-		view.layoutComplete();
+		layoutStartedAt = Double.NaN;
+		if (!isAttached() || network == null || geometry == null) {
+			clearMessage();
+			view.layoutComplete();
+			return;
+		}
+		Scheduler.get().scheduleDeferred(() -> {
+			clearMessage();
+			if (isAttached() && network != null && geometry != null)
+				drawNetwork();
+			view.layoutComplete();
+		});
 	}
 
 	/**
@@ -433,6 +477,8 @@ public abstract class GenericPopGraph<T, N extends Network<?>> extends AbstractG
 	 * @see #hasStaticLayout()
 	 */
 	protected void layoutNetwork() {
+		if (!isAttached() || network == null || geometry == null)
+			return;
 		if (!network.isStatus(Status.HAS_LAYOUT) || geometry.isType(GeometryType.DYNAMIC))
 			network.doLayout(this);
 		network.finishLayout();
@@ -464,7 +510,7 @@ public abstract class GenericPopGraph<T, N extends Network<?>> extends AbstractG
 		if (tooltipProvider != null)
 			return tooltipProvider.getTooltipAt(node);
 		// false alarm
-		element.addClassName(EVOLUDO_CURSOR_NODE);
+		element.removeClassName(EVOLUDO_CURSOR_NODE);
 		return null;
 	}
 
@@ -504,6 +550,7 @@ public abstract class GenericPopGraph<T, N extends Network<?>> extends AbstractG
 
 	@Override
 	public void onDoubleClick(DoubleClickEvent event) {
+		event.preventDefault();
 		// ignore if busy or invalid node
 		int node = findNodeAt(event.getX(), event.getY());
 		if (node >= 0 && !view.isRunning()) {
@@ -563,118 +610,34 @@ public abstract class GenericPopGraph<T, N extends Network<?>> extends AbstractG
 		event.preventDefault();
 	}
 
-	/**
-	 * The context menu item for animating the layouting process.
-	 */
-	private ContextMenuCheckBoxItem animateMenu;
-
-	/**
-	 * The context menu item for rearranging networks through random shifts of node
-	 * positions.
-	 */
-	private ContextMenuItem shakeMenu;
-
-	/**
-	 * The context menu item to clear the canvas. Only active for linear graphs to
-	 * clear the history.
-	 */
-	private ContextMenuItem clearMenu;
-
-	/**
-	 * The context menu for visually exploring (or debugging) the updating process.
-	 */
-	private ContextMenu debugSubmenu;
-
-	/**
-	 * The context menu item for updating the current node.
-	 */
-	private ContextMenuItem debugNodeMenu;
-
-	/**
-	 * The context menu item for attaching the debug submenu.
-	 */
-	private ContextMenuItem debugSubmenuTrigger;
-
-	/**
-	 * The flag to indicate whether the debug submenu is activated. For example,
-	 * debugging does not make sense if the nodes refer to states of PDE
-	 * calculations.
-	 */
-	private boolean isDebugEnabled = true;
-
-	/**
-	 * Set whether the debugging menu is enabled.
-	 * 
-	 * @param enabled {@code true} to enable debugging
-	 */
-	public void setDebugEnabled(boolean enabled) {
-		isDebugEnabled = enabled;
-	}
-
 	@Override
 	public void populateContextMenuAt(ContextMenu menu, int x, int y) {
 		if (hasMessage) {
-			// skip or disable context menu entries
+			// skip context menu entries
 			super.populateContextMenuAt(menu, x, y);
 			return;
 		}
-		addShakeMenu(menu);
-		addAnimateMenu(menu);
+		if (!hasStaticLayout()) {
+			menu.add(new ContextMenuItem("Shake", () -> network.shake(GenericPopGraph.this, 0.05)));
+			menu.add(new ContextMenuCheckBoxItem("Animate layout", animate, () -> animate = !animate));
+		}
 		addClearMenu(menu);
 		// process debug node update
 		addDebugSubmenu(menu, x, y);
+		populateGraphContextMenu(menu, x, y);
 
 		super.populateContextMenuAt(menu, x, y);
 	}
 
 	/**
-	 * Helper method to process the debug submenu logic for context menu.
-	 * 
-	 * @param menu the context menu to which the shake menu is added
+	 * Opportunity for subclasses to contribute menu items after graph-local entries
+	 * such as clear/debug and before the generic zoom/view items.
+	 *
+	 * @param menu the context menu to populate
+	 * @param x    the x-coordinate where the menu was invoked
+	 * @param y    the y-coordinate where the menu was invoked
 	 */
-	private void addShakeMenu(ContextMenu menu) {
-		if (shakeMenu == null) {
-			shakeMenu = new ContextMenuItem("Shake", () -> network.shake(GenericPopGraph.this, 0.05));
-		}
-		menu.add(shakeMenu);
-		shakeMenu.setEnabled(!hasStaticLayout());
-	}
-
-	/**
-	 * Helper method to process the debug submenu logic for context menu.
-	 * 
-	 * @param menu the context menu to which the animate menu is added
-	 */
-	private void addAnimateMenu(ContextMenu menu) {
-		if (animateMenu == null) {
-			animateMenu = new ContextMenuCheckBoxItem("Animate layout", () -> {
-				animate = !animateMenu.isChecked();
-				animateMenu.setChecked(animate);
-			});
-		}
-		animateMenu.setChecked(animate);
-		menu.add(animateMenu);
-		animateMenu.setEnabled(!hasMessage && !hasStaticLayout());
-	}
-
-	/**
-	 * Helper method to process the clear context menu.
-	 * 
-	 * @param menu the context menu to which the clear menu is added
-	 */
-	private void addClearMenu(ContextMenu menu) {
-		// add menu to clear buffer (applies only to linear geometry)
-		if (!hasHistory()) {
-			clearMenu = null;
-			return;
-		}
-		if (clearMenu == null) {
-			clearMenu = new ContextMenuItem("Clear", () -> {
-				clearHistory();
-				paint(true);
-			});
-		}
-		menu.add(clearMenu);
+	protected void populateGraphContextMenu(ContextMenu menu, int x, int y) {
 	}
 
 	/**
@@ -685,22 +648,20 @@ public abstract class GenericPopGraph<T, N extends Network<?>> extends AbstractG
 	 * @param y    the y-coordinate of the mouse when the context menu was invoked
 	 */
 	private void addDebugSubmenu(ContextMenu menu, int x, int y) {
-		if (!isDebugEnabled) {
+		if (!(view instanceof HasDebugMenu))
 			return;
-		}
+
+		Model model = view.getModel();
+		if (model == null || !model.isIBS() || view.isRunning())
+			return;
+
 		int debugNode = findNodeAt(x, y);
-		if (debugNode >= 0 && debugNode < geometry.getSize()) {
-			if (debugSubmenu == null) {
-				debugSubmenu = new ContextMenu(menu, "Debug");
-				debugNodeMenu = new ContextMenuItem("Update node @ -",
-						() -> module.getIBSPopulation().debugUpdatePopulationAt(debugNode));
-				debugSubmenu.add(debugNodeMenu);
-			}
-			debugNodeMenu.setText("Update node @ " + debugNode);
-			debugNodeMenu.setEnabled(view.getModel().getType().isIBS());
-			debugSubmenuTrigger = menu.add("Debug", debugSubmenu);
-		}
-		if (debugSubmenuTrigger != null)
-			debugSubmenuTrigger.setEnabled(!view.isRunning());
+		if (debugNode < 0 || debugNode >= geometry.getSize())
+			return;
+
+		ContextMenu debugSubmenu = new ContextMenu(menu);
+		debugSubmenu.add(new ContextMenuItem("Update node @ " + debugNode,
+				() -> module.getIBSPopulation().debugUpdatePopulationAt(debugNode)));
+		menu.add("Debug", debugSubmenu);
 	}
 }

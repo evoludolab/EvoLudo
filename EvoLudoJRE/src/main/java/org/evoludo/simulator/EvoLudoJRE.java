@@ -64,10 +64,12 @@ import org.evoludo.simulator.models.IBSDPopulation;
 import org.evoludo.simulator.models.IBSMCPopulation;
 import org.evoludo.simulator.models.IBSPopulation;
 import org.evoludo.simulator.models.Mode;
+import org.evoludo.simulator.models.AdvectionJRE;
 import org.evoludo.simulator.models.Model;
+import org.evoludo.simulator.models.ModelType;
 import org.evoludo.simulator.models.PDE;
-import org.evoludo.simulator.models.PDESupervisor;
-import org.evoludo.simulator.models.PDESupervisorJRE;
+import org.evoludo.simulator.models.PDEJRE;
+import org.evoludo.simulator.models.SDEN;
 import org.evoludo.simulator.modules.Module;
 import org.evoludo.simulator.modules.Traits;
 import org.evoludo.simulator.views.MultiView;
@@ -198,8 +200,27 @@ public class EvoLudoJRE extends EvoLudo implements Runnable {
 	}
 
 	@Override
-	public PDESupervisor hirePDESupervisor(PDE charge) {
-		return new PDESupervisorJRE(this, charge);
+	public Model createModel(ModelType type) {
+		switch (type) {
+			case PDEADV:
+				if (activeModule instanceof Model.HasDE.PDEADV)
+					return new AdvectionJRE(this);
+				break;
+			case PDE, PDERD:
+				if (activeModule instanceof Model.HasDE.PDERD)
+					return new PDEJRE(this);
+				break;
+			case SDE:
+				if (activeModule instanceof Model.HasDE.SDE) {
+					int nt = activeModule.getNTraits();
+					int dim = (((Model.HasDE) activeModule).getDependent() < 0 ? nt : nt - 1);
+					if (dim > 2)
+						return new SDEN(this);
+				}
+				break;
+			default:
+		}
+		return super.createModel(type);
 	}
 
 	@Override
@@ -765,7 +786,7 @@ public class EvoLudoJRE extends EvoLudo implements Runnable {
 				processPendingAction();
 				return fix;
 			}
-			while (activeModel.next()) {
+			while (activeModel.next(activeModel.getTimeStep())) {
 				fireModelChanged();
 			}
 			success = (fix.mutantNode >= 0);
@@ -1613,8 +1634,14 @@ public class EvoLudoJRE extends EvoLudo implements Runnable {
 
 	@Override
 	public void fatal(String msg) {
-		super.fatal(msg);
-		exit(1);
+		try {
+			// super throws an IllegalStateException. let JRE exit cleanly
+			// with an error code of 1.
+			super.fatal(msg);
+		} catch (IllegalStateException e) {
+			exit(1);
+			throw e;
+		}
 	}
 
 	/*

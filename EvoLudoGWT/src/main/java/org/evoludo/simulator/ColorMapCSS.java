@@ -32,6 +32,7 @@ package org.evoludo.simulator;
 
 import java.awt.Color;
 
+import org.evoludo.util.CLOParser;
 import org.evoludo.util.Formatter;
 
 /**
@@ -150,6 +151,51 @@ public abstract class ColorMapCSS extends ColorMap<String> {
 	}
 
 	/**
+	 * Compute the relative luminance of {@code color}.
+	 * <p>
+	 * Colors with transparency are composited over white before computing
+	 * luminance.
+	 *
+	 * @param color the color
+	 * @return relative luminance in {@code [0,1]}
+	 */
+	public static double luminance(Color color) {
+		if (color == null)
+			return 1.0;
+		return luminance(new double[] { color.getRed(), color.getGreen(), color.getBlue(), color.getAlpha() });
+	}
+
+	/**
+	 * Compute the relative luminance of the CSS color string {@code color}.
+	 *
+	 * @param color the CSS color string
+	 * @return relative luminance in {@code [0,1]}
+	 */
+	public static double luminance(String color) {
+		return luminance(CLOParser.parseColor(color));
+	}
+
+	/**
+	 * Compute the relative luminance of the color components in {@code color}.
+	 * <p>
+	 * The array is interpreted as RGB or RGBA in {@code [0,255]}. If an alpha
+	 * channel is present it is composited over white before computing luminance.
+	 *
+	 * @param color the RGB or RGBA channels
+	 * @return relative luminance in {@code [0,1]}
+	 */
+	public static double luminance(double[] color) {
+		if (color == null || color.length < 3)
+			return 1.0;
+		double alpha = (color.length > 3 ? color[3] : 255.0) * INV255;
+		double red = (alpha * color[0] + (1.0 - alpha) * 255.0) * INV255;
+		double green = (alpha * color[1] + (1.0 - alpha) * 255.0) * INV255;
+		double blue = (alpha * color[2] + (1.0 - alpha) * 255.0) * INV255;
+		return 0.2126 * sRGBChannel2Intensity(red) + 0.7152 * sRGBChannel2Intensity(green)
+				+ 0.0722 * sRGBChannel2Intensity(blue);
+	}
+
+	/**
 	 * Utility function to add padding (if needed) of leading zero'es to ensure that
 	 * each color component is encoded by a two digit hexadecimal.
 	 * 
@@ -163,6 +209,16 @@ public abstract class ColorMapCSS extends ColorMap<String> {
 		if (len == 1)
 			return "0" + in;
 		return "00";
+	}
+
+	/**
+	 * Convert a gamma-encoded color component to linear light.
+	 *
+	 * @param value the channel value in {@code [0,1]}
+	 * @return linearized channel value
+	 */
+	private static double sRGBChannel2Intensity(double value) {
+		return value <= 0.04045 ? value / 12.92 : Math.pow((value + 0.055) / 1.055, 2.4);
 	}
 
 	/**

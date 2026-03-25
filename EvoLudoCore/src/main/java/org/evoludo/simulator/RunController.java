@@ -371,12 +371,13 @@ class RunController {
 	 */
 	boolean processChangeMode(PendingAction action) {
 		Mode mode = action.getMode();
+		boolean wasRunning = engine.isRunning;
 		if (engine.activeModel.setMode(mode)) {
-			if (mode == Mode.STATISTICS_SAMPLE) {
+			if (mode == Mode.STATISTICS_SAMPLE)
 				modelReset(true);
-			} else {
-				if (engine.isRunning)
-					engine.fireModelStopped();
+			if (wasRunning) {
+				engine.setSuspended(false);
+				engine.fireModelStopped();
 			}
 		} else {
 			if (!engine.isRunning || mode == Mode.STATISTICS_SAMPLE)
@@ -489,11 +490,7 @@ class RunController {
 		startCPUSample();
 		if (engine.activeModel == null)
 			return false;
-		if (engine.activeModel.useScheduling()) {
-			engine.activeModel.next();
-			return true;
-		}
-		return modelNextDone(engine.activeModel.next());
+		return modelNextDone(engine.activeModel.next(engine.activeModel.getTimeStep()));
 	}
 
 	/**

@@ -871,6 +871,8 @@ public class CLOParser {
 	 * have different formats:
 	 * <ul>
 	 * <li>named color</li>
+	 * <li>CSS colors starting with <code>#</code>, <code>rgb(</code> or
+	 * <code>rgba(</code></li>
 	 * <li>a single number [0,255] specifying a gray scale color</li>
 	 * <li>a triplet of numbers in [0,255] (separated by <code>,</code>) specifying
 	 * the red, green and blue components of the color, respectively.</li>
@@ -891,6 +893,12 @@ public class CLOParser {
 		Color color = COLOR_KEYS.get(aColor);
 		if (color != null)
 			return color;
+		if (aColor.charAt(0) == '#')
+			return parseCssHexColor(aColor);
+		if (aColor.startsWith("rgb("))
+			return parseCssRgbColor(aColor, false);
+		if (aColor.startsWith("rgba("))
+			return parseCssRgbColor(aColor, true);
 		int len = aColor.length();
 		if (aColor.charAt(0) != '(' || aColor.charAt(len - 1) != ')')
 			return null;
@@ -899,15 +907,16 @@ public class CLOParser {
 		try {
 			switch (rgb.length) {
 				case 1: // (g) grayscale
-					int grey = parseInteger(rgb[0]);
+					int grey = parseInteger(rgb[0].trim());
 					color = new Color(grey, grey, grey);
 					break;
 				case 3: // (r, g, b)
-					color = new Color(parseInteger(rgb[0]), parseInteger(rgb[1]), parseInteger(rgb[2]));
+					color = new Color(parseInteger(rgb[0].trim()), parseInteger(rgb[1].trim()),
+							parseInteger(rgb[2].trim()));
 					break;
 				case 4: // (r, g, b, a)
-					color = new Color(parseInteger(rgb[0]), parseInteger(rgb[1]), parseInteger(rgb[2]),
-							parseInteger(rgb[3]));
+					color = new Color(parseInteger(rgb[0].trim()), parseInteger(rgb[1].trim()),
+							parseInteger(rgb[2].trim()), parseInteger(rgb[3].trim()));
 					break;
 				default:
 					return null;
@@ -916,5 +925,67 @@ public class CLOParser {
 			return null;
 		}
 		return color;
+	}
+
+	/**
+	 * Parse a CSS hex color string.
+	 *
+	 * @param color the CSS color string
+	 * @return parsed color or {@code null} if malformed
+	 */
+	private static Color parseCssHexColor(String color) {
+		try {
+			switch (color.length()) {
+				case 4:
+					return new Color(17 * Integer.parseInt(color.substring(1, 2), 16),
+							17 * Integer.parseInt(color.substring(2, 3), 16),
+							17 * Integer.parseInt(color.substring(3, 4), 16));
+				case 5:
+					return new Color(17 * Integer.parseInt(color.substring(1, 2), 16),
+							17 * Integer.parseInt(color.substring(2, 3), 16),
+							17 * Integer.parseInt(color.substring(3, 4), 16),
+							17 * Integer.parseInt(color.substring(4, 5), 16));
+				case 7:
+					return new Color(Integer.parseInt(color.substring(1, 3), 16),
+							Integer.parseInt(color.substring(3, 5), 16),
+							Integer.parseInt(color.substring(5, 7), 16));
+				case 9:
+					return new Color(Integer.parseInt(color.substring(1, 3), 16),
+							Integer.parseInt(color.substring(3, 5), 16),
+							Integer.parseInt(color.substring(5, 7), 16),
+							Integer.parseInt(color.substring(7, 9), 16));
+				default:
+					return null;
+			}
+		} catch (Exception e) {
+			return null;
+		}
+	}
+
+	/**
+	 * Parse a CSS rgb/rgba color string.
+	 *
+	 * @param color    the CSS color string
+	 * @param hasAlpha {@code true} for rgba, {@code false} for rgb
+	 * @return parsed color or {@code null} if malformed
+	 */
+	private static Color parseCssRgbColor(String color, boolean hasAlpha) {
+		int prefixLen = hasAlpha ? 5 : 4;
+		if (color.charAt(color.length() - 1) != ')')
+			return null;
+		String[] comps = color.substring(prefixLen, color.length() - 1).split(",");
+		if (comps.length != (hasAlpha ? 4 : 3))
+			return null;
+		try {
+			int red = parseInteger(comps[0].trim());
+			int green = parseInteger(comps[1].trim());
+			int blue = parseInteger(comps[2].trim());
+			if (!hasAlpha)
+				return new Color(red, green, blue);
+			double alpha = Double.parseDouble(comps[3].trim());
+			return new Color(red, green, blue, (int) Math.round(Math.max(0.0, Math.min(1.0, alpha)) * 255.0));
+		} catch (Exception e) {
+			return null;
+		}
 	}
 }

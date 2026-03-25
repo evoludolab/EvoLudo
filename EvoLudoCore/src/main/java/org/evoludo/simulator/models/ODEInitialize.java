@@ -31,6 +31,7 @@
 package org.evoludo.simulator.models;
 
 import java.util.Arrays;
+import java.util.logging.Level;
 
 import org.evoludo.math.ArrayMath;
 import org.evoludo.simulator.EvoLudo;
@@ -105,7 +106,8 @@ class ODEInitialize {
 				if (idx == 0) {
 					success = false;
 					itype = InitType.UNIFORM;
-					ode.logger.warning("invalid init type '" + inittype + "' - using " + itype.getKey() + ".");
+					if (ode.logger.isLoggable(Level.WARNING))
+						ode.logger.warning("invalid init type '" + inittype + "' - using " + itype.getKey() + ".");
 				} else {
 					itype = ode.initType[idx - 1];
 					iargs = typeargs[0];
@@ -115,8 +117,9 @@ class ODEInitialize {
 			int nTraits = pop.getNTraits();
 			if (!processInit(pop, itype, iargs, start)) {
 				success = false;
-				ode.logger.warning("invalid init args '" + iargs + "' for init type '" + itype.getKey()
-						+ "' - using " + InitType.UNIFORM.getKey() + ".");
+				if (ode.logger.isLoggable(Level.WARNING))
+					ode.logger.warning("invalid init args '" + iargs + "' for init type '" + itype.getKey()
+							+ "' - using " + InitType.UNIFORM.getKey() + ".");
 				// fall back to uniform initialization
 				itype = InitType.UNIFORM;
 				processInit(pop, itype, null, start);
@@ -169,7 +172,7 @@ class ODEInitialize {
 	private boolean processMutant(Module<?> pop, String iargs, int start) {
 		// SDE models only (no population size in ODE)
 		double[] initargs = CLOParser.parseVector(iargs);
-		if (initargs == null || initargs.length < 1)
+		if (initargs == null || initargs.length == 0)
 			return false;
 		// initargs contains the index of the mutant (and resident) trait
 		int mutantType;
@@ -218,7 +221,7 @@ class ODEInitialize {
 	 */
 	private boolean processDensity(Module<?> pop, String iargs, int start) {
 		double[] initargs = CLOParser.parseVector(iargs);
-		if (initargs == null)
+		if (initargs == null || initargs.length == 0)
 			return false;
 		int vacidx = pop.getVacantIdx();
 		if (initargs.length == (pop.getNTraits() - 1) && vacidx >= 0)

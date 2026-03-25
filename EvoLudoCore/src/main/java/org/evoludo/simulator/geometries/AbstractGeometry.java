@@ -695,6 +695,8 @@ public abstract class AbstractGeometry {
 	public final boolean check() {
 		boolean doReset = checkSettings();
 		validateRewiring();
+		if (doReset)
+			isValid = false;
 		alloc();
 		return doReset;
 	}
@@ -781,28 +783,75 @@ public abstract class AbstractGeometry {
 	protected void alloc() {
 		if (size <= 0)
 			throw new IllegalStateException("size must be set before allocating geometry");
+		boolean resized = false;
 		if (in == null || in.length != size) {
 			in = new int[size][];
+			resized = true;
+		}
+		if (kin == null || kin.length != size) {
 			kin = new int[size];
+			resized = true;
 		}
 		if (out == null || out.length != size) {
 			out = new int[size][];
+			resized = true;
+		}
+		if (kout == null || kout.length != size) {
 			kout = new int[size];
+			resized = true;
 		}
-		if (isUndirected && isRegular && connectivity >= 0.0) {
-			int k = (int) (connectivity + 0.5);
-			for (int i = 0; i < size; i++) {
-				in[i] = new int[k];
-				out[i] = new int[k];
-			}
-		} else {
-			Arrays.fill(in, EMPTY_LINKS);
-			Arrays.fill(out, EMPTY_LINKS);
+		allocInOut(false);
+		if (resized) {
+			isValid = false;
+			features = null;
 		}
+	}
+
+	/**
+	 * Clear the network structure while reusing allocated storage whenever
+	 * possible.
+	 */
+	protected void clear() {
+		alloc();
+		allocInOut(true);
 		Arrays.fill(kin, 0);
 		Arrays.fill(kout, 0);
 		isValid = false;
 		features = null;
+	}
+
+	/**
+	 * Ensure the incoming/outgoing adjacency arrays are allocated consistently with
+	 * the current geometry. When {@code clear} is {@code false}, only missing
+	 * storage is initialized. When {@code clear} is {@code true}, non-regular
+	 * geometries are reset to empty link lists while regular geometries keep their
+	 * fixed-size per-node buffers.
+	 * 
+	 * @param clear {@code true} to reset non-regular adjacency slots to empty link
+	 *              lists
+	 */
+	private void allocInOut(boolean clear) {
+		if (isUndirected && isRegular && connectivity >= 0.0) {
+			int k = (int) (connectivity + 0.5);
+			for (int i = 0; i < size; i++) {
+				if (in[i] == null || in[i].length != k)
+					in[i] = new int[k];
+				if (out[i] == null || out[i].length != k)
+					out[i] = new int[k];
+			}
+			return;
+		}
+		if (clear) {
+			Arrays.fill(in, EMPTY_LINKS);
+			Arrays.fill(out, EMPTY_LINKS);
+			return;
+		}
+		for (int i = 0; i < size; i++) {
+			if (in[i] == null)
+				in[i] = EMPTY_LINKS;
+			if (out[i] == null)
+				out[i] = EMPTY_LINKS;
+		}
 	}
 
 	/**
@@ -1470,7 +1519,7 @@ public abstract class AbstractGeometry {
 				|| clo.isValidKey(GeometryType.CUBE)
 				|| clo.isValidKey(GeometryType.HEXAGONAL) || clo.isValidKey(GeometryType.TRIANGULAR));
 		return "--geometry <>   geometry " //
-				+ (engine.getModel().getType().isIBS() ? "- interaction==competition\n" : "\n") //
+				+ (engine.getModel().isIBS() ? "- interaction==competition\n" : "\n") //
 				+ "      argument: <g><k>" //
 				+ (fixedBoundariesAvailable ? "[f|F]" : "") + " (g type, k neighbours)\n" //
 				+ clo.getDescriptionKey() + "\n      further specifications:" //
@@ -1729,8 +1778,10 @@ public abstract class AbstractGeometry {
 
 	@Override
 	public int hashCode() {
-		int result = Objects.hash(engine, specs, name, type, size, isUndirected, isRegular, isRewired,
-				isInterspecies, isSingle, isValid, features, connectivity, pRewire, pAddwire);
+		int result = Objects.hash(specs, type, size, isUndirected, isRegular, isRewired,
+				isInterspecies, isSingle, connectivity, pRewire, pAddwire);
+		result = 31 * result + hashParameters();
+		result = 31 * result + Objects.hash(engine, name, isValid, features);
 		result = 31 * result + Arrays.hashCode(kin);
 		result = 31 * result + Arrays.hashCode(kout);
 		result = 31 * result + Arrays.deepHashCode(in);
@@ -1745,16 +1796,54 @@ public abstract class AbstractGeometry {
 		if (obj == null || getClass() != obj.getClass())
 			return false;
 		AbstractGeometry other = (AbstractGeometry) obj;
+		if (!similar(other))
+			return false;
+		return isValid == other.isValid && Objects.equals(features, other.features)
+				&& Objects.equals(engine, other.engine) && Objects.equals(name, other.name)
+				&& Arrays.equals(kin, other.kin) && Arrays.equals(kout, other.kout)
+				&& Arrays.deepEquals(in, other.in) && Arrays.deepEquals(out, other.out);
+	}
+
+	/**
+	 * Compare geometry configuration while ignoring realized adjacency/layout
+	 * state.
+	 *
+	 * @param other the geometry to compare against
+	 * @return {@code true} if both geometries describe effectively the same
+	 *         structure
+	 */
+	public boolean similar(AbstractGeometry other) {
+		if (this == other)
+			return true;
+		if (other == null || getClass() != other.getClass())
+			return false;
 		return size == other.size && isUndirected == other.isUndirected && isRegular == other.isRegular
-				&& isRewired == other.isRewired && isInterspecies == other.isInterspecies && isSingle == other.isSingle
-				&& isValid == other.isValid && Objects.equals(features, other.features)
+				&& isRewired == other.isRewired && isInterspecies == other.isInterspecies
+				&& isSingle == other.isSingle
 				&& Double.doubleToLongBits(connectivity) == Double.doubleToLongBits(other.connectivity)
 				&& Double.doubleToLongBits(pRewire) == Double.doubleToLongBits(other.pRewire)
 				&& Double.doubleToLongBits(pAddwire) == Double.doubleToLongBits(other.pAddwire)
-				&& Objects.equals(engine, other.engine) && Objects.equals(specs, other.specs)
-				&& Objects.equals(name, other.name) && type == other.type && Arrays.equals(kin, other.kin)
-				&& Arrays.equals(kout, other.kout) && Arrays.deepEquals(in, other.in)
-				&& Arrays.deepEquals(out, other.out);
+				&& Objects.equals(specs, other.specs) && type == other.type
+				&& equalParameters(other);
+	}
+
+	/**
+	 * Compare subclass-specific geometry parameters for semantic equivalence.
+	 *
+	 * @param other the geometry to compare against
+	 * @return {@code true} if subclass-specific settings are equivalent
+	 */
+	protected boolean equalParameters(AbstractGeometry other) {
+		return true;
+	}
+
+	/**
+	 * Hash subclass-specific geometry parameters used by {@link #similar(AbstractGeometry)}.
+	 *
+	 * @return the hash contribution of subclass-specific settings
+	 */
+	protected int hashParameters() {
+		return 0;
 	}
 
 	/**

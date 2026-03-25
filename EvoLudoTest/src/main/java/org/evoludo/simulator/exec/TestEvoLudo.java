@@ -37,6 +37,7 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.ObjectOutputStream;
 import java.io.PrintStream;
+import java.text.DecimalFormat;
 import java.nio.file.FileAlreadyExistsException;
 import java.nio.file.FileSystems;
 import java.nio.file.Files;
@@ -48,7 +49,6 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.Scanner;
 import java.util.logging.Level;
-import java.util.logging.Logger;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
 
@@ -98,14 +98,24 @@ public class TestEvoLudo implements RunListener {
 	EvoLudoJRE engine;
 
 	/**
-	 * Logger for keeping track of and reporting events and issues.
-	 */
-	Logger logger;
-
-	/**
-	 * The output stream for logging messages.
+	 * The output stream for reporting messages.
 	 */
 	PrintStream output = System.out;
+
+	/**
+	 * Time when the current test suite started.
+	 */
+	long suiteStartNanos;
+
+	/**
+	 * Time when the current test started.
+	 */
+	long testStartNanos;
+
+	/**
+	 * Label of the currently running test.
+	 */
+	String testLabel;
 
 	/**
 	 * Directory containing tests or for storing generated tests.
@@ -182,8 +192,7 @@ public class TestEvoLudo implements RunListener {
 	 */
 	public TestEvoLudo() {
 		engine = new EvoLudoJRE();
-		logger = engine.getLogger();
-		logger.setLevel(Level.ALL);
+		engine.getLogger().setLevel(Level.WARNING);
 		// register as RunListener to receive milestone notifications
 		engine.addRunListener(this);
 	}
@@ -323,7 +332,7 @@ public class TestEvoLudo implements RunListener {
 		if (ext.equals(".plist") || ext.equals(".zip")) {
 			String name = dir.getName();
 			int idx = name.indexOf(SHA_PREFIX);
-			logMessage("Testing: '" + parent + name.substring(0, idx) + "'...");
+			startTest(parent + name.substring(0, idx));
 			Plist reference = engine.readPlist(dir.getAbsolutePath());
 			if (reference.isEmpty())
 				return;
@@ -343,6 +352,7 @@ public class TestEvoLudo implements RunListener {
 					// skip comments and empty lines
 					if (clo.isEmpty() || clo.startsWith("#"))
 						continue;
+					startTest(dir.getName() + "#" + (nTest + 1));
 					// run module
 					if (!runModule("Testing", clo)) {
 						nTest++;
@@ -482,7 +492,7 @@ public class TestEvoLudo implements RunListener {
 		engine.setCLO("--seed 0 " + stripExport(clo) + " --delay 0");
 		int issues = engine.parseCLO();
 		if (issues > 0) {
-			logError(task + ": " + issues + " parsing issues with command line arguments - review!");
+			reportTestFailure(currentTestLabel(task) + ": " + issues + " parsing issues with command line arguments - review!");
 			nTestFailures++;
 			nTests++;
 			return false;
@@ -501,12 +511,11 @@ public class TestEvoLudo implements RunListener {
 				try {
 					wait();
 				} catch (InterruptedException e) {
-					logMessage(task + ": resuming.");
+					logWarning(task + ": resuming.");
 					break;
 				}
 			}
 		}
-		engine.writeFooter();
 		return true;
 	}
 
@@ -523,10 +532,7 @@ public class TestEvoLudo implements RunListener {
 	 */
 	private boolean compareRuns(File refname, Plist reference, Plist replicate) {
 		nTests++;
-		logMessage("Testing: analyzing differences...");
 		// create 'plist' of current state and compare to 'reference'
-		if (verbose)
-			replicate.verbose();
 		// ignore some plist entries
 		int nIssues = replicate.diff(reference, SHA_EXCLUDE);
 		// check option strings only if some tests failed
@@ -565,16 +571,16 @@ public class TestEvoLudo implements RunListener {
 		}
 		String name = refname.getName();
 		int idx = name.indexOf(SHA_PREFIX);
-		msg = color + "Testing " + name.substring(0, idx) + " " + msg;
+		msg = name.substring(0, idx) + " " + msg;
 		switch (color) {
 			case GREEN:
-				logOk(msg);
+				reportTestSuccess(msg);
 				break;
 			case YELLOW:
-				logWarning(msg);
+				reportTestWarning(msg);
 				break;
 			case RED:
-				logError(msg);
+				reportTestFailure(msg);
 				break;
 			default:
 				logMessage(msg);
@@ -628,7 +634,7 @@ public class TestEvoLudo implements RunListener {
 			String shaResult = sha256(result, SHA_EXCLUDE);
 			if (shaResult.equals(shaReference)) {
 				nTests++;
-				logOk("Testing: " + name.substring(0, idx) + " SHA match!");
+				reportTestSuccess(name.substring(0, idx) + " SHA match!");
 				return ref;
 			}
 			logWarning("Testing: " + name.substring(0, idx) + " SHA mismatch! - comparing plists...");
@@ -641,7 +647,7 @@ public class TestEvoLudo implements RunListener {
 			// failed to read reference file
 			nTests++;
 			nTestFailures++;
-			logError("Testing: failed to read reference file '" + ref.getAbsolutePath() + "'.");
+			reportTestFailure("failed to read reference file '" + ref.getAbsolutePath() + "'.");
 			return null;
 		}
 		if (compareRuns(ref, reference, result))
@@ -686,6 +692,9 @@ public class TestEvoLudo implements RunListener {
 	 * @return {@code true} if successful
 	 */
 	public boolean run() {
+		suiteStartNanos = System.nanoTime();
+		testStartNanos = 0L;
+		testLabel = null;
 		nTests = 0;
 		nTestFailures = 0;
 		nTestMinor = 0;
@@ -819,6 +828,7 @@ public class TestEvoLudo implements RunListener {
 			// verbose mode
 			if (arg.startsWith("--verb")) {
 				verbose = true;
+				engine.getLogger().setLevel(Level.INFO);
 				continue;
 			}
 			// skip SHA checks
@@ -921,63 +931,128 @@ public class TestEvoLudo implements RunListener {
 	}
 
 	/**
-	 * Log message to console or logger.
+	 * Log message to console.
 	 * 
 	 * @param msg the message to log
 	 */
 	public void logMessage(String msg) {
-		if (logger.isLoggable(Level.INFO))
-			logger.info(msg);
-		else
-			output.println(msg);
+		output.println(msg);
 	}
 
 	/**
-	 * Log bold message to console or logger.
+	 * Log bold message to console.
 	 * 
 	 * @param msg the message to log
 	 */
 	public void logTitle(String msg) {
-		if (logger.isLoggable(Level.INFO))
-			logger.info(ConsoleColors.BLACK_BOLD + msg + ConsoleColors.RESET);
-		else
-			output.println(ConsoleColors.BLACK_BOLD + msg + ConsoleColors.RESET);
+		logMessage(ConsoleColors.BLACK_BOLD + msg + ConsoleColors.RESET);
 	}
 
 	/**
-	 * Log message in green color to console or logger.
+	 * Log message in green color to console.
 	 * 
 	 * @param msg the message to log
 	 */
 	public void logOk(String msg) {
-		if (logger.isLoggable(Level.INFO))
-			logger.info(ConsoleColors.GREEN + msg + ConsoleColors.RESET);
-		else
-			output.println(ConsoleColors.GREEN + msg + ConsoleColors.RESET);
+		logMessage(ConsoleColors.GREEN + msg + ConsoleColors.RESET);
 	}
 
 	/**
-	 * Log warning message in yellow color to console or logger.
+	 * Log warning message in yellow color to console.
 	 * 
 	 * @param msg the warning to log
 	 */
 	public void logWarning(String msg) {
-		if (logger.isLoggable(Level.WARNING))
-			logger.warning(ConsoleColors.YELLOW + msg + ConsoleColors.RESET);
-		else
-			output.println(ConsoleColors.YELLOW + "WARNING: " + msg + ConsoleColors.RESET);
+		logMessage(ConsoleColors.YELLOW + "WARNING: " + msg + ConsoleColors.RESET);
 	}
 
 	/**
-	 * Log error message in red color to console or logger.
+	 * Log error message in red color to console.
 	 * 
 	 * @param msg the error to log
 	 */
 	public void logError(String msg) {
-		if (logger.isLoggable(Level.SEVERE))
-			logger.severe(ConsoleColors.RED + msg + ConsoleColors.RESET);
-		else
-			output.println(ConsoleColors.RED + "ERROR: " + msg + ConsoleColors.RESET);
+		logMessage(ConsoleColors.RED + "ERROR: " + msg + ConsoleColors.RESET);
+	}
+
+	/**
+	 * Start timing the current test.
+	 * 
+	 * @param label the label of the test
+	 */
+	private void startTest(String label) {
+		testLabel = label;
+		testStartNanos = System.nanoTime();
+	}
+
+	/**
+	 * Return label of current test or fallback if none is set.
+	 * 
+	 * @param fallback the fallback label
+	 * @return the label of the current test
+	 */
+	private String currentTestLabel(String fallback) {
+		return (testLabel == null || testLabel.isBlank()) ? fallback : testLabel;
+	}
+
+	/**
+	 * Report successful test result and timing.
+	 * 
+	 * @param msg the success message
+	 */
+	private void reportTestSuccess(String msg) {
+		logOk("Success: " + msg);
+		printTestTiming();
+	}
+
+	/**
+	 * Report warning test result and timing.
+	 * 
+	 * @param msg the warning message
+	 */
+	private void reportTestWarning(String msg) {
+		logWarning("Warning: " + msg);
+		printTestTiming();
+	}
+
+	/**
+	 * Report failed test result and timing.
+	 * 
+	 * @param msg the failure message
+	 */
+	private void reportTestFailure(String msg) {
+		logError("Failure: " + msg);
+		printTestTiming();
+	}
+
+	/**
+	 * Print timing information for current test and total elapsed test-suite time.
+	 */
+	private void printTestTiming() {
+		if (testStartNanos <= 0L || suiteStartNanos <= 0L)
+			return;
+		long now = System.nanoTime();
+		logMessage("Time: " + formatDuration(now - testStartNanos) + "   Total: "
+				+ formatDuration(now - suiteStartNanos));
+		testStartNanos = 0L;
+		testLabel = null;
+	}
+
+	/**
+	 * Format elapsed nanoseconds as {@code h:mm:ss.mmm}.
+	 * 
+	 * @param durationNanos the elapsed duration in nanoseconds
+	 * @return the formatted duration
+	 */
+	private String formatDuration(long durationNanos) {
+		long durationMillis = durationNanos / 1_000_000L;
+		long durationSeconds = durationMillis / 1000L;
+		long durationMinutes = durationSeconds / 60L;
+		long durationHours = durationMinutes / 60L;
+		DecimalFormat twoDigits = new DecimalFormat("00");
+		DecimalFormat threeDigits = new DecimalFormat("000");
+		return durationHours + ":" + twoDigits.format(durationMinutes % 60L) + ":"
+				+ twoDigits.format(durationSeconds % 60L) + "." + threeDigits.format(durationMillis % 1000L);
 	}
 
 	/**

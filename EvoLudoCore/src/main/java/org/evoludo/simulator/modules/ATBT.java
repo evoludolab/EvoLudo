@@ -31,7 +31,9 @@
 package org.evoludo.simulator.modules;
 
 import java.awt.Color;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
 
 import org.evoludo.geom.Point2D;
 import org.evoludo.math.ArrayMath;
@@ -338,7 +340,7 @@ public class ATBT extends TBT implements HasS3, HasPhase2D {
 	 * @return {@code true} if feedback successfully set
 	 */
 	public boolean setFeedback(double[] feedback) {
-		if (feedback == null)
+		if (feedback == null || feedback.length == 0)
 			return false;
 		// recall:
 		// "--feedback <Cb→g:Dg→b:Cg→b:Db→g> feedback between traits and patches"
@@ -384,7 +386,7 @@ public class ATBT extends TBT implements HasS3, HasPhase2D {
 	 * @return {@code true} if environmental values successfully set
 	 */
 	public boolean setEnvironment(double[] environment) {
-		if (environment == null)
+		if (environment == null || environment.length == 0)
 			return false;
 		// recall: "--environment <g[:b]> payoff on good (bad) patches",
 		switch (environment.length) {
@@ -436,6 +438,7 @@ public class ATBT extends TBT implements HasS3, HasPhase2D {
 		 * Create the 2D projection helper using the surrounding module settings.
 		 */
 		public ATBTMap() {
+			// Intentionally empty: no additional initialization needed.
 		}
 
 		@Override
@@ -471,12 +474,14 @@ public class ATBT extends TBT implements HasS3, HasPhase2D {
 
 		@Override
 		public String getTooltipAt(double x, double y) {
-			String tip = "<table><tr><td style='text-align:right'><i>" + getXAxisLabel() + ":</i></td><td>"
-					+ Formatter.formatPercent(x, 2) + "</td></tr>";
-			tip += "<tr><td style='text-align:right'><i>" + getYAxisLabel() + ":</i></td><td>"
-					+ Formatter.formatPercent(y, 2) + "</td></tr>";
-			tip += "</table>";
-			return tip;
+			StringBuilder tip = new StringBuilder(TABLE_STYLE)
+					.append(TABLE_ROW_START_RIGHT)
+					.append(getXAxisLabel()).append(TABLE_CELL_NEXT)
+					.append(Formatter.formatPercent(x, 2)).append(TABLE_ROW_END);
+			tip.append(TABLE_ROW_START_RIGHT)
+					.append(getYAxisLabel()).append(TABLE_CELL_NEXT)
+					.append(Formatter.formatPercent(y, 2)).append(TABLE_ROW_END);
+			return tip.append(TABLE_END).toString();
 		}
 	}
 
@@ -540,7 +545,7 @@ public class ATBT extends TBT implements HasS3, HasPhase2D {
 	 * Command line option to set the origin of asymmetries to differences in
 	 * genotype or in the environment.
 	 */
-	public final CLOption cloAsymmetry = new CLOption("asymmetry", "e", CLOption.Argument.NONE, CLOCategory.Module,
+	public final CLOption cloAsymmetry = new CLOption("asymmetry", "e", CLOption.Argument.REQUIRED, CLOCategory.Module,
 			"--asymmetry <a>    type of asymmetry\n" //
 					+ "             g:    genetic (inherited) asymmetries\n" //
 					+ "             e:    environmental (default)",
@@ -605,10 +610,17 @@ public class ATBT extends TBT implements HasS3, HasPhase2D {
 	}
 
 	@Override
+	public List<ModelType> getModelTypes() {
+		List<ModelType> types = new ArrayList<>(super.getModelTypes());
+		types.remove(ModelType.EM);
+		return types;
+	}
+
+	@Override
 	public Model createModel(ModelType type) {
-		if (!type.isODE())
+		if (!(type == ModelType.ODE || type == ModelType.RK5))
 			return super.createModel(type);
-		if (getModelType().isODE())
+		if (model != null && model.isODE())
 			return model;
 		return new ATBT.ODE();
 	}

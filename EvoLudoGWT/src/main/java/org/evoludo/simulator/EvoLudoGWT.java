@@ -36,13 +36,12 @@ import org.evoludo.graphics.Network3DGWT;
 import org.evoludo.math.ArrayMath;
 import org.evoludo.simulator.geometries.AbstractGeometry;
 import org.evoludo.simulator.models.ChangeListener.PendingAction;
-import org.evoludo.simulator.models.ModelType;
+import org.evoludo.simulator.models.FixationData;
+import org.evoludo.simulator.models.IBS;
+import org.evoludo.simulator.models.Model;
+import org.evoludo.simulator.models.ODE;
 import org.evoludo.simulator.models.PDE;
-import org.evoludo.simulator.models.PDESupervisor;
-import org.evoludo.simulator.models.PDESupervisorGWT;
 import org.evoludo.simulator.views.AbstractView;
-import org.evoludo.ui.ContextMenu;
-import org.evoludo.ui.ContextMenuCheckBoxItem;
 import org.evoludo.util.CLOCategory;
 import org.evoludo.util.CLODelegate;
 import org.evoludo.util.CLOParser;
@@ -62,6 +61,22 @@ import com.google.gwt.user.client.Timer;
 public class EvoLudoGWT extends EvoLudo {
 
 	/**
+	 * Target number of microscopic IBS updates processed in one hidden GWT chunk.
+	 */
+	private static final int IBS_CHUNK_TARGET = 10000;
+
+	/**
+	 * Target number of ODE/SDE integration increments processed in one hidden GWT
+	 * chunk.
+	 */
+	private static final int OSDE_CHUNK_TARGET = 100;
+
+	/**
+	 * Tolerance for floating point comparisons of update milestones.
+	 */
+	private static final double IBS_EPS = 1e-8;
+
+	/**
 	 * Create timer to measure execution times since instantiation.
 	 */
 	private final Duration elapsedTime = new Duration();
@@ -72,13 +87,23 @@ public class EvoLudoGWT extends EvoLudo {
 	EvoLudoWeb gui;
 
 	/**
+	 * <code>true</code> while a one-off scheduled calculation is in progress and
+	 * should drive the busy spinner even though the model is not in running mode.
+	 */
+	private boolean scheduledBusy = false;
+
+	/**
+	 * <code>true</code> after a fatal execution error has disabled the lab.
+	 */
+	private boolean fatalExecutionError = false;
+
+	/**
 	 * Construct EvoLudo controller for GWT applications (web or ePub).
 	 * 
 	 * @param gui the reference to the GUI
 	 */
 	public EvoLudoGWT(EvoLudoWeb gui) {
 		this.gui = gui;
-		isGWT = true;
 	}
 
 	/**
@@ -91,7 +116,7 @@ public class EvoLudoGWT extends EvoLudo {
 
 	@Override
 	public void execute(Directive directive) {
-		Scheduler.get().scheduleDeferred(directive::execute);
+		Scheduler.get().scheduleDeferred(() -> runGuarded("executing a deferred directive", directive::execute));
 	}
 
 	/**
@@ -137,11 +162,101 @@ public class EvoLudoGWT extends EvoLudo {
 			// no stopping time requested: take snapshot now
 			gui.snapshotReady();
 		}
+		if (isSuspended()) {
+			AbstractView<?> activeView = gui.getActiveView();
+			if (activeView != null)
+				activeView.update(true);
+			Scheduler.get().scheduleDeferred(() -> runGuarded("resuming the model", this::run));
+		}
 		super.layoutComplete();
+	}
+
+	/**
+	 * Track whether one-off scheduled calculations are in progress.
+	 *
+	 * @param busy <code>true</code> while deferred work is scheduled or running
+	 */
+	private void setScheduledBusy(boolean busy) {
+		if (scheduledBusy == busy)
+			return;
+		scheduledBusy = busy;
+		gui.setBusy(isRunning || busy);
+	}
+
+	/**
+	 * Execute work behind a fatal error boundary.
+	 *
+	 * @param context the description of the operation
+	 * @param action  the action to execute
+	 */
+	private void runGuarded(String context, Runnable action) {
+		if (fatalExecutionError)
+			return;
+		gui.enterGuardedExecution();
+		try {
+			action.run();
+		} catch (RuntimeException error) {
+			gui.exitGuardedExecution();
+			handleFatalExecutionError(context, error);
+			return;
+		}
+		gui.exitGuardedExecution();
+	}
+
+	/**
+	 * Execute a scheduled command behind a fatal error boundary.
+	 *
+	 * @param context the description of the operation
+	 * @param action  the action to execute
+	 * @return <code>false</code> if execution should stop
+	 */
+	private boolean runGuarded(String context, Scheduler.RepeatingCommand action) {
+		if (fatalExecutionError)
+			return false;
+		gui.enterGuardedExecution();
+		try {
+			boolean again = action.execute();
+			gui.exitGuardedExecution();
+			return again;
+		} catch (RuntimeException error) {
+			gui.exitGuardedExecution();
+			handleFatalExecutionError(context, error);
+			return false;
+		}
+	}
+
+	/**
+	 * Disable further execution after a fatal error and notify the GUI.
+	 *
+	 * @param context the description of the failing operation
+	 * @param error   the underlying exception
+	 */
+	private void handleFatalExecutionError(String context, Throwable error) {
+		if (fatalExecutionError)
+			return;
+		abortFatalExecution();
+		gui.handleFatalError(context, error);
+	}
+
+	/**
+	 * Stop all execution paths after a fatal error, without reporting it again.
+	 */
+	public void abortFatalExecution() {
+		if (fatalExecutionError)
+			return;
+		fatalExecutionError = true;
+		setScheduledBusy(false);
+		resetChunking();
+		timer.cancel();
+		isRunning = false;
+		isSuspended = false;
+		gui.setBusy(false);
 	}
 
 	@Override
 	public void run() {
+		if (fatalExecutionError)
+			return;
 		// ignore if already running or not suspended
 		if (isRunning || !isSuspended())
 			return;
@@ -155,6 +270,12 @@ public class EvoLudoGWT extends EvoLudo {
 			case STATISTICS_UPDATE:
 			case DYNAMICS:
 				// start with an update not the delay
+				double chunkStep = getChunkStep(activeModel);
+				if (chunkStep > 0.0) {
+					scheduleChunkedStep(chunkStep);
+					timer.scheduleRepeating(getDelay());
+					break;
+				}
 				if (modelNext())
 					timer.scheduleRepeating(getDelay());
 				break;
@@ -167,12 +288,31 @@ public class EvoLudoGWT extends EvoLudo {
 	Timer timer = new Timer() {
 		@Override
 		public void run() {
-			next();
+			runGuarded("running the model", EvoLudoGWT.this::next);
 		}
 	};
 
+	/**
+	 * <code>true</code> while hidden chunk updates are scheduled or in progress.
+	 */
+	private boolean chunkedStepScheduled = false;
+
+	/**
+	 * The original report interval while scheduled, chunked updates are in
+	 * progress.
+	 */
+	private double chunkTimeStepOrig = 0.0;
+
+	/**
+	 * The update milestone at which the current visible step is complete.
+	 */
+	private double chunkTargetUpdates = 0.0;
+
 	@Override
 	public void next() {
+		if (fatalExecutionError)
+			return;
+		setScheduledBusy(true);
 		switch (activeModel.getMode()) {
 			case STATISTICS_SAMPLE:
 				// non-blocking way for running an arbitrary number of update
@@ -181,7 +321,11 @@ public class EvoLudoGWT extends EvoLudo {
 				break;
 			case STATISTICS_UPDATE:
 			case DYNAMICS:
-				// schedule single step
+				double chunkStep = getChunkStep(activeModel);
+				if (chunkStep > 0.0) {
+					scheduleChunkedStep(chunkStep);
+					break;
+				}
 				scheduleStep();
 				break;
 			default:
@@ -193,44 +337,204 @@ public class EvoLudoGWT extends EvoLudo {
 	 * Schedule the next sample.
 	 */
 	private void scheduleSample() {
-		Scheduler.get().scheduleIncremental(() -> {
+		Scheduler.get().scheduleIncremental(() -> runGuarded("running a statistics sample", () -> {
 			// in unfortunate cases even a single sample can take exceedingly long
 			// times. stop/init/reset need to be able to interrupt.
 			// make sure active model has not been unloaded in the meantime
-			if (activeModel == null || pendingAction != PendingAction.NONE) {
+			if (activeModel == null || pendingAction != PendingAction.NONE
+					|| activeModel.getMode() != org.evoludo.simulator.models.Mode.STATISTICS_SAMPLE) {
+				setScheduledBusy(false);
 				processPendingAction();
 				return false;
 			}
-			if (activeModel.next())
+			if (activeModel.next(activeModel.getTimeStep()))
 				return true; // continue sampling
+			if (pendingAction != PendingAction.NONE
+					|| activeModel.getMode() != org.evoludo.simulator.models.Mode.STATISTICS_SAMPLE) {
+				setScheduledBusy(false);
+				processPendingAction();
+				return false;
+			}
 			// sample completed
-			boolean failed = (activeModel.getFixationData().mutantNode < 0);
-			// continue if running multiple samples or sampling failed
-			return fireModelSample(!failed) || failed;
-		});
+			FixationData fixData = activeModel.getFixationData();
+			if (fixData == null)
+				// invalid sample, discard
+				return false;
+			boolean failed = fixData.mutantNode < 0;
+			// continue only when the model is actually running in batch mode
+			boolean cont = fireModelSample(!failed);
+			if (!cont)
+				setScheduledBusy(false);
+			return cont;
+		}));
 	}
 
 	/**
 	 * Schedule the next step.
 	 */
 	private void scheduleStep() {
-		Scheduler.get().scheduleDeferred(() -> modelNext());
+		Scheduler.get().scheduleDeferred(() -> runGuarded("advancing the model", () -> {
+			if (pendingAction != PendingAction.NONE) {
+				setScheduledBusy(false);
+				processPendingAction();
+				return;
+			}
+			modelNext();
+			if (!isRunning)
+				setScheduledBusy(false);
+		}));
+	}
+
+	/**
+	 * Determine the hidden chunk step for <code>model</code>.
+	 * 
+	 * @param model the model to inspect
+	 * @return the hidden chunk step in generations, or <code>0</code> if no
+	 *         chunking should be used
+	 */
+	private static double getChunkStep(Model model) {
+		if (model instanceof IBS && model.getTimeStep() > 0.0) {
+			int nTotal = 0;
+			for (int id = 0; id < model.getNSpecies(); id++)
+				nTotal += model.getSpecies(id).getNPopulation();
+			if (nTotal <= 0)
+				return model.getTimeStep();
+			return IBS_CHUNK_TARGET / (double) nTotal;
+		}
+		if (model instanceof PDE) {
+			double dt = ((PDE) model).getDt();
+			if (dt > 0.0)
+				return dt;
+		}
+		if (model instanceof ODE && !(model instanceof PDE)) {
+			double dt = ((ODE) model).getDt();
+			if (dt > 0.0) {
+				double chunkStep = OSDE_CHUNK_TARGET * dt;
+				if (model.getTimeStep() > chunkStep + IBS_EPS)
+					return chunkStep;
+			}
+		}
+		return 0.0;
+	}
+
+	/**
+	 * Schedule a visible report step as a sequence of hidden substeps.
+	 *
+	 * @param chunkStep the maximum model-time increment per hidden substep
+	 */
+	private void scheduleChunkedStep(double chunkStep) {
+		if (chunkedStepScheduled || activeModel == null)
+			return;
+		chunkedStepScheduled = true;
+		chunkTimeStepOrig = activeModel.getTimeStep();
+		chunkTargetUpdates = getNextChunkedReport();
+		runController.startCPUSample();
+		Scheduler.get().scheduleIncremental(() -> runGuarded("running a chunked model step", () -> {
+			if (!chunkedStepScheduled)
+				return false;
+			if (activeModel == null) {
+				resetChunking();
+				setScheduledBusy(false);
+				return false;
+			}
+			if (pendingAction != PendingAction.NONE) {
+				resetChunking();
+				setScheduledBusy(false);
+				processPendingAction();
+				return false;
+			}
+			double remaining = chunkTargetUpdates - activeModel.getUpdates();
+			if (remaining <= IBS_EPS) {
+				finishChunkedStep(activeModel.getUpdates() + IBS_EPS < activeModel.getNextHalt());
+				return false;
+			}
+			double chunk = Math.min(chunkStep, remaining);
+			boolean cont = activeModel.next(chunk);
+			double updates = activeModel.getUpdates();
+			boolean reachedTarget = (updates + IBS_EPS >= chunkTargetUpdates);
+			if (!cont) {
+				finishChunkedStep(false);
+				return false;
+			}
+			if (reachedTarget) {
+				finishChunkedStep(activeModel.getUpdates() + IBS_EPS < activeModel.getNextHalt());
+				return false;
+			}
+			return true;
+		}));
+	}
+
+	/**
+	 * Calculate the next regular report boundary for the active chunked model.
+	 * 
+	 * @return the update milestone for the next visible step
+	 */
+	private double getNextChunkedReport() {
+		double updates = activeModel.getUpdates();
+		double nextHalt = activeModel.getNextHalt();
+		double nextReport = (Math.floor((updates + IBS_EPS) / chunkTimeStepOrig) + 1.0) * chunkTimeStepOrig;
+		return Math.min(nextReport, nextHalt);
+	}
+
+	/**
+	 * Complete the current hidden chunked step and forward the visible-step
+	 * result.
+	 * 
+	 * @param cont <code>true</code> if the model should continue after this step
+	 */
+	private void finishChunkedStep(boolean cont) {
+		resetChunking();
+		modelNextDone(cont);
+		if (!isRunning)
+			setScheduledBusy(false);
+	}
+
+	/**
+	 * Reset temporary state used for hidden chunking.
+	 */
+	private void resetChunking() {
+		chunkedStepScheduled = false;
+		chunkTimeStepOrig = 0.0;
+		chunkTargetUpdates = 0.0;
+	}
+
+	@Override
+	public synchronized void fireModelRunning() {
+		super.fireModelRunning();
+		gui.setBusy(true);
+	}
+
+	@Override
+	public synchronized void fireModelUnloaded() {
+		setScheduledBusy(false);
+		isRunning = false;
+		gui.setBusy(false);
+		super.fireModelUnloaded();
 	}
 
 	@Override
 	public synchronized void fireModuleUnloaded() {
+		setScheduledBusy(false);
+		resetChunking();
 		isRunning = false;
 		timer.cancel();
+		gui.setBusy(false);
 		super.fireModuleUnloaded();
 	}
 
 	@Override
 	public synchronized void fireModelStopped() {
+		setScheduledBusy(false);
+		resetChunking();
 		// model may already have been unloaded
-		if (activeModel == null)
+		if (activeModel == null) {
+			isRunning = false;
+			gui.setBusy(false);
 			return;
+		}
 		super.fireModelStopped();
 		timer.cancel();
+		gui.setBusy(false);
 		if (cloSnap.isSet()) {
 			// take snapshot
 			gui.snapshotReady();
@@ -284,11 +588,6 @@ public class EvoLudoGWT extends EvoLudo {
 	}
 
 	@Override
-	public PDESupervisor hirePDESupervisor(PDE charge) {
-		return new PDESupervisorGWT(this, charge);
-	}
-
-	@Override
 	public Network2D createNetwork2D(AbstractGeometry geometry) {
 		return new Network2DGWT(this, geometry);
 	}
@@ -313,66 +612,6 @@ public class EvoLudoGWT extends EvoLudo {
 		super.setDelay(delay);
 		if (isRunning)
 			timer.scheduleRepeating(delay);
-	}
-
-	/**
-	 * The context menu item to reverse time.
-	 */
-	private ContextMenuCheckBoxItem timeReverseMenu;
-
-	/**
-	 * The context menu item for symmetrical diffusion (only applies to PDE models).
-	 */
-	private ContextMenuCheckBoxItem symDiffMenu;
-
-	/**
-	 * The field to store the fullscreen context menu.
-	 */
-	protected ContextMenuCheckBoxItem fullscreenMenu;
-
-	/**
-	 * Opportunity to contribute entries to the context menu for models. this needs
-	 * to be quarantined in order to not interfere with java simulations.
-	 *
-	 * @param menu the context menu where entries can be added
-	 */
-	public void populateContextMenu(ContextMenu menu) {
-		ModelType mt = activeModel != null ? activeModel.getType() : ModelType.NONE;
-		if (mt.isODE() || mt.isSDE()) {
-			// add time reverse context menu
-			if (timeReverseMenu == null) {
-				timeReverseMenu = new ContextMenuCheckBoxItem("Time reversed",
-						() -> activeModel.setTimeReversed(!activeModel.isTimeReversed()));
-			}
-			menu.addSeparator();
-			menu.add(timeReverseMenu);
-			timeReverseMenu.setChecked(activeModel.isTimeReversed());
-			timeReverseMenu.setEnabled(activeModel.permitsTimeReversal());
-		} else if (mt.isPDE()) {
-			// add context menu to allow symmetric diffusion
-			if (symDiffMenu == null) {
-				symDiffMenu = new ContextMenuCheckBoxItem("Symmetric diffusion", () -> {
-					PDE pde = (PDE) activeModel;
-					pde.setSymmetric(!pde.isSymmetric());
-					pde.check();
-				});
-			}
-			menu.addSeparator();
-			menu.add(symDiffMenu);
-			PDE pde = (PDE) activeModel;
-			symDiffMenu.setChecked(pde.isSymmetric());
-			AbstractGeometry space = pde.getGeometry();
-			symDiffMenu.setEnabled(space.isRegular() || space.isLattice());
-		}
-		// process fullscreen context menu
-		if (NativeJS.isFullscreenSupported()) {
-			if (fullscreenMenu == null)
-				fullscreenMenu = new ContextMenuCheckBoxItem("Full screen",
-						() -> setFullscreen(!NativeJS.isFullscreen()));
-			menu.addSeparator();
-			menu.add(fullscreenMenu);
-			fullscreenMenu.setChecked(NativeJS.isFullscreen());
-		}
 	}
 
 	/**

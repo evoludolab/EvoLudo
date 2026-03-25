@@ -157,7 +157,7 @@ public class TBT extends Discrete implements Payoffs,
 
 	@Override
 	public String getTraitName(int idx) {
-		String idxname = super.getTraitName(idx % nTraits);
+		String idxname = super.getTraitName(idx);
 		IBSPopulation<?, ?> ibsPop = getIBSPopulation();
 		if (ibsPop == null
 				|| !ibsPop.getCompetitionGeometry().isType(GeometryType.SQUARE_NEUMANN_2ND))

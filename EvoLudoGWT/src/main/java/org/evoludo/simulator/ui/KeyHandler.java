@@ -78,6 +78,11 @@ public class KeyHandler {
 	public static final String KEY_ENTER = "Enter";
 
 	/**
+	 * String value emitted when the Space key is pressed.
+	 */
+	public static final String KEY_SPACE = " ";
+
+	/**
 	 * String value emitted when the Escape key is pressed.
 	 */
 	public static final String KEY_ESCAPE = "Escape";
@@ -352,6 +357,7 @@ public class KeyHandler {
 				gui.syncDelaySlider();
 				break;
 			case KEY_ENTER:
+			case KEY_SPACE:
 				return true;
 			default:
 				return false;
@@ -513,7 +519,7 @@ public class KeyHandler {
 			case "c":
 				return handleConsoleToggle();
 			case KEY_ENTER:
-			case " ":
+			case KEY_SPACE:
 				gui.getEngine().startStop();
 				return true;
 			case KEY_ESCAPE:

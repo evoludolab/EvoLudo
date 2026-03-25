@@ -32,13 +32,14 @@ package org.evoludo.simulator.views;
 
 import java.awt.Color;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 import org.evoludo.graphics.AbstractGraph.Shifter;
 import org.evoludo.graphics.AbstractGraph.Zoomer;
-import org.evoludo.math.ArrayMath;
 import org.evoludo.graphics.GraphStyle;
 import org.evoludo.graphics.LineGraph;
+import org.evoludo.math.ArrayMath;
 import org.evoludo.simulator.ColorMap;
 import org.evoludo.simulator.ColorMapCSS;
 import org.evoludo.simulator.EvoLudoGWT;
@@ -132,7 +133,7 @@ public class Mean extends AbstractView<LineGraph> implements Shifter, Zoomer {
 			addLineGraph(module);
 		}
 		// arrange graphs vertically
-		gRows = nGraphs;
+		gRows = Math.max(1, nGraphs);
 		int width = 100 / gCols;
 		int height = 100 / gRows;
 		for (LineGraph graph : graphs)
@@ -237,6 +238,7 @@ public class Mean extends AbstractView<LineGraph> implements Shifter, Zoomer {
 		traitcolors[1] = ColorMapCSS.Color2Css(color == Color.BLACK ? Color.LIGHT_GRAY : color.darker()); // min
 		traitcolors[2] = traitcolors[1]; // max
 		graph.setColors(traitcolors);
+		graph.setMarkers(Collections.emptyList());
 	}
 
 	/**
@@ -304,6 +306,7 @@ public class Mean extends AbstractView<LineGraph> implements Shifter, Zoomer {
 		// hardcoded color: black for mean, light gray for mean +/- sdev
 		Color[] fitcolors = new Color[] { Color.BLACK, Color.LIGHT_GRAY, Color.LIGHT_GRAY };
 		graph.setColors(ColorMapCSS.Color2Css(fitcolors));
+		graph.setMarkers(Collections.emptyList());
 	}
 
 	/**
@@ -365,64 +368,54 @@ public class Mean extends AbstractView<LineGraph> implements Shifter, Zoomer {
 	}
 
 	@Override
-	public void update(boolean force) {
+	protected void updateData() {
 		double newtime = model.getUpdates();
-		Module<?> module = null;
 		if (Math.abs(timestamp - newtime) > 1e-8) {
+			Module<?> module = null;
 			int idx = 0;
 			for (LineGraph graph : graphs) {
-				idx = updateGraph(graph, module, idx, newtime);
+				Module<?> nod = graph.getModule();
+				boolean newmod = module != nod;
+				module = nod;
+				int id = module.getId();
+				int nState = model.getNMean(id);
+				double[] data;
+				switch (type) {
+					case TRAIT:
+						if (newmod) {
+							model.getMeanTraits(id, state);
+							idx = 0;
+						}
+						if (model.isContinuous())
+							data = updateCTraitGraph(nState, idx++);
+						else
+							data = updateDTraitGraph(nState);
+						break;
+					case FITNESS:
+						if (newmod)
+							model.getMeanFitness(id, state);
+						if (model.isContinuous())
+							data = updateCFitGraph();
+						else
+							data = updateDFitGraph(nState);
+						break;
+					default:
+						throw new IllegalArgumentException("Unknown data type: " + type);
+				}
+				data[0] = newtime;
+				graph.addData(data);
 			}
+			timestamp = newtime;
 		}
-		if (isActive) {
-			for (LineGraph graph : graphs)
-				graph.paint(force);
-		}
-		timestamp = newtime;
 	}
 
-	/**
-	 * Pull updated mean data for the supplied graph and append it to the data
-	 * buffer.
-	 * 
-	 * @param graph   graph to update
-	 * @param module  module currently being processed
-	 * @param idx     index offset used when processing multiple traits
-	 * @param newtime latest simulation time
-	 * @return updated index offset for subsequent graphs
-	 */
-	private int updateGraph(LineGraph graph, Module<?> module, int idx, double newtime) {
-		Module<?> nod = graph.getModule();
-		boolean newmod = module != nod;
-		module = nod;
-		int id = module.getId();
-		int nState = model.getNMean(id);
-		double[] data;
-		switch (type) {
-			case TRAIT:
-				if (newmod) {
-					model.getMeanTraits(id, state);
-					idx = 0;
-				}
-				if (model.isContinuous())
-					data = updateCTraitGraph(nState, idx++);
-				else
-					data = updateDTraitGraph(nState);
-				break;
-			case FITNESS:
-				if (newmod)
-					model.getMeanFitness(id, state);
-				if (model.isContinuous())
-					data = updateCFitGraph();
-				else
-					data = updateDFitGraph(nState);
-				break;
-			default:
-				throw new IllegalArgumentException("Unknown data type: " + type);
-		}
-		data[0] = newtime;
-		graph.addData(data);
-		return idx;
+	@Override
+	public void update(boolean force) {
+		updateData();
+		if (!isActive)
+			return;
+		for (LineGraph graph : graphs)
+			graph.paint(force);
 	}
 
 	/**

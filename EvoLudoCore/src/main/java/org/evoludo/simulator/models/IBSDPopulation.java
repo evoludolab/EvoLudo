@@ -32,6 +32,7 @@ package org.evoludo.simulator.models;
 
 import java.util.Arrays;
 import java.util.List;
+import java.util.logging.Level;
 
 import org.evoludo.math.ArrayMath;
 import org.evoludo.math.Combinatorics;
@@ -957,8 +958,8 @@ public class IBSDPopulation extends IBSPopulation<Discrete, IBSDPopulation> {
 		if (mytype == sampletype)
 			return true;
 		int besttype = getTraitAt(best);
-		int distsample = (mytype - sampletype + nTraits) % nTraits;
-		int distbest = (mytype - besttype + nTraits) % nTraits;
+		int distsample = Math.floorMod(mytype - sampletype, nTraits);
+		int distbest = Math.floorMod(mytype - besttype, nTraits);
 		return (distsample < distbest);
 	}
 
@@ -1741,9 +1742,11 @@ public class IBSDPopulation extends IBSPopulation<Discrete, IBSDPopulation> {
 				if (compRates[n] > 0.0 && pop.getPopulationSize() > 0)
 					return false;
 			}
-			String name = module.getName();
-			logger.warning(
-					"Population" + (name != null ? " of " + name : "") + " explodes (no death, no competition).");
+			if (logger.isLoggable(Level.WARNING)) {
+				String name = module.getName();
+				logger.warning(
+						"Population" + (name != null ? " of " + name : "") + " explodes (no death, no competition).");
+			}
 			return true;
 		}
 		return false;
@@ -1805,7 +1808,7 @@ public class IBSDPopulation extends IBSPopulation<Discrete, IBSDPopulation> {
 		double min = minScore;
 		if (isNeutral) {
 			map = nBins * 0.5;
-			min--;
+			min -= 1.0;
 		} else
 			map = nBins / (maxScore - min);
 		int idx = 0;
@@ -1910,7 +1913,7 @@ public class IBSDPopulation extends IBSPopulation<Discrete, IBSDPopulation> {
 
 	@Override
 	public String getTraitNameAt(int idx) {
-		return module.getTraitName(getTraitAt(idx));
+		return module.getTraitName(traits[idx]);
 	}
 
 	@Override

@@ -42,19 +42,24 @@ import org.evoludo.graphics.AbstractGraph.MyContext2d;
 import org.evoludo.graphics.AbstractGraph.Shifter;
 import org.evoludo.graphics.AbstractGraph.Zoomer;
 import org.evoludo.graphics.GenericPopGraph;
+import org.evoludo.graphics.GraphStyle;
 import org.evoludo.simulator.EvoLudo;
 import org.evoludo.simulator.EvoLudoGWT;
 import org.evoludo.simulator.Resources;
+import org.evoludo.simulator.geometries.AbstractGeometry;
 import org.evoludo.simulator.models.ChangeListener;
 import org.evoludo.simulator.models.Data;
 import org.evoludo.simulator.models.LifecycleListener;
 import org.evoludo.simulator.models.Mode;
 import org.evoludo.simulator.models.Model;
 import org.evoludo.simulator.models.ModelType;
+import org.evoludo.simulator.models.PDE;
 import org.evoludo.simulator.models.RunListener;
 import org.evoludo.simulator.models.SampleListener;
 import org.evoludo.ui.ContextMenu;
+import org.evoludo.ui.ContextMenuCheckBoxItem;
 import org.evoludo.ui.ContextMenuItem;
+import org.evoludo.ui.ContextMenuRadioItem;
 import org.evoludo.util.Formatter;
 import org.evoludo.util.NativeJS;
 import org.evoludo.util.RingBuffer;
@@ -340,7 +345,9 @@ public abstract class AbstractView<G extends AbstractGraph<?>> extends Composite
 		isActive = true;
 		for (G graph : graphs)
 			graph.activate();
-		if (!model.requestMode(getMode())) {
+		if (model.requestMode(getMode())) {
+			updateData(true);
+		} else {
 			// this is should not happen because view should not be available
 			// if mode is not supported, see EvoLudoWeb#updateViews()
 			for (G graph : graphs)
@@ -461,6 +468,7 @@ public abstract class AbstractView<G extends AbstractGraph<?>> extends Composite
 
 	@Override
 	public void modelStopped() {
+		updateData(true);
 		update(true);
 	}
 
@@ -508,7 +516,7 @@ public abstract class AbstractView<G extends AbstractGraph<?>> extends Composite
 	public void modelChanged(PendingAction action) {
 		if (action != PendingAction.NONE)
 			return;
-		updateData();
+		updateData(false);
 		if (!doUpdateView(false))
 			return;
 		update(false);
@@ -518,6 +526,15 @@ public abstract class AbstractView<G extends AbstractGraph<?>> extends Composite
 	 * Update view-specific data even when GUI rendering is throttled.
 	 */
 	protected void updateData() {
+	}
+
+	/**
+	 * Update view-specific data even when GUI rendering is throttled.
+	 *
+	 * @param force whether the update was explicitly forced
+	 */
+	protected void updateData(boolean force) {
+		updateData();
 	}
 
 	/**
@@ -609,6 +626,172 @@ public abstract class AbstractView<G extends AbstractGraph<?>> extends Composite
 	 * @see AbstractView#populateContextMenu(ContextMenu)
 	 */
 	public void populateContextMenuAt(ContextMenu menu, int node) {
+	}
+
+	/**
+	 * Add a synchronized buffer-size menu for all buffered data sources in this
+	 * view.
+	 *
+	 * @param menu the context menu to populate
+	 */
+	public void addBufferSizeMenu(ContextMenu menu) {
+		int[] capacities = getBufferMenuCapacities();
+		if (capacities == null || capacities.length == 0)
+			return;
+		int current = getBufferCapacity();
+		if (current < 0)
+			return;
+		ContextMenu bufferMenu = new ContextMenu(menu);
+		for (int cap : capacities) {
+			ContextMenuRadioItem item = new ContextMenuRadioItem(formatBufferCapacity(cap),
+					() -> setBufferCapacity(cap));
+			item.setSelected(cap == current);
+			bufferMenu.add(item);
+		}
+		ContextMenuItem trigger = menu.add("Buffer size", bufferMenu);
+		trigger.setEnabled(!isRunning());
+		menu.addSeparator();
+	}
+
+	/**
+	 * Return capacities offered in the synchronized buffer-size menu.
+	 *
+	 * @return capacities in entries
+	 */
+	public int[] getBufferMenuCapacities() {
+		return new int[] { 5000, 10000, 50000, 100000 };
+	}
+
+	/**
+	 * Format a buffer capacity label for the context menu.
+	 *
+	 * @param capacity the buffer capacity
+	 * @return the menu label
+	 */
+	protected String formatBufferCapacity(int capacity) {
+		if (capacity == 0)
+			return "unlimited";
+		if (capacity % 1000 == 0)
+			return (capacity / 1000) + "k";
+		return Integer.toString(capacity);
+	}
+
+	/**
+	 * Set the buffer capacity for all buffered data sources of this view.
+	 *
+	 * @param capacity the new capacity
+	 */
+	public void setBufferCapacity(int capacity) {
+		if (capacity < 0)
+			return;
+		if (applyBufferCapacity(capacity))
+			bufferCapacityChanged();
+	}
+
+	/**
+	 * Return current buffer capacity, or a negative value if no buffer is
+	 * available.
+	 *
+	 * @return current capacity or {@code -1} if unavailable
+	 */
+	protected int getBufferCapacity() {
+		int capacity = -1;
+		for (G graph : graphs) {
+			RingBuffer<?> history = graph.getBuffer();
+			if (history == null)
+				continue;
+			if (capacity < 0)
+				capacity = history.getCapacity();
+		}
+		return capacity;
+	}
+
+	/**
+	 * Apply a new buffer capacity to all buffered graphs in this view.
+	 *
+	 * @param capacity the new capacity
+	 * @return {@code true} if at least one capacity changed
+	 */
+	protected boolean applyBufferCapacity(int capacity) {
+		boolean changed = false;
+		for (G graph : graphs) {
+			RingBuffer<?> history = graph.getBuffer();
+			if (history == null || history.getCapacity() == capacity)
+				continue;
+			history.setCapacity(capacity);
+			changed = true;
+		}
+		return changed;
+	}
+
+	/**
+	 * Callback after buffer capacity changes. Default repaints buffered graphs.
+	 */
+	protected void bufferCapacityChanged() {
+		if (!isActive)
+			return;
+		for (G graph : graphs) {
+			if (graph.hasHistory())
+				graph.paint(true);
+		}
+	}
+
+	/**
+	 * Apply the y-axis side setting to all graphs in this view and refresh layout.
+	 *
+	 * @param showOnRight {@code true} to display y-axes on the right side
+	 */
+	public void setRightYAxis(boolean showOnRight) {
+		boolean changed = false;
+		for (G graph : graphs) {
+			GraphStyle style = graph.getStyle();
+			if (style.showYAxisRight != showOnRight) {
+				style.showYAxisRight = showOnRight;
+				changed = true;
+			}
+		}
+		if (changed)
+			onResize();
+	}
+
+	/**
+	 * Add the shared axes submenu, composed from graph-local entries followed by
+	 * view-level entries.
+	 *
+	 * @param menu        the parent context menu
+	 * @param sourceGraph the graph contributing local axes entries, or {@code null}
+	 *                    if the axes submenu is view-owned only
+	 */
+	public final void addAxesMenu(ContextMenu menu, AbstractGraph<?> sourceGraph) {
+		ContextMenu axesMenu = new ContextMenu(menu);
+		if (sourceGraph != null)
+			sourceGraph.populateLocalAxesMenu(axesMenu);
+		int afterLocal = axesMenu.getWidgetCount();
+		axesMenu.addSeparator();
+		boolean insertedSeparator = axesMenu.getWidgetCount() > afterLocal;
+		int beforeView = axesMenu.getWidgetCount();
+		populateAxesMenu(axesMenu, sourceGraph);
+		if (insertedSeparator && axesMenu.getWidgetCount() == beforeView)
+			axesMenu.remove(beforeView - 1);
+		if (axesMenu.getWidgetCount() > 0)
+			menu.add("Axes", axesMenu);
+	}
+
+	/**
+	 * Opportunity for the view to contribute view-level entries to the shared axes
+	 * submenu.
+	 *
+	 * @param menu        the axes submenu to populate
+	 * @param sourceGraph the graph that requested the axes submenu, or {@code null}
+	 */
+	protected void populateAxesMenu(ContextMenu menu, AbstractGraph<?> sourceGraph) {
+		if (graphs.isEmpty())
+			return;
+		GraphStyle style = graphs.get(0).getStyle();
+		menu.add(new ContextMenuCheckBoxItem("Right Y-axis", style.showYAxisRight, () -> {
+			boolean showOnRight = !style.showYAxisRight;
+			setRightYAxis(showOnRight);
+		}));
 	}
 
 	/**
@@ -720,14 +903,31 @@ public abstract class AbstractView<G extends AbstractGraph<?>> extends Composite
 	}
 
 	@Override
-	public void onResize() {
+	public final void onResize() {
 		if (getOffsetWidth() == 0 || getOffsetHeight() == 0)
 			return;
+		engine.guiReady();
+		if (!isLoaded)
+			return;
+		beforeResize();
 		for (G graph : graphs)
 			graph.onResize();
-		engine.guiReady();
+		afterResize();
 		if (isActive)
-			scheduleUpdate(true);
+			update(true);
+	}
+
+	/**
+	 * Hook for resize work that needs to happen before the graphs are resized.
+	 */
+	protected void beforeResize() {
+	}
+
+	/**
+	 * Hook for resize work that needs to happen after the graphs are resized but
+	 * before the view is repainted.
+	 */
+	protected void afterResize() {
 	}
 
 	/**
@@ -759,6 +959,7 @@ public abstract class AbstractView<G extends AbstractGraph<?>> extends Composite
 	protected void scheduleUpdate(boolean force) {
 		if (updateScheduled)
 			return;
+		updateScheduled = true;
 		Scheduler.get().scheduleDeferred(() -> {
 			// deferred updates can cause issues if in the mean time the model
 			// has changed and this view is no longer supported. if this is the
@@ -772,7 +973,6 @@ public abstract class AbstractView<G extends AbstractGraph<?>> extends Composite
 			}
 			updateScheduled = false;
 		});
-		updateScheduled = true;
 	}
 
 	/**
@@ -790,51 +990,65 @@ public abstract class AbstractView<G extends AbstractGraph<?>> extends Composite
 	}
 
 	/**
-	 * The field to store the restore context menu.
-	 */
-	protected ContextMenuItem restoreMenu;
-
-	/**
-	 * The field to store the export submenu trigger.
-	 */
-	protected ContextMenuItem exportSubmenuTrigger;
-
-	/**
-	 * The field to store the export context submenu.
-	 */
-	protected ContextMenu exportSubmenu;
-
-	/**
 	 * Opportunity for the controller to add functionality to the context menu
 	 * (optional implementation).
 	 *
-	 * @param contextMenu the context menu
+	 * @param menu the context menu
 	 */
-	public void populateContextMenu(ContextMenu contextMenu) {
-		// models may also like to add entries to context menu
-		// IMPORTANT: cannot query model directly due to interference with java
-		// simulations. all GUI related methods must be quarantined through EvoLudoGWT
-		engine.populateContextMenu(contextMenu);
+	public void populateContextMenu(ContextMenu menu) {
+		addBufferSizeMenu(menu);
 
+		menu.addSeparator();
+		if (model != null && (model.isODE() || model.isSDE())) {
+			// add time reverse context menu
+			ContextMenuCheckBoxItem timeReverseMenu = new ContextMenuCheckBoxItem("Time reversed",
+					() -> model.setTimeReversed(!model.isTimeReversed()));
+			menu.add(timeReverseMenu);
+			timeReverseMenu.setChecked(model.isTimeReversed());
+			timeReverseMenu.setEnabled(model.permitsTimeReversal());
+		} else if (model != null && model.isPDE()) {
+			// add context menu to allow symmetric diffusion
+			ContextMenuCheckBoxItem symDiffMenu = new ContextMenuCheckBoxItem("Symmetric diffusion", () -> {
+				PDE pde = (PDE) model;
+				pde.setSymmetric(!pde.isSymmetric());
+				pde.check();
+			});
+			menu.add(symDiffMenu);
+			PDE pde = (PDE) model;
+			symDiffMenu.setChecked(pde.isSymmetric());
+			AbstractGeometry space = pde.getGeometry();
+			symDiffMenu.setEnabled(space.isRegular() || space.isLattice());
+		}
+
+		// process fullscreen context menu
+		if (NativeJS.isFullscreenSupported()) {
+			ContextMenuCheckBoxItem fullscreenMenu = new ContextMenuCheckBoxItem("Full screen",
+					() -> engine.setFullscreen(!NativeJS.isFullscreen()));
+			menu.addSeparator();
+			menu.add(fullscreenMenu);
+			fullscreenMenu.setChecked(NativeJS.isFullscreen());
+		}
+
+		ContextMenuItem restoreMenu = null;
+		ContextMenuItem exportSubmenuTrigger = null;
 		// process exports context menu (suppress in ePub, regardless of whether a
 		// standalone lab or not)
 		if (!NativeJS.isEPub()) {
-			exportSubmenu = new ContextMenu(contextMenu, "Export");
+			ContextMenu exportSubmenu = new ContextMenu(menu);
 			exportSubmenu.add(new ContextMenuItem(ExportType.STATE.toString(), new ExportCommand(ExportType.STATE)));
 			for (ExportType e : exportTypes()) {
 				if (e == ExportType.STATE)
 					continue; // always included
 				exportSubmenu.add(new ContextMenuItem(e.toString(), new ExportCommand(e)));
 			}
-			contextMenu.addSeparator();
-			exportSubmenuTrigger = contextMenu.add("Export", exportSubmenu);
-			if (restoreMenu == null)
-				restoreMenu = new ContextMenuItem("Restore...", () -> engine.restoreFromFile());
+			menu.addSeparator();
+			exportSubmenuTrigger = menu.add("Export", exportSubmenu);
+			restoreMenu = new ContextMenuItem("Restore...", () -> engine.restoreFromFile());
 		}
 		boolean idle = !engine.isRunning();
 		if (restoreMenu != null) {
 			restoreMenu.setEnabled(idle);
-			contextMenu.add(restoreMenu);
+			menu.add(restoreMenu);
 		}
 		if (exportSubmenuTrigger != null)
 			exportSubmenuTrigger.setEnabled(idle);
@@ -974,9 +1188,9 @@ public abstract class AbstractView<G extends AbstractGraph<?>> extends Composite
 		Canvas canvas = Canvas.createIfSupported();
 		if (canvas == null)
 			return;
-		int scale = NativeJS.getDevicePixelRatio();
-		canvas.setCoordinateSpaceWidth(getOffsetWidth() * scale);
-		canvas.setCoordinateSpaceHeight(getOffsetHeight() * scale);
+		double scale = NativeJS.getDevicePixelRatio();
+		canvas.setCoordinateSpaceWidth((int) (getOffsetWidth() * scale));
+		canvas.setCoordinateSpaceHeight((int) (getOffsetHeight() * scale));
 		MyContext2d ctx = canvas.getContext2d().cast();
 		export(ctx, scale);
 		NativeJS.export(canvas.getCanvasElement().toDataUrl("image/png").replaceFirst("^data:image/[^;]",
@@ -992,8 +1206,9 @@ public abstract class AbstractView<G extends AbstractGraph<?>> extends Composite
 			ScriptInjector.fromString(Resources.INSTANCE.canvas2SVG().getText()).inject();
 			hasSVGjs = true;
 		}
-		int scale = NativeJS.getDevicePixelRatio();
-		MyContext2d ctx = NativeJS.createSVGContext(getOffsetWidth() * scale, getOffsetHeight() * scale);
+		double scale = NativeJS.getDevicePixelRatio();
+		MyContext2d ctx = NativeJS.createSVGContext((int) Math.round(getOffsetWidth() * scale),
+				(int) Math.round(getOffsetHeight() * scale));
 		export(ctx, scale);
 		NativeJS.exportSVG(ctx);
 	}
@@ -1004,7 +1219,7 @@ public abstract class AbstractView<G extends AbstractGraph<?>> extends Composite
 	 * @param ctx   the graphical context of the canvas to export to
 	 * @param scale the scaling for the export canvas
 	 */
-	protected void export(MyContext2d ctx, int scale) {
+	protected void export(MyContext2d ctx, double scale) {
 		int hOffset = 0;
 		int vOffset = 0;
 		int count = 0;
@@ -1015,9 +1230,9 @@ public abstract class AbstractView<G extends AbstractGraph<?>> extends Composite
 			ctx.restore();
 			if (++count % gCols == 0) {
 				hOffset = 0;
-				vOffset += scale * graph.getOffsetHeight();
+				vOffset += (int) Math.round(scale * graph.getOffsetHeight());
 			} else
-				hOffset += scale * graph.getOffsetWidth();
+				hOffset += (int) Math.round(scale * graph.getOffsetWidth());
 		}
 	}
 

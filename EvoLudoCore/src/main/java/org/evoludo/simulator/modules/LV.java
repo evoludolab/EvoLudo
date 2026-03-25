@@ -168,16 +168,16 @@ public class LV extends Discrete implements HasDE.ODE, HasDE.SDE, HasDE.DualDyna
 	public Model createModel(ModelType type) {
 		switch (type) {
 			case ODE:
-				if (getModelType().isODE())
+				if (model != null && model.isODE())
 					return model;
 				return new LV.ODE();
 			case SDE:
-				if (getModelType().isSDE())
+				if (model != null && model.isSDE())
 					return model;
 				return new LV.SDE();
 			// case PDE: not yet ready for multiple species
 			case IBS:
-				if (getModelType().isIBS())
+				if (model != null && model.isIBS())
 					return model;
 				return super.createModel(type);
 			default:

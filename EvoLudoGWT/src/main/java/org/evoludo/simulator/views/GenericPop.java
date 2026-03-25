@@ -34,6 +34,7 @@ import java.awt.Color;
 
 import org.evoludo.graphics.AbstractGraph;
 import org.evoludo.graphics.GenericPopGraph;
+import org.evoludo.graphics.PopGraph1D;
 import org.evoludo.graphics.TooltipProvider;
 import org.evoludo.math.ArrayMath;
 import org.evoludo.simulator.ColorMap;
@@ -45,7 +46,6 @@ import org.evoludo.simulator.geometries.AbstractGeometry;
 import org.evoludo.simulator.geometries.GeometryType;
 import org.evoludo.simulator.models.Data;
 import org.evoludo.simulator.models.IBS;
-import org.evoludo.simulator.models.ModelType;
 import org.evoludo.simulator.models.PDE;
 import org.evoludo.simulator.modules.Features.Payoffs;
 import org.evoludo.simulator.modules.Map2Fitness;
@@ -187,8 +187,7 @@ public abstract class GenericPop<T, N extends Network<?>, G extends GenericPopGr
 	 *              competition geometry
 	 */
 	void setGraphGeometry(GenericPopGraph<T, N> graph, boolean inter) {
-		ModelType mt = getModelType();
-		if (mt.isIBS()) {
+		if (model.isIBS()) {
 			Module<?> module = graph.getModule();
 			AbstractGeometry igeom = module.getIBSPopulation().getInteractionGeometry();
 			AbstractGeometry cgeom = module.getIBSPopulation().getCompetitionGeometry();
@@ -201,7 +200,7 @@ public abstract class GenericPop<T, N extends Network<?>, G extends GenericPopGr
 			graph.setGeometry(geo);
 			return;
 		}
-		if (mt.isPDE()) {
+		if (model.isPDE()) {
 			graph.setGeometry(((PDE) model).getGeometry());
 			return;
 		}
@@ -213,38 +212,53 @@ public abstract class GenericPop<T, N extends Network<?>, G extends GenericPopGr
 		super.modelDidInit();
 		for (G graph : graphs)
 			graph.init();
+		updateData(true);
 		update();
 	}
 
 	@Override
-	public void update(boolean force) {
-		ModelType mt = getModelType();
-		if (mt.isIBS() || mt.isPDE()) {
-			// always read data - some nodes may have changed due to user actions
-			double newtime = model.getUpdates();
-			boolean isNext = (Math.abs(timestamp - newtime) > 1e-8);
-			timestamp = newtime;
-			for (G graph : graphs) {
-				boolean doUpdate = (isActive || graph.hasHistory()) && !graph.hasMessage();
-				// if graph is neither active nor has history, force can be safely ignored
-				// otherwise may lead to problems if graph has never been activated
-				if (!doUpdate)
-					continue;
-				switch (type) {
-					case TRAIT:
-						model.getTraitData(graph.getModule().getId(), graph.getData(), graph.getColorMap());
-						break;
-					case FITNESS:
-						// cast should be safe for fitness data
-						model.getFitnessData(graph.getModule().getId(), graph.getData(),
-								(ColorMap.Gradient1D<T>) graph.getColorMap());
-						break;
-					default:
-						break;
-				}
-				graph.update(isNext);
-				graph.paint(force);
+	protected void updateData(boolean force) {
+		// force intentionally ignored; update policy depends on active/history state.
+		if (!(model.isIBS() || model.isPDE()))
+			return;
+		// always read data for the selected graph set
+		double newtime = model.getUpdates();
+		boolean isNext = (Math.abs(timestamp - newtime) > 1e-8);
+		boolean updated = false;
+		for (G graph : graphs) {
+			boolean doUpdate = (isActive || graph.hasHistory());
+			if (!doUpdate)
+				continue;
+			// inactive history graphs still need data updates to keep their buffers in
+			// sync.
+			if (isActive && graph.hasMessage())
+				continue;
+			switch (type) {
+				case TRAIT:
+					model.getTraitData(graph.getModule().getId(), graph.getData(), graph.getColorMap());
+					break;
+				case FITNESS:
+					// cast should be safe for fitness data
+					model.getFitnessData(graph.getModule().getId(), graph.getData(),
+							(ColorMap.Gradient1D<T>) graph.getColorMap());
+					break;
+				default:
+					break;
 			}
+			graph.update(isNext);
+			updated = true;
+		}
+		if (updated)
+			timestamp = newtime;
+	}
+
+	@Override
+	public void update(boolean force) {
+		if (model.isIBS() || model.isPDE()) {
+			if (!isActive)
+				return;
+			for (G graph : graphs)
+				graph.paint(force);
 			return;
 		}
 		for (G graph : graphs)
@@ -276,8 +290,7 @@ public abstract class GenericPop<T, N extends Network<?>, G extends GenericPopGr
 
 	@Override
 	public void mouseHitNode(int id, int node, boolean alt) {
-		ModelType mt = getModelType();
-		if (mt.isIBS())
+		if (model.isIBS())
 			((IBS) model).mouseHitNode(id, node, alt);
 	}
 
@@ -296,11 +309,10 @@ public abstract class GenericPop<T, N extends Network<?>, G extends GenericPopGr
 					.append(module.getName())
 					.append(TABLE_ROW_END);
 
-		ModelType mt = getModelType();
 		// Delegate heavy logic to dedicated helpers to reduce cognitive complexity
-		if (mt.isIBS())
+		if (model.isIBS())
 			return tooltipForIBS(node, nNodes, module, graph, tip);
-		if (mt.isPDE())
+		if (model.isPDE())
 			return tooltipForPDE(node, nNodes, geometry, module, graph, tip);
 		return null;
 	}
@@ -320,7 +332,7 @@ public abstract class GenericPop<T, N extends Network<?>, G extends GenericPopGr
 		tip.append(TABLE_ROW_START).append("Node").append(TABLE_CELL_NEXT);
 		if (node >= nNodes) {
 			// linear/time slices handled separately
-			appendLinearTip(node, nNodes, tip);
+			appendLinearTip(node, nNodes, module, graph, tip);
 			return tip.append(TABLE_END).toString();
 		}
 		IBS ibs = (IBS) model;
@@ -339,7 +351,7 @@ public abstract class GenericPop<T, N extends Network<?>, G extends GenericPopGr
 					.append(TABLE_ROW_END);
 
 		// payoffs / fitness / interactions
-		appendFitnessTip(node, module, tip);
+		appendFitnessTip(node, module, graph, tip);
 
 		// in multi-species modules this points to the other species
 		AbstractGeometry intergeom = module.getIBSPopulation().getInteractionGeometry();
@@ -367,9 +379,11 @@ public abstract class GenericPop<T, N extends Network<?>, G extends GenericPopGr
 	 * 
 	 * @param node   the node index
 	 * @param nNodes the number of nodes per time slice
+	 * @param module the module that provides the tooltip data
+	 * @param graph  the graph that provides view-specific history data
 	 * @param tip    the StringBuilder to append to
 	 */
-	private void appendLinearTip(int node, int nNodes, StringBuilder tip) {
+	private void appendLinearTip(int node, int nNodes, Module<?> module, G graph, StringBuilder tip) {
 		// this can only happen for AbstractGeometry.LINEAR
 		int idx = node / nNodes;
 		node %= nNodes;
@@ -381,6 +395,73 @@ public abstract class GenericPop<T, N extends Network<?>, G extends GenericPopGr
 				.append(TABLE_CELL_NEXT)
 				.append(Formatter.format(-t, 2))
 				.append(TABLE_ROW_END);
+		if (!(graph instanceof PopGraph1D))
+			return;
+		PopGraph1D graph1d = (PopGraph1D) graph;
+		String color = graph1d.getHistoryColorAt(idx, node);
+		if (color == null)
+			return;
+		switch (type) {
+			case TRAIT:
+				appendLinearHistoryTraitTip(graph1d, module, color, tip);
+				return;
+			case FITNESS:
+				appendLinearHistoryFitnessTip(graph1d, color, tip);
+				return;
+			default:
+				return;
+		}
+	}
+
+	/**
+	 * Append a trait value reconstructed from a history color.
+	 *
+	 * @param graph  the graph used for decoding
+	 * @param module the owning module
+	 * @param color  the encoded color
+	 * @param tip    the StringBuilder to append to
+	 */
+	private void appendLinearHistoryTraitTip(PopGraph1D graph, Module<?> module, String color, StringBuilder tip) {
+		tip.append(TABLE_ROW_START)
+				.append("Trait")
+				.append(TABLE_CELL_NEXT_COLOR)
+				.append(color)
+				.append(TABLE_CELL_BULLET);
+		int trait = graph.decodeColorIndex(color);
+		if (trait >= 0) {
+			tip.append(module.getTraitName(trait))
+					.append(TABLE_ROW_END);
+			return;
+		}
+		double value = graph.decodeColorValue(color);
+		if (Double.isFinite(value))
+			tip.append(Formatter.pretty(value, 2))
+					.append(TABLE_ROW_END);
+	}
+
+	/**
+	 * Append a fitness value reconstructed from a history color.
+	 *
+	 * @param graph the graph used for decoding
+	 * @param color the encoded color
+	 * @param tip   the StringBuilder to append to
+	 */
+	private void appendLinearHistoryFitnessTip(PopGraph1D graph, String color, StringBuilder tip) {
+		tip.append(TABLE_ROW_START)
+				.append("Fitness")
+				.append(TABLE_CELL_NEXT);
+		if (graph.isVacantColor(color)) {
+			tip.append("-")
+					.append(TABLE_ROW_END);
+			return;
+		}
+		double value = graph.decodeColorValue(color);
+		if (Double.isFinite(value))
+			tip.append(SPAN_COLOR)
+					.append(color)
+					.append(TABLE_CELL_BULLET)
+					.append(Formatter.pretty(value, 2))
+					.append(TABLE_ROW_END);
 	}
 
 	/**
@@ -428,7 +509,8 @@ public abstract class GenericPop<T, N extends Network<?>, G extends GenericPopGr
 				.append(TABLE_CELL_BULLET)
 				.append(s[0]);
 		for (int n = 1; n < s.length; n++)
-			tip.append(", <span style='color:")
+			tip.append(", ")
+					.append(SPAN_COLOR)
 					.append(ColorMapCSS.Color2Css(c[n]))
 					.append(TABLE_CELL_BULLET)
 					.append(s[n]);
@@ -452,9 +534,10 @@ public abstract class GenericPop<T, N extends Network<?>, G extends GenericPopGr
 	 * 
 	 * @param node   the node index
 	 * @param module the module
+	 * @param graph  the graph
 	 * @param tip    the StringBuilder to append to
 	 */
-	private void appendFitnessTip(int node, Module<?> module, StringBuilder tip) {
+	private void appendFitnessTip(int node, Module<?> module, G graph, StringBuilder tip) {
 		if (!(module instanceof Payoffs))
 			return;
 		int id = module.getId();
@@ -471,8 +554,12 @@ public abstract class GenericPop<T, N extends Network<?>, G extends GenericPopGr
 		// report fitness
 		tip.append(TABLE_ROW_START)
 				.append("Fitness")
-				.append(TABLE_CELL_NEXT)
-				.append(model.getFitnessNameAt(id, node))
+				.append(TABLE_CELL_NEXT);
+		if (type == Data.FITNESS)
+			tip.append(SPAN_COLOR)
+					.append(graph.getCSSColorAt(node))
+					.append(TABLE_CELL_BULLET);
+		tip.append(model.getFitnessNameAt(id, node))
 				.append(TABLE_ROW_END);
 
 		IBS ibs = (IBS) model;
@@ -521,7 +608,7 @@ public abstract class GenericPop<T, N extends Network<?>, G extends GenericPopGr
 				.append("Fitness")
 				.append(TABLE_CELL_NEXT);
 		if (type == Data.FITNESS)
-			tip.append("<span style='color:")
+			tip.append(SPAN_COLOR)
 					.append(graph.getCSSColorAt(node)).append(TABLE_CELL_BULLET);
 		appendFormattedValues(tip, fitness, vac, map, false);
 		tip.append(" → ")
@@ -573,7 +660,7 @@ public abstract class GenericPop<T, N extends Network<?>, G extends GenericPopGr
 
 		if (node >= nNodes) {
 			// linear/time slices handled separately
-			appendLinearTip(node, nNodes, tip);
+			appendLinearTip(node, nNodes, module, graph, tip);
 			return tip.append(TABLE_END).toString();
 		}
 
@@ -657,12 +744,13 @@ public abstract class GenericPop<T, N extends Network<?>, G extends GenericPopGr
 			return tip.append("[ - ]")
 					.append(TABLE_ROW_END);
 		int[] neigh = geom.out[node];
-		tip.append("[<span style='color:")
+		tip.append("[")
+				.append(SPAN_COLOR)
 				.append(graph.getCSSColorAt(neigh[0]))
 				.append(TABLE_CELL_BULLET);
 		int disp = Math.min(nNeighs, 10);
 		for (int n = 1; n < disp; n++)
-			tip.append("<span style='color:")
+			tip.append(SPAN_COLOR)
 					.append(graph.getCSSColorAt(neigh[n]))
 					.append(TABLE_CELL_BULLET);
 		if (disp < nNeighs)

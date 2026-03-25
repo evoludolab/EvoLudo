@@ -116,13 +116,25 @@ removed. -->
 	.noresize {
 		resize: none;
 	}
-	.status {
+	.status_bar {
 		margin-top: 4pt;
 		clear: both;
-		resize: none;
+		display: flex;
+		align-items: center;
+		min-height: 21pt;
+	}
+	.status_text {
 		font-size: 9pt;
-		height: 21pt;
 		line-height: 1.2;
+		flex: 1;
+		min-width: 0;
+	}
+	.status_spinner {
+		flex: 0 0 16px;
+		height: 16px;
+		margin-left: 6px;
+		position: relative;
+		width: 16px;
 	}
 	.evoludo-Panel {
 		height: 100%;
@@ -196,14 +208,19 @@ removed. -->
 					</g:FlowPanel>
 
 					<!-- status line at the end (non-floating) -->
-					<g:HTML ui:field='evoludoStatus'
+					<g:FlowPanel
 						title="Summary of current status"
-						addStyleNames='{style.status} evoludo-Status'>
-						EvoLudo is getting ready...
-					</g:HTML>
+						addStyleNames='{style.status_bar} evoludo-Status'>
+						<g:HTML ui:field='evoludoStatus'
+							addStyleNames='{style.status_text}'>
+							EvoLudo is getting ready...
+						</g:HTML>
+						<e:Spinner ui:field='evoludoSpinner'
+							addStyleNames='{style.status_spinner}'></e:Spinner>
+					</g:FlowPanel>
 				</g:FlowPanel>
 
 			</g:HeaderPanel>
 		</g:ResizeLayoutPanel>
 	</g:HTMLPanel>
-</ui:UiBinder> 
+</ui:UiBinder>

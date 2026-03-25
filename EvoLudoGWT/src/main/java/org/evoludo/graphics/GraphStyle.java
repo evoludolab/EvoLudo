@@ -38,6 +38,54 @@ package org.evoludo.graphics;
 public class GraphStyle {
 
 	/**
+	 * Positioning options for graph decorations such as legends.
+	 */
+	public enum Position {
+		/**
+		 * Top edge of the graph.
+		 */
+		NORTH,
+
+		/**
+		 * Bottom edge of the graph.
+		 */
+		SOUTH,
+
+		/**
+		 * Right edge of the graph.
+		 */
+		EAST,
+
+		/**
+		 * Left edge of the graph.
+		 */
+		WEST,
+
+		/**
+		 * Decoration disabled.
+		 */
+		NONE;
+
+		/**
+		 * Check whether this position is vertical.
+		 *
+		 * @return {@code true} for east/west
+		 */
+		public boolean isVertical() {
+			return this == EAST || this == WEST;
+		}
+
+		/**
+		 * Check whether this position is horizontal.
+		 *
+		 * @return {@code true} for north/south
+		 */
+		public boolean isHorizontal() {
+			return this == NORTH || this == SOUTH;
+		}
+	}
+
+	/**
 	 * Create a style with the default set of axis, label, and tick options.
 	 */
 	public GraphStyle() {
@@ -50,7 +98,7 @@ public class GraphStyle {
 	 * The minimum padding (in pixels) between boundaries of the HTML element and
 	 * the graph.
 	 */
-	public int minPadding = 4;
+	public int minPadding = 2;
 
 	/**
 	 * The tick length in pixels.
@@ -209,6 +257,18 @@ public class GraphStyle {
 	public double xTickOffset = 0.0;
 
 	/**
+	 * The flag to indicate whether y-axis tick labels are offset (e.g. to show
+	 * absolute time).
+	 */
+	public boolean offsetYTickLabels = false;
+
+	/**
+	 * The offset added to y-axis tick labels when {@link #offsetYTickLabels} is
+	 * enabled.
+	 */
+	public double yTickOffset = 0.0;
+
+	/**
 	 * The flag to indicate whether to show tick labels along the vertical axis.
 	 */
 	public boolean showYTickLabels = true;
@@ -217,6 +277,11 @@ public class GraphStyle {
 	 * The flag to indicate whether y-axis decorations are drawn on the right.
 	 */
 	public boolean showYAxisRight = true;
+
+	/**
+	 * Position of the fitness legend.
+	 */
+	public Position legendPos = Position.EAST;
 
 	/**
 	 * The flag to indicate whether to show the frame of the graph.

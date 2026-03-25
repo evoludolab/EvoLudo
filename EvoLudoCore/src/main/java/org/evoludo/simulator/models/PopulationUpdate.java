@@ -39,35 +39,30 @@ import org.evoludo.util.CLOCategory;
 
 /**
  * The implementation of population updates. Population updates are used to
- * update
- * the population size and composition of individuals.
+ * update the population size and composition of individuals.
  * <p>
  * The population update type can be set to one of the following:
  * <dl>
- * <dt>synchronous
- * <dd>Synchronized population updates.
- * <dt>Wright-Fisher
- * <dd>Wright-Fisher process (synchronous)
- * <dt>asynchronous
- * <dd>Asynchronous population updates (default).
- * <dt>Bd
- * <dd>Moran process (birth-death, asynchronous).
- * <dt>dB
- * <dd>Moran process (death-birth, asynchronous).
- * <dt>imitate
- * <dd>Moran process (imitate, asynchronous).
- * <dt>ecology
- * <dd>Asynchronous updates (non-constant population size).
+ * <dt>synchronous</dt>
+ * <dd>Synchronized population updates.</dd>
+ * <dt>Wright-Fisher</dt>
+ * <dd>Wright-Fisher process (synchronous).</dd>
+ * <dt>asynchronous</dt>
+ * <dd>Asynchronous population updates (default).</dd>
+ * <dt>Bd</dt>
+ * <dd>Moran process (birth-death, asynchronous).</dd>
+ * <dt>dB</dt>
+ * <dd>Moran process (death-birth, asynchronous).</dd>
+ * <dt>imitate</dt>
+ * <dd>Moran process (imitate, asynchronous).</dd>
+ * <dt>ecology</dt>
+ * <dd>Asynchronous updates (non-constant population size).</dd>
  * </dl>
  * <p>
- * The population update type can be set via the command line option {@code
- * --popupdate <u> [
-<p>
-]} where {@code <u>} is the population update type, and
- * {@code 
- * 
-<p>
- * } the fraction of individuals that reassess their trait.
+ * The population update type can be set via the command line option
+ * {@code --popupdate <u> [<&#8203;p>]} where {@code <u>} is the population
+ * update type, and {@code <&#8203;p>} the fraction of individuals that reassess
+ * their trait.
  * 
  * @author Christoph Hauert
  */
@@ -193,10 +188,10 @@ public class PopulationUpdate {
 	 * <dd>Synchronized population updates. The number of individuals that reassess
 	 * their trait is determined by an optional fraction following the key. The
 	 * default is that all individuals update. For a fraction of zero one random
-	 * individual updates, which is the same as {@code asynchronous} but much less
+	 * individual updates, which is the same as the {@code ASYNC} mode but much less
 	 * efficient.</dd>
 	 * <dt>Wright-Fisher</dt>
-	 * <dd>Wright-Fisher process (synchronous)</dd>
+	 * <dd>Wright-Fisher process (synchronous).</dd>
 	 * <dt>asynchronous</dt>
 	 * <dd>Asynchronous population updates (default).</dd>
 	 * <dt>Bd</dt>
@@ -237,10 +232,11 @@ public class PopulationUpdate {
 		ASYNC("asynchronous", "asynchronous population updates"),
 
 		/**
-		 * Every individual updates exactly once per generation. In contrast for
-		 * {@code ASYNC} every individual updates once <strong>on average</strong>.
+		 * Every individual updates exactly once per generation in random order. In
+		 * contrast, for {@code ASYNC} every individual updates once
+		 * <strong>on average</strong>.
 		 */
-		ONCE("once", "everyone updates once (asynchronous)"),
+		ONCE("once", "everyone updates once in random order"),
 
 		/**
 		 * Moran process (birth-death, asynchronous).

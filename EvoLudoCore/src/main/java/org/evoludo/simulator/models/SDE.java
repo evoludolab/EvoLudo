@@ -95,7 +95,7 @@ public class SDE extends ODE {
 				// multiple traits implies evolutionary module - revert to ODE
 				return revertToODE("multi-species require single trait - revert to ODE.");
 			}
-		} else if (((HasDE) module).getDependent() < 0) {
+		} else if (!hasRequiredDependentTrait()) {
 			// single species module requires dependent trait
 			return revertToODE("requires dependent trait - revert to ODE.");
 		}
@@ -114,6 +114,16 @@ public class SDE extends ODE {
 			isAdjustedDynamics = false;
 		}
 		return doReset;
+	}
+
+	/**
+	 * Indicates whether the current single-species module satisfies the dependent
+	 * trait requirement for SDE models.
+	 *
+	 * @return <code>true</code> if the dependent-trait requirement is met
+	 */
+	protected boolean hasRequiredDependentTrait() {
+		return ((HasDE) module).getDependent() >= 0;
 	}
 
 	/**
@@ -140,7 +150,7 @@ public class SDE extends ODE {
 	}
 
 	@Override
-	public boolean next() {
+	public boolean next(double step) {
 		// start new statistics sample if required
 		if (mode == Mode.STATISTICS_SAMPLE && statisticsSampleNew) {
 			reset();
@@ -149,7 +159,7 @@ public class SDE extends ODE {
 			update();
 			return true;
 		}
-		return super.next();
+		return super.next(step);
 	}
 
 	@Override

@@ -54,7 +54,6 @@ import com.google.gwt.dom.client.Touch;
 import com.google.gwt.event.dom.client.DoubleClickEvent;
 import com.google.gwt.event.dom.client.DoubleClickHandler;
 import com.google.gwt.event.dom.client.TouchStartEvent;
-import com.google.gwt.user.client.ui.Widget;
 
 /**
  * Graph for the simplex \(S_3\). The graph is used to visualize the evolution
@@ -70,8 +69,8 @@ import com.google.gwt.user.client.ui.Widget;
  * <li>Store and draw a time-ordered trajectory of composition vectors in a
  * ring buffer; the buffer entries include time as the first element
  * (internal format: [time, comp0, comp1, comp2, ...]).</li>
- * <li>Efficiently sample and append incoming data using a pixel-distance based
- * threshold to avoid storing nearly identical consecutive points.</li>
+ * <li>Efficiently sample and append incoming data using a display-agnostic
+ * heuristic to avoid storing nearly identical consecutive points.</li>
  * <li>Draw start/end markers and arbitrary custom markers; export the stored
  * trajectory in a human-readable CSV-like format.</li>
  * <li>Provide user interaction support: double-click and single-touch to set
@@ -94,9 +93,9 @@ import com.google.gwt.user.client.ui.Widget;
  * <li>When a new sample has the same time (within numerical tolerance) as the
  * last stored sample the last sample is replaced and the initial-state
  * (start point) tracking is updated accordingly.</li>
- * <li>Buffer sampling threshold is computed in screen pixels (see
- * {@link #calcBounds(int,int)}); points closer than the threshold
- * (squared) are not stored unless {@code force} is true.</li>
+ * <li>Buffer sampling uses normalized state-space distance and local curvature;
+ * samples failing both criteria are not stored unless {@code force} is
+ * true.</li>
  * <li>Coordinate conversions for mouse/touch interactions map screen
  * coordinates to scaled simplex coordinates in [0,1] (see
  * {@link #scaledX(double)} / {@link #scaledY(double)}). A hit test
@@ -265,13 +264,10 @@ public class S3Graph extends AbstractGraph<double[]> implements Zooming, Shiftin
 	 * @evoludo.impl
 	 *               <ul>
 	 *               <li>The data array is cloned and the time prepended before
-	 *               adding
-	 *               it to the buffer.
+	 *               adding it to the buffer.
 	 *               <li>In order to conserve memory the data is added only if the
-	 *               distance between
-	 *               the new data point and the last point in the buffer is larger
-	 *               than threshold {@link #bufferThreshold}, unless
-	 *               {@code force == true}.
+	 *               display-agnostic throttling heuristic accepts the sample,
+	 *               unless {@code force == true}.
 	 *               </ul>
 	 * 
 	 * @param t     the time of the data
@@ -294,8 +290,9 @@ public class S3Graph extends AbstractGraph<double[]> implements Zooming, Shiftin
 			handleNaNTime(data, lastt);
 			return;
 		}
-		if (force || distSq(data, last) > bufferThreshold) {
-			buffer.append(prependTime2Data(t, data));
+		double[] sample = prependTime2Data(t, data);
+		if (force || keepSample(buffer, sample, last)) {
+			buffer.append(sample);
 		}
 	}
 
@@ -333,23 +330,6 @@ public class S3Graph extends AbstractGraph<double[]> implements Zooming, Shiftin
 		if (init == null || init.length != len + 1)
 			init = new double[len + 1];
 		System.arraycopy(buffer.last(), 0, init, 0, len + 1);
-	}
-
-	/**
-	 * Helper method to calculate the distance squared between two vectors.
-	 * 
-	 * @param vec the first vector
-	 * @param buf the second vector
-	 * @return the squared distance
-	 */
-	private double distSq(double[] vec, double[] buf) {
-		int dim = vec.length;
-		double dist2 = 0.0;
-		for (int n = 0; n < dim; n++) {
-			double d = vec[n] - buf[n + 1];
-			dist2 += d * d;
-		}
-		return dist2;
 	}
 
 	@Override
@@ -446,8 +426,6 @@ public class S3Graph extends AbstractGraph<double[]> implements Zooming, Shiftin
 	 * @param h graph height
 	 */
 	private void drawCustomMarkers(double w, double h) {
-		if (markers == null)
-			return;
 		Point2D currPt = new Point2D();
 		int n = 0;
 		int nMarkers = markers.size();
@@ -477,17 +455,6 @@ public class S3Graph extends AbstractGraph<double[]> implements Zooming, Shiftin
 	 * Constant for \(\sqrt{2}\). Aspect ratio of equilateral triangle.
 	 */
 	static final double SQRT_2 = 1.41421356237;
-
-	/**
-	 * Threshold for storing new data point in buffer. Roughly corresponds to the
-	 * squared distance between two points that are at least a pixel apart.
-	 */
-	private double bufferThreshold;
-
-	/**
-	 * The minimum distance between two subsequent points in pixels.
-	 */
-	private static final double MIN_PIXELS = 3.0;
 
 	@Override
 	public void calcBounds(int width, int height) {
@@ -544,10 +511,6 @@ public class S3Graph extends AbstractGraph<double[]> implements Zooming, Shiftin
 		outline.lineTo(e1);
 		outline.lineTo(e2);
 		outline.closePath();
-		// store point only if it is estimated to be at least a few pixels from the
-		// previous point
-		bufferThreshold = MIN_PIXELS * scale / Math.max(bounds.getWidth(), bounds.getHeight());
-		bufferThreshold *= bufferThreshold;
 	}
 
 	/**
@@ -797,21 +760,6 @@ public class S3Graph extends AbstractGraph<double[]> implements Zooming, Shiftin
 		return inside(scaledX(x), scaledY(y));
 	}
 
-	/**
-	 * The context menu item to swap the order of the traits along the closest edge.
-	 */
-	private ContextMenuItem swapOrderMenu;
-
-	/**
-	 * The context menu item to clear the canvas.
-	 */
-	private ContextMenuItem clearMenu;
-
-	/**
-	 * The context menu to select the trait in the closest corner.
-	 */
-	private ContextMenu setTraitMenu;
-
 	@Override
 	public void populateContextMenuAt(ContextMenu menu, int x, int y) {
 		addClearMenu(menu);
@@ -819,27 +767,6 @@ public class S3Graph extends AbstractGraph<double[]> implements Zooming, Shiftin
 		addSetTraitMenu(menu, x, y);
 		super.populateContextMenuAt(menu, x, y);
 	}
-
-	/**
-	 * Helper method to process the clear context menu.
-	 * 
-	 * @param menu the context menu to populate
-	 */
-	private void addClearMenu(ContextMenu menu) {
-		if (clearMenu == null) {
-			clearMenu = new ContextMenuItem("Clear", () -> {
-				clearHistory();
-				paint(true);
-			});
-		}
-		menu.addSeparator();
-		menu.add(clearMenu);
-	}
-
-	/**
-	 * The label of the swap order menu item.
-	 */
-	private static final String SWAP_MENU_LABEL = "Swap Order";
 
 	/**
 	 * The prefix of the swap order menu item.
@@ -859,36 +786,37 @@ public class S3Graph extends AbstractGraph<double[]> implements Zooming, Shiftin
 	 * @param y    the <code>y</code>-coordinate of the mouse pointer
 	 */
 	private void addSwapOrderMenu(ContextMenu menu, int x, int y) {
-		if (swapOrderMenu == null) {
-			swapOrderMenu = new ContextMenuItem(SWAP_MENU_LABEL, () -> {
-				int[] order = map.getOrder();
-				String[] names = map.getNames();
-				String label = swapOrderMenu.getText();
-				if (label.startsWith(SWAP_MENU + names[order[0]])) {
-					swapOrder(order, 0, 1);
-				} else if (label.startsWith(SWAP_MENU + names[order[1]])) {
-					swapOrder(order, 1, 2);
-				} else {
-					swapOrder(order, 2, 0);
-				}
-				map.setOrder(order);
-				paint(true);
-			});
-		}
-		menu.add(swapOrderMenu);
+		int edge = closestEdge(x, y);
 		int[] order = map.getOrder();
 		String[] names = map.getNames();
-		switch (closestEdge(x, y)) {
+		String label;
+		switch (edge) {
 			case HasS3.EDGE_LEFT:
-				swapOrderMenu.setText(SWAP_MENU + names[order[0]] + SWAP_MENU_ARROW + names[order[1]]);
+				label = SWAP_MENU + names[order[0]] + SWAP_MENU_ARROW + names[order[1]];
 				break;
 			case HasS3.EDGE_RIGHT:
-				swapOrderMenu.setText(SWAP_MENU + names[order[1]] + SWAP_MENU_ARROW + names[order[2]]);
+				label = SWAP_MENU + names[order[1]] + SWAP_MENU_ARROW + names[order[2]];
 				break;
 			default:
-				swapOrderMenu.setText(SWAP_MENU + names[order[2]] + SWAP_MENU_ARROW + names[order[0]]);
+				label = SWAP_MENU + names[order[2]] + SWAP_MENU_ARROW + names[order[0]];
 				break;
 		}
+		menu.add(new ContextMenuItem(label, () -> {
+			int[] currentOrder = map.getOrder();
+			switch (edge) {
+				case HasS3.EDGE_LEFT:
+					swapOrder(currentOrder, 0, 1);
+					break;
+				case HasS3.EDGE_RIGHT:
+					swapOrder(currentOrder, 1, 2);
+					break;
+				default:
+					swapOrder(currentOrder, 2, 0);
+					break;
+			}
+			map.setOrder(currentOrder);
+			paint(true);
+		}));
 	}
 
 	/**
@@ -919,26 +847,15 @@ public class S3Graph extends AbstractGraph<double[]> implements Zooming, Shiftin
 		int[] order = map.getOrder();
 		String[] names = map.getNames();
 		int cornerIdx = closestCorner(x, y);
-		if (setTraitMenu == null) {
-			setTraitMenu = new ContextMenu(menu, "Set trait");
-			for (String name : names)
-				setTraitMenu.add(new ContextMenuItem(name, () -> {
-					Iterator<Widget> items = setTraitMenu.iterator();
-					int idx = 0;
-					while (items.hasNext()) {
-						ContextMenuItem item = (ContextMenuItem) items.next();
-						if (item.getText().equals(name)) {
-							order[cornerIdx] = idx;
-							break;
-						}
-						idx++;
-					}
-					paint(true);
-				}));
+		ContextMenu setTraitMenu = new ContextMenu(menu);
+		for (int traitIdx = 0; traitIdx < names.length; traitIdx++) {
+			final int selectedTraitIdx = traitIdx;
+			setTraitMenu.add(new ContextMenuItem(names[traitIdx], () -> {
+				map.getOrder()[cornerIdx] = selectedTraitIdx;
+				paint(true);
+			}));
 		}
 		menu.add("Set trait '" + names[order[cornerIdx]] + "' to", setTraitMenu);
-		for (Widget item : setTraitMenu)
-			((ContextMenuItem) item).setEnabled(true);
 		for (int t : order)
 			((ContextMenuItem) setTraitMenu.getWidget(t)).setEnabled(false);
 	}

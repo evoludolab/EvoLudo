@@ -881,6 +881,13 @@ public class NetGames extends Discrete implements Payoffs,
 		}
 
 		@Override
+		public double getFitnessAt(int idx) {
+			double c = interaction.kout[idx] * ratio;
+			double b = interaction.kin[idx];
+			return b - c;
+		}
+
+		@Override
 		public int getInteractionsAt(int idx) {
 			return -1;
 		}
