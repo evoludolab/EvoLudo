@@ -515,8 +515,7 @@ public class PopGraph3D extends GenericPopGraph<MeshLambertMaterial, Network3DGW
 	/**
 	 * Compute the total shift needed for hierarchical structures.
 	 * 
-	 * @param side  the side length of the grid
-	 * @param shift the initial shift
+	 * @param side the side length of the grid
 	 * @return the additional shift for hierarchy
 	 */
 	private double computeHierarchyShift(int side) {
