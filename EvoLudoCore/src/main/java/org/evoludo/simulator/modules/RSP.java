@@ -99,7 +99,7 @@ public class RSP extends Discrete implements Payoffs,
 		// trait names (optional)
 		setTraitNames(new String[] { "Rock", "Scissors", "Paper" });
 		// trait colors (optional)
-		setTraitColors(new Color[] { Color.BLUE, new Color(238, 204, 17), Color.RED });
+		setTraitColors(new Color[] { Color.BLUE, new Color(255, 220, 50), Color.RED });
 		// payoffs (local storage)
 		payoff = new double[nTraits][nTraits];
 	}

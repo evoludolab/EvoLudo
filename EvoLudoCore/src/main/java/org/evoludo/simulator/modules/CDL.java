@@ -149,7 +149,7 @@ public class CDL extends Discrete implements Payoffs,
 		// trait names (optional)
 		setTraitNames(new String[] { "Loner", "Defector", "Cooperator" });
 		// trait colors (optional)
-		setTraitColors(new Color[] { new Color(238, 204, 17), Color.RED, Color.BLUE });
+		setTraitColors(new Color[] { new Color(255, 220, 50), Color.RED, Color.BLUE });
 	}
 
 	@Override

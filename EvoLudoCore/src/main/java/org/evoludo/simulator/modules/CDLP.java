@@ -103,7 +103,7 @@ public class CDLP extends CDL {
 		setTraitNames(new String[] { "Loner", "Defector", "Cooperator", "Punisher" });
 		// trait colors (optional)
 		// yellow for loners has too little contrast
-		setTraitColors(new Color[] { new Color(238, 204, 17), Color.RED, Color.BLUE, Color.GREEN });
+		setTraitColors(new Color[] { new Color(255, 220, 50), Color.RED, Color.BLUE, Color.GREEN });
 	}
 
 	@Override
