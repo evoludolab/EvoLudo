@@ -151,5 +151,12 @@
             "mainClass": "${workspaceFolder}/EvoLudoTest/src/main/java/org/evoludo/simulator/exec/TestEvoludo.java",
             "args": "--tests ${workspaceFolder}/EvoLudoTest/tests/generators/LV.clo --references ${workspaceFolder}/EvoLudoTest/tests/references --reports ${workspaceFolder}/EvoLudoTest/tests/reports"
         },
+        {
+            "name": "JRE simCDL",
+            "type": "java",
+            "request": "launch",
+            "mainClass": "${workspaceFolder}/EvoLudoSims/src/main/java/org/evoludo/simulator/exec/simCDL.java",
+            "args": "java -jar ./simCDL.jar --seed=0 --samples 1000 --popupdate async --playerupdate imitate 1 --geometry n --interest 0.5,5.5 --cost 1 --groupsize 5 --loner 1 --lonecoop 1 --lonedefect 1 --fitnessmap static 1,1 --popsize 100 --steps 100"
+        },
     ]
 }

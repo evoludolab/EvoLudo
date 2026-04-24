@@ -89,9 +89,15 @@ public class simCDL extends CDL implements ChangeListener {
 	}
 
 	/**
-	 * The initial counts for the different traits.
+	 * The initial counts for the different traits. Doubles as flag whether initial
+	 * strategy counts are sampled.
 	 */
-	int[] initcount;
+	int[] icount;
+
+	/**
+	 * The flag to indicate whether
+	 */
+	boolean doStatistics = false;
 
 	@Override
 	public void run() {
@@ -107,7 +113,7 @@ public class simCDL extends CDL implements ChangeListener {
 		engine.writeHeader();
 
 		// TESTING PROBABILITIES AND TIME SCALES
-		// initcount = null;
+		// icount = null;
 		// double[] prob = new double[nTraits];
 		// double[] time = new double[nTraits];
 		// double[] time2 = new double[nTraits];
@@ -164,8 +170,7 @@ public class simCDL extends CDL implements ChangeListener {
 			state = new double[nTraits];
 			int tot = (dim + 1) * (dim + 2) / 2;
 			int done = 0;
-			initcount = new int[nTraits];
-			resetStatistics();
+			icount = new int[nTraits];
 			int nSamples = (int) model.getNSamples();
 			if (model.isODE() && model.getNSamples() > 1) {
 				logger.warning("ODE models are deterministic, no point in taking multiple samples.");
@@ -176,19 +181,19 @@ public class simCDL extends CDL implements ChangeListener {
 					double[] dinit = new double[nTraits];
 					((DModel) model).getInitialTraits(dinit);
 					if (dim == 0) {
-						initcount[COOPERATE] = (int) (dinit[COOPERATE] * nPopulation + 0.5);
-						initcount[DEFECT] = (int) (dinit[DEFECT] * nPopulation + 0.5);
+						icount[COOPERATE] = (int) (dinit[COOPERATE] * nPopulation + 0.5);
+						icount[DEFECT] = (int) (dinit[DEFECT] * nPopulation + 0.5);
 					} else {
-						initcount[COOPERATE] = (int) (c * incr + 0.5);
-						initcount[DEFECT] = (int) (d * incr + 0.5);
+						icount[COOPERATE] = (int) (c * incr + 0.5);
+						icount[DEFECT] = (int) (d * incr + 0.5);
 					}
-					initcount[LONER] = nPopulation - initcount[COOPERATE] - initcount[DEFECT];
-					if (initcount[LONER] < 0) {
+					icount[LONER] = nPopulation - icount[COOPERATE] - icount[DEFECT];
+					if (icount[LONER] < 0) {
 						// rounding error can cause this (e.g. c=d=10, nPopulation=99, nSteps=20)
-						initcount[LONER] = 0;
-						initcount[(LONER + 1) % nTraits]--;
+						icount[LONER] = 0;
+						icount[(LONER + 1) % nTraits]--;
 					}
-					ArrayMath.copy(initcount, dinit);
+					ArrayMath.copy(icount, dinit);
 					((DModel) model).setInitialTraits(dinit);
 					for (int s = 1; s <= nSamples; s++) {
 						engine.modelReset();
@@ -330,6 +335,7 @@ public class simCDL extends CDL implements ChangeListener {
 	 * Start collecting statistics.
 	 */
 	protected void startStatistics() {
+		doStatistics = true;
 		prevsample = engine.getModel().getUpdates();
 	}
 
@@ -354,7 +360,7 @@ public class simCDL extends CDL implements ChangeListener {
 	 * @param time the current time
 	 */
 	protected void updateStatistics(double time) {
-		if (prevsample >= time)
+		if (!doStatistics || prevsample >= time)
 			return;
 		model.getMeanTraits(getId(), state);
 		// calculate weighted mean and sdev - see wikipedia
@@ -432,6 +438,7 @@ public class simCDL extends CDL implements ChangeListener {
 		parser.addCLO(cloNSteps);
 		parser.addCLO(cloScanNL);
 		parser.addCLO(cloProgress);
+		parser.addCLO(model.cloSamples);
 
 		model.cloTimeStop.setDefault("1000000");
 		super.collectCLO(parser);
@@ -462,28 +469,30 @@ public class simCDL extends CDL implements ChangeListener {
 		@Override
 		public void init() {
 			super.init();
+			if (icount == null)
+				return;
+			System.arraycopy(icount, 0, initCount, 0, nTraits);
 			int[] todo = new int[nPopulation];
 			for (int n = 0; n < nPopulation; n++)
 				todo[n] = n;
 			int nTodo = nPopulation;
-			traitsCount[CDL.COOPERATE] = initcount[CDL.COOPERATE];
-			for (int n = 0; n < initcount[CDL.COOPERATE]; n++) {
+			traitsCount[CDL.COOPERATE] = initCount[CDL.COOPERATE];
+			for (int n = 0; n < initCount[CDL.COOPERATE]; n++) {
 				int pick = rng.random0n(nTodo);
 				setTraitAt(todo[pick], CDL.COOPERATE);
 				todo[pick] = todo[--nTodo];
 			}
-			traitsCount[CDL.DEFECT] = initcount[CDL.DEFECT];
-			for (int n = 0; n < initcount[CDL.DEFECT]; n++) {
+			traitsCount[CDL.DEFECT] = initCount[CDL.DEFECT];
+			for (int n = 0; n < initCount[CDL.DEFECT]; n++) {
 				// logger.info("setStrategyCount: nTodo="+nTodo+",
 				// todo="+ChHFormatter.format(todo));
 				int pick = rng.random0n(nTodo);
 				setTraitAt(todo[pick], CDL.DEFECT);
 				todo[pick] = todo[--nTodo];
 			}
-			traitsCount[CDL.LONER] = initcount[CDL.LONER];
-			for (int n = 0; n < initcount[CDL.LONER]; n++)
+			traitsCount[CDL.LONER] = initCount[CDL.LONER];
+			for (int n = 0; n < initCount[CDL.LONER]; n++)
 				setTraitAt(todo[n], CDL.LONER);
-			resetStatistics();
 		}
 	}
 
