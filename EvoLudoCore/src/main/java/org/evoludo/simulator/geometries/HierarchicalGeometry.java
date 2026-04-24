@@ -224,6 +224,7 @@ public class HierarchicalGeometry extends AbstractLattice {
 		isRewired = false;
 		isRegular = false;
 		isUndirected = true;
+		clear();
 
 		initHierarchy(0, 0);
 		isValid = true;

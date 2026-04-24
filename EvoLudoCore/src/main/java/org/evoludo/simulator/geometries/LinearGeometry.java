@@ -98,6 +98,7 @@ public class LinearGeometry extends AbstractLattice {
 		int left = (neighbors + linearAsymmetry) / 2;
 		int right = (neighbors - linearAsymmetry) / 2;
 		isUndirected = (left == right);
+		clear();
 
 		for (int i = 0; i < size; i++) {
 			for (int j = -left; j <= right; j++) {

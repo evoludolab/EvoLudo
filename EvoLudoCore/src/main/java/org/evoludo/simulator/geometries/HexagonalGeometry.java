@@ -77,6 +77,7 @@ public class HexagonalGeometry extends AbstractLattice {
 		isUndirected = true;
 		isRegular = true;
 		boolean interspecies = isInterspecies();
+		clear();
 
 		int side = (int) Math.floor(Math.sqrt(size) + 0.5);
 		if ((int) Math.rint(connectivity) == 1) {

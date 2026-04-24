@@ -95,6 +95,7 @@ public class ScalefreeGeometry extends AbstractNetwork {
 		isRewired = false;
 		isUndirected = true;
 		isRegular = false;
+		clear();
 
 		double[] distr = new double[size];
 		RNGDistribution rng = engine.getRNG();

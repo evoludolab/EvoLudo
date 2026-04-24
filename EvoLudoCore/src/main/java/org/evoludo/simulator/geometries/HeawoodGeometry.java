@@ -63,6 +63,7 @@ public class HeawoodGeometry extends AbstractGeometry {
 		isRewired = false;
 		isUndirected = true;
 		isRegular = true;
+		clear();
 
 		int size = getSize();
 		for (int i = 1; i < size; i++)

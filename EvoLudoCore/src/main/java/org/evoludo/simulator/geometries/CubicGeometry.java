@@ -70,6 +70,7 @@ public class CubicGeometry extends AbstractLattice {
 		isRewired = false;
 		isUndirected = true;
 		isRegular = true;
+		clear();
 
 		int l = (int) Math.floor(Math.pow(size, 1.0 / 3.0) + 0.5);
 		int lz = l;
