@@ -380,7 +380,6 @@ public abstract class Module<T extends Module<T>>
 	 * @see EvoLudo#paramsDidChange()
 	 */
 	public boolean check() {
-		setActiveTraits(null);
 		return false;
 	}
 
@@ -692,10 +691,8 @@ public abstract class Module<T extends Module<T>>
 	 * @return the array of active traits
 	 */
 	public boolean[] getActiveTraits() {
-		if (active == null || active.length != nTraits) {
-			active = new boolean[nTraits];
-			Arrays.fill(active, true);
-		}
+		if (active == null || active.length != nTraits)
+			setActiveTraits(null);
 		return active;
 	}
 
@@ -705,6 +702,8 @@ public abstract class Module<T extends Module<T>>
 	 * @return the number of active traits
 	 */
 	public int getNActive() {
+		if (active == null || active.length != nTraits)
+			setActiveTraits(null);
 		return nActive;
 	}
 
@@ -1552,15 +1551,21 @@ public abstract class Module<T extends Module<T>>
 					int n = 0;
 					for (T pop : species) {
 						int[] dtraits = CLOParser.parseIntVector(disabledtraits[n++ % disabledtraits.length]);
-						int dist = dtraits.length;
 						int mint = model.isContinuous() ? 1 : 2;
-						if (pop.nTraits - mint < dist)
+						if (pop.nTraits - mint < dtraits.length)
 							return false;
+						int vac = pop.getVacantIdx();
 						for (int t : dtraits) {
-							if (t < 0 || t >= pop.nTraits)
+							// vacant trait cannot be disabled
+							if (t < 0 || t >= pop.nTraits || t == vac)
 								return false;
 							pop.active[t] = false;
 							pop.nActive--;
+						}
+						// need at least two active traits (including vacant)
+						if (pop.nActive < 2) {
+							pop.setActiveTraits(null);
+							return false;
 						}
 					}
 					return true;

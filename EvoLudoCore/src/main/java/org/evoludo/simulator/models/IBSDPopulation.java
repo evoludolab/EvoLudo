@@ -1936,8 +1936,6 @@ public class IBSDPopulation extends IBSPopulation<Discrete, IBSDPopulation> {
 	public boolean check() {
 		boolean doReset = super.check();
 
-		active = module.getActiveTraits();
-
 		// start allocating memory
 		if (traits == null || traits.length != nPopulation) {
 			traits = new int[nPopulation];
@@ -1953,6 +1951,16 @@ public class IBSDPopulation extends IBSPopulation<Discrete, IBSDPopulation> {
 			tmpScore = new double[nTraits];
 		}
 		maxRate = -1.0;
+
+		active = module.getActiveTraits();
+		// check that current state doesn't contain inactive traits
+		for (int n = 0; n < nTraits; n++) {
+			if (!active[n] && traitsCount[n] > 0) {
+				doReset = true;
+				break;
+			}
+		}
+
 		return doReset;
 	}
 
@@ -2039,25 +2047,26 @@ public class IBSDPopulation extends IBSPopulation<Discrete, IBSDPopulation> {
 				initMono();
 				break;
 
-			case MUTANT:
-				int mutant = initMutant();
-				FixationData fix = engine.getModel().getFixationData();
-				if (fix != null) {
-					fix.mutantNode = mutant;
-					fix.mutantTrait = (mutant < 0 ? mutant : getTraitAt(mutant));
-					fix.residentTrait = (int) init.args[1];
-				}
-				break;
-
 			case TEMPERATURE:
-				mutant = initTemperature();
-				fix = engine.getModel().getFixationData();
-				if (fix != null) {
-					fix.mutantNode = mutant;
-					fix.mutantTrait = getTraitAt(fix.mutantNode);
-					fix.residentTrait = (int) init.args[1];
-					fix.mutantTrait = (mutant < 0 ? mutant : getTraitAt(mutant));
+			case MUTANT:
+				// temperature and uniform initializations differ only on non-regular graphs
+				int mutantType = (int) init.args[0] % nTraits;
+				int len = init.args.length;
+				int residentType;
+				if (len > 1)
+					residentType = (int) init.args[1] % nTraits;
+				else
+					residentType = (mutantType + 1) % nTraits;
+				if (!active[mutantType] || !active[residentType]) {
+					if (logger.isLoggable(Level.WARNING))
+						logger.warning("resident/mutant traits disabled - using uniform.");
+					initUniform();
+					break;
 				}
+				if (init.type == Init.Type.TEMPERATURE && !interaction.isRegular())
+					initTemperature(mutantType, residentType);
+				else
+					initMutant(mutantType, residentType);
 				break;
 
 			case KALEIDOSCOPE:
@@ -2104,11 +2113,18 @@ public class IBSDPopulation extends IBSPopulation<Discrete, IBSDPopulation> {
 		Arrays.fill(traitsCount, 0);
 		// different traits active
 		double[] cumFreqs = new double[nTraits];
-		cumFreqs[0] = init.args[0];
+		cumFreqs[0] = (active[0] ? init.args[0] : 0.0);
 		int nInit = init.args.length;
 		for (int i = 1; i < nTraits; i++)
-			cumFreqs[i] = cumFreqs[i - 1] + (i < nInit ? init.args[i] : 0.0);
-		double inorm = 1.0 / cumFreqs[nTraits - 1];
+			cumFreqs[i] = cumFreqs[i - 1] + (i < nInit && active[i] ? init.args[i] : 0.0);
+		double norm = cumFreqs[nTraits - 1];
+		if (norm < 1e-8) {
+			if (logger.isLoggable(Level.WARNING))
+				logger.warning("zero total frequency - using uniform.");
+			initUniform();
+			return;
+		}
+		double inorm = 1.0 / norm;
 		ArrayMath.multiply(cumFreqs, inorm);
 
 		for (int n = 0; n < nPopulation; n++) {
@@ -2192,6 +2208,13 @@ public class IBSDPopulation extends IBSPopulation<Discrete, IBSDPopulation> {
 	 */
 	public void initMono(int monoType, double monoFreq) {
 		monoType = monoType % nTraits;
+		if (!active[monoType] || (monoType == vacantIdx && monoFreq < 1.0 - 1e-8)) {
+			if (logger.isLoggable(Level.WARNING))
+				logger.warning("mono trait " + module.getTraitName(monoType)
+						+ (monoType == vacantIdx ? " cannot be vacant" : " is disabled") + " - using uniform.");
+			initUniform();
+			return;
+		}
 		Arrays.fill(traitsCount, 0);
 		if (monoFreq > 1.0 - 1e-8) {
 			Arrays.fill(traits, monoType);
@@ -2230,117 +2253,96 @@ public class IBSDPopulation extends IBSPopulation<Discrete, IBSDPopulation> {
 	 * Monomorphic initial configuration with a single mutant placed in a location
 	 * chosen uniformly at random (uniform initialization, cosmic rays).
 	 * 
-	 * @return the location of the mutant
-	 * 
 	 * @see IBSD.Init.Type#MUTANT
 	 */
-	protected int initMutant() {
-		// initArgs contains the index of the resident and mutant traits
-		int mutantType = (int) init.args[0] % nTraits;
-		int len = init.args.length;
-		int residentType;
-		if (len > 1)
-			residentType = (int) init.args[1] % nTraits;
-		else
-			residentType = (mutantType + 1) % nTraits;
-		int loc;
+	protected void initMutant(int mutantType, int residentType) {
+		int loc = -1;
 		if (vacantIdx >= 0) {
-			loc = initWithVacant(residentType);
-			if (loc < 0)
-				return -1;
+			double monoFreq = (init.args.length > 2 ? Math.max(0.0, 1.0 - init.args[2])
+					: 1.0 - estimateVacantFrequency(residentType));
+			initMono(residentType, monoFreq);
+			// check if resident population went extinct or only a single survivor
+			if (traitsCount[vacantIdx] < nPopulation - 1) {
+				// change trait of random resident to a mutant
+				int idx = random0n(getPopulationSize());
+				while (idx >= 0) {
+					if (isVacantAt(++loc))
+						continue;
+					idx--;
+				}
+			}
 		} else {
-			initMono(residentType, 1.0);
+			initMono(residentType);
 			// change trait of random resident to a mutant
 			loc = random0n(nPopulation);
 		}
+		FixationData fix = engine.getModel().getFixationData();
+		if (fix != null) {
+			fix.mutantNode = loc;
+			fix.mutantTrait = mutantType;
+			fix.residentTrait = residentType;
+		}
+		if (loc < 0)
+			return;
 		setTraitAt(loc, mutantType);
 		traitsCount[residentType]--;
 		traitsCount[mutantType]++;
-		return loc;
-	}
-
-	/**
-	 * Initialize monomorphic resident population with vacant sites and return
-	 * location of a random resident to be changed to a mutant.
-	 * 
-	 * @param residentType the resident trait
-	 * @return the location of the mutant
-	 */
-	int initWithVacant(int residentType) {
-		// if present the third argument indicates the frequency of vacant sites
-		// if not use estimate for carrying capacity
-		double monoFreq = (init.args.length > 2 ? Math.max(0.0, 1.0 - init.args[2])
-				: 1.0 - estimateVacantFrequency(residentType));
-		if (residentType == vacantIdx && monoFreq < 1.0 - 1e-8) {
-			// problem encountered
-			init.type = Init.Type.UNIFORM;
-			logger.warning("review " + init.clo.getName() + //
-					" settings! - using '" + init.type.getKey() + "'.");
-			initUniform();
-			return -1;
-		}
-		// initialize monomorphic resident population at carrying capacity
-		// relax resident population to equilibrium configuration if requested
-		initMono(residentType, monoFreq);
-		// check if resident population went extinct or a single survivor
-		// check if resident population went extinct or only a single survivor
-		if (traitsCount[vacantIdx] >= nPopulation - 1)
-			return -1;
-		// change trait of random resident to a mutant
-		int idx = random0n(getPopulationSize());
-		int loc = -1;
-		while (idx >= 0) {
-			if (isVacantAt(++loc))
-				continue;
-			idx--;
-		}
-		return loc;
 	}
 
 	/**
 	 * Monomorphic initial configuration with a single mutant placed in a random
-	 * location chosen with probability proprtional to the number of incoming links
-	 * (temperature initialization, errors in reproduction).
-	 * 
-	 * @return the location of the mutant
+	 * location chosen with probability proportional to the number of incoming links
+	 * (temperature initialization, errors in reproduction). Same as
+	 * {@link #initMutant()} for regular geometries.
 	 * 
 	 * @see IBSD.Init.Type#TEMPERATURE
 	 */
-	protected int initTemperature() {
-		int mutant = initMutant();
-		if (interaction.isRegular() || mutant < 0)
-			return mutant;
-		int mutantType = getTraitAt(mutant);
-		int residentType = (int) init.args[1];
-		// revert mutant back to resident
-		setTraitAt(mutant, residentType);
-		// pick parent uniformly at random (everyone has the same fitness)
-		int parent;
-		if (vacantIdx < 0)
-			parent = random0n(nPopulation);
-		else {
-			int idx = random0n(getPopulationSize());
-			parent = -1;
-			while (idx >= 0) {
-				if (isVacantAt(++parent))
-					continue;
-				idx--;
+	protected void initTemperature(int mutantType, int residentType) {
+		int loc = -1;
+		if (vacantIdx >= 0) {
+			double monoFreq = (init.args.length > 2 ? Math.max(0.0, 1.0 - init.args[2])
+					: 1.0 - estimateVacantFrequency(residentType));
+			initMono(residentType, monoFreq);
+			int size = nPopulation - traitsCount[vacantIdx];
+			if (size > 1) {
+				// pick parent uniformly at random (everyone has the same fitness)
+				int idx = random0n(size);
+				while (idx >= 0) {
+					if (isVacantAt(++loc))
+						continue;
+					idx--;
+				}
 			}
+		} else {
+			initMono(residentType);
+			// pick parent uniformly at random (everyone has the same fitness)
+			loc = random0n(nPopulation);
 		}
-		// now pick neighbouring node uniformly at random to place mutant
-		// note: regular structures (including well-mixed) do not get here
-		int nneighs = competition.kout[parent];
-		if (nneighs == 0)
-			// nowhere to place offspring...
-			return -1;
-		int idx = competition.out[parent][random0n(nneighs)];
-		if (isVacantAt(idx)) {
+		// check if parent valid
+		if (loc >= 0) {
+			// now pick neighbouring node uniformly at random to place mutant
+			// note: regular structures (including well-mixed) do not get here
+			int nneighs = competition.kout[loc];
+			if (nneighs == 0)
+				// nowhere to place offspring...
+				loc = -1;
+			else
+				loc = competition.out[loc][random0n(nneighs)];
+		}
+		FixationData fix = engine.getModel().getFixationData();
+		if (fix != null) {
+			fix.mutantNode = loc;
+			fix.mutantTrait = mutantType;
+			fix.residentTrait = residentType;
+		}
+		if (loc < 0)
+			return;
+		if (isVacantAt(loc))
 			traitsCount[vacantIdx]--;
-			// number of residents unchanged, initMono decreased it
-			traitsCount[residentType % nTraits]++;
-		}
-		setTraitAt(idx, mutantType);
-		return idx;
+		else
+			traitsCount[residentType]--;
+		traitsCount[mutantType]++;
+		setTraitAt(loc, mutantType);
 	}
 
 	/**
@@ -2407,10 +2409,9 @@ public class IBSDPopulation extends IBSPopulation<Discrete, IBSDPopulation> {
 		int width = size / nStripes;
 		// make first strip wider
 		int width2 = (size - (nStripes - 1) * width) / 2;
-		fillStripe(0, width2, 0);
+		fillStripe(0, width2, nact[0]);
 		int offset = (nStripes - 1) * width + width2;
-		fillStripe(offset, size - offset, 0);
-		traitsCount[0] += width * size;
+		fillStripe(offset, size - offset, nact[0]);
 		offset = width2;
 		// first all individual traits
 		for (int n = 1; n < nActive; n++) {
@@ -2504,20 +2505,13 @@ public class IBSDPopulation extends IBSPopulation<Discrete, IBSDPopulation> {
 	public boolean mouseHitNode(int hit, boolean alt) {
 		if (hit < 0 || hit >= nPopulation)
 			return false; // invalid argument
-		int newtype = getTraitAt(hit) + nTraits + (alt ? -1 : 1);
-		return mouseSetHit(hit, newtype % nTraits);
-	}
-
-	/**
-	 * Process event from GUI: individual with index {@code hit} was hit by mouse
-	 * (or tap) in order to set its trait to {@code trait}.
-	 * 
-	 * @param hit   the index of the individual that was hit by mouse or tap
-	 * @param trait the new trait of the individual
-	 * @return {@code false} if no actions taken (should not happen)
-	 */
-	private boolean mouseSetHit(int hit, int trait) {
-		traitsNext[hit] = trait;
+		int next = getTraitAt(hit);
+		for (int steps = 0; steps < nTraits; steps++) {
+			next = Math.floorMod(next + (alt ? -1 : 1), nTraits);
+			if (active[next])
+				break;
+		}
+		traitsNext[hit] = next;
 
 		/* this is a trait change - need to adjust scores */
 		if (adjustScores) {

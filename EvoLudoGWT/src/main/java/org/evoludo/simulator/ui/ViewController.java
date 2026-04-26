@@ -303,6 +303,8 @@ public class ViewController {
 
 		addView(console, oldViews);
 		rebuildSelectorItems();
+		if (activeView != null && !activeViews.containsValue(activeView))
+			activeView = getFirstView();
 
 		if (!oldViews.isEmpty())
 			unloadViews(oldViews);
@@ -492,7 +494,7 @@ public class ViewController {
 			addView(new Phase2D(engine), oldViews);
 		if (module instanceof HasMean.Traits)
 			addView(new Mean(engine, Data.TRAIT), oldViews);
-		if (module instanceof HasS3)
+		if (module instanceof HasS3 && module.getNActive() >= 3)
 			addView(new S3(engine), oldViews);
 		if (module instanceof HasHistogram.Strategy)
 			addView(new Histogram(engine, Data.TRAIT), oldViews);
