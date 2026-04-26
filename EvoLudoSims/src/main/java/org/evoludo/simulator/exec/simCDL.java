@@ -260,7 +260,7 @@ public class simCDL extends CDL implements ChangeListener {
 			int tot = (int) ((scanNL[1] - scanNL[0]) / scanNL[2]) + 1;
 			int done = 0;
 			timeStop += timeRelax;
-			out.println("# average frequencies\n# a\tr\tL\tD\tC\tT");
+			out.println("# average frequencies\n# a\tr\t" + Formatter.format(getTraitNames(), "\t") + "\tT");
 			double a = scanNL[0];
 			while (Math.abs(a) < Math.abs(scanNL[1] + scanNL[2])) {
 				double r = (interest(1) + interest(nGroup)) * 0.5;

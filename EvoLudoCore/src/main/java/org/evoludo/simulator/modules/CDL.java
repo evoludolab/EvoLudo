@@ -64,7 +64,7 @@ public class CDL extends Discrete implements Payoffs,
 	/**
 	 * The trait (and index) value of cooperators.
 	 */
-	public static final int COOPERATE = 2;
+	public static final int COOPERATE = 0;
 
 	/**
 	 * The trait (and index) value of defectors.
@@ -74,7 +74,7 @@ public class CDL extends Discrete implements Payoffs,
 	/**
 	 * The trait (and index) value of loners.
 	 */
-	public static final int LONER = 0;
+	public static final int LONER = 2;
 
 	/**
 	 * The multiplication factor of the (non-linear) public good with a single
@@ -147,9 +147,9 @@ public class CDL extends Discrete implements Payoffs,
 	public void load() {
 		super.load();
 		// trait names (optional)
-		setTraitNames(new String[] { "Loner", "Defector", "Cooperator" });
+		setTraitNames(new String[] { "Cooperator", "Defector", "Loner" });
 		// trait colors (optional)
-		setTraitColors(new Color[] { new Color(255, 220, 50), Color.RED, Color.BLUE });
+		setTraitColors(new Color[] { Color.BLUE, Color.RED, new Color(255, 220, 50) });
 	}
 
 	@Override
@@ -170,7 +170,7 @@ public class CDL extends Discrete implements Payoffs,
 
 	@Override
 	public int getDependent() {
-		return LONER;
+		return DEFECT;
 	}
 
 	@Override
