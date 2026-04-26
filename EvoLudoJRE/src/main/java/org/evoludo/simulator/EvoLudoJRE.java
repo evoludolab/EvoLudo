@@ -103,6 +103,15 @@ public class EvoLudoJRE extends EvoLudo implements Runnable {
 	}
 
 	/**
+	 * Check whether the engine is running in headless mode.
+	 * 
+	 * @return {@code true} if the engine is running without a GUI
+	 */
+	public boolean isHeadless() {
+		return isHeadless;
+	}
+
+	/**
 	 * Store time to measure execution times since instantiation.
 	 */
 	private final long startmsec = System.currentTimeMillis();
@@ -183,7 +192,7 @@ public class EvoLudoJRE extends EvoLudo implements Runnable {
 
 	@Override
 	public void execute(Directive directive) {
-		executeThread = new Thread(directive::execute, "Execute");
+		executeThread = createManagedThread(directive::execute, "Execute");
 		executeThread.start();
 	}
 
@@ -194,8 +203,25 @@ public class EvoLudoJRE extends EvoLudo implements Runnable {
 	protected void launchEngine() {
 		if (engineThread != null)
 			return;
-		engineThread = new Thread(this, "Engine");
+		engineThread = createManagedThread(this, "Engine");
 		engineThread.start();
+	}
+
+	/**
+	 * Create a managed helper thread for the JRE engine.
+	 * <p>
+	 * Headless simulations should not be kept alive solely by bookkeeping threads
+	 * after the launcher has finished, while GUI launches still require normal
+	 * non-daemon threads.
+	 * 
+	 * @param task the task executed by the thread
+	 * @param name the thread name
+	 * @return the configured thread
+	 */
+	private Thread createManagedThread(Runnable task, String name) {
+		Thread thread = new Thread(task, name);
+		thread.setDaemon(isHeadless);
+		return thread;
 	}
 
 	@Override

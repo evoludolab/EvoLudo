@@ -34,6 +34,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.evoludo.simulator.EvoLudo;
+import org.evoludo.simulator.EvoLudoJRE;
 import org.evoludo.simulator.Network2D;
 import org.evoludo.simulator.geometries.AbstractGeometry;
 import org.evoludo.simulator.geometries.GeometryType;
@@ -89,7 +90,7 @@ public class Network2DJRE extends Network2D implements Runnable {
 	public void doLayout(LayoutListener ll, boolean inThread) {
 		this.listener = ll;
 		if (inThread)
-			new Thread(this, "NetLayoutBoss").start();
+			newLayoutThread(this, "NetLayoutBoss").start();
 		else
 			run();
 	}
@@ -161,14 +162,31 @@ public class Network2DJRE extends Network2D implements Runnable {
 			start = end;
 			end = start + incr;
 			worker = new NetLayoutWorker(start, end);
-			new Thread(worker, "NetLayoutWorker-" + (i + 1)).start();
+			newLayoutThread(worker, "NetLayoutWorker-" + (i + 1)).start();
 			workers.add(worker);
 		}
 		// the last worker may be responsible for a few more nodes in case data.nData %
 		// count != 0.
 		worker = new NetLayoutWorker(end, nNodes);
-		new Thread(worker, "NetLayoutWorker-" + nWorkers).start();
+		newLayoutThread(worker, "NetLayoutWorker-" + nWorkers).start();
 		workers.add(worker);
+	}
+
+	/**
+	 * Create a layout thread.
+	 * <p>
+	 * Headless launches should not be kept alive by outstanding layout workers once
+	 * the main simulation thread has finished.
+	 * 
+	 * @param worker the layout runnable
+	 * @param name   the thread name
+	 * @return the configured thread
+	 */
+	private Thread newLayoutThread(Runnable worker, String name) {
+		Thread thread = new Thread(worker, name);
+		if (engine instanceof EvoLudoJRE jre)
+			thread.setDaemon(jre.isHeadless());
+		return thread;
 	}
 
 	/**

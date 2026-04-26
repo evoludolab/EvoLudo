@@ -37,6 +37,7 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import org.evoludo.simulator.EvoLudo;
+import org.evoludo.simulator.EvoLudoJRE;
 
 /**
  * Shared helper for JRE PDE worker thread lifecycle.
@@ -126,12 +127,30 @@ final class PDEWorkerPool {
 			int start = end;
 			end = start + incr;
 			W worker = factory.apply(start, end);
-			new Thread(worker, "RDWorker-" + (i + 1)).start();
+			newWorkerThread(engine, worker, "RDWorker-" + (i + 1)).start();
 			workers.add(worker);
 		}
 		W worker = factory.apply(end, nUnits);
-		new Thread(worker, "RDWorker-" + nWorkers).start();
+		newWorkerThread(engine, worker, "RDWorker-" + nWorkers).start();
 		workers.add(worker);
+	}
+
+	/**
+	 * Create a PDE worker thread.
+	 * <p>
+	 * Headless simulations should not stay alive because worker threads remain
+	 * blocked after the launcher thread has completed.
+	 *
+	 * @param engine the engine requesting the worker
+	 * @param worker the worker runnable
+	 * @param name   the thread name
+	 * @return the configured worker thread
+	 */
+	private static Thread newWorkerThread(EvoLudo engine, Runnable worker, String name) {
+		Thread thread = new Thread(worker, name);
+		if (engine instanceof EvoLudoJRE jre)
+			thread.setDaemon(jre.isHeadless());
+		return thread;
 	}
 
 	/**
