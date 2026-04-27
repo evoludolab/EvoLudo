@@ -1014,7 +1014,9 @@ public class EvoLudoWeb extends Composite
 			setInteractiveControlsEnabled(false);
 			return;
 		}
-		boolean stopped = !engine.isRunning();
+		Model model = engine.getModel();
+		boolean relaxing = engine.isRelaxationScheduled() && model != null && model.isRelaxing();
+		boolean stopped = !engine.isRunning() && !relaxing;
 		evoludoStartStop.setText(stopped ? BUTTON_START : BUTTON_STOP);
 		evoludoStep.setEnabled(stopped);
 		evoludoInitReset.setEnabled(stopped);
@@ -1022,12 +1024,11 @@ public class EvoLudoWeb extends Composite
 		evoludoDefault.setEnabled(stopped);
 		updateKeys();
 		evoludoSlider.setValue(engine.getDelay());
-		Model model = engine.getModel();
 		if (model == null) {
 			evoludoSlider.setEnabled(true);
 			return;
 		}
-		evoludoSlider.setEnabled(model.getMode() != Mode.STATISTICS_SAMPLE);
+		evoludoSlider.setEnabled(!relaxing && model.getMode() != Mode.STATISTICS_SAMPLE);
 		if (stopped)
 			updateStatus();
 		updateCounter();
@@ -1499,6 +1500,8 @@ public class EvoLudoWeb extends Composite
 	 */
 	@UiHandler("evoludoStartStop")
 	public void onStartStopClick(ClickEvent event) {
+		if (requestRelaxationStop())
+			return;
 		if (engine.isRunning() || SettingsController.isReady())
 			engine.startStop();
 		else
@@ -1525,7 +1528,23 @@ public class EvoLudoWeb extends Composite
 	 */
 	@UiHandler("evoludoStartStop")
 	public void onStartStopTouchEnd(TouchEndEvent event) {
+		if (requestRelaxationStop())
+			return;
 		engine.startStop();
+	}
+
+	/**
+	 * Request interruption of a scheduled relaxation if one is active.
+	 *
+	 * @return <code>true</code> if a relaxation stop was requested
+	 */
+	private boolean requestRelaxationStop() {
+		if (!engine.isRelaxationScheduled())
+			return false;
+		displayStatus(BUTTON_STOP + " pending...");
+		displayStatusThresholdLevel = Level.ALL.intValue();
+		engine.requestAction(PendingAction.STOP, false);
+		return true;
 	}
 
 	/**
@@ -1749,11 +1768,9 @@ public class EvoLudoWeb extends Composite
 			activeView.deactivate();
 		if (moduleChanged) {
 			deferStatusThresholdReset = true;
-			engine.modelReset(true);
-			loadViews(false);
-			// notify of reset (reset above was quiet because views may not have
-			// been ready for notification)
-			engine.fireModelReset();
+			engine.modelCheck();
+			loadViews();
+			engine.modelReset(false);
 		} else {
 			boolean didReset = engine.paramsDidChange();
 			loadViews(didReset);
@@ -1860,27 +1877,39 @@ public class EvoLudoWeb extends Composite
 	 * @param resetViews whether to reset view state after loading
 	 */
 	private void loadViews(boolean resetViews) {
+		for (AbstractView<?> view : loadViews()) {
+			if (resetViews)
+				view.modelDidReset();
+			else
+				view.reset(false);
+		}
+	}
+
+	/**
+	 * Helper method to update the views after the command line options have been
+	 * applied. Ensures that all views are loaded and the correct sizes applied.
+	 *
+	 * @return newly loaded views
+	 */
+	private List<AbstractView<?>> loadViews() {
 		viewController.refreshViews();
 		AbstractView<?> anchorView = viewController.getActiveView();
 		if (anchorView == null)
 			anchorView = viewController.getFirstView();
 		if (anchorView == null)
-			return;
+			return new ArrayList<>();
+		List<AbstractView<?>> loadedViews = new ArrayList<>();
 		int width = anchorView.getOffsetWidth();
 		int height = anchorView.getOffsetHeight();
 		for (AbstractView<?> view : viewController.getActiveViews()) {
-			boolean loaded = view.load();
+			if (view.load())
+				loadedViews.add(view);
 			if (view != anchorView)
 				view.setBounds(width, height);
-			if (loaded) {
-				if (resetViews)
-					view.modelDidReset();
-				else
-					view.reset(false);
-			}
 		}
 		evoludoLayout.onResize();
 		updateDropHandlers();
+		return loadedViews;
 	}
 
 	/**

@@ -412,7 +412,12 @@ class RunController {
 			mod.reset();
 		engine.activeModel.reset();
 		engine.resetRequested = false;
-		modelInit(true);
+		for (Module<?> mod : engine.activeModule.getSpecies())
+			mod.init();
+		engine.activeModel.init();
+		engine.activeModel.update();
+		resetCPUSample();
+		engine.modelRelax(quiet);
 		if (!quiet) {
 			engine.activeModel.resetStatisticsSample();
 			engine.fireModelReset();
@@ -441,10 +446,9 @@ class RunController {
 		engine.activeModel.init();
 		engine.activeModel.update();
 		resetCPUSample();
-		modelRelax(quiet);
-		if (!quiet) {
+		if (!quiet)
 			engine.fireModelInit();
-		}
+		engine.modelRelax(quiet);
 	}
 
 	/**

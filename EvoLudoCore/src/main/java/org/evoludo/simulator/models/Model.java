@@ -663,15 +663,40 @@ public abstract class Model implements CLOProvider {
 		// DE models may not have an update count but have time
 		double updt = getUpdates();
 		if (timeRelax > 0.0 && updt < timeRelax) {
-			isRelaxing = true;
+			startRelaxation();
 			next(timeRelax - updt);
-			isRelaxing = false;
-			if (type == ModelType.IBS) {
-				// reset traits after relaxation in IBS models
-				for (Module<?> mod : species) {
-					IBSPopulation<?, ?> pop = mod.getIBSPopulation();
-					pop.resetTraits();
-				}
+			return finishRelaxation();
+		}
+		return false;
+	}
+
+	/**
+	 * Mark the beginning of a relaxation phase.
+	 * <p>
+	 * Runtime-specific controllers may call this method when they perform
+	 * relaxation in multiple chunks rather than through a single invocation of
+	 * {@link #relax()}.
+	 */
+	public void startRelaxation() {
+		isRelaxing = true;
+	}
+
+	/**
+	 * Finalize a relaxation phase, including any model-specific post-processing.
+	 * <p>
+	 * Runtime-specific controllers may call this method when they perform
+	 * relaxation in multiple chunks rather than through a single invocation of
+	 * {@link #relax()}.
+	 *
+	 * @return {@code true} if the model converged during relaxation
+	 */
+	public boolean finishRelaxation() {
+		isRelaxing = false;
+		if (type == ModelType.IBS) {
+			// reset traits after relaxation in IBS models
+			for (Module<?> mod : species) {
+				IBSPopulation<?, ?> pop = mod.getIBSPopulation();
+				pop.resetTraits();
 			}
 		}
 		if (hasConverged()) {

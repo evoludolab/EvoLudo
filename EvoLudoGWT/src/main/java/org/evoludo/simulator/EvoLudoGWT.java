@@ -93,6 +93,12 @@ public class EvoLudoGWT extends EvoLudo {
 	private boolean scheduledBusy = false;
 
 	/**
+	 * Hidden chunk size in model time used for the currently scheduled relaxation.
+	 * Positive values mark a relaxation as scheduled or in progress.
+	 */
+	private double relaxationChunkStep = 0.0;
+
+	/**
 	 * <code>true</code> after a fatal execution error has disabled the lab.
 	 */
 	private boolean fatalExecutionError = false;
@@ -181,6 +187,119 @@ public class EvoLudoGWT extends EvoLudo {
 			return;
 		scheduledBusy = busy;
 		gui.setBusy(isRunning || busy);
+		gui.updateGUI();
+	}
+
+	/**
+	 * Check whether the current scheduled busy phase is a chunked initial
+	 * relaxation.
+	 *
+	 * @return {@code true} if a chunked relaxation is pending or in progress
+	 */
+	public boolean isRelaxationScheduled() {
+		return relaxationChunkStep > 0.0;
+	}
+
+	@Override
+	public boolean modelRelax(boolean quiet) {
+		if (fatalExecutionError || activeModel == null)
+			return false;
+		scheduleModelRelaxation(quiet);
+		return activeModel.hasConverged();
+	}
+
+	/**
+	 * Schedule chunked relaxation of the initial model state.
+	 *
+	 * @param quiet set to {@code true} to suppress relaxed/stopped notifications
+	 */
+	private void scheduleModelRelaxation(boolean quiet) {
+		if (fatalExecutionError)
+			return;
+		if (activeModel == null)
+			return;
+		if (activeModel.hasConverged()) {
+			if (!quiet)
+				fireModelStopped();
+			return;
+		}
+		double remaining = activeModel.getTimeRelax() - activeModel.getUpdates();
+		if (activeModel.getTimeRelax() < 1.0) {
+			return;
+		}
+		if (remaining <= IBS_EPS) {
+			if (!quiet)
+				fireModelRelaxed();
+			return;
+		}
+		relaxationChunkStep = getChunkStep(activeModel);
+		if (relaxationChunkStep <= 0.0)
+			// Relaxation has no visible report boundary; use the model time step when
+			// regular chunking has no stricter heuristic.
+			relaxationChunkStep = activeModel.getTimeStep();
+		if (relaxationChunkStep <= 0.0)
+			relaxationChunkStep = remaining;
+		gui.displayStatus("Relaxing initial state...");
+		activeModel.startRelaxation();
+		setScheduledBusy(true);
+		Scheduler.get().scheduleIncremental(() -> runGuarded("relaxing the initial model state", () -> {
+			if (!isRelaxationScheduled())
+				return false;
+			if (activeModel == null) {
+				finishScheduledRelaxation(true, quiet);
+				return false;
+			}
+			if (pendingAction != PendingAction.NONE) {
+				finishScheduledRelaxation(true, quiet);
+				processPendingAction();
+				return false;
+			}
+			double relaxRemaining = activeModel.getTimeRelax() - activeModel.getUpdates();
+			if (relaxRemaining <= IBS_EPS) {
+				finishScheduledRelaxation(false, quiet);
+				return false;
+			}
+			double chunk = Math.min(relaxationChunkStep, relaxRemaining);
+			boolean cont = activeModel.next(chunk);
+			if (!cont || activeModel.getTimeRelax() - activeModel.getUpdates() <= IBS_EPS) {
+				finishScheduledRelaxation(false, quiet);
+				return false;
+			}
+			return true;
+		}));
+	}
+
+	/**
+	 * Complete or abort a scheduled relaxation.
+	 *
+	 * @param interrupted {@code true} if the relaxation ended because another
+	 *                    action interrupted it
+	 * @param quiet       set to {@code true} to suppress relaxed/stopped
+	 *                    notifications
+	 */
+	private void finishScheduledRelaxation(boolean interrupted, boolean quiet) {
+		boolean converged = (activeModel != null && activeModel.finishRelaxation());
+		resetScheduledRelaxation();
+		if (interrupted) {
+			if (!isRunning)
+				setScheduledBusy(false);
+			return;
+		}
+		if (!quiet) {
+			if (converged)
+				fireModelStopped();
+			else
+				fireModelRelaxed();
+		}
+		if (!isRunning)
+			setScheduledBusy(false);
+	}
+
+	/**
+	 * Reset temporary state used for scheduled initial relaxation.
+	 */
+	private void resetScheduledRelaxation() {
+		relaxationChunkStep = 0.0;
 	}
 
 	/**
@@ -245,6 +364,7 @@ public class EvoLudoGWT extends EvoLudo {
 		if (fatalExecutionError)
 			return;
 		fatalExecutionError = true;
+		resetScheduledRelaxation();
 		setScheduledBusy(false);
 		resetChunking();
 		timer.cancel();
@@ -506,6 +626,7 @@ public class EvoLudoGWT extends EvoLudo {
 
 	@Override
 	public synchronized void fireModelUnloaded() {
+		resetScheduledRelaxation();
 		setScheduledBusy(false);
 		isRunning = false;
 		gui.setBusy(false);
@@ -514,6 +635,7 @@ public class EvoLudoGWT extends EvoLudo {
 
 	@Override
 	public synchronized void fireModuleUnloaded() {
+		resetScheduledRelaxation();
 		setScheduledBusy(false);
 		resetChunking();
 		isRunning = false;
@@ -524,6 +646,7 @@ public class EvoLudoGWT extends EvoLudo {
 
 	@Override
 	public synchronized void fireModelStopped() {
+		resetScheduledRelaxation();
 		setScheduledBusy(false);
 		resetChunking();
 		// model may already have been unloaded

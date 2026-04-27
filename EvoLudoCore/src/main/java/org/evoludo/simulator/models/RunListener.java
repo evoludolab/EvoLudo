@@ -45,9 +45,12 @@ public interface RunListener {
 	}
 
 	/**
-	 * Called after the EvoLudo model has relaxed.
+	 * Called after the EvoLudo model has relaxed. By default, relaxed models are
+	 * handled like stopped models while keeping this as a distinct event for
+	 * listeners that need to distinguish the two.
 	 */
 	public default void modelRelaxed() {
+		modelStopped();
 	}
 
 	/**

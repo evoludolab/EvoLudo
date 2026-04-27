@@ -505,7 +505,7 @@ public abstract class EvoLudo
 	 * Reset all populations and notify all listeners.
 	 */
 	public final void modelReset() {
-		runController.modelReset();
+		runController.modelReset(false);
 	}
 
 	/**
@@ -523,7 +523,7 @@ public abstract class EvoLudo
 	 * Initialize all populations and notify all listeners.
 	 */
 	public final void modelInit() {
-		runController.modelInit();
+		runController.modelInit(false);
 	}
 
 	/**
@@ -545,12 +545,14 @@ public abstract class EvoLudo
 	 * 
 	 * @see Model#relax()
 	 */
-	public final boolean modelRelax() {
-		return runController.modelRelax();
+	public boolean modelRelax() {
+		return modelRelax(false);
 	}
 
 	/**
 	 * Relax model by {@code timeRelax} steps and notify all listeners if requested.
+	 * Runtime-specific subclasses may override this method to perform relaxation
+	 * asynchronously.
 	 *
 	 * @param quiet set to {@code true} to skip notifying listeners
 	 * 
@@ -558,7 +560,7 @@ public abstract class EvoLudo
 	 * 
 	 * @see Model#relax()
 	 */
-	public final boolean modelRelax(boolean quiet) {
+	public boolean modelRelax(boolean quiet) {
 		return runController.modelRelax(quiet);
 	}
 
