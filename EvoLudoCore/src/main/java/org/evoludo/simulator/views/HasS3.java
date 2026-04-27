@@ -87,6 +87,15 @@ public interface HasS3 {
 	}
 
 	/**
+	 * Get the default order of trait indices shown on each vertex of the simplex.
+	 * 
+	 * @return the order of trait indices
+	 */
+	public default int[] getS3Order() {
+		return new int[0];
+	}
+
+	/**
 	 * Set the map that transforms the data of the model to a 2D phase plane
 	 * (projection) to {@code map}. This provides an opportunity for implementing
 	 * classes to change settings of the map.

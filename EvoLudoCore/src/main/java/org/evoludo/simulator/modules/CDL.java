@@ -140,7 +140,7 @@ public class CDL extends Discrete implements Payoffs,
 	 */
 	public CDL(EvoLudo engine) {
 		super(engine);
-		nTraits = 3; // loners, defectors, cooperators
+		nTraits = 3; // cooperators, defectors, loners
 	}
 
 	@Override
@@ -171,6 +171,11 @@ public class CDL extends Discrete implements Payoffs,
 	@Override
 	public int getDependent() {
 		return DEFECT;
+	}
+
+	@Override
+	public int[] getS3Order() {
+		return new int[] { LONER, DEFECT, COOPERATE };
 	}
 
 	@Override
