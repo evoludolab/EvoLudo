@@ -464,10 +464,6 @@ public class IBSDPopulation extends IBSPopulation<Discrete, IBSDPopulation> {
 		double rBirth = module.getBirthRate();
 		double rDeath = module.getDeathRate();
 		double[] compRates = module.getCompetitionRates();
-		if (compRates == null || compRates.length == 0) {
-			maxRate = rBirth + rDeath + maxFitness;
-			return;
-		}
 		// determine maximum rates for birth and death events
 		// note, updates always involve one focal and one peer as well as one model
 		// in multi-species scenarios. hence we need to determine the maximum rates
@@ -516,27 +512,18 @@ public class IBSDPopulation extends IBSPopulation<Discrete, IBSDPopulation> {
 		debugModel = -1;
 		if (maxRate < 0.0)
 			updateMaxRate();
+		double rDeath = module.getDeathRate();
+		int nPop = getPopulationSize();
+		double randomEvent = random01() * maxRate;
+		if (randomEvent < rDeath)
+			return focalDies(me, nPop);
+
+		randomEvent -= rDeath;
+		rDeath = 0.0;
 		double[] compRates = module.getCompetitionRates();
 		int idx = module.getId();
 		double rate = compRates[idx];
 		double rBirth = module.getBirthRate();
-		double rDeath = module.getDeathRate();
-		int nPop = getPopulationSize();
-		double randomTestVal = random01() * maxRate;
-		if (randomTestVal < rDeath) {
-			// vacate focal site
-			traitsNext[me] = vacantIdx + nTraits; // more efficient than setNextTraitAt(me, VACANT)
-			if (module instanceof Payoffs)
-				updateScoreAt(me, true);
-			else
-				commitTraitAt(me);
-			if (nPop == 1)
-				return -1;
-			updateMaxRate();
-			return 1;
-		}
-		randomTestVal -= rDeath;
-		rDeath = 0.0;
 		int nSpecies = compRates.length;
 		if (nSpecies > 1) {
 			// multi-species scenario: pick opponent species
@@ -573,11 +560,11 @@ public class IBSDPopulation extends IBSPopulation<Discrete, IBSDPopulation> {
 				rDeath += rate;
 		}
 		// determine event
-		if (randomTestVal > rBirth + rDeath) {
+		if (randomEvent > rBirth + rDeath) {
 			// nothing happened, no time elapsed
 			return 0;
 		}
-		if (randomTestVal < rBirth) {
+		if (randomEvent < rBirth) {
 			// birth event
 			// fill neighbor site if vacant
 			if (nTraits > 2) {
@@ -596,6 +583,19 @@ public class IBSDPopulation extends IBSPopulation<Discrete, IBSDPopulation> {
 			return 1;
 		}
 		// death event
+		return focalDies(me, nPop);
+	}
+
+	/**
+	 * Helper method to perform the death of the focal individual. Returns
+	 * {@code -1} if the population goes extinct and {@code 1} otherwise.
+	 *
+	 * @param me   the index of the focal individual
+	 * @param nPop the current population size
+	 * @return {@code -1} if the population goes extinct and {@code 1} otherwise
+	 */
+	private int focalDies(int me, int nPop) {
+		// vacate focal site
 		traitsNext[me] = vacantIdx + nTraits; // more efficient than setNextTraitAt(me, VACANT)
 		if (module instanceof Payoffs)
 			updateScoreAt(me, true);
@@ -722,7 +722,7 @@ public class IBSDPopulation extends IBSPopulation<Discrete, IBSDPopulation> {
 	 *
 	 * @param idx the index of the individual
 	 * @return the trait of the individual
-	 * 
+	 *
 	 * @see org.evoludo.simulator.modules.Module#nTraits Module.nTraits
 	 */
 	public int getTraitAt(int idx) {
@@ -1735,8 +1735,6 @@ public class IBSDPopulation extends IBSPopulation<Discrete, IBSDPopulation> {
 		if (traitsCount[vacantIdx] == 0 && module.getDeathRate() <= 0.0) {
 			// no vacant sites and no deaths: check competition
 			double[] compRates = module.getCompetitionRates();
-			if (compRates == null)
-				return true;
 			for (int n = 0; n < compRates.length; n++) {
 				IBSPopulation<?, ?> pop = module.getSpecies(n).getIBSPopulation();
 				if (compRates[n] > 0.0 && pop.getPopulationSize() > 0)

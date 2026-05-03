@@ -1194,9 +1194,6 @@ public class ODE extends Model implements DModel {
 		out[0] = mod.getBirthRate();
 		out[1] = mod.getDeathRate();
 		double[] compRates = mod.getCompetitionRates();
-		if (compRates == null || compRates.length == 0)
-			return;
-
 		double occupied = getOccupiedDensity(index, state);
 		int nSpecies = Math.min(compRates.length, species.size());
 		int self = mod.getId();
