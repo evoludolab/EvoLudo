@@ -3499,6 +3499,13 @@ public abstract class IBSPopulation<M extends Module<?>, P extends IBSPopulation
 		// population structure may require special population sizes
 		module.setNPopulation(interaction.getSize());
 		nPopulation = interaction.getSize(); // keep local copy in sync
+		// check consistency of geometry (only if --consistency is set)
+		if (nIssues == 0 && logger.isLoggable(Level.WARNING)) {
+			if (!interaction.checkConsistency())
+				nIssues++;
+			if (!interaction.isSingle() && !competition.checkConsistency())
+				nIssues++;
+		}
 		return doReset;
 	}
 
@@ -4151,7 +4158,7 @@ public abstract class IBSPopulation<M extends Module<?>, P extends IBSPopulation
 	/**
 	 * The number of concistency issues encountered in the state of the IBS model.
 	 * 
-	 * @see #isConsistent()
+	 * @see #checkConsistency()
 	 */
 	int nIssues;
 
@@ -4159,7 +4166,7 @@ public abstract class IBSPopulation<M extends Module<?>, P extends IBSPopulation
 	 * The flag to indicate whether consistency checks on the state of the IBS model
 	 * are requested.
 	 * 
-	 * @see #isConsistent()
+	 * @see #checkConsistency()
 	 */
 	boolean consistencyCheckRequested;
 
@@ -4180,20 +4187,37 @@ public abstract class IBSPopulation<M extends Module<?>, P extends IBSPopulation
 	 * <p>
 	 * Execution time is of little concern here. Never use in the final simulation
 	 * code.
+	 * 
+	 * @return {@code true} if no inconsistencies were found or consistency checks
+	 *         are disabled.
 	 */
-	public void isConsistent() {
+	public final boolean checkConsistency() {
 		// nIssues < 0 means consistency checks disabled
 		// nIssues > 0 means inconsistencies already found
 		if (nIssues != 0 || !logger.isLoggable(Level.WARNING))
-			return;
+			return nIssues <= 0;
+		checkConsistentState();
 		if (module instanceof Payoffs)
 			checkConsistentFitness();
-		// TODO consistency checks for geometries & interactions
-		// interaction.isConsistent();
-		// if (!interaction.isSingle())
-		// competition.isConsistent();
-		if (nIssues > 0)
+		if (interaction.getType() == GeometryType.DYNAMIC) {
+			if (!interaction.checkConsistency())
+				nIssues++;
+			if (!interaction.isSingle() && !competition.checkConsistency())
+				nIssues++;
+		}
+		if (nIssues > 0) {
 			logger.warning(nIssues + " inconsistencies found @ " + engine.getModel().getUpdates());
+			return false;
+		}
+		return true;
+	}
+
+	/**
+	 * Check consistency of the state of the IBS model. Subclasses may override this
+	 * method to add checks for consistency of the state of the model. Never use in
+	 * production.
+	 */
+	void checkConsistentState() {
 	}
 
 	/**

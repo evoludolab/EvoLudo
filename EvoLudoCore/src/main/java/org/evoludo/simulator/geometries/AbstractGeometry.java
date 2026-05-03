@@ -1537,9 +1537,9 @@ public abstract class AbstractGeometry {
 	 * incoming link.
 	 * </ol>
 	 * 
-	 * @return {@code true} if check succeeded
+	 * @return {@code true} if no inconsistencies found
 	 */
-	public boolean isConsistent() {
+	public boolean checkConsistency() {
 		boolean ok = true;
 		ok &= checkMultiple(kin, in, "in");
 		ok &= checkMultiple(kout, out, "out");
@@ -1565,7 +1565,7 @@ public abstract class AbstractGeometry {
 	 * @return {@code true} if no multiple connections found
 	 */
 	private boolean checkMultiple(int[] degree, int[][] links, String type) {
-		logger.fine("Checking multiple " + type + "-connections... ");
+		logger.info("Checking multiple " + type + "-connections... ");
 		boolean ok = true;
 		for (int i = 0; i < size; i++) {
 			// double connections 'in'
@@ -1590,7 +1590,7 @@ public abstract class AbstractGeometry {
 	 * @return {@code true} if all connections are consistent
 	 */
 	private boolean checkInOut() {
-		logger.fine("Checking consistency of in-, out-connections... ");
+		logger.info("Checking consistency of in-, out-connections... ");
 		boolean ok = true;
 		for (int i = 0; i < size; i++) {
 			// each 'out' connection must be balanced by an 'in' connection
@@ -1611,7 +1611,7 @@ public abstract class AbstractGeometry {
 	 */
 	private boolean checkSelfing() {
 		// self-connections are only acceptable for inter-species interactions
-		logger.fine("Checking self-connections... ");
+		logger.info("Checking self-connections... ");
 		boolean ok = true;
 		for (int i = 0; i < size; i++) {
 			// report loops
@@ -1643,7 +1643,7 @@ public abstract class AbstractGeometry {
 	 */
 	private boolean checkRegular() {
 		boolean ok = true;
-		logger.fine("Checking regularity... ");
+		logger.info("Checking regularity... ");
 		GeometryFeatures f = getFeatures();
 		int nout = f.minOut;
 		int nin = f.minIn;
@@ -1668,7 +1668,7 @@ public abstract class AbstractGeometry {
 	 * @return {@code true} if the graph is undirected
 	 */
 	private boolean checkUndirected() {
-		logger.fine("Checking undirected structure... ");
+		logger.info("Checking undirected structure... ");
 		boolean ok = true;
 		for (int i = 0; i < size; i++) {
 			// each connection must go both ways
@@ -1693,7 +1693,10 @@ public abstract class AbstractGeometry {
 	 * @param ok    {@code true} if the check passed
 	 */
 	private void logCheckResult(String label, boolean ok) {
-		logger.fine(label + (ok ? " pass" : " failed!"));
+		if (ok)
+			logger.info(label + " pass");
+		else
+			logger.warning(label + " failed!");
 	}
 
 	/**
@@ -1703,7 +1706,7 @@ public abstract class AbstractGeometry {
 	 * @param message message suffix describing the issue
 	 */
 	private void logNodeIssue(int node, String message) {
-		logger.fine("Node " + node + " " + message);
+		logger.warning("Node " + node + " " + message);
 	}
 
 	/**
@@ -1838,7 +1841,8 @@ public abstract class AbstractGeometry {
 	}
 
 	/**
-	 * Hash subclass-specific geometry parameters used by {@link #similar(AbstractGeometry)}.
+	 * Hash subclass-specific geometry parameters used by
+	 * {@link #similar(AbstractGeometry)}.
 	 *
 	 * @return the hash contribution of subclass-specific settings
 	 */

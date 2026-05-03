@@ -495,7 +495,7 @@ public abstract class IBS extends Model {
 				IBSPopulation<?, ?> pop = mod.getIBSPopulation();
 				pop.prepareTraits();
 				dt += pop.step();
-				pop.isConsistent();
+				pop.checkConsistency();
 			}
 			// advance time and real time (if possible)
 			updates += dt * gincr;
@@ -599,7 +599,7 @@ public abstract class IBS extends Model {
 		double totRate = 0.0;
 		for (Module<?> mod : species) {
 			IBSPopulation<?, ?> pop = mod.getIBSPopulation();
-			pop.isConsistent();
+			pop.checkConsistency();
 			converged &= pop.checkConvergence();
 			totRate += pop.getSpeciesUpdateRate();
 		}

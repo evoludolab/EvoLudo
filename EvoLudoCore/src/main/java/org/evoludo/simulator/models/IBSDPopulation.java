@@ -1657,9 +1657,8 @@ public class IBSDPopulation extends IBSPopulation<Discrete, IBSDPopulation> {
 	}
 
 	@Override
-	public void isConsistent() {
-		if (nIssues != 0)
-			return;
+	public void checkConsistentState() {
+		super.checkConsistentState();
 		if (vacantIdx < 0)
 			return;
 		int nPop = 0;
@@ -1670,7 +1669,6 @@ public class IBSDPopulation extends IBSPopulation<Discrete, IBSDPopulation> {
 		}
 		if (getPopulationSize() != nPop)
 			logAccountingIssue("sum of trait types is ", nPop, getPopulationSize(), "");
-		super.isConsistent();
 	}
 
 	@Override
