@@ -2253,6 +2253,9 @@ public class IBSDPopulation extends IBSPopulation<Discrete, IBSDPopulation> {
 	 * Monomorphic initial configuration with a single mutant placed in a location
 	 * chosen uniformly at random (uniform initialization, cosmic rays).
 	 * 
+	 * @param mutantType   the mutant trait
+	 * @param residentType the resident trait
+	 * 
 	 * @see IBSD.Init.Type#MUTANT
 	 */
 	protected void initMutant(int mutantType, int residentType) {
@@ -2293,7 +2296,10 @@ public class IBSDPopulation extends IBSPopulation<Discrete, IBSDPopulation> {
 	 * Monomorphic initial configuration with a single mutant placed in a random
 	 * location chosen with probability proportional to the number of incoming links
 	 * (temperature initialization, errors in reproduction). Same as
-	 * {@link #initMutant()} for regular geometries.
+	 * {@link #initMutant(int, int)} for regular geometries.
+	 * 
+	 * @param mutantType   the mutant trait
+	 * @param residentType the resident trait
 	 * 
 	 * @see IBSD.Init.Type#TEMPERATURE
 	 */
