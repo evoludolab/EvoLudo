@@ -52,13 +52,11 @@ fi
 read -p "Run tests? [Yes|no] " -n 1 -r
 echo # (optional) move to a new line
 if [[ ! $REPLY =~ ^[Nn]$ ]]; then
-	${EVOLUDO_SH}/runtests.sh
-	passed=$?
-
-	if [ $passed -ne 0 ]; then
+	${EVOLUDO_SH}/runtests.sh || {
+		status=$?
 		echo "EvoLudo test(s) failed - aborting!"
-		exit $passed
-	fi
+		exit $status
+	}
 fi
 
 # create distribution directory
@@ -67,12 +65,11 @@ mkdir -p dist/war
 # building GWT app (if needed)
 if [[ ${LATEST_JAVA} -nt ${LATEST_GWT} ]]; then
 	echo "Building EvoLudo GWT application..."
-	mvn "${MAVEN_PUBLIC_ARGS[@]}" -pl EvoLudoGWT -am clean install
-	passed=$?
-	if [ $passed -ne 0 ]; then
+	mvn "${MAVEN_PUBLIC_ARGS[@]}" -pl EvoLudoGWT -am clean install || {
+		status=$?
 		echo "Building EvoLudo GWT files failed - aborting!"
-		exit $passed
-	fi
+		exit $status
+	}
 fi
 
 # copy GWT files
@@ -83,12 +80,11 @@ cp -a "$EVOLUDO_GWT_HOME"/src/main/webapp/* dist/war/
 # building JRE executable (if needed)
 if [[ ${LATEST_JAVA} -nt ${LATEST_GWT} ]]; then
 	echo "Building EvoLudo JRE executable..."
-	mvn "${MAVEN_PUBLIC_ARGS[@]}" -pl EvoLudoJRE -am clean install
-	passed=$?
-	if [ $passed -ne 0 ]; then
+	mvn "${MAVEN_PUBLIC_ARGS[@]}" -pl EvoLudoJRE -am clean install || {
+		status=$?
 		echo "Building EvoLudo JRE files failed - aborting!"
-		exit $passed
-	fi
+		exit $status
+	}
 fi
 
 # copy JRE executable
@@ -99,13 +95,11 @@ cp -a "$EVOLUDO_JRE_HOME"/target/EvoLudo.*.jar dist/
 # note: some say compile goal is necessary to resolve cross-module dependencies of the javadoc but seems ok now
 if [[ ! -d ${EVOLUDO_API} || (-d ${EVOLUDO_API} && ${LATEST_JAVA} -nt ${LATEST_DOC}) ]]; then
 	echo "Building public API documentation..."
-	mvn "${MAVEN_PUBLIC_ARGS[@]}" javadoc:aggregate
-	passed=$?
-
-	if [ $passed -ne 0 ]; then
+	mvn "${MAVEN_PUBLIC_ARGS[@]}" javadoc:aggregate || {
+		status=$?
 		echo "Building javadoc failed - aborting!"
-		exit $passed
-	fi
+		exit $status
+	}
 else
 	echo "Building public API documentation skipped..."
 fi

@@ -38,17 +38,14 @@ echo "Preparing to run EvoLudo tests..."
 # build project - if needed
 if [[ ${LATEST_JAVA} -nt ${LATEST_TEST_JAR} ]]; then
 	echo "Building EvoLudo test suite..."
-	mvn -pl EvoLudoTest -am clean install
+	mvn -pl EvoLudoTest -am clean install || {
+		status=$?
+		echo "Building EvoLudo test suite failed - aborting!"
+		exit $status
+	}
 	LATEST_TEST_JAR=$(latest_test_jar)
 else
 	echo "EvoLudo test suite up to date."
-fi
-
-passed=$?
-
-if [ $passed -ne 0 ]; then
-	echo "Building EvoLudo test suite failed - aborting!"
-	exit $passed
 fi
 
 if [ -z "${LATEST_TEST_JAR}" ]; then

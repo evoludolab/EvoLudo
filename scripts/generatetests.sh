@@ -38,17 +38,14 @@ echo "Preparing to generate EvoLudo tests..."
 # build project - if needed
 if [[ ${LATEST_JAVA} -nt ${LATEST_TEST_JAR} ]]; then
 	echo "Building EvoLudo test suite..."
-	mvn -pl EvoLudoTest -am clean install
+	mvn -pl EvoLudoTest -am clean install || {
+		status=$?
+		echo "Building EvoLudo test suite failed - aborting!"
+		exit $status
+	}
 	LATEST_TEST_JAR=$(latest_test_jar)
 else
 	echo "EvoLudo test suite up to date."
-fi
-
-passed=$?
-
-if [ $passed -ne 0 ]; then
-	echo "Building EvoLudo test suite failed - aborting!"
-	exit $passed
 fi
 
 nreportsbefore=$(($(ls "$EVOLUDO_TEST_TEST/reports" | wc -l)))
@@ -63,14 +60,11 @@ java -jar "$LATEST_TEST_JAR" \
 	--generate "$EVOLUDO_TEST_TEST/generators" \
 	--reports "$EVOLUDO_TEST_TEST/reports" \
 	--compress \
-	"$@"
-passed=$?
-
-# System.exit(-1) in java translates to 255
-if [ $passed -ne 0 ]; then
-	echo "EvoLudo test generation failed - aborting!"
-	exit $passed
-fi
+	"$@" || {
+		status=$?
+		echo "EvoLudo test generation failed - aborting!"
+		exit $status
+	}
 
 nreportsafter=$(($(ls "$EVOLUDO_TEST_TEST/reports" | wc -l)))
 
