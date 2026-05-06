@@ -524,6 +524,7 @@ public class CLOController {
 		prsr.addCLO(cloModule);
 		prsr.addCLO(cloSeed);
 		prsr.addCLO(cloRun);
+		cloDelay.setDefault(Integer.toString(engine.getDelay()));
 		prsr.addCLO(cloDelay);
 		Module<?> module = engine.getModule();
 
