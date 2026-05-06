@@ -3500,7 +3500,7 @@ public abstract class IBSPopulation<M extends Module<?>, P extends IBSPopulation
 		module.setNPopulation(interaction.getSize());
 		nPopulation = interaction.getSize(); // keep local copy in sync
 		// check consistency of geometry (only if --consistency is set)
-		if (nIssues == 0 && logger.isLoggable(Level.WARNING)) {
+		if (checkConsistency && logger.isLoggable(Level.WARNING)) {
 			if (!interaction.checkConsistency())
 				nIssues++;
 			if (!interaction.isSingle() && !competition.checkConsistency())
@@ -4151,12 +4151,12 @@ public abstract class IBSPopulation<M extends Module<?>, P extends IBSPopulation
 		if (tags != null)
 			for (int n = 0; n < nPopulation; n++)
 				tags[n] = n;
-		// if flagged as inconsistent, no (further) checks are performed
-		nIssues = (consistencyCheckRequested ? 0 : -1);
+		// reset issue counter for the current model state
+		nIssues = 0;
 	}
 
 	/**
-	 * The number of concistency issues encountered in the state of the IBS model.
+	 * The number of consistency issues encountered in the state of the IBS model.
 	 * 
 	 * @see #checkConsistency()
 	 */
@@ -4168,7 +4168,7 @@ public abstract class IBSPopulation<M extends Module<?>, P extends IBSPopulation
 	 * 
 	 * @see #checkConsistency()
 	 */
-	boolean consistencyCheckRequested;
+	boolean checkConsistency;
 
 	/**
 	 * Enable consistency checks of the state of the IBS model. Never use in
@@ -4176,8 +4176,8 @@ public abstract class IBSPopulation<M extends Module<?>, P extends IBSPopulation
 	 * 
 	 * @param check {@code true} to request consistency checks
 	 */
-	public void setConsistencyCheck(boolean check) {
-		consistencyCheckRequested = check;
+	public void setCheckConsistency(boolean check) {
+		checkConsistency = check;
 	}
 
 	/**
@@ -4188,17 +4188,15 @@ public abstract class IBSPopulation<M extends Module<?>, P extends IBSPopulation
 	 * Execution time is of little concern here. Never use in the final simulation
 	 * code.
 	 * 
-	 * @return {@code true} if no inconsistencies were found or consistency checks
-	 *         are disabled.
+	 * @return {@code true} if no inconsistencies were found, consistency checks
+	 *         are disabled, or inconsistencies already found.
 	 */
 	public final boolean checkConsistency() {
-		// nIssues < 0 means consistency checks disabled
-		// nIssues > 0 means inconsistencies already found
-		if (nIssues != 0 || !logger.isLoggable(Level.WARNING))
-			return nIssues <= 0;
-		checkConsistentState();
+		if (!checkConsistency || nIssues > 0 || !logger.isLoggable(Level.WARNING))
+			return true;
+		checkState();
 		if (module instanceof Payoffs)
-			checkConsistentFitness();
+			checkFitness();
 		if (interaction.getType() == GeometryType.DYNAMIC) {
 			if (!interaction.checkConsistency())
 				nIssues++;
@@ -4217,25 +4215,25 @@ public abstract class IBSPopulation<M extends Module<?>, P extends IBSPopulation
 	 * method to add checks for consistency of the state of the model. Never use in
 	 * production.
 	 */
-	void checkConsistentState() {
+	void checkState() {
 	}
 
 	/**
 	 * Check consistency of scores and fitness values for modules that implement
 	 * Payoffs.
 	 */
-	void checkConsistentFitness() {
+	void checkFitness() {
 		for (int n = 0; n < nPopulation; n++)
-			checkIndividualConsistency(n);
+			checkIndividual(n);
 
 		if (adjustScores) {
 			if (hasLookupTable)
-				checkLookupTableConsistency();
+				checkLookupTable();
 			else
-				checkAdjustScoresConsistency();
+				checkAdjustScores();
 
 		} else {
-			checkNoAdjustScoresConsistency();
+			checkNoAdjustScores();
 		}
 	}
 
@@ -4244,7 +4242,7 @@ public abstract class IBSPopulation<M extends Module<?>, P extends IBSPopulation
 	 * 
 	 * @param n the index of the individual
 	 */
-	private void checkIndividualConsistency(int n) {
+	private void checkIndividual(int n) {
 		double scoren = getScoreAt(n);
 		if (Double.isNaN(scoren))
 			logScoringIssue(n, scoren, "is NaN...");
@@ -4265,7 +4263,7 @@ public abstract class IBSPopulation<M extends Module<?>, P extends IBSPopulation
 	/**
 	 * Check consistency of scores when using lookup tables.
 	 */
-	private void checkLookupTableConsistency() {
+	private void checkLookupTable() {
 		double[] typeScoresStore = typeScores;
 		double[] typeFitnessStore = ArrayMath.clone(typeFitness);
 		Arrays.fill(typeFitness, Double.MAX_VALUE);
@@ -4330,7 +4328,7 @@ public abstract class IBSPopulation<M extends Module<?>, P extends IBSPopulation
 	/**
 	 * Check consistency when not using lookup tables.
 	 */
-	private void checkAdjustScoresConsistency() {
+	private void checkAdjustScores() {
 		double[] scoresStore = scores;
 		scores = new double[nPopulation];
 		double[] fitnessStore = fitness;
@@ -4364,7 +4362,7 @@ public abstract class IBSPopulation<M extends Module<?>, P extends IBSPopulation
 	/**
 	 * Check consistency when scores are not adjusted.
 	 */
-	private void checkNoAdjustScoresConsistency() {
+	private void checkNoAdjustScores() {
 		double checkFitness = 0.0;
 		for (int n = 0; n < nPopulation; n++)
 			checkFitness += getFitnessAt(n);

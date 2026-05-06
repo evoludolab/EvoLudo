@@ -1447,7 +1447,7 @@ public abstract class IBS extends Model {
 				public boolean parse(boolean isSet) {
 					for (Module<?> mod : species) {
 						IBSPopulation<?, ?> pop = mod.getIBSPopulation();
-						pop.setConsistencyCheck(isSet);
+						pop.setCheckConsistency(isSet);
 					}
 					return true;
 				}

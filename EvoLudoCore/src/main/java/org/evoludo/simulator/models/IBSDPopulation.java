@@ -1657,8 +1657,8 @@ public class IBSDPopulation extends IBSPopulation<Discrete, IBSDPopulation> {
 	}
 
 	@Override
-	public void checkConsistentState() {
-		super.checkConsistentState();
+	public void checkState() {
+		super.checkState();
 		if (vacantIdx < 0)
 			return;
 		int nPop = 0;
@@ -1672,8 +1672,8 @@ public class IBSDPopulation extends IBSPopulation<Discrete, IBSDPopulation> {
 	}
 
 	@Override
-	protected void checkConsistentFitness() {
-		super.checkConsistentFitness();
+	protected void checkFitness() {
+		super.checkFitness();
 		double checkScores = 0.0;
 		double[] checkAccuTypeScores = new double[nTraits];
 		int[] checkTraitCount = new int[nTraits];
