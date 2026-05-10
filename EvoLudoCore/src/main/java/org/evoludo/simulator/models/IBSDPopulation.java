@@ -1609,10 +1609,10 @@ public class IBSDPopulation extends IBSPopulation<Discrete, IBSDPopulation> {
 	/**
 	 * {@inheritDoc}
 	 * <p>
-	 * Reset the colors of recently changed trait.
+	 * Clear the colors of recently changed trait.
 	 */
 	@Override
-	public void resetTraits() {
+	public void clearTraits() {
 		for (int n = 0; n < nPopulation; n++)
 			traits[n] %= nTraits;
 	}

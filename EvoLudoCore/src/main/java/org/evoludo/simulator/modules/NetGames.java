@@ -828,7 +828,7 @@ public class NetGames extends Discrete implements Payoffs,
 		}
 
 		@Override
-		public void resetTraits() {
+		public void clearTraits() {
 			// traits are unused and, instead, encoded in the network structure
 		}
 

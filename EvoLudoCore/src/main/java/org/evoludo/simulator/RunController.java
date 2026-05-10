@@ -35,6 +35,7 @@ import java.util.List;
 
 import org.evoludo.simulator.models.ChangeListener;
 import org.evoludo.simulator.models.ChangeListener.PendingAction;
+import org.evoludo.simulator.models.IBS;
 import org.evoludo.simulator.models.Mode;
 import org.evoludo.simulator.models.RunListener;
 import org.evoludo.simulator.modules.Module;
@@ -494,6 +495,7 @@ class RunController {
 		startCPUSample();
 		if (engine.activeModel == null)
 			return false;
+		clearTraits();
 		return modelNextDone(engine.activeModel.next(engine.activeModel.getTimeStep()));
 	}
 
@@ -517,6 +519,15 @@ class RunController {
 		}
 		engine.fireModelChanged();
 		return true;
+	}
+
+	/**
+	 * Clear trait display markers before the next model update starts accumulating
+	 * newly changed traits.
+	 */
+	private void clearTraits() {
+		if (engine.activeModel instanceof IBS)
+			((IBS) engine.activeModel).clearTraits();
 	}
 
 	/**

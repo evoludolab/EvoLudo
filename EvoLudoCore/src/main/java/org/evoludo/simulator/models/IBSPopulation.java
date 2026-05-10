@@ -2177,7 +2177,7 @@ public abstract class IBSPopulation<M extends Module<?>, P extends IBSPopulation
 	 */
 	private int optimizeHomo() {
 		int dt = RNGDistribution.Geometric.next(rng.getRNG(), mutation.getProbability());
-		resetTraits();
+		clearTraits();
 		resetScores();
 		updateScores();
 		engine.fireModelChanged();
@@ -2349,7 +2349,7 @@ public abstract class IBSPopulation<M extends Module<?>, P extends IBSPopulation
 	 * @param focal the index of the individual to update
 	 */
 	public void debugUpdatePopulationAt(int focal) {
-		resetTraits();
+		clearTraits();
 		switch (populationUpdate.getType()) {
 			case SYNC: // synchronous updating - gets here only in debugging mode
 				debugFocal = focal;
@@ -4452,10 +4452,10 @@ public abstract class IBSPopulation<M extends Module<?>, P extends IBSPopulation
 	}
 
 	/**
-	 * Reset all traits in preparation of the next update step. Simply an
-	 * opportunity for customizations in subclasses.
+	 * Clear transient trait state that should persist only until the current model
+	 * update has been reported.
 	 */
-	public void resetTraits() {
+	public void clearTraits() {
 	}
 
 	/**

@@ -483,8 +483,7 @@ public abstract class IBS extends Model {
 	 *         again.
 	 */
 	private boolean ibsStepSync(double stepDt) {
-		// reset traits and collect totals based on current populations
-		double totRate = resetTraits();
+		double totRate = getTotalUpdateRate();
 		double gincr = 1.0 / nTotal;
 		// nUpdates measured in generations
 		int nUpdates = Math.max(1, (int) Math.floor(stepDt));
@@ -532,8 +531,7 @@ public abstract class IBS extends Model {
 	 *         again.
 	 */
 	private boolean ibsStepAsync(double stepDt) {
-		// reset traits and collect totals based on current populations
-		double totRate = resetTraits();
+		double totRate = getTotalUpdateRate();
 		// gincr is a constant because based on total maximum population sizes
 		double gincr = 1.0 / nTotal;
 		// process at least one update.
@@ -557,19 +555,24 @@ public abstract class IBS extends Model {
 	}
 
 	/**
-	 * Resets the traits for all populations and returns the total update rate
-	 * across all species.
+	 * Return the total update rate across all species.
 	 * 
 	 * @return the total update rate across all species
 	 */
-	private double resetTraits() {
+	private double getTotalUpdateRate() {
 		double totRate = 0.0;
-		for (Module<?> mod : species) {
-			IBSPopulation<?, ?> pop = mod.getIBSPopulation();
-			pop.resetTraits();
-			totRate += pop.getSpeciesUpdateRate();
-		}
+		for (Module<?> mod : species)
+			totRate += mod.getIBSPopulation().getSpeciesUpdateRate();
 		return totRate;
+	}
+
+	/**
+	 * Clear transient trait state for all populations after the current model update
+	 * has been reported to listeners.
+	 */
+	public void clearTraits() {
+		for (Module<?> mod : species)
+			mod.getIBSPopulation().clearTraits();
 	}
 
 	/**

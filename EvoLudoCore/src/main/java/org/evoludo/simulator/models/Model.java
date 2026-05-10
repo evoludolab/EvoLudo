@@ -693,10 +693,10 @@ public abstract class Model implements CLOProvider {
 	public boolean finishRelaxation() {
 		isRelaxing = false;
 		if (type == ModelType.IBS) {
-			// reset traits after relaxation in IBS models
+			// clear trait display markers after relaxation in IBS models
 			for (Module<?> mod : species) {
 				IBSPopulation<?, ?> pop = mod.getIBSPopulation();
-				pop.resetTraits();
+				pop.clearTraits();
 			}
 		}
 		if (hasConverged()) {

@@ -441,6 +441,11 @@ public class EvoLudoGWT extends EvoLudo {
 				break;
 			case STATISTICS_UPDATE:
 			case DYNAMICS:
+				if (pendingAction != PendingAction.NONE) {
+					setScheduledBusy(false);
+					processPendingAction();
+					break;
+				}
 				double chunkStep = getChunkStep(activeModel);
 				if (chunkStep > 0.0) {
 					scheduleChunkedStep(chunkStep);
@@ -548,6 +553,8 @@ public class EvoLudoGWT extends EvoLudo {
 		chunkedStepScheduled = true;
 		chunkTimeStepOrig = activeModel.getTimeStep();
 		chunkTargetUpdates = getNextChunkedReport();
+		if (activeModel instanceof IBS)
+			((IBS) activeModel).clearTraits();
 		runController.startCPUSample();
 		Scheduler.get().scheduleIncremental(() -> runGuarded("running a chunked model step", () -> {
 			if (!chunkedStepScheduled)
