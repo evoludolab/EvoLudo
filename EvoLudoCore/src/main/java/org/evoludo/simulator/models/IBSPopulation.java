@@ -2490,6 +2490,10 @@ public abstract class IBSPopulation<M extends Module<?>, P extends IBSPopulation
 
 	/**
 	 * Update the scores of the focal individual with index {@code me}.
+	 * <p>
+	 * For non-adjustable scores the old score must be reset before committing a
+	 * switched trait so discrete trait score totals remain associated with the
+	 * trait that produced the score.
 	 * 
 	 * @param me       the index of the focal individual
 	 * @param switched {@code true} if the focal switched trait
@@ -2501,13 +2505,16 @@ public abstract class IBSPopulation<M extends Module<?>, P extends IBSPopulation
 				adjustGameScoresAt(me);
 			return;
 		}
-		if (switched)
-			commitTraitAt(me);
 		// no need to update ephemeral scores
-		if (playerScoring.equals(ScoringType.EPHEMERAL))
+		if (playerScoring.equals(ScoringType.EPHEMERAL)) {
+			if (switched)
+				commitTraitAt(me);
 			return;
+		}
 		if (switched || playerScoring.equals(ScoringType.RESET_ALWAYS))
 			resetScoreAt(me);
+		if (switched)
+			commitTraitAt(me);
 		// let me play single game
 		playGameAt(me);
 	}
