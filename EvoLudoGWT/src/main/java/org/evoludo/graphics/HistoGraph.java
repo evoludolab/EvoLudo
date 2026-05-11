@@ -321,6 +321,11 @@ public class HistoGraph extends AbstractGraph<double[]> implements BasicTooltipP
 	public static final int MIN_BIN_WIDTH = 1;
 
 	/**
+	 * Smallest y-axis range for percent-scaled histograms.
+	 */
+	private static final double MIN_PERCENT_Y_RANGE = 0.01;
+
+	/**
 	 * Create new histogram graph for <code>module</code> running in
 	 * <code>view</code>. The row is used to identify data entries that apply
 	 * to this histogram and represents the index of the data row.
@@ -645,6 +650,7 @@ public class HistoGraph extends AbstractGraph<double[]> implements BasicTooltipP
 			}
 			updateAutoscaledYMax(yMax);
 			updateAutoscaledYMin(yMin);
+			enforceMinimumPercentYRange();
 		}
 
 		double barwidth = bounds.getWidth() / nBins;
@@ -698,6 +704,21 @@ public class HistoGraph extends AbstractGraph<double[]> implements BasicTooltipP
 				roundedMin = style.yMax - delta;
 		}
 		style.yMin = roundedMin;
+	}
+
+	/**
+	 * Ensure percent-scaled histograms do not zoom into ranges below one
+	 * percentage point.
+	 */
+	private void enforceMinimumPercentYRange() {
+		if (!style.percentY || style.yMax - style.yMin >= MIN_PERCENT_Y_RANGE)
+			return;
+		if (style.yMin <= 0.0) {
+			style.yMin = 0.0;
+			style.yMax = MIN_PERCENT_Y_RANGE;
+			return;
+		}
+		style.yMin = Math.max(0.0, style.yMax - MIN_PERCENT_Y_RANGE);
 	}
 
 	/**

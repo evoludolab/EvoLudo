@@ -592,14 +592,14 @@ public abstract class AbstractGraph<B> extends FocusPanel
 	/**
 	 * Minimum horizontal gap between y tick labels and the y-axis label.
 	 */
-	private static final double Y_AXIS_LABEL_MIN_GAP = 8.0;
+	private static final double Y_AXIS_LABEL_MIN_GAP = 6.0;
 
 	/**
 	 * Default horizontal gap reserved between y tick labels and the y-axis label.
 	 * This exceeds {@link #Y_AXIS_LABEL_MIN_GAP} so modest tick-label width changes
 	 * can be absorbed without moving the axis label.
 	 */
-	private static final double Y_AXIS_LABEL_RESERVED_GAP = 12.0;
+	private static final double Y_AXIS_LABEL_RESERVED_GAP = 10.0;
 
 	/**
 	 * Approximate horizontal thickness reserved for the rotated y-axis label.
@@ -1357,6 +1357,9 @@ public abstract class AbstractGraph<B> extends FocusPanel
 				digits = computeYTickDigits(4);
 			}
 			cachedMidYTickLabelWidth = measureMidYTickLabelWidth(digits);
+			if (style.percentY)
+				cachedMidYTickLabelWidth = Math.max(cachedMidYTickLabelWidth,
+						measureYTickLabelWidth(new String[] { "100.0" }, true));
 			adjustBoundsForYSide(cachedMidYTickLabelWidth);
 			adjustBoundsForYSide(Y_TICK_LABEL_GAP + 2.0);
 		}

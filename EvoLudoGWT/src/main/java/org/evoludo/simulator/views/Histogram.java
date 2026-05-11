@@ -956,8 +956,10 @@ public class Histogram extends AbstractView<HistoGraph> {
 			Module<?> module = graph.getModule();
 			boolean newPop = (oldmod != module);
 			oldmod = module;
-			if (newPop)
+			if (newPop) {
 				data = graph.getData();
+				idx = 0;
+			}
 			int nTraits = (model.isContinuous() ? 1 : module.getNTraits());
 			int vacant = module.getVacantIdx();
 			if (vacant >= 0)
