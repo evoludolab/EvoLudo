@@ -3525,14 +3525,10 @@ public abstract class IBSPopulation<M extends Module<?>, P extends IBSPopulation
 	 * @return {@code true} if the geometry changed and a reset is required
 	 */
 	private boolean updateGeometry(AbstractGeometry geometry, int populationSize) {
-		AbstractGeometry updated = geometry.clone();
-		updated.setSize(populationSize);
-		updated.check();
-		if (geometry.similar(updated))
-			return false;
+		AbstractGeometry previous = geometry.clone();
 		geometry.setSize(populationSize);
-		geometry.check();
-		return true;
+		boolean doReset = geometry.check();
+		return doReset || !previous.similar(geometry);
 	}
 
 	/**
