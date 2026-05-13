@@ -85,9 +85,11 @@ public interface BasicTooltipProvider {
 	static final String TABLE_CELL_NEXT = ":</i></td><td>";
 
 	/**
-	 * Table cell separator for tooltips with color.
+	 * Inline color swatch for tooltips. Use a background color instead of a
+	 * colored text glyph so reader engines that override text color keep the marker.
 	 */
-	static final String SPAN_COLOR = "<span style='color:";
+	static final String SPAN_COLOR = "<span style='display:inline-block;width:0.8em;height:0.8em;"
+			+ "background-color:";
 
 	/**
 	 * Table cell separator for tooltips with color.
@@ -95,9 +97,10 @@ public interface BasicTooltipProvider {
 	static final String TABLE_CELL_NEXT_COLOR = TABLE_CELL_NEXT + SPAN_COLOR;
 
 	/**
-	 * Table cell bullet used to highlight categorical values in tooltips.
+	 * Table cell swatch suffix used to highlight categorical values in tooltips.
 	 */
-	static final String TABLE_CELL_BULLET = "; font-size:120%; line-height:0.7;'>&#x25A0;</span> ";
+	static final String TABLE_CELL_BULLET = ";border:1px solid rgba(0,0,0,0.25);"
+			+ "box-sizing:border-box;vertical-align:-0.08em;margin-right:0.25em;'></span> ";
 
 	/**
 	 * Get the tooltip at the scaled coordinates {@code (x,y)} with the origin in
