@@ -438,7 +438,7 @@ public class Tooltip extends HTML implements MouseOverHandler, MouseOutHandler, 
 	 * Helper method: show tooltip now and set timeout timer.
 	 */
 	private void doShow() {
-		if (!NativeJS.hasFocus()) {
+		if (!acceptsTooltipEvents()) {
 			close();
 			return;
 		}
@@ -477,12 +477,22 @@ public class Tooltip extends HTML implements MouseOverHandler, MouseOutHandler, 
 	 * @param origin the FocusPanel with tooltips.
 	 */
 	private void doUpdate(FocusPanel origin) {
-		if (!NativeJS.hasFocus()) {
+		if (!acceptsTooltipEvents()) {
 			close();
 			return;
 		}
 		current = participants.get(origin);
 		updateTooltip();
+	}
+
+	/**
+	 * Check whether tooltip events should be accepted for the current document.
+	 * Apple Books can dispatch mouse events before the embedded lab reports focus.
+	 *
+	 * @return {@code true} if tooltip events should be processed
+	 */
+	private boolean acceptsTooltipEvents() {
+		return NativeJS.hasFocus() || NativeJS.getEPubReader() != null;
 	}
 
 	/**
