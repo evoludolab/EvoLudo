@@ -156,18 +156,6 @@ public class TBT extends Discrete implements Payoffs,
 	}
 
 	@Override
-	public String getTraitName(int idx) {
-		String idxname = super.getTraitName(idx);
-		IBSPopulation<?, ?> ibsPop = getIBSPopulation();
-		if (ibsPop == null
-				|| !ibsPop.getCompetitionGeometry().isType(GeometryType.SQUARE_NEUMANN_2ND))
-			return idxname;
-		if (idx >= nTraits)
-			return idxname + " (2nd)";
-		return idxname + " (1st)";
-	}
-
-	@Override
 	public Color[] getMeanColors() {
 		Color[] colors = super.getMeanColors();
 		// not all models entertain competition geometries, e.g. ODE/SDE
@@ -393,13 +381,13 @@ public class TBT extends Discrete implements Payoffs,
 
 		@Override
 		public String getTraitNameAt(int idx) {
+			String traitName = super.getTraitNameAt(idx);
 			if (!competition.isType(GeometryType.SQUARE_NEUMANN_2ND))
-				return super.getTraitNameAt(idx);
+				return traitName;
 			int side = (int) Math.sqrt(nPopulation);
-			int trait = getTraitAt(idx);
 			if ((idx / side) % 2 == (idx % side) % 2)
-				return module.getTraitName(trait);
-			return module.getTraitName(nTraits + trait);
+				return traitName + " (1st)";
+			return traitName + " (2nd)";
 		}
 
 		@Override
@@ -480,12 +468,15 @@ public class TBT extends Discrete implements Payoffs,
 				return super.getStatus();
 
 			getMeanTraits(tsTraits);
+			String[] traitNames = module.getTraitNames();
 			StringBuilder status = new StringBuilder();
 			for (int i = 0; i < 2 * nTraits; i++) {
 				if (status.length() > 0) {
 					status.append(", ");
 				}
-				status.append(module.getTraitName(i)).append(": ")
+				status.append(traitNames[i % nTraits])
+						.append(i >= nTraits ? " (2nd)" : " (1st)")
+						.append(": ")
 						.append(Formatter.formatPercent(tsTraits[i], 1));
 			}
 			return status.toString();
