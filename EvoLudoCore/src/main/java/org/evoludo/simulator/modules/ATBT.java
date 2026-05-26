@@ -649,8 +649,8 @@ public class ATBT extends TBT implements HasS3, HasPhase2D {
 		public boolean isMonomorphic() {
 			if (ArrayMath.max(feedback) > 0.0)
 				return super.isMonomorphic();
-			return ((traitsCount[ATBT.COOPERATE_POOR] + traitsCount[ATBT.COOPERATE_RICH] == nPopulation)
-					|| (traitsCount[ATBT.DEFECT_POOR] + traitsCount[ATBT.DEFECT_RICH] == nPopulation));
+			return ((traitsCount[COOPERATE_POOR] + traitsCount[COOPERATE_RICH] == nPopulation)
+					|| (traitsCount[DEFECT_POOR] + traitsCount[DEFECT_RICH] == nPopulation));
 		}
 
 		/**
@@ -684,7 +684,7 @@ public class ATBT extends TBT implements HasS3, HasPhase2D {
 			double pFeedback = feedback[oldtype];
 			if (pFeedback > 0.0 && (pFeedback >= 1.0 || random01() < pFeedback)) {
 				// change type of node
-				int oldtrait = oldtype < 2 ? TBT.COOPERATE : TBT.DEFECT;
+				int oldtrait = oldtype < 2 ? COOPERATE : DEFECT;
 				// determine new patch type (old one was GOOD if oldtype is even and will now
 				// turn BAD and vice versa)
 				int newpatch = (oldtype + 1) % 2;
@@ -729,28 +729,28 @@ public class ATBT extends TBT implements HasS3, HasPhase2D {
 		@Override
 		protected void getDerivatives(double t, double[] state, double[] fitness, double[] change) {
 			avgScores(state, fitness);
-			double xr = state[ATBT.COOPERATE_RICH];
-			double xp = state[ATBT.COOPERATE_POOR];
-			double yr = state[ATBT.DEFECT_RICH];
-			double yp = state[ATBT.DEFECT_POOR];
+			double xr = state[COOPERATE_RICH];
+			double xp = state[COOPERATE_POOR];
+			double yr = state[DEFECT_RICH];
+			double yp = state[DEFECT_POOR];
 			Map2Fitness map2fit = module.getMap2Fitness();
 			for (int n = 0; n < nTraits; n++)
 				fitness[n] = map2fit.map(fitness[n]);
-			double fC = xr * fitness[ATBT.COOPERATE_RICH] + xp * fitness[ATBT.COOPERATE_POOR];
-			double fD = yr * fitness[ATBT.DEFECT_RICH] + yp * fitness[ATBT.DEFECT_POOR];
+			double fC = xr * fitness[COOPERATE_RICH] + xp * fitness[COOPERATE_POOR];
+			double fD = yr * fitness[DEFECT_RICH] + yp * fitness[DEFECT_POOR];
 			double dyn;
-			dyn = fC * yr - fD * xr + xp * feedback[ATBT.COOPERATE_POOR] - xr * feedback[ATBT.COOPERATE_RICH];
+			dyn = fC * yr - fD * xr + xp * feedback[COOPERATE_POOR] - xr * feedback[COOPERATE_RICH];
 			double err = dyn;
-			change[ATBT.COOPERATE_RICH] = dyn;
-			dyn = fC * yp - fD * xp - xp * feedback[ATBT.COOPERATE_POOR] + xr * feedback[ATBT.COOPERATE_RICH];
+			change[COOPERATE_RICH] = dyn;
+			dyn = fC * yp - fD * xp - xp * feedback[COOPERATE_POOR] + xr * feedback[COOPERATE_RICH];
 			err += dyn;
-			change[ATBT.COOPERATE_POOR] = dyn;
-			dyn = -fC * yr + fD * xr + yp * feedback[ATBT.DEFECT_POOR] - yr * feedback[ATBT.DEFECT_RICH];
+			change[COOPERATE_POOR] = dyn;
+			dyn = -fC * yr + fD * xr + yp * feedback[DEFECT_POOR] - yr * feedback[DEFECT_RICH];
 			err += dyn;
-			change[ATBT.DEFECT_RICH] = dyn;
-			dyn = -fC * yp + fD * xp - yp * feedback[ATBT.DEFECT_POOR] + yr * feedback[ATBT.DEFECT_RICH];
+			change[DEFECT_RICH] = dyn;
+			dyn = -fC * yp + fD * xp - yp * feedback[DEFECT_POOR] + yr * feedback[DEFECT_RICH];
 			err += dyn;
-			change[ATBT.DEFECT_POOR] = dyn;
+			change[DEFECT_POOR] = dyn;
 			// Mathematica: exploiting cooperators
 			// xr'[t] == (xr[t] ft[[1]] + xp[t] ft[[2]]) yr[t] - (yr[t] ft[[3]] + yp[t]
 			// ft[[4]]) xr[t] - lambda xr[t],

@@ -267,7 +267,7 @@ public class DemesTBT extends TBT {
 		public String getStatus() {
 			double gen = engine.getModel().getUpdates();
 			return super.getStatus() + ", pure: "
-					+ (gen > 0.0 ? Formatter.formatPercent((pure[TBT.COOPERATE] + pure[TBT.DEFECT]) / gen, 1)
+					+ (gen > 0.0 ? Formatter.formatPercent((pure[COOPERATE] + pure[DEFECT]) / gen, 1)
 							: "0.0%");
 		}
 
@@ -308,14 +308,14 @@ public class DemesTBT extends TBT {
 		 *         heterogeneous
 		 */
 		protected int homoDemes() {
-			if (traitsCount[org.evoludo.simulator.modules.TBT.COOPERATE] % sizeDemes != 0)
+			if (traitsCount[COOPERATE] % sizeDemes != 0)
 				// if number of cooperators is not a multiple of deme size
 				// at least one deme must be heterogeneous
 				return -1;
 
 			int nA = 0;
 			for (int d = 0; d < nDemes; d++) {
-				int ccount = demeTypeCount[d][org.evoludo.simulator.modules.TBT.COOPERATE];
+				int ccount = demeTypeCount[d][COOPERATE];
 				if (ccount == 0)
 					continue;
 				if (ccount != sizeDemes)
@@ -358,10 +358,10 @@ public class DemesTBT extends TBT {
 			// check if population is homogeneous or only the deme with a vacancy is
 			// heterogeneous. if so, all other individual are of the same type, i.e. a
 			// random individual can be drawn - no need to check fitness.
-			int ccount = traitsCount[TBT.COOPERATE];
+			int ccount = traitsCount[COOPERATE];
 			if (ccount == 0 || ccount == nPopulation
-					|| ccount == demeTypeCount[vacantDeme][TBT.COOPERATE]
-					|| nPopulation - ccount == demeTypeCount[vacantDeme][TBT.DEFECT]) {
+					|| ccount == demeTypeCount[vacantDeme][COOPERATE]
+					|| nPopulation - ccount == demeTypeCount[vacantDeme][DEFECT]) {
 				int migrant = random0n(nPopulation - sizeDemes);
 				if (migrant >= start)
 					migrant += sizeDemes;
@@ -440,10 +440,10 @@ public class DemesTBT extends TBT {
 			if (prevsample >= time)
 				return;
 			double incr = time - prevsample;
-			if (traitsCount[org.evoludo.simulator.modules.TBT.COOPERATE] == nPopulation)
-				pure[org.evoludo.simulator.modules.TBT.COOPERATE] += incr;
-			if (traitsCount[org.evoludo.simulator.modules.TBT.DEFECT] == nPopulation)
-				pure[org.evoludo.simulator.modules.TBT.DEFECT] += incr;
+			if (traitsCount[COOPERATE] == nPopulation)
+				pure[COOPERATE] += incr;
+			if (traitsCount[DEFECT] == nPopulation)
+				pure[DEFECT] += incr;
 			prevsample = time;
 		}
 
