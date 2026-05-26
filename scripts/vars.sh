@@ -13,6 +13,7 @@ EVOLUDO_TEST_HOME="EvoLudoTest"
 EVOLUDO_TEST_TEST="${EVOLUDO_TEST_HOME}/tests"
 EVOLUDO_DIST="dist"
 EVOLUDO_API="${EVOLUDO_DIST}/api"
+EVOLUDO_API_TARGET="target/site/apidocs"
 EVOLUDO_WAR="${EVOLUDO_DIST}/war"
 EVOLUDO_SH="scripts"
 EVOLUDO_GITEXPORTER_JSON="config/gitexporter.json"
@@ -42,7 +43,7 @@ latest_file() {
 }
 
 latest_java() {
-	find . -type f -name '*.java' -print0 |
+	find . \( -name .git -o -name target -o -name dist \) -prune -o -type f -name '*.java' -print0 |
 		while IFS= read -r -d '' file; do
 			stat_mtime_name "$file"
 		done |
@@ -50,15 +51,30 @@ latest_java() {
 }
 
 latest_gwt() {
-	latest_file "${EVOLUDO_GWT_HOME}/target" 'evoludoweb.nocache.js'
+	if [ ! -d "${EVOLUDO_GWT_HOME}/target" ]; then
+		return 0
+	fi
+	find "${EVOLUDO_GWT_HOME}/target" -type f \
+		-path "${EVOLUDO_GWT_HOME}/target/EvoLudoGWT*/evoludoweb/evoludoweb.nocache.js" -print0 |
+		while IFS= read -r -d '' file; do
+			stat_mtime_name "$file"
+		done |
+		sort -rn | cut -f2- -d" " | sed -n '1p'
 }
 
 latest_jar() {
-	latest_file "${EVOLUDO_JRE_HOME}/target" 'EvoLudo.*.jar'
+	if [ ! -d "${EVOLUDO_JRE_HOME}/target" ]; then
+		return 0
+	fi
+	find "${EVOLUDO_JRE_HOME}/target" -maxdepth 1 -type f -name 'EvoLudo.*.jar' -print0 |
+		while IFS= read -r -d '' file; do
+			stat_mtime_name "$file"
+		done |
+		sort -rn | cut -f2- -d" " | sed -n '1p'
 }
 
 latest_doc() {
-	latest_file "${EVOLUDO_API}" '*.html'
+	latest_file "${EVOLUDO_API_TARGET}" '*.html'
 }
 
 latest_test_jar() {
