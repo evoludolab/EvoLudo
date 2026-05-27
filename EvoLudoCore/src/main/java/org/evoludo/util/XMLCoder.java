@@ -154,6 +154,7 @@ public class XMLCoder {
 					continue;
 				}
 				decoded.replace(start, end + 1, Character.toString(replacement));
+				start++;
 			}
 		}
 		return decoded.toString();
