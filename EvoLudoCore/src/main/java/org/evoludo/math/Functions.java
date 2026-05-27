@@ -60,35 +60,34 @@ public class Functions {
 	/**
 	 * Round <code>value</code> up to the next lower order of magnitude. For
 	 * example,
-	 * <code>2.51&rarr;3, 25.1&rarr;30, 251&rarr;260, 2510&rarr;2600, ...</code>
+	 * <code>2.51&rarr;2.6, 25.1&rarr;26, 251&rarr;260, 2510&rarr;2600, ...</code>
 	 * 
 	 * @param value the {@code double} to be rounded up
 	 * @return the rounded value
 	 */
 	public static double roundUp(double value) {
 		int magnitude = magnitude(value);
-		if (magnitude == 0)
-			return Math.ceil(value);
-		double factor = Combinatorics.pow(10.0, magnitude);
+		double factor = Combinatorics.pow(10.0, magnitude - 1);
+		// prevent returning NaN for very small magnitudes
+		if (factor == 0.0)
+			return value;
 		return Math.ceil(value / factor) * factor;
 	}
 
 	/**
 	 * Round <code>value</code> down to the next lower order of magnitude. For
 	 * example,
-	 * <code>2.51&rarr;2, 25.1&rarr;20, 251&rarr;200, 2510&rarr;2000, ...</code>
+	 * <code>2.51&rarr;2.5, 25.1&rarr;25, 251&rarr;250, 2510&rarr;2500, ...</code>
 	 * 
 	 * @param value the {@code double} to be rounded down
 	 * @return the rounded value
 	 */
 	public static double roundDown(double value) {
 		int magnitude = magnitude(value);
-		if (magnitude == 0)
-			return Math.floor(value);
-		double factor = Combinatorics.pow(10.0, magnitude);
+		double factor = Combinatorics.pow(10.0, magnitude - 1);
 		// prevent returning NaN for very small magnitudes
 		if (factor == 0.0)
-			return Double.MIN_VALUE;
+			return value;
 		return Math.floor(value / factor) * factor;
 	}
 
