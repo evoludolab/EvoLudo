@@ -253,7 +253,7 @@ public class CLOParser {
 
 		switch (opt.getType()) {
 			case REQUIRED:
-				if (args.length < 1) {
+				if (arg.isEmpty()) {
 					logWarning(OPTION_PREFIX + clo + " is missing a required argument - ignored.");
 					return 1;
 				}
