@@ -2,6 +2,21 @@
 
 All notable project revisions are listed here in reverse chronological order.
 
+## [`v2.2.4`](https://github.com/evoludolab/EvoLudo/releases/tag/v2.2.4) (2026-05-29) Public release: [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.14591549.svg)](https://zenodo.org/doi/10.5281/zenodo.14591549)
+
+### Bugfixes:
+- Fixed consistency checks, random interaction score handling, prevent duplicate geometry warnings, fix trait-colors for new traits, preserve delay settings (`9ed244b90`, `fd87abca5`, `283ebe618`, `f7de496a0`, `d17fd03fa`).
+- Corrected TBT trait names on second-neighbour geometries and tightened constant references in TBT subclasses (`d4a85b367`, `b539e0eb4`).
+- Hardened utility and math edge cases in `RingBuffer`, `Functions.roundUp/roundDown`, `Segment2D`, `XMLCoder`, `PlistParser.parseReal`, `CLOParser`, and `MersenneTwister.stateEquals` (`93b673793`, `60316941d`, `1f23079dd`, `44b9ef812`, `9377503de`, `975814d0e`, `a8ad0ae5e`).
+
+### GUI changes:
+- Fixed multiple-histogram rendering and histogram graph coordination (`993b72900`).
+- Improved EPUB tooltip behavior and custom tooltip coloring (`a7e1f8401`, `7861a8744`).
+
+### Tooling changes:
+- Updated script handling for build, fetch, publish, push, and test generation workflows (`112884eb9`).
+- Select newest JAR/GWT artifacts, require confirmation for dirty or post-tag HEAD states (`5534f6f2e`).
+
 ## [`v2.2.3`](https://github.com/evoludolab/EvoLudo/releases/tag/v2.2.3) (2026-05-04) Public release: [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.14591549.svg)](https://zenodo.org/doi/10.5281/zenodo.14591549)
 
 ### Bugfixes:
