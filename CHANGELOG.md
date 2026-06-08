@@ -2,6 +2,11 @@
 
 All notable project revisions are listed here in reverse chronological order.
 
+## [`v2.2.5`](https://github.com/evoludolab/EvoLudo/releases/tag/v2.2.5) (2026-06-09) Public release: [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.14591549.svg)](https://zenodo.org/doi/10.5281/zenodo.14591549)
+
+### Bugfixes:
+- Fixed fatal internal EvoLudo errors caused by reloading cached JavaScript code and improve JavaScript error reporting (`f225bb378`).
+
 ## [`v2.2.4`](https://github.com/evoludolab/EvoLudo/releases/tag/v2.2.4) (2026-05-29) Public release: [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.14591549.svg)](https://zenodo.org/doi/10.5281/zenodo.14591549)
 
 ### Bugfixes:
