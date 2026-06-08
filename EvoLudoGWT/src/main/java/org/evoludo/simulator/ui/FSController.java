@@ -134,6 +134,17 @@ public class FSController implements FullscreenChangeHandler {
 	}
 
 	/**
+	 * Release native fullscreen resources held by this controller.
+	 */
+	public void unload() {
+		if (fullscreenHandler != null) {
+			fullscreenHandler.removeHandler();
+			fullscreenHandler = null;
+		}
+		fullscreenWidget = null;
+	}
+
+	/**
 	 * React to browser fullscreen toggles by adding/removing the helper CSS class.
 	 */
 	@Override

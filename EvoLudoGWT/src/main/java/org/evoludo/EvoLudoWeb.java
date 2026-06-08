@@ -42,13 +42,13 @@ import org.evoludo.simulator.EvoLudo;
 import org.evoludo.simulator.EvoLudoGWT;
 import org.evoludo.simulator.EvoLudoTrigger;
 import org.evoludo.simulator.Resources;
+import org.evoludo.simulator.models.ChangeListener.PendingAction;
 import org.evoludo.simulator.models.Mode;
 import org.evoludo.simulator.models.Model;
-import org.evoludo.simulator.models.ChangeListener.PendingAction;
 import org.evoludo.simulator.modules.Module;
-import org.evoludo.simulator.ui.SettingsController;
 import org.evoludo.simulator.ui.FSController;
 import org.evoludo.simulator.ui.KeyHandler;
+import org.evoludo.simulator.ui.SettingsController;
 import org.evoludo.simulator.ui.ViewController;
 import org.evoludo.simulator.ui.WebListener;
 import org.evoludo.simulator.views.AbstractView;
@@ -69,6 +69,7 @@ import com.google.gwt.canvas.client.Canvas;
 import com.google.gwt.core.client.Duration;
 import com.google.gwt.core.client.EntryPoint;
 import com.google.gwt.core.client.GWT;
+import com.google.gwt.core.client.JavaScriptException;
 import com.google.gwt.core.client.Scheduler;
 import com.google.gwt.core.client.ScriptInjector;
 import com.google.gwt.dom.client.DataTransfer;
@@ -84,16 +85,15 @@ import com.google.gwt.event.dom.client.DragLeaveEvent;
 import com.google.gwt.event.dom.client.DragLeaveHandler;
 import com.google.gwt.event.dom.client.DragOverEvent;
 import com.google.gwt.event.dom.client.DropEvent;
+import com.google.gwt.event.dom.client.FocusEvent;
 import com.google.gwt.event.dom.client.TouchEndEvent;
 import com.google.gwt.event.dom.client.TouchStartEvent;
 import com.google.gwt.event.shared.HandlerRegistration;
-import com.google.gwt.logging.client.ConsoleLogHandler;
 import com.google.gwt.uibinder.client.UiBinder;
 import com.google.gwt.uibinder.client.UiField;
 import com.google.gwt.uibinder.client.UiHandler;
 import com.google.gwt.user.client.Timer;
 import com.google.gwt.user.client.Window;
-import com.google.gwt.event.dom.client.FocusEvent;
 import com.google.gwt.user.client.ui.Button;
 import com.google.gwt.user.client.ui.Composite;
 import com.google.gwt.user.client.ui.DeckLayoutPanel;
@@ -357,12 +357,6 @@ public class EvoLudoWeb extends Composite
 	private static final List<EvoLudoWeb> guardedLabs = new ArrayList<>();
 
 	/**
-	 * Most recently active guarded lab. Used as a sticky fallback for deferred UI
-	 * callbacks that fail after the guarded block has already returned.
-	 */
-	private static EvoLudoWeb recentGuardedLab = null;
-
-	/**
 	 * Delay before the busy spinner becomes visible.
 	 */
 	private static final int BUSY_SPINNER_DELAY_MS = 1000;
@@ -448,6 +442,11 @@ public class EvoLudoWeb extends Composite
 	 * Controller handling fullscreen and --size option.
 	 */
 	private FSController fsController;
+
+	/**
+	 * Browser console log handler installed on the engine logger.
+	 */
+	private Handler logHandler;
 
 	/**
 	 * Early initializations.
@@ -546,8 +545,7 @@ public class EvoLudoWeb extends Composite
 	public void onModuleLoad() {
 		GWT.UncaughtExceptionHandler previous = GWT.getUncaughtExceptionHandler();
 		GWT.setUncaughtExceptionHandler(error -> {
-			GWT.log("Fatal uncaught EvoLudo error", error);
-			EvoLudoWeb lab = currentGuardedLab();
+			EvoLudoWeb lab = activeGuardedLab();
 			if (lab != null) {
 				try {
 					lab.handleFatalError("processing an event", error);
@@ -560,12 +558,14 @@ public class EvoLudoWeb extends Composite
 		});
 		// make sure css styling stuff is loaded
 		Resources.INSTANCE.css().ensureInjected();
-		// process DOM and replace all div's with class evoludo-simulation by an
-		// interactive lab
-		processEvoLudoLabs();
-		// process DOM and replace all div's with class evoludo-trigger-html by a
-		// trigger button
-		processEvoLudoTriggers();
+		NativeJS.runOnDocumentReady(() -> {
+			// process DOM and replace all div's with class evoludo-simulation by an
+			// interactive lab
+			processEvoLudoLabs();
+			// process DOM and replace all div's with class evoludo-trigger-html by a
+			// trigger button
+			processEvoLudoTriggers();
+		});
 	}
 
 	/**
@@ -602,13 +602,14 @@ public class EvoLudoWeb extends Composite
 	 * @param clo        the command line options for the lab
 	 */
 	private void addEvoLudoToDOM(Element labElement, String clo) {
-		HTMLPanel panel = HTMLPanel.wrap(labElement);
 		String id = labElement.getId();
 		if (id == null || id.isEmpty())
 			id = HTMLPanel.createUniqueId();
 		labElement.setId(id);
 		if (clo != null && !clo.isEmpty())
 			labElement.setAttribute(DOM_DATA_CLO, clo);
+		labElement.removeAllChildren();
+		HTMLPanel panel = HTMLPanel.wrap(labElement);
 		try {
 			EvoLudoWeb lab = new EvoLudoWeb(id, clo);
 			panel.add(lab);
@@ -655,12 +656,13 @@ public class EvoLudoWeb extends Composite
 		int nTriggers = triggers.getLength();
 		for (int n = 0; n < nTriggers; n++) {
 			Element triggerElement = triggers.getItem(n);
-			HTMLPanel trigger = HTMLPanel.wrap(triggerElement);
 			String id = triggerElement.getId();
 			if (id == null || id.isEmpty()) {
 				id = HTMLPanel.createUniqueId();
 				triggerElement.setId(id);
 			}
+			triggerElement.removeAllChildren();
+			HTMLPanel trigger = HTMLPanel.wrap(triggerElement);
 			trigger.add(new EvoLudoTrigger(id));
 		}
 	}
@@ -710,10 +712,26 @@ public class EvoLudoWeb extends Composite
 		if (logger == null) {
 			logger = engine.getLogger();
 			logger.setLevel(Level.INFO);
+		}
+		if (logHandler == null) {
 			// note: log handler needs to know whether this is an ePub (regardless of any
 			// feature declarations with --gui) to make sure log is properly XML encoded (if
 			// needed).
-			ConsoleLogHandler logHandler = new ConsoleLogHandler();
+			logHandler = new Handler() {
+				@Override
+				public void publish(LogRecord record) {
+					if (isLoggable(record))
+						NativeJS.log(record.getLevel().intValue(), getFormatter().format(record));
+				}
+
+				@Override
+				public void flush() {
+				}
+
+				@Override
+				public void close() {
+				}
+			};
 			logHandler.setFormatter(new XMLLogFormatter(true,
 					(NativeJS.getEPubReader() != null) || NativeJS.isHTML()));
 			logger.addHandler(logHandler);
@@ -764,13 +782,14 @@ public class EvoLudoWeb extends Composite
 	 * @param logger the logger instance
 	 */
 	private void setupConsole(Logger logger) {
-		if (viewConsole != null)
-			return;
-		viewConsole = new Console(engine);
-		logEvoHandler = new EvoLogHandler(viewConsole);
-		logger.addHandler(logEvoHandler);
-		logger.setLevel(Level.INFO);
-		logger.info(engine.getVersion());
+		if (viewConsole == null)
+			viewConsole = new Console(engine);
+		if (logEvoHandler == null) {
+			logEvoHandler = new EvoLogHandler(viewConsole);
+			logger.addHandler(logEvoHandler);
+			logger.setLevel(Level.INFO);
+			logger.info(engine.getVersion());
+		}
 	}
 
 	/**
@@ -788,9 +807,25 @@ public class EvoLudoWeb extends Composite
 	 */
 	@Override
 	public void onUnload() {
-		if (recentGuardedLab == this)
-			recentGuardedLab = null;
 		try {
+			// remove UI-owned global listeners and logger handlers before engine shutdown.
+			keyController.unregister();
+			if (fsController != null) {
+				fsController.unload();
+				fsController = null;
+			}
+			if (logger != null) {
+				if (logEvoHandler != null) {
+					logger.removeHandler(logEvoHandler);
+					logEvoHandler.close();
+					logEvoHandler = null;
+				}
+				if (logHandler != null) {
+					logger.removeHandler(logHandler);
+					logHandler.close();
+					logHandler = null;
+				}
+			}
 			// clear command line options to ensure they are reset to the original
 			// values should the same model get loaded again.
 			// note: this clears command line options set via URL but it does not seem
@@ -851,8 +886,8 @@ public class EvoLudoWeb extends Composite
 			evoludoPanel.getElement().getStyle().setOpacity(0.6);
 			evoludoDeck.getElement().getStyle().setProperty("pointerEvents", "none");
 			keyController.unregister();
-		} catch (RuntimeException suppressed) {
-			GWT.log("Failed to update EvoLudo fatal error UI", suppressed);
+		} catch (RuntimeException ignored) {
+			// Fatal error handling must continue even if the UI update fails.
 		}
 		logger.log(Level.SEVERE, msg, error);
 		displayStatusThresholdLevel = Integer.MAX_VALUE;
@@ -870,7 +905,36 @@ public class EvoLudoWeb extends Composite
 		StringBuilder details = new StringBuilder(context);
 		String scope = describeFailureScope();
 		String source = triageFailureSource(error);
-		if (scope == null && source == null)
+		String cause = null;
+		if (error != null) {
+			if (error instanceof JavaScriptException) {
+				JavaScriptException jsError = (JavaScriptException) error;
+				String name = jsError.getName();
+				String description = jsError.getDescription();
+				if (name != null && !name.isEmpty() && description != null && !description.isEmpty())
+					cause = name + ": " + description;
+				else if (description != null && !description.isEmpty())
+					cause = description;
+				else
+					cause = name;
+			} else {
+				cause = error.getMessage();
+			}
+			String nativeDetails = NativeJS.describe(error);
+			if (nativeDetails != null && (cause == null || cause.isEmpty()
+					|| error.getClass().getName().endsWith("JsException"))) {
+				int newline = nativeDetails.indexOf('\n');
+				cause = newline < 0 ? nativeDetails : nativeDetails.substring(0, newline);
+			}
+			if (cause != null) {
+				cause = cause.trim().replaceAll("\\s+", " ");
+				if (cause.isEmpty() || "null".equals(cause) || "null: null".equals(cause))
+					cause = null;
+				else if (cause.length() > 240)
+					cause = cause.substring(0, 237) + "...";
+			}
+		}
+		if (scope == null && source == null && cause == null)
 			return details.toString();
 		details.append(" (");
 		if (scope != null)
@@ -879,6 +943,11 @@ public class EvoLudoWeb extends Composite
 			if (scope != null)
 				details.append("; ");
 			details.append("source: ").append(source);
+		}
+		if (cause != null) {
+			if (scope != null || source != null)
+				details.append("; ");
+			details.append("cause: ").append(cause);
 		}
 		details.append(")");
 		return details.toString();
@@ -951,7 +1020,6 @@ public class EvoLudoWeb extends Composite
 	 */
 	public final void enterGuardedExecution() {
 		guardedLabs.add(this);
-		recentGuardedLab = this;
 	}
 
 	/**
@@ -984,9 +1052,9 @@ public class EvoLudoWeb extends Composite
 	 *
 	 * @return the current guarded lab, or {@code null} if none
 	 */
-	private static EvoLudoWeb currentGuardedLab() {
+	private static EvoLudoWeb activeGuardedLab() {
 		int size = guardedLabs.size();
-		return size > 0 ? guardedLabs.get(size - 1) : recentGuardedLab;
+		return size > 0 ? guardedLabs.get(size - 1) : null;
 	}
 
 	/**

@@ -61,12 +61,98 @@ public class NativeJS {
 	}-*/;
 
 	/**
-	 * JSNI method: log message into JS console.
+	 * Log message into the JavaScript console.
 	 *
 	 * @param msg the message to log
 	 */
-	public static native void log(String msg) /*-{
-		console.log(msg);
+	public static void log(String msg) {
+		log(800, msg);
+	}
+
+	/**
+	 * JSNI method: log a formatted message into the JavaScript console.
+	 * <p>
+	 * Some browsers can throw native JavaScript exceptions while processing console
+	 * output. Catching those exceptions in Java is unreliable after GWT translation,
+	 * so the browser call itself is guarded here.
+	 *
+	 * @param level the {@link java.util.logging.Level#intValue()} of the record
+	 * @param msg   the formatted message to log
+	 */
+	public static native void log(int level, String msg) /*-{
+		try {
+			var console = $wnd.console;
+			if (!console)
+				return;
+			var method = level >= 1000 ? console.error : level >= 900 ? console.warn
+					: level >= 800 ? console.info : console.debug;
+			if (typeof method !== "function")
+				method = console.log;
+			if (typeof method === "function")
+				method.call(console, msg);
+		} catch (e) {
+		}
+	}-*/;
+
+	/**
+	 * JSNI method: describe a JavaScript-backed throwable, if native details are
+	 * visible.
+	 * <p>
+	 * GWT can surface native browser failures as opaque {@code JsException}
+	 * instances. This helper inspects the JavaScript object that reaches JSNI and
+	 * reports common browser error fields without assuming a particular compiler
+	 * layout.
+	 *
+	 * @param error the throwable to inspect
+	 * @return a native error description, or {@code null} if none is available
+	 */
+	public static native String describe(Throwable error) /*-{
+		try {
+			if (!error)
+				return null;
+			var parts = [];
+			var seen = [];
+			var maxStack = 1600;
+			var add = function(label, value) {
+				if (value === null || value === undefined || value === "")
+					return;
+				var text = String(value);
+				if (label.indexOf("stack") >= 0 && text.length > maxStack)
+					text = text.substring(0, maxStack) + "...";
+				parts.push(label + ": " + text);
+			};
+			var inspect = function(label, value, depth) {
+				if (value === null || value === undefined || depth > 2)
+					return;
+				var type = typeof value;
+				if (type !== "object" && type !== "function") {
+					add(label, value);
+					return;
+				}
+				for (var s = 0; s < seen.length; s++) {
+					if (seen[s] === value)
+						return;
+				}
+				seen.push(value);
+				add(label + ".name", value.name);
+				add(label + ".message", value.message);
+				add(label + ".description", value.description);
+				add(label + ".stack", value.stack);
+				add(label + ".fileName", value.fileName);
+				add(label + ".lineNumber", value.lineNumber);
+				add(label + ".columnNumber", value.columnNumber);
+				var candidates = [ "backingJsObject", "cause", "__java$exception" ];
+				for (var i = 0; i < candidates.length; i++) {
+					var key = candidates[i];
+					if (value[key] && value[key] !== value)
+						inspect(label + "." + key, value[key], depth + 1);
+				}
+			};
+			inspect("throwable", error, 0);
+			return parts.length == 0 ? null : parts.join("\n");
+		} catch (e) {
+			return null;
+		}
 	}-*/;
 
 	/**
@@ -99,6 +185,30 @@ public class NativeJS {
 	public static final native NodeList<Element> querySelectorAll(String selector)
 	/*-{
 		return $doc.querySelectorAll(selector);
+	}-*/;
+
+	/**
+	 * JSNI method: run an action when the document has been parsed far enough for
+	 * EvoLudo marker elements to be present.
+	 * <p>
+	 * Cached scripts can execute earlier than network-loaded scripts, especially in
+	 * Safari. Delaying DOM processing until {@code DOMContentLoaded} keeps cold
+	 * loads and cache reloads on the same startup path.
+	 *
+	 * @param action the action to run once the document is ready
+	 */
+	public static final native void runOnDocumentReady(Runnable action)
+	/*-{
+		if (!action)
+			return;
+		var run = $entry(function() {
+			action.@java.lang.Runnable::run()();
+		});
+		if ($doc.readyState === "loading") {
+			$doc.addEventListener("DOMContentLoaded", run, false);
+			return;
+		}
+		run();
 	}-*/;
 
 	/**
@@ -315,38 +425,60 @@ public class NativeJS {
 	 *               all other browsers because aspects of the fullscreen API are
 	 *               interpreted differently, see
 	 *               {@link #fullscreenChangeEventName()}.
+	 *               Registered JavaScript callback functions are stored by
+	 *               {@code eventname} and {@code handler} so that the exact same
+	 *               function object can be removed later.
 	 * 
 	 * @param eventname the name of the fullscreen change event
 	 * @param handler   the handler to add
 	 */
 	public static final native void addFullscreenChangeHandler(String eventname, FullscreenChangeHandler handler)
 	/*-{
-		$doc.addEventListener(
-			eventname,
-			function(event) {
-				handler.@org.evoludo.ui.FullscreenChangeHandler::onFullscreenChange(Lorg/evoludo/ui/FullscreenChangeEvent;)(event);
-			}, true);
+		if (!eventname || !handler)
+			return;
+		if (!$wnd.EvoLudoUtils)
+			$wnd.EvoLudoUtils = {};
+		if (!$wnd.EvoLudoUtils.fullscreenListeners)
+			$wnd.EvoLudoUtils.fullscreenListeners = [];
+		@org.evoludo.util.NativeJS::removeFullscreenChangeHandler(Ljava/lang/String;Lorg/evoludo/ui/FullscreenChangeHandler;)(eventname, handler);
+		var listener = function(event) {
+			handler.@org.evoludo.ui.FullscreenChangeHandler::onFullscreenChange(Lorg/evoludo/ui/FullscreenChangeEvent;)(event);
+		};
+		$wnd.EvoLudoUtils.fullscreenListeners.push({
+			eventname : eventname,
+			handler : handler,
+			listener : listener
+		});
+		$doc.addEventListener(eventname, listener, true);
 	}-*/;
 
 	/**
 	 * JSNI method: Remove the fullscreen change handler.
 	 * 
-	 * @evoludo.impl The handler function needs to be specified again when removing
-	 *               the listener... Because we don't know how to store the handler
-	 *               returned by the JSNI method
-	 *               {@code _addFullscreenChangeHandler(String, FullscreenChangeHandler)}
-	 *               it must be exact copy of handler specification there.
+	 * @evoludo.impl The implementation removes the original function object stored
+	 *               by
+	 *               {@link #addFullscreenChangeHandler(String, FullscreenChangeHandler)}.
 	 * 
 	 * @param eventname the name of the fullscreen change event
-	 * @param handler   the handler to add
+	 * @param handler   the handler to remove
 	 */
 	public static final native void removeFullscreenChangeHandler(String eventname, FullscreenChangeHandler handler)
 	/*-{
-		$doc.removeEventListener(
-			eventname,
-			function(event) {
-				handler.@org.evoludo.ui.FullscreenChangeHandler::onFullscreenChange(Lorg/evoludo/ui/FullscreenChangeEvent;)(event);
-			}, true);
+		if (!eventname || !handler)
+			return;
+		try {
+			if (!$wnd.EvoLudoUtils || !$wnd.EvoLudoUtils.fullscreenListeners)
+				return;
+			var listeners = $wnd.EvoLudoUtils.fullscreenListeners;
+			for (var i = listeners.length - 1; i >= 0; i--) {
+				var entry = listeners[i];
+				if (entry.eventname !== eventname || entry.handler !== handler)
+					continue;
+				$doc.removeEventListener(entry.eventname, entry.listener, true);
+				listeners.splice(i, 1);
+			}
+		} catch (e) {
+		}
 	}-*/;
 
 	/**

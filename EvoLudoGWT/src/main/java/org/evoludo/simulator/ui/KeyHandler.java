@@ -680,12 +680,12 @@ public class KeyHandler {
 	 * Installs JS listeners that route keyboard events to all controllers.
 	 */
 	private static native void addGlobalKeyListeners() /*-{
-		if (!$wnd.EvoLudoUtils) {
+		if (!$wnd.EvoLudoUtils)
 			$wnd.EvoLudoUtils = {};
+		if (!$wnd.EvoLudoUtils.keyListeners)
 			$wnd.EvoLudoUtils.keyListeners = new Map();
-		}
 		if (!$wnd.EvoLudoUtils.keyListeners.get('keydown')) {
-		$wnd.EvoLudoUtils.keyListeners.set(
+			$wnd.EvoLudoUtils.keyListeners.set(
 				'keydown',
 				$entry(function(event) {
 					if (@org.evoludo.simulator.ui.KeyHandler::isCLOFieldFocused()())
@@ -695,7 +695,7 @@ public class KeyHandler {
 					}
 					event.stopPropagation();
 				}));
-		$wnd.EvoLudoUtils.keyListeners.set(
+			$wnd.EvoLudoUtils.keyListeners.set(
 				'keyup',
 				$entry(function(event) {
 					if (@org.evoludo.simulator.ui.KeyHandler::isCLOFieldFocused()())
