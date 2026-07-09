@@ -1741,7 +1741,8 @@ public class IBSDPopulation extends IBSPopulation<Discrete, IBSDPopulation> {
 			if (logger.isLoggable(Level.WARNING)) {
 				String name = module.getName();
 				logger.warning(
-						"Population" + (name != null ? " of " + name : "") + " explodes (no death, no competition).");
+						"Population" + (name != null && !name.isEmpty() ? " of " + name : "")
+								+ " at maximum (no death, no competition).");
 			}
 			return true;
 		}
