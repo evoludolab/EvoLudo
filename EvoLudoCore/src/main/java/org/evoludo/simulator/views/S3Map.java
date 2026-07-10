@@ -233,11 +233,12 @@ public class S3Map implements BasicTooltipProvider {
 	 * @return the point {@code p}
 	 */
 	public Point2D data2S3(double s1, double s2, double s3, Point2D p) {
-		// top (c): s3, right (d): s2, left (l): s1
-		// x in [-1, 1]; y in [-1/3, 2/3]
-		p.set(s2 - s1, (s3 - s2 - s1 + 1.0) * 0.5 - 1.0 / 3.0);
-		p.scale(s1 + s2 + s3);
-		p.set((p.getX() + 1.0) * 0.5, 2.0 / 3.0 - p.getY());
+		// barycentric combination of the three corners (lower left: s1, lower
+		// right: s2, top: s3); any missing mass, i.e. s1 + s2 + s3 < 1.0 (e.g.
+		// due to vacant sites or unlisted traits), is attributed to the centroid
+		// of the simplex, (0.5, 2/3). for s1 + s2 + s3 == 1.0 this reduces to the
+		// standard barycentric map onto the triangle's corners.
+		p.set(0.5 + 0.5 * (s2 - s1), 2.0 / 3.0 - s3 + (s1 + s2 + s3) / 3.0);
 		return p;
 	}
 
