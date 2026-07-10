@@ -648,16 +648,47 @@ public class PopGraph2D extends GenericPopGraph<String, Network2D> implements Sh
 
 	/**
 	 * The minimum width of a node in pixels.
+	 * <ul>
+	 * <li>Square lattices: {@code dw} is checked directly; {@code dh} is set
+	 * equal to {@code dw} afterwards, so no separate height check is
+	 * needed.</li>
+	 * <li>Triangular lattices: checked against {@code dw2} (half the node
+	 * width) rather than {@code dw} itself, which guarantees
+	 * {@code dw = 2 * dw2 >= 2 * MIN_DW} and, because {@code dh} is always
+	 * divided by a smaller denominator than {@code dw2}
+	 * ({@code side + 1 < side + 3}), also {@code dh >= dw2 >= MIN_DW} —
+	 * without a separate height check.</li>
+	 * <li>Honeycomb lattices: checked against {@code dw} (itself
+	 * {@code 2 * dw2}); as {@code dw} is always even this only ever excludes
+	 * the degenerate {@code dw2 == 0} case. See {@link #MIN_DH} for the
+	 * actual height constraint ({@code dh3}).</li>
+	 * </ul>
+	 * Also combined with {@link #MIN_DH} and {@link #MIN_DR} in the final
+	 * catch-all check after layout, which disables the graph only if width,
+	 * height and diameter are all below their respective minimums.
 	 */
-	static final int MIN_DW = 2;
+	static final int MIN_DW = 1;
 
 	/**
 	 * The minimum height of a node in pixels.
+	 * <ul>
+	 * <li>Square lattices: not checked directly (see {@link #MIN_DW}); by
+	 * construction {@code dh} always equals {@code dw}.</li>
+	 * <li>Triangular lattices: not checked directly; the constraint is
+	 * satisfied transitively through the {@link #MIN_DW} check on
+	 * {@code dw2}.</li>
+	 * <li>Honeycomb lattices: checked against {@code dh3} (one third of the
+	 * full hexagon height, {@code dh = 3 * dh3}), so the effective minimum
+	 * full height is {@code dh >= 3 * MIN_DH}.</li>
+	 * </ul>
+	 * Also combined with {@link #MIN_DW} and {@link #MIN_DR} in the final
+	 * catch-all check after layout, which disables the graph only if width,
+	 * height and diameter are all below their respective minimums.
 	 */
-	static final int MIN_DH = 2;
+	static final int MIN_DH = 1;
 
 	/**
-	 * The minimum diameter of a node in pixels.
+	 * The minimum diameter of a node in pixels for networks.
 	 */
 	static final double MIN_DR = 3.0;
 
@@ -770,7 +801,7 @@ public class PopGraph2D extends GenericPopGraph<String, Network2D> implements Sh
 		int bWidth = dw2 * (side + 1);
 		dw = 2 * dw2;
 		dh = diameter / (side + 1);
-		if (dw < MIN_DW || dh < MIN_DH) {
+		if (dw2 < MIN_DW) {
 			bounds.setSize(width, height);
 			return;
 		}
@@ -797,7 +828,7 @@ public class PopGraph2D extends GenericPopGraph<String, Network2D> implements Sh
 		dw = 2 * dw2;
 		dh3 = diameter / (3 * side + 1);
 		dh = 3 * dh3;
-		if (dw < MIN_DW || dh3 < Math.max(MIN_DH / 3, 1)) {
+		if (dw < MIN_DW || dh3 < MIN_DH) {
 			bounds.setSize(width, height);
 			return;
 		}
