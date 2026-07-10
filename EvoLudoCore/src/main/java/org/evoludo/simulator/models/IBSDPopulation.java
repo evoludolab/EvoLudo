@@ -1634,6 +1634,12 @@ public class IBSDPopulation extends IBSPopulation<Discrete, IBSDPopulation> {
 		traits = traitsNext;
 		traitsNext = swap;
 		updateTraitCount();
+		// bulk change to the whole population bypasses the single-site
+		// bookkeeping in commitTraitAt(int); invalidate the compact occupancy
+		// index (see IBSPopulation#occupiedSites) rather than trying to patch it
+		// up here - it is cheap to rebuild lazily, on demand, since this bulk
+		// path is already O(nPopulation)
+		invalidateOccupancyIndex();
 	}
 
 	/**
@@ -1774,6 +1780,14 @@ public class IBSDPopulation extends IBSPopulation<Discrete, IBSDPopulation> {
 			return;
 		traitsCount[oldtype]--;
 		traitsCount[newtype]++;
+		// keep the compact occupancy index (see IBSPopulation#occupiedSites) in
+		// sync with this single-site change, in O(1)
+		if (vacantIdx >= 0) {
+			if (oldtype == vacantIdx)
+				trackSiteOccupied(me);
+			else if (newtype == vacantIdx)
+				trackSiteVacated(me);
+		}
 	}
 
 	/**
@@ -2026,6 +2040,13 @@ public class IBSDPopulation extends IBSPopulation<Discrete, IBSDPopulation> {
 	@Override
 	public void init() {
 		super.init();
+		// the initXxx() methods below (as well as any subclass override that runs
+		// further direct trait changes after this super.init()) all set traits
+		// directly, bypassing the single-site bookkeeping in commitTraitAt(int);
+		// invalidate the compact occupancy index (see IBSPopulation#occupiedSites)
+		// rather than trying to patch it up here - it is rebuilt lazily, on
+		// demand, and this whole method is already O(nPopulation)
+		invalidateOccupancyIndex();
 		switch (init.type) {
 			case STRIPES:
 				initStripes();

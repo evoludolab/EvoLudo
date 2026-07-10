@@ -402,8 +402,120 @@ public abstract class IBSPopulation<M extends Module<?>, P extends IBSPopulation
 	protected int vacantIdx = -1;
 
 	/**
+	 * Compact index of the sites that are currently occupied, i.e. not vacant.
+	 * Enables drawing a uniformly random occupied individual in O(1) in
+	 * {@link #pickFocalSkipVacant()}/{@link #pickFocalSkipVacant(int)} instead of
+	 * scanning the population. Only the first {@link #getPopulationSize()}
+	 * entries are valid; the remainder is stale. Left {@code null} while
+	 * {@link #vacantIdx} is negative, since it is never consulted in that case.
+	 */
+	private int[] occupiedSites;
+
+	/**
+	 * Inverse of {@link #occupiedSites}: for an occupied site {@code n},
+	 * {@code siteToOccupied[n]} is its position in {@link #occupiedSites}. Stale
+	 * for vacant sites. Needed to locate an arbitrary, previously occupied site
+	 * within {@link #occupiedSites} in O(1) - both to remove it in
+	 * {@link #trackSiteVacated(int)} and to exclude it in
+	 * {@link #pickFocalSkipVacant(int)} - since neither operation can afford to
+	 * search for it.
+	 */
+	private int[] siteToOccupied;
+
+	/**
+	 * {@code true} if {@link #occupiedSites}/{@link #siteToOccupied} correctly
+	 * reflect the current occupancy of the population. Individual (asynchronous)
+	 * changes to a single site keep the index in sync incrementally, in O(1), via
+	 * {@link #trackSiteOccupied(int)}/{@link #trackSiteVacated(int)} and leave it
+	 * valid. Bulk changes that bypass those two methods - initialisation and
+	 * synchronous population updates - instead invalidate the index via
+	 * {@link #invalidateOccupancyIndex()}; it is then rebuilt from scratch,
+	 * lazily, the next time it is consulted.
+	 */
+	private boolean occupancyIndexValid = false;
+
+	/**
+	 * Mark the compact occupancy index ({@link #occupiedSites}) as stale. Must be
+	 * called by subclasses whenever sites may have changed occupancy in bulk,
+	 * bypassing {@link #trackSiteOccupied(int)}/{@link #trackSiteVacated(int)}
+	 * (e.g. initialisation or synchronous updates). Cheap and harmless to call
+	 * unconditionally, including while {@link #vacantIdx} is negative.
+	 */
+	protected final void invalidateOccupancyIndex() {
+		occupancyIndexValid = false;
+	}
+
+	/**
+	 * Rebuild {@link #occupiedSites}/{@link #siteToOccupied} from scratch by
+	 * scanning the entire population once, using {@link #isVacantAt(int)}.
+	 * Called lazily, at most once per bulk change, the next time an occupied
+	 * individual is drawn while the index is stale.
+	 */
+	private void rebuildOccupancyIndex() {
+		if (occupiedSites == null || occupiedSites.length != nPopulation) {
+			occupiedSites = new int[nPopulation];
+			siteToOccupied = new int[nPopulation];
+		}
+		int nOccupied = 0;
+		for (int n = 0; n < nPopulation; n++) {
+			if (isVacantAt(n))
+				continue;
+			siteToOccupied[n] = nOccupied;
+			occupiedSites[nOccupied] = n;
+			nOccupied++;
+		}
+		occupancyIndexValid = true;
+	}
+
+	/**
+	 * Record that site <code>index</code>, previously vacant, just became
+	 * occupied, keeping {@link #occupiedSites} in O(1) sync. Harmless no-op while
+	 * the index is currently stale, since it will be rebuilt from scratch before
+	 * it is next consulted.
+	 * <p>
+	 * Must be called after the population count already reflects this site's new
+	 * (occupied) status, e.g. after {@code traitsCount} has been updated, since
+	 * {@link #getPopulationSize()} is used to locate the new entry's slot.
+	 *
+	 * @param index the site that became occupied
+	 */
+	protected final void trackSiteOccupied(int index) {
+		if (!occupancyIndexValid)
+			return;
+		// getPopulationSize() already includes index, so its last valid slot,
+		// 0-based, is exactly getPopulationSize()-1
+		int pos = getPopulationSize() - 1;
+		siteToOccupied[index] = pos;
+		occupiedSites[pos] = index;
+	}
+
+	/**
+	 * Record that site <code>index</code>, previously occupied, just became
+	 * vacant, keeping {@link #occupiedSites} in O(1) sync by moving the last
+	 * occupied entry into the freed slot. Harmless no-op while the index is
+	 * currently stale, since it will be rebuilt from scratch before it is next
+	 * consulted.
+	 * <p>
+	 * Must be called after the population count already reflects this site's new
+	 * (vacant) status, e.g. after {@code traitsCount} has been updated, since
+	 * {@link #getPopulationSize()} is used to locate the vacated slot.
+	 *
+	 * @param index the site that became vacant
+	 */
+	protected final void trackSiteVacated(int index) {
+		if (!occupancyIndexValid)
+			return;
+		int pos = siteToOccupied[index];
+		// getPopulationSize() already excludes index, so the slot of the last
+		// remaining occupied entry, 0-based, is exactly getPopulationSize()
+		int last = occupiedSites[getPopulationSize()];
+		occupiedSites[pos] = last;
+		siteToOccupied[last] = pos;
+	}
+
+	/**
 	 * The number of traits in module. Convenience field.
-	 * 
+	 *
 	 * @see Module#getNTraits()
 	 */
 	protected int nTraits = -1;
@@ -856,116 +968,47 @@ public abstract class IBSPopulation<M extends Module<?>, P extends IBSPopulation
 
 	/**
 	 * Pick a focal individual uniformly at random but skipping vacant sites.
-	 * 
+	 * Draws from the compact index of occupied sites in O(1); see
+	 * {@link #occupiedSites}. Draws exactly one random number, from the same
+	 * <code>[0, n)</code> range as the population-scanning implementation this
+	 * replaced, so the sequence of outcomes over repeated calls has the same
+	 * distribution - only the (arbitrary) mapping from a drawn integer to a site
+	 * index differs, because sites now appear in {@link #occupiedSites} in the
+	 * order they were populated rather than in site-index order.
+	 *
 	 * @return the index of the picked individual
 	 */
 	private int pickFocalSkipVacant() {
-		int nTot = getPopulationSize();
-		int pick = random0n(nTot);
-		if (pick + pick > nTot) {
-			pick = nTot - pick - 1;
-			return pickFocalTail(pick);
-		}
-		return pickFocalHead(pick);
+		if (!occupancyIndexValid)
+			rebuildOccupancyIndex();
+		int nOccupied = getPopulationSize();
+		if (nOccupied <= 0)
+			return pickFailed();
+		return occupiedSites[random0n(nOccupied)];
 	}
 
 	/**
 	 * Pick a focal individual uniformly at random but excluding the individual with
-	 * index <code>excl</code>.
-	 * 
+	 * index <code>excl</code>, which must itself currently be occupied. Draws
+	 * from the compact index of occupied sites in O(1); see
+	 * {@link #occupiedSites}. Draws exactly one random number, from the same
+	 * <code>[0, n)</code> range as the population-scanning implementation this
+	 * replaced; see {@link #pickFocalSkipVacant()}.
+	 *
 	 * @param excl the index of the excluded individual
 	 * @return the index of the picked individual
 	 */
 	private int pickFocalSkipVacant(int excl) {
-		int nTot = getPopulationSize() - 1;
-		int pick = random0n(nTot);
-		if (pick + pick > nTot) {
-			pick = nTot - pick - 1;
-			return pickFocalTail(pick, excl);
-		}
-		return pickFocalHead(pick, excl);
-	}
-
-	/**
-	 * Pick a focal individual uniformly at random starting from head.
-	 * 
-	 * @param pick the pick index
-	 * @return the index of the picked individual
-	 */
-	private int pickFocalHead(int pick) {
-		// start search at head, cannot stop halfway
-		// vacancies may be concentrated at tail
-		for (int n = 0; n < nPopulation; n++) {
-			if (!isVacantAt(n) && --pick < 0)
-				return n;
-		}
-		// should not get here, does not return control
-		return pickFailed();
-	}
-
-	/**
-	 * Pick a focal individual uniformly at random starting from head, excluding
-	 * individual <code>excl</code>.
-	 * 
-	 * @param pick the pick index
-	 * @param excl the index of the excluded individual
-	 * @return the index of the picked individual
-	 */
-	private int pickFocalHead(int pick, int excl) {
-		// start search at head, cannot stop halfway
-		// vacancies may be concentrated at tail
-		for (int n = 0; n < excl; n++) {
-			if (!isVacantAt(n) && --pick < 0)
-				return n;
-		}
-		// two loops avoid repeated n != excl checks
-		for (int n = excl + 1; n < nPopulation; n++) {
-			if (!isVacantAt(n) && --pick < 0)
-				return n;
-		}
-		// should not get here, does not return control
-		return pickFailed();
-	}
-
-	/**
-	 * Pick a focal individual uniformly at random starting from tail.
-	 * 
-	 * @param pick the pick index
-	 * @return the index of the picked individual
-	 */
-	private int pickFocalTail(int pick) {
-		// start search at tail, cannot stop halfway
-		// vacancies may be concentrated at head
-		for (int n = nPopulation - 1; n >= 0; n--) {
-			if (!isVacantAt(n) && --pick < 0)
-				return n;
-		}
-		// should not get here, does not return control
-		return pickFailed();
-	}
-
-	/**
-	 * Pick a focal individual uniformly at random starting from tail, excluding
-	 * individual <code>excl</code>.
-	 * 
-	 * @param pick the pick index
-	 * @param excl the index of the excluded individual
-	 * @return the index of the picked individual
-	 */
-	private int pickFocalTail(int pick, int excl) {
-		// start search at tail, cannot stop halfway
-		// vacancies may be concentrated at head
-		for (int n = nPopulation - 1; n > excl; n--) {
-			if (!isVacantAt(n) && --pick < 0)
-				return n;
-		}
-		// two loops avoid repeated n != excl checks
-		for (int n = excl - 1; n >= 0; n--) {
-			if (!isVacantAt(n) && --pick < 0)
-				return n;
-		}
-		// should not get here, does not return control
-		return pickFailed();
+		if (!occupancyIndexValid)
+			rebuildOccupancyIndex();
+		int nOccupied = getPopulationSize();
+		if (nOccupied <= 1)
+			return pickFailed();
+		int pos = siteToOccupied[excl];
+		int pick = random0n(nOccupied - 1);
+		if (pick >= pos)
+			pick++;
+		return occupiedSites[pick];
 	}
 
 	/**
