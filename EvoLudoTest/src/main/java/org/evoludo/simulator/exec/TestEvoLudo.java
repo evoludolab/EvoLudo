@@ -38,7 +38,6 @@ import java.io.IOException;
 import java.io.ObjectOutputStream;
 import java.io.PrintStream;
 import java.text.DecimalFormat;
-import java.nio.file.FileAlreadyExistsException;
 import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -188,6 +187,15 @@ public class TestEvoLudo implements RunListener {
 	int nTestWarnings;
 
 	/**
+	 * The number of tests where the SHA of the reference did not match the SHA
+	 * of the result but the subsequent full comparison of the plists passed
+	 * anyway, e.g. because the reference predates a change to what is included
+	 * in the SHA. Excludes genuine failures - those are tracked separately in
+	 * {@link #nTestFailures} and must not inflate this count.
+	 */
+	int nSHAMismatches;
+
+	/**
 	 * Constructor for TestEvoLudo.
 	 */
 	public TestEvoLudo() {
@@ -250,13 +258,12 @@ public class TestEvoLudo implements RunListener {
 					// copy failed test to reports directory
 					try {
 						File src = search(referencesDir, dest);
-						Path dst = new File(reportsDir.getPath() + File.separator +
-								dest + "-old.plist" +
-								(src.getName().endsWith(".zip") ? ".zip" : "")).toPath();
+						String ext = ".plist" + (src.getName().endsWith(".zip") ? ".zip" : "");
+						// a leftover from an earlier failed generation attempt may already
+						// occupy the default quarantine name; keep it and pick the next
+						// free "-old-<n>" name instead of overwriting or aborting
+						Path dst = uniqueReportPath(dest + "-old", ext);
 						Files.move(src.toPath(), dst);
-					} catch (FileAlreadyExistsException e) {
-						logError("file '" + reportsDir + File.separator + dest + "' already exists.");
-						continue;
 					} catch (IOException e) {
 						logError("failed to move '" + referencesDir + File.separator + dest
 								+ "' to '" + reportsDir + File.separator + dest + "'.");
@@ -492,7 +499,8 @@ public class TestEvoLudo implements RunListener {
 		engine.setCLO("--seed 0 " + stripExport(clo) + " --delay 0");
 		int issues = engine.parseCLO();
 		if (issues > 0) {
-			reportTestFailure(currentTestLabel(task) + ": " + issues + " parsing issues with command line arguments - review!");
+			reportTestFailure(
+					currentTestLabel(task) + ": " + issues + " parsing issues with command line arguments - review!");
 			nTestFailures++;
 			nTests++;
 			return false;
@@ -628,6 +636,7 @@ public class TestEvoLudo implements RunListener {
 		}
 		String name = ref.getName();
 		int idx = name.indexOf(SHA_PREFIX);
+		boolean shaMismatch = false;
 		if (!skipSHA || idx < 0) {
 			// skip SHA check or no SHA in name
 			String shaReference = name.substring(idx + SHA_PREFIX.length()).replace(".zip", "").replace(".plist", "");
@@ -637,6 +646,7 @@ public class TestEvoLudo implements RunListener {
 				reportTestSuccess(name.substring(0, idx) + " SHA match!");
 				return ref;
 			}
+			shaMismatch = true;
 			logWarning("Testing: " + name.substring(0, idx) + " SHA mismatch! - comparing plists...");
 		}
 		// compare plists
@@ -650,8 +660,14 @@ public class TestEvoLudo implements RunListener {
 			reportTestFailure("failed to read reference file '" + ref.getAbsolutePath() + "'.");
 			return null;
 		}
-		if (compareRuns(ref, reference, result))
+		if (compareRuns(ref, reference, result)) {
+			// the plists agree despite the SHA mismatch - benign, e.g. a reference
+			// predating a change to what is included in the SHA; a genuine failure
+			// is tracked separately, in nTestFailures, and must not inflate this count
+			if (shaMismatch)
+				nSHAMismatches++;
 			return ref;
+		}
 		return null;
 	}
 
@@ -680,6 +696,27 @@ public class TestEvoLudo implements RunListener {
 		return null;
 	}
 
+	/**
+	 * Find a path in {@link #reportsDir} named {@code base + ext} for
+	 * quarantining a stale reference file. If that name is already taken - e.g.
+	 * by a leftover from an earlier failed generation attempt - append
+	 * "-1", "-2", ... before {@code ext} until a free name is found, matching
+	 * the numbering convention used elsewhere for report dumps (e.g.
+	 * "-failed-1.plist").
+	 *
+	 * @param base the base name of the file, without extension
+	 * @param ext  the extension to append, including the leading dot (e.g.
+	 *             ".plist" or ".plist.zip")
+	 * @return a path in {@link #reportsDir} that does not yet exist
+	 */
+	private Path uniqueReportPath(String base, String ext) {
+		File dst = new File(reportsDir.getPath() + File.separator + base + ext);
+		int counter = 0;
+		while (dst.exists())
+			dst = new File(reportsDir.getPath() + File.separator + base + "-" + (++counter) + ext);
+		return dst.toPath();
+	}
+
 	@Override
 	public synchronized void modelStopped() {
 		isRunning = false;
@@ -699,6 +736,7 @@ public class TestEvoLudo implements RunListener {
 		nTestFailures = 0;
 		nTestMinor = 0;
 		nTestWarnings = 0;
+		nSHAMismatches = 0;
 		if (performTest) {
 			test(testsDir);
 			logTitle("Tests completed.");
@@ -706,6 +744,9 @@ public class TestEvoLudo implements RunListener {
 			generate();
 			logTitle("Generating completed.");
 		}
+		if (nSHAMismatches > 0)
+			logWarning(nSHAMismatches + " out of " + nTests
+					+ " tests had a SHA mismatch only.");
 		if (nTestWarnings > 0)
 			logWarning(nTestWarnings + " out of " + nTests + " tests had warnings.");
 		if (nTestMinor > 0)

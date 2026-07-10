@@ -54,8 +54,16 @@ public class Plist extends HashMap<String, Object> {
 	/**
 	 * The flag to indicate if the comparison should fail fast, i.e. after first
 	 * issue encountered.
+	 * <p>
+	 * <strong>Note:</strong> {@code transient} - this and the other bookkeeping
+	 * fields below track the state of a {@link #diff(Plist, Collection)} call
+	 * against some other, unrelated plist; they are not part of this plist's own
+	 * data and must be excluded from (Java object) serialization. Otherwise a
+	 * content hash computed from the serialized plist depends on whatever
+	 * comparison happened to be run on it previously, rather than purely on its
+	 * own content.
 	 */
-	boolean failFast = false;
+	transient boolean failFast = false;
 
 	/**
 	 * The number of repeated messages to report before skipping further messages.
@@ -448,30 +456,34 @@ public class Plist extends HashMap<String, Object> {
 	}
 
 	/**
-	 * The number of issues found.
+	 * The number of issues found. See {@link #failFast} for why this is
+	 * {@code transient}.
 	 */
-	private int nIssues;
+	private transient int nIssues;
 
 	/**
-	 * The number of numerical issues found.
+	 * The number of numerical issues found. See {@link #failFast} for why this
+	 * is {@code transient}.
 	 */
-	private int nNumerical;
+	private transient int nNumerical;
 
 	/**
 	 * The number of times a particular type of issue is reported before skipping
-	 * any further ones.
+	 * any further ones. See {@link #failFast} for why this is {@code transient}.
 	 */
-	private int nRepeat;
+	private transient int nRepeat;
 
 	/**
-	 * The previous message.
+	 * The previous message. See {@link #failFast} for why this is
+	 * {@code transient}.
 	 */
-	private String prevmsg;
+	private transient String prevmsg;
 
 	/**
-	 * The number of times the previous message was repeated.
+	 * The number of times the previous message was repeated. See
+	 * {@link #failFast} for why this is {@code transient}.
 	 */
-	private int repeat;
+	private transient int repeat;
 
 	/**
 	 * Process a difference.
