@@ -650,6 +650,12 @@ public abstract class Module<T extends Module<T>>
 		// prevent requesting re-parsing of CLOs on initial load
 		if (this.nTraits > 0 && (this.nTraits != nTraits))
 			engine.requestParseCLO();
+		if (this.nTraits != nTraits || this.vacantIdx != vacantIdx) {
+			// cached names/colors are sized and populated for the previous number
+			// of traits (and vacant index) - discard so they get regenerated
+			traitName = null;
+			traitColor = null;
+		}
 		this.nTraits = nTraits;
 		this.vacantIdx = vacantIdx;
 	}
@@ -861,13 +867,16 @@ public abstract class Module<T extends Module<T>>
 	 */
 	public boolean setTraitColors(Color[] colors) {
 		if (colors == null) {
-			colors = new Color[nTraits];
-			System.arraycopy(defaultColor, 0, colors, 0, Math.min(nTraits, defaultColor.length));
-			if (nTraits > defaultColor.length) {
+			// vacant sites get their color inserted below, like for any other
+			// caller-supplied array - so only the active traits need default colors here
+			int nColors = hasVacant() ? nTraits - 1 : nTraits;
+			colors = new Color[nColors];
+			System.arraycopy(defaultColor, 0, colors, 0, Math.min(nColors, defaultColor.length));
+			if (nColors > defaultColor.length) {
 				// add random colors if needed - do not use the shared RNG to prevent
 				// interfering with reproducibility
 				RNGDistribution rng = new RNGDistribution.Uniform();
-				for (int n = defaultColor.length; n < nTraits; n++)
+				for (int n = defaultColor.length; n < nColors; n++)
 					colors[n] = new Color(rng.random0n(256), rng.random0n(256), rng.random0n(256));
 			}
 		}
