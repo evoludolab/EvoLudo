@@ -191,6 +191,16 @@ public class CLOption implements Comparable<CLOption> {
 	String defaultArg = null;
 
 	/**
+	 * The parse priority of this option. Options with a lower priority are
+	 * parsed before options with a higher one; ties fall back to alphabetical
+	 * order by {@link #name} (the previous, sole ordering criterion). Defaults
+	 * to {@code 0} for all options.
+	 *
+	 * @see #setPriority(int)
+	 */
+	private int priority = 0;
+
+	/**
 	 * The list of valid keys (if applicable).
 	 */
 	HashMap<String, Key> keys = null;
@@ -1025,9 +1035,27 @@ public class CLOption implements Comparable<CLOption> {
 		description = descr;
 	}
 
+	/**
+	 * Set the parse priority of this option, see {@link #priority}. Use this
+	 * when this option's valid argument range depends on another option that
+	 * would otherwise sort later, alphabetically, e.g. an explicit matrix sized
+	 * by a count set through a separate option - assign the count option a lower
+	 * priority so it is always parsed first, instead of relying on the automatic
+	 * reparse (see {@link org.evoludo.simulator.CLOController#requestParseCLO()})
+	 * to fix up a transient failure after the fact.
+	 *
+	 * @param priority the parse priority (lower parses first)
+	 * @return this option, for chaining
+	 */
+	public CLOption setPriority(int priority) {
+		this.priority = priority;
+		return this;
+	}
+
 	@Override
 	public int compareTo(CLOption opt) {
-		return name.compareTo(opt.getName());
+		int cmp = Integer.compare(priority, opt.priority);
+		return cmp != 0 ? cmp : name.compareTo(opt.getName());
 	}
 
 	@Override
