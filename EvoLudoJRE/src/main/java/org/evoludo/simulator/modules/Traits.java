@@ -239,6 +239,13 @@ public class Traits extends Discrete implements Payoffs,
 	/*
 	 * command line parsing stuff
 	 */
+	// given priority over other options, see CLOption#setPriority(int), because
+	// cloPayoff sizes its explicit matrix against the current number of traits
+	// and so must see this option applied first - without it, a stale trait
+	// count during the first of the two parsing passes silently discards the
+	// requested matrix, replacing it with a random one (see
+	// initPayoffs()/PAYOFF_MATRIX) and burning RNG draws that a properly
+	// ordered, single pass would never consume
 	public final CLOption cloTraits = new CLOption("traits", "2", CLOCategory.Module,
 			"--traits <t>    number of traits", new CLODelegate() {
 				@Override
@@ -246,7 +253,7 @@ public class Traits extends Discrete implements Payoffs,
 					setNTraits(CLOParser.parseInteger(arg));
 					return true;
 				}
-			});
+			}).setPriority(-1);
 
 	public final CLOption cloPayoff = new CLOption("paymatrix", "const", CLOCategory.Module,
 			"--paymatrix <a11,a12,...,a1n;...;an1,an2,...,ann>  nxn payoff matrix", new CLODelegate() {
