@@ -106,8 +106,6 @@ removed. -->
 	}
 	.deck {
 		clear: both;
-		margin-top: 4pt;
-		margin-bottom: 4pt;
 	}
 	.slider {
 		clear: both;
