@@ -870,6 +870,10 @@ public abstract class AbstractGraph<B> extends FocusPanel
 		clearHistory();
 		updateCanvas();
 		zoom();
+		// recalculate bounds so that any message reflecting a still-valid display
+		// constraint (e.g. population too big) is restored rather than left cleared
+		// with stale, unusable dimensions
+		calcBounds();
 	}
 
 	/**

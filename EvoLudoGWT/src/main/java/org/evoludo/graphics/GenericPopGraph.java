@@ -353,8 +353,11 @@ public abstract class GenericPopGraph<T, N extends Network<?>> extends AbstractG
 
 	@Override
 	public void reset() {
-		super.reset();
+		// invalidate() clears any transient (e.g. layout) message; run it before
+		// super.reset() so the final calcBounds() there is the one that decides
+		// whether a display-constraint message (e.g. population too big) applies
 		invalidate();
+		super.reset();
 	}
 
 	/**
