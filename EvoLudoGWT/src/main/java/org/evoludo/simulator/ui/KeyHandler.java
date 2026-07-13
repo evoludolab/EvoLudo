@@ -64,6 +64,17 @@ public class KeyHandler {
 	private boolean isShiftDown = false;
 
 	/**
+	 * Tracks whether the Ctrl modifier is currently pressed.
+	 */
+	private boolean isCtrlDown = false;
+
+	/**
+	 * Tracks whether the Meta (Cmd on macOS, Windows key elsewhere) modifier is
+	 * currently pressed.
+	 */
+	private boolean isMetaDown = false;
+
+	/**
 	 * String value emitted when the Alt key is pressed.
 	 */
 	public static final String KEY_ALT = "Alt";
@@ -72,6 +83,16 @@ public class KeyHandler {
 	 * String value emitted when the Shift key is pressed.
 	 */
 	public static final String KEY_SHIFT = "Shift";
+
+	/**
+	 * String value emitted when the Ctrl key is pressed.
+	 */
+	public static final String KEY_CTRL = "Control";
+
+	/**
+	 * String value emitted when the Meta key is pressed.
+	 */
+	public static final String KEY_META = "Meta";
 
 	/**
 	 * String value emitted when the Enter key is pressed.
@@ -289,6 +310,9 @@ public class KeyHandler {
 	 * <ol>
 	 * <li>this EvoLudo model is not visible.
 	 * <li>in an ePub, except when on a standalone page.
+	 * <li>the Ctrl or Meta (Cmd) modifier is held, since none of the shortcuts
+	 * below explicitly require it and browser/OS shortcuts (e.g. {@code Cmd-C})
+	 * must keep working.
 	 * </ol>
 	 * <li>{@code keydown} events do not propagate further
 	 * ({@code stopPropagation()} is always called).
@@ -338,7 +362,13 @@ public class KeyHandler {
 		}
 		if (key.equals(KEY_SHIFT))
 			isShiftDown = true;
+		if (key.equals(KEY_CTRL))
+			isCtrlDown = true;
+		if (key.equals(KEY_META))
+			isMetaDown = true;
 		if (NativeJS.isElementActive(gui.getCLOElement()))
+			return false;
+		if (isCtrlOrMetaDown(key))
 			return false;
 		AbstractView<?> activeView = gui.getActiveView();
 		if (activeView != null && activeView.onKeyDown(key))
@@ -389,6 +419,9 @@ public class KeyHandler {
 	 * <li>{@code keyup} events are ignored if:
 	 * <ol>
 	 * <li>this EvoLudo model is not visible.
+	 * <li>the Ctrl or Meta (Cmd) modifier is held, since none of the shortcuts
+	 * below explicitly require it and browser/OS shortcuts (e.g. {@code Cmd-C})
+	 * must keep working.
 	 * <li>the command line options field has the focus. With
 	 * the exception of {@code Shift-Enter} to apply the new settings to the model.
 	 * <li>when a context menu is open, visible menu items get priority before view
@@ -474,6 +507,8 @@ public class KeyHandler {
 		updateModifierStates(key);
 		if (gui.isEPub() && !gui.isEPubStandalone())
 			return false;
+		if (isCtrlOrMetaDown(key))
+			return false;
 		if (handleCLOActiveKeys(key))
 			return true;
 		if (ContextMenu.handleKey(key, isShiftDown, isAltDown))
@@ -496,6 +531,27 @@ public class KeyHandler {
 		}
 		if (key.equals(KEY_SHIFT))
 			isShiftDown = false;
+		if (key.equals(KEY_CTRL))
+			isCtrlDown = false;
+		if (key.equals(KEY_META))
+			isMetaDown = false;
+	}
+
+	/**
+	 * Checks whether the Ctrl or Meta (Cmd) modifier is currently pressed while a
+	 * key other than a modifier key itself is being processed. None of the
+	 * shortcuts handled by this class or the views it delegates to explicitly
+	 * require Ctrl or Meta, so any such combination (e.g. {@code Cmd-C} to copy)
+	 * must be left to the browser/OS instead of triggering a shortcut.
+	 *
+	 * @param key the key currently being processed
+	 * @return {@code true} if Ctrl or Meta is down and {@code key} is not itself
+	 *         a modifier key
+	 */
+	private boolean isCtrlOrMetaDown(String key) {
+		if (!isCtrlDown && !isMetaDown)
+			return false;
+		return !key.equals(KEY_ALT) && !key.equals(KEY_SHIFT) && !key.equals(KEY_CTRL) && !key.equals(KEY_META);
 	}
 
 	/**
