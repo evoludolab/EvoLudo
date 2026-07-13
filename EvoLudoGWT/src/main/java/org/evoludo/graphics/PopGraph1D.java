@@ -497,15 +497,17 @@ public class PopGraph1D extends PopGraph2D {
 		if (hasMessage || network == null || invalidated || network.isStatus(Status.LAYOUT_IN_PROGRESS))
 			return FINDNODEAT_OUT_OF_BOUNDS;
 
-		x = x - (int) (style.frameWidth * zoomFactor + 0.5);
-		y = y - (int) (style.frameWidth * zoomFactor - 0.5);
-		if (!bounds.contains(x, y))
+		// the frame border is a centered stroke drawn inside the zoomed content
+		// transform, so only half its width extends past the content origin that
+		// bounds refers to; both axes need the identical correction
+		double sx = (viewCorner.getX() + x - bounds.getX()) / zoomFactor - style.frameWidth * 0.5;
+		double sy = (viewCorner.getY() + y - bounds.getY()) / zoomFactor - style.frameWidth * 0.5;
+		if (sx < 0.0 || sx > bounds.getWidth() || sy < 0.0 || sy > bounds.getHeight())
 			return FINDNODEAT_OUT_OF_BOUNDS;
-
-		int sx = (int) ((viewCorner.getX() + x - bounds.getX()) / zoomFactor + 0.5);
-		int sy = (int) ((viewCorner.getY() + y - bounds.getY()) / zoomFactor + 0.5);
-		int c = sx / dw;
-		int r = sy / dh;
+		int isx = (int) (sx + 0.5);
+		int isy = (int) (sy + 0.5);
+		int c = isx / dw;
+		int r = isy / dh;
 		if (c < 0 || c >= geometry.getSize() || r < 0)
 			return FINDNODEAT_OUT_OF_BOUNDS;
 		return r * geometry.getSize() + c;

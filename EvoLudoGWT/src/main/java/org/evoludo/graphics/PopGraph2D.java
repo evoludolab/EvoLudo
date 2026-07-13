@@ -928,11 +928,11 @@ public class PopGraph2D extends GenericPopGraph<String, Network2D> implements Sh
 		if (hasMessage || network == null || invalidated || network.isStatus(Status.LAYOUT_IN_PROGRESS))
 			return FINDNODEAT_OUT_OF_BOUNDS;
 
-		// some heuristic adjustments... cause remains mysterious
-		x = x - (int) (style.frameWidth * zoomFactor + 0.5);
-		y = y - (int) (style.frameWidth * zoomFactor - 0.5);
-		double sx = (viewCorner.getX() + x - bounds.getX()) / zoomFactor;
-		double sy = (viewCorner.getY() + y - bounds.getY()) / zoomFactor;
+		// the frame border is a centered stroke drawn inside the zoomed content
+		// transform, so only half its width extends past the content origin that
+		// bounds refers to; both axes need the identical correction
+		double sx = (viewCorner.getX() + x - bounds.getX()) / zoomFactor - style.frameWidth * 0.5;
+		double sy = (viewCorner.getY() + y - bounds.getY()) / zoomFactor - style.frameWidth * 0.5;
 		if (sx < 0.0 || sx > bounds.getWidth() || sy < 0.0 || sy > bounds.getHeight())
 			return FINDNODEAT_OUT_OF_BOUNDS;
 		int isx = (int) (sx + 0.5);
@@ -1253,11 +1253,9 @@ public class PopGraph2D extends GenericPopGraph<String, Network2D> implements Sh
 
 	@Override
 	protected boolean inside(int x, int y) {
-		// heuristic offset aligns with findNodeAt bounds checks
-		int adjX = x - (int) (style.frameWidth * zoomFactor + 0.5);
-		int adjY = y - (int) (style.frameWidth * zoomFactor - 0.5);
-		double sx = (viewCorner.getX() + adjX - bounds.getX()) / zoomFactor;
-		double sy = (viewCorner.getY() + adjY - bounds.getY()) / zoomFactor;
+		// keep aligned with findNodeAt() for consistency
+		double sx = (viewCorner.getX() + x - bounds.getX()) / zoomFactor - style.frameWidth * 0.5;
+		double sy = (viewCorner.getY() + y - bounds.getY()) / zoomFactor - style.frameWidth * 0.5;
 		return sx >= 0.0 && sx <= bounds.getWidth() && sy >= 0.0 && sy <= bounds.getHeight();
 	}
 
