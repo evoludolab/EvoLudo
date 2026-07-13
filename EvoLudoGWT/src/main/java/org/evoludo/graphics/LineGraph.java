@@ -38,7 +38,6 @@ import org.evoludo.geom.Point2D;
 import org.evoludo.graphics.AbstractGraph.HasLogScaleY;
 import org.evoludo.graphics.AbstractGraph.Shifting;
 import org.evoludo.graphics.AbstractGraph.Zooming;
-import org.evoludo.math.ArrayMath;
 import org.evoludo.math.Functions;
 import org.evoludo.simulator.ColorMapCSS;
 import org.evoludo.simulator.models.Data;
@@ -201,6 +200,38 @@ public class LineGraph extends AbstractGraph<double[]>
 	private static final double ZOOM_FIT_MARGIN = 0.05;
 
 	/**
+	 * Whether the model tracks real time for the current run (as opposed to only
+	 * generation/update counts), see {@code EvoLudo.Model#getTime()}. Determines
+	 * whether the "use real time" toggle is shown at all.
+	 */
+	private boolean realTimeAvailable = false;
+
+	/**
+	 * Whether the x-axis currently plots real time (the value appended at the end
+	 * of each buffered sample) rather than updates (the value prepended at the
+	 * start). Defaults to real time as soon as it becomes available, unless the
+	 * user has explicitly picked an axis through the context menu.
+	 */
+	private boolean useRealTime = false;
+
+	/**
+	 * Whether {@link #useRealTime} was set explicitly by the user through the
+	 * context menu, in which case it is no longer overridden automatically when
+	 * {@link #setRealTimeAvailable(boolean)} is called.
+	 */
+	private boolean userSetAxis = false;
+
+	/**
+	 * The x-axis label to show when plotting updates.
+	 */
+	private String updatesLabel = "generation";
+
+	/**
+	 * The x-axis label to show when plotting real time.
+	 */
+	private String realTimeLabel = "time";
+
+	/**
 	 * Create new line graph for {@code view}. The {@code id} is used to
 	 * distinguish different graphs of the same module to visualize different
 	 * components of the data and represents the index of the data column.
@@ -327,34 +358,44 @@ public class LineGraph extends AbstractGraph<double[]>
 	/**
 	 * Add data to the graph. The time {@code t} is prepended to the data as the
 	 * first element.
-	 * 
+	 *
 	 * @evoludo.impl The data array is cloned and the time prepended before adding
 	 *               it to the buffer.
-	 * 
-	 * @param t    the time of the data
-	 * @param data the data to add
+	 *
+	 * @param t        the time (updates) of the data
+	 * @param data     the data to add
+	 * @param realTime the real time of the data, or {@code Double.NaN} if not
+	 *                 available for this run
 	 */
-	public void addData(double t, double[] data) {
-		addData(prependTime2Data(t, data));
+	public void addData(double t, double[] data, double realTime) {
+		addData(prependTime2Data(t, data), realTime);
 	}
 
 	/**
-	 * Add data to the graph.
-	 * 
+	 * Add data to the graph. Real time is appended as the last element of the
+	 * stored sample, alongside updates prepended as the first element, so that
+	 * either can be selected as the x-axis without maintaining a second, separately
+	 * synchronized buffer.
+	 *
 	 * @evoludo.impl If the change relative to the latest buffered sample is
-	 *               negligible, only the latest sample's time entry is updated
+	 *               negligible, only the latest sample's time entries are updated
 	 *               unless the new sample is needed to anchor the beginning of a
 	 *               flat segment. Model initialization inserts a separator and
 	 *               starts a new buffered time series. Changes in the direction of
 	 *               time are always appended, and the following sample is retained
 	 *               once to anchor the new direction. Otherwise the data array is
 	 *               directly added to the buffer. It is the caller's
-	 *               responsibility to ensure that the first entry represents time
-	 *               and the data remains unmodified.
-	 * 
-	 * @param data the data to add
+	 *               responsibility to ensure that the first entry represents
+	 *               updates and the data remains unmodified.
+	 *
+	 * @param data     the data to add (updates prepended)
+	 * @param realTime the real time of the data, or {@code Double.NaN} if not
+	 *                 available for this run
 	 */
-	public void addData(double[] data) {
+	public void addData(double[] data, double realTime) {
+		double[] extended = Arrays.copyOf(data, data.length + 1);
+		extended[data.length] = realTime;
+		data = extended;
 		if (newTimeseries) {
 			newTimeseries = false;
 			if (!buffer.isEmpty()) {
@@ -396,7 +437,9 @@ public class LineGraph extends AbstractGraph<double[]>
 				return;
 			}
 			if (updateTimeOnly(data, last)) {
+				// extend the flat segment along both axes
 				last[0] = data[0];
+				last[last.length - 1] = data[data.length - 1];
 				return;
 			}
 		}
@@ -407,7 +450,7 @@ public class LineGraph extends AbstractGraph<double[]>
 	/**
 	 * Append a sample to the history and update autoscaling metadata.
 	 *
-	 * @param data the sample to append
+	 * @param data the sample to append (updates prepended, real time appended)
 	 */
 	private void appendData(double[] data) {
 		buffer.append(data);
@@ -417,7 +460,8 @@ public class LineGraph extends AbstractGraph<double[]>
 	/**
 	 * Append an in-buffer separator that marks the beginning of a new time series.
 	 *
-	 * @param length the length of the separator sample
+	 * @param length the length of the separator sample (including the trailing
+	 *               real-time column)
 	 */
 	private void appendSeparator(int length) {
 		double[] separator = new double[length];
@@ -428,32 +472,35 @@ public class LineGraph extends AbstractGraph<double[]>
 
 	/**
 	 * Update autoscaled {@code y}-range from a newly appended sample.
-	 * 
-	 * @param data the latest buffered sample (time prepended)
+	 *
+	 * @param data the latest buffered sample (updates prepended, real time
+	 *             appended)
 	 */
 	private void updateAutoscale(double[] data) {
-		// time does not count for min/max
-		double t = data[0];
-		data[0] = style.yMin;
-		double min = ArrayMath.min(data);
-		if (style.logScaleY && min <= 0.0) {
-			// keep log scale: ignore non-positive point for autoscale updates
-			data[0] = t;
-			return;
+		// only the plotted value columns (1..nLines) count for min/max - the
+		// leading updates and trailing real-time columns are excluded
+		double min = Double.POSITIVE_INFINITY;
+		double max = Double.NEGATIVE_INFINITY;
+		for (int n = 1; n <= nLines; n++) {
+			double v = data[n];
+			if (!Double.isFinite(v))
+				continue;
+			min = Math.min(min, v);
+			max = Math.max(max, v);
 		}
+		if (style.logScaleY && min <= 0.0)
+			// keep log scale: ignore non-positive point for autoscale updates
+			return;
 		if (min <= 0.0)
 			style.logScaleY = false;
 		if (style.autoscaleY) {
 			// dynamically extend range if needed - never reduce (would need to
 			// consult RingBuffer for this)
-			if (!Double.isNaN(min))
+			if (min != Double.POSITIVE_INFINITY)
 				style.yMin = Math.min(style.yMin, Functions.roundDown(min));
-			data[0] = style.yMax;
-			double max = ArrayMath.max(data);
-			if (!Double.isNaN(max))
+			if (max != Double.NEGATIVE_INFINITY)
 				style.yMax = Math.max(style.yMax, Functions.roundUp(max));
 		}
-		data[0] = t;
 	}
 
 	/**
@@ -501,15 +548,29 @@ public class LineGraph extends AbstractGraph<double[]>
 	 *         should be hidden
 	 */
 	private double historyStepWidth(double[] current, double[] prev) {
-		double dt = Math.abs(current[0] - prev[0]);
+		double dt = Math.abs(xValue(current) - xValue(prev));
 		if (!Double.isFinite(dt) || dt == 0.0)
 			return 0.0;
 		return dt;
 	}
 
+	/**
+	 * Return the x-coordinate of a buffered (or interpolated) sample for the
+	 * currently selected axis: the leading updates column, or the trailing real
+	 * time column when {@link #useRealTime} is set. Both columns are {@code NaN}
+	 * on a time-series separator, so axis selection does not affect separator
+	 * detection.
+	 *
+	 * @param sample the sample, updates prepended and real time appended
+	 * @return the x-coordinate to use for display
+	 */
+	private double xValue(double[] sample) {
+		return useRealTime ? sample[sample.length - 1] : sample[0];
+	}
+
 	@Override
 	protected boolean keepSample(RingBuffer<double[]> buffer, double[] current, double[] last) {
-		double max = maxDelta(current, last);
+		double max = maxValueDelta(current, last);
 		if (!Double.isFinite(max))
 			return true;
 		if (max > MIN_NORM_DELTA)
@@ -527,7 +588,33 @@ public class LineGraph extends AbstractGraph<double[]>
 		if (!iter.hasNext())
 			return false;
 		double[] prev = iter.next();
-		return maxDelta(last, prev) > MIN_NORM_DELTA;
+		return maxValueDelta(last, prev) > MIN_NORM_DELTA;
+	}
+
+	/**
+	 * Like {@code maxDelta(double[], double[])} but scoped to the plotted value
+	 * columns ({@code 1..nLines}), excluding the leading updates and trailing
+	 * real-time columns so that neither ever-increasing axis can interfere with
+	 * decimation of near-identical samples.
+	 *
+	 * @param current the current sample
+	 * @param last    the reference sample
+	 * @return the maximum absolute normalized difference among plotted values, or
+	 *         {@link Double#POSITIVE_INFINITY} if the samples are invalid or
+	 *         contain non-finite entries
+	 */
+	private double maxValueDelta(double[] current, double[] last) {
+		if (current == null || last == null || current.length != last.length || current.length < 2)
+			return Double.POSITIVE_INFINITY;
+		double max = 0.0;
+		for (int n = 1; n <= nLines; n++) {
+			double a = current[n];
+			double b = last[n];
+			if (!Double.isFinite(a) || !Double.isFinite(b))
+				return Double.POSITIVE_INFINITY;
+			max = Math.max(max, Math.abs(normDelta(a, b)));
+		}
+		return max;
 	}
 
 	@Override
@@ -544,7 +631,7 @@ public class LineGraph extends AbstractGraph<double[]>
 		if (!style.autoscaleY)
 			return;
 		double[] min = buffer.min(this::compareData);
-		double bufmin = ArrayMath.min(min);
+		double bufmin = minValue(min);
 		if (bufmin < 0.0) {
 			noLogY();
 			return;
@@ -566,26 +653,35 @@ public class LineGraph extends AbstractGraph<double[]>
 	}
 
 	/**
-	 * Compare two data arrays based on their minimum value (ignoring first entry,
-	 * time). Returns a negative integer, zero, or a positive integer if the minimum
-	 * of the first argument is less than, equal to, or greater than the second,
-	 * respectively.
-	 * 
+	 * Compare two data arrays based on their minimum plotted value (ignoring the
+	 * leading updates and trailing real-time columns). Returns a negative
+	 * integer, zero, or a positive integer if the minimum of the first argument
+	 * is less than, equal to, or greater than the second, respectively.
+	 *
 	 * @param o1 the first data array
 	 * @param o2 the second data array
 	 * @return a negative integer, zero, or a positive integer
 	 */
 	private int compareData(double[] o1, double[] o2) {
-		// ignore time
-		double t = o1[0];
-		o1[0] = Double.MAX_VALUE;
-		double m1 = ArrayMath.min(o1);
-		o1[0] = t;
-		t = o2[0];
-		o2[0] = Double.MAX_VALUE;
-		double m2 = ArrayMath.min(o2);
-		o2[0] = t;
-		return Double.compare(m1, m2);
+		return Double.compare(minValue(o1), minValue(o2));
+	}
+
+	/**
+	 * Get the minimum plotted value ({@code 1..nLines}) of a buffered sample,
+	 * excluding the leading updates and trailing real-time columns.
+	 *
+	 * @param data the sample
+	 * @return the minimum plotted value, or {@link Double#MAX_VALUE} if none is
+	 *         finite
+	 */
+	private double minValue(double[] data) {
+		double min = Double.MAX_VALUE;
+		for (int n = 1; n <= nLines; n++) {
+			double v = data[n];
+			if (Double.isFinite(v))
+				min = Math.min(min, v);
+		}
+		return min;
 	}
 
 	@Override
@@ -1088,8 +1184,7 @@ public class LineGraph extends AbstractGraph<double[]>
 				.append(TABLE_ROW_START_RIGHT)
 				.append(style.xLabel)
 				.append(TABLE_CELL_NEXT)
-				// .append(Formatter.format(r.time, 2))
-				.append(Formatter.format(inter[0], 2))
+				.append(Formatter.format(xValue(inter), 2))
 				.append(TABLE_ROW_END);
 
 		Color[] colors = module.getMeanColors();
@@ -1126,14 +1221,14 @@ public class LineGraph extends AbstractGraph<double[]>
 	 * @param colors the colors for each trait
 	 */
 	private void appendTipTraits(StringBuilder tip, double[] inter, Color[] colors) {
-		// N.B. length includes time at index 0
-		int len = inter.length;
+		// N.B. inter has updates prepended and real time appended around the
+		// nLines plotted values - bound the loop by nLines, not inter.length
 		Data type = view.getType();
-		for (int n = 0; n < len - 1; n++) {
+		for (int n = 0; n < nLines; n++) {
 			int n1 = n + 1;
 			String name;
 			Color color;
-			if (n1 == len - 1 && type == Data.FITNESS) {
+			if (n1 == nLines && type == Data.FITNESS) {
 				name = "average";
 				color = Color.BLACK;
 			} else {
@@ -1210,20 +1305,82 @@ public class LineGraph extends AbstractGraph<double[]>
 				style.xTickOffset = 0.0;
 			paint(true);
 		});
+		ContextMenuCheckBoxItem realTimeMenu = new ContextMenuCheckBoxItem("Use " + realTimeLabel, () -> {
+			userSetAxis = true;
+			switchAxis(!useRealTime);
+		});
 		String axisLabel = style.xLabel == null ? "time" : style.xLabel;
 		autoscaleYMenu.setChecked(style.autoscaleY);
 		logYAxesMenu.setChecked(style.logScaleY);
 		logYAxesMenu.setEnabled(style.yMin >= 0.0);
 		absoluteTimeMenu.setText("Absolute " + axisLabel);
 		absoluteTimeMenu.setChecked(style.offsetXTickLabels);
+		realTimeMenu.setChecked(useRealTime);
+		realTimeMenu.setEnabled(realTimeAvailable);
 		axesMenu.addHeader("X-axis");
 		axesMenu.add(fullXRangeMenu);
 		axesMenu.add(absoluteTimeMenu);
+		if (realTimeAvailable)
+			axesMenu.add(realTimeMenu);
 		axesMenu.addHeader("Y-axis");
 		axesMenu.add(autoscaleYMenu);
 		fullYRangeMenu.setEnabled(style.percentY);
 		axesMenu.add(fullYRangeMenu);
 		axesMenu.add(logYAxesMenu);
+	}
+
+	/**
+	 * Switch the x-axis between updates and real time, relabelling the axis and
+	 * recomputing the visible window and tick spacing for the newly selected
+	 * axis. The two axes are not linearly related (real time can advance
+	 * arbitrarily faster or slower than updates depending on the model's
+	 * dynamics), so the previous zoom/pan state cannot be carried over
+	 * meaningfully - the full buffered history on the new axis is shown instead.
+	 *
+	 * @param realTime {@code true} to plot real time, {@code false} for updates
+	 */
+	private void switchAxis(boolean realTime) {
+		if (realTime == useRealTime)
+			return;
+		useRealTime = realTime;
+		style.xLabel = useRealTime ? realTimeLabel : updatesLabel;
+		if (updateXRangeFromBuffer())
+			style.xIncr = (style.xMax - style.xMin) / Math.max(1.0, steps);
+		if (style.offsetXTickLabels)
+			updateXTickOffset();
+		paint(true);
+	}
+
+	/**
+	 * Set whether real time is available for the current run, see
+	 * {@code EvoLudo.Model#getTime()}. Enables the "Use {@link #realTimeLabel}"
+	 * context menu entry; if not available, forces the axis back to updates. The
+	 * first time real time becomes available it is selected by default, unless
+	 * the user has already picked an axis explicitly through the context menu.
+	 *
+	 * @param available {@code true} if real time is tracked for this run
+	 */
+	public void setRealTimeAvailable(boolean available) {
+		realTimeAvailable = available;
+		if (!available) {
+			switchAxis(false);
+			return;
+		}
+		if (!userSetAxis)
+			switchAxis(true);
+	}
+
+	/**
+	 * Set the x-axis labels for the updates and real-time axes, respectively.
+	 * Applies immediately to the currently selected axis.
+	 *
+	 * @param updatesLabel  the label to show when plotting updates
+	 * @param realTimeLabel the label to show when plotting real time
+	 */
+	public void setAxisLabels(String updatesLabel, String realTimeLabel) {
+		this.updatesLabel = updatesLabel;
+		this.realTimeLabel = realTimeLabel;
+		style.xLabel = useRealTime ? realTimeLabel : updatesLabel;
 	}
 
 	@Override
@@ -1268,16 +1425,17 @@ public class LineGraph extends AbstractGraph<double[]>
 			double[] latest = buffer.last();
 			if (latest == null)
 				return false;
-			tMax = latest[0] + style.xMax;
-			tMin = latest[0] + style.xMin;
+			double latestT = xValue(latest);
+			tMax = latestT + style.xMax;
+			tMin = latestT + style.xMin;
 		}
 		Iterator<double[]> it = buffer.ordered();
 		while (it.hasNext()) {
 			double[] data = it.next();
-			double t = data[0];
+			double t = xValue(data);
 			if (visibleOnly && (t < tMin || t > tMax))
 				continue;
-			for (int i = 1; i < data.length; i++) {
+			for (int i = 1; i <= nLines; i++) {
 				double v = data[i];
 				if (!Double.isFinite(v))
 					continue;
@@ -1357,7 +1515,7 @@ public class LineGraph extends AbstractGraph<double[]>
 		}
 		Iterator<double[]> it = buffer.iterator();
 		while (it.hasNext()) {
-			double t = it.next()[0];
+			double t = xValue(it.next());
 			if (Double.isNaN(t))
 				break;
 			if (Double.isFinite(t)) {

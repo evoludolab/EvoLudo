@@ -342,7 +342,8 @@ public class Mean extends AbstractView<LineGraph> implements Shifter, Zoomer {
 			Module<?> module = graph.getModule();
 			style.label = module.getName();
 		}
-		style.xLabel = "time";
+		graph.setAxisLabels("generation", "time");
+		graph.setRealTimeAvailable(model.getTime() != Double.POSITIVE_INFINITY);
 		style.showXLevels = false;
 		double rFreq = model.getTimeStep();
 		if (Math.abs(style.xIncr - rFreq) > 1e-8) {
@@ -373,6 +374,9 @@ public class Mean extends AbstractView<LineGraph> implements Shifter, Zoomer {
 	protected void updateData() {
 		double newtime = model.getUpdates();
 		if (Math.abs(timestamp - newtime) > 1e-8) {
+			double realTime = model.getTime();
+			if (realTime == Double.POSITIVE_INFINITY)
+				realTime = Double.NaN;
 			Module<?> module = null;
 			int idx = 0;
 			for (LineGraph graph : graphs) {
@@ -405,7 +409,7 @@ public class Mean extends AbstractView<LineGraph> implements Shifter, Zoomer {
 						throw new IllegalArgumentException("Unknown data type: " + type);
 				}
 				data[0] = newtime;
-				graph.addData(data);
+				graph.addData(data, realTime);
 			}
 			timestamp = newtime;
 		}
