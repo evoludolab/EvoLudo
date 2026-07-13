@@ -1960,6 +1960,9 @@ public class IBSDPopulation extends IBSPopulation<Discrete, IBSDPopulation> {
 			tmpTraitScore = new double[nTraits];
 			// best-response may require temporary memory - this is peanuts
 			tmpScore = new double[nTraits];
+			// traitsCount is now allocated but all-zero; it does not reflect an
+			// actual configuration until init() runs
+			initialized = false;
 		}
 		maxRate = -1.0;
 
@@ -2097,6 +2100,7 @@ public class IBSDPopulation extends IBSPopulation<Discrete, IBSDPopulation> {
 					+ ").");
 		System.arraycopy(traitsCount, 0, initCount, 0, nTraits);
 		maxRate = -1.0;
+		initialized = true;
 	}
 
 	/**

@@ -260,6 +260,11 @@ public abstract class IBS extends Model {
 		if (!doReset) {
 			for (Module<?> mod : species) {
 				IBSPopulation<?, ?> pop = mod.getIBSPopulation();
+				if (!pop.isInitialized()) {
+					// not yet safe to check convergence, see IBSPopulation#isInitialized()
+					converged = false;
+					continue;
+				}
 				converged &= pop.checkConvergence();
 			}
 		}

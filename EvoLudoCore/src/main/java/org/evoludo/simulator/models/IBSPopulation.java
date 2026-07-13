@@ -387,6 +387,37 @@ public abstract class IBSPopulation<M extends Module<?>, P extends IBSPopulation
 	}
 
 	/**
+	 * Backing field for {@link #isInitialized()}. Defaults to {@code true};
+	 * subclasses with vacancy-like content must manage it themselves, see there.
+	 */
+	protected boolean initialized = true;
+
+	/**
+	 * Check if the population's trait/state data reflects an actual, fully
+	 * initialized configuration, i.e. whether {@link #init()} has completed at
+	 * least once since the population's structure was last (re)allocated in
+	 * {@link #check()}.
+	 * <p>
+	 * <strong>Note:</strong> {@link #check()} can run more than once (e.g. once
+	 * explicitly and once more as part of {@link org.evoludo.simulator.EvoLudo
+	 * EvoLudo}'s reset sequence) before {@link #init()} gets a chance to run in
+	 * between; a freshly (re)allocated population then looks structurally
+	 * consistent even though its content (e.g. trait counts) is not yet
+	 * meaningful, and {@link #checkConvergence()} must not be trusted on it.
+	 * Declared here, rather than in an individual subclass, because any
+	 * population admitting vacant sites - currently {@link IBSDPopulation}, in
+	 * principle also {@link IBSCPopulation}/{@link IBSMCPopulation} - is
+	 * equally at risk. Subclasses that maintain such content are responsible
+	 * for clearing {@link #initialized} where they (re)allocate it in
+	 * {@link #check()}, and setting it again at the end of their {@link #init()}.
+	 *
+	 * @return {@code true} if the population has been initialized
+	 */
+	public boolean isInitialized() {
+		return initialized;
+	}
+
+	/**
 	 * The update type of players. Convenience field.
 	 * 
 	 * @see Module#getPlayerUpdate()
