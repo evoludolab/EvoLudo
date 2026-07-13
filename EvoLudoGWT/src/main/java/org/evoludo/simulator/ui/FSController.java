@@ -68,6 +68,10 @@ public class FSController implements FullscreenChangeHandler {
 						return false;
 					if (fullscreenWidget == null)
 						return false;
+					// leave an already sized lab (default, --size or manually resized)
+					// unaffected unless --size is explicitly given this time
+					if (!cloSize.isSet() && !fullscreenWidget.getElement().getStyle().getWidth().isEmpty())
+						return true;
 					fullscreenWidget.setSize((int) dim[0] + "px", (int) dim[1] + "px");
 					return true;
 				}
