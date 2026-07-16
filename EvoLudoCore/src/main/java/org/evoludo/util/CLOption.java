@@ -909,17 +909,16 @@ public class CLOption implements Comparable<CLOption> {
 	 * @return description of option and arguments.
 	 */
 	public String getDescription() {
-		if (description == null && delegate != null) {
-			// description is delegate's responsibility - including keys (if applicable)
-			return delegate.getDescription();
-		}
-		StringBuilder myDescr = buildBaseDescription();
+		// if description is null, the delegate is responsible for the base text -
+		// including any key descriptions (if applicable) - but the current/default
+		// argument annotation is always appended here for consistency.
+		StringBuilder myDescr = description == null ? new StringBuilder(delegate.getDescription())
+				: buildBaseDescription();
 		String currentArg = optionArg;
 		if (keys != null)
 			currentArg = buildArgKeys();
 		buildCurrent(myDescr, currentArg);
 		return myDescr.toString();
-
 	}
 
 	/**
@@ -933,6 +932,10 @@ public class CLOption implements Comparable<CLOption> {
 		sb.append("\n      (");
 		if (type == Argument.NONE) {
 			sb.append("current: ").append(isSet() ? "" : "not ").append("set)");
+			return sb;
+		}
+		if (currentArg == null && defaultArg == null) {
+			sb.append("current: not set; no default)");
 			return sb;
 		}
 		if (currentArg != null) {
@@ -973,7 +976,8 @@ public class CLOption implements Comparable<CLOption> {
 		Key prev = null;
 		String arg = getArg();
 		if (arg == null || arg.isEmpty())
-			return "INVALID";
+			// nothing set and no default - let buildCurrent() report accordingly
+			return null;
 		String[] args = arg.split(CLOParser.SPECIES_DELIMITER);
 		StringBuilder sb = new StringBuilder();
 		for (int n = 0; n < args.length; n++) {
@@ -983,8 +987,6 @@ public class CLOption implements Comparable<CLOption> {
 			if (keypos < 0 || keypos >= argsn.length) {
 				// no valid key position available, append as-is and continue.
 				sb.append(String.join(",", argsn));
-				if (n != args.length - 1)
-					sb.append(CLOParser.SPECIES_DELIMITER);
 			} else {
 				Key key = match(argsn[keypos]);
 				if (key == null) {
@@ -996,6 +998,8 @@ public class CLOption implements Comparable<CLOption> {
 				}
 				prev = buildKey(sb, key, argsn, keypos);
 			}
+			if (n != args.length - 1)
+				sb.append(CLOParser.SPECIES_DELIMITER);
 		}
 		return sb.toString();
 	}
@@ -1020,9 +1024,6 @@ public class CLOption implements Comparable<CLOption> {
 		if (tail.length > 0) {
 			sb.append(" ").append(String.join(",", tail));
 		}
-
-		if (pos != args.length - 1)
-			sb.append(CLOParser.SPECIES_DELIMITER);
 		return key;
 	}
 
