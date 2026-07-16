@@ -1729,14 +1729,9 @@ public class IBSDPopulation extends IBSPopulation<Discrete, IBSDPopulation> {
 		if (getPopulationSize() == 0)
 			// extinction trumps everything
 			return true;
-		// death rate zero and no vacant sites
-		if (!super.checkConvergence())
-			return false;
-		// monomorphic, no mutations and no optimizations for homogeneous states
-		// monomporhic stop requested or no ecological events possible
-		if (module.getMonoStop() || vacantIdx < 0)
-			return true;
-		if (traitsCount[vacantIdx] == 0 && module.getDeathRate() <= 0.0) {
+		// ecological populations: a fully occupied lattice with no death and no
+		// competition is a dead end regardless of trait composition.
+		if (vacantIdx >= 0 && traitsCount[vacantIdx] == 0 && module.getDeathRate() <= 0.0) {
 			// no vacant sites and no deaths: check competition
 			double[] compRates = module.getCompetitionRates();
 			for (int n = 0; n < compRates.length; n++) {
@@ -1752,7 +1747,11 @@ public class IBSDPopulation extends IBSPopulation<Discrete, IBSDPopulation> {
 			}
 			return true;
 		}
-		return false;
+		// death rate > 0 and/or vacant sites
+		if (!super.checkConvergence())
+			return false;
+		// monomorphic stop requested or no ecological events possible
+		return module.getMonoStop() || vacantIdx < 0;
 	}
 
 	@Override
