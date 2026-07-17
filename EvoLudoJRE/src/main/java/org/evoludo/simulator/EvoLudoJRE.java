@@ -393,7 +393,10 @@ public class EvoLudoJRE extends EvoLudo implements Runnable {
 
 	/**
 	 * Run custom module {@code module} with command line options {@code args}.
-	 * 
+	 * <p>
+	 * <strong>Note:</strong> does not return control to caller if the options in
+	 * {@code args} include any unresolved warnings.
+	 *
 	 * @param module the custom module to run
 	 * @param args   the command line options
 	 */
@@ -406,7 +409,9 @@ public class EvoLudoJRE extends EvoLudo implements Runnable {
 		setCLO(Formatter.format(args, " "));
 		addModule(module);
 		// parse options
-		parseCLO();
+		if (parseCLO() > 0)
+			fatal("All warnings in the option string must first be resolved.\n"
+					+ "Try --help for more information.");
 		// reset model to check and apply all parameters
 		modelReset();
 		// register hook to dump state when receiving SIGINT
