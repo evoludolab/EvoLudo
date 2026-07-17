@@ -1742,25 +1742,48 @@ public abstract class Module<T extends Module<T>>
 
 				@Override
 				public String getDescription() {
-					String descr;
 					int nt = -Integer.MAX_VALUE;
 					for (T pop : species)
 						nt = Math.max(nt, pop.getNTraits());
 
+					StringBuilder sb;
 					switch (nt) {
 						case 1:
-							descr = "--traitnames <n>  override trait name";
+							sb = new StringBuilder("--traitnames <n>  override trait name");
 							break;
 						case 2:
-							descr = "--traitnames <n1,n2>  override trait names";
+							sb = new StringBuilder("--traitnames <n1,n2>  override trait names");
 							break;
 						default:
-							descr = "--traitnames <n1,...,n" + nt + ">  override trait names";
+							sb = new StringBuilder("--traitnames <n1,...,n").append(nt)
+									.append(">  override trait names");
+					}
+					int idx = 0;
+					for (T mod : species) {
+						String speciesName = mod.getName();
+						if (species.size() > 1 && !speciesName.isEmpty())
+							sb.append("\n       Species: ").append(speciesName);
+						nt = mod.getNTraits();
+						for (int n = 0; n < nt; n++) {
+							sb.append("\n             ")
+									.append(idx + n)
+									.append(": ")
+									.append(mod.getTraitName(n));
+							if (mod instanceof HasDE && ((HasDE) mod).getDependent() == n)
+								sb.append(" (dependent)");
+						}
+						idx += nt;
 					}
 					if (species.size() > 1)
-						descr += "\n      settings for multi-species separated by '" + CLOParser.SPECIES_DELIMITER
-								+ "'";
-					return descr;
+						sb.append("\n      settings for multi-species separated by '" + CLOParser.SPECIES_DELIMITER
+								+ "'");
+					return sb.toString();
+				}
+
+				@Override
+				public boolean showsCurrent() {
+					// current trait names are already listed per trait above
+					return false;
 				}
 			});
 
