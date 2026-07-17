@@ -939,6 +939,21 @@ public class CLOption implements Comparable<CLOption> {
 			sb.append(isSet() ? "set" : "not set").append("]");
 			return sb;
 		}
+		if (type == Argument.OPTIONAL) {
+			// what matters most is whether the option is engaged at all; if so, report
+			// the effective value (explicit or, if none was given, the default)
+			boolean set = isSet();
+			sb.append(set ? "set" : "not set");
+			if (defaultArg != null) {
+				String effective = set ? getArg() : null;
+				sb.append("; ");
+				if (effective != null && !effective.equals(defaultArg))
+					sb.append(effective).append(" | ");
+				sb.append(defaultArg).append(" (default)");
+			}
+			sb.append("]");
+			return sb;
+		}
 		if (currentArg == null && defaultArg == null) {
 			sb.append("not set; no default]");
 			return sb;
