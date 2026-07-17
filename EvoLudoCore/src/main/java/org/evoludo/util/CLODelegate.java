@@ -107,10 +107,23 @@ public interface CLODelegate {
 
 	/**
 	 * Optional: position of key in the list of arguments. Used in help display.
-	 * 
+	 *
 	 * @return the position of the key
 	 */
 	public default int getKeyPos() {
 		return 0;
+	}
+
+	/**
+	 * Optional: whether the help display should automatically append the current
+	 * and default argument annotation after {@link #getDescription()}. Override
+	 * to return {@code false} for options whose description already reports the
+	 * relevant settings itself (e.g. a per-item listing of current values), for
+	 * which the generic single-value annotation would be redundant or misleading.
+	 *
+	 * @return {@code true} if the current/default annotation should be appended
+	 */
+	public default boolean showsCurrent() {
+		return true;
 	}
 }

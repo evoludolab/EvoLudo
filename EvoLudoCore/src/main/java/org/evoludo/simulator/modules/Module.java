@@ -1668,16 +1668,25 @@ public abstract class Module<T extends Module<T>>
 						for (int n = 0; n < nt; n++) {
 							String aTrait = "              " + (idx++) + ": ";
 							int traitlen = aTrait.length();
+							Color color = mod.getTraitColor(n);
 							sb.append("\n")
 									.append(aTrait.substring(traitlen - 16, traitlen))
 									.append(species.size() > 1 ? mod.getName() + "." : "")
-									.append(mod.getTraitName(n));
+									.append(mod.getTraitName(n))
+									.append(" (").append(color.getRed()).append(',').append(color.getGreen())
+									.append(',').append(color.getBlue()).append(')');
 						}
 					}
 					if (species.size() > 1)
 						sb.append("\n      settings for multi-species separated by '" + CLOParser.SPECIES_DELIMITER
 								+ "'");
 					return sb.toString();
+				}
+
+				@Override
+				public boolean showsCurrent() {
+					// current colors are already listed per trait above
+					return false;
 				}
 			});
 

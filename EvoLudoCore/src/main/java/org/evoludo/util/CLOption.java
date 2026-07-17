@@ -911,9 +911,12 @@ public class CLOption implements Comparable<CLOption> {
 	public String getDescription() {
 		// if description is null, the delegate is responsible for the base text -
 		// including any key descriptions (if applicable) - but the current/default
-		// argument annotation is always appended here for consistency.
+		// argument annotation is always appended here for consistency, unless the
+		// delegate opts out because it already reports settings itself.
 		StringBuilder myDescr = description == null ? new StringBuilder(delegate.getDescription())
 				: buildBaseDescription();
+		if (!delegate.showsCurrent())
+			return myDescr.toString();
 		String currentArg = optionArg;
 		if (keys != null)
 			currentArg = buildArgKeys();
