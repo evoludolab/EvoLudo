@@ -210,9 +210,13 @@ public class CLOParser {
 			}
 		}
 		for (CLOption option : options) {
-			if (!option.parse()) {
+			// snapshot before parsing: parse() clears the raw argument once it
+			// falls back to the default, so this is the only chance to capture it
+			String rejected = option.isSet() ? option.getArg() : null;
+			boolean ok = option.parse();
+			if (!ok || (rejected != null && !option.isSet())) {
 				issues++;
-				logParseFailure(option);
+				logParseFailure(option, rejected);
 			}
 		}
 		return issues;
@@ -272,18 +276,22 @@ public class CLOParser {
 	}
 
 	/**
-	 * Logs a parse failure for an option.
-	 * 
-	 * @param opt the option that failed to parse
+	 * Logs a parse failure for an option. If {@code rejected} is {@code null} the
+	 * option was never set and only the default was attempted (and failed);
+	 * otherwise {@code rejected} is the raw argument that failed to parse.
+	 *
+	 * @param opt      the option that failed to parse
+	 * @param rejected the raw argument that failed to parse, or {@code null} if
+	 *                 the option was never set
 	 */
-	private void logParseFailure(CLOption opt) {
-		if (opt.isSet()) {
-			String da = opt.getDefault();
-			logWarning(OPTION_PREFIX + opt.getName() + " failed to parse argument '" + opt.getArg() +
-					(da == null ? "'." : "' - using default '" + da + "'."));
-		} else {
+	private void logParseFailure(CLOption opt, String rejected) {
+		if (rejected == null) {
 			logError(OPTION_PREFIX + opt.getName() + " failed to parse default argument '" + opt.getDefault() + "'.");
+			return;
 		}
+		String da = opt.getDefault();
+		logWarning(OPTION_PREFIX + opt.getName() + " failed to parse argument '" + rejected +
+				(da == null ? "'." : "' - using default '" + da + "'."));
 	}
 
 	/**

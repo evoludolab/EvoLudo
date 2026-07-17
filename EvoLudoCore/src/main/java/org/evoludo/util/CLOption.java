@@ -521,9 +521,17 @@ public class CLOption implements Comparable<CLOption> {
 
 	/**
 	 * Delegate parsing helper that handles optional vs required arguments.
-	 * 
+	 * <p>
+	 * <strong>Note:</strong> if the primary (command line) argument fails to
+	 * parse and recovery falls back to the default, {@link #optionArg} is
+	 * cleared so the option's state reflects what is actually in effect. Callers
+	 * can detect that a fallback occurred by comparing {@link #isSet()} before
+	 * and after calling {@link #parse()}.
+	 *
 	 * @param isOptional {@code true} if the option argument is optional
 	 * @return {@code true} if parsing succeeds
+	 *
+	 * @see CLOParser#parseCLO(String[])
 	 */
 	private boolean parse(boolean isOptional) {
 		boolean isSet = isSet();
@@ -535,9 +543,10 @@ public class CLOption implements Comparable<CLOption> {
 			return !isSet && delegate.parse(getDefault());
 		} catch (Exception e) {
 			try {
-				if (isOptional)
-					return delegate.parse(getDefault(), isSet);
-				return delegate.parse(getDefault());
+				boolean success = isOptional ? delegate.parse(getDefault(), isSet) : delegate.parse(getDefault());
+				if (success && isSet)
+					optionArg = null;
+				return success;
 			} catch (Exception ex) {
 				return false;
 			}
