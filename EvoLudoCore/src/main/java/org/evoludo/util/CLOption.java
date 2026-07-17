@@ -932,27 +932,27 @@ public class CLOption implements Comparable<CLOption> {
 	 * @return the supplied builder for chaining
 	 */
 	private StringBuilder buildCurrent(StringBuilder sb, String currentArg) {
-		sb.append("\n      (");
+		// square brackets - parentheses are used within some settings themselves
+		// (e.g. colors as '(r,g,b)') and would otherwise clash
+		sb.append("\n      [");
 		if (type == Argument.NONE) {
-			sb.append(isSet() ? "set" : "not set").append(")");
+			sb.append(isSet() ? "set" : "not set").append("]");
 			return sb;
 		}
-		if (currentArg == null) {
-			if (defaultArg == null)
-				sb.append("not set; no default)");
-			else
-				sb.append("default: ").append(defaultArg).append(")");
+		if (currentArg == null && defaultArg == null) {
+			sb.append("not set; no default]");
 			return sb;
 		}
-		if (currentArg.equals(defaultArg)) {
-			// current matches default - labelling it as 'current' is redundant
-			sb.append(currentArg).append(" [default])");
+		if (currentArg == null || currentArg.equals(defaultArg)) {
+			// nothing set (falls back to default) or current matches default -
+			// labelling it as 'current' is redundant, just tag it as the default
+			sb.append(currentArg == null ? defaultArg : currentArg).append(" (default)]");
 			return sb;
 		}
 		sb.append(currentArg);
 		if (defaultArg != null)
-			sb.append(" | default: ").append(defaultArg);
-		sb.append(")");
+			sb.append(" | ").append(defaultArg).append(" (default)");
+		sb.append("]");
 		return sb;
 	}
 

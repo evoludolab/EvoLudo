@@ -818,6 +818,20 @@ public abstract class Module<T extends Module<T>>
 	}
 
 	/**
+	 * Format {@code color} as an <code>(r,g,b)</code> triplet, or an
+	 * <code>(r,g,b,a)</code> quadruple if {@code color} is not fully opaque,
+	 * matching the syntax accepted by {@link CLOParser#parseColor(String)}.
+	 *
+	 * @param color the color to format
+	 * @return the formatted color triplet (or quadruple with alpha)
+	 */
+	private static String formatColor(Color color) {
+		int alpha = color.getAlpha();
+		String rgb = color.getRed() + "," + color.getGreen() + "," + color.getBlue();
+		return alpha == 255 ? "(" + rgb + ")" : "(" + rgb + "," + alpha + ")";
+	}
+
+	/**
 	 * Gets the colors for all traits.
 	 * 
 	 * @return the array of trait colors
@@ -1668,13 +1682,12 @@ public abstract class Module<T extends Module<T>>
 						for (int n = 0; n < nt; n++) {
 							String aTrait = "              " + (idx++) + ": ";
 							int traitlen = aTrait.length();
-							Color color = mod.getTraitColor(n);
 							sb.append("\n")
 									.append(aTrait.substring(traitlen - 16, traitlen))
 									.append(species.size() > 1 ? mod.getName() + "." : "")
 									.append(mod.getTraitName(n))
-									.append(" (").append(color.getRed()).append(',').append(color.getGreen())
-									.append(',').append(color.getBlue()).append(')');
+									.append(" [").append(formatColor(mod.getTraitColor(n))).append(", ")
+									.append(formatColor(mod.getTraitColor(n + nt))).append(']');
 						}
 					}
 					if (species.size() > 1)
