@@ -931,21 +931,24 @@ public class CLOption implements Comparable<CLOption> {
 	private StringBuilder buildCurrent(StringBuilder sb, String currentArg) {
 		sb.append("\n      (");
 		if (type == Argument.NONE) {
-			sb.append("current: ").append(isSet() ? "" : "not ").append("set)");
+			sb.append(isSet() ? "set" : "not set").append(")");
 			return sb;
 		}
-		if (currentArg == null && defaultArg == null) {
-			sb.append("current: not set; no default)");
+		if (currentArg == null) {
+			if (defaultArg == null)
+				sb.append("not set; no default)");
+			else
+				sb.append("default: ").append(defaultArg).append(")");
 			return sb;
 		}
-		if (currentArg != null) {
-			sb.append("current: ").append(currentArg);
-			if (defaultArg != null)
-				sb.append(" ");
+		if (currentArg.equals(defaultArg)) {
+			// current matches default - labelling it as 'current' is redundant
+			sb.append(currentArg).append(" [default])");
+			return sb;
 		}
-		if (defaultArg != null) {
-			sb.append("default: ").append(defaultArg);
-		}
+		sb.append(currentArg);
+		if (defaultArg != null)
+			sb.append(" | default: ").append(defaultArg);
 		sb.append(")");
 		return sb;
 	}
