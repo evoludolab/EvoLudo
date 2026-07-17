@@ -1042,6 +1042,12 @@ public class CLOption implements Comparable<CLOption> {
 			sb.append(String.join(",", lead)).append(" ");
 		}
 		sb.append(key.getKey());
+		// preserve any remainder of the matched token beyond the key itself, e.g.
+		// 'N4' matched against key 'N' - the '4' must not be silently dropped
+		String matched = args[pos];
+		String keyStr = key.getKey();
+		if (matched.length() > keyStr.length())
+			sb.append(matched.substring(keyStr.length()));
 		if (tail.length > 0) {
 			sb.append(" ").append(String.join(",", tail));
 		}

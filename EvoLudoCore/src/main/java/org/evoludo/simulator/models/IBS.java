@@ -572,8 +572,8 @@ public abstract class IBS extends Model {
 	}
 
 	/**
-	 * Clear transient trait state for all populations after the current model update
-	 * has been reported to listeners.
+	 * Clear transient trait state for all populations after the current model
+	 * update has been reported to listeners.
 	 */
 	public void clearTraits() {
 		for (Module<?> mod : species)
@@ -1789,7 +1789,7 @@ public abstract class IBS extends Model {
 			 * according to an exponential distribution for an event happening with
 			 * probability {@code Module#getMutationProb()}.
 			 */
-			RESET_GEOMETRY("reset <s>", "reset geometry every <s> samples (0 never)");
+			RESET_GEOMETRY("reset", "reset <s>, reset geometry every <s> samples (0 never)");
 
 			/**
 			 * Key of statistics type. Used when parsing command line options.
