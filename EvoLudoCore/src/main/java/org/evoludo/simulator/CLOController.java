@@ -196,7 +196,14 @@ public class CLOController {
 			});
 
 	/**
-	 * Command line option to print help message for available command line options.
+	 * Command line option to print help message for available command line
+	 * options.
+	 * <p>
+	 * <strong>Note:</strong> priority set to parse last so that the help screen
+	 * reflects all other options set on the command line - some options report
+	 * live state rather than the raw command line argument (e.g.
+	 * {@code --traitnames}) and would otherwise appear unset/default if help
+	 * happened to sort before them alphabetically.
 	 */
 	public final CLOption cloHelp = new CLOption("help", CLOCategory.Global,
 			"--help          print this help screen", new CLODelegate() {
@@ -206,7 +213,7 @@ public class CLOController {
 						engine.showHelp();
 					return true;
 				}
-			});
+			}).setPriority(Integer.MAX_VALUE);
 
 	/**
 	 * Replacement command line option for serious parsing failures to display help
