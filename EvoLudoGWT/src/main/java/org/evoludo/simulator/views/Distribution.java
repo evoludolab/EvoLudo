@@ -310,8 +310,7 @@ public class Distribution extends AbstractView<PopGraph2D> implements TooltipPro
 	}
 
 	@Override
-	public void modelDidInit() {
-		super.modelDidInit();
+	protected void onModelDidInit() {
 		for (PopGraph2D graph : graphs)
 			graph.init();
 		updateData(true);

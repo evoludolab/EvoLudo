@@ -166,8 +166,7 @@ public class S3 extends AbstractView<S3Graph> {
 	}
 
 	@Override
-	public void modelDidInit() {
-		super.modelDidInit();
+	protected void onModelDidInit() {
 		for (S3Graph graph : graphs) {
 			model.getMeanTraits(graph.getModule().getId(), state);
 			graph.addData(Double.NaN, state, true);

@@ -208,8 +208,7 @@ public abstract class GenericPop<T, N extends Network<?>, G extends GenericPopGr
 	}
 
 	@Override
-	public void modelDidInit() {
-		super.modelDidInit();
+	protected void onModelDidInit() {
 		for (G graph : graphs)
 			graph.init();
 		updateData(true);

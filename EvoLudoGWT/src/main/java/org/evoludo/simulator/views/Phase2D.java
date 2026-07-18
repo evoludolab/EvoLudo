@@ -249,8 +249,7 @@ public class Phase2D extends AbstractView<ParaGraph> {
 	}
 
 	@Override
-	public void modelDidInit() {
-		super.modelDidInit();
+	protected void onModelDidInit() {
 		model.getMeanTraits(state);
 		graph.addData(Double.NaN, state, true);
 		graph.paint(true);

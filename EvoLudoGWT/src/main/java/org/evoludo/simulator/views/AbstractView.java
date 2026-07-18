@@ -145,6 +145,22 @@ public abstract class AbstractView<G extends AbstractGraph<?>> extends Composite
 	boolean isLoaded = false;
 
 	/**
+	 * The flag to indicate whether {@link #reset(boolean)} has completed at least
+	 * once. {@link #load()} already populates {@link #graphs} - so it is not a
+	 * reliable indicator - while view-specific setup (e.g. sizing of per-view
+	 * data buffers) happens only in {@link #reset(boolean)}, triggered later by
+	 * {@link #modelDidReset()}. Without this flag, an update request arriving in
+	 * between (e.g. the model going extinct during the initial relaxation) can
+	 * reach an {@link #updateData()} or {@link #update(boolean)} implementation
+	 * before its buffers are allocated. Package-private (like {@link #isLoaded})
+	 * so that subclasses overriding {@link #modelDidInit()} - which, unlike
+	 * {@link #modelStopped()}, {@link #modelChanged(PendingAction)} and
+	 * {@link #activate()}, has no common base implementation to guard in one
+	 * place - can check it before touching their own view-specific buffers.
+	 */
+	boolean isReset = false;
+
+	/**
 	 * The timestamp of model at the last update of this view.
 	 */
 	protected double timestamp;
@@ -243,6 +259,7 @@ public abstract class AbstractView<G extends AbstractGraph<?>> extends Composite
 		engine.removeChangeListener(this);
 		destroyGraphs();
 		isActive = false;
+		isReset = false;
 		model = null;
 		isLoaded = false;
 	}
@@ -345,6 +362,12 @@ public abstract class AbstractView<G extends AbstractGraph<?>> extends Composite
 		isActive = true;
 		for (G graph : graphs)
 			graph.activate();
+		if (!isReset) {
+			// reset(boolean) has not completed yet (see the note on isReset) - nothing
+			// to display until it does, at which point reset()'s own update(hard) call
+			// paints this view if it is active by then
+			return;
+		}
 		if (model.requestMode(getMode())) {
 			updateData(true);
 		} else {
@@ -433,6 +456,7 @@ public abstract class AbstractView<G extends AbstractGraph<?>> extends Composite
 	@Override
 	public void modelDidReset() {
 		reset(true);
+		isReset = true;
 		parse();
 	}
 
@@ -452,9 +476,29 @@ public abstract class AbstractView<G extends AbstractGraph<?>> extends Composite
 		}
 	}
 
+	/**
+	 * {@inheritDoc}
+	 * <p>
+	 * <strong>Note:</strong> final - subclasses needing to react to this event
+	 * must override {@link #onModelDidInit()} instead. This guarantees the
+	 * {@link #isReset} guard (see its documentation) is applied uniformly,
+	 * rather than requiring every subclass to repeat it before touching its own
+	 * view-specific buffers.
+	 */
 	@Override
-	public void modelDidInit() {
+	public final void modelDidInit() {
 		resetTimestamps();
+		if (!isReset)
+			return;
+		onModelDidInit();
+	}
+
+	/**
+	 * Called after {@link #modelDidInit()} has verified that {@link #reset}
+	 * has completed at least once. Override to react to the model's state
+	 * having been (re-)initialized.
+	 */
+	protected void onModelDidInit() {
 	}
 
 	/**
@@ -468,6 +512,8 @@ public abstract class AbstractView<G extends AbstractGraph<?>> extends Composite
 
 	@Override
 	public void modelStopped() {
+		if (!isReset)
+			return;
 		updateData(true);
 		update(true);
 	}
@@ -514,7 +560,7 @@ public abstract class AbstractView<G extends AbstractGraph<?>> extends Composite
 
 	@Override
 	public void modelChanged(PendingAction action) {
-		if (action != PendingAction.NONE)
+		if (action != PendingAction.NONE || !isReset)
 			return;
 		updateData(false);
 		if (!doUpdateView(false))

@@ -1128,8 +1128,7 @@ public class Histogram extends AbstractView<HistoGraph> {
 	}
 
 	@Override
-	public void modelDidInit() {
-		super.modelDidInit();
+	protected void onModelDidInit() {
 		for (HistoGraph graph : graphs)
 			graph.init();
 		update();
