@@ -1795,8 +1795,8 @@ public class Histogram extends AbstractView<HistoGraph> {
 
 	@Override
 	protected void exportStatData() {
-		// NOTE: consider exporting more data (e.g. overall fix probs/times, sdev,
-		// sample count); initial configuration for statistics, structure
+		// NOTE: consider exporting more data (e.g. overall fix probs/times, sdev);
+		// initial configuration for statistics, structure
 		StringBuilder export = new StringBuilder();
 		switch (type) {
 			case STATISTICS_FIXATION_PROBABILITY:
@@ -1827,10 +1827,22 @@ public class Histogram extends AbstractView<HistoGraph> {
 				export.append("# no data available\n");
 				continue;
 			}
-			export.append("# node,\tdata\n");
 			int nData = data[idx].length;
-			for (int n = 0; n < nData; n++)
-				export.append(graph.bin2x(n)).append(",\t").append(graph.getData(n)).append("\n");
+			GraphStyle gStyle = graph.getStyle();
+			double binWidth = (gStyle.xMax - gStyle.xMin) / nData;
+			boolean hasRange = binWidth > 1.0 + 1e-9;
+			export.append(
+					hasRange ? "# bin,\tvalue,\tsamples,\tdata,\tfrom,\tto\n" : "# bin,\tvalue,\tsamples,\tdata\n");
+			for (int n = 0; n < nData; n++) {
+				export.append(n).append(",\t")
+						.append(graph.getData(n)).append(",\t")
+						.append((long) graph.getSamples(n));
+				if (hasRange)
+					export.append(",\t").append(Math.round(gStyle.xMin + n * binWidth)).append(",\t")
+							.append(n == nData - 1 ? Math.round(gStyle.xMax)
+									: Math.round(gStyle.xMin + (n + 1) * binWidth) - 1);
+				export.append("\n");
+			}
 		}
 		NativeJS.export("data:text/csv;base64," + NativeJS.b64encode(export.toString()), "evoludo_stat.csv");
 	}
