@@ -1767,7 +1767,7 @@ public abstract class IBSPopulation<M extends Module<?>, P extends IBSPopulation
 			// undirected graph - same as earlier approach
 			// remove old scores
 			int[] neigh = interaction.out[me];
-			int nNeigh = competition.kout[me];
+			int nNeigh = interaction.kout[me];
 			interGroup.setGroupAt(me, neigh, nNeigh);
 			yalpGroupGameAt(interGroup);
 			for (int i = 0; i < nNeigh; i++) {
