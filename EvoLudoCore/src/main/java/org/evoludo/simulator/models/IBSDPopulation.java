@@ -1143,39 +1143,41 @@ public class IBSDPopulation extends IBSPopulation<Discrete, IBSDPopulation> {
 		int oldType = getTraitAt(me);
 		int newType = traitsNext[me] % nTraits;
 		commitTraitAt(me);
-		// count out-neighbors
-		int nIn = 0;
-		int nOut = interaction.kout[me];
-		int[] out = interaction.out[me];
-		int[] in = null;
-		Arrays.fill(tmpCount, 0);
-		// count traits of (outgoing) opponents
-		for (int n = 0; n < nOut; n++)
-			tmpCount[opponent.getTraitAt(out[n])]++;
-		int u2 = 2;
-		if (!interaction.isUndirected()) {
-			// directed graph, count in-neighbors
+		int[] neigh;
+		int nNeigh;
+		int u2;
+		if (interaction.isUndirected()) {
+			neigh = interaction.out[me];
+			nNeigh = interaction.kout[me];
+			u2 = 2;
+		} else {
+			// directed graph: interact only with upstream (in-)neighbours by default,
+			// for consistency with competition, where only upstream neighbours
+			// compete
+			// TODO: add CLO option to control whether interactions on directed
+			// graphs are restricted to upstream neighbours, downstream neighbours,
+			// or both
+			neigh = interaction.in[me];
+			nNeigh = interaction.kin[me];
 			u2 = 1;
-			nIn = interaction.kin[me];
-			in = interaction.in[me];
-			// add traits of incoming opponents
-			for (int n = 0; n < nIn; n++)
-				tmpCount[opponent.getTraitAt(in[n])]++;
 		}
-		int nInter = nIn + nOut - (vacantIdx < 0 ? 0 : tmpCount[vacantIdx]);
+		Arrays.fill(tmpCount, 0);
+		for (int n = 0; n < nNeigh; n++)
+			tmpCount[opponent.getTraitAt(neigh[n])]++;
+		int nInter = nNeigh - (vacantIdx < 0 ? 0 : tmpCount[vacantIdx]);
 		// my type has changed otherwise we wouldn't get here
 		// old/newScore are the total accumulated scores
 		double oldScore = u2 * pairmodule.pairScores(oldType, tmpCount, tmpScore);
 		double newScore = u2 * pairmodule.pairScores(newType, tmpCount, tmpTraitScore);
 		if (newType == vacantIdx) {
 			// focal individual became vacant
-			adjustVacantScoreAt(me, oldType, out, nOut, in, nIn, u2);
+			adjustVacantScoreAt(me, oldType, neigh, nNeigh, u2);
 			return;
 		}
 		if (oldType == vacantIdx) {
 			// focal individual became occupied
 			updateScoreAt(me, newScore, u2 * nInter);
-			adjustOccupiedScoreAt(out, nOut, in, nIn, u2);
+			adjustOccupiedScoreAt(neigh, nNeigh, u2);
 			return;
 		}
 		// interaction count remains the same but old/newScore are accumulated
@@ -1188,28 +1190,20 @@ public class IBSDPopulation extends IBSPopulation<Discrete, IBSDPopulation> {
 		adjustScoreAt(me, oldScore, newScore);
 		accuTypeScores[oldType] -= oldScore;
 		accuTypeScores[newType] += oldScore;
-		// adjust (outgoing) opponent's score
-		adjustNeighborScores(out, nOut, u2);
-		// same as !interaction.isUndirected() because in != null implies directed graph
-		// (see above)
-		if (in != null) {
-			// adjust (incoming) opponent's score
-			adjustNeighborScores(in, nIn, 1);
-		}
+		// adjust opponents' scores
+		adjustNeighborScores(neigh, nNeigh, u2);
 	}
 
 	/**
 	 * Adjust the score of a focal individual that became vacant.
-	 * 
+	 *
 	 * @param me      the index of the focal individual
 	 * @param oldType the trait type of the focal individual before becoming vacant
-	 * @param out     the indices of outgoing neighbors
-	 * @param nOut    the number of outgoing neighbors
-	 * @param in      the indices of incoming neighbors
-	 * @param nIn     the number of incoming neighbors
+	 * @param neigh   the indices of the interaction partners
+	 * @param nNeigh  the number of interaction partners
 	 * @param u2      a scaling factor (2 for undirected, 1 for directed graphs)
 	 */
-	void adjustVacantScoreAt(int me, int oldType, int[] out, int nOut, int[] in, int nIn, int u2) {
+	void adjustVacantScoreAt(int me, int oldType, int[] neigh, int nNeigh, int u2) {
 		double myScore = scores[me];
 		accuTypeScores[oldType] -= myScore;
 		scores[me] = 0.0;
@@ -1217,50 +1211,28 @@ public class IBSDPopulation extends IBSPopulation<Discrete, IBSDPopulation> {
 		updateEffScoreRange(me, myScore, 0.0);
 		sumFitness -= fitness[me];
 		fitness[me] = 0.0;
-		// neighbors lost one interaction partner - adjust (outgoing) opponent's score
-		for (int n = 0; n < nOut; n++) {
-			int you = out[n];
+		// neighbors lost one interaction partner - adjust opponent's score
+		for (int n = 0; n < nNeigh; n++) {
+			int you = neigh[n];
 			int type = opponent.getTraitAt(you);
 			opponent.removeScoreAt(you, u2 * (tmpScore[type] - tmpTraitScore[type]), u2);
-		}
-		// same as !interaction.isUndirected() because in != null implies directed graph
-		// (see above)
-		if (in != null) {
-			for (int n = 0; n < nIn; n++) {
-				int you = in[n];
-				int type = opponent.getTraitAt(you);
-				// adjust (incoming) opponent's score
-				opponent.removeScoreAt(you, tmpScore[type] - tmpTraitScore[type], 1);
-			}
 		}
 	}
 
 	/**
 	 * Adjust the score of the neighbours of a focal individual that became
 	 * occupied.
-	 * 
-	 * @param out  the indices of outgoing neighbors
-	 * @param nOut the number of outgoing neighbors
-	 * @param in   the indices of incoming neighbors
-	 * @param nIn  the number of incoming neighbors
-	 * @param u2   a scaling factor (2 for undirected, 1 for directed graphs)
+	 *
+	 * @param neigh  the indices of the interaction partners
+	 * @param nNeigh the number of interaction partners
+	 * @param u2     a scaling factor (2 for undirected, 1 for directed graphs)
 	 */
-	void adjustOccupiedScoreAt(int[] out, int nOut, int[] in, int nIn, int u2) {
-		// neighbors gained one interaction partner - adjust (outgoing) opponent's score
-		for (int n = 0; n < nOut; n++) {
-			int you = out[n];
+	void adjustOccupiedScoreAt(int[] neigh, int nNeigh, int u2) {
+		// neighbors gained one interaction partner - adjust opponent's score
+		for (int n = 0; n < nNeigh; n++) {
+			int you = neigh[n];
 			int type = opponent.getTraitAt(you);
 			opponent.updateScoreAt(you, u2 * (tmpTraitScore[type] - tmpScore[type]), u2);
-		}
-		// same as !interaction.isUndirected() because in != null implies directed graph
-		// (see above)
-		if (in != null) {
-			for (int n = 0; n < nIn; n++) {
-				int you = in[n];
-				int type = opponent.getTraitAt(you);
-				// adjust (incoming) opponent's score
-				opponent.updateScoreAt(you, tmpTraitScore[type] - tmpScore[type], 1);
-			}
 		}
 	}
 

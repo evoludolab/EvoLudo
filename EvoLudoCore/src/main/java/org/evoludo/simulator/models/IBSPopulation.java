@@ -1695,29 +1695,20 @@ public abstract class IBSPopulation<M extends Module<?>, P extends IBSPopulation
 			engine.fatal("playGameAt(int) should not be called for constant selection!");
 			// fatal does not return control
 		}
-		// any graph - interact with out-neighbors
-		// same as earlier approach to undirected graphs
 		if (adjustScores) {
 			throw new IllegalStateException("playGameAt(int idx) and adjustScores are incompatible!");
 		}
+		// undirected graph - out- and in-neighbours coincide, one pass suffices;
+		// directed graph - interact only with upstream (in-)neighbours by default,
+		// for consistency with competition, where only upstream neighbours compete
+		// TODO: add CLO option to control whether interactions on directed graphs
+		// are restricted to upstream neighbours, downstream neighbours, or both
+		boolean downstream = interaction.isUndirected();
 		if (module.isPairwise()) {
-			interGroup.pickAt(me, true);
-			playPairGameAt(interGroup);
-			// if undirected, we are done
-			if (interaction.isUndirected())
-				return;
-
-			// directed graph - additionally/separately interact with in-neighbors
-			interGroup.pickAt(me, false);
+			interGroup.pickAt(me, downstream);
 			playPairGameAt(interGroup);
 		} else {
-			interGroup.pickAt(me, true);
-			playGroupGameAt(interGroup);
-			// if undirected, we are done
-			if (interaction.isUndirected())
-				return;
-			// directed graph - additionally/separately interact with in-neighbors
-			interGroup.pickAt(me, false);
+			interGroup.pickAt(me, downstream);
 			playGroupGameAt(interGroup);
 		}
 	}
@@ -1761,70 +1752,31 @@ public abstract class IBSPopulation<M extends Module<?>, P extends IBSPopulation
 			adjustPairGameScoresAt(me);
 			return;
 		}
-		// any graph - interact with out-neighbors
-		// same as earlier approach to undirected graphs
-		if (interaction.isUndirected()) {
-			// undirected graph - same as earlier approach
-			// remove old scores
-			int[] neigh = interaction.out[me];
-			int nNeigh = interaction.kout[me];
-			interGroup.setGroupAt(me, neigh, nNeigh);
-			yalpGroupGameAt(interGroup);
-			for (int i = 0; i < nNeigh; i++) {
-				int you = neigh[i];
-				interGroup.setGroupAt(you, interaction.out[you], interaction.kout[you]);
-				yalpGroupGameAt(interGroup);
-			}
-			commitTraitAt(me);
-			// add new scores
-			interGroup.setGroupAt(me, neigh, nNeigh);
-			playGroupGameAt(interGroup);
-			for (int i = 0; i < nNeigh; i++) {
-				int you = neigh[i];
-				interGroup.setGroupAt(you, interaction.out[you], interaction.kout[you]);
-				playGroupGameAt(interGroup);
-			}
-			return;
-		}
-
-		// directed graph - separately interact with in- and out-neighbors
+		// undirected graph - out- and in-neighbours coincide, one pass suffices;
+		// directed graph - interact only with upstream (in-)neighbours by default,
+		// for consistency with competition, where only upstream neighbours compete
+		// TODO: add CLO option to control whether interactions on directed graphs
+		// are restricted to upstream neighbours, downstream neighbours, or both
+		boolean downstream = interaction.isUndirected();
+		int[][] side = downstream ? interaction.out : interaction.in;
+		int[] sideDegree = downstream ? interaction.kout : interaction.kin;
+		int[] neigh = side[me];
+		int nNeigh = sideDegree[me];
 		// remove old scores
-		int[] neigh = interaction.out[me];
-		int nNeigh = interaction.kout[me];
 		interGroup.setGroupAt(me, neigh, nNeigh);
 		yalpGroupGameAt(interGroup);
 		for (int i = 0; i < nNeigh; i++) {
 			int you = neigh[i];
-			interGroup.setGroupAt(you, interaction.out[you], interaction.kout[you]);
-			yalpGroupGameAt(interGroup);
-		}
-		neigh = interaction.in[me];
-		nNeigh = interaction.kin[me];
-		interGroup.setGroupAt(me, neigh, nNeigh);
-		yalpGroupGameAt(interGroup);
-		for (int i = 0; i < nNeigh; i++) {
-			int you = neigh[i];
-			interGroup.setGroupAt(you, interaction.in[you], interaction.kin[you]);
+			interGroup.setGroupAt(you, side[you], sideDegree[you]);
 			yalpGroupGameAt(interGroup);
 		}
 		commitTraitAt(me);
 		// add new scores
-		neigh = interaction.out[me];
-		nNeigh = interaction.kout[me];
 		interGroup.setGroupAt(me, neigh, nNeigh);
 		playGroupGameAt(interGroup);
 		for (int i = 0; i < nNeigh; i++) {
 			int you = neigh[i];
-			interGroup.setGroupAt(you, interaction.out[you], interaction.kout[you]);
-			playGroupGameAt(interGroup);
-		}
-		neigh = interaction.in[me];
-		nNeigh = interaction.kin[me];
-		interGroup.setGroupAt(me, neigh, nNeigh);
-		playGroupGameAt(interGroup);
-		for (int i = 0; i < nNeigh; i++) {
-			int you = neigh[i];
-			interGroup.setGroupAt(you, interaction.in[you], interaction.kin[you]);
+			interGroup.setGroupAt(you, side[you], sideDegree[you]);
 			playGroupGameAt(interGroup);
 		}
 	}
