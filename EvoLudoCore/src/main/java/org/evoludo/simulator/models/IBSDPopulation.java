@@ -571,7 +571,7 @@ public class IBSDPopulation extends IBSPopulation<Discrete, IBSDPopulation> {
 		// neighbours coincide, so reuse peer instead of drawing (and checking) again;
 		// no downstream neighbour (dest < 0) means nowhere to place offspring
 		boolean undirected = competition.isUndirected();
-		int dest = undirected ? peer : pickNeighborSiteAt(me);
+		int dest = undirected ? peer : pickDownstreamSiteAt(me);
 		if (dest >= 0 && (undirected ? peerVacant : isVacantAt(dest))) {
 			// destination vacant: add fitness contribution if module implements Payoffs
 			if (module instanceof Payoffs)

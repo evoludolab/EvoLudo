@@ -1449,26 +1449,28 @@ public abstract class IBSPopulation<M extends Module<?>, P extends IBSPopulation
 	}
 
 	/**
-	 * Pick a neighbour of the focal individual {@code me} with probability
-	 * proportional to their fitness.
-	 * 
+	 * Pick an upstream (in-)neighbour of the focal individual {@code me} with
+	 * probability proportional to their fitness. The returned neighbour is
+	 * guaranteed to be occupied.
+	 *
 	 * @param me the index of the focal individual
-	 * @return the index of a neighbour
+	 * @return the index of an upstream neighbour
 	 */
-	protected int pickFitNeighborAt(int me) {
-		return pickFitNeighborAt(me, false);
+	protected int pickUpstreamFitNeighborAt(int me) {
+		return pickUpstreamFitNeighborAt(me, false);
 	}
 
 	/**
-	 * Pick a neighbour of the focal individual {@code me} with probability
-	 * proportional to their fitness. If the flag {@code withSelf==true} then the
+	 * Pick an upstream (in-)neighbour of the focal individual {@code me} with
+	 * probability proportional to their fitness. The returned neighbour is
+	 * guaranteed to be occupied. If the flag {@code withSelf==true} then the
 	 * focal individual is included in the picking.
 	 *
 	 * @param me       the index of the focal individual
 	 * @param withSelf the flag whether to include self
-	 * @return the index of a neighbour
+	 * @return the index of an upstream neighbour
 	 */
-	protected int pickFitNeighborAt(int me, boolean withSelf) {
+	protected int pickUpstreamFitNeighborAt(int me, boolean withSelf) {
 		if (isNeutral)
 			return pickNeutralNeighbourAt(me, withSelf);
 
@@ -1480,92 +1482,21 @@ public abstract class IBSPopulation<M extends Module<?>, P extends IBSPopulation
 			return pickFitFocalIndividual(me);
 		}
 
-		if (vacantIdx < 0)
-			return pickFitNeighborNoVacantAt(me, withSelf);
-		return pickFitNeighborSkipVacantAt(me, withSelf);
-	}
-
-	/**
-	 * Pick a neighbour of the focal individual {@code me} with probability
-	 * proportional to their fitness assuming no vacant sites. If the flag
-	 * {@code withSelf==true} then the focal individual is included in the picking.
-	 *
-	 * @param me       the index of the focal individual
-	 * @param withSelf the flag whether to include self
-	 * @return the index of a neighbour
-	 */
-	private int pickFitNeighborNoVacantAt(int me, boolean withSelf) {
-		double totFitness = 0.0;
-		double myFit = 0.0;
-		if (withSelf) {
-			if (debugNModels == 0)
-				return me;
-			myFit = getFitnessAt(me);
-			totFitness = myFit;
-		}
-		totFitness += totFitnessNoVacant(me);
-		// negligible fitness, pick uniformly at random; same as neutral above
-		if (totFitness <= 1e-8)
-			return pickNeutralNeighbourAt(me, withSelf);
-
-		double hit = random01() * totFitness - myFit;
-		if (hit < 0.0)
-			return me;
-		for (int n = 0; n < debugNModels; n++) {
-			hit -= getFitnessAt(debugModels[n]);
-			if (hit < 0.0)
-				return debugModels[n];
-		}
-		// should not get here, does not return control
-		return pickFailed(hit);
-	}
-
-	/**
-	 * Compute total fitness of neighbours of individual {@code me} assuming no
-	 * vacant sites.
-	 * 
-	 * @param me the index of the focal individual
-	 * @return the total fitness of neighbours
-	 */
-	private double totFitnessNoVacant(int me) {
 		debugModels = competition.in[me];
 		debugNModels = competition.kin[me];
-		double totFitness = 0.0;
-		switch (debugNModels) {
-			case 0:
-				// no upstream neighbour
-				return -1;
-			case 1:
-				return debugModels[0];
-			default:
-		}
-		for (int n = 0; n < debugNModels; n++)
-			totFitness += getFitnessAt(debugModels[n]);
-		return totFitness;
-	}
-
-	/**
-	 * Pick a neighbour of the focal individual {@code me} with probability
-	 * proportional to their fitness assuming vacant sites. If the flag
-	 * {@code withSelf==true} then the focal individual is included in the picking.
-	 *
-	 * @param me       the index of the focal individual
-	 * @param withSelf the flag whether to include self
-	 * @return the index of a neighbour
-	 */
-	private int pickFitNeighborSkipVacantAt(int me, boolean withSelf) {
-		// vacancies require some extra care
-		debugModels = competition.in[me];
-		debugNModels = competition.kin[me];
-		double totFitness = 0.0;
 		double myFit = 0.0;
+		double totFitness = 0.0;
 		if (withSelf && !isVacantAt(me)) {
 			if (debugNModels == 0)
 				return me;
 			myFit = getFitnessAt(me);
 			totFitness = myFit;
 		}
-		totFitness += totFitnessSkipVacant(me);
+		for (int n = 0; n < debugNModels; n++) {
+			int neigh = debugModels[n];
+			if (!isVacantAt(neigh))
+				totFitness += getFitnessAt(neigh);
+		}
 		// negligible fitness, pick uniformly at random; same as neutral above
 		if (totFitness <= 1e-8)
 			return pickNeutralNeighbourAt(me, withSelf);
@@ -1586,42 +1517,12 @@ public abstract class IBSPopulation<M extends Module<?>, P extends IBSPopulation
 	}
 
 	/**
-	 * Compute total fitness of neighbours of individual {@code me} assuming vacant
-	 * sites.
-	 * 
-	 * @param me the index of the focal individual
-	 * @return the total fitness of neighbours
-	 */
-	private double totFitnessSkipVacant(int me) {
-		// vacancies require some extra care
-		debugModels = competition.in[me];
-		debugNModels = competition.kin[me];
-		double totFitness = 0.0;
-		switch (debugNModels) {
-			case 0:
-				return -1;
-			case 1:
-				int neigh = debugModels[0];
-				if (isVacantAt(neigh))
-					return -1;
-				return neigh;
-			default:
-		}
-		for (int n = 0; n < debugNModels; n++) {
-			int neigh = debugModels[n];
-			if (isVacantAt(neigh))
-				continue;
-			totFitness += getFitnessAt(neigh);
-		}
-		return totFitness;
-	}
-
-	/**
 	 * Helper method to do picking under neutral conditions (no or negligible
-	 * fitness differences). In well-mixed populations the picking includes the
-	 * focal individual if {@code withSelf==true}. Otherwise picking never includes
-	 * {@code me}.
-	 * 
+	 * fitness differences) for the {@link #pickUpstreamFitNeighborAt(int, boolean)}
+	 * family, i.e. picking is restricted to <em>upstream</em> (in-)neighbours. In
+	 * well-mixed populations the picking includes the focal individual if
+	 * {@code withSelf==true}. Otherwise picking never includes {@code me}.
+	 *
 	 * @param me       the index of the focal individual
 	 * @param withSelf the flag whether to include self
 	 * @return the index of a neighbour
@@ -1633,18 +1534,18 @@ public abstract class IBSPopulation<M extends Module<?>, P extends IBSPopulation
 				return pickFocalIndividual();
 			return pickFocalIndividual(me);
 		}
-		return pickNeighborSiteAt(me);
+		return pickUpstreamSiteAt(me);
 	}
 
 	/**
-	 * Picks a neighbouring site of the focal individual {@code me} uniformly at
-	 * random. This is where the focal individual places its offspring in the Moran
-	 * process under Birth-death updating. The original Moran process refers to
-	 * well-mixed (or mean-field) populations where the offspring can replace its
-	 * parent (albeit with a small probability of \(o(1/N)\), where \(N\) is the
-	 * population size). In contrast in the spatial Moran process the offspring
-	 * replaces a <em>neighbour</em> of the parent.
-	 * 
+	 * Picks a downstream (out-)neighbouring site of the focal individual
+	 * {@code me} uniformly at random. This is where the focal individual places
+	 * its offspring in the Moran process under Birth-death updating. The original
+	 * Moran process refers to well-mixed (or mean-field) populations where the
+	 * offspring can replace its parent (albeit with a small probability of
+	 * \(o(1/N)\), where \(N\) is the population size). In contrast in the spatial
+	 * Moran process the offspring replaces a <em>neighbour</em> of the parent.
+	 *
 	 * <h3>Notes:</h3>
 	 * <ol>
 	 * <li>The parent is never picked.
@@ -1652,12 +1553,12 @@ public abstract class IBSPopulation<M extends Module<?>, P extends IBSPopulation
 	 * </ol>
 	 *
 	 * @param me the index of the focal individual
-	 * @return the index of a neighbour
-	 * 
-	 * @see #pickFitNeighborAt(int)
+	 * @return the index of a downstream neighbour, or {@code -1} if none exists
+	 *
+	 * @see #pickUpstreamFitNeighborAt(int)
 	 * @see #updatePlayerMoranBirthDeath()
 	 */
-	public int pickNeighborSiteAt(int me) {
+	public int pickDownstreamSiteAt(int me) {
 		// mean-field
 		if (competition.isType(GeometryType.WELLMIXED))
 			return pickFocalSite(me);
@@ -1677,17 +1578,18 @@ public abstract class IBSPopulation<M extends Module<?>, P extends IBSPopulation
 	}
 
 	/**
-	 * Picks an upstream neighbour of the focal individual {@code me} uniformly at
-	 * random, i.e. an individual for which {@code me} is a downstream neighbour
-	 * and who could therefore place its own offspring at {@code me}'s site. This
-	 * is the mirror image of {@link #pickNeighborSiteAt(int)}, which considers
-	 * only <em>downstream</em> neighbours; here only <em>upstream</em>
+	 * Picks an upstream (in-)neighbouring site of the focal individual {@code me}
+	 * uniformly at random, i.e. an individual for which {@code me} is a
+	 * downstream neighbour and who could therefore place its own offspring at
+	 * {@code me}'s site. This is the mirror image of
+	 * {@link #pickDownstreamSiteAt(int)}, which considers only
+	 * <em>downstream</em> neighbours; here only <em>upstream</em>
 	 * (in-)neighbours are considered. On undirected geometries the two coincide.
 	 *
 	 * @param me the index of the focal individual
 	 * @return the index of an upstream neighbour, or {@code -1} if none exists
 	 *
-	 * @see #pickNeighborSiteAt(int)
+	 * @see #pickDownstreamSiteAt(int)
 	 */
 	public int pickUpstreamSiteAt(int me) {
 		// mean-field
@@ -2653,7 +2555,7 @@ public abstract class IBSPopulation<M extends Module<?>, P extends IBSPopulation
 			debugModel = pickFocalIndividual();
 			debugNModels = 0;
 		} else
-			debugModel = pickNeighborSiteAt(parent);
+			debugModel = pickDownstreamSiteAt(parent);
 		if (debugModel < 0)
 			return; // parent has no outgoing-neighbors (sink)
 		// note: do not return prematurely if <code>debugModel==debugFocal</code>
@@ -2685,7 +2587,7 @@ public abstract class IBSPopulation<M extends Module<?>, P extends IBSPopulation
 	 */
 	protected void updatePlayerMoranDeathBirthAt(int vacant) {
 		debugFocal = vacant;
-		debugModel = pickFitNeighborAt(vacant);
+		debugModel = pickUpstreamFitNeighborAt(vacant);
 		if (debugModel < 0)
 			return; // vacant has no incoming-neighbors (source)
 		maybeMutateMoran(debugModel, debugFocal);
@@ -2714,7 +2616,7 @@ public abstract class IBSPopulation<M extends Module<?>, P extends IBSPopulation
 	 */
 	protected void updatePlayerMoranImitateAt(int imitator) {
 		debugFocal = imitator;
-		debugModel = pickFitNeighborAt(imitator, true);
+		debugModel = pickUpstreamFitNeighborAt(imitator, true);
 		if (debugModel < 0)
 			return; // vacant has no incoming-neighbors (source)
 		maybeMutateMoran(debugModel, debugFocal);
