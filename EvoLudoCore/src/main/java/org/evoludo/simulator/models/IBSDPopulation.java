@@ -475,6 +475,7 @@ public class IBSDPopulation extends IBSPopulation<Discrete, IBSDPopulation> {
 		// death (competition with Y)
 		// X, X, Y: death (competition with X and Y)
 		// X, -, -: death happens in all cases with death rate
+		//
 		int idx = module.getId();
 		double peerRate = (idx >= 0 && idx < compRates.length) ? compRates[idx] : 0.0;
 		double peerComp = (peerRate > 0.0) ? peerRate : 0.0;
@@ -490,12 +491,22 @@ public class IBSDPopulation extends IBSPopulation<Discrete, IBSDPopulation> {
 			if (comp < 0.0 && -comp > maxOppNeg)
 				maxOppNeg = -comp;
 		}
-		// peer vacant: birth is possible (plus peer/opponent synergies and fitness)
-		// peer occupied: birth impossible, competition adds to death rate
-		double birthWithPeer = rBirth + maxFitness + peerSynergy;
-		double maxVacant = rDeath + birthWithPeer + Math.max(maxOppPos, maxOppNeg);
-		double maxOccupied = rDeath + peerComp + maxOppPos;
-		maxRate = Math.max(maxVacant, maxOccupied);
+		if (competition.isUndirected()) {
+			// peer and the site available for placing offspring are the same site,
+			// so birth (peer vacant) and same-species competition (peer occupied)
+			// remain mutually exclusive; use the tighter, scenario-specific bound
+			double maxVacant = rDeath + rBirth + maxFitness + peerSynergy + Math.max(maxOppPos, maxOppNeg);
+			double maxOccupied = rDeath + peerComp + maxOppPos;
+			maxRate = Math.max(maxVacant, maxOccupied);
+		} else {
+			// peer (upstream) and the site available for placing offspring
+			// (downstream) are drawn independently, so birth and same-/cross-species
+			// competition are no longer mutually exclusive and must be summed;
+			// peerComp/peerSynergy are mutually exclusive by the sign of peerRate,
+			// and the opponent term already takes the tighter of its two directions,
+			// so this sum is exact, not an overestimate
+			maxRate = rDeath + rBirth + maxFitness + peerSynergy + peerComp + Math.max(maxOppPos, maxOppNeg);
+		}
 	}
 
 	/**
@@ -530,7 +541,7 @@ public class IBSDPopulation extends IBSPopulation<Discrete, IBSDPopulation> {
 			int specIdx = (module.getId() + 1
 					+ (nSpecies == 2 ? 0 : random0n(nSpecies - 1))) % nSpecies;
 			IBSPopulation<?, ?> oppPop = module.getSpecies(specIdx).getIBSPopulation();
-			int oppIdx = oppPop.pickNeighborSiteAt(me);
+			int oppIdx = oppPop.pickUpstreamSiteAt(me);
 			if (!oppPop.isVacantAt(oppIdx)) {
 				// cross-species competition/synergy
 				double comp = compRates[specIdx];
@@ -540,24 +551,34 @@ public class IBSDPopulation extends IBSPopulation<Discrete, IBSDPopulation> {
 					rBirth += -comp;
 			}
 		}
-		// peer interactions
-		int peer = pickNeighborSiteAt(me);
+		// peer interactions: an upstream neighbour threatens to invade this site
+		// (analogous to death-Birth updating, where a vacant site is filled by one
+		// of its incoming neighbours) and so drives competition/synergy affecting
+		// this individual's own rates
+		int peer = pickUpstreamSiteAt(me);
 		boolean peerVacant = isVacantAt(peer);
 		if (peerVacant) {
-			// peer site is vacant either birth (with synergies) or death through
-			// cross-species competition (no peer competition)
+			// peer site is vacant: no competition pressure, possibly synergy
 			if (rate < 0.0)
 				// peer synergy/mutualism
 				rBirth -= rate;
+		} else {
+			// peer occupied: competition pressure adds to death rate
+			if (rate > 0.0)
+				rDeath += rate;
+		}
+		// offspring, in turn, is placed on a downstream neighbour (analogous to
+		// Birth-death updating); on undirected geometries upstream and downstream
+		// neighbours coincide, so reuse peer instead of drawing (and checking) again
+		boolean undirected = competition.isUndirected();
+		int dest = undirected ? peer : pickNeighborSiteAt(me);
+		boolean destVacant = undirected ? peerVacant : isVacantAt(dest);
+		if (destVacant) {
 			// add fitness contribution if module implements Payoffs
 			if (module instanceof Payoffs)
 				rBirth += getFitnessAt(me);
-
 		} else {
-			rBirth = 0.0; // birth not possible if peer occupied
-			if (rate > 0.0)
-				// peer competition
-				rDeath += rate;
+			rBirth = 0.0; // birth not possible if destination occupied
 		}
 		// determine event
 		if (randomEvent > rBirth + rDeath) {
@@ -569,16 +590,16 @@ public class IBSDPopulation extends IBSPopulation<Discrete, IBSDPopulation> {
 			// fill neighbor site if vacant
 			if (nTraits > 2) {
 				// two (or more) trait consider mutation
-				maybeMutateMoran(me, peer);
+				maybeMutateMoran(me, dest);
 			} else {
 				// single trait (plus vacant): no mutation
-				updateFromModelAt(peer, me);
+				updateFromModelAt(dest, me);
 				if (module instanceof Payoffs)
-					updateScoreAt(peer, true);
+					updateScoreAt(dest, true);
 				else
-					commitTraitAt(peer);
+					commitTraitAt(dest);
 			}
-			debugModel = peer;
+			debugModel = dest;
 			updateMaxRate();
 			return 1;
 		}

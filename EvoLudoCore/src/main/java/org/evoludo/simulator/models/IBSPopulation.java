@@ -1677,6 +1677,37 @@ public abstract class IBSPopulation<M extends Module<?>, P extends IBSPopulation
 	}
 
 	/**
+	 * Picks an upstream neighbour of the focal individual {@code me} uniformly at
+	 * random, i.e. an individual for which {@code me} is a downstream neighbour
+	 * and who could therefore place its own offspring at {@code me}'s site. This
+	 * is the mirror image of {@link #pickNeighborSiteAt(int)}, which considers
+	 * only <em>downstream</em> neighbours; here only <em>upstream</em>
+	 * (in-)neighbours are considered. On undirected geometries the two coincide.
+	 *
+	 * @param me the index of the focal individual
+	 * @return the index of an upstream neighbour, or {@code -1} if none exists
+	 *
+	 * @see #pickNeighborSiteAt(int)
+	 */
+	public int pickUpstreamSiteAt(int me) {
+		// mean-field
+		if (competition.isType(GeometryType.WELLMIXED))
+			return pickFocalSite(me);
+
+		debugModels = competition.in[me];
+		debugNModels = competition.kin[me];
+		switch (debugNModels) {
+			case 0:
+				// no upstream neighbour? nothing threatens to invade this site
+				return -1;
+			case 1:
+				return debugModels[0];
+			default:
+				return debugModels[random0n(debugNModels)];
+		}
+	}
+
+	/**
 	 * Update individual with index {@code me} and adopt the trait of individual
 	 * with index {@code you}.
 	 * <p>
