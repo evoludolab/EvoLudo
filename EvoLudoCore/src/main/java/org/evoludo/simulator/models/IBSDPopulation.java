@@ -532,54 +532,52 @@ public class IBSDPopulation extends IBSPopulation<Discrete, IBSDPopulation> {
 		randomEvent -= rDeath;
 		rDeath = 0.0;
 		double[] compRates = module.getCompetitionRates();
-		int idx = module.getId();
-		double rate = compRates[idx];
 		double rBirth = module.getBirthRate();
 		int nSpecies = compRates.length;
 		if (nSpecies > 1) {
-			// multi-species scenario: pick opponent species
+			// multi-species scenario: pick opponent species; oppIdx < 0 means no
+			// upstream neighbour in the opponent population (source node on a
+			// directed geometry) and hence no cross-species effect
 			int specIdx = (module.getId() + 1
 					+ (nSpecies == 2 ? 0 : random0n(nSpecies - 1))) % nSpecies;
 			IBSPopulation<?, ?> oppPop = module.getSpecies(specIdx).getIBSPopulation();
 			int oppIdx = oppPop.pickUpstreamSiteAt(me);
-			if (!oppPop.isVacantAt(oppIdx)) {
-				// cross-species competition/synergy
+			if (oppIdx >= 0 && !oppPop.isVacantAt(oppIdx)) {
 				double comp = compRates[specIdx];
 				if (comp > 0.0)
-					rDeath += comp;
+					rDeath += comp; // cross-species competition
 				else
-					rBirth += -comp;
+					rBirth -= comp; // cross-species synergy
 			}
 		}
 		// peer interactions: an upstream neighbour threatens to invade this site
 		// (analogous to death-Birth updating, where a vacant site is filled by one
 		// of its incoming neighbours) and so drives competition/synergy affecting
-		// this individual's own rates
+		// this individual's own rates; no upstream neighbour (peer < 0) means
+		// nothing threatens to invade and neither applies
 		int peer = pickUpstreamSiteAt(me);
-		boolean peerVacant = isVacantAt(peer);
-		if (peerVacant) {
-			// peer site is vacant: no competition pressure, possibly synergy
-			if (rate < 0.0)
-				// peer synergy/mutualism
-				rBirth -= rate;
-		} else {
-			// peer occupied: competition pressure adds to death rate
-			if (rate > 0.0)
-				rDeath += rate;
+		boolean peerVacant = false;
+		if (peer >= 0) {
+			peerVacant = isVacantAt(peer);
+			double rate = compRates[module.getId()];
+			if (peerVacant) {
+				if (rate < 0.0)
+					rBirth -= rate; // peer synergy/mutualism
+			} else if (rate > 0.0)
+				rDeath += rate; // peer competition
 		}
 		// offspring, in turn, is placed on a downstream neighbour (analogous to
 		// Birth-death updating); on undirected geometries upstream and downstream
-		// neighbours coincide, so reuse peer instead of drawing (and checking) again
+		// neighbours coincide, so reuse peer instead of drawing (and checking) again;
+		// no downstream neighbour (dest < 0) means nowhere to place offspring
 		boolean undirected = competition.isUndirected();
 		int dest = undirected ? peer : pickNeighborSiteAt(me);
-		boolean destVacant = undirected ? peerVacant : isVacantAt(dest);
-		if (destVacant) {
-			// add fitness contribution if module implements Payoffs
+		if (dest >= 0 && (undirected ? peerVacant : isVacantAt(dest))) {
+			// destination vacant: add fitness contribution if module implements Payoffs
 			if (module instanceof Payoffs)
 				rBirth += getFitnessAt(me);
-		} else {
-			rBirth = 0.0; // birth not possible if destination occupied
-		}
+		} else
+			rBirth = 0.0; // birth not possible if destination occupied or none exists
 		// determine event
 		if (randomEvent > rBirth + rDeath) {
 			// nothing happened, no time elapsed
