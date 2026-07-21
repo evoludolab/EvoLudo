@@ -772,7 +772,7 @@ public abstract class AbstractGeometry {
 	 */
 	protected String getLabel() {
 		String label = getName();
-		if (label == null)
+		if (label == null || label.isEmpty())
 			return type.name() + ": ";
 		return label + " - " + type.name() + ": ";
 	}
