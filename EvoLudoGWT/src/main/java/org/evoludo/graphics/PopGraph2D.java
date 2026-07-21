@@ -585,7 +585,7 @@ public class PopGraph2D extends GenericPopGraph<String, Network2D> implements Sh
 
 	@Override
 	public String getTooltipAt(int x, int y) {
-		return bounds.contains(x, y) ? super.getTooltipAt(x, y) : legend.getTooltipAt(x, y);
+		return inside(x, y) ? super.getTooltipAt(x, y) : legend.getTooltipAt(x, y);
 	}
 
 	/**
