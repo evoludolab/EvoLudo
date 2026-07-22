@@ -132,12 +132,6 @@ public class IBSDPopulation extends IBSPopulation<Discrete, IBSDPopulation> {
 	protected int[] traitsNext;
 
 	/**
-	 * The array indicating which traits are active. Convenience field to reduce
-	 * calls to module.
-	 */
-	protected boolean[] active;
-
-	/**
 	 * The array with the total scores for each trait.
 	 */
 	protected double[] accuTypeScores;
@@ -773,7 +767,7 @@ public class IBSDPopulation extends IBSPopulation<Discrete, IBSDPopulation> {
 	 */
 	public boolean setNextTraitAt(int idx, int trait) {
 		int next = trait % nTraits;
-		if (!active[next])
+		if (!module.getActiveTraits()[next])
 			return false;
 		traitsNext[idx] = nTraits + next;
 		return getTraitAt(idx) != next;
@@ -861,6 +855,7 @@ public class IBSDPopulation extends IBSPopulation<Discrete, IBSDPopulation> {
 
 		double max = tmpTraitScore[mytype];
 		int newtype = mytype;
+		boolean[] active = module.getActiveTraits();
 		for (int n = 0; n < nTraits; n++) {
 			if (!active[n])
 				continue;
@@ -888,6 +883,7 @@ public class IBSDPopulation extends IBSPopulation<Discrete, IBSDPopulation> {
 		int mytype = getTraitAt(me);
 		double max = typeScores[mytype];
 		int newtype = mytype;
+		boolean[] active = module.getActiveTraits();
 		for (int n = 0; n < nTraits; n++) {
 			if (!active[n] || n == vacantIdx)
 				continue;
@@ -917,6 +913,7 @@ public class IBSDPopulation extends IBSPopulation<Discrete, IBSDPopulation> {
 			int mytype = getTraitAt(me);
 			tmpCount[mytype]--;
 		}
+		boolean[] active = module.getActiveTraits();
 		for (int n = 0; n < nTraits; n++) {
 			if (!active[n] || n == vacantIdx) {
 				tmpTraitScore[n] = -Double.MAX_VALUE;
@@ -935,13 +932,14 @@ public class IBSDPopulation extends IBSPopulation<Discrete, IBSDPopulation> {
 
 	/**
 	 * Best response update for structured populations.
-	 * 
+	 *
 	 * @param group the group of individuals involved in the interaction
 	 * @param size  the size of the group
 	 */
 	private void structuredBR(int[] group, int size) {
 		size = stripVacancies(group, size, tmpTraits, tmpGroup);
 		countTraits(tmpCount, tmpTraits, 0, size);
+		boolean[] active = module.getActiveTraits();
 		for (int n = 0; n < nTraits; n++) {
 			if (!active[n] || n == vacantIdx) {
 				tmpTraitScore[n] = -Double.MAX_VALUE;
@@ -1922,8 +1920,9 @@ public class IBSDPopulation extends IBSPopulation<Discrete, IBSDPopulation> {
 		StringBuilder status = new StringBuilder();
 		double norm = 1.0 / nPopulation;
 		String[] names = module.getTraitNames();
+		boolean[] active = module.getActiveTraits();
 		for (int i = 0; i < nTraits; i++) {
-			if (active != null && !active[i])
+			if (!active[i])
 				continue;
 			if (status.length() > 0)
 				status.append(", ");
@@ -1956,8 +1955,8 @@ public class IBSDPopulation extends IBSPopulation<Discrete, IBSDPopulation> {
 		}
 		maxRate = -1.0;
 
-		active = module.getActiveTraits();
 		// check that current state doesn't contain inactive traits
+		boolean[] active = module.getActiveTraits();
 		for (int n = 0; n < nTraits; n++) {
 			if (!active[n] && traitsCount[n] > 0) {
 				doReset = true;
@@ -2068,6 +2067,7 @@ public class IBSDPopulation extends IBSPopulation<Discrete, IBSDPopulation> {
 					residentType = (int) init.args[1] % nTraits;
 				else
 					residentType = (mutantType + 1) % nTraits;
+				boolean[] active = module.getActiveTraits();
 				if (!active[mutantType] || !active[residentType]) {
 					if (logger.isLoggable(Level.WARNING))
 						logger.warning("resident/mutant traits disabled - using uniform.");
@@ -2104,6 +2104,7 @@ public class IBSDPopulation extends IBSPopulation<Discrete, IBSDPopulation> {
 		int nActive = module.getNActive();
 		int[] nact = new int[nActive];
 		int idx = 0;
+		boolean[] active = module.getActiveTraits();
 		for (int n = 0; n < nTraits; n++) {
 			if (!active[n])
 				continue;
@@ -2124,6 +2125,7 @@ public class IBSDPopulation extends IBSPopulation<Discrete, IBSDPopulation> {
 	protected void initFrequency() {
 		Arrays.fill(traitsCount, 0);
 		// different traits active
+		boolean[] active = module.getActiveTraits();
 		double[] cumFreqs = new double[nTraits];
 		cumFreqs[0] = (active[0] ? init.args[0] : 0.0);
 		int nInit = init.args.length;
@@ -2220,7 +2222,7 @@ public class IBSDPopulation extends IBSPopulation<Discrete, IBSDPopulation> {
 	 */
 	public void initMono(int monoType, double monoFreq) {
 		monoType = monoType % nTraits;
-		if (!active[monoType] || (monoType == vacantIdx && monoFreq < 1.0 - 1e-8)) {
+		if (!module.getActiveTraits()[monoType] || (monoType == vacantIdx && monoFreq < 1.0 - 1e-8)) {
 			if (logger.isLoggable(Level.WARNING))
 				logger.warning("mono trait " + module.getTraitName(monoType)
 						+ (monoType == vacantIdx ? " cannot be vacant" : " is disabled") + " - using uniform.");
@@ -2413,6 +2415,7 @@ public class IBSDPopulation extends IBSPopulation<Discrete, IBSDPopulation> {
 		int nActive = module.getNActive();
 		int[] nact = new int[nActive];
 		int idx = 0;
+		boolean[] active = module.getActiveTraits();
 		for (int n = 0; n < nTraits; n++) {
 			if (!active[n])
 				continue;
@@ -2524,6 +2527,7 @@ public class IBSDPopulation extends IBSPopulation<Discrete, IBSDPopulation> {
 		if (hit < 0 || hit >= nPopulation)
 			return false; // invalid argument
 		int next = getTraitAt(hit);
+		boolean[] active = module.getActiveTraits();
 		for (int steps = 0; steps < nTraits; steps++) {
 			next = Math.floorMod(next + (alt ? -1 : 1), nTraits);
 			if (active[next])

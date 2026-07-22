@@ -333,6 +333,12 @@ public abstract class Module<T extends Module<T>>
 		// currently only the Test module uses neither Discrete nor Continuous classes.
 		if (species == null)
 			species = new ArrayList<>();
+		// activate all traits by default; subclasses with only a subset
+		// must override this after calling super.load(). skip if nTraits
+		// isn't set yet - some subclasses only call setNTraits() later in
+		// their own load(), which takes care of this itself
+		if (nTraits > 0)
+			setActiveTraits(null);
 		engine.addCLOProvider(this);
 		engine.addLifecycleListener(this);
 		engine.addRunListener(this);
@@ -650,14 +656,17 @@ public abstract class Module<T extends Module<T>>
 		// prevent requesting re-parsing of CLOs on initial load
 		if (this.nTraits > 0 && (this.nTraits != nTraits))
 			engine.requestParseCLO();
-		if (this.nTraits != nTraits || this.vacantIdx != vacantIdx) {
-			// cached names/colors are sized and populated for the previous number
-			// of traits (and vacant index) - discard so they get regenerated
-			traitName = null;
-			traitColor = null;
-		}
+		boolean sizeChanged = (this.nTraits != nTraits || this.vacantIdx != vacantIdx);
 		this.nTraits = nTraits;
 		this.vacantIdx = vacantIdx;
+		if (sizeChanged) {
+			// cached names/colors and the active-trait bitmask are sized (and,
+			// for names/colors, populated) for the previous number of traits -
+			// discard so they get regenerated
+			traitName = null;
+			traitColor = null;
+			setActiveTraits(null);
+		}
 	}
 
 	/**
@@ -678,7 +687,8 @@ public abstract class Module<T extends Module<T>>
 	 */
 	public void setActiveTraits(boolean[] active) {
 		if (active == null) {
-			this.active = new boolean[nTraits];
+			if (this.active == null || this.active.length != nTraits)
+				this.active = new boolean[nTraits];
 			Arrays.fill(this.active, true);
 			nActive = nTraits;
 			return;
@@ -697,8 +707,6 @@ public abstract class Module<T extends Module<T>>
 	 * @return the array of active traits
 	 */
 	public boolean[] getActiveTraits() {
-		if (active == null || active.length != nTraits)
-			setActiveTraits(null);
 		return active;
 	}
 
@@ -708,8 +716,6 @@ public abstract class Module<T extends Module<T>>
 	 * @return the number of active traits
 	 */
 	public int getNActive() {
-		if (active == null || active.length != nTraits)
-			setActiveTraits(null);
 		return nActive;
 	}
 
@@ -1565,7 +1571,10 @@ public abstract class Module<T extends Module<T>>
 				 */
 				@Override
 				public boolean parse(String arg) {
-					// activate all traits
+					// activate all traits first: parse() re-runs from scratch on every
+					// CLO re-parse (unlike load(), which only runs once per module
+					// switch), so a previous --disable must be cleared before
+					// (re-)applying the current one - or none, if arg == null
 					for (T pop : species)
 						pop.setActiveTraits(null);
 					if (arg == null)
