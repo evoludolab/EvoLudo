@@ -515,6 +515,11 @@ public class IBSDPopulation extends IBSPopulation<Discrete, IBSDPopulation> {
 	protected int updatePlayerEcologyAt(int me) {
 		debugFocal = me;
 		debugModel = -1;
+		// pickUpstreamSiteAt/pickDownstreamSiteAt below set debugModels/debugNModels
+		// as a side effect, but only on some branches (e.g. never on focalDies());
+		// reset here so a stale group from an earlier, unrelated event doesn't leak
+		// into debugMarkChange()
+		debugNModels = 0;
 		if (maxRate < 0.0)
 			updateMaxRate();
 		double rDeath = module.getDeathRate();
@@ -566,6 +571,10 @@ public class IBSDPopulation extends IBSPopulation<Discrete, IBSDPopulation> {
 		// no downstream neighbour (dest < 0) means nowhere to place offspring
 		boolean undirected = competition.isUndirected();
 		int dest = undirected ? peer : pickDownstreamSiteAt(me);
+		// pickUpstreamSiteAt/pickDownstreamSiteAt above set debugModels/debugNModels
+		// as a side effect (for the benefit of other update rules); ecology only ever
+		// highlights debugFocal/debugModel, so discard that side effect again
+		debugNModels = 0;
 		if (dest >= 0 && (undirected ? peerVacant : isVacantAt(dest))) {
 			// destination vacant: add fitness contribution if module implements Payoffs
 			if (module instanceof Payoffs)

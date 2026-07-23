@@ -295,6 +295,7 @@ class RunController {
 			return;
 		java.util.logging.Level logLevel = engine.logger.getLevel();
 		engine.logger.setLevel(java.util.logging.Level.ALL);
+		clearTraits();
 		engine.activeModel.debugStep();
 		engine.logger.setLevel(logLevel);
 	}
