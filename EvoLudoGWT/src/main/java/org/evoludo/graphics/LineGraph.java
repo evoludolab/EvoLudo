@@ -1224,6 +1224,7 @@ public class LineGraph extends AbstractGraph<double[]>
 		// N.B. inter has updates prepended and real time appended around the
 		// nLines plotted values - bound the loop by nLines, not inter.length
 		Data type = view.getType();
+		boolean[] active = module.getActiveTraits();
 		for (int n = 0; n < nLines; n++) {
 			int n1 = n + 1;
 			String name;
@@ -1232,6 +1233,8 @@ public class LineGraph extends AbstractGraph<double[]>
 				name = "average";
 				color = Color.BLACK;
 			} else {
+				if (active != null && n < active.length && !active[n])
+					continue;
 				name = module.getTraitName(n);
 				color = colors[n];
 			}
