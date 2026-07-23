@@ -575,7 +575,7 @@ public abstract class Module<T extends Module<T>>
 	public static final String VACANT_NAME = "Vacant";
 
 	/**
-	 * The default name of the vacant type (empty site).
+	 * The default color of the vacant type (empty site).
 	 */
 	public static final Color VACANT_COLOR = Color.GRAY;
 
@@ -904,8 +904,8 @@ public abstract class Module<T extends Module<T>>
 				|| (hasVacant() && (colors.length == nTraits - 1
 						|| colors.length == 2 * (nTraits - 1)))))
 			return false;
-		if (hasVacant()) {
-			// insert vacant color
+		if (hasVacant() && (colors.length == nTraits - 1 || colors.length == 2 * (nTraits - 1))) {
+			// caller omitted the vacant color - insert default(s)
 			if (colors.length == 2 * (nTraits - 1))
 				colors = ArrayMath.insert(colors, ColorMap.blendColors(VACANT_COLOR, Color.WHITE, 0.333),
 						nTraits + vacantIdx);
