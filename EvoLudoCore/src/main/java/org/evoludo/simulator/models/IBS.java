@@ -690,6 +690,8 @@ public abstract class IBS extends Model {
 				return debugFocalSpecies.step();
 			case MUTATION:
 				return debugFocalSpecies.mutate();
+			case MIGRATION:
+				return debugFocalSpecies.doMigration();
 			default:
 				engine.fatal("unknown event type...");
 				return 0; // unreachable
@@ -1024,20 +1026,32 @@ public abstract class IBS extends Model {
 
 	/**
 	 * Pick type of next event in focal population.
-	 * 
+	 * <p>
+	 * Migration is tested here as an event independent of replication, on equal
+	 * footing with mutation, for every population update type except
+	 * {@link PopulationUpdate.Type#ECOLOGY}: ecological (vacancy) populations
+	 * already draw death/birth/competition as competing rates in
+	 * {@code updatePlayerEcologyAt()}, and migration has not (yet) been folded
+	 * into that draw - see {@link IBSPopulation#checkMigration()}, which
+	 * disables migration for such populations.
+	 *
 	 * @param pop the focal population
 	 * @return the next event
 	 */
 	protected Event pickEvent(IBSPopulation<?, ?> pop) {
 		Mutation mu = pop.module.getMutation();
-		if (mu.temperature || mu.getProbability() <= 0.0 || random01() > mu.getProbability())
-			return Event.REPLICATION;
-		return Event.MUTATION;
+		if (!mu.temperature && mu.getProbability() > 0.0 && random01() <= mu.getProbability())
+			return Event.MUTATION;
+		if (pop.getPopulationUpdate().getType() != PopulationUpdate.Type.ECOLOGY
+				&& pop.getMigrationType() != MigrationType.NONE
+				&& random01() <= pop.getMigrationProb())
+			return Event.MIGRATION;
+		return Event.REPLICATION;
 	}
 
 	/**
 	 * Enumeration of possible events in focal population.
-	 * 
+	 *
 	 * @see #pickEvent(IBSPopulation)
 	 */
 	public enum Event {
@@ -1046,6 +1060,11 @@ public abstract class IBS extends Model {
 		 * Mutation event.
 		 */
 		MUTATION,
+
+		/**
+		 * Migration event.
+		 */
+		MIGRATION,
 
 		/**
 		 * Replication event.

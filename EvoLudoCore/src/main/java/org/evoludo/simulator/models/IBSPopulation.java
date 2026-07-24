@@ -659,11 +659,6 @@ public abstract class IBSPopulation<M extends Module<?>, P extends IBSPopulation
 	protected double pMigration = 0.0;
 
 	/**
-	 * The distribution to determine the number of migrants.
-	 */
-	protected RNGDistribution.Geometric distrMigrants;
-
-	/**
 	 * Conveninece variable to store cumulative probability distributions for
 	 * replicator updating.
 	 * 
@@ -833,17 +828,17 @@ public abstract class IBSPopulation<M extends Module<?>, P extends IBSPopulation
 			case NONE:
 				break;
 			case BIRTH_DEATH:
-				nMigrants = nextBinomial(1.0 - pMigration, nPopulation);
+				nMigrants = nextBinomial(pMigration, nPopulation);
 				for (int n = 0; n < nMigrants; n++)
 					doBirthDeathMigration();
 				break;
 			case DEATH_BIRTH:
-				nMigrants = nextBinomial(1.0 - pMigration, nPopulation);
+				nMigrants = nextBinomial(pMigration, nPopulation);
 				for (int n = 0; n < nMigrants; n++)
 					doDeathBirthMigration();
 				break;
 			case DIFFUSION:
-				nMigrants = nextBinomial(1.0 - pMigration, nPopulation);
+				nMigrants = nextBinomial(pMigration, nPopulation);
 				for (int n = 0; n < nMigrants; n++)
 					doDiffusionMigration();
 				break;
@@ -855,8 +850,10 @@ public abstract class IBSPopulation<M extends Module<?>, P extends IBSPopulation
 
 	/**
 	 * Perform asynchronous migration.
+	 *
+	 * @return the number of elapsed realtime units
 	 */
-	public void doMigration() {
+	public int doMigration() {
 		switch (migrationType) {
 			case NONE:
 				break;
@@ -872,6 +869,7 @@ public abstract class IBSPopulation<M extends Module<?>, P extends IBSPopulation
 			default: // should never get here
 				throw new UnsupportedOperationException("Unknown migration type (" + migrationType + ")");
 		}
+		return 1;
 	}
 
 	/**
@@ -2080,25 +2078,25 @@ public abstract class IBSPopulation<M extends Module<?>, P extends IBSPopulation
 	 * 
 	 * <h3>Discussions/extensions</h3>
 	 * <ol>
-	 * <li>Review migration. Exclusively used in Demes2x2. Should probably be
-	 * treated as an independent event, in particular independent of population or
-	 * player updates
 	 * <li>Implement Wright-Fisher update.
 	 * <li>How to scale realtime with multiple populations? How to define a
 	 * generation if population sizes can vary?
 	 * <li>{@link #updatePlayerEcology()} returns time increment in realtime units.
 	 * Everyone else does fine without...
 	 * </ol>
-	 * 
+	 * <p>
+	 * <strong>Note:</strong> for asynchronous updates, migration is dispatched
+	 * as an independent event by {@link IBS#pickEvent(IBSPopulation)}, on equal
+	 * footing with mutation and replication, rather than handled here - see
+	 * {@link #doMigration()}. Ecological (vacancy) population updates are the
+	 * exception: migration is not yet supported for
+	 * {@link PopulationUpdate.Type#ECOLOGY}, see {@link #checkMigration()}.
+	 *
 	 * @return the number of elapsed realtime units
 	 */
 	public int step() {
 		if (optimizeHomo && isMonomorphic()) {
 			return optimizeHomo();
-		}
-		if (pMigration > 0.0 && random01() < pMigration) {
-			doMigration();
-			return 1;
 		}
 		switch (populationUpdate.getType()) {
 			case SYNC:
@@ -3573,7 +3571,6 @@ public abstract class IBSPopulation<M extends Module<?>, P extends IBSPopulation
 		if (pMigration < 1e-10 || migrationType == MigrationType.NONE) {
 			setMigrationType(MigrationType.NONE);
 			setMigrationProb(0.0);
-			distrMigrants = null;
 			return;
 		}
 		if (!interaction.isUndirected()) {
@@ -3585,9 +3582,13 @@ public abstract class IBSPopulation<M extends Module<?>, P extends IBSPopulation
 		} else if (interaction.isType(GeometryType.WELLMIXED)) {
 			logger.warning("no migration in well-mixed populations!");
 			setMigrationType(MigrationType.NONE);
+		} else if (populationUpdate.getType() == PopulationUpdate.Type.ECOLOGY) {
+			// ecological (vacancy) populations draw death/birth/competition as
+			// competing rates in updatePlayerEcologyAt(); migration has not yet been
+			// folded into that rate-based draw, so it is not currently supported here
+			logger.warning("migration not yet supported for ecological population updates!");
+			setMigrationType(MigrationType.NONE);
 		}
-		// new instance to ensure potential changes in pMigration are reflected
-		distrMigrants = new RNGDistribution.Geometric(rng.getRNG(), 1.0 - pMigration);
 	}
 
 	/**
