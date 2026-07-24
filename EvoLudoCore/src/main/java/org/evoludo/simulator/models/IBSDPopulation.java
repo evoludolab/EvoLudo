@@ -1384,8 +1384,14 @@ public class IBSDPopulation extends IBSPopulation<Discrete, IBSDPopulation> {
 	@Override
 	public void yalpGroupGameAt(IBSGroup group) {
 		int me = group.focal;
-		int newtype = traitsNext[me] % nTraits;
-		if (newtype == vacantIdx || group.nSampled <= 0) {
+		// use the current (committed) trait, not traitsNext[me]: this removes
+		// the group's *existing* contribution, and for sites other than the
+		// one whose trait is about to change (i.e. every 'you' in
+		// adjustGameScoresAt's neighbour loop) traitsNext[me] is not
+		// guaranteed to mirror traits[me] - e.g. sites that have been vacant
+		// since initialization and never individually committed since
+		int oldtype = getTraitAt(me);
+		if (oldtype == vacantIdx || group.nSampled <= 0) {
 			// isolated individual or vacant site - reset score
 			resetScoreAt(me);
 			return;
@@ -1397,7 +1403,6 @@ public class IBSDPopulation extends IBSPopulation<Discrete, IBSDPopulation> {
 			return;
 		}
 
-		int oldtype = getTraitAt(me);
 		int nGroup = module.getNGroup();
 		if (nGroup < group.nSampled + 1) { // interact with part of group sequentially
 			double myScore = 0.0;
