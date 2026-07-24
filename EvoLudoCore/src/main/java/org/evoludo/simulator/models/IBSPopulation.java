@@ -2089,8 +2089,9 @@ public abstract class IBSPopulation<M extends Module<?>, P extends IBSPopulation
 	 * as an independent event by {@link IBS#pickEvent(IBSPopulation)}, on equal
 	 * footing with mutation and replication, rather than handled here - see
 	 * {@link #doMigration()}. Ecological (vacancy) population updates are the
-	 * exception: migration is not yet supported for
-	 * {@link PopulationUpdate.Type#ECOLOGY}, see {@link #checkMigration()}.
+	 * exception: only diffusive migration is supported there, folded directly
+	 * into the ecological rate draw instead (see {@code IBSDPopulation}), see
+	 * {@link #checkMigration()}.
 	 *
 	 * @return the number of elapsed realtime units
 	 */
@@ -3582,11 +3583,14 @@ public abstract class IBSPopulation<M extends Module<?>, P extends IBSPopulation
 		} else if (interaction.isType(GeometryType.WELLMIXED)) {
 			logger.warning("no migration in well-mixed populations!");
 			setMigrationType(MigrationType.NONE);
-		} else if (populationUpdate.getType() == PopulationUpdate.Type.ECOLOGY) {
+		} else if (populationUpdate.getType() == PopulationUpdate.Type.ECOLOGY
+				&& migrationType != MigrationType.DIFFUSION) {
 			// ecological (vacancy) populations draw death/birth/competition as
-			// competing rates in updatePlayerEcologyAt(); migration has not yet been
-			// folded into that rate-based draw, so it is not currently supported here
-			logger.warning("migration not yet supported for ecological population updates!");
+			// competing rates in updatePlayerEcologyAt(); diffusive migration has
+			// been folded into that same rate-based draw (see IBSDPopulation), but
+			// birth-death/death-birth migration - a global, non-local process - has
+			// no equivalent there and remains unsupported for this population update
+			logger.warning("only diffusive migration supported for ecological population updates!");
 			setMigrationType(MigrationType.NONE);
 		}
 	}

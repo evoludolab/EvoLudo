@@ -41,6 +41,7 @@ import org.evoludo.simulator.EvoLudo;
 import org.evoludo.simulator.geometries.AbstractGeometry;
 import org.evoludo.simulator.geometries.GeometryType;
 import org.evoludo.simulator.geometries.HierarchicalGeometry;
+import org.evoludo.simulator.models.IBS.MigrationType;
 import org.evoludo.simulator.models.IBS.ScoringType;
 import org.evoludo.simulator.models.IBSD.Init;
 import org.evoludo.simulator.models.Model.HasIBS;
@@ -449,12 +450,74 @@ public class IBSDPopulation extends IBSPopulation<Discrete, IBSDPopulation> {
 	}
 
 	/**
+	 * The microscopic rate at which two adjacent sites exchange occupants,
+	 * derived from the diffusion coefficient set through
+	 * {@code --migration D<i>&lt;D&gt;</i>} - cached alongside {@link #maxRate}
+	 * since both depend only on quantities that are fixed for the duration of a
+	 * run (rates, population size and geometry).
+	 *
+	 * @see #effectiveDiffusionRate()
+	 */
+	private double exchangeRate;
+
+	/**
+	 * Derive the microscopic exchange rate \(\epsilon\) at which two adjacent
+	 * sites swap occupants from the migration probability
+	 * {@link IBSPopulation#pMigration}, interpreted here as a diffusion
+	 * coefficient \(D\) (only {@link IBS.MigrationType#DIFFUSION} is supported
+	 * for ecological population updates, see
+	 * {@link IBSPopulation#checkMigration()}). On lattice geometries with a
+	 * well defined spatial dimension \(\delta\) - disregarding boundary
+	 * conditions, i.e. {@link GeometryType#LINEAR} (\(\delta=1\)),
+	 * {@link GeometryType#SQUARE}, {@link GeometryType#SQUARE_MOORE},
+	 * {@link GeometryType#SQUARE_NEUMANN}, {@link GeometryType#SQUARE_NEUMANN_2ND},
+	 * {@link GeometryType#HEXAGONAL} and {@link GeometryType#TRIANGULAR}
+	 * (\(\delta=2\)), as well as {@link GeometryType#CUBE} (\(\delta=3\)) - the
+	 * migration probability is interpreted as the macroscopic diffusion
+	 * coefficient \(D\) and converted according to
+	 * \(\epsilon = D\,\delta\,N^{2/\delta}\), where \(N\) is the total number
+	 * of sites. For all other geometries, where the spatial dimension is not
+	 * defined, the migration probability is used directly as \(\epsilon\).
+	 *
+	 * @return the microscopic exchange rate \(\epsilon\)
+	 */
+	private double effectiveDiffusionRate() {
+		if (getMigrationType() != MigrationType.DIFFUSION)
+			return 0.0;
+		double diffusion = getMigrationProb();
+		if (diffusion <= 0.0)
+			return 0.0;
+		int delta;
+		switch (competition.getType()) {
+			case LINEAR:
+				delta = 1;
+				break;
+			case SQUARE:
+			case SQUARE_MOORE:
+			case SQUARE_NEUMANN:
+			case SQUARE_NEUMANN_2ND:
+			case HEXAGONAL:
+			case TRIANGULAR:
+				delta = 2;
+				break;
+			case CUBE:
+				delta = 3;
+				break;
+			default:
+				// spatial dimension not defined - use epsilon directly
+				return diffusion;
+		}
+		return diffusion * delta * Math.pow(nPopulation, 2.0 / delta);
+	}
+
+	/**
 	 * Computes the maximum ecological event rate for this species given the current
 	 * set of rates. Needed both for rejection sampling of events and to weight
 	 * species selection in multi-species simulations.
 	 */
 	protected void updateMaxRate() {
 		// updates always involve focal, peer, opponent; cover all combinations
+		exchangeRate = effectiveDiffusionRate();
 		double rBirth = module.getBirthRate();
 		double rDeath = module.getDeathRate();
 		double[] compRates = module.getCompetitionRates();
@@ -488,18 +551,23 @@ public class IBSDPopulation extends IBSPopulation<Discrete, IBSDPopulation> {
 		if (competition.isUndirected()) {
 			// peer and the site available for placing offspring are the same site,
 			// so birth (peer vacant) and same-species competition (peer occupied)
-			// remain mutually exclusive; use the tighter, scenario-specific bound
+			// remain mutually exclusive; use the tighter, scenario-specific bound.
+			// diffusion can apply regardless of whether the peer is vacant or
+			// occupied, so it adds to both
 			double maxVacant = rDeath + rBirth + maxFitness + peerSynergy + Math.max(maxOppPos, maxOppNeg);
 			double maxOccupied = rDeath + peerComp + maxOppPos;
-			maxRate = Math.max(maxVacant, maxOccupied);
+			maxRate = Math.max(maxVacant, maxOccupied) + exchangeRate;
 		} else {
 			// peer (upstream) and the site available for placing offspring
 			// (downstream) are drawn independently, so birth and same-/cross-species
 			// competition are no longer mutually exclusive and must be summed;
 			// peerComp/peerSynergy are mutually exclusive by the sign of peerRate,
 			// and the opponent term already takes the tighter of its two directions,
-			// so this sum is exact, not an overestimate
-			maxRate = rDeath + rBirth + maxFitness + peerSynergy + peerComp + Math.max(maxOppPos, maxOppNeg);
+			// so this sum is exact, not an overestimate. exchangeRate is always 0.0
+			// here since diffusion requires an undirected geometry, see
+			// IBSPopulation#checkMigration()
+			maxRate = rDeath + rBirth + maxFitness + peerSynergy + peerComp + Math.max(maxOppPos, maxOppNeg)
+					+ exchangeRate;
 		}
 	}
 
@@ -565,6 +633,10 @@ public class IBSDPopulation extends IBSPopulation<Discrete, IBSDPopulation> {
 			} else if (rate > 0.0)
 				rDeath += rate; // peer competition
 		}
+		// diffusion: focal and peer trade places if they differ, including peer
+		// being vacant (focal hops into the empty neighbouring site); requires an
+		// undirected geometry, already enforced by IBSPopulation#checkMigration()
+		double rDiff = (peer >= 0 && exchangeRate > 0.0 && getTraitAt(peer) != getTraitAt(me)) ? exchangeRate : 0.0;
 		// offspring, in turn, is placed on a downstream neighbour (analogous to
 		// Birth-death updating); on undirected geometries upstream and downstream
 		// neighbours coincide, so reuse peer instead of drawing (and checking) again;
@@ -582,7 +654,7 @@ public class IBSDPopulation extends IBSPopulation<Discrete, IBSDPopulation> {
 		} else
 			rBirth = 0.0; // birth not possible if destination occupied or none exists
 		// determine event
-		if (randomEvent > rBirth + rDeath) {
+		if (randomEvent > rBirth + rDeath + rDiff) {
 			// nothing happened, no time elapsed
 			return 0;
 		}
@@ -604,8 +676,16 @@ public class IBSDPopulation extends IBSPopulation<Discrete, IBSDPopulation> {
 			updateMaxRate();
 			return 1;
 		}
-		// death event
-		return focalDies(me, nPop);
+		randomEvent -= rBirth;
+		if (randomEvent < rDeath)
+			return focalDies(me, nPop);
+		// diffusion: focal and peer trade places
+		swapTraits(me, peer);
+		commitTraitAt(me);
+		commitTraitAt(peer);
+		debugModel = peer;
+		updateMaxRate();
+		return 1;
 	}
 
 	/**

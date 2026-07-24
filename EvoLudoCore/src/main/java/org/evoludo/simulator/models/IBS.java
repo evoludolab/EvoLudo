@@ -1031,9 +1031,10 @@ public abstract class IBS extends Model {
 	 * footing with mutation, for every population update type except
 	 * {@link PopulationUpdate.Type#ECOLOGY}: ecological (vacancy) populations
 	 * already draw death/birth/competition as competing rates in
-	 * {@code updatePlayerEcologyAt()}, and migration has not (yet) been folded
-	 * into that draw - see {@link IBSPopulation#checkMigration()}, which
-	 * disables migration for such populations.
+	 * {@code updatePlayerEcologyAt()}, and diffusive migration is folded into
+	 * that same draw instead (see {@code IBSDPopulation}); other migration
+	 * types have no equivalent there and remain disabled for such populations,
+	 * see {@link IBSPopulation#checkMigration()}.
 	 *
 	 * @param pop the focal population
 	 * @return the next event
@@ -1261,6 +1262,15 @@ public abstract class IBS extends Model {
 						IBSPopulation<?, ?> pop = mod.getIBSPopulation();
 						String migt = migrationtypes[n++ % migrationtypes.length];
 						MigrationType mt = (MigrationType) cloMigration.match(migt);
+						if (mt == null && cloMigration.getKeys().size() == 2) {
+							// 'none' plus a single other type is active; its key is optional
+							for (CLOption.Key key : cloMigration.getKeys()) {
+								if (key != MigrationType.NONE) {
+									mt = (MigrationType) key;
+									break;
+								}
+							}
+						}
 						if (mt != null) {
 							pop.setMigrationType(mt);
 							if (mt == MigrationType.NONE) {
@@ -1483,8 +1493,6 @@ public abstract class IBS extends Model {
 	@Override
 	public void collectCLO(CLOParser parser) {
 		super.collectCLO(parser);
-		cloMigration.addKeys(MigrationType.values());
-		parser.addCLO(cloMigration);
 		parser.addCLO(cloGeometryRewire);
 		parser.addCLO(cloGeometryAddwire);
 		parser.addCLO(cloConsistency);
@@ -1518,6 +1526,15 @@ public abstract class IBS extends Model {
 			cloReferences.clearKeys();
 			cloReferences.addKeys(IBSGroup.SamplingType.values());
 		}
+		cloMigration.clearKeys();
+		if (anyVacant) {
+			// ecological (vacancy) populations only support diffusive migration
+			cloMigration.addKey(MigrationType.NONE);
+			cloMigration.addKey(MigrationType.DIFFUSION);
+		} else {
+			cloMigration.addKeys(MigrationType.values());
+		}
+		parser.addCLO(cloMigration);
 		IBSPopulation<?, ?> ibs = species.get(0).getIBSPopulation();
 		PopulationUpdate pup = ibs.getPopulationUpdate();
 		// ToDo: further updates to implement or make standard
