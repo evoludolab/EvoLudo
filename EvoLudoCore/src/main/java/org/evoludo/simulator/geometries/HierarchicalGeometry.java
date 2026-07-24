@@ -32,7 +32,6 @@ package org.evoludo.simulator.geometries;
 
 import java.util.Arrays;
 
-import org.evoludo.math.ArrayMath;
 import org.evoludo.simulator.EvoLudo;
 import org.evoludo.util.CLOParser;
 import org.evoludo.util.CLOption;
@@ -121,18 +120,22 @@ public class HierarchicalGeometry extends AbstractLattice {
 		boolean reset = false;
 		parseHierarchy();
 		int nHierarchy = hierarchy.length;
-		for (int i = 0; i < nHierarchy; i++) {
-			// collapse hierarchies with single units
-			if (hierarchy[i] <= 1)
-				hierarchy = ArrayMath.drop(hierarchy, i);
-		}
-		if (nHierarchy == 0) {
-			warn("hierarchies must encompass ≥2 levels - reset to single level.");
-			setType(subType);
-			return true;
-		}
+		// collapse hierarchies with single units; a plain loop with ArrayMath.drop()
+		// would misindex once an earlier drop shifts later entries, so filter into a
+		// fresh array instead. if every level collapses (e.g. "H1"), keep a single
+		// placeholder level rather than leaving an empty array: calcUnitSize() still
+		// needs one level to auto-size into a single well-mixed deme, and an empty
+		// hierarchy cannot be recovered in place (setType() alone does not turn this
+		// into a working non-hierarchical geometry - init() requires a configured
+		// hierarchy regardless of type)
+		int[] kept = new int[nHierarchy];
+		int nKept = 0;
+		for (int i = 0; i < nHierarchy; i++)
+			if (hierarchy[i] > 1)
+				kept[nKept++] = hierarchy[i];
+		hierarchy = (nKept == 0) ? new int[] { 1 } : Arrays.copyOf(kept, nKept);
 		if (nHierarchy != hierarchy.length) {
-			warn("hierarchy levels must include >1 units - hierarchies collapsed to " + (nHierarchy + 1) + " levels.");
+			warn("hierarchy levels must include >1 units - hierarchies collapsed to " + hierarchy.length + " levels.");
 			reset = true;
 		}
 		reset |= calcUnitSize();
@@ -152,6 +155,9 @@ public class HierarchicalGeometry extends AbstractLattice {
 		int nIndiv;
 		connectivity = 0;
 		int nHierarchy = hierarchy.length;
+		// grow by one slot to hold the auto-computed size of the leaf (deme) level,
+		// appended below by this method (WELLMIXED) or by calcSquareUnit (SQUARE*)
+		hierarchy = Arrays.copyOf(hierarchy, nHierarchy + 1);
 		switch (subType) {
 			case SQUARE_MOORE:
 				connectivity = 8;

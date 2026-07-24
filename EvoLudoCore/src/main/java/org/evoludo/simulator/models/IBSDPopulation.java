@@ -1571,6 +1571,9 @@ public class IBSDPopulation extends IBSPopulation<Discrete, IBSDPopulation> {
 		HierarchicalGeometry hgeom = (HierarchicalGeometry) interaction;
 		int[] hierarchy = hgeom.getHierarchyLevels();
 		int unitSize = hierarchy[hierarchy.length - 1];
+		// setScoreAt() below assumes resetScores() had been called before. Not
+		// necessary because we set all scores but sumFitness needs to be reset.
+		sumFitness = 0.0;
 		for (int unitStart = 0; unitStart < nPopulation; unitStart += unitSize) {
 			// count traits in unit
 			countTraits(tmpCount, traits, unitStart, unitSize);
