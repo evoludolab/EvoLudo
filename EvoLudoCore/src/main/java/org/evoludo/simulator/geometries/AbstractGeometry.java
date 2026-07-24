@@ -1157,7 +1157,9 @@ public abstract class AbstractGeometry {
 	 * N_\text{links} \log(1-p_\text{dir})}\), i.e. at most the number directed
 	 * links in the graph. Thus, at most an expected fraction of \(1-1/e\) (or
 	 * \(~63%\)) of original links get rewired.
-	 * <li>ToDo: Rewrite similar to rewireUndirected().
+	 * <li>The implementation follows the same idea as
+	 * {@link #rewireUndirected(double)}
+	 * but keeps the directionality constraints intact.
 	 * </ol>
 	 * 
 	 * @return {@code true} if rewiring succeeded
@@ -1182,10 +1184,8 @@ public abstract class AbstractGeometry {
 		do {
 			// draw first node - avoid sources (nodes without inlinks) and fully connected
 			// nodes
-			do {
-				last = rng.random0n(size);
-				len = kin[last];
-			} while (len == 0 || len == size - 1);
+			last = drawRewiringStart(rng);
+			len = kin[last];
 			neigh = len == 1 ? 0 : rng.random0n(len);
 			from = in[last][neigh]; // link used to come from here
 			// note that 'from' must have at least one outlink to 'last'.
@@ -1194,11 +1194,7 @@ public abstract class AbstractGeometry {
 			// draw random node 'to' that is not a neighbor of 'from' (avoid double
 			// connections)
 			// in addition, 'to' must not be a source
-			do {
-				to = rng.random0n(size - 1);
-				if (to >= from)
-					to++;
-			} while (isNeighborOf(from, to) || kin[to] == 0);
+			to = drawRewiringTarget(rng, from);
 			// 'from' -> 'last' rewired to 'from' -> 'to'
 			rewireLinkAt(from, to, last);
 			done++;
@@ -1212,28 +1208,12 @@ public abstract class AbstractGeometry {
 				// draw random neighbor of 'to' but exclude newly drawn link
 				neigh = (len - 1) == 1 ? 0 : rng.random0n(len - 1);
 				from = in[to][neigh]; // link used to come from here
-				// is 'from' already linked to everyone else?
-				if (kout[from] == size - 1) {
-					// are there other feasible neighbors?
-					for (int n = 0; n < len - 1; n++)
-						if (kout[in[to][n]] < size - 1)
-							continue; // there is hope...
-					// this looks bad - try node we just came from
-					if (kout[in[to][len - 1]] == size - 1) {
-						throw new IllegalStateException("Rewiring troubles - giving up...");
-					}
-					// let's go back - can this fail?
-					from = in[to][len - 1];
-				}
+				from = selectRewiringSource(to, len, from);
 				prev = to;
 				// draw random node 'to' that is not a neighbor of 'from' (avoid double
 				// connections)
 				// in addition, 'to' must not be a source
-				do {
-					to = rng.random0n(size - 1);
-					if (to >= from)
-						to++;
-				} while (isNeighborOf(from, to) || kin[to] == 0);
+				to = drawRewiringTarget(rng, from);
 				// 'from' -> 'prev' rewired to 'from' -> 'to'
 				rewireLinkAt(from, to, prev);
 				done++;
@@ -1254,17 +1234,12 @@ public abstract class AbstractGeometry {
 			// draw random neighbor of 'to' but exclude newly drawn link
 			neigh = (len - 1) == 1 ? 0 : rng.random0n(len - 1);
 			from = in[to][neigh]; // link used to come from here
-			if (kout[from] == size - 1)
-				continue; // already linked to everybody else
+			from = selectRewiringSource(to, len, from);
 			prev = to;
 			// draw random node 'to' that is not a neighbor of 'from' (avoid double
 			// connections)
 			// in addition, 'to' must not be a source
-			do {
-				to = rng.random0n(size - 1);
-				if (to >= from)
-					to++;
-			} while (isNeighborOf(from, to) || kin[to] == 0);
+			to = drawRewiringTarget(rng, from);
 			rewireLinkAt(from, to, prev);
 		}
 		// 'to' just got a new inlink -> len>1
@@ -1273,6 +1248,95 @@ public abstract class AbstractGeometry {
 		neigh = (len - 1) == 1 ? 0 : rng.random0n(len - 1);
 		rewireLinkAt(to, last, in[to][neigh]);
 		return true;
+	}
+
+	/**
+	 * Draw a starting node for directed rewiring.
+	 *
+	 * @param rng the shared random number generator
+	 * @return a node with at least one inlink and at least one missing outgoing
+	 *         link
+	 */
+	private int drawRewiringStart(RNGDistribution rng) {
+		// try cheap random draws first; most nodes are usually eligible, so this
+		// almost always succeeds in O(1) and avoids the O(size) scan below.
+		// draws are with replacement, so 'size' attempts alone can still miss a
+		// rare eligible node too often for small networks (e.g. 25% miss chance
+		// for size=2 with a single eligible node); 8 is a cheap floor that keeps
+		// that miss chance well under 1%.
+		int attempts = Math.max(8, size);
+		for (int i = 0; i < attempts; i++) {
+			int candidate = rng.random0n(size);
+			if (kin[candidate] > 0 && kin[candidate] < size - 1)
+				return candidate;
+		}
+		int selected = -1;
+		int seen = 0;
+		for (int candidate = 0; candidate < size; candidate++) {
+			if (kin[candidate] == 0 || kin[candidate] == size - 1)
+				continue;
+			seen++;
+			if (rng.random0n(seen) == 0)
+				selected = candidate;
+		}
+		if (selected >= 0)
+			return selected;
+		throw new IllegalStateException("No feasible start node for directed rewiring.");
+	}
+
+	/**
+	 * Draw a target node for directed rewiring.
+	 *
+	 * @param rng  the shared random number generator
+	 * @param from the source node that must not already connect to the target
+	 * @return a node that is neither a source nor already a neighbour of
+	 *         {@code from}
+	 */
+	private int drawRewiringTarget(RNGDistribution rng, int from) {
+		// see drawRewiringStart() for why random draws are tried first and why 8
+		// is a floor on the number of attempts.
+		int attempts = Math.max(8, size);
+		for (int i = 0; i < attempts; i++) {
+			int candidate = rng.random0n(size - 1);
+			if (candidate >= from)
+				candidate++;
+			if (kin[candidate] == 0 || isNeighborOf(from, candidate))
+				continue;
+			return candidate;
+		}
+		int selected = -1;
+		int seen = 0;
+		for (int candidate = 0; candidate < size; candidate++) {
+			if (candidate == from || kin[candidate] == 0 || isNeighborOf(from, candidate))
+				continue;
+			seen++;
+			if (rng.random0n(seen) == 0)
+				selected = candidate;
+		}
+		if (selected >= 0)
+			return selected;
+		throw new IllegalStateException("No feasible target node for directed rewiring.");
+	}
+
+	/**
+	 * Resolve the predecessor used for the next rewiring step.
+	 *
+	 * @param to   the current node being rewired through
+	 * @param len  the number of valid in-neighbours of {@code to}
+	 * @param from the initially selected predecessor of {@code to}
+	 * @return a predecessor that still has room for one more outgoing link
+	 */
+	private int selectRewiringSource(int to, int len, int from) {
+		if (kout[from] < size - 1)
+			return from;
+		for (int n = 0; n < len - 1; n++) {
+			int candidate = in[to][n];
+			if (kout[candidate] < size - 1)
+				return candidate;
+		}
+		if (kout[in[to][len - 1]] == size - 1)
+			throw new IllegalStateException("Rewiring troubles - giving up...");
+		return in[to][len - 1];
 	}
 
 	/**
