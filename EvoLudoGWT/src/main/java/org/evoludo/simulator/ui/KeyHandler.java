@@ -241,7 +241,26 @@ public class KeyHandler {
 	}
 
 	/**
+	 * Determines whether {@code key} is a modifier key (Alt, Shift, Ctrl or
+	 * Meta).
+	 *
+	 * @param key the key value reported by the browser event
+	 * @return {@code true} if {@code key} is a modifier key
+	 */
+	private static boolean isModifierKey(String key) {
+		return key.equals(KEY_ALT) || key.equals(KEY_SHIFT) || key.equals(KEY_CTRL) || key.equals(KEY_META);
+	}
+
+	/**
 	 * Dispatches keydown events first to the active controller, then to others.
+	 * <p>
+	 * <strong>Note:</strong> a modifier key alone never counts as "consumed" by
+	 * {@link #onKeyDown(String)} (it only updates tracked state and button
+	 * labels), so unlike other keys it is restricted to a single controller -
+	 * the active one, or the first registered controller if none is active -
+	 * and is not passed on to the others regardless of that controller's return
+	 * value; otherwise every lab on the page would toggle its button labels
+	 * whenever any one of them has focus.
 	 *
 	 * @param key the key value reported by the browser event
 	 * @return {@code true} if any controller consumed the event
@@ -249,8 +268,13 @@ public class KeyHandler {
 	@SuppressWarnings("java:S1144") // Used by JSNI
 	private static boolean dispatchKeyDown(String key) {
 		KeyHandler current = active;
-		if (current != null && current.onKeyDown(key))
-			return true;
+		if (current == null && !keyHandlers.isEmpty())
+			current = keyHandlers.get(0);
+		if (current == null)
+			return false;
+		boolean handled = current.onKeyDown(key);
+		if (handled || isModifierKey(key))
+			return handled;
 		for (KeyHandler controller : new ArrayList<>(keyHandlers)) {
 			if (controller == current)
 				continue;
@@ -262,6 +286,8 @@ public class KeyHandler {
 
 	/**
 	 * Dispatches keyup events first to the active controller, then to others.
+	 * See {@link #dispatchKeyDown(String)} for why modifier keys are restricted
+	 * to a single controller.
 	 *
 	 * @param key the key value reported by the browser event
 	 * @return {@code true} if any controller consumed the event
@@ -269,8 +295,13 @@ public class KeyHandler {
 	@SuppressWarnings("java:S1144") // Used by JSNI
 	private static boolean dispatchKeyUp(String key) {
 		KeyHandler current = active;
-		if (current != null && current.onKeyUp(key))
-			return true;
+		if (current == null && !keyHandlers.isEmpty())
+			current = keyHandlers.get(0);
+		if (current == null)
+			return false;
+		boolean handled = current.onKeyUp(key);
+		if (handled || isModifierKey(key))
+			return handled;
 		for (KeyHandler controller : new ArrayList<>(keyHandlers)) {
 			if (controller == current)
 				continue;
@@ -281,18 +312,40 @@ public class KeyHandler {
 	}
 
 	/**
-	 * Determines whether any controller's CLO field currently has focus.
+	 * Determines whether the CLO/settings field of the currently active
+	 * controller has focus.
 	 *
-	 * @return {@code true} if one of the registered controllers has its CLO field
-	 *         focused
+	 * @return {@code true} if the active controller's CLO field is focused
 	 */
-	@SuppressWarnings("java:S1144") // Used by JSNI
 	private static boolean isCLOFieldFocused() {
 		if (active == null)
 			return false;
 		Element focused = NativeJS.getActiveElement();
 		Element cloElement = active.gui.getCLOElement();
 		return focused != null && cloElement != null && focused.equals(cloElement);
+	}
+
+	/**
+	 * Determines whether a key event should be dropped before it even reaches
+	 * {@link #dispatchKeyDown(String)}/{@link #dispatchKeyUp(String)}.
+	 * <p>
+	 * While a CLO/settings field has focus, plain typing (and shortcuts such as
+	 * {@code Cmd-C}, already handled separately) must not leak through to
+	 * <em>other</em>, unfocused EvoLudo instances on the same page - the dispatch
+	 * loop falls through to every registered controller, not just the focused
+	 * one, so per-instance focus checks alone are not enough. Modifier keys
+	 * (Alt, Shift, Ctrl, Meta) are the exception: they carry no shortcut action
+	 * by themselves, only update tracked state and button labels, so they are
+	 * let through even while a CLO field has focus.
+	 *
+	 * @param key the key value reported by the browser event
+	 * @return {@code true} if the event should be dropped without dispatching
+	 */
+	@SuppressWarnings("java:S1144") // Used by JSNI
+	private static boolean blocksDispatch(String key) {
+		if (!isCLOFieldFocused())
+			return false;
+		return !isModifierKey(key);
 	}
 
 	/**
@@ -744,7 +797,7 @@ public class KeyHandler {
 			$wnd.EvoLudoUtils.keyListeners.set(
 				'keydown',
 				$entry(function(event) {
-					if (@org.evoludo.simulator.ui.KeyHandler::isCLOFieldFocused()())
+					if (@org.evoludo.simulator.ui.KeyHandler::blocksDispatch(Ljava/lang/String;)(event.key))
 						return;
 					if (@org.evoludo.simulator.ui.KeyHandler::dispatchKeyDown(Ljava/lang/String;)(event.key)) {
 						event.preventDefault();
@@ -754,7 +807,7 @@ public class KeyHandler {
 			$wnd.EvoLudoUtils.keyListeners.set(
 				'keyup',
 				$entry(function(event) {
-					if (@org.evoludo.simulator.ui.KeyHandler::isCLOFieldFocused()())
+					if (@org.evoludo.simulator.ui.KeyHandler::blocksDispatch(Ljava/lang/String;)(event.key))
 						return;
 					if (@org.evoludo.simulator.ui.KeyHandler::dispatchKeyUp(Ljava/lang/String;)(event.key)) {
 						event.preventDefault();
