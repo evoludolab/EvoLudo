@@ -454,11 +454,17 @@ public class IBSDPopulation extends IBSPopulation<Discrete, IBSDPopulation> {
 	 * derived from the diffusion coefficient set through
 	 * {@code --migration D<i>&lt;D&gt;</i>} - cached alongside {@link #maxRate}
 	 * since both depend only on quantities that are fixed for the duration of a
-	 * run (rates, population size and geometry).
+	 * run (rates, population size and geometry). Protected rather than private
+	 * so that subclasses overriding {@link #updateMaxRate()} with their own
+	 * (non-generic) rate structure - e.g. because they support a full
+	 * competition matrix among more than two types, which
+	 * {@link Discrete#getCompetitionRates()} cannot represent - can still fold
+	 * diffusion into their own bound via {@link #effectiveDiffusionRate()},
+	 * instead of duplicating the diffusion-coefficient machinery themselves.
 	 *
 	 * @see #effectiveDiffusionRate()
 	 */
-	private double exchangeRate;
+	protected double exchangeRate;
 
 	/**
 	 * Derive the microscopic exchange rate \(\epsilon\) at which two adjacent
@@ -481,7 +487,7 @@ public class IBSDPopulation extends IBSPopulation<Discrete, IBSDPopulation> {
 	 *
 	 * @return the microscopic exchange rate \(\epsilon\)
 	 */
-	private double effectiveDiffusionRate() {
+	protected double effectiveDiffusionRate() {
 		if (getMigrationType() != MigrationType.DIFFUSION)
 			return 0.0;
 		double diffusion = getMigrationProb();
