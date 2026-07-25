@@ -102,10 +102,14 @@ class ODEInitialize {
 			String iargs = null;
 			// if matching of inittype failed assume it was omitted; use previous type
 			if (itype == null) {
-				// if no previous match, give up
-				if (idx == 0) {
+				// try optional-key fallback (single or default+one active type)
+				itype = (InitType) ode.cloInit.matchOptionalKey(inittype);
+				if (itype != null) {
+					iargs = typeargs[0];
+				} else if (idx == 0) {
+					// no previous match and no fallback available - give up
 					success = false;
-					itype = InitType.UNIFORM;
+					itype = (InitType) ode.cloInit.match(ode.cloInit.getDefault());
 					if (ode.logger.isLoggable(Level.WARNING))
 						ode.logger.warning("invalid init type '" + inittype + "' - using " + itype.getKey() + ".");
 				} else {
@@ -117,11 +121,12 @@ class ODEInitialize {
 			int nTraits = pop.getNTraits();
 			if (!processInit(pop, itype, iargs, start)) {
 				success = false;
+				InitType deftype = (InitType) ode.cloInit.match(ode.cloInit.getDefault());
 				if (ode.logger.isLoggable(Level.WARNING))
 					ode.logger.warning("invalid init args '" + iargs + "' for init type '" + itype.getKey()
-							+ "' - using " + InitType.UNIFORM.getKey() + ".");
-				// fall back to uniform initialization
-				itype = InitType.UNIFORM;
+							+ "' - using " + deftype.getKey() + ".");
+				// fall back to the option's default initialization
+				itype = deftype;
 				processInit(pop, itype, null, start);
 			}
 			ode.initType[idx] = itype;

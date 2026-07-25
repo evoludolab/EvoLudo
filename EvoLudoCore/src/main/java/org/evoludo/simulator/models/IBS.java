@@ -1249,7 +1249,7 @@ public abstract class IBS extends Model {
 				 * values. The parser cycles through <code>arg</code> until all
 				 * populations/species have the migration types and probabilities of players
 				 * set.
-				 * 
+				 *
 				 * @param arg the (array of) migration type(s) and probability(ies)
 				 */
 				@Override
@@ -1261,16 +1261,7 @@ public abstract class IBS extends Model {
 					for (Module<?> mod : species) {
 						IBSPopulation<?, ?> pop = mod.getIBSPopulation();
 						String migt = migrationtypes[n++ % migrationtypes.length];
-						MigrationType mt = (MigrationType) cloMigration.match(migt);
-						if (mt == null && cloMigration.getKeys().size() == 2) {
-							// 'none' plus a single other type is active; its key is optional
-							for (CLOption.Key key : cloMigration.getKeys()) {
-								if (key != MigrationType.NONE) {
-									mt = (MigrationType) key;
-									break;
-								}
-							}
-						}
+						MigrationType mt = (MigrationType) cloMigration.matchOptionalKey(migt);
 						if (mt != null) {
 							pop.setMigrationType(mt);
 							if (mt == MigrationType.NONE) {

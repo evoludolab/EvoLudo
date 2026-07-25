@@ -1876,14 +1876,17 @@ public class ODE extends Model implements DModel {
 		cloInit.addKeys(InitType.values());
 		if (!(mod instanceof HasDE.DualDynamics)) {
 			if (isDensity) {
-				// remove frequency specific initialization options
+				// remove frequency specific initialization options; 'uniform' is no longer
+				// a valid default, fall back to unit densities instead
 				cloInit.removeKey(InitType.RANDOM);
 				cloInit.removeKey(InitType.FREQUENCY);
 				cloInit.removeKey(InitType.UNIFORM);
+				cloInit.setDefault(InitType.UNITY.getKey());
 			} else {
 				// remove density specific initialization options
 				cloInit.removeKey(InitType.DENSITY);
 				cloInit.removeKey(InitType.UNITY);
+				cloInit.setDefault(InitType.UNIFORM.getKey());
 			}
 			cloInit.removeKey(InitType.MUTANT);
 		}

@@ -684,9 +684,51 @@ public class CLOption implements Comparable<CLOption> {
 	}
 
 	/**
+	 * Returns the key that matches <code>keyname</code>, as {@link #match(String)}.
+	 * If no key matches, the key prefix is treated as optional in two cases:
+	 * <ol>
+	 * <li>exactly one key is currently registered - specifying it is redundant
+	 * and hence optional;
+	 * <li>exactly two keys are currently registered and one of them is the
+	 * option's current default (see {@link #getDefault()}), e.g. a 'none'-like
+	 * key - the other, non-default key is the only genuine alternative and so
+	 * its prefix is optional.
+	 * </ol>
+	 * In all other cases, e.g. more than two keys registered, or neither/both of
+	 * two registered keys match the default, no fallback applies and
+	 * <code>null</code> is returned to flag <code>keyname</code> as invalid.
+	 *
+	 * @param keyname the name of the key to match
+	 * @return the matching, sole, or unambiguous non-default key, or
+	 *         <code>null</code> if none of these apply
+	 */
+	public Key matchOptionalKey(String keyname) {
+		Key key = match(keyname);
+		if (key != null || keys == null)
+			return key;
+		Collection<Key> all = keys.values();
+		if (all.size() == 1)
+			return all.iterator().next();
+		if (all.size() == 2) {
+			String def = getDefault();
+			Key nonDefault = null;
+			for (Key k : all) {
+				if (def != null && k.getKey().equals(def))
+					continue;
+				if (nonDefault != null)
+					// neither key matches the default - ambiguous, don't guess
+					return null;
+				nonDefault = k;
+			}
+			return nonDefault;
+		}
+		return null;
+	}
+
+	/**
 	 * Remove key from the option's key collection. Returns {@code null} if the
 	 * option has no keys or the {@code key} is not part of the collection.
-	 * 
+	 *
 	 * @param key the key to remove
 	 * @return the key that was removed or <code>null</code> if no such key exists
 	 */
@@ -1018,7 +1060,7 @@ public class CLOption implements Comparable<CLOption> {
 				// no valid key position available, append as-is and continue.
 				sb.append(String.join(",", argsn));
 			} else {
-				Key key = match(argsn[keypos]);
+				Key key = matchOptionalKey(argsn[keypos]);
 				if (key == null) {
 					key = prev;
 				}
@@ -1036,7 +1078,7 @@ public class CLOption implements Comparable<CLOption> {
 
 	/**
 	 * Append the resolved key value and remaining arguments to the builder.
-	 * 
+	 *
 	 * @param sb   builder to append to
 	 * @param key  resolved key
 	 * @param args tokenized argument list
@@ -1051,12 +1093,11 @@ public class CLOption implements Comparable<CLOption> {
 			sb.append(String.join(",", lead)).append(" ");
 		}
 		sb.append(key.getKey());
-		// preserve any remainder of the matched token beyond the key itself, e.g.
-		// 'N4' matched against key 'N' - the '4' must not be silently dropped
-		String matched = args[pos];
-		String keyStr = key.getKey();
-		if (matched.length() > keyStr.length())
-			sb.append(matched.substring(keyStr.length()));
+		// Preserve any remainder of the matched token beyond the key itself, e.g.
+		// 'N4' matched against key 'N' - the '4' must not be silently dropped.
+		String remainder = stripKey(key, args[pos]);
+		if (!remainder.isEmpty())
+			sb.append(" ").append(remainder);
 		if (tail.length > 0) {
 			sb.append(" ").append(String.join(",", tail));
 		}
