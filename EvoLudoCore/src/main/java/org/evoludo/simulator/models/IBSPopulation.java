@@ -654,9 +654,13 @@ public abstract class IBSPopulation<M extends Module<?>, P extends IBSPopulation
 	protected MigrationType migrationType = MigrationType.NONE;
 
 	/**
-	 * The probability of migration.
+	 * The probability of migration, indexed by trait. A single entry applies to
+	 * all traits (cycled with modulo indexing, see {@link #getMigrationProb(int)}
+	 * - only relevant for {@link IBS.MigrationType#DIFFUSION} on ecological
+	 * (vacancy) population updates, where different traits can migrate at
+	 * different rates, see {@code IBSDPopulation}.
 	 */
-	protected double pMigration = 0.0;
+	protected double[] pMigration = { 0.0 };
 
 	/**
 	 * Conveninece variable to store cumulative probability distributions for
@@ -828,17 +832,17 @@ public abstract class IBSPopulation<M extends Module<?>, P extends IBSPopulation
 			case NONE:
 				break;
 			case BIRTH_DEATH:
-				nMigrants = nextBinomial(pMigration, nPopulation);
+				nMigrants = nextBinomial(getMigrationProb(), nPopulation);
 				for (int n = 0; n < nMigrants; n++)
 					doBirthDeathMigration();
 				break;
 			case DEATH_BIRTH:
-				nMigrants = nextBinomial(pMigration, nPopulation);
+				nMigrants = nextBinomial(getMigrationProb(), nPopulation);
 				for (int n = 0; n < nMigrants; n++)
 					doDeathBirthMigration();
 				break;
 			case DIFFUSION:
-				nMigrants = nextBinomial(pMigration, nPopulation);
+				nMigrants = nextBinomial(getMigrationProb(), nPopulation);
 				for (int n = 0; n < nMigrants; n++)
 					doDiffusionMigration();
 				break;
@@ -3569,7 +3573,14 @@ public abstract class IBSPopulation<M extends Module<?>, P extends IBSPopulation
 	 * feasible).
 	 */
 	void checkMigration() {
-		if (pMigration < 1e-10 || migrationType == MigrationType.NONE) {
+		boolean anyMigration = false;
+		for (double p : pMigration) {
+			if (p >= 1e-10) {
+				anyMigration = true;
+				break;
+			}
+		}
+		if (!anyMigration || migrationType == MigrationType.NONE) {
 			setMigrationType(MigrationType.NONE);
 			setMigrationProb(0.0);
 			return;
@@ -4788,21 +4799,44 @@ public abstract class IBSPopulation<M extends Module<?>, P extends IBSPopulation
 	}
 
 	/**
-	 * Sets the migration probability to {@code aValue}.
-	 * 
+	 * Sets the migration probability to {@code aValue} for all traits.
+	 *
 	 * @param aValue the new migration probability
 	 */
 	public void setMigrationProb(double aValue) {
-		pMigration = aValue;
+		pMigration = new double[] { aValue };
+	}
+
+	/**
+	 * Sets the migration probability per trait to {@code rates}.
+	 *
+	 * @param rates the new migration probabilities, one per trait
+	 *
+	 * @see #getMigrationProb(int)
+	 */
+	public void setMigrationProb(double[] rates) {
+		pMigration = (rates == null || rates.length == 0) ? new double[] { 0.0 } : rates;
 	}
 
 	/**
 	 * Gets the migration probability.
-	 * 
+	 *
 	 * @return the migration probability
 	 */
 	public double getMigrationProb() {
-		return pMigration;
+		return pMigration[0];
+	}
+
+	/**
+	 * Gets the migration probability for {@code type}. Entries are cycled with
+	 * modulo indexing if fewer rates than traits were specified, e.g. a single
+	 * rate applies to all traits.
+	 *
+	 * @param type the trait for which to get the migration probability
+	 * @return the migration probability of {@code type}
+	 */
+	public double getMigrationProb(int type) {
+		return pMigration[type % pMigration.length];
 	}
 
 	/**

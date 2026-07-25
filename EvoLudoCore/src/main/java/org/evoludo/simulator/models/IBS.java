@@ -1238,7 +1238,9 @@ public abstract class IBS extends Model {
 	 * Command line option to set the migration types and probabilities of players.
 	 */
 	public final CLOption cloMigration = new CLOption("migration", "none", CLOCategory.Model,
-			"--migration <tp>  migration (t type, p probability)",
+			"--migration <tp>  migration (t type, p probability;\n" +
+					"                  p0,p1,... rate per trait for diffusive\n" +
+					"                  migration in ecological populations)",
 			new CLODelegate() {
 
 				/**
@@ -1246,44 +1248,55 @@ public abstract class IBS extends Model {
 				 * <p>
 				 * Parse migration types and probabilities of players in a single or multiple
 				 * populations/species. <code>arg</code> can be a single value or an array of
-				 * values. The parser cycles through <code>arg</code> until all
-				 * populations/species have the migration types and probabilities of players
-				 * set.
+				 * values separated by {@value CLOParser#SPECIES_DELIMITER}. The parser cycles
+				 * through <code>arg</code> until all populations/species have the migration
+				 * types and probabilities of players set. For diffusive migration in
+				 * ecological (vacancy) populations, the probability can be a
+				 * {@value CLOParser#VECTOR_DELIMITER}-separated list of rates, one per trait
+				 * (cycled with modulo indexing if fewer rates than traits are given), so that
+				 * different traits can migrate at different rates.
 				 *
 				 * @param arg the (array of) migration type(s) and probability(ies)
 				 */
 				@Override
 				public boolean parse(String arg) {
-					String[] migrationtypes = arg.contains(CLOParser.SPECIES_DELIMITER)
-							? arg.split(CLOParser.SPECIES_DELIMITER)
-							: arg.split(CLOParser.VECTOR_DELIMITER);
+					String[] migrationtypes = arg.split(CLOParser.SPECIES_DELIMITER);
 					int n = 0;
 					for (Module<?> mod : species) {
 						IBSPopulation<?, ?> pop = mod.getIBSPopulation();
 						String migt = migrationtypes[n++ % migrationtypes.length];
 						MigrationType mt = (MigrationType) cloMigration.matchOptionalKey(migt);
-						if (mt != null) {
-							pop.setMigrationType(mt);
-							if (mt == MigrationType.NONE) {
-								pop.setMigrationProb(0.0);
-							} else {
-								String keyarg = CLOption.stripKey(mt, arg);
-								if (!keyarg.isEmpty()) {
-									pop.setMigrationProb(CLOParser.parseDouble(keyarg));
-									double mig = pop.getMigrationProb();
-									if (mig < 1e-8) {
-										if (logger.isLoggable(Level.WARNING))
-											logger.warning((isMultispecies ? mod.getName() + ": " : "")
-													+ "migration rate too small (" + Formatter.formatSci(mig, 4)
-													+ ") - reverting to no migration");
-										pop.setMigrationType(MigrationType.NONE);
-										pop.setMigrationProb(0.0);
-									}
-								}
-							}
+						if (mt == null)
+							return false;
+						pop.setMigrationType(mt);
+						if (mt == MigrationType.NONE) {
+							pop.setMigrationProb(0.0);
 							continue;
 						}
-						return false;
+						String keyarg = CLOption.stripKey(mt, migt);
+						if (keyarg.isEmpty())
+							continue;
+						double[] rates = CLOParser.parseVector(keyarg);
+						boolean perType = (mt == MigrationType.DIFFUSION && mod.getVacantIdx() >= 0);
+						if (!perType && rates.length > 1) {
+							if (logger.isLoggable(Level.WARNING))
+								logger.warning((isMultispecies ? mod.getName() + ": " : "")
+										+ "per-type migration rates only supported for diffusive "
+										+ "migration in ecological (vacancy) populations - using first rate only");
+							rates = new double[] { rates[0] };
+						}
+						pop.setMigrationProb(rates);
+						double mig = 0.0;
+						for (double r : rates)
+							mig = Math.max(mig, r);
+						if (mig < 1e-8) {
+							if (logger.isLoggable(Level.WARNING))
+								logger.warning((isMultispecies ? mod.getName() + ": " : "")
+										+ "migration rate too small (" + Formatter.formatSci(mig, 4)
+										+ ") - reverting to no migration");
+							pop.setMigrationType(MigrationType.NONE);
+							pop.setMigrationProb(0.0);
+						}
 					}
 					return true;
 				}

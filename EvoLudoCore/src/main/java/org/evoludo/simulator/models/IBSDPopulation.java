@@ -451,48 +451,53 @@ public class IBSDPopulation extends IBSPopulation<Discrete, IBSDPopulation> {
 
 	/**
 	 * The microscopic rate at which two adjacent sites exchange occupants,
-	 * derived from the diffusion coefficient set through
-	 * {@code --migration D<i>&lt;D&gt;</i>} - cached alongside {@link #maxRate}
-	 * since both depend only on quantities that are fixed for the duration of a
-	 * run (rates, population size and geometry). Protected rather than private
-	 * so that subclasses overriding {@link #updateMaxRate()} with their own
-	 * (non-generic) rate structure - e.g. because they support a full
-	 * competition matrix among more than two types, which
-	 * {@link Discrete#getCompetitionRates()} cannot represent - can still fold
-	 * diffusion into their own bound via {@link #effectiveDiffusionRate()},
-	 * instead of duplicating the diffusion-coefficient machinery themselves.
+	 * indexed by the trait of the individual at the site whose turn it is to
+	 * update (see {@link #updatePlayerEcologyAt(int)}), derived from the
+	 * diffusion coefficient(s) set through {@code --migration D<i>&lt;D&gt;</i>}
+	 * - cached alongside {@link #maxRate} since both depend only on quantities
+	 * that are fixed for the duration of a run (rates, population size and
+	 * geometry). Protected rather than private so that subclasses overriding
+	 * {@link #updateMaxRate()} with their own (non-generic) rate structure -
+	 * e.g. because they support a full competition matrix among more than two
+	 * types, which {@link Discrete#getCompetitionRates()} cannot represent -
+	 * can still fold diffusion into their own bound via
+	 * {@link #updateExchangeRates()}, instead of duplicating the
+	 * diffusion-coefficient machinery themselves.
 	 *
-	 * @see #effectiveDiffusionRate()
+	 * @see #updateExchangeRates()
 	 */
-	protected double exchangeRate;
+	protected double[] exchangeRates;
 
 	/**
-	 * Derive the microscopic exchange rate \(\epsilon\) at which two adjacent
-	 * sites swap occupants from the migration probability
-	 * {@link IBSPopulation#pMigration}, interpreted here as a diffusion
-	 * coefficient \(D\) (only {@link IBS.MigrationType#DIFFUSION} is supported
-	 * for ecological population updates, see
+	 * Derive the microscopic exchange rate(s) \(\epsilon\) at which two adjacent
+	 * sites swap occupants from the migration probability(ies)
+	 * {@link IBSPopulation#pMigration}, one per trait, interpreted here as
+	 * diffusion coefficient(s) \(D\) (only {@link IBS.MigrationType#DIFFUSION}
+	 * is supported for ecological population updates, see
 	 * {@link IBSPopulation#checkMigration()}). On lattice geometries with a
 	 * well defined spatial dimension \(\delta\) - disregarding boundary
 	 * conditions, i.e. {@link GeometryType#LINEAR} (\(\delta=1\)),
 	 * {@link GeometryType#SQUARE}, {@link GeometryType#SQUARE_MOORE},
 	 * {@link GeometryType#SQUARE_NEUMANN}, {@link GeometryType#SQUARE_NEUMANN_2ND},
 	 * {@link GeometryType#HEXAGONAL} and {@link GeometryType#TRIANGULAR}
-	 * (\(\delta=2\)), as well as {@link GeometryType#CUBE} (\(\delta=3\)) - the
+	 * (\(\delta=2\)), as well as {@link GeometryType#CUBE} (\(\delta=3\)) - each
 	 * migration probability is interpreted as the macroscopic diffusion
 	 * coefficient \(D\) and converted according to
 	 * \(\epsilon = D\,\delta\,N^{2/\delta}\), where \(N\) is the total number
 	 * of sites. For all other geometries, where the spatial dimension is not
 	 * defined, the migration probability is used directly as \(\epsilon\).
-	 *
-	 * @return the microscopic exchange rate \(\epsilon\)
+	 * Populates {@link #exchangeRates}, one entry per trait (see
+	 * {@link IBSPopulation#getMigrationProb(int)} for how fewer rates than
+	 * traits are cycled to allow different traits to migrate at different
+	 * rates).
 	 */
-	protected double effectiveDiffusionRate() {
-		if (getMigrationType() != MigrationType.DIFFUSION)
-			return 0.0;
-		double diffusion = getMigrationProb();
-		if (diffusion <= 0.0)
-			return 0.0;
+	protected void updateExchangeRates() {
+		if (exchangeRates == null || exchangeRates.length != nTraits)
+			exchangeRates = new double[nTraits];
+		if (getMigrationType() != MigrationType.DIFFUSION) {
+			Arrays.fill(exchangeRates, 0.0);
+			return;
+		}
 		int delta;
 		switch (competition.getType()) {
 			case LINEAR:
@@ -510,10 +515,14 @@ public class IBSDPopulation extends IBSPopulation<Discrete, IBSDPopulation> {
 				delta = 3;
 				break;
 			default:
-				// spatial dimension not defined - use epsilon directly
-				return diffusion;
+				// spatial dimension not defined - use each migration probability directly
+				delta = 0;
 		}
-		return diffusion * delta * Math.pow(nPopulation, 2.0 / delta);
+		for (int t = 0; t < nTraits; t++) {
+			double diffusion = getMigrationProb(t);
+			exchangeRates[t] = (diffusion <= 0.0) ? 0.0
+					: (delta == 0) ? diffusion : diffusion * delta * Math.pow(nPopulation, 2.0 / delta);
+		}
 	}
 
 	/**
@@ -523,7 +532,12 @@ public class IBSDPopulation extends IBSPopulation<Discrete, IBSDPopulation> {
 	 */
 	protected void updateMaxRate() {
 		// updates always involve focal, peer, opponent; cover all combinations
-		exchangeRate = effectiveDiffusionRate();
+		updateExchangeRates();
+		double maxExchangeRate = 0.0;
+		for (double rate : exchangeRates) {
+			if (rate > maxExchangeRate)
+				maxExchangeRate = rate;
+		}
 		double rBirth = module.getBirthRate();
 		double rDeath = module.getDeathRate();
 		double[] compRates = module.getCompetitionRates();
@@ -562,18 +576,18 @@ public class IBSDPopulation extends IBSPopulation<Discrete, IBSDPopulation> {
 			// occupied, so it adds to both
 			double maxVacant = rDeath + rBirth + maxFitness + peerSynergy + Math.max(maxOppPos, maxOppNeg);
 			double maxOccupied = rDeath + peerComp + maxOppPos;
-			maxRate = Math.max(maxVacant, maxOccupied) + exchangeRate;
+			maxRate = Math.max(maxVacant, maxOccupied) + maxExchangeRate;
 		} else {
 			// peer (upstream) and the site available for placing offspring
 			// (downstream) are drawn independently, so birth and same-/cross-species
 			// competition are no longer mutually exclusive and must be summed;
 			// peerComp/peerSynergy are mutually exclusive by the sign of peerRate,
 			// and the opponent term already takes the tighter of its two directions,
-			// so this sum is exact, not an overestimate. exchangeRate is always 0.0
+			// so this sum is exact, not an overestimate. maxExchangeRate is always 0.0
 			// here since diffusion requires an undirected geometry, see
 			// IBSPopulation#checkMigration()
 			maxRate = rDeath + rBirth + maxFitness + peerSynergy + peerComp + Math.max(maxOppPos, maxOppNeg)
-					+ exchangeRate;
+					+ maxExchangeRate;
 		}
 	}
 
@@ -640,9 +654,13 @@ public class IBSDPopulation extends IBSPopulation<Discrete, IBSDPopulation> {
 				rDeath += rate; // peer competition
 		}
 		// diffusion: focal and peer trade places if they differ, including peer
-		// being vacant (focal hops into the empty neighbouring site); requires an
-		// undirected geometry, already enforced by IBSPopulation#checkMigration()
-		double rDiff = (peer >= 0 && exchangeRate > 0.0 && getTraitAt(peer) != getTraitAt(me)) ? exchangeRate : 0.0;
+		// being vacant (focal hops into the empty neighbouring site); the rate is
+		// that of the focal's own trait (each individual carries its own mobility
+		// when it is its turn to update); requires an undirected geometry, already
+		// enforced by IBSPopulation#checkMigration()
+		double focalExchangeRate = exchangeRates[getTraitAt(me)];
+		double rDiff = (peer >= 0 && focalExchangeRate > 0.0 && getTraitAt(peer) != getTraitAt(me)) ? focalExchangeRate
+				: 0.0;
 		// offspring, in turn, is placed on a downstream neighbour (analogous to
 		// Birth-death updating); on undirected geometries upstream and downstream
 		// neighbours coincide, so reuse peer instead of drawing (and checking) again;

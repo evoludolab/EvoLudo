@@ -228,9 +228,9 @@ public class DemesTBT extends TBT {
 			}
 			if (demeTypeCount == null || demeTypeCount.length != nDemes)
 				demeTypeCount = new int[nDemes][nTraits];
-			if (nDemes == 1 || pMigration <= 0.0) {
+			if (nDemes == 1 || getMigrationProb() <= 0.0) {
 				migrationType = MigrationType.NONE;
-				pMigration = 0.0;
+				setMigrationProb(0.0);
 				optimizeMigration = false;
 			}
 			if (nDemes > 1 && !adjustScores) {
@@ -242,9 +242,9 @@ public class DemesTBT extends TBT {
 				// need to get new instances to make sure potential changes in pMigration,
 				// mutation probabilities are reflected. must be based on same RNG as the
 				// rest of simulations to ensure reproducibility of results
-				distrMigration = new RNGDistribution.Geometric(rng.getRNG(), pMigration);
+				distrMigration = new RNGDistribution.Geometric(rng.getRNG(), getMigrationProb());
 				distrMutationMigration = new RNGDistribution.Geometric(rng.getRNG(),
-						pMigration + mutation.probability);
+						getMigrationProb() + mutation.probability);
 			}
 			return doReset;
 		}
@@ -282,12 +282,13 @@ public class DemesTBT extends TBT {
 				if (mutation.probability <= 0.0 && !optimizeMigration)
 					// pMigration=0: absorbed (heterogeneous population but homogeneous demes)
 					// pMigration>0: waiting for migration to happen
-					return (pMigration <= 0.0);
+					return (getMigrationProb() <= 0.0);
 
 				// determine WHEN next event happens
 				double timehomo = distrMutationMigration.next() / (double) nPopulation;
 				updateStatistics(timehomo);
 				// determine WHAT event happens (sequence of this is of crucial importance!)
+				double pMigration = getMigrationProb();
 				if (random01() * (mutation.probability + pMigration) < pMigration)
 					// do migration
 					doMigration();
