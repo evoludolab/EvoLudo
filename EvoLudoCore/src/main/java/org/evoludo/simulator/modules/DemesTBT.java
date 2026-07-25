@@ -228,7 +228,16 @@ public class DemesTBT extends TBT {
 			}
 			if (demeTypeCount == null || demeTypeCount.length != nDemes)
 				demeTypeCount = new int[nDemes][nTraits];
-			if (nDemes == 1 || getMigrationProb() <= 0.0) {
+			if (pMigration.length > 1) {
+				// deme-structured populations don't (yet) support per-trait migration
+				// rates - the analytical machinery below (distrMigration,
+				// distrMutationMigration) assumes a single, homogeneous rate; a
+				// tangent not currently worth pursuing, see IBS#cloMigration
+				logger.warning("per-trait migration rates not supported for deme-structured populations "
+						+ "- using first rate only");
+				setMigrationProb(getMigrationProb(0));
+			}
+			if (nDemes == 1 || getMaxMigrationProb() <= 0.0) {
 				migrationType = MigrationType.NONE;
 				setMigrationProb(0.0);
 				optimizeMigration = false;
@@ -242,9 +251,9 @@ public class DemesTBT extends TBT {
 				// need to get new instances to make sure potential changes in pMigration,
 				// mutation probabilities are reflected. must be based on same RNG as the
 				// rest of simulations to ensure reproducibility of results
-				distrMigration = new RNGDistribution.Geometric(rng.getRNG(), getMigrationProb());
+				distrMigration = new RNGDistribution.Geometric(rng.getRNG(), getMigrationProb(0));
 				distrMutationMigration = new RNGDistribution.Geometric(rng.getRNG(),
-						getMigrationProb() + mutation.probability);
+						getMigrationProb(0) + mutation.probability);
 			}
 			return doReset;
 		}
@@ -282,13 +291,13 @@ public class DemesTBT extends TBT {
 				if (mutation.probability <= 0.0 && !optimizeMigration)
 					// pMigration=0: absorbed (heterogeneous population but homogeneous demes)
 					// pMigration>0: waiting for migration to happen
-					return (getMigrationProb() <= 0.0);
+					return (getMigrationProb(0) <= 0.0);
 
 				// determine WHEN next event happens
 				double timehomo = distrMutationMigration.next() / (double) nPopulation;
 				updateStatistics(timehomo);
 				// determine WHAT event happens (sequence of this is of crucial importance!)
-				double pMigration = getMigrationProb();
+				double pMigration = getMigrationProb(0);
 				if (random01() * (mutation.probability + pMigration) < pMigration)
 					// do migration
 					doMigration();

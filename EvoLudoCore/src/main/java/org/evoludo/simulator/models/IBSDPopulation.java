@@ -855,6 +855,11 @@ public class IBSDPopulation extends IBSPopulation<Discrete, IBSDPopulation> {
 		return traits[idx] % nTraits;
 	}
 
+	@Override
+	protected double getMigrationAt(int idx) {
+		return getMigrationProb(getTraitAt(idx));
+	}
+
 	/**
 	 * Sets the trait of the individual with index {@code idx} to {@code trait}. The
 	 * trait is an index in {@code [0,nTraits)}.

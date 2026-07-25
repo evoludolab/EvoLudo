@@ -37,6 +37,7 @@ import org.evoludo.simulator.ColorMap;
 import org.evoludo.simulator.EvoLudo;
 import org.evoludo.simulator.geometries.AbstractGeometry;
 import org.evoludo.simulator.geometries.GeometryType;
+import org.evoludo.simulator.modules.Discrete;
 import org.evoludo.simulator.modules.Features.Payoffs;
 import org.evoludo.simulator.modules.Map2Fitness;
 import org.evoludo.simulator.modules.Module;
@@ -1045,7 +1046,7 @@ public abstract class IBS extends Model {
 			return Event.MUTATION;
 		if (pop.getPopulationUpdate().getType() != PopulationUpdate.Type.ECOLOGY
 				&& pop.getMigrationType() != MigrationType.NONE
-				&& random01() <= pop.getMigrationProb())
+				&& random01() <= pop.getMaxMigrationProb())
 			return Event.MIGRATION;
 		return Event.REPLICATION;
 	}
@@ -1085,7 +1086,7 @@ public abstract class IBS extends Model {
 	 */
 	public final CLOption cloAccumulatedScores = new CLOption("accuscores", "noaccu", CLOption.Argument.NONE,
 			CLOCategory.Model,
-			"--accuscores    accumulate scores (instead of averaging)",
+			"--accuscores    accumulate scores (default: averaging)",
 			new CLODelegate() {
 
 				/**
@@ -1237,10 +1238,7 @@ public abstract class IBS extends Model {
 	/**
 	 * Command line option to set the migration types and probabilities of players.
 	 */
-	public final CLOption cloMigration = new CLOption("migration", "none", CLOCategory.Model,
-			"--migration <tp>  migration (t type, p probability;\n" +
-					"                  p0,p1,... rate per trait for diffusive\n" +
-					"                  migration in ecological populations)",
+	public final CLOption cloMigration = new CLOption("migration", "none", CLOCategory.Model, null,
 			new CLODelegate() {
 
 				/**
@@ -1250,11 +1248,18 @@ public abstract class IBS extends Model {
 				 * populations/species. <code>arg</code> can be a single value or an array of
 				 * values separated by {@value CLOParser#SPECIES_DELIMITER}. The parser cycles
 				 * through <code>arg</code> until all populations/species have the migration
-				 * types and probabilities of players set. For diffusive migration in
-				 * ecological (vacancy) populations, the probability can be a
-				 * {@value CLOParser#VECTOR_DELIMITER}-separated list of rates, one per trait
-				 * (cycled with modulo indexing if fewer rates than traits are given), so that
-				 * different traits can migrate at different rates.
+				 * types and probabilities of players set. For discrete-trait modules, the
+				 * probability can instead be a {@value CLOParser#VECTOR_DELIMITER}-separated
+				 * list of rates, one per trait (cycled with modulo indexing if fewer rates
+				 * than traits are given), so that different traits migrate at different
+				 * rates: diffusive migration ({@link MigrationType#DIFFUSION}) folds this
+				 * directly into the per-site rate draw for ecological (vacancy) populations
+				 * (see {@code IBSDPopulation}); for {@link MigrationType#BIRTH_DEATH} and
+				 * {@link MigrationType#DEATH_BIRTH}, and for diffusive migration outside
+				 * ecological populations, the trait of the (fitness- or randomly-selected)
+				 * proposed migrant thins the event relative to the largest rate across all
+				 * traits (see {@link IBSPopulation#rejectMigrant(int)}), so traits with a
+				 * smaller rate migrate correspondingly less often.
 				 *
 				 * @param arg the (array of) migration type(s) and probability(ies)
 				 */
@@ -1277,18 +1282,15 @@ public abstract class IBS extends Model {
 						if (keyarg.isEmpty())
 							continue;
 						double[] rates = CLOParser.parseVector(keyarg);
-						boolean perType = (mt == MigrationType.DIFFUSION && mod.getVacantIdx() >= 0);
-						if (!perType && rates.length > 1) {
+						if (!(mod instanceof Discrete) && rates.length > 1) {
 							if (logger.isLoggable(Level.WARNING))
 								logger.warning((isMultispecies ? mod.getName() + ": " : "")
-										+ "per-type migration rates only supported for diffusive "
-										+ "migration in ecological (vacancy) populations - using first rate only");
+										+ "per-trait migration rates only supported for discrete modules "
+										+ "- using first rate only");
 							rates = new double[] { rates[0] };
 						}
 						pop.setMigrationProb(rates);
-						double mig = 0.0;
-						for (double r : rates)
-							mig = Math.max(mig, r);
+						double mig = pop.getMaxMigrationProb();
 						if (mig < 1e-8) {
 							if (logger.isLoggable(Level.WARNING))
 								logger.warning((isMultispecies ? mod.getName() + ": " : "")
@@ -1299,6 +1301,19 @@ public abstract class IBS extends Model {
 						}
 					}
 					return true;
+				}
+
+				@Override
+				public String getDescription() {
+					String descr;
+					if (species.get(0) instanceof Discrete)
+						descr = "--migration <t p0[,p1,p2,...]>  migration\n" +
+								"            pi: migration rate for trait i,";
+					else
+						descr = "--migration <t p>  migration, p probability,";
+					return descr +
+							"\n             t: migration type, with:\n" +
+							cloMigration.getDescriptionKey();
 				}
 			});
 

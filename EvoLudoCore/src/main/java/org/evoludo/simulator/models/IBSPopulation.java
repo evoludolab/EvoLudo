@@ -832,17 +832,17 @@ public abstract class IBSPopulation<M extends Module<?>, P extends IBSPopulation
 			case NONE:
 				break;
 			case BIRTH_DEATH:
-				nMigrants = nextBinomial(getMigrationProb(), nPopulation);
+				nMigrants = nextBinomial(getMaxMigrationProb(), nPopulation);
 				for (int n = 0; n < nMigrants; n++)
 					doBirthDeathMigration();
 				break;
 			case DEATH_BIRTH:
-				nMigrants = nextBinomial(getMigrationProb(), nPopulation);
+				nMigrants = nextBinomial(getMaxMigrationProb(), nPopulation);
 				for (int n = 0; n < nMigrants; n++)
 					doDeathBirthMigration();
 				break;
 			case DIFFUSION:
-				nMigrants = nextBinomial(getMigrationProb(), nPopulation);
+				nMigrants = nextBinomial(getMaxMigrationProb(), nPopulation);
 				for (int n = 0; n < nMigrants; n++)
 					doDiffusionMigration();
 				break;
@@ -882,10 +882,46 @@ public abstract class IBSPopulation<M extends Module<?>, P extends IBSPopulation
 	 */
 	public void doDiffusionMigration() {
 		int migrant = random0n(nPopulation);
+		if (rejectMigrant(migrant))
+			return;
 		// migrant swaps places with random neighbor
 		int[] myNeighs = interaction.out[migrant];
 		int aNeigh = myNeighs[random0n(interaction.kout[migrant])];
 		updatePlayerSwap(migrant, aNeigh);
+	}
+
+	/**
+	 * Gets the migration rate of the individual at {@code idx}. Only populations
+	 * with discrete traits distinguish rates by individual (see
+	 * {@link IBSDPopulation#getMigrationAt(int)}); the default implementation
+	 * returns {@link #getMigrationProb(int) getMigrationProb(0)}, i.e. the same,
+	 * single rate for everyone - correct since {@link #pMigration} is only ever
+	 * set to more than one entry for discrete-trait modules (see
+	 * {@code IBS#cloMigration}).
+	 *
+	 * @param idx the index of the individual
+	 * @return the migration rate of the individual
+	 */
+	protected double getMigrationAt(int idx) {
+		return getMigrationProb(0);
+	}
+
+	/**
+	 * Thin a proposed migration event by the migration rate of {@code migrant}
+	 * (see {@link #getMigrationAt(int)}), relative to the largest rate across
+	 * all traits ({@link #getMaxMigrationProb()}) used to decide whether/how
+	 * often a migration event is attempted at all in the first place - so that
+	 * traits with a smaller rate than the maximum migrate correspondingly less
+	 * often. Skipped whenever only a single, trait-independent rate is set (the
+	 * common case), to avoid perturbing the random number sequence and hence
+	 * the reproducibility of seeded runs that do not use this feature.
+	 *
+	 * @param migrant the index of the proposed migrant
+	 * @return {@code true} if the proposed migration event should be rejected
+	 */
+	protected boolean rejectMigrant(int migrant) {
+		return pMigration.length > 1
+				&& random01() * getMaxMigrationProb() > getMigrationAt(migrant);
 	}
 
 	/**
@@ -936,6 +972,8 @@ public abstract class IBSPopulation<M extends Module<?>, P extends IBSPopulation
 	 */
 	public void doBirthDeathMigration() {
 		int migrant = pickFitFocalIndividual();
+		if (rejectMigrant(migrant))
+			return;
 		int vacant = random0n(nPopulation - 1);
 		if (vacant >= migrant)
 			vacant++;
@@ -954,6 +992,8 @@ public abstract class IBSPopulation<M extends Module<?>, P extends IBSPopulation
 	public void doDeathBirthMigration() {
 		int vacant = random0n(nPopulation);
 		int migrant = pickFitFocalIndividual(vacant);
+		if (rejectMigrant(migrant))
+			return;
 		migrateMoran(migrant, vacant);
 	}
 
@@ -3573,14 +3613,7 @@ public abstract class IBSPopulation<M extends Module<?>, P extends IBSPopulation
 	 * feasible).
 	 */
 	void checkMigration() {
-		boolean anyMigration = false;
-		for (double p : pMigration) {
-			if (p >= 1e-10) {
-				anyMigration = true;
-				break;
-			}
-		}
-		if (!anyMigration || migrationType == MigrationType.NONE) {
+		if (getMaxMigrationProb() < 1e-10 || migrationType == MigrationType.NONE) {
 			setMigrationType(MigrationType.NONE);
 			setMigrationProb(0.0);
 			return;
@@ -4819,24 +4852,31 @@ public abstract class IBSPopulation<M extends Module<?>, P extends IBSPopulation
 	}
 
 	/**
-	 * Gets the migration probability.
-	 *
-	 * @return the migration probability
-	 */
-	public double getMigrationProb() {
-		return pMigration[0];
-	}
-
-	/**
 	 * Gets the migration probability for {@code type}. Entries are cycled with
 	 * modulo indexing if fewer rates than traits were specified, e.g. a single
-	 * rate applies to all traits.
+	 * rate applies to all traits - so for modules with a single, trait-
+	 * independent rate (the common case), {@code getMigrationProb(0)} is simply
+	 * that rate, regardless of {@code type}.
 	 *
 	 * @param type the trait for which to get the migration probability
 	 * @return the migration probability of {@code type}
 	 */
 	public double getMigrationProb(int type) {
 		return pMigration[type % pMigration.length];
+	}
+
+	/**
+	 * Gets the largest migration probability across all traits - trivially equal
+	 * to {@link #getMigrationProb(int) getMigrationProb(0)} whenever a single,
+	 * trait-independent rate is set. Used as the upper bound to decide
+	 * whether/how often a migration event is attempted at all in the first
+	 * place, with the individual's own rate then thinning the accepted
+	 * attempts, see {@link #rejectMigrant(int)}.
+	 *
+	 * @return the largest migration probability across all traits
+	 */
+	public double getMaxMigrationProb() {
+		return ArrayMath.max(pMigration);
 	}
 
 	/**
