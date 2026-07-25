@@ -85,8 +85,8 @@ public abstract class AbstractGeometry {
 			throw new IllegalArgumentException("engine must not be null");
 		if (cli == null)
 			throw new IllegalArgumentException("geometry specification must not be empty");
-		String normalized = cli.trim();
-		if (normalized.isEmpty())
+		String canonical = cli.trim().replaceAll("\\s+", "");
+		if (canonical.isEmpty())
 			throw new IllegalArgumentException("geometry specification must not be empty");
 		if (current != null) {
 			String currentCLI = current.cli;
@@ -94,15 +94,15 @@ public abstract class AbstractGeometry {
 				String currentSpecs = current.getSpecs();
 				currentCLI = current.getType().getKey() + (currentSpecs == null ? "" : currentSpecs);
 			}
-			if (normalized.equals(currentCLI))
+			if (canonical.equals(currentCLI))
 				return current;
 		}
 		CLOption clo = engine.getModule().cloGeometry;
-		GeometryType type = (GeometryType) clo.match(normalized);
+		GeometryType type = (GeometryType) clo.match(canonical);
 		AbstractGeometry geometry = AbstractGeometry.create(engine, type);
-		String spec = normalized.substring(Math.min(type.key.length(), normalized.length()));
+		String spec = canonical.substring(Math.min(type.key.length(), canonical.length()));
 		geometry.specs = spec;
-		geometry.cli = normalized;
+		geometry.cli = canonical;
 		return geometry;
 	}
 
@@ -235,7 +235,8 @@ public abstract class AbstractGeometry {
 	String specs;
 
 	/**
-	 * Optional trimmed CLI string used to create this geometry.
+	 * Optional canonical CLI string used to create this geometry, with whitespace
+	 * removed.
 	 */
 	String cli;
 
@@ -522,12 +523,30 @@ public abstract class AbstractGeometry {
 	}
 
 	/**
-	 * Get the trimmed CLI string that created this geometry (if available).
+	 * Get the canonical CLI string that created this geometry (if available).
 	 *
-	 * @return the original CLI specification string, or {@code null}
+	 * @return the canonical CLI specification string, or {@code null}
 	 */
 	public String getCLI() {
 		return cli;
+	}
+
+	/**
+	 * Get the canonical, re-parseable command line argument for this geometry,
+	 * with the key separated from its specification by a single space, e.g.
+	 * {@code "N 4f"}, rather than either the fully fused {@link #getCLI()} form
+	 * ({@code "N4f"}) or the original, possibly whitespace-scattered, input
+	 * ({@code "N 4 f"}). Keeping the key on its own isolates it as a single
+	 * token for the generic {@link CLOption} argument report, so a
+	 * comma-separated specification (e.g. hierarchical geometry level sizes)
+	 * round-trips as a single, correctly comma-joined item instead of being
+	 * torn apart by a key fused to its first element.
+	 *
+	 * @return the key and specification, separated by a single space if a
+	 *         specification is present
+	 */
+	public String getCLOArg() {
+		return specs == null || specs.isEmpty() ? type.getKey() : type.getKey() + " " + specs;
 	}
 
 	/**

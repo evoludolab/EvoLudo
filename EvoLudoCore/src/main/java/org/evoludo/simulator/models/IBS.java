@@ -1320,6 +1320,7 @@ public abstract class IBS extends Model {
 						String[] geomargs = arg.split(CLOParser.SPECIES_DELIMITER);
 						boolean doReset = false;
 						int n = 0;
+						StringBuilder canonical = new StringBuilder();
 						for (Module<?> mod : species) {
 							// creates new interaction geometry
 							IBSPopulation<?, ?> ibs = mod.getIBSPopulation();
@@ -1331,8 +1332,14 @@ public abstract class IBS extends Model {
 								ibs.interaction = next;
 								doReset = true;
 							}
+							if (n > 1)
+								canonical.append(CLOParser.SPECIES_DELIMITER);
+							canonical.append(ibs.interaction.getCLOArg());
 						}
 						engine.requiresReset(doReset);
+						// store the canonical, re-parseable form (e.g. 'N 4f' rather than
+						// 'N 4 f'), see AbstractGeometry#getCLOArg()
+						cloGeometryInteraction.setArg(canonical.toString());
 					}
 					return true;
 				}
@@ -1369,6 +1376,7 @@ public abstract class IBS extends Model {
 						String[] geomargs = arg.split(CLOParser.SPECIES_DELIMITER);
 						boolean doReset = false;
 						int n = 0;
+						StringBuilder canonical = new StringBuilder();
 						for (Module<?> mod : species) {
 							// creates new competition geometry
 							IBSPopulation<?, ?> ibs = mod.getIBSPopulation();
@@ -1380,9 +1388,15 @@ public abstract class IBS extends Model {
 								ibs.competition = next;
 								doReset = true;
 							}
+							if (n > 0)
+								canonical.append(CLOParser.SPECIES_DELIMITER);
+							canonical.append(ibs.competition.getCLOArg());
 							n++;
 						}
 						engine.requiresReset(doReset);
+						// store the canonical, re-parseable form (e.g. 'N 4f' rather than
+						// 'N 4 f'), see AbstractGeometry#getCLOArg()
+						cloGeometryCompetition.setArg(canonical.toString());
 					}
 					return true;
 				}

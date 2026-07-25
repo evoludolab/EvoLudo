@@ -1244,6 +1244,7 @@ public abstract class Module<T extends Module<T>>
 					String[] geomargs = arg.split(CLOParser.SPECIES_DELIMITER);
 					boolean doReset = false;
 					int n = 0;
+					StringBuilder canonical = new StringBuilder();
 					for (T mod : species) {
 						String geomarg = geomargs[n++ % geomargs.length];
 						AbstractGeometry current = mod.structure;
@@ -1253,8 +1254,14 @@ public abstract class Module<T extends Module<T>>
 							mod.structure = next;
 							doReset = true;
 						}
+						if (n > 1)
+							canonical.append(CLOParser.SPECIES_DELIMITER);
+						canonical.append(mod.structure.getCLOArg());
 					}
 					engine.requiresReset(doReset);
+					// store the canonical, re-parseable form (e.g. 'N 4f' rather than
+					// 'N 4 f'), see AbstractGeometry#getCLOArg()
+					cloGeometry.setArg(canonical.toString());
 					return true;
 				}
 
