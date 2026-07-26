@@ -1252,7 +1252,8 @@ public abstract class IBS extends Model {
 				 * probability can instead be a {@value CLOParser#VECTOR_DELIMITER}-separated
 				 * list of rates, one per trait (cycled with modulo indexing if fewer rates
 				 * than traits are given), so that different traits migrate at different
-				 * rates: diffusive migration ({@link MigrationType#DIFFUSION}) folds this
+				 * rates. For modules with vacant sites, the vacant trait's rate is forced to
+				 * zero: diffusive migration ({@link MigrationType#DIFFUSION}) folds this
 				 * directly into the per-site rate draw for ecological (vacancy) populations
 				 * (see {@code IBSDPopulation}); for {@link MigrationType#BIRTH_DEATH} and
 				 * {@link MigrationType#DEATH_BIRTH}, and for diffusive migration outside
@@ -1282,7 +1283,22 @@ public abstract class IBS extends Model {
 						if (keyarg.isEmpty())
 							continue;
 						double[] rates = CLOParser.parseVector(keyarg);
-						if (!(mod instanceof Discrete) && rates.length > 1) {
+						if (mod instanceof Discrete) {
+							int vacant = mod.getVacantIdx();
+							int nTraits = mod.getNTraits();
+							if (rates.length != nTraits) {
+								double[] allRates = new double[nTraits];
+								int idx = 0;
+								for (int t = 0; t < allRates.length; t++) {
+									if (t == vacant)
+										continue;
+									allRates[t] = rates[idx++ % rates.length];
+								}
+								rates = allRates;
+							}
+							if (vacant >= 0)
+								rates[vacant] = 0.0;
+						} else if (rates.length > 1) {
 							if (logger.isLoggable(Level.WARNING))
 								logger.warning((isMultispecies ? mod.getName() + ": " : "")
 										+ "per-trait migration rates only supported for discrete modules "
