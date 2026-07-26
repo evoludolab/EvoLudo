@@ -1526,7 +1526,7 @@ public abstract class IBS extends Model {
 				 * {@inheritDoc}
 				 * <p>
 				 * Parse method to enable consistency checks.
-				 * 
+				 *
 				 * @param arg the ignored argument
 				 */
 				@Override
@@ -1539,12 +1539,42 @@ public abstract class IBS extends Model {
 				}
 			});
 
+	/**
+	 * Command line option to enable tracking of individual tags to trace
+	 * ancestry.
+	 * <p>
+	 * <strong>Note:</strong> disabled by default to save memory as well as the
+	 * memory accesses on the hot path of updating individuals, see
+	 * {@link IBSPopulation#updateFromModelAt(int, int)}.
+	 */
+	public final CLOption cloTags = new CLOption("tags", "notags", CLOption.Argument.NONE,
+			CLOCategory.Model,
+			"--tags          track tags to trace ancestry", new CLODelegate() {
+
+				/**
+				 * {@inheritDoc}
+				 * <p>
+				 * Parse method to enable tracking of tags.
+				 *
+				 * @param arg the ignored argument
+				 */
+				@Override
+				public boolean parse(boolean isSet) {
+					for (Module<?> mod : species) {
+						IBSPopulation<?, ?> pop = mod.getIBSPopulation();
+						pop.setUseTags(isSet);
+					}
+					return true;
+				}
+			});
+
 	@Override
 	public void collectCLO(CLOParser parser) {
 		super.collectCLO(parser);
 		parser.addCLO(cloGeometryRewire);
 		parser.addCLO(cloGeometryAddwire);
 		parser.addCLO(cloConsistency);
+		parser.addCLO(cloTags);
 		statisticsSettings.clo.clearKeys();
 		statisticsSettings.clo.addKeys(Statistics.Type.values());
 		parser.addCLO(statisticsSettings.clo);

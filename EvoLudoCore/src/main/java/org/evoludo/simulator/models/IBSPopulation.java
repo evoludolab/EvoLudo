@@ -747,8 +747,28 @@ public abstract class IBSPopulation<M extends Module<?>, P extends IBSPopulation
 
 	/**
 	 * The array of individual tags counts. This can be used to trace ancestry.
+	 * <p>
+	 * <strong>Note:</strong> {@code null} unless requested with the command line
+	 * option {@code --tags}, see {@link IBS#cloTags}, to save memory as well as
+	 * the memory accesses on the hot path in {@link #updateFromModelAt(int, int)}.
 	 */
 	protected double[] tags;
+
+	/**
+	 * Flag to indicate whether tags are tracked, see {@link IBS#cloTags}.
+	 */
+	protected boolean useTags = false;
+
+	/**
+	 * Request tracking of individual tags to trace ancestry.
+	 *
+	 * @param use {@code true} to request tracking of tags
+	 *
+	 * @see IBS#cloTags
+	 */
+	public void setUseTags(boolean use) {
+		useTags = use;
+	}
 
 	/**
 	 * Optimization: Number of interactions in well-mixed populations for update
@@ -1669,7 +1689,8 @@ public abstract class IBSPopulation<M extends Module<?>, P extends IBSPopulation
 	 * @see IBSMCPopulation#updateFromModelAt(int, int)
 	 */
 	public void updateFromModelAt(int me, int you) {
-		tags[me] = tags[you];
+		if (tags != null)
+			tags[me] = tags[you];
 		debugModel = you;
 	}
 
@@ -3444,8 +3465,11 @@ public abstract class IBSPopulation<M extends Module<?>, P extends IBSPopulation
 			maxFitness = 0.0;
 		}
 
-		if (tags == null || tags.length != nPopulation)
-			tags = new double[nPopulation];
+		if (useTags) {
+			if (tags == null || tags.length != nPopulation)
+				tags = new double[nPopulation];
+		} else
+			tags = null;
 
 		// check for scenarios that are untested or work in progress
 		checkLimitedTesting();
@@ -4723,9 +4747,11 @@ public abstract class IBSPopulation<M extends Module<?>, P extends IBSPopulation
 	 * array {@code mem}.
 	 * 
 	 * @param mem the array to copy the tags into
-	 * @return the array of tags
+	 * @return the array of tags; {@code mem} unchanged if tags are not tracked
 	 */
 	public double[] getTags(double[] mem) {
+		if (tags == null)
+			return mem;
 		System.arraycopy(tags, 0, mem, 0, nPopulation);
 		return mem;
 	}
@@ -4745,6 +4771,8 @@ public abstract class IBSPopulation<M extends Module<?>, P extends IBSPopulation
 	 * @param colorMap the map that converts tags into colors
 	 */
 	public <T> void getTagData(T[] colors, ColorMap<T> colorMap) {
+		if (tags == null)
+			return;
 		colorMap.translate(tags, colors);
 	}
 
@@ -4752,9 +4780,11 @@ public abstract class IBSPopulation<M extends Module<?>, P extends IBSPopulation
 	 * Gets the tag of the individual with index {@code idx}.
 	 *
 	 * @param idx the index of the individual
-	 * @return the tag number
+	 * @return the tag number, or {@code Double.NaN} if tags are not tracked
 	 */
 	public double getTagAt(int idx) {
+		if (tags == null)
+			return Double.NaN;
 		return tags[idx];
 	}
 
@@ -4762,9 +4792,11 @@ public abstract class IBSPopulation<M extends Module<?>, P extends IBSPopulation
 	 * Gets the formatted tag of the individual with index {@code idx} as string.
 	 *
 	 * @param idx the index of the individual
-	 * @return the tag as a string
+	 * @return the tag as a string, or {@code null} if tags are not tracked
 	 */
 	public String getTagNameAt(int idx) {
+		if (tags == null)
+			return null;
 		return Formatter.format(tags[idx], 4);
 	}
 
@@ -4773,9 +4805,12 @@ public abstract class IBSPopulation<M extends Module<?>, P extends IBSPopulation
 	 *
 	 * @param idx the index of the individual
 	 * @param tag the new tag of the individual
-	 * @return {@code true} if the tag changed
+	 * @return {@code true} if the tag changed; {@code false} if tags are not
+	 *         tracked
 	 */
 	public boolean setTagAt(int idx, double tag) {
+		if (tags == null)
+			return false;
 		double old = tags[idx];
 		tags[idx] = tag;
 		return (Math.abs(tag - old) < 1e-8);
