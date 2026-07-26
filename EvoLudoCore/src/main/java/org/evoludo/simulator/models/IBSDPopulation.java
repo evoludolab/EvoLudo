@@ -703,10 +703,9 @@ public class IBSDPopulation extends IBSPopulation<Discrete, IBSDPopulation> {
 		randomEvent -= rBirth;
 		if (randomEvent < rDeath)
 			return focalDies(me, nPop);
-		// diffusion: focal and peer trade places
-		swapTraits(me, peer);
-		commitTraitAt(me);
-		commitTraitAt(peer);
+		// diffusion: focal and peer trade places; use the generic swap path so
+		// scores, fitnesses and interaction counts remain consistent with the move.
+		updatePlayerSwap(me, peer);
 		debugModel = peer;
 		updateMaxRate();
 		return 1;
