@@ -301,7 +301,7 @@ public class IBSMCPopulation extends IBSPopulation<Continuous, IBSMCPopulation> 
 	}
 
 	@Override
-	public void swapTraits(int a, int b) {
+	protected void swapTraits(int a, int b) {
 		int idxa = a * nTraits;
 		int idxb = b * nTraits;
 		System.arraycopy(traits, idxb, traitsNext, idxa, nTraits);

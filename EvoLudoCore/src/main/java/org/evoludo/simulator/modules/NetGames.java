@@ -858,7 +858,7 @@ public class NetGames extends Discrete implements Payoffs,
 		}
 
 		@Override
-		public void swapTraits(int a, int b) {
+		protected void swapTraits(int a, int b) {
 			// traits are unused and, instead, encoded in the network structure
 		}
 

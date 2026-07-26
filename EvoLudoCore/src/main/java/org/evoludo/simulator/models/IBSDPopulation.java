@@ -706,7 +706,7 @@ public class IBSDPopulation extends IBSPopulation<Discrete, IBSDPopulation> {
 			return focalDies(me, nPop);
 		// diffusion: focal and peer trade places; use the generic swap path so
 		// scores, fitnesses and interaction counts remain consistent with the move.
-		updatePlayerSwap(me, peer);
+		swapSitesAt(me, peer);
 		debugModel = peer;
 		updateMaxRate();
 		return 1;
@@ -795,7 +795,7 @@ public class IBSDPopulation extends IBSPopulation<Discrete, IBSDPopulation> {
 	}
 
 	@Override
-	public void swapTraits(int a, int b) {
+	protected void swapTraits(int a, int b) {
 		traitsNext[a] = traits[b];
 		traitsNext[b] = traits[a];
 	}

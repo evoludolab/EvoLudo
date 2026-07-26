@@ -102,7 +102,7 @@ public class IBSCPopulation extends IBSMCPopulation {
 	}
 
 	@Override
-	public void swapTraits(int a, int b) {
+	protected void swapTraits(int a, int b) {
 		traitsNext[a] = traits[b];
 		traitsNext[b] = traits[a];
 	}

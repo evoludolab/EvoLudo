@@ -348,7 +348,7 @@ public class DemesTBT extends TBT {
 			int vacant = random0n(nPopulation - sizeDemes);
 			if (vacant >= migrantDeme * sizeDemes)
 				vacant += sizeDemes;
-			updatePlayerSwap(migrant, vacant);
+			swapSitesAt(migrant, vacant);
 		}
 
 		/**

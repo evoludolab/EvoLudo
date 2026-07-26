@@ -233,7 +233,7 @@ public abstract class IBSPopulation<M extends Module<?>, P extends IBSPopulation
 	 * 
 	 * @see #commitTraitAt(int)
 	 */
-	public abstract void swapTraits(int a, int b);
+	protected abstract void swapTraits(int a, int b);
 
 	/**
 	 * Play a pairwise interaction with the individuals in {@code group}.
@@ -887,7 +887,7 @@ public abstract class IBSPopulation<M extends Module<?>, P extends IBSPopulation
 		// migrant swaps places with random neighbor
 		int[] myNeighs = interaction.out[migrant];
 		int aNeigh = myNeighs[random0n(interaction.kout[migrant])];
-		updatePlayerSwap(migrant, aNeigh);
+		swapSitesAt(migrant, aNeigh);
 	}
 
 	/**
@@ -925,12 +925,16 @@ public abstract class IBSPopulation<M extends Module<?>, P extends IBSPopulation
 	}
 
 	/**
-	 * Swap players in locations {@code a} and {@code b}.
+	 * Swap the individuals in locations {@code a} and {@code b} - the only path
+	 * for doing so; both the generic framework (diffusive migration, see
+	 * {@link #doDiffusionMigration()}) and modules with custom ecological
+	 * updates that swap sites (e.g. {@code EcoRSP}, {@code EcoTraits}) route
+	 * through here.
 	 *
 	 * @param a the index of the first individual
 	 * @param b the index of the second individual
 	 */
-	public void updatePlayerSwap(int a, int b) {
+	protected void swapSitesAt(int a, int b) {
 		swapTraits(a, b); // trait changed; still needs to be committed
 		// fitness accounting:
 		// synchronous: no need to worry about fitness - this is determined afterwards
@@ -939,9 +943,9 @@ public abstract class IBSPopulation<M extends Module<?>, P extends IBSPopulation
 		// scores along
 		// - if interactions are with all neighbors (payoffs are adjusted) we need to
 		// recalculate the payoffs
-		if (populationUpdate.isSynchronous()) {
-			// NOTE: this is not efficient because it deals unnecessarily with types and
-			// scores; enough to only copy from scratch to traits.
+		if (scores == null || populationUpdate.isSynchronous()) {
+			// module has no payoffs - nothing further to keep in sync, see check()
+			// or synchronous update - no need to worry about scores, determined afterwards
 			commitTraitAt(a);
 			commitTraitAt(b);
 			return;
@@ -1968,7 +1972,7 @@ public abstract class IBSPopulation<M extends Module<?>, P extends IBSPopulation
 	 * @param idxa the index of the first individual
 	 * @param idxb the index of the second individual
 	 */
-	public void swapScoresAt(int idxa, int idxb) {
+	private void swapScoresAt(int idxa, int idxb) {
 		double myScore = scores[idxa];
 		scores[idxa] = scores[idxb];
 		scores[idxb] = myScore;
