@@ -39,6 +39,7 @@ import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.IOException;
 import java.text.DecimalFormat;
+import java.util.Arrays;
 import java.util.Iterator;
 import java.util.Properties;
 
@@ -191,7 +192,11 @@ public class MVPop2D extends MVAbstract implements PopListener {
 							}
 							//$FALL-THROUGH$
 						default:
-							colorMap = new ColorMapJRE.GradientND(tColors, dep);
+							// unlike Gradient1D/Gradient2D above, GradientND iterates over the
+							// entire colors array, so it must be trimmed first - getTraitColors()
+							// may return 2*nTraits entries (regular colors followed by
+							// "new"/highlight variants, see Module#setTraitColors)
+							colorMap = new ColorMapJRE.GradientND(Arrays.copyOf(tColors, module.getNTraits()), dep);
 							break;
 					}
 				} else
@@ -209,7 +214,7 @@ public class MVPop2D extends MVAbstract implements PopListener {
 						break;
 					case 3: // three traits red, green, blue - calculate on the fly? fewer colors?
 					default:
-						colorMap = new ColorMapJRE.GradientND(tColors);
+						colorMap = new ColorMapJRE.GradientND(Arrays.copyOf(tColors, module.getNTraits()));
 						logger.warning("MVPop: display of >2 continuous traits is experimental...");
 						break;
 				}

@@ -31,6 +31,7 @@
 package org.evoludo.simulator.views;
 
 import java.awt.Color;
+import java.util.Arrays;
 import java.util.List;
 
 import org.evoludo.graphics.GenericPopGraph.HasDebugMenu;
@@ -576,12 +577,22 @@ public class Pop2D extends GenericPop<String, Network2D, PopGraph2D> implements 
 			if (nTraits == 2 && dep >= 0) {
 				int trait = (dep + 1) % nTraits;
 				return new ColorMapCSS.Gradient1D(colors[dep], colors[trait], trait, 100);
-			} else {
-				// vacant space does not count as dependent trait for coloring
-				if (module.getVacantIdx() == dep)
-					dep = -1;
-				return new ColorMapCSS.Gradient2D(colors, dep, 100);
 			}
+			int nIndep = (dep >= 0) ? nTraits - 1 : nTraits;
+			if (nIndep <= 2) {
+				// vacant space does not count as dependent trait for coloring
+				int colorDep = (module.getVacantIdx() == dep) ? -1 : dep;
+				return new ColorMapCSS.Gradient2D(colors, colorDep, 100);
+			}
+			// 3 or more independent traits: Gradient2D only supports two, so blend
+			// them additively instead, fading to black as the dependent trait's
+			// (e.g. vacant sites') density grows. unlike Gradient1D/Gradient2D above,
+			// which only ever touch a few fixed indices, GradientND iterates over the
+			// entire colors array, so it must be trimmed first - getTraitColors() may
+			// return 2*nTraits entries (regular colors followed by "new"/highlight
+			// variants, see Module#setTraitColors)
+			Color[] baseColors = Arrays.copyOf(colors, nTraits);
+			return (dep >= 0) ? new ColorMapCSS.GradientND(baseColors, dep) : new ColorMapCSS.GradientND(baseColors);
 		} else {
 			return new ColorMapCSS.Index(module.getTraitColors(), 220);
 		}

@@ -1254,6 +1254,10 @@ public abstract class ColorMap<T extends Object> {
 			}
 			if (idx >= 0 && idx < colors.length)
 				bg = colors[idx];
+			// on the simplex, each data value already is the weight of its trait's
+			// color (they add up to at most one, with the dependent trait making up
+			// the remainder) - no further 1/nTraits averaging as in GradientND(int)
+			Arrays.fill(map, 1.0);
 		}
 
 		/**
@@ -1289,13 +1293,14 @@ public abstract class ColorMap<T extends Object> {
 		 * @see IBSMCPopulation
 		 */
 		@Override
+		@SuppressWarnings("java:S2388") // must dispatch to the overriding subclass, not Gradient2D's lookup table
 		public boolean translate(double[] data, T[] color) {
 			double[] datan = new double[nTraits];
 			int len = color.length;
 			int idx = 0;
 			for (int n = 0; n < len; n++) {
 				System.arraycopy(data, idx, datan, 0, nTraits);
-				color[n] = super.translate(datan);
+				color[n] = translate(datan);
 				idx += nTraits;
 			}
 			return true;
@@ -1317,10 +1322,11 @@ public abstract class ColorMap<T extends Object> {
 		 * @see PDE
 		 */
 		@Override
+		@SuppressWarnings("java:S2388") // must dispatch to the overriding subclass, not Gradient2D's lookup table
 		public boolean translate(double[][] data, T[] color) {
 			int len = color.length;
 			for (int n = 0; n < len; n++)
-				color[n] = super.translate(data[n]);
+				color[n] = translate(data[n]);
 			return true;
 		}
 

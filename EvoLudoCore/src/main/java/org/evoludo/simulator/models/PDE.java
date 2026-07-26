@@ -762,6 +762,14 @@ public class PDE extends ODE {
 			colorMap.translate(density, colors);
 			return;
 		}
+		if (colorMap instanceof ColorMap.GradientND) {
+			// GradientND blends colors on the fly rather than through a discretized
+			// gradient[][] lookup table, so it needs no dynamic min/max autoscaling
+			// - its constructor already fixes the scale to match the natural
+			// [0,1] range of trait densities/frequencies (see ColorMap.GradientND)
+			colorMap.translate(density, colors);
+			return;
+		}
 		ColorMap.Gradient2D<T> map = (ColorMap.Gradient2D<T>) colorMap;
 		map.setRange(minDensity, maxDensity, dependent);
 		map.translate(density, colors);
