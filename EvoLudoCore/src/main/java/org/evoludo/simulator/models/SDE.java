@@ -273,6 +273,9 @@ public class SDE extends ODE {
 	protected double deStep(double step) {
 		double stepSize = Math.abs(step);
 		double sqrtdt = Math.sqrt(stepSize) / stepSize;
+		// SDE models never evaluate concurrently, so the reusable fields are safe
+		// to reuse here, unlike PDE's per-call buffers, see ODE#applyUpdates
+		computeEffRates(yt, effBirth, effDeath);
 
 		switch (nDim) {
 			case 2:
@@ -473,10 +476,9 @@ public class SDE extends ODE {
 	private void processAnyTraits(double step, double sqrtdt) {
 		int skip = 0;
 		if (isDensity) {
-			int index = 0;
 			for (Module<?> mod : species) {
 				if (mod.getVacantIdx() >= 0) {
-					processEcologyDensity(mod, index, skip, sqrtdt);
+					processEcologyDensity(mod, skip, sqrtdt);
 				} else {
 					double noise = Math.sqrt(getEffectiveNoise(mod, skip)) * rng.nextGaussian() * sqrtdt;
 					// species that went extinct should not make a sudden reappearance
@@ -485,15 +487,13 @@ public class SDE extends ODE {
 				}
 				applyStep(skip, skip + mod.getNTraits(), step);
 				skip += mod.getNTraits();
-				index++;
 			}
 			return;
 		}
 		// frequency dynamics: demographic noise from ecological events only
-		int index = 0;
 		for (Module<?> mod : species) {
 			if (mod.getVacantIdx() >= 0) {
-				processEcologyFrequency(mod, index++, skip, sqrtdt);
+				processEcologyFrequency(mod, skip, sqrtdt);
 				applyStep(skip, skip + mod.getNTraits(), step);
 			} else {
 				process2Traits(skip, step, sqrtdt, 0.0, getEffectiveNoise(mod, skip));
@@ -507,31 +507,27 @@ public class SDE extends ODE {
 	 * and death events.
 	 *
 	 * @param mod    the module to process
-	 * @param index  the species index
 	 * @param skip   the starting index in state arrays
 	 * @param sqrtdt square root of time step for noise scaling
 	 */
-	private void processEcologyDensity(Module<?> mod, int index, int skip, double sqrtdt) {
+	private void processEcologyDensity(Module<?> mod, int skip, double sqrtdt) {
 		int vacant = mod.getVacantIdx();
 		int vacantIdx = (vacant >= 0) ? skip + vacant : -1;
 		int end = skip + mod.getNTraits();
-		// Calculate effective rates with competition adjustments
-		computeEffRates(mod, index, yt, effRate);
-		double effBirth = effRate[0];
-		double effDeath = effRate[1];
 		double nPop = mod.getNPopulation();
 		double invN = 1.0 / nPop;
 
-		// Apply demographic noise to each trait
+		// Apply demographic noise to each trait; effective rates (with competition
+		// adjustments) were already computed for every trait, see #deStep
 		for (int n = skip; n < end; n++) {
 			if (n == vacantIdx)
 				continue;
 			double x = yt[n];
 			if (x <= 0.0)
 				continue;
-			double birthRate = effBirth + ((ft != null) ? ft[n] : 0.0);
+			double birthRate = effBirth[n] + ((ft != null) ? ft[n] : 0.0);
 			double aBirth = (birthRate > 0.0) ? nPop * x * birthRate : 0.0;
-			double aDeath = (effDeath > 0.0) ? nPop * x * effDeath : 0.0;
+			double aDeath = (effDeath[n] > 0.0) ? nPop * x * effDeath[n] : 0.0;
 			double eta = 0.0;
 			if (aBirth > 0.0)
 				eta += Math.sqrt(aBirth) * rng.nextGaussian() * sqrtdt * invN;
@@ -547,33 +543,29 @@ public class SDE extends ODE {
 	 * events.
 	 * 
 	 * @param mod    the module to process
-	 * @param index  the species index
 	 * @param skip   the starting index in state arrays
 	 * @param sqrtdt square root of time step for noise scaling
 	 */
-	private void processEcologyFrequency(Module<?> mod, int index, int skip, double sqrtdt) {
+	private void processEcologyFrequency(Module<?> mod, int skip, double sqrtdt) {
 		int vacant = mod.getVacantIdx();
 		if (vacant < 0)
 			return;
 		int end = skip + mod.getNTraits();
 		double z = yt[skip + vacant];
-		// Calculate effective rates with competition adjustments
-		computeEffRates(mod, index, yt, effRate);
-		double effBirth = effRate[0];
-		double effDeath = effRate[1];
 		double nPop = mod.getNPopulation();
 		double invN = 1.0 / nPop;
 
-		// Apply demographic noise to each trait
+		// Apply demographic noise to each trait; effective rates (with competition
+		// adjustments) were already computed for every trait, see #deStep
 		for (int n = skip; n < end; n++) {
 			if (n == skip + vacant)
 				continue;
 			double x = yt[n];
 			if (x <= 0.0)
 				continue;
-			double birthRate = effBirth + ((ft != null) ? ft[n] : 0.0);
+			double birthRate = effBirth[n] + ((ft != null) ? ft[n] : 0.0);
 			double aBirth = (birthRate > 0.0 && z > 0.0) ? nPop * x * z * birthRate : 0.0;
-			double aDeath = (effDeath > 0.0) ? nPop * x * effDeath : 0.0;
+			double aDeath = (effDeath[n] > 0.0) ? nPop * x * effDeath[n] : 0.0;
 			double eta = 0.0;
 			if (aBirth > 0.0)
 				eta += Math.sqrt(aBirth) * rng.nextGaussian() * sqrtdt * invN;

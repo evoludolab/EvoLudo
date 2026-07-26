@@ -1051,11 +1051,42 @@ public abstract class Module<T extends Module<T>>
 
 	/**
 	 * Set the per capita birth rate for ecological population updates.
-	 * 
+	 *
 	 * @param birthRate the birth rate
 	 */
 	public void setBirthRate(double birthRate) {
 		this.birthRate = birthRate;
+	}
+
+	/**
+	 * Sets the birth rate for the single species of single-species modules from
+	 * the (potentially longer) vector {@code rates} parsed on the command line.
+	 * The default implementation only supports a single, trait-independent rate
+	 * and hence uses the first entry; any additional entries are ignored, with a
+	 * warning. Discrete-trait modules override this to interpret additional
+	 * entries as one rate per trait, see {@code Discrete#setBirthRate(double[])}.
+	 *
+	 * @param rates the parsed birth rate(s)
+	 *
+	 * @see #cloBirthRate
+	 */
+	public void setBirthRate(double[] rates) {
+		if (rates.length > 1 && logger.isLoggable(Level.WARNING)) {
+			String sn = getName();
+			logger.warning("birth rate" + (sn.isEmpty() ? "" : " of " + sn)
+					+ " only supports a single value - ignoring " + (rates.length - 1)
+					+ " additional value(s).");
+		}
+		double rate = rates[0];
+		if (rate < 0.0) {
+			if (logger.isLoggable(Level.WARNING)) {
+				String sn = getName();
+				logger.warning("birth rate" + (sn.isEmpty() ? "" : " of " + sn)
+						+ " must be non-negative (changed to 0).");
+			}
+			rate = 0.0;
+		}
+		setBirthRate(rate);
 	}
 
 	/**
@@ -1065,20 +1096,47 @@ public abstract class Module<T extends Module<T>>
 
 	/**
 	 * Sets the death rate for ecological population updates.
-	 * 
+	 *
 	 * @param rate the death rate
-	 * @return {@code true} if the death rate changed
 	 */
-	public boolean setDeathRate(double rate) {
-		double newrate = Math.max(0.0, rate);
-		boolean changed = (Math.abs(newrate - deathRate) > 1e-7);
-		deathRate = newrate;
-		return changed;
+	public void setDeathRate(double rate) {
+		deathRate = Math.max(0.0, rate);
+	}
+
+	/**
+	 * Sets the death rate for the single species of single-species modules from
+	 * the (potentially longer) vector {@code rates} parsed on the command line.
+	 * The default implementation only supports a single, trait-independent rate
+	 * and hence uses the first entry; any additional entries are ignored, with a
+	 * warning. Discrete-trait modules override this to interpret additional
+	 * entries as one rate per trait, see {@code Discrete#setDeathRate(double[])}.
+	 *
+	 * @param rates the parsed death rate(s)
+	 *
+	 * @see #cloDeathRate
+	 */
+	public void setDeathRate(double[] rates) {
+		if (rates.length > 1 && logger.isLoggable(Level.WARNING)) {
+			String sn = getName();
+			logger.warning("death rate" + (sn.isEmpty() ? "" : " of " + sn)
+					+ " only supports a single value - ignoring " + (rates.length - 1)
+					+ " additional value(s).");
+		}
+		double rate = rates[0];
+		if (rate < 0.0) {
+			if (logger.isLoggable(Level.WARNING)) {
+				String sn = getName();
+				logger.warning("death rate" + (sn.isEmpty() ? "" : " of " + sn)
+						+ " must be non-negative (changed to 0).");
+			}
+			rate = 0.0;
+		}
+		setDeathRate(rate);
 	}
 
 	/**
 	 * Gets the death rate for ecological population updates.
-	 * 
+	 *
 	 * @return the death rate
 	 */
 	public double getDeathRate() {
@@ -1357,6 +1415,13 @@ public abstract class Module<T extends Module<T>>
 						rates = CLOParser.parseVector(arg);
 					if (rates.length == 0)
 						return false;
+					if (species.size() == 1) {
+						// single species: hand the whole vector to it - discrete-trait modules
+						// interpret multiple values as one rate per trait, see
+						// Discrete#setBirthRate(double[])
+						species.get(0).setBirthRate(rates);
+						return true;
+					}
 					int n = 0;
 					for (T pop : species) {
 						double rate = rates[n++ % rates.length];
@@ -1418,6 +1483,13 @@ public abstract class Module<T extends Module<T>>
 						rates = CLOParser.parseVector(arg);
 					if (rates.length == 0)
 						return false;
+					if (species.size() == 1) {
+						// single species: hand the whole vector to it - discrete-trait modules
+						// interpret multiple values as one rate per trait, see
+						// Discrete#setDeathRate(double[])
+						species.get(0).setDeathRate(rates);
+						return true;
+					}
 					int n = 0;
 					for (T pop : species) {
 						double rate = rates[n++ % rates.length];

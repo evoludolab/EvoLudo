@@ -538,8 +538,8 @@ public class IBSDPopulation extends IBSPopulation<Discrete, IBSDPopulation> {
 			if (rate > maxExchangeRate)
 				maxExchangeRate = rate;
 		}
-		double rBirth = module.getBirthRate();
-		double rDeath = module.getDeathRate();
+		double rBirth = module.getMaxBirthRate();
+		double rDeath = module.getMaxDeathRate();
 		double[] compRates = module.getCompetitionRates();
 		// determine maximum rates for birth and death events
 		// note, updates always involve one focal and one peer as well as one model
@@ -610,7 +610,8 @@ public class IBSDPopulation extends IBSPopulation<Discrete, IBSDPopulation> {
 		debugNModels = 0;
 		if (maxRate < 0.0)
 			updateMaxRate();
-		double rDeath = module.getDeathRate();
+		int myType = getTraitAt(me);
+		double rDeath = module.getDeathRate(myType);
 		int nPop = getPopulationSize();
 		double randomEvent = random01() * maxRate;
 		if (randomEvent < rDeath)
@@ -619,7 +620,7 @@ public class IBSDPopulation extends IBSPopulation<Discrete, IBSDPopulation> {
 		randomEvent -= rDeath;
 		rDeath = 0.0;
 		double[] compRates = module.getCompetitionRates();
-		double rBirth = module.getBirthRate();
+		double rBirth = module.getBirthRate(myType);
 		int nSpecies = compRates.length;
 		if (nSpecies > 1) {
 			// multi-species scenario: pick opponent species; oppIdx < 0 means no
@@ -1845,7 +1846,7 @@ public class IBSDPopulation extends IBSPopulation<Discrete, IBSDPopulation> {
 			return true;
 		// ecological populations: a fully occupied lattice with no death and no
 		// competition is a dead end regardless of trait composition.
-		if (vacantIdx >= 0 && traitsCount[vacantIdx] == 0 && module.getDeathRate() <= 0.0) {
+		if (vacantIdx >= 0 && traitsCount[vacantIdx] == 0 && module.getMaxDeathRate() <= 0.0) {
 			// no vacant sites and no deaths: check competition
 			double[] compRates = module.getCompetitionRates();
 			for (int n = 0; n < compRates.length; n++) {
@@ -2315,7 +2316,7 @@ public class IBSDPopulation extends IBSPopulation<Discrete, IBSDPopulation> {
 	 * @return the estimated frequency of vacant sites
 	 */
 	private double estimateVacantFrequency(int type) {
-		double d = module.getDeathRate();
+		double d = module.getDeathRate(type % nTraits);
 		double fit = map2fit.map(module.getMonoPayoff(type % nTraits));
 		AbstractGeometry geometry = module.getGeometry();
 		if (geometry.isType(GeometryType.WELLMIXED))

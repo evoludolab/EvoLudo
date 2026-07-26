@@ -32,7 +32,9 @@ package org.evoludo.simulator.modules;
 
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.logging.Level;
 
+import org.evoludo.math.ArrayMath;
 import org.evoludo.simulator.EvoLudo;
 import org.evoludo.simulator.models.IBSD;
 import org.evoludo.simulator.models.Model;
@@ -159,6 +161,170 @@ public abstract class Discrete extends Module<Discrete> {
 				max = monon;
 		}
 		return max;
+	}
+
+	/**
+	 * Per-trait birth rates, overriding {@link Module#birthRate}. {@code null}
+	 * as long as no per-trait rates have been set, in which case birth rates
+	 * fall back to the single, trait-independent {@link Module#birthRate}.
+	 */
+	protected double[] birthRates = null;
+
+	@Override
+	public void setBirthRate(double rate) {
+		birthRates = null;
+		super.setBirthRate(rate);
+	}
+
+	@Override
+	public void setBirthRate(double[] rates) {
+		if (rates.length <= 1) {
+			setBirthRate(rates.length == 0 ? 0.0 : rates[0]);
+			return;
+		}
+		double[] newRates = ArrayMath.clone(rates);
+		String sn = getName();
+		for (int i = 0; i < newRates.length; i++) {
+			if (newRates[i] >= 0.0)
+				continue;
+			if (logger.isLoggable(Level.WARNING))
+				logger.warning("birth rate" + (sn.isEmpty() ? "" : " of " + sn)
+						+ " must be non-negative (changed to 0).");
+			newRates[i] = 0.0;
+		}
+		birthRates = newRates;
+	}
+
+	@Override
+	public double getBirthRate() {
+		return birthRates == null ? super.getBirthRate() : birthRates[0];
+	}
+
+	/**
+	 * Get the per capita birth rate of {@code type}. Entries are cycled with
+	 * modulo indexing if fewer rates than traits were specified, e.g. a single
+	 * rate applies to all traits.
+	 *
+	 * @param type the trait for which to get the birth rate
+	 * @return the birth rate of {@code type}
+	 */
+	public double getBirthRate(int type) {
+		return birthRates == null ? getBirthRate() : birthRates[type % birthRates.length];
+	}
+
+	/**
+	 * Gets the largest birth rate across all traits - trivially equal to
+	 * {@link #getBirthRate()} whenever a single, trait-independent rate is set.
+	 *
+	 * @return the largest birth rate across all traits
+	 */
+	public double getMaxBirthRate() {
+		return birthRates == null ? getBirthRate() : ArrayMath.max(birthRates);
+	}
+
+	/**
+	 * Gets the birth rate of every non-vacant trait, in ascending trait-index
+	 * order (skipping {@link #vacantIdx}, if any), materializing the modulo
+	 * cycling of {@link #getBirthRate(int)} into a properly sized array (unlike
+	 * {@link #birthRates} itself, which may hold fewer entries, e.g. a single,
+	 * common rate, or even be {@code null}). Callers that need the birth rates
+	 * of all non-vacant traits at once, such as an ODE's per-type dynamics,
+	 * should use this instead of the raw field - it does not presume any
+	 * particular position of {@link #vacantIdx} among the traits.
+	 *
+	 * @return the birth rate of each non-vacant trait
+	 */
+	public double[] getBirthRates() {
+		double[] rates = new double[vacantIdx >= 0 ? nTraits - 1 : nTraits];
+		int j = 0;
+		for (int i = 0; i < nTraits; i++) {
+			if (i == vacantIdx)
+				continue;
+			rates[j++] = getBirthRate(i);
+		}
+		return rates;
+	}
+
+	/**
+	 * Per-trait death rates, overriding {@link Module#deathRate}. {@code null}
+	 * as long as no per-trait rates have been set, in which case death rates
+	 * fall back to the single, trait-independent {@link Module#deathRate}.
+	 */
+	protected double[] deathRates = null;
+
+	@Override
+	public void setDeathRate(double rate) {
+		deathRates = null;
+		super.setDeathRate(rate);
+	}
+
+	@Override
+	public void setDeathRate(double[] rates) {
+		if (rates.length <= 1) {
+			setDeathRate(rates.length == 0 ? 0.0 : rates[0]);
+			return;
+		}
+		double[] newRates = ArrayMath.clone(rates);
+		String sn = getName();
+		for (int i = 0; i < newRates.length; i++) {
+			if (newRates[i] >= 0.0)
+				continue;
+			if (logger.isLoggable(Level.WARNING))
+				logger.warning("death rate" + (sn.isEmpty() ? "" : " of " + sn)
+						+ " must be non-negative (changed to 0).");
+			newRates[i] = 0.0;
+		}
+		deathRates = newRates;
+	}
+
+	@Override
+	public double getDeathRate() {
+		return deathRates == null ? super.getDeathRate() : deathRates[0];
+	}
+
+	/**
+	 * Get the per capita death rate of {@code type}. Entries are cycled with
+	 * modulo indexing if fewer rates than traits were specified, e.g. a single
+	 * rate applies to all traits.
+	 *
+	 * @param type the trait for which to get the death rate
+	 * @return the death rate of {@code type}
+	 */
+	public double getDeathRate(int type) {
+		return deathRates == null ? getDeathRate() : deathRates[type % deathRates.length];
+	}
+
+	/**
+	 * Gets the largest death rate across all traits - trivially equal to
+	 * {@link #getDeathRate()} whenever a single, trait-independent rate is set.
+	 *
+	 * @return the largest death rate across all traits
+	 */
+	public double getMaxDeathRate() {
+		return deathRates == null ? getDeathRate() : ArrayMath.max(deathRates);
+	}
+
+	/**
+	 * Gets the death rate of every non-vacant trait, in ascending trait-index
+	 * order (skipping {@link #vacantIdx}, if any), materializing the modulo
+	 * cycling of {@link #getDeathRate(int)} into a properly sized array (unlike
+	 * {@link #deathRates} itself, which may hold fewer entries, e.g. a single,
+	 * common rate, or even be {@code null}). Callers that need the death rates
+	 * of all non-vacant traits at once, such as an ODE's per-type dynamics,
+	 * should use this instead of the raw field - it does not presume any
+	 * particular position of {@link #vacantIdx} among the traits.
+	 *
+	 * @return the death rate of each non-vacant trait
+	 */
+	public double[] getDeathRates() {
+		double[] rates = new double[vacantIdx >= 0 ? nTraits - 1 : nTraits];
+		int j = 0;
+		for (int i = 0; i < nTraits; i++) {
+			if (i == vacantIdx)
+				continue;
+			rates[j++] = getDeathRate(i);
+		}
+		return rates;
 	}
 
 	/**

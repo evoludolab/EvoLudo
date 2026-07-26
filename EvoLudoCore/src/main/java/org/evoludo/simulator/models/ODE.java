@@ -40,6 +40,7 @@ import org.evoludo.simulator.ColorMap;
 import org.evoludo.simulator.EvoLudo;
 import org.evoludo.simulator.models.Model.HasDE;
 import org.evoludo.simulator.models.ODEInitialize.InitType;
+import org.evoludo.simulator.modules.Discrete;
 import org.evoludo.simulator.modules.Features;
 import org.evoludo.simulator.modules.Features.Payoffs;
 import org.evoludo.simulator.modules.Map2Fitness;
@@ -266,11 +267,24 @@ public class ODE extends Model implements DModel {
 	double[] invFitRange;
 
 	/**
-	 * Reusable scratch space for effective rates used by single-threaded ODE and
-	 * SDE models. PDEs use per-call buffers to remain thread safe.
-	 * Index 0: effective birth rate, index 1: effective death rate.
+	 * Reusable scratch space for the effective birth rate of every trait of
+	 * every species, indexed globally exactly like {@link #yt}/{@link #change}
+	 * (see {@link #idxSpecies}). Used by single-threaded ODE and SDE models;
+	 * PDEs use per-call buffers to remain thread safe.
+	 *
+	 * @see #computeEffRates(double[], double[], double[])
 	 */
-	protected double[] effRate;
+	protected double[] effBirth;
+
+	/**
+	 * Reusable scratch space for the effective death rate of every trait of
+	 * every species, indexed globally exactly like {@link #yt}/{@link #change}
+	 * (see {@link #idxSpecies}). Used by single-threaded ODE and SDE models;
+	 * PDEs use per-call buffers to remain thread safe.
+	 *
+	 * @see #computeEffRates(double[], double[], double[])
+	 */
+	protected double[] effDeath;
 
 	/**
 	 * The names of the traits (dynamical variables) in the ODE. In multi-species
@@ -349,7 +363,6 @@ public class ODE extends Model implements DModel {
 		initType = new InitType[nSpecies];
 		mutation = new Mutation.Discrete[nSpecies];
 		dependents = new int[nSpecies];
-		effRate = new double[2];
 		int idx = 0;
 		for (Module<?> mod : species) {
 			mutation[idx] = (Mutation.Discrete) mod.getMutation();
@@ -362,7 +375,7 @@ public class ODE extends Model implements DModel {
 		initType = null;
 		mutation = null;
 		dependents = null;
-		effRate = null;
+		effBirth = effDeath = null;
 		yt = ft = dyt = yout = null;
 		staticfit = null;
 		names = null;
@@ -445,6 +458,10 @@ public class ODE extends Model implements DModel {
 		}
 		if (hasPayoffs && (ft == null || ft.length != nDim))
 			ft = new double[nDim];
+		if (effBirth == null || effBirth.length != nDim) {
+			effBirth = new double[nDim];
+			effDeath = new double[nDim];
+		}
 	}
 
 	/**
@@ -1021,6 +1038,11 @@ public class ODE extends Model implements DModel {
 	 *                population
 	 */
 	private void applyUpdates(double[] state, double[] fitness, double[] change) {
+		// PDEs evaluate many grid nodes concurrently and share this ODE instance,
+		// so they must use fresh, per-call buffers instead of the reusable fields
+		double[] eBirth = isPDE() ? new double[nDim] : effBirth;
+		double[] eDeath = isPDE() ? new double[nDim] : effDeath;
+		computeEffRates(state, eBirth, eDeath);
 		int index = 0;
 		for (Module<?> mod : species) {
 			int nGroup = mod.getNGroup();
@@ -1028,7 +1050,7 @@ public class ODE extends Model implements DModel {
 			int skip = idxSpecies[index];
 
 			if (mod.getVacantIdx() >= 0) {
-				updateEcology(mod, state, fitness, nGroup, index, change);
+				updateEcology(mod, state, fitness, nGroup, index, change, eBirth, eDeath);
 				index++;
 				continue;
 			}
@@ -1118,10 +1140,14 @@ public class ODE extends Model implements DModel {
 	 *                modules
 	 * @param change  array to return the rate of change of each type in the
 	 *                population
+	 * @param eBirth  the effective birth rate of every trait, globally indexed,
+	 *                see {@link #computeEffRates(double[], double[], double[])}
+	 * @param eDeath  the effective death rate of every trait, globally indexed,
+	 *                see {@link #computeEffRates(double[], double[], double[])}
 	 * @return the total change (should be zero in theory)
 	 */
 	protected double updateEcology(Module<?> mod, double[] state, double[] fitness, int nGroup, int index,
-			double[] change) {
+			double[] change, double[] eBirth, double[] eDeath) {
 		// XXX what happens if one trait is deactivated!?
 		int vacant = mod.getVacantIdx();
 		int skip = idxSpecies[index];
@@ -1133,16 +1159,12 @@ public class ODE extends Model implements DModel {
 			z = state[skip + vacant];
 		if (fitness != null && vacant >= 0)
 			fitness[skip + vacant] = 0.0;
-		double[] effRates = isPDE() ? new double[2] : effRate;
-		computeEffRates(mod, index, state, effRates);
-		double effBirth = effRates[0];
-		double effDeath = effRates[1];
 		double birthFactor = isDensity ? 1.0 : z;
 		for (int n = skip; n < end; n++) {
 			if (n == skip + vacant)
 				continue;
 			double fit = (fitness == null) ? 0.0 : fitness[n];
-			double dyn = state[n] * (birthFactor * (effBirth + fit) - effDeath);
+			double dyn = state[n] * (birthFactor * (eBirth[n] + fit) - eDeath[n]);
 			change[n] = dyn;
 			if (!isDensity && vacant >= 0)
 				dz -= dyn;
@@ -1183,47 +1205,76 @@ public class ODE extends Model implements DModel {
 	}
 
 	/**
-	 * Compute effective birth and death rates, including competition adjustments.
+	 * Compute the effective birth and death rate of every trait of every
+	 * ecological (vacancy-supporting) species in one pass, including
+	 * competition adjustments. Results are written to {@code eBirth}/
+	 * {@code eDeath}, globally indexed exactly like {@link #yt}/{@link #change}
+	 * (see {@link #idxSpecies}); entries belonging to non-ecological species,
+	 * or to the vacant trait itself, are left untouched since they are never
+	 * read by {@link #updateEcology}. The competition adjustment is computed
+	 * once per species (competition rates are per-species, not per-trait, see
+	 * {@link Module#getCompetitionRates()}) and then applied identically to
+	 * every trait of that species; only the underlying birth/death rate,
+	 * {@link Discrete#getBirthRate(int)}/{@link Discrete#getDeathRate(int)},
+	 * varies by trait.
 	 *
-	 * @param mod   the module to compute effective rates for
-	 * @param index the species index used as a fallback identifier
-	 * @param state the state vector to sample for occupied densities
-	 * @param out   output array: effective birth rate at index 0, death at index 1
+	 * @param state  the state vector to sample for occupied densities
+	 * @param eBirth the array to receive the effective birth rate of every trait
+	 * @param eDeath the array to receive the effective death rate of every trait
 	 */
-	protected void computeEffRates(Module<?> mod, int index, double[] state, double[] out) {
-		out[0] = mod.getBirthRate();
-		out[1] = mod.getDeathRate();
-		double[] compRates = mod.getCompetitionRates();
-		double occupied = getOccupiedDensity(index, state);
-		int nSpecies = Math.min(compRates.length, species.size());
-		int self = mod.getId();
-		if (self < 0 || self >= nSpecies)
-			self = index;
-		if (self >= 0 && self < nSpecies) {
-			double selfRate = compRates[self];
-			if (selfRate > 0.0)
-				out[1] += selfRate * occupied;
-			else if (selfRate < 0.0)
-				out[0] -= selfRate;
-		}
-		if (nSpecies > 1) {
-			double crossBirth = 0.0;
-			double crossDeath = 0.0;
-			double oppScale = 1.0 / (nSpecies - 1);
-			for (int s = 0; s < nSpecies; s++) {
-				if (s == self)
-					continue;
-				double occ = getOccupiedDensity(s, state);
-				if (occ <= 0.0)
-					continue;
-				double rate = compRates[s];
-				if (rate > 0.0)
-					crossDeath += rate * occ;
-				else if (rate < 0.0)
-					crossBirth -= rate * occ;
+	protected void computeEffRates(double[] state, double[] eBirth, double[] eDeath) {
+		int index = 0;
+		for (Module<?> mod : species) {
+			int vacant = mod.getVacantIdx();
+			if (vacant < 0) {
+				index++;
+				continue;
 			}
-			out[0] += crossBirth * oppScale;
-			out[1] += crossDeath * oppScale;
+			int skip = idxSpecies[index];
+			int nTraits = mod.getNTraits();
+			boolean discrete = mod instanceof Discrete;
+			Discrete dmod = discrete ? (Discrete) mod : null;
+			double birthAdj = 0.0;
+			double deathAdj = 0.0;
+			double[] compRates = mod.getCompetitionRates();
+			double occupied = getOccupiedDensity(index, state);
+			int nSpecies = Math.min(compRates.length, species.size());
+			int self = mod.getId();
+			if (self < 0 || self >= nSpecies)
+				self = index;
+			if (self >= 0 && self < nSpecies) {
+				double selfRate = compRates[self];
+				if (selfRate > 0.0)
+					deathAdj += selfRate * occupied;
+				else if (selfRate < 0.0)
+					birthAdj -= selfRate;
+			}
+			if (nSpecies > 1) {
+				double crossBirth = 0.0;
+				double crossDeath = 0.0;
+				double oppScale = 1.0 / (nSpecies - 1);
+				for (int s = 0; s < nSpecies; s++) {
+					if (s == self)
+						continue;
+					double occ = getOccupiedDensity(s, state);
+					if (occ <= 0.0)
+						continue;
+					double rate = compRates[s];
+					if (rate > 0.0)
+						crossDeath += rate * occ;
+					else if (rate < 0.0)
+						crossBirth -= rate * occ;
+				}
+				birthAdj += crossBirth * oppScale;
+				deathAdj += crossDeath * oppScale;
+			}
+			for (int n = skip, t = 0; t < nTraits; n++, t++) {
+				if (t == vacant)
+					continue;
+				eBirth[n] = (discrete ? dmod.getBirthRate(t) : mod.getBirthRate()) + birthAdj;
+				eDeath[n] = (discrete ? dmod.getDeathRate(t) : mod.getDeathRate()) + deathAdj;
+			}
+			index++;
 		}
 	}
 
