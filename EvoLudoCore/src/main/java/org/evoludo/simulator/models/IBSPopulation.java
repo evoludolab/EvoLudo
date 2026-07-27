@@ -3435,6 +3435,9 @@ public abstract class IBSPopulation<M extends Module<?>, P extends IBSPopulation
 		int ot = nTraits;
 		nTraits = module.getNTraits();
 		boolean doReset = (ot != nTraits);
+		int ovi = vacantIdx;
+		vacantIdx = module.getVacantIdx();
+		doReset |= (ovi != vacantIdx);
 		nPopulation = module.getNPopulation();
 		map2fit = module.getMap2Fitness();
 		playerUpdate = module.getPlayerUpdate();

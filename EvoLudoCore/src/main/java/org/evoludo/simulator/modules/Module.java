@@ -379,15 +379,36 @@ public abstract class Module<T extends Module<T>>
 	 * <p>
 	 * <strong>Note:</strong> All parameter changes that don't require a reset can
 	 * be made on the fly, in particular also while a model is running.
-	 * 
+	 * <p>
+	 * <strong>Important:</strong> overriding subclasses must incorporate the
+	 * result of {@code super.check()} into their own return value (typically
+	 * {@code doReset |= super.check()}) so that a pending
+	 * {@link #setNTraits(int, int)} change is not silently dropped.
+	 *
 	 * @return {@code true} to trigger reset
-	 * 
+	 *
 	 * @see EvoLudo#modelCheck()
 	 * @see EvoLudo#paramsDidChange()
 	 */
 	public boolean check() {
-		return false;
+		boolean doReset = nTraitsChanged;
+		nTraitsChanged = false;
+		return doReset;
 	}
+
+	/**
+	 * Flags that {@link #setNTraits(int, int)} changed {@link #nTraits} or
+	 * {@link #vacantIdx} since the last call to {@link #check()}. Changing either
+	 * alters the dimension of essentially everything derived from them -
+	 * population arrays, color/name caches, view history buffers, etc. - so it
+	 * must always trigger a reset, regardless of whether the module's own
+	 * {@link #check()} override happens to resize its parameter arrays (e.g. via
+	 * a CLO re-parse triggered by {@link EvoLudo#requestParseCLO()}) before
+	 * noticing the change itself.
+	 *
+	 * @see #check()
+	 */
+	private boolean nTraitsChanged = false;
 
 	/**
 	 * Initialize Module based on current parameters. This requires that parameters
@@ -656,10 +677,10 @@ public abstract class Module<T extends Module<T>>
 		// prevent requesting re-parsing of CLOs on initial load
 		if (this.nTraits > 0 && (this.nTraits != nTraits))
 			engine.requestParseCLO();
-		boolean sizeChanged = (this.nTraits != nTraits || this.vacantIdx != vacantIdx);
+		nTraitsChanged = (this.nTraits != nTraits || this.vacantIdx != vacantIdx);
 		this.nTraits = nTraits;
 		this.vacantIdx = vacantIdx;
-		if (sizeChanged) {
+		if (nTraitsChanged) {
 			// cached names/colors and the active-trait bitmask are sized (and,
 			// for names/colors, populated) for the previous number of traits -
 			// discard so they get regenerated
