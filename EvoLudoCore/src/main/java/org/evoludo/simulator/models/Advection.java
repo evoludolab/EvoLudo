@@ -224,10 +224,10 @@ public class Advection extends PDE {
 	 * Adds the advection contribution of a single neighbor (si) to the accumulator
 	 * adv for the focal site with state sn using precomputed delta = 1 + si - sn.
 	 * 
-	 * @param sn    the state of the focal site
-	 * @param si    the state of the neighboring site
-	 * @param delta the precomputed delta = 1 + si - sn
-	 * @param adv   the advection accumulator for the focal site
+	 * @param sn      the state of the focal site
+	 * @param si      the state of the neighboring site
+	 * @param delta   the precomputed delta = 1 + si - sn
+	 * @param adv     the advection accumulator for the focal site
 	 * @param scaledA the advection coefficients scaled for the current time step
 	 */
 	private void addAdvectionContribution(double[] sn, double[] si, double[] delta, double[] adv,
@@ -374,7 +374,7 @@ public class Advection extends PDE {
 								.append(names[n])
 								.append("\n");
 					}
-					descr.append("      advection: ai=Ai/(2*dx^2)");
+					descr.append("      advection: ai=Ai*dt/dx^2 (internally, per step)");
 					return descr.toString();
 				}
 			});

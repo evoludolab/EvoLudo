@@ -428,7 +428,8 @@ public class PDE extends ODE {
 	 * Perform the reaction step across the entire PDE domain.
 	 *
 	 * @param stepSize the integration step to apply
-	 * @return the accumulated total change in state
+	 * @return the accumulated change in state over the combined diffusion and
+	 *         reaction step
 	 */
 	public synchronized double react(double stepSize) {
 		double change;
@@ -502,7 +503,8 @@ public class PDE extends ODE {
 	 * @param start    the index of the first cell (including)
 	 * @param end      the index of the last cell (excluding)
 	 * @param stepSize the integration step to apply
-	 * @return the accumulated change in state
+	 * @return the accumulated change in state over the combined diffusion and
+	 *         reaction step
 	 */
 	public double react(int start, int end, double stepSize) {
 		boolean hasFit = (module instanceof Payoffs);
@@ -517,6 +519,7 @@ public class PDE extends ODE {
 			meanFit = new double[nDim];
 		}
 		double[] dytn = new double[nDim];
+		double[] ytn1 = new double[nDim];
 		double change = 0.0;
 
 		for (int n = start; n < end; n++) {
@@ -524,8 +527,13 @@ public class PDE extends ODE {
 			double[] youtn = next[n]; // youtn is only a short-cut - data written to next[]
 			double[] ftn = (hasFit ? fitness[n] : null);
 			getDerivatives(time, ytn, ftn, dytn);
+			// youtn still holds the state prior to this step's diffusion; capture it to
+			// measure the total change over both diffusion and reaction combined - this
+			// is what determines convergence to a steady state (which need not be
+			// homogeneous, e.g. Turing patterns)
+			System.arraycopy(youtn, 0, ytn1, 0, nDim);
 			ArrayMath.addscale(ytn, dytn, stepSize, youtn); // youtn = ytn+step*dy
-			change += ArrayMath.dot(dytn, dytn) * stepSize * stepSize;
+			change += ArrayMath.distSq(youtn, ytn1);
 			if (!isDensity) {
 				normalizeState(youtn);
 			}
@@ -609,7 +617,7 @@ public class PDE extends ODE {
 	/**
 	 * Symmetric diffusion for the provided index range; extracts work from the
 	 * original diffuse method to reduce its cognitive complexity.
-	 * 
+	 *
 	 * @param start    the index of the first cell (including)
 	 * @param end      the index of the last cell (excluding)
 	 * @param scaledD  the diffusion coefficients scaled for the current time step
@@ -651,7 +659,7 @@ public class PDE extends ODE {
 	/**
 	 * Standard (non-symmetric) diffusion for the provided index range; extracts
 	 * work from the original diffuse method to reduce its cognitive complexity.
-	 * 
+	 *
 	 * @param start    the index of the first cell (including)
 	 * @param end      the index of the last cell (excluding)
 	 * @param scaledD  the diffusion coefficients scaled for the current time step
@@ -998,8 +1006,9 @@ public class PDE extends ODE {
 	}
 
 	/**
-	 * Indicates that the numerical integration has converged to a homogeneous
-	 * state.
+	 * Indicates that the numerical integration has converged to a steady state.
+	 * Note that a steady state need not be spatially homogeneous, e.g. stationary
+	 * Turing patterns are also detected as converged.
 	 */
 	public void setConverged() {
 		converged = true;
@@ -1368,7 +1377,7 @@ public class PDE extends ODE {
 						}
 						descrDiff.append("\n      d").append(idx++).append(": ").append(names[n]);
 					}
-					descrDiff.append("\n      diffusion: di=Di/(2*dx^2)");
+					descrDiff.append("\n      diffusion: di=Di*dt/dx^2 (internally, per step)");
 					return descrDiff.toString();
 				}
 			});
