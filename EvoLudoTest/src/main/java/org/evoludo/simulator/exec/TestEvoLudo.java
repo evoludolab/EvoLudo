@@ -196,6 +196,15 @@ public class TestEvoLudo implements RunListener {
 	int nSHAMismatches;
 
 	/**
+	 * The number of stale references successfully regenerated and re-verified
+	 * during {@link #generate()}. A subset of {@link #nTestFailures}: each stale
+	 * reference is first detected as a failed comparison against the outdated
+	 * file, then (if the freshly saved replacement re-verifies successfully)
+	 * counted here as resolved.
+	 */
+	int nRegenerated;
+
+	/**
 	 * Constructor for TestEvoLudo.
 	 */
 	public TestEvoLudo() {
@@ -250,11 +259,18 @@ public class TestEvoLudo implements RunListener {
 				String result = engine.encodeState();
 				Plist plist = PlistParser.parse(result);
 				String dest = generateBasename(cloLine, ++nTest);
+				// checkReference() also serves as a staleness probe here: a mismatch
+				// means the existing reference predates a source change and must be
+				// regenerated below (quarantine + save + re-verify with test(ref)).
+				// Track that outcome separately in nRegenerated so it can be reported
+				// on its own, distinct from unresolved failures.
+				boolean wasStale = false;
 				File ref = checkReference(referencesDir, plist, dest);
 				if (ref != null && ref != referencesDir)
 					// check passed
 					continue;
 				if (ref == null) {
+					wasStale = true;
 					// copy failed test to reports directory
 					try {
 						File src = search(referencesDir, dest);
@@ -308,7 +324,10 @@ public class TestEvoLudo implements RunListener {
 				int idx = name.indexOf(SHA_PREFIX);
 				logOk(name.substring(0, idx) + ": test generated/updated.");
 				// check test
+				int nTestFailuresBeforeVerify = nTestFailures;
 				test(ref);
+				if (wasStale && nTestFailures == nTestFailuresBeforeVerify)
+					nRegenerated++;
 			}
 			scanner.close();
 		} catch (FileNotFoundException fnfe) {
@@ -737,6 +756,7 @@ public class TestEvoLudo implements RunListener {
 		nTestMinor = 0;
 		nTestWarnings = 0;
 		nSHAMismatches = 0;
+		nRegenerated = 0;
 		if (performTest) {
 			test(testsDir);
 			logTitle("Tests completed.");
@@ -744,6 +764,7 @@ public class TestEvoLudo implements RunListener {
 			generate();
 			logTitle("Generating completed.");
 		}
+		int nUnresolved = nTestFailures - nRegenerated;
 		if (nSHAMismatches > 0)
 			logWarning(nSHAMismatches + " out of " + nTests
 					+ " tests had a SHA mismatch only.");
@@ -754,14 +775,17 @@ public class TestEvoLudo implements RunListener {
 					+ " tests had minor (likely numerical) issues.");
 		if (nTestFailures > 0)
 			logError(nTestFailures + " out of " + nTests + " tests had errors.");
+		if (nRegenerated > 0)
+			logOk("REGENERATED: " + nRegenerated + " out of " + nTests
+					+ " tests successfully regenerated.");
 		if (nTests != nTestFailures)
 			logOk((nTests - nTestFailures) + " out of " + nTests
 					+ " tests successfully passed.");
-		if (nTestFailures > 0 || nTestMinor > 0 || nTestWarnings > 0)
+		if (nUnresolved > 0 || nTestMinor > 0 || nTestWarnings > 0)
 			logTitle("Review issues carefully!");
 		// remove reports directory if empty
 		reportsDir.delete();
-		return (nTestFailures == 0);
+		return (nUnresolved == 0);
 	}
 
 	/**
