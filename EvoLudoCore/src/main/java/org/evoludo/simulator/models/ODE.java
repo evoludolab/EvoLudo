@@ -583,7 +583,7 @@ public class ODE extends Model implements DModel {
 		int start = idxSpecies[id];
 		if (init.length != idxSpecies[id + 1] - start)
 			return false;
-		applyDependentTraits(init, 0, init.length, dependents[id]);
+		processDependentTrait(init, 0, init.length, dependents[id]);
 		System.arraycopy(init, start, y0, 0, idxSpecies[id + 1] - start);
 		init(false);
 		return true;
@@ -603,20 +603,39 @@ public class ODE extends Model implements DModel {
 			int start = idxSpecies[idx];
 			if (start + nTraits > state.length)
 				return;
-			applyDependentTraits(state, start, nTraits, dependents[idx]);
+			processDependentTrait(state, start, nTraits, dependents[idx]);
 		}
 	}
 
 	/**
 	 * Adjust the dependent trait for a single species slice in frequency-based
-	 * dynamics.
+	 * dynamics: {@code state[dependent] = max(0, 1 - sum(others))}.
 	 *
 	 * @param state     the state vector containing the slice to adjust
 	 * @param start     the start offset of the species slice
 	 * @param nTraits   the number of traits for the species
 	 * @param dependent the dependent trait index (relative to the slice)
 	 */
-	private void applyDependentTraits(double[] state, int start, int nTraits, int dependent) {
+	private void processDependentTrait(double[] state, int start, int nTraits, int dependent) {
+		processDependentTrait(state, start, nTraits, dependent, 1.0, true);
+	}
+
+	/**
+	 * Adjust the dependent trait of a single species slice so its traits
+	 * (including the dependent one) sum to {@code target}: {@code 1.0} for a
+	 * state (frequencies), {@code 0.0} for its derivative (frequencies summing
+	 * to 1 implies their combined drift sums to 0). A derivative may legitimately
+	 * be negative, so {@code clamp} should be {@code false} for it.
+	 *
+	 * @param state     the state vector or derivative containing the slice
+	 * @param start     the start offset of the species slice
+	 * @param nTraits   the number of traits for the species
+	 * @param dependent the dependent trait index (relative to the slice)
+	 * @param target    the value the slice's traits must sum to
+	 * @param clamp     whether to floor the result at 0
+	 */
+	protected void processDependentTrait(double[] state, int start, int nTraits, int dependent, double target,
+			boolean clamp) {
 		if (isDensity || nTraits <= 0 || dependent < 0 || dependent >= nTraits)
 			return;
 		if (start < 0 || start + nTraits > state.length)
@@ -627,7 +646,8 @@ public class ODE extends Model implements DModel {
 				continue;
 			sum += state[start + n];
 		}
-		state[start + dependent] = Math.max(0.0, 1.0 - sum);
+		double value = target - sum;
+		state[start + dependent] = clamp ? Math.max(0.0, value) : value;
 	}
 
 	@Override
@@ -1081,6 +1101,7 @@ public class ODE extends Model implements DModel {
 					throw new IllegalArgumentException("Unknown update method for players (" + put + ")");
 			}
 
+			// XXX could apply logic similar to processDependentTrait here as well
 			// with frequencies totDelta is zero (in theory); correct numerical drift
 			if (!isDensity && Math.abs(totDelta) > accuracy) {
 				boolean[] active = mod.getActiveTraits();

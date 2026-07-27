@@ -57,8 +57,8 @@ public class SDE extends ODE {
 	 * {@code true} for a custom subclass with a vacant-trait species, routing
 	 * {@link #deStep(double)} through the reaction-based
 	 * {@link #processEcology(double, double)} instead of the closed-form
-	 * {@link #process2Traits(int, double, double, double, double)}/
-	 * {@link #process3Traits(double, double)}.
+	 * {@link #process2TraitsNoise(int, double, double, double)}/
+	 * {@link #process3TraitsNoise(double)}.
 	 */
 	protected boolean isEcological;
 
@@ -104,7 +104,7 @@ public class SDE extends ODE {
 				// multiple traits implies evolutionary module - revert to ODE
 				return revertToODE("multi-species require single trait - revert to ODE.");
 			}
-		} else if (!hasRequiredDependentTrait()) {
+		} else if (((HasDE) module).getDependent() < 0) {
 			// single species module requires dependent trait
 			return revertToODE("requires dependent trait - revert to ODE.");
 		}
@@ -135,16 +135,6 @@ public class SDE extends ODE {
 			isAdjustedDynamics = false;
 		}
 		return doReset;
-	}
-
-	/**
-	 * Indicates whether the current single-species module satisfies the dependent
-	 * trait requirement for SDE models.
-	 *
-	 * @return <code>true</code> if the dependent-trait requirement is met
-	 */
-	protected boolean hasRequiredDependentTrait() {
-		return ((HasDE) module).getDependent() >= 0;
 	}
 
 	/**
@@ -271,17 +261,29 @@ public class SDE extends ODE {
 	}
 
 	/**
+	 * Safety buffer, in standard deviations, for the proactive step-size guard in
+	 * {@link #boundVacantStep}: steps are shrunk so the boundary stays at least
+	 * this many sigma away from both the estimated drift and the estimated noise
+	 * jump.
+	 */
+	private static final double STEP_SAFETY_SIGMA = 2.0;
+
+	/**
 	 * {@inheritDoc}
 	 * <p>
 	 * For stochastic differential equations Gaussian distributed white noise is
 	 * added.
-	 * 
+	 *
 	 * <h3>Implementation Notes:</h3>
 	 * Non-ecological replicator dynamics uses the closed forms
-	 * {@link #process2Traits(int, double, double, double, double)}/
-	 * {@link #process3Traits(double, double)} for 2 or 3 traits. Ecological
+	 * {@link #process2TraitsNoise(int, double, double, double)}/
+	 * {@link #process3TraitsNoise(double)} for 2 or 3 traits. Ecological
 	 * dynamics instead uses {@link #processEcology(double, double)} for any
-	 * number of traits, see {@link #isEcological}.
+	 * number of traits, see {@link #isEcological}. In both cases noise is
+	 * computed into {@link #dyt} first, then
+	 * {@link #addReactionNoise(double[], double[], double)} runs, and only then
+	 * is the step actually applied - so noise added by that hook is never
+	 * dropped.
 	 *
 	 * @see <a href="http://dx.doi.org/10.1103/PhysRevE.85.041901">Traulsen, A.,
 	 *      Claussen J. C. &amp; Hauert, Ch. (2012) Stochastic differential
@@ -295,22 +297,39 @@ public class SDE extends ODE {
 	 */
 	@Override
 	protected double deStep(double step) {
-		double stepSize = Math.abs(step);
-		double sqrtdt = Math.sqrt(stepSize) / stepSize;
 		// SDE models never evaluate concurrently, so the reusable fields are safe
 		// to reuse here, unlike PDE's per-call buffers, see ODE#applyUpdates
 		computeEffRates(yt, effBirth, effDeath);
+		if (!isDensity)
+			step = computeStep(step);
+		double stepSize = Math.abs(step);
+		double sqrtdt = Math.sqrt(stepSize) / stepSize;
 
+		// addReactionNoise() must run before any step is applied, not after, so
+		// any noise it adds to dyt (e.g. a trait-to-trait exchange that bypasses
+		// vacant) is actually reflected in yout
 		if (isEcological) {
 			processEcology(step, sqrtdt);
 		} else {
 			switch (nDim) {
 				case 2:
-					process2Traits(0, step, sqrtdt, mutation[0].getProbability(), getEffectiveNoise(module, 0));
+					process2TraitsNoise(0, sqrtdt, mutation[0].getProbability(), getEffectiveNoise(module, 0));
+					addReactionNoise(yt, dyt, sqrtdt);
+					applyStep2Traits(0, step, mutation[0].getProbability());
 					break;
 
 				case 3:
-					process3Traits(step, sqrtdt);
+					process3TraitsNoise(sqrtdt);
+					addReactionNoise(yt, dyt, sqrtdt);
+					if (mutation[0].getProbability() > 0.0) {
+						// noise must not push us beyond boundaries of simplex
+						ArrayMath.addscale(yt, dyt, step, yout);
+						break;
+					}
+					// in the absence of mutations, extinct traits (or species) must not make
+					// a sudden reappearance due to roundoff errors! (this closed-form,
+					// non-ecological case has no vacant trait, so nothing reflects)
+					applyStep(0, nDim, -1, step);
 					break;
 
 				default:
@@ -320,28 +339,62 @@ public class SDE extends ODE {
 							+ ": non-ecological SDE with nDim=" + nDim + " not supported here - see SDEN.");
 			}
 		}
-		addReactionNoise(yt, dyt, sqrtdt);
 
-		// polish result (shared across cases)
-		int idx = ArrayMath.minIndex(yout);
-		if (yout[idx] < 0.0) {
-			// step too big, resulted in negative densities/frequencies
-			// note, yt[idx]>0 must hold (from previous step) but
-			// sign of dyt[idx] depends on direction of integration
-			step = -yt[idx] / dyt[idx]; // note: dyt[idx]<0 -> step>0
-			ArrayMath.addscale(yt, dyt, step, yout);
-			yout[idx] = 0.0; // avoid roundoff errors
-		}
-		if (!isDensity) {
-			idx = ArrayMath.maxIndex(yout);
-			if (yout[idx] > 1.0) {
-				// step too big, resulted in frequencies >1
-				step = (1.0 - yt[idx]) / dyt[idx];
-				ArrayMath.addscale(yt, dyt, step, yout);
-				yout[idx] = 1.0; // avoid roundoff errors
+		// reactive closest-boundary clamp: yout is affine in the step size, so
+		// the sub-step cancelling each violation is independently computable;
+		// the smallest one is safe for all simultaneously - a single pass,
+		// rather than two independent ones that can undo each other's fix.
+		double bound = step;
+		int boundIdx = -1;
+		boolean anyViolation = false;
+		for (int i = 0; i < yout.length; i++) {
+			double yi = yout[i];
+			if (yi < 0.0) {
+				anyViolation = true;
+				// yt[i] already at 0 and still being pushed down isn't a new
+				// crossing - it can't move further, and must not force
+				// everyone else's step to zero; the defensive clamp below
+				// re-pins it exactly regardless, so just skip it here
+				if (yt[i] <= 0.0)
+					continue;
+				// yt[i]>0 must hold (from previous step); sign of dyt[i] depends
+				// on direction of integration
+				double s = -yt[i] / dyt[i];
+				if (Math.abs(s) < Math.abs(bound)) {
+					bound = s;
+					boundIdx = i;
+				}
+			} else if (!isDensity && yi > 1.0) {
+				anyViolation = true;
+				if (yt[i] >= 1.0)
+					continue;
+				double s = (1.0 - yt[i]) / dyt[i];
+				if (Math.abs(s) < Math.abs(bound)) {
+					bound = s;
+					boundIdx = i;
+				}
 			}
-			normalizeState(yout);
 		}
+		if (anyViolation) {
+			step = bound;
+			ArrayMath.addscale(yt, dyt, step, yout);
+			// division/multiplication roundoff in the corrected addscale can
+			// leave a residual of either sign on the entry that defined bound -
+			// unlike a genuine overshoot, a tiny surviving value on the wrong
+			// side of exact would silently defeat the absorbing/reflecting
+			// boundary tests upstream (e.g. yt[i] <= 0.0), so force it to the
+			// exact boundary rather than merely clamping overshoots. Entries
+			// already pinned at 0/1 before this step (excluded above) are not
+			// touched here - the defensive clamp below re-pins them exactly.
+			if (boundIdx >= 0)
+				yout[boundIdx] = (yout[boundIdx] < 0.5) ? 0.0 : 1.0;
+			// roundoff may still leave other entries marginally outside their
+			// bound even at the corrected step - clamp defensively
+			for (int i = 0; i < yout.length; i++)
+				yout[i] = isDensity ? Math.max(0.0, yout[i]) : Math.min(1.0, Math.max(0.0, yout[i]));
+		}
+		if (!isDensity)
+			normalizeState(yout);
 		// the new state is in yout - swap and determine new fitness
 		double[] swap = yt;
 		yt = yout;
@@ -351,6 +404,76 @@ public class SDE extends ODE {
 		time += step;
 		dtTaken = Math.abs(step);
 		return ArrayMath.distSq(yout, yt);
+	}
+
+	/**
+	 * Proactive step-size guard, narrowly scoped to a species' vacant fraction
+	 * approaching 1 (population {@code ->} extinct): that is the one regime
+	 * where demographic noise itself explodes (the {@code 1/(1-ytv)} term in
+	 * {@link #getEffectiveNoise(Module, int)}), rather than just the state
+	 * nearing a boundary - which is the reactive clamp's job in
+	 * {@link #deStep}. Only ever shrinks {@code step}; see
+	 * {@link #boundVacantStep} for how.
+	 *
+	 * @param step the requested (signed) step size
+	 * @return the (signed) step size, shrunk if necessary
+	 */
+	private double computeStep(double step) {
+		double stepSize = Math.abs(step);
+		double dir = (step < 0.0) ? -1.0 : 1.0;
+		for (int idx = 0; idx < nSpecies; idx++) {
+			Module<?> mod = species.get(idx);
+			int vacant = mod.getVacantIdx();
+			if (vacant < 0)
+				continue;
+			stepSize = Math.min(stepSize, boundVacantStep(mod, idxSpecies[idx], idxSpecies[idx + 1], vacant, dir));
+		}
+		return dir * stepSize;
+	}
+
+	/**
+	 * Bound the step size for one species so its vacant fraction's expected
+	 * drift and noise jump stay {@link #STEP_SAFETY_SIGMA} standard deviations
+	 * from full extinction. The drift bound uses the previous step's rate (this
+	 * step's noise isn't known yet); the noise bound uses this step's effective
+	 * birth/death rates (from {@link #computeEffRates}) and the population size
+	 * - since the noise jump scales as {@code sqrt(step * activity /
+	 * population)}, smaller populations need smaller steps for the same margin.
+	 *
+	 * @param mod    the species' module
+	 * @param start  the species' starting index in {@link #yt}
+	 * @param end    the species' ending index (exclusive) in {@link #yt}
+	 * @param vacant the species-relative index of the vacant trait
+	 * @param dir    the direction of integration, {@code +1.0} or {@code -1.0}
+	 * @return the estimated bound on the step size (unsigned)
+	 */
+	private double boundVacantStep(Module<?> mod, int start, int end, int vacant, double dir) {
+		int vacantAbs = start + vacant;
+		double z = yt[vacantAbs];
+		double margin = 1.0 - z;
+		if (margin <= 0.0)
+			return Double.POSITIVE_INFINITY; // already extinct
+		double buffered = margin / STEP_SAFETY_SIGMA;
+		double bound = Double.POSITIVE_INFINITY;
+		double rate = dir * dyt[vacantAbs];
+		if (rate > 0.0)
+			bound = buffered / rate;
+		double activity = 0.0;
+		for (int n = start; n < end; n++) {
+			if (n == vacantAbs)
+				continue;
+			double x = yt[n];
+			if (x <= 0.0)
+				continue;
+			double birthRate = effBirth[n] + ((ft != null) ? ft[n] : 0.0);
+			if (birthRate > 0.0)
+				activity += x * z * birthRate;
+			if (effDeath[n] > 0.0)
+				activity += x * effDeath[n];
+		}
+		if (activity > 0.0)
+			bound = Math.min(bound, buffered * buffered * mod.getNPopulation() / activity);
+		return bound;
 	}
 
 	/**
@@ -368,37 +491,55 @@ public class SDE extends ODE {
 	}
 
 	/**
-	 * Process noise with two dependent traits.
-	 * 
+	 * Add noise for two dependent traits to {@link #dyt}. Split from
+	 * {@link #applyStep2Traits(int, double, double)} so callers can run
+	 * {@link #addReactionNoise(double[], double[], double)} in between, see
+	 * {@link #deStep(double)}.
+	 *
 	 * @param skip   the start index of the two traits
-	 * @param step   the step size
 	 * @param sqrtdt the square root of the step size
 	 * @param mu     the mutation rate
 	 * @param noise  the noise to be processed
 	 */
-	private void process2Traits(int skip, double step, double sqrtdt, double mu, double noise) {
+	private void process2TraitsNoise(int skip, double sqrtdt, double mu, double noise) {
 		double x = yt[skip];
 		// T^+ + T^-: b = ((1.0 - mu) * x * (1.0 - x) + mu) * noise;
 		// noise: n = Math.sqrt(b) * rng.nextGaussian() * sqrtdt;
 		double n = Math.sqrt(((1.0 - mu) * x * (1.0 - x) + mu) * noise)
 				* rng.nextGaussian() * sqrtdt;
 		dyt[skip] += n;
-		int skip1 = skip + 1;
-		dyt[skip1] -= n;
+		dyt[skip + 1] -= n;
+	}
 
-		double dy = step * dyt[skip];
-		double dy1 = step * dyt[skip1];
+	/**
+	 * Apply the Euler step for two dependent traits, using {@link #dyt} as
+	 * finalized by {@link #process2TraitsNoise(int, double, double, double)} and
+	 * {@link #addReactionNoise(double[], double[], double)}.
+	 *
+	 * @param skip the start index of the two traits
+	 * @param step the step size
+	 * @param mu   the mutation rate
+	 */
+	private void applyStep2Traits(int skip, double step, double mu) {
+		int skip1 = skip + 1;
 		if (mu > 0.0) {
-			if (yt[skip] <= 0.0) {
+			double dy = step * dyt[skip];
+			double dy1 = step * dyt[skip1];
+			// yt[skip]<=0.0 and yt[skip1]>=1.0 are the same extinction event - but
+			// roundoff can let the two drift out of sync (e.g. yt[skip1] already
+			// snapped to exactly 1.0 while yt[skip] still carries a stale non-zero
+			// residual); treating only one as the trigger leaves that residual
+			// behind, where it can later freeze the integrator, see deStep(double)
+			if (yt[skip] <= 0.0 || yt[skip1] >= 1.0) {
 				dy = Math.max(0.0, dy);
-				yout[skip] = yt[skip] + dy;
-				yout[skip1] = yt[skip1] - dy;
+				yout[skip] = dy;
+				yout[skip1] = 1.0 - dy;
 				return;
 			}
-			if (yt[skip1] <= 0.0) {
+			if (yt[skip1] <= 0.0 || yt[skip] >= 1.0) {
 				dy1 = Math.max(0.0, dy1);
-				yout[skip] = yt[skip] - dy;
-				yout[skip1] = yt[skip1] + dy1;
+				yout[skip] = 1.0 - dy1;
+				yout[skip1] = dy1;
 				return;
 			}
 			yout[skip] = yt[skip] + dy;
@@ -406,17 +547,20 @@ public class SDE extends ODE {
 			return;
 		}
 		// in the absence of mutations, extinct traits (or species) must not make
-		// a sudden reappearance due to roundoff errors!
-		applyStep(skip, skip + 2, step);
+		// a sudden reappearance due to roundoff errors! (no vacant trait involved
+		// here, so nothing reflects)
+		applyStep(skip, skip + 2, -1, step);
 	}
 
 	/**
-	 * Process the three-trait stochastic update (including vacant).
-	 * 
-	 * @param step   Euler step size
+	 * Add noise for the three-trait stochastic update to {@link #dyt}. Called
+	 * from {@link #deStep(double)}, before
+	 * {@link #addReactionNoise(double[], double[], double)} and the step itself
+	 * are applied.
+	 *
 	 * @param sqrtdt square root of the time step (for noise terms)
 	 */
-	private void process3Traits(double step, double sqrtdt) {
+	private void process3TraitsNoise(double sqrtdt) {
 		// NOTE: if not replicator equation some adjustments are required (references to
 		// e.g. yt[2] would fail)
 		double x = yt[0];
@@ -500,23 +644,22 @@ public class SDE extends ODE {
 			dyt[0] += mx;
 			dyt[1] += my;
 			dyt[2] -= mx + my;
-			ArrayMath.addscale(yt, dyt, step, yout);
 		} else {
 			dyt[0] += nx;
 			dyt[1] += ny;
 			if (yt[2] > 0.0)
 				dyt[2] -= nx + ny;
-			// in the absence of mutations, extinct traits (or species) must not make
-			// a sudden reappearance due to roundoff errors!
-			applyStep(0, nDim, step);
 		}
 	}
 
 	/**
-	 * Process reaction-based ecological noise (birth, death, competition) per
-	 * species. Every reaction moves individuals between one active trait and
-	 * the vacant trait, so noise contributions are independent per trait and
-	 * simply add - no eigendecomposition needed, for any number of traits.
+	 * Add reaction-based ecological noise (birth, death, competition) to
+	 * {@link #dyt}, per species - every reaction moves individuals between one
+	 * active trait and the vacant trait, so noise contributions are independent
+	 * per trait and simply add, no eigendecomposition needed, for any number of
+	 * traits - then run {@link #addReactionNoise(double[], double[], double)}
+	 * and finally apply the Euler step for every species, using the fully
+	 * finalized {@link #dyt}, in that order, see {@link #deStep(double)}.
 	 *
 	 * @param step   the step size
 	 * @param sqrtdt the square root of the step size
@@ -533,20 +676,29 @@ public class SDE extends ODE {
 					if (yt[skip] > 0.0)
 						dyt[skip] += noise;
 				}
-				applyStep(skip, skip + mod.getNTraits(), step);
 				skip += mod.getNTraits();
 			}
-			return;
-		}
-		// frequency dynamics: demographic noise from ecological events only
-		for (Module<?> mod : species) {
-			if (mod.getVacantIdx() >= 0) {
-				processEcologyFrequency(mod, skip, sqrtdt);
-				applyStep(skip, skip + mod.getNTraits(), step);
-			} else {
-				process2Traits(skip, step, sqrtdt, 0.0, getEffectiveNoise(mod, skip));
+		} else {
+			// frequency dynamics: demographic noise from ecological events only
+			for (Module<?> mod : species) {
+				if (mod.getVacantIdx() >= 0)
+					processEcologyFrequency(mod, skip, sqrtdt);
+				else
+					process2TraitsNoise(skip, sqrtdt, 0.0, getEffectiveNoise(mod, skip));
+				skip += mod.getNTraits();
 			}
-			skip += mod.getNTraits();
+		}
+		addReactionNoise(yt, dyt, sqrtdt);
+		skip = 0;
+		for (Module<?> mod : species) {
+			int vacant = mod.getVacantIdx();
+			int nTraits = mod.getNTraits();
+			if (isDensity || vacant >= 0)
+				// vacant sites can always spontaneously reopen (reflect at 0)
+				applyStep(skip, skip + nTraits, vacant >= 0 ? skip + vacant : -1, step);
+			else
+				applyStep2Traits(skip, step, 0.0);
+			skip += nTraits;
 		}
 	}
 
@@ -627,16 +779,24 @@ public class SDE extends ODE {
 	}
 
 	/**
-	 * Apply an Euler step with zero-clamping to prevent extinct traits from
-	 * reappearing due to roundoff errors. Used when mutations are absent.
-	 * 
-	 * @param start the starting index (inclusive)
-	 * @param end   the ending index (exclusive)
-	 * @param step  the step size
+	 * Apply an Euler step. Traits are absorbed at 0, so extinct types don't
+	 * reappear due to roundoff (used when mutations are absent). The trait at
+	 * {@code reflect} - typically vacant - reflects at 0 instead: running out of
+	 * vacant sites is routine and reversible, unlike genuine extinction.
+	 *
+	 * @param start   the starting index (inclusive)
+	 * @param end     the ending index (exclusive)
+	 * @param reflect the index that reflects rather than absorbs at 0, or -1
+	 * @param step    the step size
 	 */
-	private void applyStep(int start, int end, double step) {
-		for (int i = start; i < end; i++)
+	private void applyStep(int start, int end, int reflect, double step) {
+		for (int i = start; i < end; i++) {
+			if (i == reflect) {
+				yout[i] = Math.max(0.0, yt[i] + step * dyt[i]);
+				continue;
+			}
 			yout[i] = (yt[i] > 0.0) ? yt[i] + step * dyt[i] : 0.0;
+		}
 	}
 
 	/**

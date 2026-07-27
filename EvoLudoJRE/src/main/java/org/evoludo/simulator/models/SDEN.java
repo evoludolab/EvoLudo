@@ -132,17 +132,6 @@ public class SDEN extends SDE {
 		super.unload();
 	}
 
-	@Override
-	protected boolean hasRequiredDependentTrait() {
-		if (((HasDE) module).getDependent() < 0 && module.getNTraits() >= 3) {
-			Logger logger = engine.getLogger();
-			if (logger.isLoggable(Level.WARNING))
-				logger.warning("SDEN without a dependent trait not yet implemented");
-			return false;
-		}
-		return true;
-	}
-
 	private void destroy() {
 		matB = null;
 		matU = matL = matC = matTmp = null;
@@ -210,7 +199,6 @@ public class SDEN extends SDE {
 
 		double stepSize = Math.abs(step);
 		double sqrtdt = Math.sqrt(stepSize) / stepSize;
-		int idx;
 		// effective noise may vary for populations of variable size
 		double effnoise = 1.0 / module.getNPopulation();
 		// scale noise according effective population size
@@ -288,17 +276,50 @@ public class SDEN extends SDE {
 				else
 					yout[i] = 0.0;
 		}
-		// polish result
-		idx = ArrayMath.minIndex(yout);
-		if (yout[idx] < 0.0) {
-			// step too big, resulted in negative densities/frequencies
-			// note, yt[idx]>0 must hold (from previous step) but
-			// sign of dyt[idx] depends on direction of integration
-			step = -yt[idx] / dyt[idx]; // note: dyt[idx]<0 -> step>0
-			// ensure all frequencies are positive - despite roundoff errors
+		// polish result: a trait already at 0 or 1 and still being pushed
+		// further isn't a new crossing - it can't move further that
+		// direction, and must not force everyone else's step to zero, see
+		// SDE#deStep for the same issue and why the exclusion must be exact
+		double bound = step;
+		int boundIdx = -1;
+		boolean anyViolation = false;
+		for (int i = 0; i < nDim; i++) {
+			double yi = yout[i];
+			if (yi < 0.0) {
+				anyViolation = true;
+				if (yt[i] <= 0.0)
+					continue;
+				// yt[i]>0 must hold (from previous step); sign of dyt[i]
+				// depends on direction of integration
+				double s = -yt[i] / dyt[i];
+				if (Math.abs(s) < Math.abs(bound)) {
+					bound = s;
+					boundIdx = i;
+				}
+			} else if (yi > 1.0) {
+				anyViolation = true;
+				if (yt[i] >= 1.0)
+					continue;
+				double s = (1.0 - yt[i]) / dyt[i];
+				if (Math.abs(s) < Math.abs(bound)) {
+					bound = s;
+					boundIdx = i;
+				}
+			}
+		}
+		if (anyViolation) {
+			step = bound;
+			ArrayMath.addscale(yt, dyt, step, yout);
+			// division/multiplication roundoff can leave a residual on the
+			// entry that defined bound - force it to the exact boundary;
+			// entries already pinned at 0/1 (excluded above) are re-pinned by
+			// the defensive clamp below instead
+			if (boundIdx >= 0)
+				yout[boundIdx] = (yout[boundIdx] < 0.5) ? 0.0 : 1.0;
+			// roundoff may still leave other entries marginally outside their
+			// bound even at the corrected step - clamp defensively
 			for (int i = 0; i < nDim; i++)
-				yout[i] = Math.max(0.0, yt[i] + step * dyt[i]);
-			yout[idx] = 0.0; // avoid roundoff errors
+				yout[i] = Math.min(1.0, Math.max(0.0, yout[i]));
 		}
 		normalizeState(yout);
 		// the new state is in yout - swap and determine new fitness
