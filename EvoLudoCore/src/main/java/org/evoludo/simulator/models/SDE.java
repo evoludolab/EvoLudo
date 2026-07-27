@@ -54,6 +54,15 @@ public class SDE extends ODE {
 	protected Module<?> module;
 
 	/**
+	 * {@code true} for a custom subclass with a vacant-trait species, routing
+	 * {@link #deStep(double)} through the reaction-based
+	 * {@link #processEcology(double, double)} instead of the closed-form
+	 * {@link #process2Traits(int, double, double, double, double)}/
+	 * {@link #process3Traits(double, double)}.
+	 */
+	protected boolean isEcological;
+
+	/**
 	 * Constructs a new model for the numerical integration of the system of
 	 * stochastic differential equations representing the dynamics specified by the
 	 * {@link Module} <code>module</code> using the {@link EvoLudo} pacemaker
@@ -100,6 +109,18 @@ public class SDE extends ODE {
 			return revertToODE("requires dependent trait - revert to ODE.");
 		}
 		boolean doReset = super.check();
+		isEcological = false;
+		// only custom subclasses (which can override computeEffRates() for
+		// e.g. a competition matrix) opt into the ecological noise; plain SDE
+		// instances (e.g. EcoPGG) keep the closed forms even with a vacant trait
+		if (getClass() != SDE.class) {
+			for (Module<?> mod : species) {
+				if (mod.getVacantIdx() >= 0) {
+					isEcological = true;
+					break;
+				}
+			}
+		}
 		// at this point it is clear that we have a dependent trait
 		int dim = nDim - 1;
 		// only one or two traits acceptable or, alternatively, two or three
@@ -256,9 +277,12 @@ public class SDE extends ODE {
 	 * added.
 	 * 
 	 * <h3>Implementation Notes:</h3>
-	 * Integration of SDEs can be optimized in 1 and 2 dimensions. For replicator
-	 * systems this means 2 or 3 traits.
-	 * 
+	 * Non-ecological replicator dynamics uses the closed forms
+	 * {@link #process2Traits(int, double, double, double, double)}/
+	 * {@link #process3Traits(double, double)} for 2 or 3 traits. Ecological
+	 * dynamics instead uses {@link #processEcology(double, double)} for any
+	 * number of traits, see {@link #isEcological}.
+	 *
 	 * @see <a href="http://dx.doi.org/10.1103/PhysRevE.85.041901">Traulsen, A.,
 	 *      Claussen J. C. &amp; Hauert, Ch. (2012) Stochastic differential
 	 *      equations for evolutionary dynamics with demographic noise and
@@ -277,19 +301,26 @@ public class SDE extends ODE {
 		// to reuse here, unlike PDE's per-call buffers, see ODE#applyUpdates
 		computeEffRates(yt, effBirth, effDeath);
 
-		switch (nDim) {
-			case 2:
-				process2Traits(0, step, sqrtdt, mutation[0].getProbability(), getEffectiveNoise(module, 0));
-				break;
+		if (isEcological) {
+			processEcology(step, sqrtdt);
+		} else {
+			switch (nDim) {
+				case 2:
+					process2Traits(0, step, sqrtdt, mutation[0].getProbability(), getEffectiveNoise(module, 0));
+					break;
 
-			case 3:
-				process3Traits(step, sqrtdt);
-				break;
+				case 3:
+					process3Traits(step, sqrtdt);
+					break;
 
-			default:
-				processAnyTraits(step, sqrtdt);
-				break;
+				default:
+					// unreachable: check() reverts non-ecological dim>2 to ODE, and
+					// subclasses bypassing that cap (e.g. SDEN) override deStep()
+					throw new IllegalStateException(getClass().getSimpleName()
+							+ ": non-ecological SDE with nDim=" + nDim + " not supported here - see SDEN.");
+			}
 		}
+		addReactionNoise(yt, dyt, sqrtdt);
 
 		// polish result (shared across cases)
 		int idx = ArrayMath.minIndex(yout);
@@ -320,6 +351,20 @@ public class SDE extends ODE {
 		time += step;
 		dtTaken = Math.abs(step);
 		return ArrayMath.distSq(yout, yt);
+	}
+
+	/**
+	 * Hook for noise from reaction channels not covered by
+	 * {@link #computeEffRates(double[], double[], double[])}, e.g. a direct
+	 * exchange between two traits that bypasses the vacant trait. No-op by
+	 * default.
+	 *
+	 * @param state  the current state, as in {@link #yt}
+	 * @param change the derivatives to add noise to, as in {@link #dyt}
+	 * @param sqrtdt the square root of the step size
+	 */
+	protected void addReactionNoise(double[] state, double[] change, double sqrtdt) {
+		// no-op by default
 	}
 
 	/**
@@ -468,12 +513,15 @@ public class SDE extends ODE {
 	}
 
 	/**
-	 * Process the default case (any number of traits).
-	 * 
+	 * Process reaction-based ecological noise (birth, death, competition) per
+	 * species. Every reaction moves individuals between one active trait and
+	 * the vacant trait, so noise contributions are independent per trait and
+	 * simply add - no eigendecomposition needed, for any number of traits.
+	 *
 	 * @param step   the step size
 	 * @param sqrtdt the square root of the step size
 	 */
-	private void processAnyTraits(double step, double sqrtdt) {
+	private void processEcology(double step, double sqrtdt) {
 		int skip = 0;
 		if (isDensity) {
 			for (Module<?> mod : species) {
