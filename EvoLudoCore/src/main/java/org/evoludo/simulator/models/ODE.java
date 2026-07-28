@@ -268,7 +268,7 @@ public class ODE extends Model implements DModel {
 
 	/**
 	 * Reusable scratch space for the effective birth rate of every trait of
-	 * every species, indexed globally exactly like {@link #yt}/{@link #change}
+	 * every species, indexed globally exactly like {@link #yt}/{@link #dyt}
 	 * (see {@link #idxSpecies}). Used by single-threaded ODE and SDE models;
 	 * PDEs use per-call buffers to remain thread safe.
 	 *
@@ -278,7 +278,7 @@ public class ODE extends Model implements DModel {
 
 	/**
 	 * Reusable scratch space for the effective death rate of every trait of
-	 * every species, indexed globally exactly like {@link #yt}/{@link #change}
+	 * every species, indexed globally exactly like {@link #yt}/{@link #dyt}
 	 * (see {@link #idxSpecies}). Used by single-threaded ODE and SDE models;
 	 * PDEs use per-call buffers to remain thread safe.
 	 *
@@ -1003,7 +1003,8 @@ public class ODE extends Model implements DModel {
 	 * 
 	 * @see #updateBest(Module, double[], double[], int, int, double[])
 	 * @see #updateBestResponse(Module, double[], double[], int, int, double[])
-	 * @see #updateEcology(Module, double[], double[], int, int, double[])
+	 * @see #updateEcology(Module, double[], double[], int, int, double[], double[],
+	 *      double[])
 	 * @see #updateImitate(Module, double[], double[], int, int, double[])
 	 * @see #updateThermal(Module, double[], double[], int, int, double[])
 	 */
@@ -1229,7 +1230,7 @@ public class ODE extends Model implements DModel {
 	 * Compute the effective birth and death rate of every trait of every
 	 * ecological (vacancy-supporting) species in one pass, including
 	 * competition adjustments. Results are written to {@code eBirth}/
-	 * {@code eDeath}, globally indexed exactly like {@link #yt}/{@link #change}
+	 * {@code eDeath}, globally indexed exactly like {@link #yt}/{@link #dyt}
 	 * (see {@link #idxSpecies}); entries belonging to non-ecological species,
 	 * or to the vacant trait itself, are left untouched since they are never
 	 * read by {@link #updateEcology}. The competition adjustment is computed
