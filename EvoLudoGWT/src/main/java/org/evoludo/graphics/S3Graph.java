@@ -204,6 +204,16 @@ public class S3Graph extends AbstractGraph<double[]> implements Zooming, Shiftin
 	int role;
 
 	/**
+	 * Tooltip warning shown when setting initial frequencies is ambiguous.
+	 */
+	private static final String INIT_PROJECTION_WARNING = "Warning: initial frequencies cannot be set from an S3 projection.";
+
+	/**
+	 * Duration in milliseconds for the temporary initial-frequency warning.
+	 */
+	private static final int INIT_PROJECTION_WARNING_DURATION = 2500;
+
+	/**
 	 * Create a new simplex \(S_3\) graph for {@code module} running in {@code
 	 * view} with the specified {@code role}.
 	 * 
@@ -667,7 +677,7 @@ public class S3Graph extends AbstractGraph<double[]> implements Zooming, Shiftin
 
 	@Override
 	public void onDoubleClick(DoubleClickEvent event) {
-		processInitXY(event.getX(), event.getY());
+		processInitXY(event.getX(), event.getY(), event.getClientX(), event.getClientY(), false);
 	}
 
 	@Override
@@ -679,7 +689,8 @@ public class S3Graph extends AbstractGraph<double[]> implements Zooming, Shiftin
 			return;
 
 		Touch touch = touches.get(0);
-		processInitXY(touch.getRelativeX(getElement()), touch.getRelativeY(getElement()));
+		processInitXY(touch.getRelativeX(getElement()), touch.getRelativeY(getElement()), touch.getClientX(),
+				touch.getClientY(), true);
 		event.preventDefault();
 	}
 
@@ -709,14 +720,32 @@ public class S3Graph extends AbstractGraph<double[]> implements Zooming, Shiftin
 	 * Helper method to convert screen coordinates into an initial configuration and
 	 * set the controller's initial state.
 	 * 
-	 * @param x the {@code x}-coordinate on screen
-	 * @param y the {@code y}-coordinate on screen
+	 * @param x       the {@code x}-coordinate relative to the graph
+	 * @param y       the {@code y}-coordinate relative to the graph
+	 * @param clientX the {@code x}-coordinate relative to the browser window
+	 * @param clientY the {@code y}-coordinate relative to the browser window
+	 * @param isTouch {@code true} if the interaction was triggered by touch
 	 */
-	private void processInitXY(int x, int y) {
+	private void processInitXY(int x, int y, int clientX, int clientY, boolean isTouch) {
+		if (module.getNTraits() != 3) {
+			showProjectionWarning(clientX, clientY, isTouch);
+			return;
+		}
 		// convert to user coordinates
-		double[] s3 = new double[3];
-		map.s32Data(scaledX(x), scaledY(y), s3);
+		double[] s3 = map.s32Data(scaledX(x), scaledY(y));
 		view.setInitialState(s3);
+	}
+
+	/**
+	 * Show a temporary warning that setting initial frequencies from the current
+	 * simplex projection is ambiguous.
+	 * 
+	 * @param x       the {@code x}-coordinate relative to the browser window
+	 * @param y       the {@code y}-coordinate relative to the browser window
+	 * @param isTouch {@code true} if the interaction was triggered by touch
+	 */
+	private void showProjectionWarning(int x, int y, boolean isTouch) {
+		tooltip.showEphemeralTip(this, x, y, isTouch, INIT_PROJECTION_WARNING, INIT_PROJECTION_WARNING_DURATION);
 	}
 
 	// tool tips
