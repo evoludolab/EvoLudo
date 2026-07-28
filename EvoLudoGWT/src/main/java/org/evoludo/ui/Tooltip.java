@@ -332,6 +332,12 @@ public class Tooltip extends HTML implements MouseOverHandler, MouseOutHandler, 
 	protected Registration current;
 
 	/**
+	 * Tooltip contents to show temporarily instead of querying the registered
+	 * provider.
+	 */
+	private String ephemeralTip;
+
+	/**
 	 * Shared instance of tooltip.
 	 */
 	protected static Tooltip tooltip;
@@ -435,6 +441,21 @@ public class Tooltip extends HTML implements MouseOverHandler, MouseOutHandler, 
 	};
 
 	/**
+	 * Timer for restoring the regular tooltip after a temporary message expires.
+	 */
+	private Timer ephemeralTipTimer = new Timer() {
+		@Override
+		public void run() {
+			ephemeralTip = null;
+			if (current == null) {
+				close();
+				return;
+			}
+			updateTooltip();
+		}
+	};
+
+	/**
 	 * Helper method: show tooltip now and set timeout timer.
 	 */
 	private void doShow() {
@@ -456,9 +477,50 @@ public class Tooltip extends HTML implements MouseOverHandler, MouseOutHandler, 
 	public void close() {
 		delayShowTimer.cancel();
 		delayHideTimer.cancel();
+		ephemeralTipTimer.cancel();
+		ephemeralTip = null;
 		setVisible(false);
 		// prevents reappearance of tooltip after update.
 		current = null;
+	}
+
+	/**
+	 * Show a temporary tooltip message at {@code (x,y)} and restore the regular
+	 * provider supplied tooltip after {@code duration} milliseconds.
+	 * 
+	 * @param listener widget sporting tooltips
+	 * @param x        horizontal position relative to browser window
+	 * @param y        vertical position relative to browser window
+	 * @param isTouch  {@code true} if the tooltip was triggered by a touch event
+	 * @param tip      the temporary tooltip contents
+	 * @param duration duration in milliseconds before the regular tooltip is
+	 *                 restored
+	 */
+	public void showEphemeralTip(FocusPanel listener, int x, int y, boolean isTouch, String tip, int duration) {
+		if (tip == null) {
+			close();
+			return;
+		}
+		if (!acceptsTooltipEvents()) {
+			close();
+			return;
+		}
+		current = participants.get(listener);
+		if (current == null) {
+			close();
+			return;
+		}
+		this.x = x;
+		this.y = y;
+		touchEvent = isTouch;
+		ephemeralTip = tip;
+		delayShowTimer.cancel();
+		delayHideTimer.cancel();
+		ephemeralTipTimer.cancel();
+		setHTML(tip);
+		doShow();
+		if (duration > 0)
+			ephemeralTipTimer.schedule(duration);
 	}
 
 	/**
@@ -504,6 +566,11 @@ public class Tooltip extends HTML implements MouseOverHandler, MouseOutHandler, 
 		if (current == null) {
 			close();
 			return false;
+		}
+		if (ephemeralTip != null) {
+			setHTML(ephemeralTip);
+			show();
+			return true;
 		}
 		String tip = current.provider.getTooltipAt(x + Window.getScrollLeft() - current.listener.getAbsoluteLeft(),
 				y + Window.getScrollTop() - current.listener.getAbsoluteTop());
