@@ -393,24 +393,44 @@ public class EvoLudoGWT extends EvoLudo {
 				double chunkStep = getChunkStep(activeModel);
 				if (chunkStep > 0.0) {
 					scheduleChunkedStep(chunkStep);
-					timer.scheduleRepeating(getDelay());
+					timer.scheduleRepeating();
 					break;
 				}
 				if (modelNext())
-					timer.scheduleRepeating(getDelay());
+					timer.scheduleRepeating();
 				break;
+		}
+	}
+
+	/**
+	 * Timer for running models. Adds a convenience method to schedule updates at
+	 * the appropriate delay.
+	 *
+	 * @see #scheduleRepeating()
+	 */
+	class RunTimer extends Timer {
+		@Override
+		public void run() {
+			runGuarded("running the model", EvoLudoGWT.this::next);
+		}
+
+		/**
+		 * Schedule repeated updates at the requested delay. Snapshots run at the
+		 * minimum delay to reach the requested end state as quickly as possible. The
+		 * requested delay is left untouched because it is part of the GUI state that
+		 * gets captured, see the delay slider.
+		 *
+		 * @see EvoLudoGWT#cloSnap
+		 */
+		public void scheduleRepeating() {
+			scheduleRepeating(cloSnap.isSet() ? (int) DELAY_MIN : getDelay());
 		}
 	}
 
 	/**
 	 * Timer for running models.
 	 */
-	Timer timer = new Timer() {
-		@Override
-		public void run() {
-			runGuarded("running the model", EvoLudoGWT.this::next);
-		}
-	};
+	RunTimer timer = new RunTimer();
 
 	/**
 	 * <code>true</code> while hidden chunk updates are scheduled or in progress.
@@ -741,7 +761,7 @@ public class EvoLudoGWT extends EvoLudo {
 	public void setDelay(int delay) {
 		super.setDelay(delay);
 		if (isRunning)
-			timer.scheduleRepeating(delay);
+			timer.scheduleRepeating();
 	}
 
 	/**
@@ -802,25 +822,51 @@ public class EvoLudoGWT extends EvoLudo {
 	}
 
 	/**
-	 * Command line option to request that the EvoLudo model signals the completion
-	 * of of the layouting procedure for taking snapshots, e.g. with
-	 * <code>capture-website</code>.
-	 * 
-	 * @see <a href="https://github.com/sindresorhus/capture-website-cli"> Github:
-	 *      capture-website-cli</a>
+	 * Command line option to request that the EvoLudo model signals when a snapshot
+	 * can be taken, e.g. with <code>playwright</code>.
+	 * <p>
+	 * <strong>Note:</strong> the argument only limits the time spent on laying out
+	 * networks. When to take the snapshot follows from the requested end state, see
+	 * {@link Model#cloTimeStop} and {@link Model#cloSamples}.
+	 * <p>
+	 * Running the model is derived from the requested end state and overrides
+	 * {@link CLOController#cloRun} in both directions: without an end state the
+	 * model would run indefinitely and the snapshot would never be taken. This
+	 * requires that all other options are parsed first, hence the lower parse
+	 * priority. Whether the end state applies to the mode of the active view is
+	 * only known once the view is activated, see
+	 * {@code EvoLudoWeb#processCLOSnap()}.
+	 * <p>
+	 * <strong>Note:</strong> snapshots run at the minimum delay, see
+	 * {@link #run()}. The requested delay is left untouched because it is part of
+	 * the GUI state that gets captured, see the delay slider.
+	 *
+	 * @see EvoLudoWeb#snapshotReady()
+	 * @see <a href="https://playwright.dev"> playwright.dev</a>
 	 */
 	public final CLOption cloSnap = new CLOption("snap", "20", CLOption.Argument.OPTIONAL, CLOCategory.GUI,
-			"--snap [<s>]    snapshot utility, timeout <s> secs;\n"
-					+ "                (add '<div id=\"snapshot-ready\"></div>' to <body>\n"
-					+ "                when ready for snapshot, see capture-website docs)",
+			"--snap [<s>]    snapshot utility, layout timeout <s> secs\n"
+					+ "                add '<div id=\"snapshot-ready\"></div>' to <body>\n"
+					+ "                when ready, see --timestop and --samples",
 			new CLODelegate() {
 				@Override
 				public boolean parse(String arg, boolean isSet) {
-					if (isSet)
-						snapLayoutTimeout = Math.max(1, CLOParser.parseInteger(arg)) * 1000;
+					if (!isSet)
+						return true;
+					snapLayoutTimeout = Math.max(1, CLOParser.parseInteger(arg)) * 1000;
+					// check whether an end state is requested, i.e. a stopping time or a
+					// number of samples
+					boolean hasEnd = false;
+					if (activeModel != null) {
+						double tStop = activeModel.getTimeStop();
+						// special case: --timestop 0 does not run, see EvoLudo#modelCheck()
+						hasEnd = (Double.isFinite(tStop) && Math.abs(tStop) > 1e-8)
+								|| activeModel.getNSamples() > 0.0;
+					}
+					setSuspended(hasEnd);
 					return true;
 				}
-			});
+			}).setPriority(1);
 
 	@Override
 	public void collectCLO(CLOParser prsr) {

@@ -101,6 +101,9 @@ public class CLOController {
 	/**
 	 * Command line option to request that the EvoLudo model immediately starts
 	 * running after loading.
+	 * <p>
+	 * <strong>Note:</strong> for snapshots running is not requested but derived
+	 * from the requested end state, see {@code --snap}.
 	 */
 	public final CLOption cloRun = new CLOption("run", CLOCategory.GUI,
 			"--run           simulations run after launch", new CLODelegate() {

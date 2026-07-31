@@ -1878,58 +1878,43 @@ public class EvoLudoWeb extends Composite
 	}
 
 	/**
-	 * Process the command line options for snap execution,
-	 * {@link EvoLudoGWT#cloSnap}, and start the model accordingly.
+	 * Process the command line option for snapshots, {@link EvoLudoGWT#cloSnap}.
+	 * For snapshots running the model is derived from the requested end state:
+	 * the model runs only if {@link Model#cloTimeStop} or {@link Model#cloSamples}
+	 * applies to the mode of the active view and does not run otherwise - even if
+	 * {@code --run} was provided. Without a stopping point the model would run
+	 * indefinitely and the snapshot would never be taken.
+	 * <p>
+	 * <strong>Note:</strong> the mode is only known once the view is activated,
+	 * i.e. after {@link EvoLudoGWT#cloSnap} derived whether to run.
+	 *
+	 * @see org.evoludo.simulator.EvoLudoGWT#cloSnap
 	 */
 	private void processCLOSnap() {
 		if (!engine.cloSnap.isSet())
 			return;
 		// --snap set
 		Model activeModel = engine.getModel();
+		boolean hasStop = false;
 		switch (activeModel.getMode()) {
 			case DYNAMICS:
 			case STATISTICS_UPDATE:
-				snapDynamics(activeModel);
+				hasStop = Double.isFinite(activeModel.getTimeStop());
+				if (activeModel.getNSamples() > 0.0)
+					logger.warning("--samples found: wrong mode for statistics, use --view option.");
 				break;
 			case STATISTICS_SAMPLE:
-				snapSamples(activeModel);
+				hasStop = activeModel.getNSamples() > 0.0;
+				if (Double.isFinite(activeModel.getTimeStop()))
+					logger.warning("--timestop found: wrong mode for dynamics, use --view option.");
 				break;
 			default:
 		}
-	}
-
-	/**
-	 * Helper method to process snap for dynamics mode.
-	 * 
-	 * @param activeModel the active model
-	 */
-	private void snapDynamics(Model activeModel) {
-		double tStop = activeModel.getTimeStop();
-		double nSamples = activeModel.getNSamples();
-		double deltat = (tStop - activeModel.getTime()) * (activeModel.isTimeReversed() ? -1.0 : 1.0);
-		if (Double.isFinite(tStop) && deltat > 0.0) {
-			// start running - even without --run
-			engine.setSuspended(true);
-		}
-		if (nSamples > 0.0)
-			logger.warning("--samples found: wrong mode for statistics, use --view option.");
-	}
-
-	/**
-	 * Helper method to process snap for statistics sample mode.
-	 * 
-	 * @param activeModel the active model
-	 */
-	private void snapSamples(Model activeModel) {
-		double tStop = activeModel.getTimeStop();
-		double nSamples = activeModel.getNSamples();
-		// run to specified sample count
-		if (nSamples > activeModel.getNStatisticsSamples()) {
-			// start running - even without --run
-			engine.setSuspended(true);
-		}
-		if (Double.isFinite(tStop))
-			logger.warning("--timestop found: wrong mode for dynamics, use --view option.");
+		if (hasStop || !engine.isSuspended())
+			return;
+		// no end state for this mode: do not run but take the snapshot right away
+		engine.setSuspended(false);
+		snapshotReady();
 	}
 
 	/**
@@ -2270,11 +2255,11 @@ public class EvoLudoWeb extends Composite
 	/**
 	 * Prepare GUI to create a snapshot. Stops running model, updates GUI (buttons
 	 * and view) and adds a marker element with ID <code>snapshot-ready</code> to
-	 * DOM. This is used to control automated snapshots using
-	 * <code>capture-website</code>.
-	 * 
-	 * @see <a href="https://github.com/sindresorhus/capture-website-cli"> Github:
-	 *      capture-website-cli</a>
+	 * DOM. This is used to control automated snapshots, e.g. with
+	 * <code>playwright</code>.
+	 *
+	 * @see org.evoludo.simulator.EvoLudoGWT#cloSnap
+	 * @see <a href="https://playwright.dev"> playwright.dev</a>
 	 */
 	public void snapshotReady() {
 		if (snapmarker != null)
@@ -2285,7 +2270,7 @@ public class EvoLudoWeb extends Composite
 		view.update(true);
 		// make sure GUI is in stopped state before taking the snapshot
 		updateGUI();
-		// add div to DOM to signal completion of layout for capture-website
+		// add div to DOM to signal that the snapshot can be taken
 		snapmarker = Document.get().createDivElement();
 		snapmarker.setId("snapshot-ready");
 		Document.get().getBody().appendChild(snapmarker);
