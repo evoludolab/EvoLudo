@@ -3055,8 +3055,9 @@ public abstract class IBSPopulation<M extends Module<?>, P extends IBSPopulation
 			return true;
 		}
 
-		for (int i = 1; i < rGroupSize; i++) {
-			// normalize cumulative probabilities only if and when needed
+		// normalize cumulative probabilities only if and when needed
+		norm = (1.0 - nProb) / norm;
+		for (int i = 0; i < rGroupSize; i++) {
 			if (choice < cProbs[i] * norm) {
 				updateFromModelAt(me, refGroup[i]);
 				return true;
@@ -3222,8 +3223,9 @@ public abstract class IBSPopulation<M extends Module<?>, P extends IBSPopulation
 			return true;
 		}
 
-		for (int i = 1; i < rGroupSize; i++) {
-			// normalize cumulative probabilities only if and when needed
+		// normalize cumulative probabilities only if and when needed
+		norm = (1.0 - nProb) / norm;
+		for (int i = 0; i < rGroupSize; i++) {
 			if (choice < cProbs[i] * norm) {
 				updateFromModelAt(me, refGroup[i]);
 				return true;
