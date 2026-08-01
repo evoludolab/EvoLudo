@@ -46,8 +46,10 @@ import org.evoludo.ui.TrackballControls;
 
 import com.google.gwt.core.client.Duration;
 import com.google.gwt.core.client.JavaScriptObject;
+import com.google.gwt.core.client.Scheduler;
 import com.google.gwt.dom.client.CanvasElement;
 import com.google.gwt.dom.client.NativeEvent;
+import com.google.gwt.dom.client.Style.Unit;
 import com.google.gwt.event.dom.client.MouseDownEvent;
 import com.google.gwt.event.dom.client.MouseUpEvent;
 import com.google.gwt.event.dom.client.TouchEndEvent;
@@ -162,7 +164,16 @@ public class PopGraph3D extends GenericPopGraph<MeshLambertMaterial, Network3DGW
 		super.onLoad();
 		// PopGraph3D cannot use wrapper - transfer all widgets to graphPanel3D
 		// (except canvas) and make this the wrapper
-		graph3DPanel = new RenderingPanel();
+		graph3DPanel = new RenderingPanel() {
+			@Override
+			public void onResize() {
+				super.onResize();
+				// parallax resizes the canvas to the CSS size of the panel in a deferred
+				// command - restore the resolution of the display right after
+				Scheduler.get().scheduleDeferred(
+						() -> scaleCanvas(getOffsetWidth(), getOffsetHeight()));
+			}
+		};
 		for (Widget widget : wrapper) {
 			if (widget == canvas)
 				continue;
@@ -669,12 +680,41 @@ public class PopGraph3D extends GenericPopGraph<MeshLambertMaterial, Network3DGW
 
 	@Override
 	public void calcBounds(int width, int height) {
-		if (graph3DScene == null)
+		scaleCanvas(width, height);
+	}
+
+	/**
+	 * Resize the 3D canvas to {@code width} by {@code height} CSS pixels but render
+	 * at the resolution of the display, see {@link #scale}.
+	 * <p>
+	 * <strong>Note:</strong> parallax sizes the canvas in CSS pixels, which results
+	 * in blurred renderings on high resolution displays as well as in snapshots.
+	 * The CSS size is fixed explicitly because the canvas would otherwise be laid
+	 * out at the size of its (scaled) coordinate space.
+	 *
+	 * @param width  the width of the drawing area in CSS pixels
+	 * @param height the height of the drawing area in CSS pixels
+	 *
+	 * @see org.evoludo.util.NativeJS#getDevicePixelRatio()
+	 */
+	private void scaleCanvas(int width, int height) {
+		if (graph3DScene == null || width <= 0 || height <= 0)
 			return;
 		Canvas3d canvas = graph3DScene.getCanvas();
 		if (canvas == null)
 			return;
-		canvas.setSize(width, height);
+		CanvasElement element3D = canvas.getCanvas();
+		element3D.getStyle().setWidth(width, Unit.PX);
+		element3D.getStyle().setHeight(height, Unit.PX);
+		int sw = (int) (scale * width);
+		int sh = (int) (scale * height);
+		if (canvas.getWidth() == sw && canvas.getHeight() == sh)
+			return;
+		canvas.setSize(sw, sh);
+		WebGLRenderer renderer = graph3DScene.getRenderer();
+		if (renderer != null)
+			// keep the viewport in sync with the coordinate space of the canvas
+			renderer.setSize(sw, sh);
 	}
 
 	/**
@@ -852,10 +892,9 @@ public class PopGraph3D extends GenericPopGraph<MeshLambertMaterial, Network3DGW
 
 	@Override
 	public void export(MyContext2d ctx) {
-		ctx.save();
-		ctx.scale(scale, scale);
+		// no scaling required - the canvas already renders at the resolution of the
+		// display, see #scaleCanvas(int, int)
 		ctx.drawImage(getCanvasElement(), 0, 0);
-		ctx.restore();
 	}
 
 	/**
@@ -955,8 +994,11 @@ public class PopGraph3D extends GenericPopGraph<MeshLambertMaterial, Network3DGW
 				return;
 			if (doOrthographic) {
 				// orthographic projection
+				// note: the frustum is specified in CSS pixels - the canvas renders at
+				// the resolution of the display, see PopGraph3D#scaleCanvas(int, int)
 				if (!(graph3DCamera instanceof OrthographicCamera)) {
-					graph3DCamera = new OrthographicCamera(c3d.getWidth(), c3d.getHeight(),
+					graph3DCamera = new OrthographicCamera((int) (c3d.getWidth() / scale),
+							(int) (c3d.getHeight() / scale),
 							-10000, // near
 							10000 // far
 					);
