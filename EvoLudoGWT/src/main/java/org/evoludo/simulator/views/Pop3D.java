@@ -189,23 +189,24 @@ public class Pop3D extends GenericPop<MeshLambertMaterial, Network3DGWT, PopGrap
 		int nGraphs = 0;
 		List<? extends Module<?>> species = engine.getModule().getSpecies();
 		for (Module<?> mod : species)
-			nGraphs += mod.getIBSPopulation().getInteractionGeometry().isSingle() ? 1 : 2;
+			nGraphs += displaySingle(mod) ? 1 : 2;
 
 		if (graphs.size() == nGraphs)
 			return false;
 
 		destroyGraphs();
+		gCols = 1;
 		for (Module<?> mod : species) {
 			PopGraph3D graph = new PopGraph3D(this, mod);
 			wrapper.add(graph);
 			graphs.add(graph);
-			if (!mod.getIBSPopulation().getInteractionGeometry().isSingle()) {
-				graph = new PopGraph3D(this, mod);
-				wrapper.add(graph);
-				graphs.add(graph);
-				// arrange graphs horizontally
-				gCols = 2;
-			}
+			if (displaySingle(mod))
+				continue;
+			graph = new PopGraph3D(this, mod);
+			wrapper.add(graph);
+			graphs.add(graph);
+			// arrange graphs horizontally
+			gCols = 2;
 		}
 		gRows = species.size();
 		if (gRows * gCols == 2) {
@@ -215,11 +216,16 @@ public class Pop3D extends GenericPop<MeshLambertMaterial, Network3DGWT, PopGrap
 		}
 		int width = 100 / gCols;
 		int height = 100 / gRows;
-		boolean inter = true;
-		for (PopGraph3D graph : graphs) {
+		int idx = 0;
+		for (Module<?> mod : species) {
+			PopGraph3D graph = graphs.get(idx++);
 			graph.setSize(width + "%", height + "%");
-			setGraphGeometry(graph, inter);
-			inter = !inter;
+			setGraphGeometry(graph, true);
+			if (displaySingle(mod))
+				continue;
+			graph = graphs.get(idx++);
+			graph.setSize(width + "%", height + "%");
+			setGraphGeometry(graph, false);
 		}
 		return true;
 	}

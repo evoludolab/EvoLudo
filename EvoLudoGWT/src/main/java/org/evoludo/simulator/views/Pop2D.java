@@ -200,28 +200,23 @@ public class Pop2D extends GenericPop<String, Network2D, PopGraph2D> implements 
 		int nGraphs = 0;
 		List<? extends Module<?>> species = engine.getModule().getSpecies();
 		for (Module<?> mod : species)
-			nGraphs += mod.getIBSPopulation().getInteractionGeometry().isSingle() ? 1 : 2;
+			nGraphs += displaySingle(mod) ? 1 : 2;
 
 		boolean compatible = graphs.size() == nGraphs;
 		if (compatible) {
 			int idx = 0;
-			boolean inter = true;
 			for (Module<?> mod : species) {
-				AbstractGeometry geometry = resolveIBSGeometry(mod, inter);
-				if (isLinearGeometry(geometry) != (graphs.get(idx) instanceof PopGraph1D)) {
+				AbstractGeometry geometry = resolveIBSGeometry(mod, true);
+				if (isLinearGeometry(geometry) != (graphs.get(idx++) instanceof PopGraph1D)) {
 					compatible = false;
 					break;
 				}
-				idx++;
-				inter = !inter;
-				if (!mod.getIBSPopulation().getInteractionGeometry().isSingle()) {
-					geometry = resolveIBSGeometry(mod, inter);
-					if (isLinearGeometry(geometry) != (graphs.get(idx) instanceof PopGraph1D)) {
-						compatible = false;
-						break;
-					}
-					idx++;
-					inter = !inter;
+				if (displaySingle(mod))
+					continue;
+				geometry = resolveIBSGeometry(mod, false);
+				if (isLinearGeometry(geometry) != (graphs.get(idx++) instanceof PopGraph1D)) {
+					compatible = false;
+					break;
 				}
 			}
 		}
@@ -230,22 +225,19 @@ public class Pop2D extends GenericPop<String, Network2D, PopGraph2D> implements 
 
 		destroyGraphs();
 		gCols = 1;
-		boolean inter = true;
 		for (Module<?> mod : species) {
-			AbstractGeometry geometry = resolveIBSGeometry(mod, inter);
+			AbstractGeometry geometry = resolveIBSGeometry(mod, true);
 			PopGraph2D graph = createGraph(mod, geometry);
 			wrapper.add(graph);
 			graphs.add(graph);
-			inter = !inter;
-			if (!mod.getIBSPopulation().getInteractionGeometry().isSingle()) {
-				geometry = resolveIBSGeometry(mod, inter);
-				graph = createGraph(mod, geometry);
-				wrapper.add(graph);
-				graphs.add(graph);
-				inter = !inter;
-				// arrange graphs horizontally
-				gCols = 2;
-			}
+			if (displaySingle(mod))
+				continue;
+			geometry = resolveIBSGeometry(mod, false);
+			graph = createGraph(mod, geometry);
+			wrapper.add(graph);
+			graphs.add(graph);
+			// arrange graphs horizontally
+			gCols = 2;
 		}
 		gRows = species.size();
 		if (gRows * gCols == 2) {
@@ -255,11 +247,16 @@ public class Pop2D extends GenericPop<String, Network2D, PopGraph2D> implements 
 		}
 		int width = 100 / gCols;
 		int height = 100 / gRows;
-		boolean interLayout = true;
-		for (PopGraph2D graph : graphs) {
+		int idx = 0;
+		for (Module<?> mod : species) {
+			PopGraph2D graph = graphs.get(idx++);
 			graph.setSize(width + "%", height + "%");
-			setGraphGeometry(graph, interLayout);
-			interLayout = !interLayout;
+			setGraphGeometry(graph, true);
+			if (displaySingle(mod))
+				continue;
+			graph = graphs.get(idx++);
+			graph.setSize(width + "%", height + "%");
+			setGraphGeometry(graph, false);
 		}
 		return true;
 	}
