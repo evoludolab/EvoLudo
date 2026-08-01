@@ -342,31 +342,26 @@ public abstract class Network<N extends Node> extends AbstractList<N> implements
 
 		nNodes = geometry.getSize();
 		GeometryType type = geometry.getType();
-		if (type == GeometryType.HIERARCHY)
+		boolean isHierarchy = (type == GeometryType.HIERARCHY);
+		if (isHierarchy)
 			type = ((HierarchicalGeometry) geometry).getSubType();
-		// geometries that have special/fixed layout
-		switch (type) {
-			case CUBE:
-			case SQUARE_NEUMANN:
-			case SQUARE_NEUMANN_2ND:
-			case SQUARE_MOORE:
-			case SQUARE:
-			case LINEAR:
-			case HEXAGONAL:
-			case TRIANGULAR:
-				setStatus(Status.NO_LAYOUT);
-				nLinks = 0;
-				break;
-			case WELLMIXED:
-				nLinks = 0;
-				setStatus(Status.NEEDS_LAYOUT);
-				break;
-			default:
-				nLinks = ArrayMath.norm(geometry.kout);
-				if (geometry.isUndirected())
-					nLinks /= 2;
-				setStatus(Status.NEEDS_LAYOUT);
+		// geometries that have special/fixed layout; note rewiring or adding links
+		// destroys the regular structure of lattices and requires layouting, just
+		// like any other network
+		if (type.isLattice() && (isHierarchy || geometry.isLattice())) {
+			setStatus(Status.NO_LAYOUT);
+			nLinks = 0;
+			return;
 		}
+		if (type == GeometryType.WELLMIXED) {
+			nLinks = 0;
+			setStatus(Status.NEEDS_LAYOUT);
+			return;
+		}
+		nLinks = ArrayMath.norm(geometry.kout);
+		if (geometry.isUndirected())
+			nLinks /= 2;
+		setStatus(Status.NEEDS_LAYOUT);
 	}
 
 	/**

@@ -345,6 +345,10 @@ public class PopGraph2D extends GenericPopGraph<String, Network2D> implements Sh
 	 */
 	@Override
 	public boolean paint(boolean force) {
+		if (!hasStaticLayout())
+			// networks are drawn without a frame; the layout of rewired lattices may
+			// only be settled after calcBounds ran, see #handleNetwork(int, int)
+			style.showFrame = false;
 		if (super.paint(force))
 			return true;
 		if (hasStaticLayout())
@@ -732,29 +736,35 @@ public class PopGraph2D extends GenericPopGraph<String, Network2D> implements Sh
 			hPeriods = null;
 
 		// dispatch to concise handlers for each geometry
-		switch (type) {
-			case LINEAR:
-				if (this instanceof PopGraph1D)
+		// note: rewiring or adding links destroys the regular structure of lattices,
+		// which then require layouting like any other network, see Network#reset()
+		if (!isHierarchy && type.isLattice() && !geometry.isLattice()) {
+			handleNetwork(width, height);
+		} else {
+			switch (type) {
+				case LINEAR:
+					if (this instanceof PopGraph1D)
+						return;
+					//$FALL-THROUGH$
+				case CUBE:
+					handleNoRepresentation(type);
 					return;
-				//$FALL-THROUGH$
-			case CUBE:
-				handleNoRepresentation(type);
-				return;
-			case TRIANGULAR:
-				handleTriangular(width, height);
-				break;
-			case HEXAGONAL:
-				handleHoneycomb(width, height);
-				break;
-			case SQUARE_NEUMANN:
-			case SQUARE_NEUMANN_2ND:
-			case SQUARE_MOORE:
-			case SQUARE:
-				handleSquare(width, height);
-				break;
-			default:
-				handleNetwork(width, height);
-				break;
+				case TRIANGULAR:
+					handleTriangular(width, height);
+					break;
+				case HEXAGONAL:
+					handleHoneycomb(width, height);
+					break;
+				case SQUARE_NEUMANN:
+				case SQUARE_NEUMANN_2ND:
+				case SQUARE_MOORE:
+				case SQUARE:
+					handleSquare(width, height);
+					break;
+				default:
+					handleNetwork(width, height);
+					break;
+			}
 		}
 
 		// final sanity checks
