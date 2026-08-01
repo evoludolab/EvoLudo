@@ -36,6 +36,7 @@ import java.util.logging.Level;
 import org.evoludo.graphics.AbstractGraph;
 import org.evoludo.simulator.EvoLudoGWT;
 import org.evoludo.simulator.models.Data;
+import org.evoludo.simulator.models.Mode;
 import org.evoludo.ui.ContextMenu;
 import org.evoludo.ui.ContextMenuItem;
 import org.evoludo.util.RingBuffer;
@@ -185,11 +186,15 @@ public class Console extends AbstractView<AbstractGraph<?>> implements ContextMe
 		super.onUnload();
 	}
 
+	/**
+	 * {@inheritDoc}
+	 * <p>
+	 * The console imposes no requirements on the mode of the model. Prevent
+	 * a mode switch by returning the active mode. Keeps running models running.
+	 */
 	@Override
-	public void activate() {
-		if (isActive)
-			return;
-		isActive = true;
+	Mode getMode() {
+		return (model == null ? Mode.DYNAMICS : model.getMode());
 	}
 
 	@Override
