@@ -43,6 +43,8 @@ import org.evoludo.simulator.geometries.HierarchicalGeometry;
 import org.evoludo.simulator.modules.Module;
 import org.evoludo.simulator.views.Pop3D;
 import org.evoludo.ui.TrackballControls;
+import org.evoludo.util.CLOption;
+import org.evoludo.util.CLOParser;
 
 import com.google.gwt.core.client.Duration;
 import com.google.gwt.core.client.JavaScriptObject;
@@ -678,6 +680,186 @@ public class PopGraph3D extends GenericPopGraph<MeshLambertMaterial, Network3DGW
 		invalidated = false;
 	}
 
+	/**
+	 * The rendering modes of 3D views. The modes are mutually exclusive and are
+	 * selected either on the command line, see {@link PopGraph3D#parse(String)}, or
+	 * through the context menu, see
+	 * {@code Pop3D#populateContextMenu(ContextMenu)}.
+	 */
+	public enum Mode implements CLOption.Key {
+
+		/**
+		 * Perspective projection (default).
+		 */
+		PERSPECTIVE("perspective", "perspective projection (default)"),
+
+		/**
+		 * Parallel (orthographic) projection.
+		 */
+		PARALLEL("parallel", "parallel (orthographic) projection", "ortho"),
+
+		/**
+		 * Red/cyan anaglyph. Requires a perspective projection.
+		 */
+		ANAGLYPH("anaglyph", "red/cyan anaglyph (single graph only)"),
+
+		/**
+		 * Side-by-side stereo view. Requires a perspective projection.
+		 */
+		VR("vr", "side-by-side stereo (single graph only)");
+
+		/**
+		 * The keys identifying the mode on the command line. The first one is the
+		 * canonical name, the others are aliases.
+		 */
+		private final String[] keys;
+
+		/**
+		 * The brief description of the mode for the help screen.
+		 */
+		private final String title;
+
+		/**
+		 * Create a rendering mode with the given command line key, description and
+		 * optional aliases.
+		 *
+		 * @param key     the name of the mode
+		 * @param title   the description of the mode
+		 * @param aliases any aliases of the mode
+		 */
+		Mode(String key, String title, String... aliases) {
+			keys = new String[aliases.length + 1];
+			keys[0] = key;
+			System.arraycopy(aliases, 0, keys, 1, aliases.length);
+			this.title = title;
+		}
+
+		@Override
+		public String getKey() {
+			return keys[0];
+		}
+
+		@Override
+		public String getTitle() {
+			return title;
+		}
+
+		/**
+		 * Check if the mode is a stereoscopic effect rather than a projection. The
+		 * effects are available for single graphs only.
+		 *
+		 * @return {@code true} for stereoscopic effects
+		 */
+		public boolean isEffect() {
+			return (this == ANAGLYPH || this == VR);
+		}
+
+		/**
+		 * Get the mode requested by the command line argument {@code arg}. Matching is
+		 * as lenient as for command line keys, i.e. keys can be abbreviated as well as
+		 * extended, and the best match wins.
+		 *
+		 * @param arg the argument to match
+		 * @return the matching mode or {@code null} if none matches
+		 *
+		 * @see CLOption#match(String)
+		 */
+		public static Mode match(String arg) {
+			int best = 0;
+			Mode match = null;
+			for (Mode mode : values()) {
+				for (String key : mode.keys) {
+					int diff = CLOption.differAt(arg, key);
+					if (diff > best) {
+						best = diff;
+						match = mode;
+					}
+				}
+			}
+			return match;
+		}
+	}
+
+	/**
+	 * The rendering mode of the graph.
+	 *
+	 * @see Mode
+	 */
+	private Mode mode = Mode.PERSPECTIVE;
+
+	@Override
+	public boolean parse(String args) {
+		boolean ok = true;
+		// set default
+		mode = Mode.PERSPECTIVE;
+		if (args != null) {
+			for (String arg : args.split(CLOParser.VECTOR_DELIMITER)) {
+				arg = arg.trim();
+				if (arg.isEmpty())
+					continue;
+				Mode match = Mode.match(arg);
+				if (match == null) {
+					logger.warning("view '" + view.getName() + "': unknown option '" + arg + "' - ignored.");
+					ok = false;
+					continue;
+				}
+				// the rendering modes are mutually exclusive, see
+				// Pop3D#populateContextMenu(ContextMenu) - the last one provided applies
+				mode = match;
+			}
+		}
+		if (mode.isEffect() && view.getNGraphs() > 1) {
+			// the effects are available for a single graph only
+			logger.warning("view '" + view.getName() + "': '" + mode.getKey()
+					+ "' requires a single graph - ignored.");
+			mode = Mode.PERSPECTIVE;
+			ok = false;
+		}
+		applyMode();
+		return ok;
+	}
+
+	/**
+	 * Get the rendering mode of the graph.
+	 *
+	 * @return the rendering mode
+	 */
+	public Mode getMode() {
+		return mode;
+	}
+
+	/**
+	 * Set the rendering mode of the graph.
+	 *
+	 * @param mode the rendering mode
+	 */
+	public void setMode(Mode mode) {
+		this.mode = mode;
+		applyMode();
+	}
+
+	/**
+	 * Apply the rendering mode to the scene.
+	 * <p>
+	 * <strong>Note:</strong> the options are parsed before the rendering panel has
+	 * loaded and hence before a renderer is available. In that case the mode is
+	 * applied once the scene starts, see {@code Pop3DScene#onStart()}.
+	 *
+	 * @see #parse(String)
+	 */
+	private void applyMode() {
+		if (!hasRenderer())
+			return;
+		// note: the projection needs to be set first - the effects require a
+		// perspective projection
+		if (isOrthographic() != (mode == Mode.PARALLEL))
+			setOrthographic(mode == Mode.PARALLEL);
+		if (isAnaglyph() != (mode == Mode.ANAGLYPH))
+			setAnaglyph(mode == Mode.ANAGLYPH);
+		if (isVR() != (mode == Mode.VR))
+			setVR(mode == Mode.VR);
+	}
+
 	@Override
 	public void calcBounds(int width, int height) {
 		scaleCanvas(width, height);
@@ -823,7 +1005,7 @@ public class PopGraph3D extends GenericPopGraph<MeshLambertMaterial, Network3DGW
 	 * @param orthographic the flag to set an orthographic (parallel) projection for
 	 *                     the camera
 	 */
-	public void setOrthographic(boolean orthographic) {
+	private void setOrthographic(boolean orthographic) {
 		if (graph3DScene == null)
 			return;
 		graph3DScene.setOrtho(orthographic);
@@ -836,7 +1018,7 @@ public class PopGraph3D extends GenericPopGraph<MeshLambertMaterial, Network3DGW
 	 * 
 	 * @return {@code true} for orthographic projections
 	 */
-	public boolean isOrthographic() {
+	private boolean isOrthographic() {
 		return (graph3DCamera instanceof OrthographicCamera);
 	}
 
@@ -845,7 +1027,7 @@ public class PopGraph3D extends GenericPopGraph<MeshLambertMaterial, Network3DGW
 	 * 
 	 * @param anaglyph {@code true} enable the anaglyph effect
 	 */
-	public void setAnaglyph(boolean anaglyph) {
+	private void setAnaglyph(boolean anaglyph) {
 		if (!hasRenderer())
 			return;
 		if (!anaglyph || isVR()) {
@@ -861,7 +1043,7 @@ public class PopGraph3D extends GenericPopGraph<MeshLambertMaterial, Network3DGW
 	 * 
 	 * @return {@code true} if anaglyph shown
 	 */
-	public boolean isAnaglyph() {
+	private boolean isAnaglyph() {
 		return (effect instanceof Anaglyph);
 	}
 
@@ -870,7 +1052,7 @@ public class PopGraph3D extends GenericPopGraph<MeshLambertMaterial, Network3DGW
 	 * 
 	 * @param vr {@code true} to enable the stereo effect
 	 */
-	public void setVR(boolean vr) {
+	private void setVR(boolean vr) {
 		if (!hasRenderer())
 			return;
 		if (!vr || isAnaglyph()) {
@@ -886,7 +1068,7 @@ public class PopGraph3D extends GenericPopGraph<MeshLambertMaterial, Network3DGW
 	 * 
 	 * @return {@code true} if stereo effect shown
 	 */
-	public boolean isVR() {
+	private boolean isVR() {
 		return (effect instanceof Stereo);
 	}
 
@@ -925,6 +1107,9 @@ public class PopGraph3D extends GenericPopGraph<MeshLambertMaterial, Network3DGW
 		@Override
 		protected void onStart() {
 			positionCamera();
+			// the renderer is ready only now - apply the mode requested on the
+			// command line, see PopGraph3D#parse(String)
+			applyMode();
 		}
 
 		/**

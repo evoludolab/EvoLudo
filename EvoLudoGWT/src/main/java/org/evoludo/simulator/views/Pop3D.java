@@ -37,6 +37,7 @@ import java.util.List;
 import org.evoludo.graphics.GenericPopGraph.HasDebugMenu;
 import org.evoludo.graphics.Network3DGWT;
 import org.evoludo.graphics.PopGraph3D;
+import org.evoludo.graphics.PopGraph3D.Mode;
 import org.evoludo.simulator.ColorMap;
 import org.evoludo.simulator.ColorMap3D;
 import org.evoludo.simulator.geometries.AbstractGeometry;
@@ -52,6 +53,7 @@ import org.evoludo.simulator.modules.Map2Fitness;
 import org.evoludo.simulator.modules.Module;
 import org.evoludo.ui.ContextMenu;
 import org.evoludo.ui.ContextMenuCheckBoxItem;
+import org.evoludo.util.CLOption;
 
 import thothbot.parallax.core.shared.materials.MeshLambertMaterial;
 
@@ -410,44 +412,46 @@ public class Pop3D extends GenericPop<MeshLambertMaterial, Network3DGWT, PopGrap
 	}
 
 	@Override
+	public String getOptionsDescription() {
+		return CLOption.getDescriptionKey(Mode.values());
+	}
+
+	@Override
 	public void populateContextMenu(ContextMenu menu) {
 		menu.addSeparator();
-		boolean multiGraph = graphs.size() > 1;
-		PopGraph3D graph = graphs.get(0);
-		boolean isOrthographic = graph.isOrthographic();
-		boolean isAnaglyph = graph.isAnaglyph();
-		boolean isVR = graph.isVR();
+		Mode mode = graphs.get(0).getMode();
 		// projections synchronized across graphs
-		ContextMenuCheckBoxItem projectionMenu = new ContextMenuCheckBoxItem("Parallel projection", () -> {
-			boolean orthographic = !graphs.get(0).isOrthographic();
-			for (PopGraph3D popGraph : graphs)
-				popGraph.setOrthographic(orthographic);
-		});
-		projectionMenu.setChecked(isOrthographic);
-		projectionMenu.setEnabled(!(isAnaglyph || isVR));
+		ContextMenuCheckBoxItem projectionMenu = new ContextMenuCheckBoxItem("Parallel projection",
+				() -> setMode(mode == Mode.PARALLEL ? Mode.PERSPECTIVE : Mode.PARALLEL));
+		projectionMenu.setChecked(mode == Mode.PARALLEL);
+		projectionMenu.setEnabled(!mode.isEffect());
 		menu.add(projectionMenu);
 		// anaglyph and VR modes are mutually exclusive
 		// only available for a single graph
-		if (!multiGraph) {
-			ContextMenuCheckBoxItem anaglyphMenu = new ContextMenuCheckBoxItem("Anaglyph 3D", () -> {
-				boolean anaglyph = !graphs.get(0).isAnaglyph();
-				for (PopGraph3D popGraph : graphs)
-					popGraph.setAnaglyph(anaglyph);
-			});
-			anaglyphMenu.setChecked(isAnaglyph);
-			anaglyphMenu.setEnabled(!isOrthographic);
+		if (graphs.size() == 1) {
+			ContextMenuCheckBoxItem anaglyphMenu = new ContextMenuCheckBoxItem("Anaglyph 3D",
+					() -> setMode(mode == Mode.ANAGLYPH ? Mode.PERSPECTIVE : Mode.ANAGLYPH));
+			anaglyphMenu.setChecked(mode == Mode.ANAGLYPH);
+			anaglyphMenu.setEnabled(mode != Mode.PARALLEL);
 			menu.add(anaglyphMenu);
 
-			ContextMenuCheckBoxItem vrMenu = new ContextMenuCheckBoxItem("Virtual reality (β)", () -> {
-				boolean vr = !graphs.get(0).isVR();
-				for (PopGraph3D popGraph : graphs)
-					popGraph.setVR(vr);
-			});
-			vrMenu.setChecked(isVR);
-			vrMenu.setEnabled(!isOrthographic);
+			ContextMenuCheckBoxItem vrMenu = new ContextMenuCheckBoxItem("Virtual reality (β)",
+					() -> setMode(mode == Mode.VR ? Mode.PERSPECTIVE : Mode.VR));
+			vrMenu.setChecked(mode == Mode.VR);
+			vrMenu.setEnabled(mode != Mode.PARALLEL);
 			menu.add(vrMenu);
 		}
 		super.populateContextMenu(menu);
+	}
+
+	/**
+	 * Set the rendering mode of all graphs.
+	 *
+	 * @param mode the rendering mode
+	 */
+	private void setMode(Mode mode) {
+		for (PopGraph3D graph : graphs)
+			graph.setMode(mode);
 	}
 
 	@Override

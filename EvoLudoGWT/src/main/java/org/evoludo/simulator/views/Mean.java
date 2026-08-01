@@ -39,6 +39,7 @@ import org.evoludo.graphics.AbstractGraph.Shifter;
 import org.evoludo.graphics.AbstractGraph.Zoomer;
 import org.evoludo.graphics.GraphStyle;
 import org.evoludo.graphics.LineGraph;
+import org.evoludo.graphics.LineGraph.GraphOption;
 import org.evoludo.math.ArrayMath;
 import org.evoludo.simulator.ColorMap;
 import org.evoludo.simulator.ColorMapCSS;
@@ -47,6 +48,7 @@ import org.evoludo.simulator.models.DModel;
 import org.evoludo.simulator.models.Data;
 import org.evoludo.simulator.models.IBSC;
 import org.evoludo.simulator.modules.Module;
+import org.evoludo.util.CLOption;
 
 /**
  * A view that displays time-series plots of mean trait values or mean fitness
@@ -108,6 +110,11 @@ public class Mean extends AbstractView<LineGraph> implements Shifter, Zoomer {
 			default:
 				return null;
 		}
+	}
+
+	@Override
+	public String getOptionsDescription() {
+		return CLOption.getDescriptionKey(GraphOption.values());
 	}
 
 	@Override

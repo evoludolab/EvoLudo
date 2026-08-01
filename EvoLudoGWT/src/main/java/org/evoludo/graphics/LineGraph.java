@@ -49,6 +49,7 @@ import org.evoludo.ui.ContextMenu;
 import org.evoludo.ui.ContextMenuCheckBoxItem;
 import org.evoludo.ui.ContextMenuItem;
 import org.evoludo.util.CLOParser;
+import org.evoludo.util.CLOption;
 import org.evoludo.util.Formatter;
 import org.evoludo.util.RingBuffer;
 
@@ -260,46 +261,138 @@ public class LineGraph extends AbstractGraph<double[]>
 		}
 	}
 
+	/**
+	 * The options of line graphs. The options are selected on the command line,
+	 * see {@link LineGraph#parse(String)}. All options except {@link #LOG} take a
+	 * numerical parameter, separated from the key by a space.
+	 */
+	public enum GraphOption implements CLOption.Key {
+
+		/**
+		 * Logarithmic scaling of the y-axis.
+		 */
+		LOG("log", "logarithmic scaling of y-axis"),
+
+		/**
+		 * Set the minimum of the x-axis.
+		 */
+		XMIN("xmin", "minimum of x-axis <x>"),
+
+		/**
+		 * Set the maximum of the x-axis.
+		 */
+		XMAX("xmax", "maximum of x-axis <x>"),
+
+		/**
+		 * Set the minimum of the y-axis. Disables autoscaling.
+		 */
+		YMIN("ymin", "minimum of y-axis <y> (disables autoscaling)"),
+
+		/**
+		 * Set the maximum of the y-axis. Disables autoscaling.
+		 */
+		YMAX("ymax", "maximum of y-axis <y> (disables autoscaling)");
+
+		/**
+		 * The key identifying the option on the command line.
+		 */
+		private final String key;
+
+		/**
+		 * The brief description of the option for the help screen.
+		 */
+		private final String title;
+
+		/**
+		 * Create a graph option with the given command line key and description.
+		 *
+		 * @param key   the name of the option
+		 * @param title the description of the option
+		 */
+		GraphOption(String key, String title) {
+			this.key = key;
+			this.title = title;
+		}
+
+		@Override
+		public String getKey() {
+			return key;
+		}
+
+		@Override
+		public String getTitle() {
+			return title;
+		}
+	}
+
 	@Override
 	public boolean parse(String args) {
 		// set defaults
 		style.autoscaleY = true;
 		setLogY(false);
-		if (args != null)
-			parseArgs(args);
-		return true;
+		if (args == null)
+			return true;
+		return parseArgs(args);
 	}
 
 	/**
-	 * Parse command line options for the graph. The following options are
-	 * recognized:
-	 * <ul>
-	 * <li>{@code log}: enable logarithmic scaling on the y-axis
-	 * <li>{@code xmin <value>}: set the minimum x-axis value
-	 * <li>{@code xmax <value>}: set the maximum x-axis value
-	 * <li>{@code ymin <value>}: set the minimum y-axis value
-	 * <li>{@code ymax <value>}: set the maximum y-axis value
-	 * </ul>
-	 * 
-	 * @param args the command line arguments (comma separated, no spaces)
+	 * Parse command line options for the graph, see {@link GraphOption} for the
+	 * recognized options. Matching is as lenient as for command line keys, i.e.
+	 * keys can be abbreviated as well as extended, and the best match wins.
+	 * Unknown options or missing parameters are reported and ignored.
+	 *
+	 * @param args the command line arguments (comma separated)
+	 * @return {@code true} if all arguments were successfully parsed
+	 *
+	 * @see CLOption#match(String, CLOption.Key[])
 	 */
-	private void parseArgs(String args) {
+	private boolean parseArgs(String args) {
+		boolean ok = true;
 		for (String arg : args.split(CLOParser.VECTOR_DELIMITER)) {
 			arg = arg.trim();
-			if (arg.startsWith("log")) {
+			if (arg.isEmpty())
+				continue;
+			int split = arg.indexOf(' ');
+			String keyname = split < 0 ? arg : arg.substring(0, split);
+			GraphOption option = CLOption.match(keyname, GraphOption.values());
+			if (option == null) {
+				logger.warning("view '" + view.getName() + "': unknown option '" + arg + "' - ignored.");
+				ok = false;
+				continue;
+			}
+			if (option == GraphOption.LOG) {
 				setLogY(true);
-			} else if (arg.startsWith("xmin")) {
-				style.xMin = Double.parseDouble(arg.substring(arg.indexOf(" ") + 1).trim());
-			} else if (arg.startsWith("xmax")) {
-				style.xMax = Double.parseDouble(arg.substring(arg.indexOf(" ") + 1).trim());
-			} else if (arg.startsWith("ymin")) {
-				style.yMin = Double.parseDouble(arg.substring(arg.indexOf(" ") + 1).trim());
-				style.autoscaleY = false;
-			} else if (arg.startsWith("ymax")) {
-				style.yMax = Double.parseDouble(arg.substring(arg.indexOf(" ") + 1).trim());
-				style.autoscaleY = false;
+				continue;
+			}
+			double param;
+			try {
+				param = Double.parseDouble(split < 0 ? "" : arg.substring(split + 1).trim());
+			} catch (NumberFormatException e) {
+				logger.warning("view '" + view.getName() + "': option '" + option.getKey()
+						+ "' requires a numerical parameter - ignored.");
+				ok = false;
+				continue;
+			}
+			switch (option) {
+				case XMIN:
+					style.xMin = param;
+					break;
+				case XMAX:
+					style.xMax = param;
+					break;
+				case YMIN:
+					style.yMin = param;
+					style.autoscaleY = false;
+					break;
+				case YMAX:
+					style.yMax = param;
+					style.autoscaleY = false;
+					break;
+				default:
+					break;
 			}
 		}
+		return ok;
 	}
 
 	@Override

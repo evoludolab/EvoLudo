@@ -135,7 +135,8 @@ public class ViewController {
 
 		@Override
 		public String getDescription() {
-			StringBuilder descr = new StringBuilder("--view <v>      select view (v: index or title)");
+			StringBuilder descr = new StringBuilder("--view <v[ <o>]>  select view (v: index or title,\n"
+					+ "                o: view specific options)");
 			int idx = 1;
 			if (engine.getModel() == null)
 				refreshViews();
@@ -143,6 +144,10 @@ public class ViewController {
 				String keycode = "              " + (idx++) + ": ";
 				int len = keycode.length();
 				descr.append("\n").append(keycode.substring(len - 16, len)).append(view.getName());
+				String opts = view.getOptionsDescription();
+				if (opts != null)
+					// continuation lines of multi-line descriptions align with 'o: '
+					descr.append("\n                o: ").append(opts.replace("\n", "\n                   "));
 			}
 			return descr.toString();
 		}

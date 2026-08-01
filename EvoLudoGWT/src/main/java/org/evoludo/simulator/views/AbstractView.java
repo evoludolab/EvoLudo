@@ -286,9 +286,31 @@ public abstract class AbstractView<G extends AbstractGraph<?>> extends Composite
 	}
 
 	/**
+	 * Get the number of graphs displayed by this view.
+	 *
+	 * @return the number of graphs
+	 */
+	public int getNGraphs() {
+		return graphs.size();
+	}
+
+	/**
+	 * Get a description of the arguments accepted by this view for the help screen
+	 * of {@link org.evoludo.simulator.ui.ViewController#getCloView()}. The default
+	 * implementation returns {@code null} for views that take no arguments.
+	 *
+	 * @return the description of the arguments or {@code null} if none are accepted
+	 *
+	 * @see #setOptions(String)
+	 */
+	public String getOptionsDescription() {
+		return null;
+	}
+
+	/**
 	 * Parse the arguments provided to this view. The default implementation simply
 	 * passes the currently configured option string to all graphs.
-	 * 
+	 *
 	 * @return {@code true} if the arguments were successfully parsed
 	 */
 	public boolean parse() {

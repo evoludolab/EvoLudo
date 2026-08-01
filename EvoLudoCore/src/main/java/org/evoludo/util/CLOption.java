@@ -666,9 +666,45 @@ public class CLOption implements Comparable<CLOption> {
 	public Key match(String keyname, int min) {
 		if (keys == null)
 			return null;
+		return match(keyname, keys.values(), min);
+	}
+
+	/**
+	 * Returns the key in the array {@code keys} that best matches
+	 * <code>keyname</code>. Matching is as lenient as for command line options,
+	 * i.e. keys can be abbreviated as well as extended, and the best match wins.
+	 * If several keys are equally good matches the first match is returned.
+	 * Useful for enums that implement {@link Key} but are not (or not yet)
+	 * associated with a {@link CLOption}, see {@link #addKeys(Key[])}.
+	 *
+	 * @param <K>     the type of the keys
+	 * @param keyname the name of the key to match
+	 * @param keys    the array of keys to match against
+	 * @return matching key or <code>null</code> if no match was found
+	 */
+	public static <K extends Key> K match(String keyname, K[] keys) {
+		return match(keyname, Arrays.asList(keys), 1);
+	}
+
+	/**
+	 * Returns the key in the collection {@code keys} that best matches
+	 * <code>keyname</code> with at least {@code min} characters matching. If
+	 * several keys are equally good matches the first match is returned. If
+	 * <code>keyname</code> perfectly matches one key, i.e.
+	 * <code>keyname.startsWith(key.getKey())</code> is {@code true}, then a
+	 * better match must match at least one more character of
+	 * <code>keyname</code>.
+	 *
+	 * @param <K>     the type of the keys
+	 * @param keyname the name of the key to match
+	 * @param keys    the collection of keys to match against
+	 * @param min     minimum number of characters that must match
+	 * @return matching key or <code>null</code> if no match was found
+	 */
+	public static <K extends Key> K match(String keyname, Iterable<K> keys, int min) {
 		double best = 0.0;
-		Key match = null;
-		for (Key key : keys.values()) {
+		K match = null;
+		for (K key : keys) {
 			int diff = differAt(keyname, key.getKey());
 			if (diff < min) {
 				// not enough matching characters; skip this key
@@ -876,8 +912,33 @@ public class CLOption implements Comparable<CLOption> {
 	public String getDescriptionKey() {
 		if (keys == null || inheritedKeys)
 			return "";
+		return getDescriptionKey(keys.values());
+	}
+
+	/**
+	 * Get the description of the array {@code keys}, formatted as
+	 * {@link #getDescriptionKey()}. Useful for enums that implement {@link Key}
+	 * but are not (or not yet) associated with a {@link CLOption}, see
+	 * {@link #addKeys(Key[])}.
+	 *
+	 * @param keys the array of keys to describe
+	 * @return the description of all keys
+	 */
+	public static String getDescriptionKey(Key[] keys) {
+		return getDescriptionKey(Arrays.asList(keys));
+	}
+
+	/**
+	 * Get the description of the collection {@code keys}. Minimal formatting is
+	 * applied with the name of the key and a brief description of the key
+	 * separated by '\n'. No HTML or other formatting can be applied.
+	 *
+	 * @param keys the collection of keys to describe
+	 * @return the description of all keys
+	 */
+	public static String getDescriptionKey(Iterable<? extends Key> keys) {
 		StringBuilder keydescr = new StringBuilder();
-		for (Key key : keys.values()) {
+		for (Key key : keys) {
 			String descr = key.getDescription();
 			// align ':' for better readability
 			String aKey = "             " + key.getKey() + ": ";
