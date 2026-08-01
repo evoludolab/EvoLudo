@@ -1108,6 +1108,8 @@ public class PDE extends ODE {
 
 		initType = (PDEInitialize.Type) cloInit.match(typeargs[0]);
 		if (!isValidInitForType(init)) {
+			logger.warning("initialization type '" + (initType == null ? typeargs[0] : initType.getKey())
+					+ "' requires " + nt + " densities - reverting to 'random'.");
 			success = false;
 			initType = PDEInitialize.Type.RANDOM;
 			init = null;
@@ -1140,6 +1142,10 @@ public class PDE extends ODE {
 
 		int vacant = module.getVacantIdx();
 		if (vacant < 0) {
+			// no vacant trait to fill the background with
+			logger.warning("initialization type '" + initType.getKey()
+					+ "' requires background densities, '<d1,...,dn;b1,...,bn>', for modules"
+					+ " without vacant trait - reverting to 'random'.");
 			success = false;
 			initType = PDEInitialize.Type.RANDOM;
 			Arrays.fill(y0, 1.0);
