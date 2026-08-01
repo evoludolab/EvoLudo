@@ -501,22 +501,13 @@ public class EvoLudoJRE extends EvoLudo implements Runnable {
 		// register hook to dump state when receiving SIGINT
 		registerHook();
 		// allocate storage and initialize helper variables
-		int totTraits = 0;
+		// note: the model may report more mean values than the modules have traits,
+		// see Model#getNMean()
 		boolean isContinuous = model.isContinuous();
-		for (Module<?> specie : module.getSpecies()) {
-			int nt = specie.getNTraits();
-			totTraits += nt;
-		}
-		double[] meantrait = isContinuous ? new double[2 * totTraits] : new double[totTraits];
-		double[] meanfit = isContinuous ? new double[2 * totTraits] : new double[totTraits + 1];
-		String[] traitNames = new String[totTraits];
-		int offset = 0;
-		for (Module<?> specie : module.getSpecies()) {
-			String[] tnames = specie.getTraitNames();
-			int nt = specie.getNTraits();
-			System.arraycopy(tnames, 0, traitNames, offset, nt);
-			offset += nt;
-		}
+		int nMean = model.getNMean();
+		double[] meantrait = isContinuous ? new double[2 * nMean] : new double[nMean];
+		double[] meanfit = isContinuous ? new double[2 * nMean] : new double[nMean + 1];
+		String[] traitNames = model.getMeanNames();
 		// helper variables for statistics
 		double[][] fixProb = new double[0][];
 		double[][] fixUpdate = new double[0][];
