@@ -1171,33 +1171,36 @@ public abstract class Model implements CLOProvider {
 	 * @return the names of the mean traits
 	 */
 	public String[] getMeanNames() {
-		int nMean = getNMean();
-		String[] names = new String[nMean];
+		String[] names = new String[getNMean()];
 		int skip = 0;
 		for (Module<?> mod : species) {
-			int nt = mod.getNTraits();
-			System.arraycopy(mod.getTraitNames(), 0, names, skip, nt);
-			skip += nt;
+			int nMean = getNMean(mod.getId());
+			String[] mnames = mod.getMeanNames();
+			// modules that report fewer names than mean values leave them unnamed
+			System.arraycopy(mnames, 0, names, skip, Math.min(nMean, mnames.length));
+			skip += nMean;
 		}
 		return names;
 	}
 
 	/**
 	 * Return the name of the mean trait with index {@code index} or {@code null} if
-	 * index is invalid.
+	 * index is invalid or refers to an inactive trait.
 	 *
 	 * @param index the index of the mean trait
 	 * @return the name of mean trait with index {@code index}
 	 */
 	public String getMeanName(int index) {
 		for (Module<?> mod : species) {
-			int nt = mod.getNTraits();
-			if (index < nt) {
-				if (mod.getActiveTraits()[index])
-					return mod.getTraitName(index);
-				return null;
+			int nMean = getNMean(mod.getId());
+			if (index < nMean) {
+				// mean values beyond the traits of the module cannot be deactivated
+				if (index < mod.getNTraits() && !mod.getActiveTraits()[index])
+					return null;
+				String[] names = mod.getMeanNames();
+				return index < names.length ? names[index] : null;
 			}
-			index -= nt;
+			index -= nMean;
 		}
 		return null;
 	}

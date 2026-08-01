@@ -881,6 +881,22 @@ public abstract class Module<T extends Module<T>>
 	}
 
 	/**
+	 * Gets the names for the mean values of traits. By default this is the same as
+	 * the trait names. Opportunity for subclasses to return different sets of names
+	 * for reporting mean values.
+	 * <p>
+	 * <strong>Note:</strong> the number of names must match the number of mean
+	 * values reported by the model, see {@link Model#getNMean(int)}.
+	 *
+	 * @return the array of mean value names
+	 *
+	 * @see #getMeanColors()
+	 */
+	public String[] getMeanNames() {
+		return getTraitNames();
+	}
+
+	/**
 	 * Sets trait colors specified in {@code colors}. If {@code colors} is
 	 * {@code null} default colors are used until exhausted and then complemented by
 	 * random colors. Otherwise the number of colors must equal {@code nTraits} or

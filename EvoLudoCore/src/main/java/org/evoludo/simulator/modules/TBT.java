@@ -173,6 +173,23 @@ public class TBT extends Discrete implements Payoffs,
 	}
 
 	@Override
+	public String[] getMeanNames() {
+		String[] names = super.getMeanNames();
+		// not all models entertain competition geometries, e.g. ODE/SDE
+		IBSPopulation<?, ?> ibsPop = getIBSPopulation();
+		if (ibsPop == null
+				|| !ibsPop.getCompetitionGeometry().isType(GeometryType.SQUARE_NEUMANN_2ND))
+			return names;
+		String[] name2nd = new String[2 * nTraits];
+		for (int n = 0; n < nTraits; n++) {
+			String nn = names[n];
+			name2nd[n] = nn + " (1st)";
+			name2nd[nTraits + n] = nn + " (2nd)";
+		}
+		return name2nd;
+	}
+
+	@Override
 	public int getDependent() {
 		return DEFECT;
 	}
@@ -355,6 +372,15 @@ public class TBT extends Discrete implements Payoffs,
 		double[] tsFits;
 
 		/**
+		 * The names of the traits on the two sublattices for
+		 * {@code GeometryType.SQUARE_NEUMANN_2ND}. Cached because tooltips request
+		 * them for every node.
+		 *
+		 * @see TBT#getMeanNames()
+		 */
+		String[] tsNames;
+
+		/**
 		 * Create a new instance of the IBS model for {@code 2×2} games.
 		 * 
 		 * @param engine the pacemaker for running the model
@@ -370,9 +396,11 @@ public class TBT extends Discrete implements Payoffs,
 			if (!competition.isType(GeometryType.SQUARE_NEUMANN_2ND)) {
 				tsTraits = null;
 				tsFits = null;
+				tsNames = null;
 			} else {
 				tsTraits = new double[2 * nTraits];
 				tsFits = new double[2 * nTraits + 1];
+				tsNames = module.getMeanNames();
 			}
 			tsMean = -1.0;
 			tsFit = -1.0;
@@ -381,13 +409,14 @@ public class TBT extends Discrete implements Payoffs,
 
 		@Override
 		public String getTraitNameAt(int idx) {
-			String traitName = super.getTraitNameAt(idx);
 			if (!competition.isType(GeometryType.SQUARE_NEUMANN_2ND))
-				return traitName;
+				return super.getTraitNameAt(idx);
+			// nodes on the first sublattice share the parity of their row and column;
+			// their names are those of the first nTraits mean values, see
+			// TBT#getMeanNames()
 			int side = (int) Math.sqrt(nPopulation);
-			if ((idx / side) % 2 == (idx % side) % 2)
-				return traitName + " (1st)";
-			return traitName + " (2nd)";
+			boolean isFirst = (idx / side) % 2 == (idx % side) % 2;
+			return tsNames[(isFirst ? 0 : nTraits) + getTraitAt(idx)];
 		}
 
 		@Override
@@ -468,14 +497,12 @@ public class TBT extends Discrete implements Payoffs,
 				return super.getStatus();
 
 			getMeanTraits(tsTraits);
-			String[] traitNames = module.getTraitNames();
 			StringBuilder status = new StringBuilder();
 			for (int i = 0; i < 2 * nTraits; i++) {
 				if (status.length() > 0) {
 					status.append(", ");
 				}
-				status.append(traitNames[i % nTraits])
-						.append(i >= nTraits ? " (2nd)" : " (1st)")
+				status.append(tsNames[i])
 						.append(": ")
 						.append(Formatter.formatPercent(tsTraits[i], 1));
 			}
