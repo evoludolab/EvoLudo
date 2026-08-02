@@ -817,7 +817,7 @@ public class Histogram extends AbstractView<HistoGraph> {
 		Module<?> module = graph.getModule();
 		int nPop = module.getNPopulation();
 		if (isAbsorption) {
-			style.label = "Absorbtion";
+			style.label = "Absorption";
 			style.graphColor = ColorMapCSS.Color2Css(Color.BLACK);
 		} else {
 			Color[] colors = module.getTraitColors();

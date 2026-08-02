@@ -139,7 +139,7 @@ public class simMoran extends Moran {
 		// }
 		// double rhoA1 = rhoA(1);
 		// output.println("# r\tfixation prob\t(analytical)\tfixation
-		// time\t(analytical)\tabsorbtion time\t(analytical)");
+		// time\t(analytical)\tabsorption time\t(analytical)");
 		// output.println(ChHFormatter.formatFix(getFitness()[MUTANT], 2)+"\t"+
 		// ChHFormatter.formatFix((double)mFix/nSamples,
 		// 8)+"\t"+ChHFormatter.formatFix(rhoA1, 8)+"\t"+
@@ -204,7 +204,7 @@ public class simMoran extends Moran {
 			varFix += dx * (n0 - meanFix);
 		}
 		double rhoA1 = rhoA(1, nPopulation);
-		out.println("# r\tfixation prob\t(well-mixed)\tfixation time\t(well-mixed)\tabsorbtion time\t(well-mixed)");
+		out.println("# r\tfixation prob\t(well-mixed)\tfixation time\t(well-mixed)\tabsorption time\t(well-mixed)");
 		out.println(Formatter.formatFix(getFitness()[MUTANT], 2) + "\t"
 				+ Formatter.formatFix(meanFix, 8) + " ± " + Formatter.formatFix(Math.sqrt(varFix / (count - 1.0)), 8)
 				+ "\t"

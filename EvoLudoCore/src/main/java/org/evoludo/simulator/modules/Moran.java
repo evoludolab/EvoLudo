@@ -426,12 +426,12 @@ public class Moran extends Discrete implements Static,
 	// }
 
 	/**
-	 * The absorbtion time (in generations) of a single mutant in a population of
+	 * The absorption time (in generations) of a single mutant in a population of
 	 * constant size {@code N} (and {@code N-1} residents).
 	 * 
 	 * @param rhoA the fixation probability of a single mutant
 	 * @param n    the size of the population
-	 * @return the absorbtion time
+	 * @return the absorption time
 	 * 
 	 * @see #rhoA(int, int)
 	 */
@@ -453,13 +453,13 @@ public class Moran extends Discrete implements Static,
 	}
 
 	/**
-	 * The absorbtion time (in generations) of {@code i} mutants in a population of
+	 * The absorption time (in generations) of {@code i} mutants in a population of
 	 * constant size {@code N} (and {@code N-i} residents).
 	 * 
 	 * @param i  the number of mutants
 	 * @param n  the size of the population
-	 * @param t1 the absorbtion time of a single mutant
-	 * @return the absorbtion time of {@code i} mutants
+	 * @param t1 the absorption time of a single mutant
+	 * @return the absorption time of {@code i} mutants
 	 * 
 	 * @see #t1(double, int)
 	 */

@@ -203,13 +203,13 @@ public class simCDLP extends CDLP implements ChangeListener {
 				} while (true);
 			}
 			if (doBasin) {
-				out.println("# absorbtion probabilities for coop-pun-edge (C P C+P)\n"
+				out.println("# absorption probabilities for coop-pun-edge (C P C+P)\n"
 						+ Formatter.format(basin[COOPERATE] / timeStop, 6) + "\t"
 						+ Formatter.format(basin[PUNISH] / timeStop, 6) + "\t"
 						+ Formatter.format((basin[COOPERATE] + basin[PUNISH]) / timeStop, 6));
 			} else {
 				StringBuilder msg = new StringBuilder(
-						"# absorbtion probabilities for each corner from random initial configuration\n");
+						"# absorption probabilities for each corner from random initial configuration\n");
 				msg.append(Formatter.format(corner[0] / timeStop, 6));
 				for (int n = 1; n < nTraits; n++)
 					msg.append("\t").append(Formatter.format(corner[n] / timeStop, 6));
