@@ -626,7 +626,8 @@ public abstract class IBS extends Model {
 		double totRate = 0.0;
 		for (Module<?> mod : species) {
 			IBSPopulation<?, ?> pop = mod.getIBSPopulation();
-			pop.updateScores();
+			if (mod instanceof Payoffs)
+				pop.updateScores();
 			converged &= pop.checkConvergence();
 			totRate += pop.getSpeciesUpdateRate();
 		}
