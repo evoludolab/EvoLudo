@@ -1064,8 +1064,9 @@ public class Histogram extends AbstractView<HistoGraph> {
 			int nTraits = module.getNTraits();
 			boolean doFixtimeDistr = doFixtimeDistr(module);
 			if (doFixtimeDistr) {
-				int maxBins = graph.getMaxBins();
-				maxBins *= (HistoGraph.MIN_BIN_WIDTH + 1)
+				// widen the bins by one pixel; multiply before dividing to avoid
+				// integer division truncating the ratio to zero
+				int maxBins = graph.getMaxBins() * (HistoGraph.MIN_BIN_WIDTH + 1)
 						/ (HistoGraph.MIN_BIN_WIDTH + 2);
 				if (data == null || data.length != nTraits + 1 || data[0].length != maxBins)
 					data = new double[nTraits + 1][maxBins];
