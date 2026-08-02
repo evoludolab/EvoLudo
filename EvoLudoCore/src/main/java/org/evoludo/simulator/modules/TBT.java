@@ -156,23 +156,6 @@ public class TBT extends Discrete implements Payoffs,
 	}
 
 	@Override
-	public Color[] getMeanColors() {
-		Color[] colors = super.getMeanColors();
-		// not all models entertain competition geometries, e.g. ODE/SDE
-		IBSPopulation<?, ?> ibsPop = getIBSPopulation();
-		if (ibsPop == null
-				|| !ibsPop.getCompetitionGeometry().isType(GeometryType.SQUARE_NEUMANN_2ND))
-			return colors;
-		Color[] color2nd = new Color[2 * nTraits];
-		for (int n = 0; n < nTraits; n++) {
-			Color cn = colors[n];
-			color2nd[n] = cn;
-			color2nd[nTraits + n] = ColorMap.addAlpha(cn, 150);
-		}
-		return color2nd;
-	}
-
-	@Override
 	public String[] getMeanNames() {
 		String[] names = super.getMeanNames();
 		// not all models entertain competition geometries, e.g. ODE/SDE
@@ -187,6 +170,23 @@ public class TBT extends Discrete implements Payoffs,
 			name2nd[nTraits + n] = nn + " (2nd)";
 		}
 		return name2nd;
+	}
+
+	@Override
+	public Color[] getMeanColors() {
+		Color[] colors = super.getMeanColors();
+		// not all models entertain competition geometries, e.g. ODE/SDE
+		IBSPopulation<?, ?> ibsPop = getIBSPopulation();
+		if (ibsPop == null
+				|| !ibsPop.getCompetitionGeometry().isType(GeometryType.SQUARE_NEUMANN_2ND))
+			return colors;
+		Color[] color2nd = new Color[2 * nTraits];
+		for (int n = 0; n < nTraits; n++) {
+			Color cn = colors[n];
+			color2nd[n] = cn;
+			color2nd[nTraits + n] = ColorMap.addAlpha(cn, 150);
+		}
+		return color2nd;
 	}
 
 	@Override
@@ -211,22 +211,10 @@ public class TBT extends Discrete implements Payoffs,
 
 	@Override
 	public double pairScores(int me, int[] traitCount, double[] traitScore) {
-		switch (me) {
-			case COOPERATE:
-				traitScore[COOPERATE] = payoffs[COOPERATE][COOPERATE];
-				traitScore[DEFECT] = payoffs[DEFECT][COOPERATE];
-				return traitCount[COOPERATE] * payoffs[COOPERATE][COOPERATE]
-						+ traitCount[DEFECT] * payoffs[COOPERATE][DEFECT];
-
-			case DEFECT:
-				traitScore[COOPERATE] = payoffs[COOPERATE][DEFECT];
-				traitScore[DEFECT] = payoffs[DEFECT][DEFECT];
-				return traitCount[COOPERATE] * payoffs[DEFECT][COOPERATE]
-						+ traitCount[DEFECT] * payoffs[DEFECT][DEFECT];
-
-			default: // should not end here
-				throw new UnsupportedOperationException("Unknown trait (" + me + ")");
-		}
+		traitScore[COOPERATE] = payoffs[COOPERATE][me];
+		traitScore[DEFECT] = payoffs[DEFECT][me];
+		return traitCount[COOPERATE] * payoffs[me][COOPERATE]
+				+ traitCount[DEFECT] * payoffs[me][DEFECT];
 	}
 
 	@Override
@@ -350,35 +338,35 @@ public class TBT extends Discrete implements Payoffs,
 	public class IBSPop extends IBSDPopulation {
 
 		/**
-		 * Timestamp for the last mean trait calculation.
-		 */
-		double tsMean = -1.0;
-
-		/**
-		 * Timestamp for the last fitness calculation.
-		 */
-		double tsFit = -1.0;
-
-		/**
-		 * The trait frequencies for the two sublattices for
-		 * {@code GeometryType.SQUARE_NEUMANN_2ND}.
-		 */
-		double[] tsTraits;
-
-		/**
-		 * The trait fitnesses for the two sublattices for
-		 * {@code GeometryType.SQUARE_NEUMANN_2ND}.
-		 */
-		double[] tsFits;
-
-		/**
 		 * The names of the traits on the two sublattices for
 		 * {@code GeometryType.SQUARE_NEUMANN_2ND}. Cached because tooltips request
 		 * them for every node.
 		 *
 		 * @see TBT#getMeanNames()
 		 */
-		String[] tsNames;
+		String[] n2Names;
+
+		/**
+		 * Timestamp of the last calculation of {@link #n2Traits}.
+		 */
+		double n2TraitsTimestamp = -1.0;
+
+		/**
+		 * The trait frequencies for the two sublattices for
+		 * {@code GeometryType.SQUARE_NEUMANN_2ND}.
+		 */
+		double[] n2Traits;
+
+		/**
+		 * Timestamp of the last calculation of {@link #n2Fits}.
+		 */
+		double n2FitsTimestamp = -1.0;
+
+		/**
+		 * The trait fitnesses for the two sublattices for
+		 * {@code GeometryType.SQUARE_NEUMANN_2ND}.
+		 */
+		double[] n2Fits;
 
 		/**
 		 * Create a new instance of the IBS model for {@code 2×2} games.
@@ -394,16 +382,16 @@ public class TBT extends Discrete implements Payoffs,
 		public boolean check() {
 			boolean doReset = super.check();
 			if (!competition.isType(GeometryType.SQUARE_NEUMANN_2ND)) {
-				tsTraits = null;
-				tsFits = null;
-				tsNames = null;
+				n2Names = null;
+				n2Traits = null;
+				n2Fits = null;
 			} else {
-				tsTraits = new double[2 * nTraits];
-				tsFits = new double[2 * nTraits + 1];
-				tsNames = module.getMeanNames();
+				n2Names = module.getMeanNames();
+				n2Traits = new double[2 * nTraits];
+				n2Fits = new double[2 * nTraits + 1];
 			}
-			tsMean = -1.0;
-			tsFit = -1.0;
+			n2TraitsTimestamp = -1.0;
+			n2FitsTimestamp = -1.0;
 			return doReset;
 		}
 
@@ -416,7 +404,7 @@ public class TBT extends Discrete implements Payoffs,
 			// TBT#getMeanNames()
 			int side = (int) Math.sqrt(nPopulation);
 			boolean isFirst = (idx / side) % 2 == (idx % side) % 2;
-			return tsNames[(isFirst ? 0 : nTraits) + getTraitAt(idx)];
+			return n2Names[(isFirst ? 0 : nTraits) + getTraitAt(idx)];
 		}
 
 		@Override
@@ -435,8 +423,8 @@ public class TBT extends Discrete implements Payoffs,
 			}
 
 			double newtime = model.getUpdates();
-			if (Math.abs(tsMean - newtime) < model.getTimeStep()) {
-				System.arraycopy(tsTraits, 0, mean, 0, mean.length);
+			if (Math.abs(n2TraitsTimestamp - newtime) < model.getTimeStep()) {
+				System.arraycopy(n2Traits, 0, mean, 0, mean.length);
 				return mean;
 			}
 			int n = 0;
@@ -452,8 +440,8 @@ public class TBT extends Discrete implements Payoffs,
 				mean[getTraitAt(n++)]++;
 			}
 			ArrayMath.multiply(mean, 2.0 / nPopulation);
-			System.arraycopy(mean, 0, tsTraits, 0, mean.length);
-			tsMean = newtime;
+			System.arraycopy(mean, 0, n2Traits, 0, mean.length);
+			n2TraitsTimestamp = newtime;
 			return mean;
 		}
 
@@ -466,8 +454,8 @@ public class TBT extends Discrete implements Payoffs,
 			}
 
 			double newtime = model.getUpdates();
-			if (Math.abs(tsFit - newtime) < model.getTimeStep()) {
-				System.arraycopy(tsFits, 0, mean, 0, mean.length);
+			if (Math.abs(n2FitsTimestamp - newtime) < model.getTimeStep()) {
+				System.arraycopy(n2Fits, 0, mean, 0, mean.length);
 				return mean;
 			}
 			int n = 0;
@@ -486,8 +474,8 @@ public class TBT extends Discrete implements Payoffs,
 			mean[2 * nTraits] = sumFitness * 0.25;
 			// averages for each sublattice
 			ArrayMath.multiply(mean, 2.0 / nPopulation);
-			System.arraycopy(mean, 0, tsFits, 0, mean.length);
-			tsFit = newtime;
+			System.arraycopy(mean, 0, n2Fits, 0, mean.length);
+			n2FitsTimestamp = newtime;
 			return mean;
 		}
 
@@ -496,15 +484,15 @@ public class TBT extends Discrete implements Payoffs,
 			if (!competition.isType(GeometryType.SQUARE_NEUMANN_2ND))
 				return super.getStatus();
 
-			getMeanTraits(tsTraits);
+			getMeanTraits(n2Traits);
 			StringBuilder status = new StringBuilder();
 			for (int i = 0; i < 2 * nTraits; i++) {
 				if (status.length() > 0) {
 					status.append(", ");
 				}
-				status.append(tsNames[i])
+				status.append(n2Names[i])
 						.append(": ")
-						.append(Formatter.formatPercent(tsTraits[i], 1));
+						.append(Formatter.formatPercent(n2Traits[i], 1));
 			}
 			return status.toString();
 		}
