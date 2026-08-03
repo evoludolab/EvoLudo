@@ -779,10 +779,16 @@ public class SDE extends ODE {
 	}
 
 	/**
-	 * Apply an Euler step. Traits are absorbed at 0, so extinct types don't
-	 * reappear due to roundoff (used when mutations are absent). The trait at
-	 * {@code reflect} - typically vacant - reflects at 0 instead: running out of
-	 * vacant sites is routine and reversible, unlike genuine extinction.
+	 * Apply an Euler step. Traits at 0 absorb rather than dip further negative
+	 * from roundoff, unless {@code dyt[i]} itself carries genuine positive drift
+	 * e.g. a reaction source term that does not vanish at the boundary, or
+	 * best-response dynamics resulting in legitimate backflow into an
+	 * extinct trait. For pure replicator dynamics {@code dyt[i]} is proportional
+	 * to {@code yt[i]} and so is already ~0 at the boundary. Thus, this does not
+	 * reopen the roundoff-reappearance case the absorption guards against. The
+	 * trait at {@code reflect} - typically vacant - reflects at 0 instead:
+	 * running out of vacant sites is routine and reversible, unlike genuine
+	 * extinction.
 	 *
 	 * @param start   the starting index (inclusive)
 	 * @param end     the ending index (exclusive)
@@ -795,7 +801,12 @@ public class SDE extends ODE {
 				yout[i] = Math.max(0.0, yt[i] + step * dyt[i]);
 				continue;
 			}
-			yout[i] = (yt[i] > 0.0) ? yt[i] + step * dyt[i] : 0.0;
+			if (yt[i] > 0.0) {
+				yout[i] = yt[i] + step * dyt[i];
+				continue;
+			}
+			double grow = step * dyt[i];
+			yout[i] = (grow > 0.0) ? grow : 0.0;
 		}
 	}
 
