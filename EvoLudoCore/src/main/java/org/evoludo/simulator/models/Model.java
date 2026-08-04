@@ -821,6 +821,9 @@ public abstract class Model implements CLOProvider {
 	public boolean setMode(Mode mode) {
 		if (!permitsMode(mode))
 			return false;
+		if (mode == Mode.STATISTICS_UPDATE && cloTimeStop.isSet() && cloSamples.isSet())
+			logger.warning("--timestop and --samples are equivalent for stationary distributions: "
+					+ "halting at whichever comes first.");
 		boolean changed = (this.mode != mode);
 		this.mode = mode;
 		return changed;
@@ -1467,15 +1470,20 @@ public abstract class Model implements CLOProvider {
 		// note: use getUpdates to ensure relaxation works for all models.
 		// DE models may not have an update count but have time
 		double updt = getUpdates();
+		// for stationary distributions one sample is taken in every reporting interval,
+		// which makes --samples and --timestop equivalent ways to request the end state
+		double stop = timeStop;
+		if (mode == Mode.STATISTICS_UPDATE && nSamples > 0.0 && timeStep > 0.0)
+			stop = Math.min(stop, nSamples * timeStep);
 		if (isTimeReversed()) {
 			// time is 'decreasing' find next smaller milestone
-			double halt = timeStop < updt ? timeStop : Double.NEGATIVE_INFINITY;
+			double halt = stop < updt ? stop : Double.NEGATIVE_INFINITY;
 			double relax = (Math.abs(timeRelax) > 1e-8 && timeRelax < updt) ? timeRelax
 					: Double.NEGATIVE_INFINITY;
 			return Math.max(halt, relax);
 		}
 		// time is 'increasing'
-		double halt = timeStop > updt ? timeStop : Double.POSITIVE_INFINITY;
+		double halt = stop > updt ? stop : Double.POSITIVE_INFINITY;
 		double relax = (Math.abs(timeRelax) > 1e-8 && timeRelax > updt) ? timeRelax : Double.POSITIVE_INFINITY;
 		return Math.min(halt, relax);
 	}
@@ -1664,6 +1672,11 @@ public abstract class Model implements CLOProvider {
 	/**
 	 * Command line option to set the number of samples to take for statistical
 	 * measurements.
+	 * <p>
+	 * <strong>Note:</strong> for stationary distributions, {@link Mode#STATISTICS_UPDATE},
+	 * one sample is taken in every reporting interval, see {@link #cloTimeStep}. Hence
+	 * {@code --samples} and {@link #cloTimeStop} are equivalent ways to request the end
+	 * state and the model halts at whichever comes first.
 	 */
 	public final CLOption cloSamples = new CLOption("samples", "none", CLOCategory.Simulation,
 			"--samples <s>   number of samples for statistics", new CLODelegate() {
@@ -1688,7 +1701,8 @@ public abstract class Model implements CLOProvider {
 		// cannot use permitsSampleStatistics and permitsUpdateStatistics because
 		// they also check parameters that have not yet been set
 		if (module instanceof HasHistogram.StatisticsProbability
-				|| module instanceof HasHistogram.StatisticsTime)
+				|| module instanceof HasHistogram.StatisticsTime
+				|| module instanceof HasHistogram.StatisticsStationary)
 			parser.addCLO(cloSamples);
 	}
 

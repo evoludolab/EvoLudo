@@ -1898,10 +1898,13 @@ public class EvoLudoWeb extends Composite
 		boolean hasStop = false;
 		switch (activeModel.getMode()) {
 			case DYNAMICS:
-			case STATISTICS_UPDATE:
 				hasStop = Double.isFinite(activeModel.getTimeStop());
 				if (activeModel.getNSamples() > 0.0)
 					logger.warning("--samples found: wrong mode for statistics, use --view option.");
+				break;
+			case STATISTICS_UPDATE:
+				// stationary distributions accept --timestop and --samples alike
+				hasStop = Double.isFinite(activeModel.getTimeStop()) || activeModel.getNSamples() > 0.0;
 				break;
 			case STATISTICS_SAMPLE:
 				hasStop = activeModel.getNSamples() > 0.0;
