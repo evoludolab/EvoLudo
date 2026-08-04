@@ -1,0 +1,68 @@
+# testing SIR, susceptible-infected-recovered disease dynamics
+# NOTE: SIR has no --playerupdate (IBSPop#updatePlayerAt implements the S/I/R
+# transitions directly, bypassing PlayerUpdate.Type entirely) and, unlike
+# payoff-based modules, --fitnessmap has no effect (getDerivatives is the
+# compartmental S/I/R reaction system, not payoff-driven) - so neither is
+# varied below, cf. eMoran.clo which shares this bespoke-dynamics structure.
+
+# ODE
+# base scenario
+--module SIR --model ODE --timestep 1 --init frequency 998,2,0
+# parameters: I->S in addition to I->R
+--module SIR --model ODE --timestep 1 --recover 0.3,0.2 --init frequency 998,2,0
+# parameters: no waning immunity - R absorbing, no return flow to S
+--module SIR --model ODE --timestep 1 --suscept 0 --init frequency 998,2,0
+# parameters: no recovery - dependent trait falls back to S, see SIR#getDependent
+--module SIR --model ODE --timestep 1 --recover 0 --init frequency 998,2,0
+# parameters: non-linear incidence
+--module SIR --model ODE --timestep 1 --incidence 2,1 --init frequency 998,2,0
+--module SIR --model ODE --timestep 1 --incidence 1,2 --init frequency 998,2,0
+#NOTE seasonal forcing never settles into a fixed point - cap runtime
+--module SIR --model ODE --timestep 1 --infect 1.0,0.3,0.1 --init frequency 998,2,0 --timestop 100
+#NOTE regression: extinct susceptibles must not stay absorbed at 0 despite the
+# non-vanishing R->S backflow (dS/dt=R*pRS+... does not vanish at S=0, unlike
+# genuine replicator dynamics) - see SDE#applyStep
+--module SIR --model ODE --timestep 1 --init frequency 0,1,99
+# disabled trait
+--module SIR --model ODE --timestep 1 --disable 2 --init frequency 998,2,0
+
+# SDE
+# base scenario
+--module SIR --model SDE --timestep 1 --popsize 200 --init frequency 198,2,0 --timestop 100
+#NOTE regression: extinct susceptibles must not stay absorbed at 0 despite the
+# non-vanishing R->S backflow, see SDE#applyStep
+--module SIR --model SDE --timestep 1 --popsize 200 --init frequency 0,2,198 --timestop 100
+# parameters: I->S in addition to I->R
+--module SIR --model SDE --timestep 1 --popsize 200 --recover 0.3,0.2 --init frequency 198,2,0 --timestop 100
+# parameters: no waning immunity - R absorbing, no return flow to S
+--module SIR --model SDE --timestep 1 --popsize 200 --suscept 0 --init frequency 198,2,0 --timestop 100
+# parameters: no recovery - dependent trait falls back to S
+--module SIR --model SDE --timestep 1 --popsize 200 --recover 0 --init frequency 198,2,0 --timestop 100
+# parameters: non-linear incidence
+--module SIR --model SDE --timestep 1 --popsize 200 --incidence 2,1 --init frequency 198,2,0 --timestop 100
+
+# PDE
+# base scenario
+--module SIR --model PDE --timestep 1 --geometry n --init random 998,2,0 --timestop 50
+#NOTE regression: extinct susceptibles must not stay absorbed at 0 despite the
+# non-vanishing R->S backflow
+--module SIR --model PDE --timestep 1 --geometry n --init random 0,2,998 --timestop 50
+# parameters
+--module SIR --model PDE --timestep 1 --geometry n --suscept 0 --init random 998,2,0 --timestop 50
+--module SIR --model PDE --timestep 1 --geometry n --recover 0 --init random 998,2,0 --timestop 50
+
+# IBS
+# base scenario
+--module SIR --model IBS --timestep 1 --geometry M --popsize 500 --init frequency 498,2,0 --timestop 100
+# parameters: I->S in addition to I->R
+--module SIR --model IBS --timestep 1 --geometry M --popsize 500 --recover 0.3,0.2 --init frequency 498,2,0 --timestop 100
+#NOTE no waning immunity - disease dies out but S/R mix need not be
+# homogeneous, see SIR.IBSPop#checkConvergence
+--module SIR --model IBS --timestep 1 --geometry M --popsize 500 --suscept 0 --init frequency 498,2,0 --timestop 100
+# consistency check: no susceptibles initially, repopulated via R->S
+--module SIR --model IBS --timestep 1 --geometry M --popsize 500 --init frequency 0,2,498 --timestop 100
+# geometries
+--module SIR --model IBS --timestep 1 --geometry n --popsize 50x --init frequency 498,2,0 --timestop 100
+--module SIR --model IBS --timestep 1 --geometry r4 --popsize 500 --init frequency 498,2,0 --timestop 100
+--module SIR --model IBS --timestep 1 --geometry s --popsize 200 --init frequency 198,2,0 --timestop 100
+--module SIR --model IBS --timestep 1 --geometry f4 --popsize 500 --init frequency 498,2,0 --timestop 100
