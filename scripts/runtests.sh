@@ -31,6 +31,34 @@
 #
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
+print_help() {
+	echo "Usage: $0 [options] [TEST[.clo] ...]"
+	echo
+	echo "Run EvoLudo tests. If no TEST names are given, all generator .clo"
+	echo "files in EvoLudoTest/tests/generators are run."
+	echo
+	echo "TEST names without a path are resolved in EvoLudoTest/tests/generators,"
+	echo "and the .clo extension is optional."
+	echo
+	echo "Options are passed to the EvoLudo test jar:"
+	echo "  --references <directory>  Directory for reference test cases"
+	echo "  --reports <directory>     Directory for failed test reports"
+	echo "  --minor                   Dump differences for minor failures"
+	echo "  --verb                    Verbose mode"
+	echo "  --nosha                   Disable SHA checks"
+	echo "  -h, --help                Show this help screen"
+}
+
+for arg in "$@"; do
+	case "$arg" in
+		-h|--help)
+			print_help
+			exit 0
+			;;
+	esac
+done
+
 source "${SCRIPT_DIR}/vars.sh"
 
 echo "Preparing to run EvoLudo tests..."
@@ -53,8 +81,82 @@ if [ -z "${LATEST_TEST_JAR}" ]; then
 	exit 1
 fi
 
-java -jar "$LATEST_TEST_JAR" \
-	--tests "$EVOLUDO_TEST_TEST/generators" \
-	--references "$EVOLUDO_TEST_TEST/references" \
-	--reports "$EVOLUDO_TEST_TEST/reports" \
-	"$@"
+TEST_FILES=()
+PASSTHROUGH_ARGS=()
+EXPECT_VALUE=false
+LAST_OPTION=
+for arg in "$@"; do
+	if [[ "$EXPECT_VALUE" == true ]]; then
+		PASSTHROUGH_ARGS+=("$arg")
+		EXPECT_VALUE=false
+		LAST_OPTION=
+		continue
+	fi
+	case "$arg" in
+		--generate|--ref|--references|--report|--reports|--test|--tests)
+			PASSTHROUGH_ARGS+=("$arg")
+			EXPECT_VALUE=true
+			LAST_OPTION="$arg"
+			;;
+		-*)
+			PASSTHROUGH_ARGS+=("$arg")
+			;;
+		*)
+			testfile="$arg"
+			if [[ "$testfile" != *.clo ]]; then
+				testfile="${testfile}.clo"
+			fi
+			if [[ "$testfile" != /* && "$testfile" != */* ]]; then
+				testfile="$EVOLUDO_TEST_TEST/generators/$testfile"
+			fi
+			if [ ! -f "$testfile" ]; then
+				echo "EvoLudo test file '$testfile' not found - aborting!"
+				exit 1
+			fi
+			TEST_FILES+=("$testfile")
+			;;
+	esac
+done
+
+if [[ "$EXPECT_VALUE" == true ]]; then
+	echo "Missing value for option '$LAST_OPTION' - aborting!"
+	exit 1
+fi
+
+if ((${#TEST_FILES[@]} == 0)); then
+	if ((${#PASSTHROUGH_ARGS[@]} == 0)); then
+		java -jar "$LATEST_TEST_JAR" \
+			--tests "$EVOLUDO_TEST_TEST/generators" \
+			--references "$EVOLUDO_TEST_TEST/references" \
+			--reports "$EVOLUDO_TEST_TEST/reports"
+	else
+		java -jar "$LATEST_TEST_JAR" \
+			--tests "$EVOLUDO_TEST_TEST/generators" \
+			--references "$EVOLUDO_TEST_TEST/references" \
+			--reports "$EVOLUDO_TEST_TEST/reports" \
+			"${PASSTHROUGH_ARGS[@]}"
+	fi
+	exit $?
+fi
+
+status=0
+for testfile in "${TEST_FILES[@]}"; do
+	echo "Running EvoLudo test file '$testfile'..."
+	teststatus=0
+	if ((${#PASSTHROUGH_ARGS[@]} == 0)); then
+		java -jar "$LATEST_TEST_JAR" \
+			--tests "$testfile" \
+			--references "$EVOLUDO_TEST_TEST/references" \
+			--reports "$EVOLUDO_TEST_TEST/reports" || teststatus=$?
+	else
+		java -jar "$LATEST_TEST_JAR" \
+			--tests "$testfile" \
+			--references "$EVOLUDO_TEST_TEST/references" \
+			--reports "$EVOLUDO_TEST_TEST/reports" \
+			"${PASSTHROUGH_ARGS[@]}" || teststatus=$?
+	fi
+	if ((teststatus != 0)); then
+		status=$teststatus
+	fi
+done
+exit $status
