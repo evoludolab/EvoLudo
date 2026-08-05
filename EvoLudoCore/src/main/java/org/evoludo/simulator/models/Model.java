@@ -877,6 +877,7 @@ public abstract class Model implements CLOProvider {
 	public void resetStatisticsSample() {
 		nStatisticsSamples = 0;
 		nStatisticsFailed = 0;
+		nStatisticsFailedInRow = 0;
 		statisticsSampleNew = true;
 	}
 
@@ -888,20 +889,33 @@ public abstract class Model implements CLOProvider {
 	}
 
 	/**
-	 * Clear statistics sample and get ready to collect next sample.
+	 * Discard failed statistics sample and get ready to collect next sample. Gives
+	 * up if no valid sample was obtained in the last {@link #nSamples} attempts
+	 * (but at least {@link #MIN_STATISTICS_FAILED}), which indicates settings that
+	 * are unable to produce any samples rather than a run of bad luck.
 	 */
 	public void initStatisticsFailed() {
 		nStatisticsFailed++;
+		if (++nStatisticsFailedInRow >= Math.max(nSamples, MIN_STATISTICS_FAILED))
+			// does not return control
+			engine.fatal("failed to generate a valid statistics sample in "
+					+ nStatisticsFailedInRow + " attempts - check initialization.");
 	}
 
 	/**
-	 * Signal that statistics sample is ready to process.
+	 * Signal that statistics sample is ready to process. Samples that never got
+	 * started, e.g. because no mutant was placed, are counted as failed.
+	 *
+	 * @see #initStatisticsFailed()
 	 */
 	public void readStatisticsSample() {
-		if (!statisticsSampleNew) {
-			nStatisticsSamples++;
-			statisticsSampleNew = true;
+		if (statisticsSampleNew) {
+			initStatisticsFailed();
+			return;
 		}
+		nStatisticsSamples++;
+		nStatisticsFailedInRow = 0;
+		statisticsSampleNew = true;
 	}
 
 	/**
@@ -936,6 +950,23 @@ public abstract class Model implements CLOProvider {
 	 * Number of failed statistics samples.
 	 */
 	protected int nStatisticsFailed = 0;
+
+	/**
+	 * Number of failed statistics samples since the last successful one.
+	 *
+	 * @see #initStatisticsFailed()
+	 */
+	protected int nStatisticsFailedInRow = 0;
+
+	/**
+	 * The minimum number of consecutive failed statistics samples before giving up.
+	 * This applies in particular if the number of samples, {@link #nSamples}, is not
+	 * set or small. Chance runs of failures are perfectly possible, for example if
+	 * mutants are placed on nodes without outgoing links.
+	 *
+	 * @see #initStatisticsFailed()
+	 */
+	private static final int MIN_STATISTICS_FAILED = 100;
 
 	/**
 	 * The container for collecting statistics samples.

@@ -415,11 +415,11 @@ public abstract class IBS extends Model {
 					nStatisticsSamples % statisticsSettings.resetInterval == 0)
 				reset();
 			init();
-			if (fixData.mutantNode < 0) {
-				initStatisticsFailed();
-				// notify listeners so counters/status reflect failed samples immediately
+			if (fixData.mutantNode < 0)
+				// notify listeners so counters/status reflect failed samples
+				// immediately; the sample is recorded as failed in
+				// readStatisticsSample()
 				return engine.fireModelSample(false);
-			}
 			initStatisticsSample();
 			update();
 			return true;

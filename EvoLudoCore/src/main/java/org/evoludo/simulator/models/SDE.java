@@ -177,9 +177,8 @@ public class SDE extends ODE {
 	public boolean setMode(Mode mode) {
 		if (mode == Mode.STATISTICS_SAMPLE && fixData == null) {
 			fixData = new FixationData();
-			// the index of the mutant trait is meaningless in SDE models
-			// but must be non-negative (otherwise indicates an invalid sample)
-			fixData.mutantTrait = 0;
+			// mutant, resident and location of the mutant are set in
+			// resetStatisticsSample() once the initial state is known
 		} else
 			fixData = null;
 		return super.setMode(mode);
@@ -864,6 +863,9 @@ public class SDE extends ODE {
 			// this needs to be revised for vacant sites
 			fixData.mutantTrait = ArrayMath.minIndex(y0);
 			fixData.residentTrait = ArrayMath.maxIndex(y0);
+			// SDE's have no structure, hence the location of the mutant is meaningless
+			// but must be non-negative to mark the samples as valid
+			fixData.mutantNode = 0;
 		}
 	}
 
@@ -877,10 +879,11 @@ public class SDE extends ODE {
 		if (nSpecies > 1)
 			return false;
 		Module<?> mod = engine.getModule();
-		// unlike structured populations any initialization is
-		// acceptable for sampling statistics
-		return (mod instanceof HasHistogram.StatisticsProbability
-				|| mod instanceof HasHistogram.StatisticsTime)
+		// just as in structured populations, sampling statistics require a single
+		// mutant in a resident population, see IBSD#permitsSampleStatistics()
+		return initType != null && initType[0] == InitType.MUTANT
+				&& (mod instanceof HasHistogram.StatisticsProbability
+						|| mod instanceof HasHistogram.StatisticsTime)
 				&& mod.getMutation().getProbability() <= 0.0;
 	}
 

@@ -32,8 +32,6 @@ package org.evoludo.simulator.models;
 
 import org.evoludo.math.ArrayMath;
 import org.evoludo.simulator.EvoLudo;
-import org.evoludo.simulator.geometries.AbstractGeometry;
-import org.evoludo.simulator.geometries.GeometryType;
 import org.evoludo.simulator.modules.Module;
 import org.evoludo.util.CLOCategory;
 import org.evoludo.util.CLODelegate;
@@ -100,19 +98,18 @@ public class IBSD extends IBS implements DModel {
 		if (!super.permitsSampleStatistics())
 			return false;
 		// sampling statistics also require:
-		// - mutant or temperature initialization
+		// - mutant or temperature initialization, regardless of the geometry: the
+		// statistics are collected for the location of the initial mutant, see
+		// FixationData#mutantNode, which only those initializations provide
 		// - no vacant sites or monostop (otherwise extinction is the only absorbing
 		// state)
-		// - for well-mixed populations any frequency is acceptable
+		// - in principle, in well-mixed populations any initial frequency of mutant
+		// nodes would qualify as unique initial configuration and suitable for statistics
+		// however, currently neither FixationData nor the consumers are equipped to deal
+		// with this case and so we only allow the single mutant case (for now).
 		for (Module<?> mod : species) {
-			IBSDPopulation dpop = (IBSDPopulation) mod.getIBSPopulation();
-			AbstractGeometry inter = dpop.interaction;
-			boolean isWM = inter.isType(GeometryType.WELLMIXED)
-					&& (inter.isSingle()
-							|| dpop.competition.isType(GeometryType.WELLMIXED));
-			Init.Type itype = dpop.getInit().type;
-			if (!isWM && !(itype.equals(Init.Type.MUTANT) ||
-					itype.equals(Init.Type.TEMPERATURE)))
+			Init.Type itype = ((IBSDPopulation) mod.getIBSPopulation()).getInit().type;
+			if (!(itype.equals(Init.Type.MUTANT) || itype.equals(Init.Type.TEMPERATURE)))
 				return false;
 		}
 		return true;

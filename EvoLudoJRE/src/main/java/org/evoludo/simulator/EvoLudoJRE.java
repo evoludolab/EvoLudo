@@ -492,9 +492,10 @@ public class EvoLudoJRE extends EvoLudo implements Runnable {
 		// parser)
 		Mode mode = (isDynamicsDataType(dataTypes.get(0)) ? Mode.DYNAMICS : Mode.STATISTICS_SAMPLE);
 		if (!model.requestMode(mode)) {
-			// mode not supported
-			logger.info("Mode " + mode + " not supported!");
-			return;
+			// mode not supported; does not return control
+			fatal("Data '" + dataTypes.get(0).getKey() + "' requires mode " + mode
+					+ ", which is not supported by the current settings.\n"
+					+ "Try --help for more information.");
 		}
 		// reset model to check and apply all parameters
 		modelReset();
