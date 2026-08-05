@@ -724,6 +724,8 @@ public class EvoLudoJRE extends EvoLudo implements Runnable {
 									+ " populations for all locations with samples");
 							double meanFix = 0.0;
 							double varFix = 0.0;
+							// running mean and variance over the nodes that have samples
+							int nNodes = 0;
 							for (int n = 0; n < nPopulation; n++) {
 								double[] node = fixProb[n];
 								double norm = node[nTraits];
@@ -737,12 +739,15 @@ public class EvoLudoJRE extends EvoLudo implements Runnable {
 										+ Formatter.format(n1, dataDigits) + ", " // resident fixation
 										+ Formatter.format(norm, 0)); // sample size
 								double dx = n0 - meanFix;
-								meanFix += dx / (n + 1);
+								meanFix += dx / (++nNodes);
 								varFix += dx * (n0 - meanFix);
 							}
 							// trick: to avoid -0 output simply add 0...!
 							output.println("# overall:\t" + Formatter.format(meanFix + 0.0, dataDigits) + " ± "
-									+ Formatter.format(Math.sqrt(varFix / (nPopulation - 1)) + 0.0, dataDigits) + ", "
+									+ (nNodes > 1
+											? Formatter.format(Math.sqrt(varFix / (nNodes - 1)) + 0.0, dataDigits)
+											: "-")
+									+ ", "
 									+ Formatter.format(samples, 0) +
 									(nFailed > 0L ? " (" + nFailed + " failed)" : ""));
 							break;
