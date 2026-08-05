@@ -275,6 +275,16 @@ public class Advection extends PDE {
 
 	@Override
 	protected void checkDt() {
+		if (doAdvection) {
+			// the dependent trait is only authoritative now, after all options have been
+			// parsed (see cloPdeAdvection) - validate advcoeff's dimensions accordingly
+			int dim = dependent < 0 ? nDim : nDim - 1;
+			if (advcoeff.length != dim || advcoeff[0].length != dim) {
+				logger.warning("advection matrix dimensions do not match number of independent traits - disabling advection.");
+				doAdvection = false;
+				advcoeff = null;
+			}
+		}
 		super.checkDt();
 		// some careful checking for suitable time steps is required!
 		// if Ai/(dx^2)>1/dt for any Ai then adjust dt
@@ -314,12 +324,12 @@ public class Advection extends PDE {
 					advcoeff = null;
 					if (arg == null)
 						return true;
-					// dim not yet set - retrieve directly from module
-					int dim = module.getNTraits();
-					if (module instanceof HasDE && ((HasDE) module).getDependent() >= 0)
-						dim--;
+					// the dependent trait is not necessarily known yet at this point (e.g. it
+					// may depend on other, not yet parsed, options) - validating advcoeff's
+					// dimensions against it is deferred to check(), once the dependent trait
+					// is authoritatively known
 					advcoeff = CLOParser.parseMatrix(arg);
-					if (advcoeff.length != dim || advcoeff[0].length != dim) {
+					if (advcoeff.length == 0 || advcoeff[0].length != advcoeff.length) {
 						advcoeff = null;
 						return false;
 					}

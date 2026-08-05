@@ -140,8 +140,10 @@ public class PDE extends ODE {
 	protected double linext;
 
 	/**
-	 * The array of diffusion coefficients for each (independent) trait.
-	 * 
+	 * The array of diffusion coefficients for each (independent) trait, as
+	 * parsed. The dependent trait, if any, is excluded when the effective,
+	 * scaled diffusion coefficients get derived in {@link #getScaledDiffusion(double)}.
+	 *
 	 * @see #cloPdeDiffusion
 	 */
 	protected double[] diffcoeff;
@@ -1188,6 +1190,8 @@ public class PDE extends ODE {
 		double[] scaledD = new double[nDim];
 		double invdx = calcInvDeltaX();
 		ArrayMath.multiply(diffcoeff, stepSize * invdx * invdx, scaledD);
+		if (dependent >= 0)
+			scaledD[dependent] = 0.0;
 		return scaledD;
 	}
 
@@ -1215,7 +1219,11 @@ public class PDE extends ODE {
 		// then adjust dt
 		double invdx = calcInvDeltaX();
 		double invdx2 = invdx * invdx;
-		double maxD = ArrayMath.max(diffcoeff) * invdx2;
+		double maxD = 0.0;
+		for (int n = 0; n < nDim; n++)
+			if (n != dependent)
+				maxD = Math.max(maxD, diffcoeff[n]);
+		maxD *= invdx2;
 		GeometryFeatures features = space.getFeatures();
 		int maxK = Math.max(features.maxOut, features.maxIn);
 		// threshold of 1 is much to aggressive - this means everyone in one site
@@ -1341,16 +1349,17 @@ public class PDE extends ODE {
 					diffcoeff = CLOParser.parseVector(arg);
 					if (diffcoeff == null || diffcoeff.length == 0)
 						return false;
-					// number of traits and dependent not yet set - retrieve directly from module
+					// the dependent trait is not necessarily known yet at this point (e.g. it
+					// may depend on other, not yet parsed, options) - excluding it from the
+					// effective diffusion coefficients is deferred to getScaledDiffusion(),
+					// once the dependent trait is authoritatively known
 					int dim = module.getNTraits();
-					int dep = ((HasDE) module).getDependent();
 					if (diffcoeff.length != dim) {
 						double[] dc = diffcoeff;
 						diffcoeff = new double[dim];
 						for (int n = 0; n < dim; n++)
 							diffcoeff[n] = dc[n % dc.length];
 					}
-					diffcoeff[dep] = 0.0;
 					return true;
 				}
 
