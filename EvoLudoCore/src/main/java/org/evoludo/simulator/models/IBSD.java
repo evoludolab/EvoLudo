@@ -101,8 +101,8 @@ public class IBSD extends IBS implements DModel {
 		// - mutant or temperature initialization, regardless of the geometry: the
 		// statistics are collected for the location of the initial mutant, see
 		// FixationData#mutantNode, which only those initializations provide
-		// - no vacant sites or monostop (otherwise extinction is the only absorbing
-		// state)
+		// - with vacant sites extinction is the only absorbing state, unless monostop
+		// is requested; this is permitted but warned about, see setMode(Mode)
 		// - in principle, in well-mixed populations any initial frequency of mutant
 		// nodes would qualify as unique initial configuration and suitable for statistics
 		// however, currently neither FixationData nor the consumers are equipped to deal
@@ -113,6 +113,22 @@ public class IBSD extends IBS implements DModel {
 				return false;
 		}
 		return true;
+	}
+
+	@Override
+	public boolean setMode(Mode mode) {
+		if (mode == Mode.STATISTICS_SAMPLE) {
+			for (Module<?> mod : species) {
+				if (!mod.hasVacant() || ((IBSDPopulation) mod.getIBSPopulation()).module.getMonoStop())
+					continue;
+				// samples end only once the population went extinct, which is recorded as
+				// fixation of the vacant trait rather than of a resident or mutant
+				logger.warning("extinction is the only absorbing state - "
+						+ "consider --monostop for fixation statistics.");
+				break;
+			}
+		}
+		return super.setMode(mode);
 	}
 
 	@Override
