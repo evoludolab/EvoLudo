@@ -324,6 +324,12 @@ public class HistoGraph extends AbstractGraph {
 		return getToolTipText(infobin);
 	}
 
+	/**
+	 * Get the tooltip for the bin with index {@code bin}.
+	 *
+	 * @param bin the index of the bin
+	 * @return the tooltip text
+	 */
 	private String getToolTipText(int bin) {
 		GraphAxis x = frame.xaxis, y = frame.yaxis;
 		double xDelta = (x.max - x.min) / data.bins;
@@ -332,9 +338,28 @@ public class HistoGraph extends AbstractGraph {
 		String tt = "<html>";
 		if (name != null)
 			tt += "<i>" + name + "</i><br>";
-		return tt + "<i>" + x.label + ":</i> " + x.formatter.format(xLow + xDelta * 0.5) + " - ["
-				+ x.formatter.format(xLow) + ", " + x.formatter.format(xLow + xDelta) + ")<br><i>" + y.label + ":</i> "
+		return tt + "<i>" + x.label + ":</i> " + formatBin(xLow, xDelta) + "<br><i>" + y.label + ":</i> "
 				+ x.formatter.format(data.state[bin]) + y.unit;
+	}
+
+	/**
+	 * Format the {@code x}-range covered by a bin. Bins of integer valued data,
+	 * such as degree distributions, report the integers covered by the bin, e.g.
+	 * {@code 4} or {@code [150, 151]}, while all others report the midpoint
+	 * together with the range of the bin.
+	 *
+	 * @param xLow   the lower bound of the bin
+	 * @param xDelta the width of the bin
+	 * @return the formatted range
+	 */
+	private String formatBin(double xLow, double xDelta) {
+		GraphAxis x = frame.xaxis;
+		if (data.binwidth <= 0)
+			return x.formatter.format(xLow + xDelta * 0.5) + " - [" + x.formatter.format(xLow) + ", "
+					+ x.formatter.format(xLow + xDelta) + ")";
+		int first = (int) Math.round(xLow);
+		int last = first + data.binwidth - 1;
+		return (last > first ? "[" + first + ", " + last + "]" : Integer.toString(first));
 	}
 
 	private int mouseStart, mouseStartBin;

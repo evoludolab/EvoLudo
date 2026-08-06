@@ -171,9 +171,18 @@ public class MVDegree extends MVAbstract implements HistoGraphListener {
 	 * }
 	 */
 
+	/**
+	 * Calculate the maximum degree for displaying the degree distribution. This
+	 * rounds {@code max} up to {@code 10, 20, 50, 100, 200, 500, 1000} etc. The
+	 * result is always strictly larger than {@code max}, i.e. the degrees
+	 * {@code 0, 1, ..., max} all fall inside the range {@code [0, kmax)}.
+	 *
+	 * @param max the maximum degree of the graph
+	 * @return the maximum degree to display
+	 */
 	private static int kmax(int max) {
 		// determine range and number of bins required
-		// range starts at 1 up to 10, 20, 50, 100, 200, 500, 1000 etc.
+		// range starts at 0 up to 10, 20, 50, 100, 200, 500, 1000 etc.
 		// the number of bins is at most 100
 		int order = Math.max(10, (int) Combinatorics.pow(10, (int) Math.floor(Math.log10(max + 1))));
 		switch (max / order) {
@@ -195,12 +204,20 @@ public class MVDegree extends MVAbstract implements HistoGraphListener {
 		}
 	}
 
+	/**
+	 * Process the degrees {@code in} and store the resulting distribution in
+	 * {@code data}. The x-axis covers the degrees {@code [0, kmax)} such that the
+	 * first bin holds the isolated nodes with degree zero.
+	 *
+	 * @param data the histogram data
+	 * @param in   the degrees of all nodes (or {@code null} if unavailable)
+	 * @param max  the maximum degree of the graph
+	 * @return {@code true} if the layout of the histogram changed
+	 */
 	private static boolean process(HistoData data, int[] in, int max) {
 		// boolean changed = false;
 		int kmax = kmax(max);
 		int b = Math.min(kmax, MAX_BINS);
-		if (kmax <= 100)
-			b++;
 		if (b > data.state.length)
 			data.state = new double[b];
 		/*
@@ -217,7 +234,8 @@ public class MVDegree extends MVAbstract implements HistoGraphListener {
 			return true;
 		int n = in.length;
 		for (int i = 0; i < n; i++)
-			out[in[i] / binwidth]++;
+			// guard against stale degree ranges of dynamic geometries
+			out[Math.min(in[i] / binwidth, b - 1)]++;
 		// return ( changed || changed(out) );
 
 		double minBin = Double.MAX_VALUE, maxBin = -Double.MAX_VALUE, accuBin = 0.0;
@@ -315,6 +333,25 @@ public class MVDegree extends MVAbstract implements HistoGraphListener {
 	 * }
 	 */
 
+	/**
+	 * Calculate the total degrees, i.e. the sum of the in- and out-degrees, of all
+	 * nodes in {@code geometry}.
+	 *
+	 * @param geometry the graph
+	 * @return the total degrees of all nodes (or {@code null} if unavailable)
+	 */
+	private static int[] totalDegrees(AbstractGeometry geometry) {
+		int[] kin = geometry.kin;
+		int[] kout = geometry.kout;
+		if (kin == null || kout == null)
+			return null;
+		int nNodes = kout.length; // has to be the same as kin.length
+		int[] ktot = new int[nNodes];
+		for (int i = 0; i < nNodes; i++)
+			ktot[i] = kin[i] + kout[i];
+		return ktot;
+	}
+
 	@Override
 	public synchronized boolean getData(HistoData data, int tag) {
 		// check if we need to process data first
@@ -340,68 +377,7 @@ public class MVDegree extends MVAbstract implements HistoGraphListener {
 					break;
 
 				case K_TOT:
-					int kmax = kmax(features.maxTot);
-					int b = Math.min(kmax, MAX_BINS);
-					if (kmax <= 100)
-						b++;
-					if (b > data.state.length)
-						data.state = new double[b];
-					// note kmax = 10, 20, 50, 100, 200, 500, 1000, ...
-					int binwidth = (kmax < MAX_BINS ? 1 : kmax / MAX_BINS);
-					// int n = Math.min(geometry.kout.length, geometry.kin.length);
-					int n = geometry.kout.length; // has to be the same as geometry.kin.length
-					double[] tot = data.state;
-					for (int i = 0; i < n; i++)
-						tot[(geometry.kin[i] + geometry.kout[i]) / binwidth]++;
-					/*
-					 * if( geometry.kout.length>n )
-					 * for( int i=n; i<geometry.kout.length; i++ ) tot[geometry.kout[i]/binwidth]++;
-					 * else if( geometry.kin.length>n )
-					 * for( int i=n; i<geometry.kin.length; i++ ) tot[geometry.kin[i]/binwidth]++;
-					 */
-					double minBin = Double.MAX_VALUE, maxBin = -Double.MAX_VALUE, accuBin = 0.0;
-					for (int i = 0; i < b; i++) {
-						double aBin = tot[i];
-						if (aBin > 0) {
-							minBin = Math.min(minBin, aBin);
-							maxBin = Math.max(maxBin, aBin);
-							accuBin += aBin;
-						}
-					}
-					double norm = 100.0 / accuBin;
-					if (data.bins != b) {
-						data.bins = b;
-						changed = true;
-					}
-					if (data.binwidth != binwidth) {
-						data.binwidth = binwidth;
-						changed = true;
-					}
-					if (Math.abs(data.xmin - 0) > 1e-8) {
-						data.xmin = 0;
-						changed = true;
-					}
-					if (Math.abs(data.xmax - kmax) > 1e-8) {
-						data.xmax = kmax;
-						changed = true;
-					}
-					if (Math.abs(data.ymin - minBin * norm) > 1e-8) {
-						data.ymin = minBin * norm;
-						if (data.logy && data.ymin <= 0.0)
-							data.ymin = 1.0 / accuBin;
-						changed = true;
-					}
-					if (Math.abs(data.ymax - maxBin * norm) > 1e-8) {
-						data.ymax = maxBin * norm;
-						changed = true;
-					}
-					if (data.logy) {
-						ArrayMath.log10(tot);
-						ArrayMath.add(tot, Math.log10(norm));
-					} else
-						ArrayMath.multiply(tot, norm);
-					// System.out.println("getData K_TOT: kmax="+kmax+", accuBin="+accuBin+",
-					// norm="+norm);
+					changed = process(data, totalDegrees(geometry), features.maxTot);
 					break;
 			}
 		}

@@ -769,12 +769,7 @@ public class Histogram extends AbstractView<HistoGraph> {
 		style.yMin = 0.0;
 		style.yMax = 1.0;
 		style.xMin = 0.0;
-		GeometryFeatures iFeats = inter.getFeatures();
-		GeometryFeatures cFeats = comp.getFeatures();
-		if (inter.isUndirected())
-			style.xMax = maxDegree(Math.max(iFeats.maxOut, cFeats.maxOut));
-		else
-			style.xMax = maxDegree(Math.max(iFeats.maxTot, cFeats.maxTot));
+		style.xMax = maxDegree(inter, comp);
 	}
 
 	/**
@@ -1317,16 +1312,10 @@ public class Histogram extends AbstractView<HistoGraph> {
 	 */
 	private double[][] ensureDegreeData(HistoGraph graph, AbstractGeometry inter, AbstractGeometry comp,
 			double[][] data) {
-		int bincount;
-		GeometryFeatures interFeatures = inter.getFeatures();
-		GeometryFeatures compFeatures = comp.getFeatures();
-		if (inter.isUndirected())
-			bincount = maxDegree(Math.max(interFeatures.maxOut, compFeatures.maxOut));
-		else
-			bincount = maxDegree(Math.max(interFeatures.maxTot, compFeatures.maxTot));
+		int kmax = maxDegree(inter, comp);
 		double min = 0.0;
-		double max = bincount;
-		bincount = Math.min(bincount, HistoGraph.DEFAULT_BINS);
+		double max = kmax;
+		int bincount = Math.min(kmax, HistoGraph.DEFAULT_BINS);
 		if (bincount != data[0].length) {
 			data = new double[data.length][bincount];
 			graph.setData(data);
@@ -1509,14 +1498,16 @@ public class Histogram extends AbstractView<HistoGraph> {
 
 	/**
 	 * Calculate the maximum degree for displaying the degree distribution. This
-	 * rounds {@code max} up to {@code 10, 20, 50, 100, 200, 500, 1000} etc.
-	 * 
+	 * rounds {@code max} up to {@code 10, 20, 50, 100, 200, 500, 1000} etc. The
+	 * result is always strictly larger than {@code max}, i.e. the degrees
+	 * {@code 0, 1, ..., max} all fall inside the range {@code [0, maxDegree)}.
+	 *
 	 * @param max the maximum degree of the graph
 	 * @return the maximum degree to display
 	 */
 	private static int maxDegree(int max) {
 		// determine range and number of bins required
-		// range starts at 1 up to 10, 20, 50, 100, 200, 500, 1000 etc.
+		// range starts at 0 up to 10, 20, 50, 100, 200, 500, 1000 etc.
 		// the number of bins is at most 100
 		int order = (int) Math.max(10, Combinatorics.pow(10, (int) Math.floor(Math.log10(max + 1.0))));
 		switch (max / order) {
@@ -1539,6 +1530,40 @@ public class Histogram extends AbstractView<HistoGraph> {
 	}
 
 	/**
+	 * Calculate the maximum degree for displaying the degree distributions of the
+	 * interaction and competition geometries. For directed graphs the total degree
+	 * determines the range because the in-, out- and total degree distributions
+	 * share the same axis.
+	 *
+	 * @param inter the interaction graph
+	 * @param comp  the competition graph
+	 * @return the maximum degree to display
+	 *
+	 * @see #maxDegree(int)
+	 */
+	private static int maxDegree(AbstractGeometry inter, AbstractGeometry comp) {
+		GeometryFeatures interFeatures = inter.getFeatures();
+		int max = inter.isUndirected() ? interFeatures.maxOut : interFeatures.maxTot;
+		if (inter != comp) {
+			GeometryFeatures compFeatures = comp.getFeatures();
+			max = Math.max(max, comp.isUndirected() ? compFeatures.maxOut : compFeatures.maxTot);
+		}
+		return maxDegree(max);
+	}
+
+	/**
+	 * Add the node with degree {@code k} to the corresponding bin.
+	 *
+	 * @param bins      the degree distribution
+	 * @param k         the degree of the node
+	 * @param ibinwidth the scaling factor to map degrees to bins
+	 */
+	private static void binDegree(double[] bins, int k, double ibinwidth) {
+		// guard against stale degree ranges of dynamic geometries
+		bins[Math.min((int) (k * ibinwidth), bins.length - 1)]++;
+	}
+
+	/**
 	 * Generate the degree histogram data for the given interaction and competition
 	 * geometries.
 	 * 
@@ -1547,13 +1572,9 @@ public class Histogram extends AbstractView<HistoGraph> {
 	 * @param comp  the competition graph
 	 */
 	private void getDegreeHistogramData(double[][] data, AbstractGeometry inter, AbstractGeometry comp) {
-		GeometryFeatures interFeatures = inter.getFeatures();
-		GeometryFeatures compFeatures = comp.getFeatures();
-		int kmax = maxDegree(inter.isUndirected() ? interFeatures.maxOut : interFeatures.maxTot);
-		if (inter != comp)
-			kmax = Math.max(kmax,
-					maxDegree(comp.isUndirected() ? compFeatures.maxOut : compFeatures.maxTot));
-		double ibinwidth = (double) data[0].length / (kmax + 1);
+		// the x-axis covers degrees [0, kmax) such that the first bin holds the
+		// isolated nodes with degree zero
+		double ibinwidth = (double) data[0].length / maxDegree(inter, comp);
 		getDegreeHistogramData(data, inter, 0, ibinwidth);
 		if (inter != comp)
 			getDegreeHistogramData(data, comp, inter.isUndirected() ? 1 : 3, ibinwidth);
@@ -1574,7 +1595,7 @@ public class Histogram extends AbstractView<HistoGraph> {
 			double[] dataio = data[idx];
 			Arrays.fill(dataio, 0.0);
 			for (int i = 0; i < nodeCount; i++)
-				dataio[(int) (geometry.kin[i] * ibinwidth)]++;
+				binDegree(dataio, geometry.kin[i], ibinwidth);
 			ArrayMath.multiply(dataio, 1.0 / nodeCount);
 			return;
 		}
@@ -1587,9 +1608,9 @@ public class Histogram extends AbstractView<HistoGraph> {
 		for (int i = 0; i < nodeCount; i++) {
 			int kin = geometry.kin[i];
 			int kout = geometry.kout[i];
-			datao[(int) (kout * ibinwidth)]++;
-			datai[(int) (kin * ibinwidth)]++;
-			datat[(int) ((kin + kout) * ibinwidth)]++;
+			binDegree(datao, kout, ibinwidth);
+			binDegree(datai, kin, ibinwidth);
+			binDegree(datat, kin + kout, ibinwidth);
 		}
 		double norm = 1.0 / nodeCount;
 		ArrayMath.multiply(datao, norm);
@@ -1630,16 +1651,7 @@ public class Histogram extends AbstractView<HistoGraph> {
 	private int getDegreeBins(AbstractGeometry inter, AbstractGeometry comp) {
 		if (inter == null)
 			return 0;
-		GeometryFeatures interFeatures = inter.getFeatures();
-		GeometryFeatures compFeatures = comp.getFeatures();
-		int nBins = maxDegree(interFeatures.maxOut);
-		if (!inter.isUndirected())
-			nBins = Math.max(maxDegree(interFeatures.maxTot) + 1, nBins);
-		if (comp != inter)
-			nBins = Math.max(maxDegree(compFeatures.maxOut) + 1, nBins);
-		if (!comp.isUndirected())
-			nBins = Math.max(maxDegree(compFeatures.maxTot) + 1, nBins);
-		return Math.max(2, Math.min(nBins, HistoGraph.DEFAULT_BINS));
+		return Math.min(maxDegree(inter, comp), HistoGraph.DEFAULT_BINS);
 	}
 
 	/**

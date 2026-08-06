@@ -865,11 +865,8 @@ public class HistoGraph extends AbstractGraph<double[]> implements BasicTooltipP
 				style.showLabel && style.label != null ? "<b>" + style.label + "</b><br/>" : "");
 		switch (view.getType()) {
 			case DEGREE:
-				if (Math.abs(style.xMax - (nBins - 1)) < 1e-6) {
-					appendTipDegree(tip, bar);
-					break;
-				}
-				//$FALL-THROUGH$
+				appendTipDegree(tip, bar);
+				break;
 			case TRAIT:
 			case FITNESS:
 				appendBinTooltip(tip, bar);
@@ -891,14 +888,19 @@ public class HistoGraph extends AbstractGraph<double[]> implements BasicTooltipP
 	}
 
 	/**
-	 * Append degree tooltip.
-	 * 
+	 * Append degree tooltip. Bins may span several degrees for graphs with a wide
+	 * range of degrees.
+	 *
 	 * @param tip the tooltip string builder
 	 * @param bar the bar index
 	 */
 	private void appendTipDegree(StringBuilder tip, int bar) {
+		double perBin = (style.xMax - style.xMin) / nBins;
+		int first = (int) Math.round(style.xMin + bar * perBin);
+		int last = (int) Math.round(style.xMin + (bar + 1) * perBin) - 1;
+		String degree = (last > first ? "[" + first + ", " + last + "]" : Integer.toString(first));
 		tip.append(TABLE_STYLE);
-		tip.append(TABLE_ROW_START + style.xLabel + TABLE_CELL_NEXT + bar + TABLE_ROW_END);
+		tip.append(TABLE_ROW_START + style.xLabel + TABLE_CELL_NEXT + degree + TABLE_ROW_END);
 		tip.append(TABLE_ROW_START + style.yLabel + TABLE_CELL_NEXT
 				+ Formatter.formatPercent(data[row][bar], 2) + TABLE_ROW_END + TABLE_END);
 	}

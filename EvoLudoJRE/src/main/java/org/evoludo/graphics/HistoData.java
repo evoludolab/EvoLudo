@@ -37,6 +37,10 @@ public class HistoData {
 	public double[] state = new double[0];
 	// public int bins = HistoGraph.HISTO_BINS;
 	public int bins = 0;
+	/**
+	 * The number of integers covered by a single bin or {@code 0} for continuous
+	 * data. Only set for integer valued data such as degree distributions.
+	 */
 	public int binwidth;
 	public double xmin = 0.0;
 	public double xmax = 1.0;
