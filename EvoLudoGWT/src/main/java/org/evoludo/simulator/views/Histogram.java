@@ -977,6 +977,7 @@ public class Histogram extends AbstractView<HistoGraph> {
 	 * Reset degree graphs.
 	 */
 	private void resetDegreeGraphs() {
+		degreeProcessed = false;
 		Module<?> oldmod = null;
 		double[][] data = null;
 		int idx = 0;
