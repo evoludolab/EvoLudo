@@ -218,26 +218,17 @@ public class IBSCPopulation extends IBSMCPopulation {
 			tmpGroup[i] = opptraits[group.group[i]];
 		int me = group.focal;
 
-		switch (group.samplingType) {
-			// interact with all neighbors - interact repeatedly if nGroup<groupSize+1
-			case ALL:
-				// interact with all neighbors
-				int nGroup = module.getNGroup();
-				if (nGroup < group.nSampled + 1) {
-					playGroupSequentiallyAt(me, group, nGroup);
-					return;
-				}
-				// interact with full group (random graphs, all neighbors)
-
-				//$FALL-THROUGH$
-			case RANDOM:
-				// interact with sampled neighbors
-				playGroupOnceAt(me, group);
+		if (group.isSampling(IBSGroup.SAMPLING_ALL)) {
+			// interact with all neighbors - interact repeatedly if nGroup<nSampled+1
+			int nGroup = module.getNGroup();
+			if (nGroup < group.nSampled + 1) {
+				playGroupSequentiallyAt(me, group, nGroup);
 				return;
-
-			default:
-				throw new UnsupportedOperationException("Unknown interaction type (" + interGroup.getSampling() + ")");
+			}
+			// interact with full group (random graphs, all neighbors)
 		}
+		// interact with sampled neighbors
+		playGroupOnceAt(me, group);
 	}
 
 	@Override

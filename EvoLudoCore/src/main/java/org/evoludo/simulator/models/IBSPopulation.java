@@ -48,7 +48,6 @@ import org.evoludo.simulator.geometries.GeometryType;
 import org.evoludo.simulator.geometries.HierarchicalGeometry;
 import org.evoludo.simulator.models.IBS.MigrationType;
 import org.evoludo.simulator.models.IBS.ScoringType;
-import org.evoludo.simulator.models.IBSGroup.SamplingType;
 import org.evoludo.simulator.modules.Features;
 import org.evoludo.simulator.modules.Features.Payoffs;
 import org.evoludo.simulator.modules.Map2Fitness;
@@ -806,7 +805,7 @@ public abstract class IBSPopulation<M extends Module<?>, P extends IBSPopulation
 	 * <ol>
 	 * <li>Adjusting scores is only feasible if all individuals have a fixed number
 	 * of interactions. For example, if all individuals always interact with all
-	 * their neighbours, see {@link IBSGroup.SamplingType#ALL}. The only exception
+	 * their neighbours, see {@link IBSGroup#SAMPLING_ALL}. The only exception
 	 * are well-mixed populations, {@link GeometryType#WELLMIXED}. With continuous
 	 * traits all possible encounters would need to be considered, which is
 	 * computationally not feasible. In contrast, for discrete traits separate
@@ -815,7 +814,7 @@ public abstract class IBSPopulation<M extends Module<?>, P extends IBSPopulation
 	 * sets of interaction partners and their numbers of interactions may vary.
 	 * </ol>
 	 * 
-	 * @see IBSGroup.SamplingType
+	 * @see IBSGroup#SAMPLING_ALL
 	 */
 	protected boolean adjustScores;
 
@@ -1787,8 +1786,8 @@ public abstract class IBSPopulation<M extends Module<?>, P extends IBSPopulation
 	 * <h3>Requirements/notes:</h3>
 	 * <ol>
 	 * <li>This optimized method is only applicable if
-	 * {@link IBSGroup.SamplingType#ALL}
-	 * is true and not {@link GeometryType#WELLMIXED}, i.e. if the interaction
+	 * {@link IBSGroup#SAMPLING_ALL}
+	 * is set and not {@link GeometryType#WELLMIXED}, i.e. if the interaction
 	 * group includes all neighbors but not all other members of the population.
 	 * <li>For pairwise interactions more efficient approaches are possible but
 	 * those require direct access to the trait and are hence delegated to
@@ -3394,7 +3393,7 @@ public abstract class IBSPopulation<M extends Module<?>, P extends IBSPopulation
 		}
 		if (playerScoring == ScoringType.EPHEMERAL) {
 			if (module.isPairwise()) {
-				if (interGroup.samplingType == SamplingType.RANDOM)
+				if (interGroup.nSamples > 0)
 					return interGroup.nSamples * score;
 				if (count == 0)
 					return (nPopulation - 1) * score;
@@ -3683,22 +3682,22 @@ public abstract class IBSPopulation<M extends Module<?>, P extends IBSPopulation
 		interaction.setInterspecies(opponent != this);
 		// check sampling in special geometries
 		if (interaction.isType(GeometryType.SQUARE) && interaction.isRegular() && interaction.getConnectivity() > 8 &&
-				interGroup.isSampling(IBSGroup.SamplingType.ALL) && nGroup > 2 && nGroup < 9) {
+				interGroup.isSampling(IBSGroup.SAMPLING_ALL) && nGroup > 2 && nGroup < 9) {
 			// if connectivity > 8 then the interaction pattern Group.SAMPLING_ALL with a
 			// group size between 2 and 8 (excluding boundaries is not allowed because this
 			// pattern requires a particular (internal) arrangement of the neighbors.
-			interGroup.setSampling(IBSGroup.SamplingType.RANDOM);
+			interGroup.setNSamples(1);
 			if (logger.isLoggable(Level.WARNING))
 				logger.warning(
 						"square " + interaction.getName()
 								+ " geometry has incompatible interaction pattern and neighborhood size"
 								+ " - using random sampling of interaction partners!");
 		}
-		if (interaction.isType(GeometryType.CUBE) && interGroup.isSampling(IBSGroup.SamplingType.ALL) &&
+		if (interaction.isType(GeometryType.CUBE) && interGroup.isSampling(IBSGroup.SAMPLING_ALL) &&
 				nGroup > 2 && nGroup <= interaction.getConnectivity()) {
 			// Group.SAMPLING_ALL only works with pairwise interactions or all neighbors
 			// restrictions do not apply for PDE's
-			interGroup.setSampling(IBSGroup.SamplingType.RANDOM);
+			interGroup.setNSamples(1);
 			if (logger.isLoggable(Level.WARNING))
 				logger.warning(
 						"cubic " + interaction.getName()
@@ -3796,7 +3795,7 @@ public abstract class IBSPopulation<M extends Module<?>, P extends IBSPopulation
 		hasLookupTable = module.isStatic() || //
 				(adjustScores && interaction.isType(GeometryType.WELLMIXED)) || //
 				(ephemeralScores && interaction.isType(GeometryType.WELLMIXED) //
-						&& interGroup.isSampling(SamplingType.ALL));
+						&& interGroup.isSampling(IBSGroup.SAMPLING_ALL));
 
 		if (!hasLookupTable || ephemeralScores)
 			return checkNoLookupTable(ephemeralScores);
@@ -3890,15 +3889,14 @@ public abstract class IBSPopulation<M extends Module<?>, P extends IBSPopulation
 
 		// best-response in well-mixed populations should skip sampling of references
 		if (playerUpdate.getType() == PlayerUpdate.Type.BEST_RESPONSE) {
-			compGroup.setSampling(IBSGroup.SamplingType.NONE);
-		} else if (compGroup.isSampling(IBSGroup.SamplingType.ALL)) {
+			compGroup.setNSamples(IBSGroup.SAMPLING_NONE);
+		} else if (compGroup.isSampling(IBSGroup.SAMPLING_ALL)) {
 			// 010320 using everyone as a reference in mean-field simulations is not
 			// feasible - except for best-response
 			// ecological updates are based on births and deaths rather than references
 			if (logger.isLoggable(Level.WARNING))
-				logger.warning("reference type (" + compGroup.getSampling()
-						+ ") unfeasible in well-mixed populations!");
-			compGroup.setSampling(IBSGroup.SamplingType.RANDOM);
+				logger.warning("reference type 'all' unfeasible in well-mixed populations - using single reference!");
+			compGroup.setNSamples(1);
 		}
 	}
 
@@ -4145,7 +4143,6 @@ public abstract class IBSPopulation<M extends Module<?>, P extends IBSPopulation
 		// (birth-death)
 		// reason: referenceGroup properly deals with hierarchies
 		// future: pick parent to populate vacated site (death-birth, fitness dependent)
-		compGroup.setSampling(IBSGroup.SamplingType.RANDOM);
 		compGroup.setNSamples(1);
 		// in the original Moran process offspring can replace the parent
 		compGroup.setSelf(competition.isType(GeometryType.WELLMIXED));
@@ -4163,7 +4160,7 @@ public abstract class IBSPopulation<M extends Module<?>, P extends IBSPopulation
 		if (!playerScoring.equals(ScoringType.EPHEMERAL))
 			return;
 
-		if (interGroup.isSampling(SamplingType.ALL)) {
+		if (interGroup.isSampling(IBSGroup.SAMPLING_ALL)) {
 			if (nGroup > 2) {
 				// single interaction with all members in neighbourhood
 				Arrays.fill(interactions, 1);

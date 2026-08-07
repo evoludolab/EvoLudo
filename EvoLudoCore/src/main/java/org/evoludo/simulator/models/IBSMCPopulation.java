@@ -411,7 +411,7 @@ public class IBSMCPopulation extends IBSPopulation<Continuous, IBSMCPopulation> 
 						(interaction.isType(GeometryType.HIERARCHY) && //
 								((HierarchicalGeometry) interaction).isSubtype(GeometryType.WELLMIXED)))
 					return false;
-				return interGroup.isSampling(IBSGroup.SamplingType.ALL);
+				return interGroup.isSampling(IBSGroup.SAMPLING_ALL);
 		}
 	}
 
@@ -544,24 +544,17 @@ public class IBSMCPopulation extends IBSPopulation<Continuous, IBSMCPopulation> 
 		}
 		gatherPlayers(group);
 
-		switch (group.samplingType) {
-			case ALL:
-				// interact with all neighbors
-				int nGroup = module.getNGroup();
-				if (nGroup < group.nSampled + 1) {
-					playGroupSequentiallyAt(me, group, nGroup);
-					return;
-				}
-				// interact with full group (random graphs, all neighbors)
-				// $FALL-THROUGH$
-			case RANDOM:
-				// interact with sampled neighbors
-				playGroupOnceAt(me, group);
+		if (group.isSampling(IBSGroup.SAMPLING_ALL)) {
+			// interact with all neighbors - interact repeatedly if nGroup<nSampled+1
+			int nGroup = module.getNGroup();
+			if (nGroup < group.nSampled + 1) {
+				playGroupSequentiallyAt(me, group, nGroup);
 				return;
-
-			default:
-				throw new UnsupportedOperationException("Unknown interaction type (" + interGroup.getSampling() + ")");
+			}
+			// interact with full group (random graphs, all neighbors)
 		}
+		// interact with sampled neighbors
+		playGroupOnceAt(me, group);
 	}
 
 	/**
@@ -964,12 +957,12 @@ public class IBSMCPopulation extends IBSPopulation<Continuous, IBSMCPopulation> 
 		traitRangeMax = module.getTraitMax();
 
 		// check interaction geometry
-		if (interaction.isType(GeometryType.WELLMIXED) && interGroup.isSampling(IBSGroup.SamplingType.ALL)) {
+		if (interaction.isType(GeometryType.WELLMIXED) && interGroup.isSampling(IBSGroup.SAMPLING_ALL)) {
 			// interacting with everyone in mean-field simulations is not feasible - except
 			// for discrete traits
 			logger.warning(
-					"interaction type (" + interGroup.getSampling() + ") unfeasible in well-mixed populations!");
-			interGroup.setSampling(IBSGroup.SamplingType.RANDOM);
+					"interaction type 'all' unfeasible in well-mixed populations - using single interaction!");
+			interGroup.setNSamples(1);
 			// change of sampling may affect whether scores can be adjusted
 			adjustScores = doAdjustScores();
 		}

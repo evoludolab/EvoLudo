@@ -1151,7 +1151,7 @@ public abstract class IBS extends Model {
 	 * Command line option to set whether players interact with all their neighbours
 	 * or a random subsample.
 	 */
-	public final CLOption cloInteractions = new CLOption("interactions", IBSGroup.SamplingType.ALL.getKey(),
+	public final CLOption cloInteractions = new CLOption("interactions", "all",
 			CLOCategory.Model,
 			"--interactions <all|k>  interact with all or k random neighbours",
 			new CLODelegate() {
@@ -1229,8 +1229,8 @@ public abstract class IBS extends Model {
 	 */
 	private static boolean parseGroupSampling(String arg, IBSGroup group) {
 		String trimmed = arg.trim();
-		if (trimmed.equalsIgnoreCase(IBSGroup.SamplingType.ALL.getKey())) {
-			group.setSampling(IBSGroup.SamplingType.ALL);
+		if (trimmed.equalsIgnoreCase("all")) {
+			group.setNSamples(IBSGroup.SAMPLING_ALL);
 			return true;
 		}
 		int k;
@@ -1241,7 +1241,6 @@ public abstract class IBS extends Model {
 		}
 		if (k < 1)
 			return false;
-		group.setSampling(IBSGroup.SamplingType.RANDOM);
 		group.setNSamples(k);
 		return true;
 	}

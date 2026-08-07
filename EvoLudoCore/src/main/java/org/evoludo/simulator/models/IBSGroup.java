@@ -31,10 +31,8 @@
 package org.evoludo.simulator.models;
 
 import org.evoludo.math.RNGDistribution;
-import org.evoludo.simulator.EvoLudo;
 import org.evoludo.simulator.geometries.AbstractGeometry;
 import org.evoludo.simulator.geometries.HierarchicalGeometry;
-import org.evoludo.util.CLOption;
 
 /**
  * Interaction and reference groups in IBS models.
@@ -102,33 +100,23 @@ public class IBSGroup {
 	}
 
 	/**
-	 * The current sampling type for the formation of interaction or reference
-	 * groups.
+	 * Sentinel value for {@code nSamples} to sample all neighbours.
 	 */
-	SamplingType samplingType = SamplingType.ALL;
+	public static final int SAMPLING_ALL = 0;
 
 	/**
-	 * Sets the type of sampling of interaction/reference groups to {@code type}.
-	 * 
-	 * @param type the type of sampling
+	 * Sentinel value for {@code nSamples} to skip sampling altogether. Used to
+	 * speed up e.g. best-response updates in well-mixed populations. Not user
+	 * selectable.
 	 */
-	public void setSampling(SamplingType type) {
-		samplingType = type;
-	}
+	public static final int SAMPLING_NONE = -1;
 
 	/**
-	 * Gets the type of sampling of interaction/reference groups.
-	 * 
-	 * @return the type of sampling
+	 * The sample size requested: {@code SAMPLING_ALL} samples all neighbours,
+	 * {@code SAMPLING_NONE} skips sampling, and {@code k>0} samples {@code k}
+	 * random neighbours.
 	 */
-	public SamplingType getSampling() {
-		return samplingType;
-	}
-
-	/**
-	 * The sample size requested. Default is a single sample for RANDOM sampling.
-	 */
-	int nSamples = 1;
+	int nSamples = SAMPLING_ALL;
 
 	/**
 	 * The effective sample size. {@code nSampled &lt; nSamples} may hold depending
@@ -137,36 +125,39 @@ public class IBSGroup {
 	int nSampled = 1;
 
 	/**
-	 * Get the number of interactions with random neighbours.
-	 * 
-	 * @return the number of interactions
+	 * Get the number of samples: {@code SAMPLING_ALL} for all neighbours,
+	 * {@code SAMPLING_NONE} for no sampling, or the number of random neighbours.
+	 *
+	 * @return the number of samples
 	 */
 	public int getNSamples() {
 		return nSamples;
 	}
 
 	/**
-	 * Set the number of interactions with random neighbours.
-	 * 
-	 * @param nSamples the number of interactions
+	 * Set the number of samples: {@code SAMPLING_ALL} for all neighbours,
+	 * {@code SAMPLING_NONE} for no sampling, or the number of random neighbours.
+	 * Other (negative) values are ignored.
+	 *
+	 * @param nSamples the number of samples
 	 */
 	public void setNSamples(int nSamples) {
-		if (nSamples <= 0)
+		if (nSamples < SAMPLING_NONE)
 			return;
 		this.nSamples = nSamples;
-		if (mem == null || mem.length < nSamples)
+		if (nSamples > 0 && (mem == null || mem.length < nSamples))
 			mem = new int[nSamples];
 	}
 
 	/**
-	 * Checks whether the type of sampling of interaction/reference groups is
-	 * {@code type}.
-	 * 
-	 * @param type the sampling type to check
-	 * @return {@code true} if the type of sampling is {@code type}
+	 * Checks whether the sample size is {@code nSamples}, including the sentinels
+	 * {@code SAMPLING_ALL} and {@code SAMPLING_NONE}.
+	 *
+	 * @param nSamples the number of samples to check
+	 * @return {@code true} if the sample size is {@code nSamples}
 	 */
-	public boolean isSampling(SamplingType type) {
-		return (type == samplingType);
+	public boolean isSampling(int nSamples) {
+		return (this.nSamples == nSamples);
 	}
 
 	/**
@@ -271,14 +262,14 @@ public class IBSGroup {
 	 */
 	public int[] pickAt(int me, boolean downstream) {
 		focal = me;
-		switch (samplingType) {
-			case NONE: // speeds things up e.g. for best-response in well-mixed populations
+		switch (nSamples) {
+			case SAMPLING_NONE: // speeds things up e.g. for best-response in well-mixed populations
 				// XXX if nSampled == 0 updatePlayerAt aborts if no references found...
 				// pretend...
 				nSampled = 1;
 				return empty;
 
-			case ALL:
+			case SAMPLING_ALL:
 				if (downstream) {
 					group = geometry.out[focal];
 					nSampled = geometry.kout[focal];
@@ -288,7 +279,8 @@ public class IBSGroup {
 				nSampled = geometry.kin[focal];
 				return group;
 
-			case RANDOM:
+			default:
+				// sample nSamples random neighbours
 				switch (geometry.getType()) {
 					case WELLMIXED:
 						return pickRandom(geometry.getSize());
@@ -299,8 +291,6 @@ public class IBSGroup {
 					default:
 						return pickRandomStructured(downstream);
 				}
-			default:
-				throw new UnsupportedOperationException("Unknown group sampling (type: " + samplingType + ")!");
 		}
 	}
 
@@ -629,78 +619,6 @@ public class IBSGroup {
 			if (duplicate)
 				continue;
 			group[n++] = aPick;
-		}
-	}
-
-	/**
-	 * Types of sampling of groups for interactions or references:
-	 * <dl>
-	 * <dt>none</dt>
-	 * <dd>no interactions</dd>
-	 * <dt>all</dt>
-	 * <dd>interact with all neighbours</dd>
-	 * <dt>random</dt>
-	 * <dd>interact with n random neighbours</dd>
-	 * </dl>
-	 * 
-	 * @see org.evoludo.simulator.models.IBS#cloInteractions
-	 * @see org.evoludo.simulator.models.IBS#cloReferences
-	 */
-	public enum SamplingType implements CLOption.Key {
-		/**
-		 * No sampling. Not user selectable.
-		 */
-		NONE("-none", "no samples"),
-
-		/**
-		 * Sample all neighbours.
-		 */
-		ALL("all", "all neighbours"),
-
-		/**
-		 * Sample some random neighbours.
-		 */
-		RANDOM("random", "sample n random neighbours");
-
-		/**
-		 * Key of interaction type. Used for parsing command line options.
-		 * 
-		 * @see org.evoludo.simulator.models.IBS#cloInteractions
-		 *      IBS.cloInteractions
-		 */
-		String key;
-
-		/**
-		 * Brief description of interaction type for GUI and help display.
-		 * 
-		 * @see EvoLudo#getCLOHelp()
-		 */
-		String title;
-
-		/**
-		 * Instantiate new type of interactions.
-		 * 
-		 * @param key   identifier for parsing of command line option
-		 * @param title the summary of interactions for GUI and help display
-		 */
-		SamplingType(String key, String title) {
-			this.key = key;
-			this.title = title;
-		}
-
-		@Override
-		public String getKey() {
-			return key;
-		}
-
-		@Override
-		public String getTitle() {
-			return title;
-		}
-
-		@Override
-		public String toString() {
-			return key + ": " + title;
 		}
 	}
 

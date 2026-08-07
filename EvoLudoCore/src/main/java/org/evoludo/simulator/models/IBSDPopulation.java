@@ -1391,24 +1391,17 @@ public class IBSDPopulation extends IBSPopulation<Discrete, IBSDPopulation> {
 			return;
 		}
 
-		switch (group.samplingType) {
-			case ALL:
-				// interact with all neighbors
-				int nGroup = module.getNGroup();
-				if (nGroup < group.nSampled + 1) {
-					playGroupSequentiallyAt(me, myType, group, nGroup);
-					return;
-				}
-				// interact with full group (random graphs or all neighbors)
-				// $FALL-THROUGH$
-			case RANDOM:
-				// interact with sampled neighbors
-				playGroupOnceAt(me, myType, group);
+		if (group.isSampling(IBSGroup.SAMPLING_ALL)) {
+			// interact with all neighbors - interact repeatedly if nGroup<nSampled+1
+			int nGroup = module.getNGroup();
+			if (nGroup < group.nSampled + 1) {
+				playGroupSequentiallyAt(me, myType, group, nGroup);
 				return;
-
-			default:
-				throw new UnsupportedOperationException("Unknown interaction type (" + interGroup.getSampling() + ")");
+			}
+			// interact with full group (random graphs or all neighbors)
 		}
+		// interact with sampled neighbors
+		playGroupOnceAt(me, myType, group);
 	}
 
 	/**
@@ -2151,7 +2144,7 @@ public class IBSDPopulation extends IBSPopulation<Discrete, IBSDPopulation> {
 			default:
 				// if resetting scores after every update, scores can be adjusted
 				// when interacting all neighbours
-				return interGroup.isSampling(IBSGroup.SamplingType.ALL);
+				return interGroup.isSampling(IBSGroup.SAMPLING_ALL);
 		}
 	}
 
