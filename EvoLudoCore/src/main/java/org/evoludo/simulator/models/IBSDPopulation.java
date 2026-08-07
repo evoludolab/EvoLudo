@@ -36,6 +36,7 @@ import java.util.logging.Level;
 
 import org.evoludo.math.ArrayMath;
 import org.evoludo.math.Combinatorics;
+import org.evoludo.math.RNGDistribution;
 import org.evoludo.simulator.ColorMap;
 import org.evoludo.simulator.EvoLudo;
 import org.evoludo.simulator.geometries.AbstractGeometry;
@@ -1763,11 +1764,56 @@ public class IBSDPopulation extends IBSPopulation<Discrete, IBSDPopulation> {
 
 	/**
 	 * Gets the count of each trait.
-	 * 
+	 *
 	 * @return the array with the numbers of each trait
 	 */
 	public int[] getTraitsCount() {
 		return traitsCount;
+	}
+
+	/**
+	 * Count the individuals with trait {@code type} among the contacts of the
+	 * focal individual {@code me}. Contacts are upstream (in-)neighbours, i.e.
+	 * those that can transmit their trait to {@code me}. The number of contacts
+	 * is set through {@link IBS#cloContacts} and stored in the reference group
+	 * {@link #compGroup}, which is otherwise unused in contact processes.
+	 *
+	 * <h3>Notes:</h3>
+	 * <ol>
+	 * <li>In well-mixed populations no sampling is needed: for all contacts the
+	 * count derives directly from the trait counts (mass action) and for
+	 * {@code k} contacts the count is a hypergeometric random number based on
+	 * the trait counts.
+	 * <li>In structured populations the contacts are sampled through
+	 * {@link IBSGroup#pickAt(int, boolean)} just as for references, i.e. all
+	 * upstream neighbours or {@code k} random upstream neighbours (without
+	 * replacement).
+	 * </ol>
+	 *
+	 * @param me   the index of the focal individual
+	 * @param type the trait to count among the contacts
+	 * @return the number of contacts with trait {@code type}
+	 */
+	public int countContactsAt(int me, int type) {
+		if (competition.isType(GeometryType.WELLMIXED)) {
+			int nOthers = nPopulation - 1;
+			int nType = traitsCount[type];
+			if (getTraitAt(me) == type)
+				nType--;
+			int nContacts = compGroup.getNSamples();
+			if (nContacts == IBSGroup.SAMPLING_ALL || nContacts >= nOthers)
+				// mass action: in contact with everyone
+				return nType;
+			return RNGDistribution.Hypergeometric.next(rng.getRNG(), nOthers, nType, nContacts);
+		}
+		// structured populations: sample contacts among upstream neighbours
+		int[] contacts = compGroup.pickAt(me, false);
+		int nContacts = compGroup.getNSampled();
+		int nType = 0;
+		for (int i = 0; i < nContacts; i++)
+			if (getTraitAt(contacts[i]) == type)
+				nType++;
+		return nType;
 	}
 
 	@Override

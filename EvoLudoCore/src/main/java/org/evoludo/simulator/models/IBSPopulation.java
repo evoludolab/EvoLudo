@@ -3467,6 +3467,7 @@ public abstract class IBSPopulation<M extends Module<?>, P extends IBSPopulation
 			typeFitness = null;
 			typeScores = null;
 			maxFitness = 0.0;
+			checkContacts();
 		}
 
 		if (useTags) {
@@ -3481,9 +3482,39 @@ public abstract class IBSPopulation<M extends Module<?>, P extends IBSPopulation
 	}
 
 	/**
+	 * Check the number of contacts in contact processes. In well-mixed populations
+	 * a susceptible individual receives \(k\,p\,x\) transmissions per update, where
+	 * \(k\) denotes the number of contacts, \(p\) the probability of transmission
+	 * and \(x\) the frequency of the transmitting trait. Only for \(k\,p\,x\ll1\)
+	 * do those act independently and the dynamics reduces to mass action, i.e. to
+	 * the mean-field dynamics of the corresponding differential equations. For more
+	 * contacts the exposures overlap, at most one of them can take effect per
+	 * update, and the effective rate of transmission saturates. A single contact,
+	 * \(k=1\), recovers mass action exactly and is the default.
+	 * <p>
+	 * In structured populations \(k\) is bounded by the neighbourhood size and does
+	 * not scale with the population size. No mean-field limit is expected there in
+	 * the first place, hence no warning.
+	 *
+	 * @see IBS#cloContacts
+	 * @see IBSDPopulation#countContactsAt(int, int)
+	 */
+	void checkContacts() {
+		if (!competition.isType(GeometryType.WELLMIXED))
+			return;
+		int nContacts = compGroup.getNSamples();
+		int nOthers = nPopulation - 1;
+		int k = (nContacts == IBSGroup.SAMPLING_ALL || nContacts >= nOthers) ? nOthers : nContacts;
+		if (k > 1 && logger.isLoggable(Level.WARNING))
+			logger.warning(
+					"effective rates scale with the number of contacts (" + k
+							+ ") and may saturate; use --contacts 1 for mean-field dynamics.");
+	}
+
+	/**
 	 * Check the interaction and competition geometries for consistency and adjust
 	 * if necessary (and feasible).
-	 * 
+	 *
 	 * @return {@code true} if reset is required
 	 */
 	boolean checkGeometry() {

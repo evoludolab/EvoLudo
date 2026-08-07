@@ -430,15 +430,14 @@ public class SIR extends Discrete implements HasIBS, HasDE.RK5, HasDE.SDE, HasDE
 		}
 
 		@Override
-		public boolean updatePlayerAt(int me, int[] refGroup, int rGroupSize) {
+		public boolean updatePlayerAt(int me) {
+			debugFocal = me;
+			debugNModels = 0;
+			debugModel = -1;
 			int type = getTraitAt(me);
 			switch (type) {
 				case S: // S -> I transition
-					int nI = 0;
-					for (int n = 0; n < rGroupSize; n++) {
-						if ((getTraitAt(refGroup[n])) == I)
-							nI++;
-					}
+					int nI = countContactsAt(me, I);
 					double psi1 = pSI[1];
 					double psi = pSI[0];
 					if (psi1 > 0.0)

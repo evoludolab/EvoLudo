@@ -1219,12 +1219,51 @@ public abstract class IBS extends Model {
 			});
 
 	/**
-	 * Parse the sampling specification {@code arg} for the interaction or
-	 * reference group {@code group}: {@code all} selects all neighbours, a
+	 * Command line option to set the number of contacts in contact processes,
+	 * e.g. for the transmission of a disease. Contacts are upstream
+	 * (in-)neighbours, i.e. those that can transmit their trait to the focal
+	 * individual. The setting is stored in the reference group, which is
+	 * otherwise unused in contact processes.
+	 *
+	 * @see IBSDPopulation#countContactsAt(int, int)
+	 */
+	public final CLOption cloContacts = new CLOption("contacts", "1", CLOCategory.Model,
+			"--contacts <k|all>  contact k random or all (upstream) neighbours",
+			new CLODelegate() {
+
+				/**
+				 * {@inheritDoc}
+				 * <p>
+				 * Parse the number of contacts in a single or multiple populations/species.
+				 * <code>arg</code> can be a single value or an array of values. The parser
+				 * cycles through <code>arg</code> until all populations/species have the
+				 * number of contacts set.
+				 *
+				 * @param arg the (array of) number of contacts
+				 */
+				@Override
+				public boolean parse(String arg) {
+					String[] contacttypes = arg.contains(CLOParser.SPECIES_DELIMITER)
+							? arg.split(CLOParser.SPECIES_DELIMITER)
+							: arg.split(CLOParser.VECTOR_DELIMITER);
+					int n = 0;
+					for (Module<?> mod : species) {
+						IBSPopulation<?, ?> pop = mod.getIBSPopulation();
+						String contacttype = contacttypes[n++ % contacttypes.length];
+						if (!parseGroupSampling(contacttype, pop.getCompGroup()))
+							return false;
+					}
+					return true;
+				}
+			});
+
+	/**
+	 * Parse the sampling specification {@code arg} for the interaction, reference
+	 * or contact group {@code group}: {@code all} selects all neighbours, a
 	 * positive integer {@code k} selects {@code k} random neighbours.
 	 *
 	 * @param arg   the sampling specification
-	 * @param group the interaction or reference group to configure
+	 * @param group the group to configure
 	 * @return {@code true} if parsing was successful
 	 */
 	private static boolean parseGroupSampling(String arg, IBSGroup group) {
@@ -1611,7 +1650,12 @@ public abstract class IBS extends Model {
 		}
 		if (anyNonVacant) {
 			// additional options that only make sense without vacant sites
-			parser.addCLO(cloReferences);
+			if (anyPayoffs)
+				parser.addCLO(cloReferences);
+			else
+				// contact processes spread traits through upstream contacts rather
+				// than by imitating references
+				parser.addCLO(cloContacts);
 		}
 		cloMigration.clearKeys();
 		if (anyVacant) {
