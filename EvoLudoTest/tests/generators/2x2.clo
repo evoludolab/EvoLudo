@@ -48,13 +48,13 @@
 
 # IBS
 # base scenario
---module 2x2 --model IBS --timestep 1 --geometry M --references random 1 --popsize 500 --popupdate async --playerupdate thermal 0.1 --init mutant 1,0 --paymatrix 1,0;1.25,0.25
+--module 2x2 --model IBS --timestep 1 --geometry M --references 1 --popsize 500 --popupdate async --playerupdate thermal 0.1 --init mutant 1,0 --paymatrix 1,0;1.25,0.25
 # population/player updates
---module 2x2 --model IBS --timestep 1 --geometry M --references random 1 --popsize 500 --popupdate async --playerupdate imitate 0.1 --init mutant 1,0 --paymatrix 1,0;1.25,0.25
---module 2x2 --model IBS --timestep 1 --geometry M --references random 1 --popsize 500 --popupdate async --playerupdate best --init mutant 1,0 --paymatrix 1,0;1.25,0.25
---module 2x2 --model IBS --timestep 1 --geometry M --references random 1 --popsize 500 --popupdate async --playerupdate best-response --init mutant 1,0 --paymatrix 1,0;1.25,0.25
---module 2x2 --model IBS --timestep 1 --geometry M --references random 1 --popsize 500 --popupdate B --init mutant 1,0 --paymatrix 1,0;1.25,0.25
---module 2x2 --model IBS --timestep 1 --geometry M --references random 1 --popsize 500 --popupdate d --init mutant 1,0 --paymatrix 1,0;1.25,0.25
+--module 2x2 --model IBS --timestep 1 --geometry M --references 1 --popsize 500 --popupdate async --playerupdate imitate 0.1 --init mutant 1,0 --paymatrix 1,0;1.25,0.25
+--module 2x2 --model IBS --timestep 1 --geometry M --references 1 --popsize 500 --popupdate async --playerupdate best --init mutant 1,0 --paymatrix 1,0;1.25,0.25
+--module 2x2 --model IBS --timestep 1 --geometry M --references 1 --popsize 500 --popupdate async --playerupdate best-response --init mutant 1,0 --paymatrix 1,0;1.25,0.25
+--module 2x2 --model IBS --timestep 1 --geometry M --references 1 --popsize 500 --popupdate B --init mutant 1,0 --paymatrix 1,0;1.25,0.25
+--module 2x2 --model IBS --timestep 1 --geometry M --references 1 --popsize 500 --popupdate d --init mutant 1,0 --paymatrix 1,0;1.25,0.25
 # population/player updates - structured
 --module 2x2 --model IBS --timestep 1 --geometry r4 --popsize 500 --popupdate async --playerupdate thermal 0.1 --init mutant 1,0 --paymatrix 1,0;1.25,0.25
 --module 2x2 --model IBS --timestep 1 --geometry r4 --popsize 500 --popupdate async --playerupdate imitate 0.1 --init mutant 1,0 --paymatrix 1,0;1.25,0.25
@@ -67,8 +67,8 @@
 # skip the selection among references, see IBSPopulation.updateThermal
 --module 2x2 --model IBS --timestep 1 --geometry n --references all --popsize 50x --popupdate async --playerupdate thermal 0.1 --init mutant 1,0 --paymatrix 1,0;1.25,0.25 --timestop 1000
 --module 2x2 --model IBS --timestep 1 --geometry n --references all --popsize 50x --popupdate async --playerupdate imitate 0.1 --init mutant 1,0 --paymatrix 1,0;1.25,0.25 --timestop 1000
---module 2x2 --model IBS --timestep 1 --geometry r4 --references random 4 --popsize 500 --popupdate async --playerupdate thermal 0.1 --init mutant 1,0 --paymatrix 1,0;1.25,0.25 --timestop 1000
---module 2x2 --model IBS --timestep 1 --geometry r4 --references random 4 --popsize 500 --popupdate async --playerupdate imitate 0.1 --init mutant 1,0 --paymatrix 1,0;1.25,0.25 --timestop 1000
+--module 2x2 --model IBS --timestep 1 --geometry r4 --references 4 --popsize 500 --popupdate async --playerupdate thermal 0.1 --init mutant 1,0 --paymatrix 1,0;1.25,0.25 --timestop 1000
+--module 2x2 --model IBS --timestep 1 --geometry r4 --references 4 --popsize 500 --popupdate async --playerupdate imitate 0.1 --init mutant 1,0 --paymatrix 1,0;1.25,0.25 --timestop 1000
 # strong selection keeps the cumulative probabilities below one
 --module 2x2 --model IBS --timestep 1 --geometry n --references all --popsize 50x --popupdate async --playerupdate thermal 0.1 --init frequency 2,8 --paymatrix 1,-0.2;1.2,0 --fitnessmap static 100.0 --timestop 1000
 
@@ -79,10 +79,10 @@
 --module 2x2 --model IBS --timestep 1 --geometry S5,5 --popsize 196 --popupdate B --init mutant 1,0 --paymatrix 1,0;1.25,0.25
 --module 2x2 --model IBS --timestep 1 --geometry f4 --popsize 500 --popupdate B --init mutant 1,0 --paymatrix 1,0;1.25,0.25
 # mutation
---module 2x2 --model IBS --timestep 1 --geometry M --references random 1 --popsize 500 --playerupdate thermal 0.1 --init mutant 1,0 --mutation 0.05 other --paymatrix 1,0;1.25,0.25 --timestop 1000
+--module 2x2 --model IBS --timestep 1 --geometry M --references 1 --popsize 500 --playerupdate thermal 0.1 --init mutant 1,0 --mutation 0.05 other --paymatrix 1,0;1.25,0.25 --timestop 1000
 # fitness map and selection
---module 2x2 --model IBS --timestep 1 --geometry M --references random 1 --popsize 500 --popupdate async --playerupdate thermal 0.1 --init mutant 1,0 --mutation 0.05 other --paymatrix 1,0;1.25,0.25 --fitnessmap exp 1.0,0.1 --timestop 1000
---module 2x2 --model IBS --timestep 1 --geometry M --references random 1 --popsize 500 --popupdate async --playerupdate thermal 0.1 --init mutant 1,0 --mutation 0.05 other --paymatrix 1,0;1.25,0.25 --fitnessmap exp 1.0,10.0 --timestop 1000
+--module 2x2 --model IBS --timestep 1 --geometry M --references 1 --popsize 500 --popupdate async --playerupdate thermal 0.1 --init mutant 1,0 --mutation 0.05 other --paymatrix 1,0;1.25,0.25 --fitnessmap exp 1.0,0.1 --timestop 1000
+--module 2x2 --model IBS --timestep 1 --geometry M --references 1 --popsize 500 --popupdate async --playerupdate thermal 0.1 --init mutant 1,0 --mutation 0.05 other --paymatrix 1,0;1.25,0.25 --fitnessmap exp 1.0,10.0 --timestop 1000
 --module 2x2 --model IBS --timestep 1 --geometry r4 --popsize 500 --popupdate B --init mutant 1,0 --mutation 0.05 other --paymatrix 1,0;1.25,0.25 --fitnessmap exp 1.0,0.1 --timestop 1000
 --module 2x2 --model IBS --timestep 1 --geometry r4 --popsize 500 --popupdate B --init mutant 1,0 --mutation 0.05 other --paymatrix 1,0;1.25,0.25 --fitnessmap exp 1.0,10.0 --timestop 1000
 --module 2x2 --model IBS --timestep 1 --geometry r4 --popsize 500 --popupdate d --init mutant 1,0 --mutation 0.05 other --paymatrix 1,0;1.25,0.25 --fitnessmap exp 1.0,0.1 --timestop 1000

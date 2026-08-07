@@ -1153,7 +1153,7 @@ public abstract class IBS extends Model {
 	 */
 	public final CLOption cloInteractions = new CLOption("interactions", IBSGroup.SamplingType.ALL.getKey(),
 			CLOCategory.Model,
-			"--interactions <t [n]> select interaction type t:",
+			"--interactions <all|k>  interact with all or k random neighbours",
 			new CLODelegate() {
 
 				/**
@@ -1163,7 +1163,7 @@ public abstract class IBS extends Model {
 				 * populations/species. <code>arg</code> can be a single value or an array of
 				 * values. The parser cycles through <code>arg</code> until all
 				 * populations/species have the player interactions set.
-				 * 
+				 *
 				 * @param arg the (array of) interaction(s)
 				 */
 				@Override
@@ -1175,17 +1175,8 @@ public abstract class IBS extends Model {
 					for (Module<?> mod : species) {
 						IBSPopulation<?, ?> pop = mod.getIBSPopulation();
 						String intertype = interactiontypes[n++ % interactiontypes.length];
-						IBSGroup.SamplingType intt = (IBSGroup.SamplingType) cloInteractions.match(intertype);
-						IBSGroup group = pop.getInterGroup();
-						if (intt == null)
+						if (!parseGroupSampling(intertype, pop.getInterGroup()))
 							return false;
-						group.setSampling(intt);
-						// parse n, if present
-						String[] args = intertype.split(CLOParser.SPLIT_ARG_REGEX);
-						int nInter = 1;
-						if (args.length > 1)
-							nInter = CLOParser.parseInteger(args[1]);
-						group.setNSamples(nInter);
 					}
 					return true;
 				}
@@ -1195,9 +1186,9 @@ public abstract class IBS extends Model {
 	 * Command line option to set the method for choosing references/models among
 	 * the neighbours of a player for updating their trait.
 	 */
-	public final CLOption cloReferences = new CLOption("references", IBSGroup.SamplingType.RANDOM.getKey() + " 1",
+	public final CLOption cloReferences = new CLOption("references", "1",
 			CLOCategory.Model,
-			"--references <t [n]> select reference type t:",
+			"--references <all|k>  reference all or k random neighbours",
 			new CLODelegate() {
 
 				/**
@@ -1208,7 +1199,7 @@ public abstract class IBS extends Model {
 				 * <code>arg</code> can be a single value or an array of values. The parser
 				 * cycles through <code>arg</code> until all populations/species have the
 				 * player's references set.
-				 * 
+				 *
 				 * @param arg the (array of) reference type(s)
 				 */
 				@Override
@@ -1220,21 +1211,40 @@ public abstract class IBS extends Model {
 					for (Module<?> mod : species) {
 						IBSPopulation<?, ?> pop = mod.getIBSPopulation();
 						String reftype = referencetypes[n++ % referencetypes.length];
-						IBSGroup.SamplingType reft = (IBSGroup.SamplingType) cloReferences.match(reftype);
-						IBSGroup group = pop.getCompGroup();
-						if (reft == null)
+						if (!parseGroupSampling(reftype, pop.getCompGroup()))
 							return false;
-						group.setSampling(reft);
-						// parse n, if present
-						String[] args = reftype.split(CLOParser.SPLIT_ARG_REGEX);
-						int nInter = 1;
-						if (args.length > 1)
-							nInter = CLOParser.parseInteger(args[1]);
-						group.setNSamples(nInter);
 					}
 					return true;
 				}
 			});
+
+	/**
+	 * Parse the sampling specification {@code arg} for the interaction or
+	 * reference group {@code group}: {@code all} selects all neighbours, a
+	 * positive integer {@code k} selects {@code k} random neighbours.
+	 *
+	 * @param arg   the sampling specification
+	 * @param group the interaction or reference group to configure
+	 * @return {@code true} if parsing was successful
+	 */
+	private static boolean parseGroupSampling(String arg, IBSGroup group) {
+		String trimmed = arg.trim();
+		if (trimmed.equalsIgnoreCase(IBSGroup.SamplingType.ALL.getKey())) {
+			group.setSampling(IBSGroup.SamplingType.ALL);
+			return true;
+		}
+		int k;
+		try {
+			k = CLOParser.parseInteger(trimmed);
+		} catch (NumberFormatException nfe) {
+			return false;
+		}
+		if (k < 1)
+			return false;
+		group.setSampling(IBSGroup.SamplingType.RANDOM);
+		group.setNSamples(k);
+		return true;
+	}
 
 	/**
 	 * Command line option to set the migration types and probabilities of players.
@@ -1603,8 +1613,6 @@ public abstract class IBS extends Model {
 		if (anyNonVacant) {
 			// additional options that only make sense without vacant sites
 			parser.addCLO(cloReferences);
-			cloReferences.clearKeys();
-			cloReferences.addKeys(IBSGroup.SamplingType.values());
 		}
 		cloMigration.clearKeys();
 		if (anyVacant) {
@@ -1636,8 +1644,6 @@ public abstract class IBS extends Model {
 			cloScoringType.clearKeys();
 			cloScoringType.addKeys(ScoringType.values());
 			parser.addCLO(cloInteractions);
-			cloInteractions.clearKeys();
-			cloInteractions.addKeys(IBSGroup.SamplingType.values());
 			parser.addCLO(cloGeometryInteraction);
 			parser.addCLO(cloGeometryCompetition);
 		}
