@@ -336,12 +336,50 @@ public abstract class RNGDistribution {
 
 	/**
 	 * Copy settings of <code>this</code> to <code>clone</code>.
-	 * 
+	 *
 	 * @param clone cloned <code>RNGDistribution</code>
 	 */
 	protected void clone(RNGDistribution clone) {
 		clone.seedSet = this.seedSet;
 		clone.testSamples = this.testSamples;
+	}
+
+	/**
+	 * Draw a random number from the discrete distribution with the cumulative
+	 * distribution function <code>cdf</code>: returns the smallest index
+	 * <code>k</code> with <code>cdf[k] &gt; u</code> for a uniform random number
+	 * <code>u</code> from <code>[0, 1)</code>. This convention skips leading
+	 * zeros in <code>cdf</code>, i.e. indices outside the support are never
+	 * returned. The binary search places its first probe at <code>start</code>,
+	 * typically the mean of the distribution.
+	 *
+	 * <h3>Requirements:</h3>
+	 * <ol>
+	 * <li><code>cdf</code> must be non-decreasing with
+	 * <code>cdf[cdf.length - 1] = 1</code>.
+	 * </ol>
+	 *
+	 * @param cdf   the cumulative distribution function
+	 * @param start the index of the first probe of the binary search
+	 * @return the index of the random number drawn
+	 */
+	protected int nextCDF(double[] cdf, int start) {
+		double uRand = random01();
+		if (cdf[0] > uRand)
+			return 0;
+		// binary search for the smallest index with cdf[x] > uRand;
+		// invariant: cdf[xmin] <= uRand < cdf[xmax]
+		int xmin = 0;
+		int xmax = cdf.length - 1;
+		int x = Math.min(Math.max(start, 1), xmax - 1);
+		while (xmax - xmin > 1) {
+			if (cdf[x] > uRand)
+				xmax = x;
+			else
+				xmin = x;
+			x = (xmin + xmax) >>> 1;
+		}
+		return xmax;
 	}
 
 	/**
@@ -1124,27 +1162,23 @@ public abstract class RNGDistribution {
 		 * @return the number of trials until first success
 		 */
 		public int next() {
-			double uRand = random01();
-
 			if (cdf == null)
 				// use exponential distribution
-				return Math.max((int) Math.ceil(-Math.log1p(-uRand) * mean), 1);
+				return nextApprox(rng, mean);
+			return nextCDF(cdf, (int) mean);
+		}
 
-			// binary search - start at expected value
-			int xmin = 0;
-			int xmax = cdf.length - 1;
-			int x = (int) mean;
-
-			while (xmax - xmin > 1) {
-				if (uRand > cdf[x]) {
-					xmin = x;
-					x += (xmax - x) / 2;
-				} else {
-					xmax = x;
-					x -= (x - xmin) / 2;
-				}
-			}
-			return xmax;
+		/**
+		 * Approximate a geometrically distributed random number with mean
+		 * <code>mean</code> by an exponentially distributed random number for small
+		 * success probabilities.
+		 *
+		 * @param rng  random number generator
+		 * @param mean the mean of the geometric distribution
+		 * @return the number of trials until first success
+		 */
+		private static int nextApprox(MersenneTwister rng, double mean) {
+			return Math.max((int) Math.ceil(-Math.log1p(-rng.nextDouble()) * mean), 1);
 		}
 
 		@Override
@@ -1173,7 +1207,7 @@ public abstract class RNGDistribution {
 				throw new IllegalArgumentException("success probability must be in (0, 1).");
 			if (p < 1e-4) {
 				// p too small, use exponential distribution as an approximation
-				return Math.max((int) Math.ceil(-Math.log1p(-rng.nextDouble()) * Math.floor(1.0 / p + 0.5)), 1);
+				return nextApprox(rng, Math.floor(1.0 / p + 0.5));
 			}
 			double rnd = rng.nextDouble();
 			int n = 1;
@@ -1388,27 +1422,11 @@ public abstract class RNGDistribution {
 		/**
 		 * Generate the number of successful trials drawn from the binomial
 		 * distribution.
-		 * 
+		 *
 		 * @return the number of successful trials
 		 */
 		public int next() {
-			double uRand = random01();
-
-			// binary search - start at expected value
-			int xmin = 0;
-			int xmax = cdf.length - 1;
-			int x = (int) mean;
-
-			while (xmax - xmin > 1) {
-				if (uRand > cdf[x]) {
-					xmin = x;
-					x += (xmax - x) / 2;
-				} else {
-					xmax = x;
-					x -= (x - xmin) / 2;
-				}
-			}
-			return xmax;
+			return nextCDF(cdf, (int) mean);
 		}
 
 		@Override
@@ -1529,6 +1547,300 @@ public abstract class RNGDistribution {
 				return;
 			}
 			logger.severe("Test of Binomial distribution failed...");
+		}
+	}
+
+	/**
+	 * Hypergeometric distributed random numbers: the number of successes when
+	 * drawing <code>nDraws</code> individuals <em>without replacement</em> from a
+	 * pool of <code>nPool</code> individuals of which <code>nSuccesses</code> are
+	 * successes. The support is
+	 * <code>{max(0, nDraws+nSuccesses-nPool),..., min(nDraws, nSuccesses)}</code>.
+	 *
+	 * @see <a href=
+	 *      "https://en.wikipedia.org/wiki/Hypergeometric_distribution">
+	 *      Wikipedia: Hypergeometric distribution</a>
+	 */
+	public static class Hypergeometric extends RNGDistribution {
+
+		/**
+		 * Cumulative distribution function of hypergeometric probability
+		 * distribution.
+		 */
+		private double[] cdf;
+
+		/**
+		 * Size of the pool to draw from.
+		 */
+		private int nPool;
+
+		/**
+		 * Number of successes in the pool.
+		 */
+		private int nSuccesses;
+
+		/**
+		 * Number of draws (without replacement).
+		 */
+		private int nDraws;
+
+		/**
+		 * Mean number of successes <code>nDraws nSuccesses / nPool</code>.
+		 */
+		private double mean;
+
+		/**
+		 * Creates a hypergeometric distribution for <code>nDraws</code> draws from a
+		 * pool of size <code>nPool</code> with <code>nSuccesses</code> successes and a
+		 * new instance of {@link MersenneTwister}.
+		 *
+		 * @param nPool      the size of the pool
+		 * @param nSuccesses the number of successes in the pool
+		 * @param nDraws     the number of draws
+		 */
+		public Hypergeometric(int nPool, int nSuccesses, int nDraws) {
+			this(null, nPool, nSuccesses, nDraws);
+		}
+
+		/**
+		 * Creates a hypergeometric distribution for <code>nDraws</code> draws from a
+		 * pool of size <code>nPool</code> with <code>nSuccesses</code> successes and
+		 * the random number generator <code>rng</code>.
+		 *
+		 * @param rng        random number generator
+		 * @param nPool      the size of the pool
+		 * @param nSuccesses the number of successes in the pool
+		 * @param nDraws     the number of draws
+		 */
+		public Hypergeometric(MersenneTwister rng, int nPool, int nSuccesses, int nDraws)
+				throws IllegalArgumentException {
+			super(rng);
+			initialize(this, nPool, nSuccesses, nDraws);
+		}
+
+		/**
+		 * Helper method to prevent {@code this-escape} warnings.
+		 *
+		 * @param rng        the hypergeometric distribution to initialize
+		 * @param nPool      the size of the pool
+		 * @param nSuccesses the number of successes in the pool
+		 * @param nDraws     the number of draws
+		 * @throws IllegalArgumentException if <code>nPool&lt;1</code>,
+		 *                                  <code>nSuccesses</code> or
+		 *                                  <code>nDraws</code> are negative or exceed
+		 *                                  <code>nPool</code>
+		 */
+		protected static void initialize(Hypergeometric rng, int nPool, int nSuccesses, int nDraws)
+				throws IllegalArgumentException {
+			if (nPool < 1)
+				throw new IllegalArgumentException("pool size must be >=1.");
+			if (nSuccesses < 0 || nSuccesses > nPool)
+				throw new IllegalArgumentException("number of successes must lie in [0, pool size].");
+			if (nDraws < 0 || nDraws > nPool)
+				throw new IllegalArgumentException("number of draws must lie in [0, pool size].");
+
+			rng.nPool = nPool;
+			rng.nSuccesses = nSuccesses;
+			rng.nDraws = nDraws;
+			rng.mean = (double) nDraws * nSuccesses / nPool;
+			int kmax = Math.min(nSuccesses, nDraws);
+			if (rng.cdf == null || rng.cdf.length != kmax + 1) {
+				rng.cdf = new double[kmax + 1];
+			}
+			int kmin = Math.max(0, nDraws + nSuccesses - nPool);
+			double pk = Combinatorics.H2(nSuccesses, kmin, nPool - nSuccesses, nDraws - kmin);
+			double cum = pk;
+			for (int k = 0; k < kmin; k++)
+				rng.cdf[k] = 0.0;
+			rng.cdf[kmin] = cum;
+			for (int k = kmin + 1; k <= kmax; k++) {
+				pk *= (double) (nSuccesses - k + 1) * (nDraws - k + 1)
+						/ ((double) k * (nPool - nSuccesses - nDraws + k));
+				cum += pk;
+				rng.cdf[k] = cum;
+			}
+			rng.cdf[kmax] = 1.0;
+		}
+
+		/**
+		 * Set the pool size <code>nPool</code>, the number of successes
+		 * <code>nSuccesses</code> and the number of draws <code>nDraws</code>. This
+		 * calculates the cumulative probabilities for the hypergeometric
+		 * distribution.
+		 *
+		 * @param nPool      the size of the pool
+		 * @param nSuccesses the number of successes in the pool
+		 * @param nDraws     the number of draws
+		 * @throws IllegalArgumentException if <code>nPool&lt;1</code>,
+		 *                                  <code>nSuccesses</code> or
+		 *                                  <code>nDraws</code> are negative or exceed
+		 *                                  <code>nPool</code>
+		 */
+		public void setPoolSuccessesDraws(int nPool, int nSuccesses, int nDraws) throws IllegalArgumentException {
+			initialize(this, nPool, nSuccesses, nDraws);
+		}
+
+		/**
+		 * Get the size of the pool for the hypergeometric distribution.
+		 *
+		 * @return the size of the pool
+		 */
+		public int getPool() {
+			return nPool;
+		}
+
+		/**
+		 * Get the number of successes in the pool for the hypergeometric
+		 * distribution.
+		 *
+		 * @return the number of successes in the pool
+		 */
+		public int getSuccesses() {
+			return nSuccesses;
+		}
+
+		/**
+		 * Get the number of draws for the hypergeometric distribution.
+		 *
+		 * @return the number of draws
+		 */
+		public int getDraws() {
+			return nDraws;
+		}
+
+		/**
+		 * Generate the number of successful draws from the hypergeometric
+		 * distribution.
+		 *
+		 * @return the number of successful draws
+		 */
+		public int next() {
+			return nextCDF(cdf, (int) mean);
+		}
+
+		@Override
+		public Hypergeometric clone() {
+			Hypergeometric clone = new Hypergeometric(rng.clone(), nPool, nSuccesses, nDraws);
+			clone(clone);
+			return clone;
+		}
+
+		/**
+		 * Draw the number of successes when drawing <code>nDraws</code> individuals
+		 * without replacement from a pool of <code>nPool</code> individuals of which
+		 * <code>nSuccesses</code> are successes, using the random number generator
+		 * <code>rng</code>.
+		 * <p>
+		 * <strong>Note:</strong> the number of successes is generated through
+		 * sequential draws. This is fine if only a few hypergeometrically distributed
+		 * random numbers are required, or if the parameters change between draws.
+		 * Otherwise use
+		 * {@link RNGDistribution.Hypergeometric#Hypergeometric(int, int, int)
+		 * Hypergeometric(int, int, int)} and {@link #next()}.
+		 *
+		 * @param rng        random number generator
+		 * @param nPool      the size of the pool
+		 * @param nSuccesses the number of successes in the pool
+		 * @param nDraws     the number of draws
+		 * @return the number of successful draws
+		 */
+		public static int next(MersenneTwister rng, int nPool, int nSuccesses, int nDraws) {
+			int hits = 0;
+			for (int n = 0; n < nDraws && nSuccesses > 0; n++) {
+				if (rng.nextDouble() * nPool < nSuccesses) {
+					hits++;
+					nSuccesses--;
+				}
+				nPool--;
+			}
+			return hits;
+		}
+
+		/**
+		 * Test Hypergeometric distribution.
+		 * <p>
+		 * The test samples the distribution and bins the random numbers. This sample
+		 * distribution is compared to the theoretical expectation. The mean deviation
+		 * is the mean difference between the actual number of events in each bin and
+		 * their expected number. For a perfect match the mean deviation is
+		 * <code>0</code>. The test passes if the mean deviation lies within one
+		 * standard error from <code>0</code>. This is more stringent than the
+		 * traditional 95% confidence interval.
+		 *
+		 * @param rng    the random number generator
+		 * @param logger the logger for reporting results
+		 * @param clock  the stop watch
+		 */
+		public static void test(MersenneTwister rng, Logger logger, Chronometer clock) {
+			if (!logger.isLoggable(Level.INFO)) {
+				logger.severe("log level of at last INFO required for Hypergeometric tests.");
+				return;
+			}
+			int nPool = 100;
+			int nSuccesses = 30;
+			int nDraws = 20;
+			RNGDistribution.Hypergeometric hypergeometric = new Hypergeometric(rng, nPool, nSuccesses, nDraws);
+			int kmax = Math.min(nSuccesses, nDraws);
+			int[] bins = new int[kmax + 1];
+			int nSamples = hypergeometric.testSamples;
+			StringBuilder buffer = new StringBuilder();
+			logger.info("Testing Hypergeometric distribution (pool=" + nPool + ", successes=" + nSuccesses
+					+ ", draws=" + nDraws + "): " + nSamples + " samples...");
+			double msStart = clock.elapsedTimeMsec();
+			for (int i = 0; i < nSamples; i++) {
+				int idx = hypergeometric.next();
+				bins[idx]++;
+			}
+			double msEnd = clock.elapsedTimeMsec();
+			// compare sequential draws against the same expectations
+			int[] seqbins = new int[kmax + 1];
+			for (int i = 0; i < nSamples; i++) {
+				int idx = Hypergeometric.next(rng, nPool, nSuccesses, nDraws);
+				seqbins[idx]++;
+			}
+			boolean verbose = (logger.getLevel().intValue() <= Level.FINE.intValue());
+			buffer.append("Time elapsed: " + (msEnd - msStart) + " msec\n");
+			if (verbose)
+				buffer.append("Distribution:\n");
+			double m1 = 0.0;
+			double m2 = 0.0;
+			double s1 = 0.0;
+			double s2 = 0.0;
+			for (int i = 0; i <= kmax; i++) {
+				int bini = bins[i];
+				double pmfn = Combinatorics.H2(nSuccesses, i, nPool - nSuccesses, nDraws - i) * nSamples;
+				if (verbose)
+					buffer.append(i)
+							.append(": ")
+							.append(bini)
+							.append(" (")
+							.append((int) (pmfn * 100.0) * 0.01)
+							.append(")\n");
+				double d = bini - pmfn;
+				m1 += d;
+				m2 += d * d;
+				d = seqbins[i] - pmfn;
+				s1 += d;
+				s2 += d * d;
+			}
+			m1 /= nSamples;
+			m2 /= nSamples;
+			s1 /= nSamples;
+			s2 /= nSamples;
+			double sdev = Math.sqrt(m2 - m1 * m1);
+			double sterr = sdev / Math.sqrt(nSamples);
+			double ssdev = Math.sqrt(s2 - s1 * s1);
+			double ssterr = ssdev / Math.sqrt(nSamples);
+			buffer.append("Statistics: mean +/- SEM = " + m1 + " +/- " + sterr + " (cdf), " + s1 + " +/- " + ssterr
+					+ " (sequential)");
+			logger.info(buffer.toString());
+			// in order to pass the test, the mean+/-sterr must include 0
+			boolean success = (Math.abs(m1) < sterr && Math.abs(s1) < ssterr);
+			if (success) {
+				logger.info("Test passed!");
+				return;
+			}
+			logger.severe("Test of Hypergeometric distribution failed...");
 		}
 	}
 
