@@ -526,7 +526,11 @@ public class CLOption implements Comparable<CLOption> {
 	 * parse and recovery falls back to the default, {@link #optionArg} is
 	 * cleared so the option's state reflects what is actually in effect. Callers
 	 * can detect that a fallback occurred by comparing {@link #isSet()} before
-	 * and after calling {@link #parse()}.
+	 * and after calling {@link #parse()}. Recovery is attempted regardless of
+	 * whether the delegate rejected the argument by returning {@code false} or
+	 * by throwing an exception. Without the fallback the delegate would be left
+	 * with whatever settings were in effect before, which may well be
+	 * inconsistent with the remaining options.
 	 *
 	 * @param isOptional {@code true} if the option argument is optional
 	 * @return {@code true} if parsing succeeds
@@ -535,22 +539,28 @@ public class CLOption implements Comparable<CLOption> {
 	 */
 	private boolean parse(boolean isOptional) {
 		boolean isSet = isSet();
+		String arg = getArg();
 		try {
-			if (isOptional)
-				return delegate.parse(getArg(), isSet);
-			if (isSet && delegate.parse(getArg()))
+			if (isOptional ? delegate.parse(arg, isSet) : delegate.parse(arg))
 				return true;
-			return !isSet && delegate.parse(getDefault());
 		} catch (Exception e) {
-			try {
-				boolean success = isOptional ? delegate.parse(getDefault(), isSet) : delegate.parse(getDefault());
-				if (success && isSet)
-					optionArg = null;
-				return success;
-			} catch (Exception ex) {
-				return false;
-			}
+			// argument rejected by throwing - fall back on default, see below
 		}
+		String dflt = getDefault();
+		if (dflt == null || dflt.equals(arg))
+			// no default to fall back on or the default was rejected just now
+			// (getArg() returns the default if the option provides no argument)
+			return false;
+		try {
+			if (!(isOptional ? delegate.parse(dflt, isSet) : delegate.parse(dflt)))
+				return false;
+		} catch (Exception e) {
+			return false;
+		}
+		// the default is in effect now - the argument no longer reflects the state
+		// of the option
+		optionArg = null;
+		return true;
 	}
 
 	/**
