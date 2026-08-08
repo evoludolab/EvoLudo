@@ -3815,12 +3815,23 @@ public abstract class IBSPopulation<M extends Module<?>, P extends IBSPopulation
 	}
 
 	/**
-	 * Check whether lookup tables for scores and fitness can be used. Free memory
-	 * if possible and request a reset if the use of lookup tables has changed.
-	 * 
+	 * Check whether lookup tables for scores and fitness can be used and allocate
+	 * (or free) the corresponding memory. Lookup tables hold a single entry per
+	 * trait rather than per individual and are possible for modules with static
+	 * payoffs as well as in well-mixed populations if scores are adjusted or are
+	 * ephemeral with all neighbours sampled.
+	 * <p>
+	 * <strong>Note:</strong> ephemeral scores are the only case that requires the
+	 * per-individual arrays {@link #scores}, {@link #fitness} and
+	 * {@link #interactions} <em>in addition</em> to the lookup tables because the
+	 * number of interactions varies between individuals.
+	 *
 	 * @param nGroup          the interaction group size
 	 * @param ephemeralScores the flag for ephemeral scores
 	 * @return {@code true} if reset is required
+	 *
+	 * @see #resetEphemeral(int)
+	 * @see IBSDPopulation#getScoreAt(int)
 	 */
 	boolean checkLookupTable(int nGroup, boolean ephemeralScores) {
 		hasLookupTable = module.isStatic() || //
@@ -3828,8 +3839,29 @@ public abstract class IBSPopulation<M extends Module<?>, P extends IBSPopulation
 				(ephemeralScores && interaction.isType(GeometryType.WELLMIXED) //
 						&& interGroup.isSampling(IBSGroup.SAMPLING_ALL));
 
-		if (!hasLookupTable || ephemeralScores)
-			return checkNoLookupTable(ephemeralScores);
+		if (!hasLookupTable || ephemeralScores) {
+			if (scores == null || scores.length != nPopulation)
+				scores = new double[nPopulation];
+			if (fitness == null || fitness.length != nPopulation)
+				fitness = new double[nPopulation];
+			if (interactions == null || interactions.length != nPopulation)
+				interactions = new int[nPopulation];
+		} else {
+			// with lookup tables scores, fitness and interaction arrays not needed
+			scores = null;
+			fitness = null;
+			interactions = null;
+		}
+
+		if (!hasLookupTable) {
+			// request reset if lookup tables had been in use because scores and
+			// fitness now need to be recalculated for every individual
+			boolean doReset = (typeFitness != null || typeScores != null);
+			typeFitness = null;
+			typeScores = null;
+			nMixedInter = -1;
+			return doReset;
+		}
 
 		// allocate memory for fitness lookup table
 		if (typeFitness == null || typeFitness.length != nTraits)
@@ -3841,43 +3873,13 @@ public abstract class IBSPopulation<M extends Module<?>, P extends IBSPopulation
 				typeFitness[n] = map2fit.map(typeScores[n]);
 			maxEffScoreIdx = -1;
 			nMixedInter = -1;
-		} else {
-			// allocate memory for score lookup table
-			if (typeScores == null || typeScores.length != nTraits)
-				typeScores = new double[nTraits];
-			nMixedInter = getNMixedInteractions(nGroup);
-		}
-		// with lookup tables scores, fitness and interaction arrays not needed
-		scores = null;
-		fitness = null;
-		interactions = null;
-		return false;
-	}
-
-	/**
-	 * Free memory used for lookup tables and allocate arrays for scores, fitness
-	 * and interactions. Returns {@code true} if reset is required.
-	 * 
-	 * @param ephemeralScores the flag for ephemeral scores
-	 * @return {@code true} if reset is required
-	 */
-	boolean checkNoLookupTable(boolean ephemeralScores) {
-		nMixedInter = -1;
-		// ephemeral scores need both (except in well-mixed populations)
-		if (scores == null || scores.length != nPopulation)
-			scores = new double[nPopulation];
-		if (fitness == null || fitness.length != nPopulation)
-			fitness = new double[nPopulation];
-		if (interactions == null || interactions.length != nPopulation)
-			interactions = new int[nPopulation];
-		if (ephemeralScores)
 			return false;
-		// request reset if we had lookup tables before to allocate arrays scores,
-		// fitness and interaction
-		boolean doReset = (typeFitness != null || typeScores != null);
-		typeFitness = null;
-		typeScores = null;
-		return doReset;
+		}
+		// allocate memory for score lookup table
+		if (typeScores == null || typeScores.length != nTraits)
+			typeScores = new double[nTraits];
+		nMixedInter = getNMixedInteractions(nGroup);
+		return false;
 	}
 
 	/**
