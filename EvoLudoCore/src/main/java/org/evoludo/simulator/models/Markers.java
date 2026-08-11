@@ -146,10 +146,10 @@ public class Markers {
 						markerList.clear();
 					// model loaded but not yet initialized; getNMean() etc not yet available
 					int nSpecies = model.getNSpecies();
-					double[] dmk = new double[0];
 					for (String aMarker : myMarkers) {
 						String[] mk = aMarker.split(CLOParser.SPECIES_DELIMITER);
 						boolean filled = true;
+						double[] dmk = new double[0];
 						for (int n = 0; n < nSpecies; n++) {
 							double[] smk = CLOParser.parseVector(mk[n]);
 							if (smk.length == 0)
