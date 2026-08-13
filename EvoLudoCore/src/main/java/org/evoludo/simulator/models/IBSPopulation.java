@@ -3467,7 +3467,9 @@ public abstract class IBSPopulation<M extends Module<?>, P extends IBSPopulation
 			typeFitness = null;
 			typeScores = null;
 			maxFitness = 0.0;
-			checkContacts();
+			// populations with a vacant trait never sample contacts
+			if (vacantIdx < 0)
+				checkContacts();
 		}
 
 		if (useTags) {
