@@ -769,10 +769,10 @@ public abstract class Module<T extends Module<T>>
 	}
 
 	/**
-	 * Set trait names. Underscores, '_', are converted to spaces. The number of
-	 * names must equal {@code nTraits}. For modules that have vacant sites, the
-	 * length may also be {@code nTraits - 1}, in which case the vacant type keeps
-	 * its default name, see {@link #VACANT_NAME}.
+	 * Set trait names. The number of names must equal {@code nTraits}. For
+	 * modules that have vacant sites, the length may also be {@code nTraits - 1},
+	 * in which case the vacant type keeps its default name, see
+	 * {@link #VACANT_NAME}.
 	 * <p>
 	 * <strong>Note:</strong> If {@code names == null} then all traits are named
 	 * "Trait A", "Trait B", etc. (or {@link #VACANT_NAME} for the vacant type).
@@ -798,7 +798,7 @@ public abstract class Module<T extends Module<T>>
 					idx++;
 					continue;
 				}
-				traitName[idx++] = n.replace('_', ' ').trim();
+				traitName[idx++] = n.trim();
 			}
 		}
 		for (int i = idx; i < nTraits; i++)
