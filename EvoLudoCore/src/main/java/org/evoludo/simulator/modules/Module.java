@@ -769,23 +769,33 @@ public abstract class Module<T extends Module<T>>
 	}
 
 	/**
-	 * Set trait names. Underscores, '_', are converted to spaces.
+	 * Set trait names. Underscores, '_', are converted to spaces. The number of
+	 * names must equal {@code nTraits}. For modules that have vacant sites, the
+	 * length may also be {@code nTraits - 1}, in which case the vacant type keeps
+	 * its default name, see {@link #VACANT_NAME}.
 	 * <p>
-	 * <strong>Note:</strong> If {@code names == null} or
-	 * {@code names.length &lt; nTraits} then additional traits are named "Trait A",
-	 * "Trait B", etc. If {@code names.length &gt; nTraits} then excess names are
-	 * ignored.
-	 * 
+	 * <strong>Note:</strong> If {@code names == null} then all traits are named
+	 * "Trait A", "Trait B", etc. (or {@link #VACANT_NAME} for the vacant type).
+	 *
 	 * @param names the names of the traits
+	 * @return {@code true} if names successfully set
+	 *
+	 * @see #VACANT_NAME
 	 */
-	public void setTraitNames(String[] names) {
+	public boolean setTraitNames(String[] names) {
+		if (names != null && !(names.length == nTraits || (hasVacant() && names.length == nTraits - 1)))
+			return false;
+		if (hasVacant() && names != null && names.length == nTraits - 1)
+			// caller omitted the vacant name - insert default
+			names = ArrayMath.insert(names, null, vacantIdx);
 		if (traitName == null || !(traitName.length == nTraits || (traitName.length == nTraits - 1 && hasVacant())))
 			traitName = new String[nTraits];
 		int idx = 0;
 		if (names != null) {
 			for (String n : names) {
 				if (n == null) {
-					traitName[idx++] = nameTrait(idx);
+					traitName[idx] = nameTrait(idx);
+					idx++;
 					continue;
 				}
 				traitName[idx++] = n.replace('_', ' ').trim();
@@ -793,6 +803,7 @@ public abstract class Module<T extends Module<T>>
 		}
 		for (int i = idx; i < nTraits; i++)
 			traitName[i] = nameTrait(idx++);
+		return true;
 	}
 
 	/**
@@ -1855,9 +1866,9 @@ public abstract class Module<T extends Module<T>>
 					int n = 0;
 					for (T pop : species) {
 						String[] names = namespecies[n++ % namespecies.length].split(CLOParser.VECTOR_DELIMITER);
-						if (names.length != nTraits)
+						// setTraitNames deals with an omitted vacant name
+						if (!pop.setTraitNames(names))
 							return false;
-						pop.setTraitNames(names);
 					}
 					return true;
 				}
