@@ -445,11 +445,17 @@ public class ViewController {
 	/**
 	 * Parse the initial view specification (if provided) and resolve the matching
 	 * view.
+	 * <p>
+	 * View names may contain spaces (e.g. {@code "Traits - Mean"}), so the name
+	 * cannot simply be separated from any trailing view-specific options by the
+	 * first space. Instead, {@code initialView} is matched against the longest
+	 * view name that is a prefix of it (followed by a space or nothing); anything
+	 * beyond that name is passed on as options.
 	 *
 	 * @param logger logger for diagnostics (optional)
 	 * @return the initial view or {@code null} if the {@code --view} option was not
 	 *         provided
-	 * 
+	 *
 	 * @see #cloView
 	 */
 	public AbstractView<?> resolveInitialView(Logger logger) {
@@ -459,16 +465,25 @@ public class ViewController {
 		List<AbstractView<?>> availableViews = new ArrayList<>(activeViews.values());
 		if (availableViews.isEmpty())
 			return null;
-		String[] iv = initialView.split(" ", 2);
-		String name = iv[0].replace('_', ' ').trim();
 		AbstractView<?> newView = null;
+		String options = null;
+		int bestLen = -1;
 		for (AbstractView<?> view : availableViews) {
-			if (view.getName().equals(name)) {
+			String vname = view.getName();
+			if (vname == null || vname.length() <= bestLen)
+				continue;
+			if (initialView.equals(vname)) {
 				newView = view;
-				break;
+				options = null;
+				bestLen = vname.length();
+			} else if (initialView.startsWith(vname + " ")) {
+				newView = view;
+				options = initialView.substring(vname.length()).trim();
+				bestLen = vname.length();
 			}
 		}
 		if (newView == null) {
+			String[] iv = initialView.split(" ", 2);
 			int idx = 0;
 			try {
 				idx = CLOParser.parseInteger(iv[0]);
@@ -478,8 +493,9 @@ public class ViewController {
 			}
 			idx = Math.min(Math.max(idx, 1), availableViews.size());
 			newView = availableViews.get(idx - 1);
+			options = iv.length > 1 ? iv[1].trim() : null;
 		}
-		newView.setOptions(iv.length > 1 ? iv[1].trim() : null);
+		newView.setOptions(options);
 		return newView;
 	}
 
