@@ -312,6 +312,7 @@ public class CLOController {
 	 * 
 	 * @return cached command-line string split on option boundaries
 	 */
+	@SuppressWarnings("java:S8786") // \s and '-' are disjoint, no backtracking hazard
 	public String[] getSplitCLO() {
 		// strip all whitespace at start and end
 		String[] args = clo.trim().split("\\s+--");

@@ -1199,6 +1199,7 @@ public class EvoLudoJRE extends EvoLudo implements Runnable {
 	 * </dl>
 	 */
 	@Override
+	@SuppressWarnings("java:S8786") // \s and '-' are disjoint, no backtracking hazard
 	protected String[] preprocessCLO(String[] cloarray) {
 		// first check if --restore requested; ignore if already restoring
 		String restoreName = cloRestore.getName();
