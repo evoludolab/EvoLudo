@@ -148,15 +148,41 @@ public class EvoLudoPanel extends JPanel implements ItemListener {
 		viewChoice.addItemListener(this);
 	}
 
-	public void setView(String name) {
-		// if length of string is 1 or 2, assume an index is given
-		if (name.length() < 3)
-			viewChoice.setSelectedIndex(Math.max(0, Math.min(viewChoice.getItemCount() - 1, Integer.parseInt(name))));
-		else
-			viewChoice.setSelectedItem(name.replace('_', ' '));
-		// active = -1; // force update - this seems necessary because the listener is
-		// added early on viewChoice and gets triggered during initialization.
-		setView(viewChoice.getSelectedIndex());
+	/**
+	 * Set the active view from a command line style specification. {@code spec}
+	 * may be a (1-based) index or a view title; since titles may themselves
+	 * contain spaces (e.g. {@code "Traits - Mean"}), {@code spec} is matched
+	 * against the longest view title that is a prefix of it (followed by a space
+	 * or nothing) rather than splitting on the first space. Trailing text beyond
+	 * a matched title is currently ignored (JRE views do not support inline
+	 * options, unlike their GWT counterparts).
+	 *
+	 * @param spec the view index or title
+	 */
+	public void setView(String spec) {
+		int bestLen = -1;
+		int bestIdx = -1;
+		for (int i = 0; i < views.size(); i++) {
+			String vname = views.get(i).getName();
+			if (vname == null || vname.length() <= bestLen)
+				continue;
+			if (spec.equals(vname) || spec.startsWith(vname + " ")) {
+				bestLen = vname.length();
+				bestIdx = i;
+			}
+		}
+		if (bestIdx < 0) {
+			// fall back to a 1-based index, optionally followed by trailing text
+			String head = spec.split(" ", 2)[0];
+			int idx;
+			try {
+				idx = Integer.parseInt(head);
+			} catch (NumberFormatException e) {
+				idx = 1;
+			}
+			bestIdx = Math.clamp(idx, 1, Math.max(views.size(), 1)) - 1;
+		}
+		setView(bestIdx);
 	}
 
 	public void changeView(int increment) {
