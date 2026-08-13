@@ -243,10 +243,31 @@ public class NativeJS {
 	}-*/;
 
 	/**
+	 * JSNI method: read the rendered text content of {@code element}, preserving
+	 * line breaks between block-level children (e.g. the separate {@code <div>}
+	 * elements a contenteditable region creates for each line).
+	 * <p>
+	 * GWT's own {@code Element.getInnerText()}/{@code Label.getText()} read
+	 * {@code element.textContent}, which concatenates all descendant text nodes
+	 * without any separator at block boundaries. For a multi-line contenteditable
+	 * field that silently fuses adjacent lines together (e.g. the last word of
+	 * one option and the first word of the next), which then fails to parse.
+	 * The native {@code innerText} property reflects the rendered layout instead
+	 * and inserts a newline at each line/block boundary.
+	 *
+	 * @param element the element to read the text from
+	 * @return the text content with line breaks preserved
+	 */
+	public static final native String getRenderedText(Element element)
+	/*-{
+		return element.innerText || element.textContent || "";
+	}-*/;
+
+	/**
 	 * JSNI method: install a paste handler on the editable {@code element} that
 	 * inserts plain text only. This strips any clipboard formatting before it
 	 * reaches the DOM.
-	 * 
+	 *
 	 * @param element the editable element that should receive plain-text pastes
 	 */
 	public static final native void installPlainTextPasteHandler(Element element)

@@ -740,7 +740,7 @@ public class EvoLudoWeb extends Composite
 			return;
 		engine.loadModules();
 		engine.addCLOProvider(this);
-		engine.setCLO(evoludoCLO.getText().trim());
+		engine.setCLO(NativeJS.getRenderedText(evoludoCLO.getElement()).trim());
 	}
 
 	/**
@@ -1406,7 +1406,7 @@ public class EvoLudoWeb extends Composite
 	 * Applies the text currently in the CLO field to the engine.
 	 */
 	public void applyCLOFromField() {
-		engine.setCLO(evoludoCLO.getText().replace((char) 160, ' '));
+		engine.setCLO(NativeJS.getRenderedText(evoludoCLO.getElement()).replace((char) 160, ' '));
 		applyCLO();
 	}
 
@@ -1716,7 +1716,7 @@ public class EvoLudoWeb extends Composite
 	@UiHandler("evoludoApply")
 	public void onApplyClick(ClickEvent event) {
 		if (evoludoApply.getText().equals(SettingsController.BUTTON_APPLY)) {
-			engine.setCLO(evoludoCLO.getText().replace((char) 160, ' '));
+			engine.setCLO(NativeJS.getRenderedText(evoludoCLO.getElement()).replace((char) 160, ' '));
 			applyCLO();
 			return;
 		}
