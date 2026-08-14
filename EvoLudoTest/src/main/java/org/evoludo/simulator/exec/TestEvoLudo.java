@@ -213,11 +213,15 @@ public class TestEvoLudo implements RunListener {
 	int nSHAMismatches;
 
 	/**
-	 * The number of stale references successfully regenerated and re-verified
-	 * during {@link #generate()}. A subset of {@link #nTestFailures}: each stale
-	 * reference is first detected as a failed comparison against the outdated
-	 * file, then (if the freshly saved replacement re-verifies successfully)
-	 * counted here as resolved.
+	 * The number of stale or missing references successfully regenerated and
+	 * re-verified during {@link #generate()} - whether stale because their
+	 * content had changed or merely because the SHA embedded in their filename
+	 * had. Purely informational: unlike {@link #nSHAMismatches}, it is not a
+	 * subset of {@link #nTestFailures}, since regeneration replaces the
+	 * reference with the freshly computed, known-good result before the one and
+	 * only counted verification of that test runs - so a successful
+	 * regeneration never leaves a trace in {@link #nTestFailures} to subtract
+	 * from.
 	 */
 	int nRegenerated;
 
@@ -276,35 +280,66 @@ public class TestEvoLudo implements RunListener {
 				String result = engine.encodeState();
 				Plist plist = PlistParser.parse(result);
 				String dest = generateBasename(cloLine, ++nTest);
-				// checkReference() also serves as a staleness probe here: a mismatch
-				// means the existing reference predates a source change and must be
-				// regenerated below (quarantine + save + re-verify with test(ref)).
-				// Track that outcome separately in nRegenerated so it can be reported
-				// on its own, distinct from unresolved failures.
-				boolean wasStale = false;
-				File ref = checkReference(referencesDir, plist, dest);
-				if (ref != null && ref != referencesDir)
-					// check passed
-					continue;
-				if (ref == null) {
-					wasStale = true;
-					// copy failed test to reports directory
+				String sha = sha256(plist, SHA_EXCLUDE);
+				// locate an existing reference without touching any counters: the one
+				// and only counted check for this test happens below, either as the
+				// fast SHA-match pass or via test(ref) after regenerating. Using
+				// checkReference() for this probe, as before, double-counted every
+				// stale/missing test - once for the probe's own compareRuns() call and
+				// once more for the re-verify - inflating nTests and printing every
+				// pass/fail message twice.
+				File existing = search(referencesDir, dest);
+				if (existing != null) {
+					String name = existing.getName();
+					int idx = name.indexOf(SHA_PREFIX);
+					String existingSha = name.substring(idx + SHA_PREFIX.length()).replace(".zip", "").replace(".plist", "");
+					if (existingSha.equals(sha)) {
+						// reference already up to date, both content and filename
+						nTests++;
+						reportTestSuccess(name.substring(0, idx) + " SHA match!");
+						continue;
+					}
+				}
+				// stale (SHA mismatch) or missing reference - regenerate below. Whether
+				// the content actually changed or only the SHA went stale (e.g. after a
+				// change to what the hash covers) only matters for the diagnostic
+				// message and nSHAMismatches/nTestMinor bookkeeping here; either way the
+				// reference gets refreshed, so this uncounted check must not touch
+				// nTests or nTestFailures, see above.
+				boolean wasStale = existing != null;
+				if (wasStale) {
 					try {
-						File src = search(referencesDir, dest);
-						String ext = ".plist" + (src.getName().endsWith(".zip") ? ".zip" : "");
+						Plist reference = engine.readPlist(existing.getAbsolutePath());
+						int nIssues = plist.diff(reference, SHA_EXCLUDE);
+						if (nIssues == 0) {
+							nSHAMismatches++;
+							logWarning(dest + " SHA mismatch! - content unchanged, refreshing reference...");
+						} else if (nIssues == plist.getNMinor()) {
+							nTestMinor++;
+							logWarning(dest + " SHA mismatch! - minor (likely numerical) differences, refreshing reference...");
+						} else {
+							logWarning(dest + " SHA mismatch! - content changed, refreshing reference...");
+						}
+					} catch (Exception e) {
+						logWarning(dest + " SHA mismatch! - refreshing reference...");
+					}
+					// copy stale reference to reports directory
+					try {
+						String ext = ".plist" + (existing.getName().endsWith(".zip") ? ".zip" : "");
 						// a leftover from an earlier failed generation attempt may already
 						// occupy the default quarantine name; keep it and pick the next
 						// free "-old-<n>" name instead of overwriting or aborting
 						Path dst = uniqueReportPath(dest + "-old", ext);
-						Files.move(src.toPath(), dst);
+						Files.move(existing.toPath(), dst);
 					} catch (IOException e) {
 						logError("failed to move '" + referencesDir + File.separator + dest
 								+ "' to '" + reportsDir + File.separator + dest + "'.");
 						continue;
 					}
 				}
-				dest += SHA_PREFIX + sha256(plist, SHA_EXCLUDE) + ".plist";
+				dest += SHA_PREFIX + sha + ".plist";
 				// save new reference
+				File ref;
 				if (useCompression) {
 					// with compression
 					ref = exportDir.toPath().resolve(dest + ".zip").toFile();
@@ -340,7 +375,7 @@ public class TestEvoLudo implements RunListener {
 				String name = ref.getName();
 				int idx = name.indexOf(SHA_PREFIX);
 				logOk(name.substring(0, idx) + ": test generated/updated.");
-				// check test
+				// check test - the one and only counted verification for this test
 				int nTestFailuresBeforeVerify = nTestFailures;
 				test(ref);
 				if (wasStale && nTestFailures == nTestFailuresBeforeVerify)
@@ -836,7 +871,6 @@ public class TestEvoLudo implements RunListener {
 			generate();
 			logTitle("Generating completed.");
 		}
-		int nUnresolved = nTestFailures - nRegenerated;
 		if (nSHAMismatches > 0)
 			logWarning(nSHAMismatches + " out of " + nTests
 					+ " tests had a SHA mismatch only.");
@@ -853,11 +887,11 @@ public class TestEvoLudo implements RunListener {
 		if (nTests != nTestFailures)
 			logOk((nTests - nTestFailures) + " out of " + nTests
 					+ " tests successfully passed.");
-		if (nUnresolved > 0 || nTestMinor > 0 || nTestWarnings > 0)
+		if (nTestFailures > 0 || nTestMinor > 0 || nTestWarnings > 0)
 			logTitle("Review issues carefully!");
 		// remove reports directory if empty
 		reportsDir.delete();
-		return (nUnresolved == 0);
+		return (nTestFailures == 0);
 	}
 
 	/**
