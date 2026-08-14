@@ -143,6 +143,84 @@ if [[ "$GUI" == true && "$GENERATE" == true ]]; then
 	exit 1
 fi
 
+# ANSI colors matching org.evoludo.simulator.exec.TestEvoLudo's ConsoleColors,
+# used to keep the aggregate summary visually consistent with its per-module
+# reports.
+COLOR_GREEN='\033[0;32m'
+COLOR_YELLOW='\033[0;33m'
+COLOR_RED='\033[0;31m'
+COLOR_TITLE='\033[1;30m'
+COLOR_RESET='\033[0m'
+
+# Run one 'java -jar $LATEST_TEST_JAR "$@"' test invocation, streaming its
+# output live while also tallying counts into the modules_checked/total_*
+# variables (initialized by the caller) for the aggregate summary printed by
+# print_aggregate_summary. Each module runs in its own JVM, so its counts are
+# otherwise lost once that process exits and the final report only ever
+# reflects the last module checked, not the entire run. Sets $teststatus to
+# the java process' exit status.
+run_and_tally() {
+	local tmpout content
+	tmpout="$(mktemp)"
+	java -jar "$LATEST_TEST_JAR" "$@" 2>&1 | tee "$tmpout" || true
+	teststatus=${PIPESTATUS[0]}
+	modules_checked=$((modules_checked + 1))
+	content="$(<"$tmpout")"
+	rm -f "$tmpout"
+	# nTests is echoed as the denominator in every "X out of Y ..." summary
+	# line; prefer the "successfully passed" line, but that line is skipped
+	# when every single test in the module failed, so fall back to the
+	# "had errors" line's denominator in that case.
+	if [[ $content =~ ([0-9]+)\ out\ of\ ([0-9]+)\ tests\ successfully\ passed ]]; then
+		total_passed=$((total_passed + ${BASH_REMATCH[1]}))
+		total_tests=$((total_tests + ${BASH_REMATCH[2]}))
+	elif [[ $content =~ ([0-9]+)\ out\ of\ ([0-9]+)\ tests\ had\ errors ]]; then
+		total_tests=$((total_tests + ${BASH_REMATCH[2]}))
+	fi
+	if [[ $content =~ ([0-9]+)\ out\ of\ [0-9]+\ tests\ had\ warnings ]]; then
+		total_warnings=$((total_warnings + ${BASH_REMATCH[1]}))
+	fi
+	if [[ $content =~ ([0-9]+)\ out\ of\ [0-9]+\ tests\ had\ minor ]]; then
+		total_minor=$((total_minor + ${BASH_REMATCH[1]}))
+	fi
+	if [[ $content =~ ([0-9]+)\ out\ of\ [0-9]+\ tests\ had\ errors ]]; then
+		total_failures=$((total_failures + ${BASH_REMATCH[1]}))
+	fi
+}
+
+# Print the aggregate summary across all modules_checked. Only called when
+# more than one module was actually checked - a single module already prints
+# its own complete summary.
+print_aggregate_summary() {
+	echo
+	if ((modules_skipped > 0)); then
+		printf "${COLOR_TITLE}Overall test summary (%d modules checked, %d skipped):${COLOR_RESET}\n" \
+			"$modules_checked" "$modules_skipped"
+	else
+		printf "${COLOR_TITLE}Overall test summary (%d modules checked):${COLOR_RESET}\n" \
+			"$modules_checked"
+	fi
+	if ((total_warnings > 0)); then
+		printf "${COLOR_YELLOW}WARNING: %d out of %d tests had warnings.${COLOR_RESET}\n" \
+			"$total_warnings" "$total_tests"
+	fi
+	if ((total_minor > 0)); then
+		printf "${COLOR_YELLOW}WARNING: %d out of %d tests had minor (likely numerical) issues.${COLOR_RESET}\n" \
+			"$total_minor" "$total_tests"
+	fi
+	if ((total_failures > 0)); then
+		printf "${COLOR_RED}ERROR: %d out of %d tests had errors.${COLOR_RESET}\n" \
+			"$total_failures" "$total_tests"
+	fi
+	if ((total_tests != total_failures)); then
+		printf "${COLOR_GREEN}%d out of %d tests successfully passed.${COLOR_RESET}\n" \
+			"$total_passed" "$total_tests"
+	fi
+	if ((total_failures > 0 || total_minor > 0 || total_warnings > 0)); then
+		printf "${COLOR_TITLE}Review issues carefully!${COLOR_RESET}\n"
+	fi
+}
+
 if [[ "$GENERATE" == true ]]; then
 	echo "Preparing to generate EvoLudo tests..."
 else
@@ -203,30 +281,38 @@ if [[ "$GENERATE" == true ]]; then
 	exit $status
 fi
 
+status=0
+modules_checked=0
+modules_skipped=0
+total_tests=0
+total_passed=0
+total_warnings=0
+total_minor=0
+total_failures=0
+
 if [[ "$GUI" == false ]]; then
-	# run the tests in the JRE
+	# run the tests in the JRE, one module (generator file) per invocation, so
+	# that each gets its own summary alongside the aggregate over all of them
 	if ((${#TEST_FILES[@]} == 0)); then
-		java -jar "$LATEST_TEST_JAR" \
-			--tests "$EVOLUDO_TEST_TEST/generators" \
-			--references "$REFERENCES_DIR" \
-			--reports "$REPORTS_DIR" \
-			${PASSTHROUGH_ARGS[@]+"${PASSTHROUGH_ARGS[@]}"}
-		exit $?
+		for testfile in "$EVOLUDO_TEST_TEST"/generators/*.clo; do
+			TEST_FILES+=("$testfile")
+		done
 	fi
 
-	status=0
 	for testfile in "${TEST_FILES[@]}"; do
 		echo "Running EvoLudo test file '$testfile'..."
-		teststatus=0
-		java -jar "$LATEST_TEST_JAR" \
+		run_and_tally \
 			--tests "$testfile" \
 			--references "$REFERENCES_DIR" \
 			--reports "$REPORTS_DIR" \
-			${PASSTHROUGH_ARGS[@]+"${PASSTHROUGH_ARGS[@]}"} || teststatus=$?
+			${PASSTHROUGH_ARGS[@]+"${PASSTHROUGH_ARGS[@]}"}
 		if ((teststatus != 0)); then
 			status=$teststatus
 		fi
 	done
+	if ((modules_checked > 1)); then
+		print_aggregate_summary
+	fi
 	exit $status
 fi
 
@@ -271,8 +357,6 @@ if ((${#TEST_FILES[@]} == 0)); then
 	done
 fi
 
-status=0
-
 # run the tests in the browser and save the states exported by the GUI
 echo "Running EvoLudo tests in the GUI on ${EVOLUDO_URL}..."
 node "${SCRIPT_DIR}/guitests.js" \
@@ -282,24 +366,28 @@ node "${SCRIPT_DIR}/guitests.js" \
 	${GUI_ARGS[@]+"${GUI_ARGS[@]}"} \
 	"${TEST_FILES[@]}" || status=$?
 
-# compare the exported states to the references
+# compare the exported states to the references, one module per invocation,
+# tallying totals across all modules checked
 for testfile in "${TEST_FILES[@]}"; do
 	name="$(basename "$testfile" .clo)"
 	if [ ! -d "$EXPORTS_DIR/$name" ]; then
 		echo "No states exported for '$testfile' - skipped."
 		status=1
+		modules_skipped=$((modules_skipped + 1))
 		continue
 	fi
 	echo "Checking EvoLudo GUI test file '$testfile'..."
-	teststatus=0
-	java -jar "$LATEST_TEST_JAR" \
+	run_and_tally \
 		--gui \
 		--tests "$EXPORTS_DIR/$name" \
 		--references "$REFERENCES_DIR" \
 		--reports "$REPORTS_DIR" \
-		${PASSTHROUGH_ARGS[@]+"${PASSTHROUGH_ARGS[@]}"} || teststatus=$?
+		${PASSTHROUGH_ARGS[@]+"${PASSTHROUGH_ARGS[@]}"}
 	if ((teststatus != 0)); then
 		status=$teststatus
 	fi
 done
+if ((modules_checked > 1)); then
+	print_aggregate_summary
+fi
 exit $status
