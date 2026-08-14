@@ -35,14 +35,19 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 print_help() {
 	echo "Usage: $0 [options] [TEST[.clo] ...]"
 	echo
-	echo "Run EvoLudo tests. If no TEST names are given, all generator .clo"
-	echo "files in EvoLudoTest/tests/generators are run."
+	echo "Run or generate EvoLudo tests. If no TEST names are given, all generator"
+	echo ".clo files in EvoLudoTest/tests/generators are used."
 	echo
 	echo "TEST names without a path are resolved in EvoLudoTest/tests/generators,"
 	echo "and the .clo extension is optional."
 	echo
 	echo "Options are passed to the EvoLudo test jar:"
 	echo "  --exports <directory>     Exported states (requires --gui)"
+	echo "  --generate                Generate reference test cases instead of"
+	echo "                            running tests, replacing any existing"
+	echo "                            reference with a mismatching SHA (prompts"
+	echo "                            for confirmation); cannot be combined with"
+	echo "                            --gui"
 	echo "  -h, --help                Show this help screen"
 	echo "  --headful, --headed       Show the browser window (requires --gui)"
 	echo "  --gui                     Run test through GUI using playwright"
@@ -72,6 +77,7 @@ REFERENCES_DIR="$EVOLUDO_TEST_TEST/references"
 REPORTS_DIR="$EVOLUDO_TEST_TEST/reports"
 EXPORTS_DIR="$EVOLUDO_TEST_TEST/exports"
 GUI=false
+GENERATE=false
 TEST_FILES=()
 PASSTHROUGH_ARGS=()
 GUI_ARGS=()
@@ -96,6 +102,9 @@ for arg in "$@"; do
 			;;
 		--gui)
 			GUI=true
+			;;
+		--generate)
+			GENERATE=true
 			;;
 		--headed|--headful)
 			GUI_ARGS+=("--headed")
@@ -129,7 +138,16 @@ if [[ "$EXPECT_VALUE" == true ]]; then
 	exit 1
 fi
 
-echo "Preparing to run EvoLudo tests..."
+if [[ "$GUI" == true && "$GENERATE" == true ]]; then
+	echo "Options --gui and --generate cannot be combined - aborting!"
+	exit 1
+fi
+
+if [[ "$GENERATE" == true ]]; then
+	echo "Preparing to generate EvoLudo tests..."
+else
+	echo "Preparing to run EvoLudo tests..."
+fi
 
 # build project - if needed. note in GUI mode 'clean' would kill the
 # development server and is deliberately omitted.
@@ -153,6 +171,36 @@ fi
 if [ -z "${LATEST_TEST_JAR}" ]; then
 	echo "EvoLudoTest jar missing - aborting!"
 	exit 1
+fi
+
+if [[ "$GENERATE" == true ]]; then
+	# generate reference test cases from the generator .clo files; the java
+	# process itself prompts for confirmation before overwriting references
+	if ((${#TEST_FILES[@]} == 0)); then
+		java -jar "$LATEST_TEST_JAR" \
+			--generate "$EVOLUDO_TEST_TEST/generators" \
+			--references "$REFERENCES_DIR" \
+			--reports "$REPORTS_DIR" \
+			--compress \
+			${PASSTHROUGH_ARGS[@]+"${PASSTHROUGH_ARGS[@]}"}
+		exit $?
+	fi
+
+	status=0
+	for testfile in "${TEST_FILES[@]}"; do
+		echo "Generating EvoLudo test file '$testfile'..."
+		teststatus=0
+		java -jar "$LATEST_TEST_JAR" \
+			--generate "$testfile" \
+			--references "$REFERENCES_DIR" \
+			--reports "$REPORTS_DIR" \
+			--compress \
+			${PASSTHROUGH_ARGS[@]+"${PASSTHROUGH_ARGS[@]}"} || teststatus=$?
+		if ((teststatus != 0)); then
+			status=$teststatus
+		fi
+	done
+	exit $status
 fi
 
 if [[ "$GUI" == false ]]; then
