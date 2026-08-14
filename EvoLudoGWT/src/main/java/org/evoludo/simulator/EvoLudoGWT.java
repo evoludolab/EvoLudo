@@ -164,8 +164,10 @@ public class EvoLudoGWT extends EvoLudo {
 
 	@Override
 	public void layoutComplete() {
-		if (cloSnap.isSet() && !isSuspended()) {
-			// no stopping time requested: take snapshot now
+		if (cloSnap.isSet() && !isSuspended() && !isRunning) {
+			// no stopping time requested and not running: take snapshot now. note
+			// layouts also complete while the model is running, e.g. after the view
+			// updated the network, and must not cut the run short, see cloSnap.
 			gui.snapshotReady();
 		}
 		if (isSuspended()) {
@@ -830,12 +832,16 @@ public class EvoLudoGWT extends EvoLudo {
 	 * {@link Model#cloTimeStop} and {@link Model#cloSamples}.
 	 * <p>
 	 * Running the model is derived from the requested end state and overrides
-	 * {@link CLOController#cloRun} in both directions: without an end state the
-	 * model would run indefinitely and the snapshot would never be taken. This
-	 * requires that all other options are parsed first, hence the lower parse
-	 * priority. Whether the end state applies to the mode of the active view is
-	 * only known once the view is activated, see
-	 * {@code EvoLudoWeb#processCLOSnap()}.
+	 * {@link CLOController#cloRun} in both directions, unless running was
+	 * explicitly requested: without an end state the model would otherwise run
+	 * indefinitely and the snapshot would never be taken. With {@code --run} the
+	 * snapshot is taken once the model stops by itself, e.g. after converging to
+	 * a fixed point, see {@link #fireModelStopped()}. This is how the GUI test
+	 * suite reproduces the runs of its JRE counterpart, see
+	 * {@code scripts/runtests.sh --gui}. Deriving the end state requires that all
+	 * other options are parsed first, hence the lower parse priority. Whether the
+	 * end state applies to the mode of the active view is only known once the
+	 * view is activated, see {@code EvoLudoWeb#processCLOSnap()}.
 	 * <p>
 	 * <strong>Note:</strong> snapshots run at the minimum delay, see
 	 * {@link #run()}. The requested delay is left untouched because it is part of
@@ -863,7 +869,7 @@ public class EvoLudoGWT extends EvoLudo {
 						hasEnd = (Double.isFinite(tStop) && Math.abs(tStop) > 1e-8)
 								|| activeModel.getNSamples() > 0.0;
 					}
-					setSuspended(hasEnd);
+					setSuspended(hasEnd || cloRun.isSet());
 					return true;
 				}
 			}).setPriority(1);

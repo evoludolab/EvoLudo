@@ -891,6 +891,9 @@ public class EvoLudoWeb extends Composite
 		}
 		logger.log(Level.SEVERE, msg, error);
 		displayStatusThresholdLevel = Integer.MAX_VALUE;
+		if (engine != null && engine.cloSnap.isSet())
+			// unblock whoever is waiting for the snapshot
+			snapshotFailed(msg);
 	}
 
 	/**
@@ -1881,9 +1884,11 @@ public class EvoLudoWeb extends Composite
 	 * Process the command line option for snapshots, {@link EvoLudoGWT#cloSnap}.
 	 * For snapshots running the model is derived from the requested end state:
 	 * the model runs only if {@link Model#cloTimeStop} or {@link Model#cloSamples}
-	 * applies to the mode of the active view and does not run otherwise - even if
-	 * {@code --run} was provided. Without a stopping point the model would run
-	 * indefinitely and the snapshot would never be taken.
+	 * applies to the mode of the active view and does not run otherwise. Without
+	 * a stopping point the model would run indefinitely and the snapshot would
+	 * never be taken. The exception is {@code --run}, which requests the run
+	 * regardless and leaves it to the model to stop by itself, e.g. after
+	 * converging to a fixed point.
 	 * <p>
 	 * <strong>Note:</strong> the mode is only known once the view is activated,
 	 * i.e. after {@link EvoLudoGWT#cloSnap} derived whether to run.
@@ -1913,7 +1918,7 @@ public class EvoLudoWeb extends Composite
 				break;
 			default:
 		}
-		if (hasStop || !engine.isSuspended())
+		if (hasStop || engine.cloRun.isSet() || !engine.isSuspended())
 			return;
 		// no end state for this mode: do not run but take the snapshot right away
 		engine.setSuspended(false);
@@ -2287,6 +2292,27 @@ public class EvoLudoWeb extends Composite
 			return;
 		Document.get().getBody().removeChild(snapmarker);
 		snapmarker = null;
+	}
+
+	/**
+	 * Report that no snapshot can be taken because a fatal error froze the lab,
+	 * see {@link #handleFatalError(String, Throwable)}. Adds a marker element with
+	 * ID <code>snapshot-failed</code>, which holds {@code msg}, to the DOM.
+	 * Without it automated snapshots would wait for a snapshot that never
+	 * materializes.
+	 *
+	 * @param msg the description of the error
+	 *
+	 * @see org.evoludo.simulator.EvoLudoGWT#cloSnap
+	 * @see <a href="https://playwright.dev"> playwright.dev</a>
+	 */
+	public void snapshotFailed(String msg) {
+		if (snapmarker != null)
+			return;
+		snapmarker = Document.get().createDivElement();
+		snapmarker.setId("snapshot-failed");
+		snapmarker.setInnerText(msg);
+		Document.get().getBody().appendChild(snapmarker);
 	}
 
 	@Override
