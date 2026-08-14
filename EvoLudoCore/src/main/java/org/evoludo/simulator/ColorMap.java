@@ -1098,11 +1098,10 @@ public abstract class ColorMap<T extends Object> {
 		 * <code>data[n+1]</code> are converted to the corresponding gradient colors.
 		 * This applies, for example, to data from continuous games with multiple
 		 * traits. The gradient colors are returned in the <code>color</code> array.
-		 * <li>For performance reasons no validity checks on
-		 * <code>data</code>. In particular, all data entries must lie inside the range
-		 * for mapping data values.
+		 * <li>Entries whose value lies outside the range of the gradient are skipped,
+		 * i.e. <code>color[n]</code> keeps its previous value; see {@link #binOf}.
 		 * </ol>
-		 * 
+		 *
 		 * @see IBSMCPopulation
 		 */
 		@Override
@@ -1110,7 +1109,10 @@ public abstract class ColorMap<T extends Object> {
 			int len = color.length;
 			int idx = 0;
 			for (int n = 0; n < len; n++) {
-				color[n] = gradient[binOf(data[idx], trait1)][binOf(data[idx + 1], trait2)];
+				int bin0 = binOf(data[idx], trait1);
+				int bin1 = binOf(data[idx + 1], trait2);
+				if (bin0 >= 0 && bin1 >= 0)
+					color[n] = gradient[bin0][bin1];
 				idx += nTraits;
 			}
 			return true;
@@ -1124,27 +1126,26 @@ public abstract class ColorMap<T extends Object> {
 		 * <li>Each entry in <code>data</code> represents a multi-dimensional trait
 		 * value, which is converted to the corresponding gradient color and returned in
 		 * the <code>color</code> array. An example are trait densities in PDE models.
-		 * <li>For performance reasons no validity checks on <code>data</code>. In
-		 * particular, all data entries must lie inside the range for mapping data
-		 * values.
+		 * <li>Entries whose value lies outside the range of the gradient are skipped,
+		 * i.e. <code>color[n]</code> keeps its previous value; see {@link #binOf}. This
+		 * matters in particular for ecological models - e.g. with a dependent trait
+		 * and a non-constant total density via <code>--deathrate</code> - where density
+		 * values are not guaranteed to stay within the calibrated
+		 * <code>[min,max]</code> range of the gradient, unlike frequencies in a
+		 * replicator-type model.
 		 * </ol>
-		 * 
+		 *
 		 * @see PDE
 		 */
 		@Override
 		public boolean translate(double[][] data, T[] color) {
 			int len = color.length;
-			if (nTraits == 2) {
-				// no dependent trait - use auto scaling
-				for (int n = 0; n < len; n++) {
-					double[] datan = data[n];
-					color[n] = gradient[binOf(datan, trait1)][binOf(datan, trait2)];
-				}
-			} else {
-				for (int n = 0; n < len; n++) {
-					double[] datan = data[n];
-					color[n] = gradient[(int) (datan[trait1] * nGradient)][(int) (datan[trait2] * nGradient)];
-				}
+			for (int n = 0; n < len; n++) {
+				double[] datan = data[n];
+				int bin0 = binOf(datan, trait1);
+				int bin1 = binOf(datan, trait2);
+				if (bin0 >= 0 && bin1 >= 0)
+					color[n] = gradient[bin0][bin1];
 			}
 			return true;
 		}
