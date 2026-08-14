@@ -459,18 +459,20 @@ public class TestEvoLudo implements RunListener {
 	/**
 	 * Compute the SHA-256 hash of the {@code plist}, excluding the keys in
 	 * {@code exclude}.
-	 * 
+	 * <p>
+	 * <strong>Note:</strong> excluded keys are removed. Some keys are legitimately
+	 * absent on one platform (e.g. {@code JavaVersion} is never written by the GWT
+	 * front-end).
+	 *
 	 * @param plist   the property list to hash
 	 * @param exclude the keys to exclude from the hash
 	 * @return the SHA-256 hash as a hexadecimal string
 	 */
 	public static String sha256(Plist plist, Collection<String> exclude) {
-		HashMap<String, Object> original = new HashMap<>(plist);
+		HashMap<String, Object> original = new HashMap<>();
 		for (String key : exclude) {
-			if (plist.containsKey(key)) {
-				original.put(key, plist.get(key));
-				plist.replace(key, null);
-			}
+			if (plist.containsKey(key))
+				original.put(key, plist.remove(key));
 		}
 		String sha = "";
 		try {
@@ -486,7 +488,7 @@ public class TestEvoLudo implements RunListener {
 
 	/**
 	 * Compute SHA-256 hash of serializable object {@code obj}.
-	 * 
+	 *
 	 * @param obj the object to hash
 	 * @return the SHA-256 hash as a hexadecimal string
 	 * @throws IOException              if an I/O error occurs
