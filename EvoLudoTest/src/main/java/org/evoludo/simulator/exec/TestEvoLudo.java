@@ -292,7 +292,8 @@ public class TestEvoLudo implements RunListener {
 				if (existing != null) {
 					String name = existing.getName();
 					int idx = name.indexOf(SHA_PREFIX);
-					String existingSha = name.substring(idx + SHA_PREFIX.length()).replace(".zip", "").replace(".plist", "");
+					String existingSha = name.substring(idx + SHA_PREFIX.length()).replace(".zip", "")
+							.replace(".plist", "");
 					if (existingSha.equals(sha)) {
 						// reference already up to date, both content and filename
 						nTests++;
@@ -316,7 +317,8 @@ public class TestEvoLudo implements RunListener {
 							logWarning(dest + " SHA mismatch! - content unchanged, refreshing reference...");
 						} else if (nIssues == plist.getNMinor()) {
 							nTestMinor++;
-							logWarning(dest + " SHA mismatch! - minor (likely numerical) differences, refreshing reference...");
+							logWarning(dest
+									+ " SHA mismatch! - minor (likely numerical) differences, refreshing reference...");
 						} else {
 							logWarning(dest + " SHA mismatch! - content changed, refreshing reference...");
 						}
@@ -661,7 +663,7 @@ public class TestEvoLudo implements RunListener {
 			String rclo = (String) reference.get("CLO");
 			String mclo = (String) replicate.get("CLO");
 			if (!rclo.equals(mclo)) {
-				logWarning("CLO strings differ!\n me: " + mclo + "\nref: " + rclo + ")");
+				logWarning("CLO strings differ!\n me: " + mclo + "\nref: " + rclo);
 				nTestWarnings++;
 			}
 		}
@@ -712,8 +714,10 @@ public class TestEvoLudo implements RunListener {
 			return false;
 		String javaref = (String) reference.get("JavaVersion");
 		String javarep = (String) replicate.get("JavaVersion");
-		if (javaref != null && !javaref.equals(javarep))
-			logWarning("JRE versions differ (me: " + javarep + ", ref: " + javaref + ")");
+		// note: replicate has no JavaVersion in guiMode (states exported by the
+		// browser, not a JRE) - nothing to compare, and hence nothing to warn about
+		if (javaref != null && javarep != null && !javaref.equals(javarep))
+			logWarning("JRE versions differ - me: " + javarep + ", ref: " + javaref);
 		String ext;
 		String report = reportsDir.getAbsolutePath() + File.separator + refname.getName();
 		if (nIssues == nMinor) {
