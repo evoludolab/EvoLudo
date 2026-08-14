@@ -804,12 +804,19 @@ public class ODE extends Model implements DModel {
 	public boolean next(double step) {
 		if (converged)
 			return false;
-		connect = true;
 		double nextHalt = getNextHalt();
-		// continue if milestone reached in previous step, i.e. deltat < 1e-8
+		// continue if milestone reached in previous call, i.e. deltat < 1e-8. this
+		// guards against a redundant call after a previous call already reached
+		// nextHalt and reported so - e.g. EvoLudoGWT's timer-driven scheduling can
+		// queue one more step before it gets to cancel itself, see
+		// EvoLudoGWT#scheduleStep(). without this check the redundant call would
+		// integrate a full extra, unclipped step because deltat is too small to
+		// clip against but not quite zero.
 		double deltat = Math.abs(nextHalt - time);
-		if (deltat >= 1e-8)
-			step = Math.min(step, deltat);
+		if (deltat < 1e-8)
+			return false;
+		connect = true;
+		step = Math.min(step, deltat);
 		// NOTE: dt is always >0
 		double elapsed = 0.0;
 		double timeBefore = time;

@@ -305,6 +305,19 @@ public class EvoLudoGWT extends EvoLudo {
 	}
 
 	/**
+	 * Reset all state tracking scheduled-but-not-yet-completed work: initial
+	 * relaxation, chunked/unchunked step scheduling, and the busy spinner. Common
+	 * cleanup for a fatal error, an unloaded module/model, or a stopped model, see
+	 * {@link #abortFatalExecution()}, {@link #fireModuleUnloaded()},
+	 * {@link #fireModelUnloaded()} and {@link #fireModelStopped()}.
+	 */
+	private void resetScheduling() {
+		resetScheduledRelaxation();
+		resetStepScheduling();
+		setScheduledBusy(false);
+	}
+
+	/**
 	 * Execute work behind a fatal error boundary.
 	 *
 	 * @param context the description of the operation
@@ -366,9 +379,7 @@ public class EvoLudoGWT extends EvoLudo {
 		if (fatalExecutionError)
 			return;
 		fatalExecutionError = true;
-		resetScheduledRelaxation();
-		setScheduledBusy(false);
-		resetChunking();
+		resetScheduling();
 		timer.cancel();
 		isRunning = false;
 		isSuspended = false;
@@ -433,11 +444,6 @@ public class EvoLudoGWT extends EvoLudo {
 	 * Timer for running models.
 	 */
 	RunTimer timer = new RunTimer();
-
-	/**
-	 * <code>true</code> while hidden chunk updates are scheduled or in progress.
-	 */
-	private boolean chunkedStepScheduled = false;
 
 	/**
 	 * The original report interval while scheduled, chunked updates are in
@@ -517,10 +523,34 @@ public class EvoLudoGWT extends EvoLudo {
 	}
 
 	/**
-	 * Schedule the next step.
+	 * <code>true</code> while a step - chunked, see
+	 * {@link #scheduleChunkedStep(double)}, or unchunked, see
+	 * {@link #scheduleStep()} - is scheduled or in progress. Both paths share this
+	 * one guard because they are mutually exclusive: {@link #next()} picks one or
+	 * the other for any given step.
+	 * <p>
+	 * <strong>Note:</strong> guards against {@link #timer}'s fixed-rate ticks
+	 * outrunning the deferred/incremental command that carries out the previous
+	 * tick's step: without the guard, a tick can queue a redundant step before the
+	 * pending one has had a chance to run, discover the model already reached its
+	 * requested end state, and cancel the timer. Model#next treats such a
+	 * redundant call as a fresh request rather than a no-op, so it would integrate
+	 * one more, otherwise unclipped, step - visibly overshooting the requested end
+	 * state.
+	 */
+	private boolean stepScheduled = false;
+
+	/**
+	 * Schedule the next, unchunked step.
+	 *
+	 * @see #stepScheduled
 	 */
 	private void scheduleStep() {
+		if (stepScheduled)
+			return;
+		stepScheduled = true;
 		Scheduler.get().scheduleDeferred(() -> runGuarded("advancing the model", () -> {
+			resetStepScheduling();
 			if (pendingAction != PendingAction.NONE) {
 				setScheduledBusy(false);
 				processPendingAction();
@@ -570,24 +600,24 @@ public class EvoLudoGWT extends EvoLudo {
 	 * @param chunkStep the maximum model-time increment per hidden substep
 	 */
 	private void scheduleChunkedStep(double chunkStep) {
-		if (chunkedStepScheduled || activeModel == null)
+		if (stepScheduled || activeModel == null)
 			return;
-		chunkedStepScheduled = true;
+		stepScheduled = true;
 		chunkTimeStepOrig = activeModel.getTimeStep();
 		chunkTargetUpdates = getNextChunkedReport();
 		if (activeModel instanceof IBS)
 			((IBS) activeModel).clearTraits();
 		runController.startCPUSample();
 		Scheduler.get().scheduleIncremental(() -> runGuarded("running a chunked model step", () -> {
-			if (!chunkedStepScheduled)
+			if (!stepScheduled)
 				return false;
 			if (activeModel == null) {
-				resetChunking();
+				resetStepScheduling();
 				setScheduledBusy(false);
 				return false;
 			}
 			if (pendingAction != PendingAction.NONE) {
-				resetChunking();
+				resetStepScheduling();
 				setScheduledBusy(false);
 				processPendingAction();
 				return false;
@@ -632,17 +662,18 @@ public class EvoLudoGWT extends EvoLudo {
 	 * @param cont <code>true</code> if the model should continue after this step
 	 */
 	private void finishChunkedStep(boolean cont) {
-		resetChunking();
+		resetStepScheduling();
 		modelNextDone(cont);
 		if (!isRunning)
 			setScheduledBusy(false);
 	}
 
 	/**
-	 * Reset temporary state used for hidden chunking.
+	 * Reset temporary state used for step scheduling, chunked or unchunked, see
+	 * {@link #stepScheduled}.
 	 */
-	private void resetChunking() {
-		chunkedStepScheduled = false;
+	private void resetStepScheduling() {
+		stepScheduled = false;
 		chunkTimeStepOrig = 0.0;
 		chunkTargetUpdates = 0.0;
 	}
@@ -655,8 +686,7 @@ public class EvoLudoGWT extends EvoLudo {
 
 	@Override
 	public synchronized void fireModelUnloaded() {
-		resetScheduledRelaxation();
-		setScheduledBusy(false);
+		resetScheduling();
 		isRunning = false;
 		gui.setBusy(false);
 		super.fireModelUnloaded();
@@ -664,9 +694,7 @@ public class EvoLudoGWT extends EvoLudo {
 
 	@Override
 	public synchronized void fireModuleUnloaded() {
-		resetScheduledRelaxation();
-		setScheduledBusy(false);
-		resetChunking();
+		resetScheduling();
 		isRunning = false;
 		timer.cancel();
 		gui.setBusy(false);
@@ -675,9 +703,7 @@ public class EvoLudoGWT extends EvoLudo {
 
 	@Override
 	public synchronized void fireModelStopped() {
-		resetScheduledRelaxation();
-		setScheduledBusy(false);
-		resetChunking();
+		resetScheduling();
 		// model may already have been unloaded
 		if (activeModel == null) {
 			isRunning = false;
