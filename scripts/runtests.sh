@@ -49,10 +49,11 @@ print_help() {
 	echo "                            for confirmation); cannot be combined with"
 	echo "                            --gui"
 	echo "  -h, --help                Show this help screen"
-	echo "  --headful, --headed       Show the browser window (requires --gui)"
-	echo "  --gui                     Run test through GUI using playwright"
-	echo "                            (requires development server, see"
-	echo "                            'mvn gwt:devmode')"
+	echo "  --headful, --headed [<v>] Show the browser window (requires --gui);"
+	echo "                            <v> optional view index; defaults to first"
+	echo "  --gui [<v>]               Run test through GUI using playwright"
+	echo "                            (requires server, see 'mvn gwt:devmode')"
+	echo "                            <v> optional view index; defaults to console"
 	echo "  --minor                   Dump differences for minor failures"
 	echo "  --nosha                   Disable SHA checks"
 	echo "  --snap <seconds>          Timeout for laying out networks (default 20)"
@@ -78,43 +79,58 @@ REPORTS_DIR="$EVOLUDO_TEST_TEST/reports"
 EXPORTS_DIR="$EVOLUDO_TEST_TEST/exports"
 GUI=false
 GENERATE=false
+HEADED=false
+GUI_VIEW=
 TEST_FILES=()
 PASSTHROUGH_ARGS=()
 GUI_ARGS=()
-EXPECT_VALUE=false
-LAST_OPTION=
-for arg in "$@"; do
-	if [[ "$EXPECT_VALUE" == true ]]; then
-		case "$LAST_OPTION" in
-			--ref|--references) REFERENCES_DIR="$arg" ;;
-			--report|--reports) REPORTS_DIR="$arg" ;;
-			--export|--exports) EXPORTS_DIR="$arg" ;;
-			*) GUI_ARGS+=("$LAST_OPTION" "$arg") ;;
-		esac
-		EXPECT_VALUE=false
-		LAST_OPTION=
-		continue
-	fi
+while [[ $# -gt 0 ]]; do
+	arg="$1"
 	case "$arg" in
 		--ref|--references|--report|--reports|--export|--exports|--timeout|--snap)
-			EXPECT_VALUE=true
-			LAST_OPTION="$arg"
+			if [[ $# -lt 2 ]]; then
+				echo "Missing value for option '$arg' - aborting!"
+				exit 1
+			fi
+			case "$arg" in
+				--ref|--references) REFERENCES_DIR="$2" ;;
+				--report|--reports) REPORTS_DIR="$2" ;;
+				--export|--exports) EXPORTS_DIR="$2" ;;
+				--timeout|--snap) GUI_ARGS+=("$arg" "$2") ;;
+			esac
+			shift 2
 			;;
 		--gui)
 			GUI=true
+			# optional numeric view index, e.g. '--gui 1' - see GUI_VIEW below
+			if [[ $# -ge 2 && "$2" =~ ^[0-9]+$ ]]; then
+				GUI_VIEW="$2"
+				shift
+			fi
+			shift
 			;;
 		--generate)
 			GENERATE=true
+			shift
 			;;
 		--headed|--headful)
 			GUI_ARGS+=("--headed")
+			HEADED=true
+			# optional numeric view index, same as for '--gui' above
+			if [[ $# -ge 2 && "$2" =~ ^[0-9]+$ ]]; then
+				GUI_VIEW="$2"
+				shift
+			fi
+			shift
 			;;
 		--verb)
 			GUI_ARGS+=("$arg")
 			PASSTHROUGH_ARGS+=("$arg")
+			shift
 			;;
 		-*)
 			PASSTHROUGH_ARGS+=("$arg")
+			shift
 			;;
 		*)
 			testfile="$arg"
@@ -129,13 +145,23 @@ for arg in "$@"; do
 				exit 1
 			fi
 			TEST_FILES+=("$testfile")
+			shift
 			;;
 	esac
 done
 
-if [[ "$EXPECT_VALUE" == true ]]; then
-	echo "Missing value for option '$LAST_OPTION' - aborting!"
-	exit 1
+# select the initial view for every test in the browser, see EvoLudoWeb's
+# --view option: an explicit index (from '--gui <v>' or '--headful <v>')
+# always wins; otherwise headless runs default to the console view - it
+# requires no layouting of networks and so is by far the fastest, whereas
+# headful runs default to the module's own default (first) view, since a
+# visible browser is presumably meant to be looked at. Console is always the
+# last entry in the view list regardless of module, so an index well beyond
+# any module's view count reliably clamps to it.
+if [[ -n "$GUI_VIEW" ]]; then
+	GUI_ARGS+=("--view" "$GUI_VIEW")
+elif [[ "$HEADED" == false ]]; then
+	GUI_ARGS+=("--view" "999")
 fi
 
 if [[ "$GUI" == true && "$GENERATE" == true ]]; then

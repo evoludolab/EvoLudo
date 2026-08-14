@@ -62,6 +62,7 @@ function printHelp() {
 	console.log('  --references <dir>   directory with the reference test cases');
 	console.log('  --timeout <s>        timeout per test case (default 300s)');
 	console.log('  --snap <s>           timeout for laying out networks (default 20s)');
+	console.log('  --view <v>           initial view for every test, see EvoLudoWeb --view');
 	console.log('  --headful, --headed  show the browser window');
 	console.log('  --verb               verbose mode, echo the browser console');
 	console.log('  -h, --help           show this help screen');
@@ -79,6 +80,7 @@ function parse(argv) {
 		references: 'EvoLudoTest/tests/references',
 		timeout: 300,
 		snap: 20,
+		view: null,
 		headed: false,
 		verbose: false,
 		tests: []
@@ -105,6 +107,9 @@ function parse(argv) {
 				break;
 			case '--snap':
 				config.snap = Number(argv[++i]);
+				break;
+			case '--view':
+				config.view = argv[++i];
 				break;
 			case '--headed':
 			case '--headful':
@@ -238,9 +243,13 @@ function interceptExport() {
  */
 async function runTest(page, clo, config) {
 	// mirror the JRE test suite: fixed seed, full speed, no export to file;
-	// '--snap' signals when the requested end state has been reached
+	// '--snap' signals when the requested end state has been reached. '--view'
+	// is prepended, not appended, so that later options take precedence, see
+	// TestEvoLudo#runModule(String, String): a test whose own generator line
+	// sets '--view' is free to override this run's default view.
 	config.errors.length = 0;
-	const options = `--seed 0 ${stripExport(clo)} --delay 0 --run --snap ${config.snap}`;
+	const view = config.view ? `--view ${config.view} ` : '';
+	const options = `--seed 0 ${view}${stripExport(clo)} --delay 0 --run --snap ${config.snap}`;
 	const url = `${config.url}/TestEvoLudo.html?clo=${encodeURIComponent(options)}`;
 	const timeout = config.timeout * 1000;
 	await page.goto(url, { timeout });
