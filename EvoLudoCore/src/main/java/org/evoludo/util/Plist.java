@@ -429,10 +429,10 @@ public class Plist extends HashMap<String, Object> {
 	/**
 	 * Check if the difference between <code>ref</code> and <code>check</code> is
 	 * due to rounding errors.
-	 * 
+	 *
 	 * @param ref   the reference value
 	 * @param check the value to check
-	 * 
+	 *
 	 * @see #PRECISION_DIGITS
 	 */
 	private void checkRounding(Double ref, Double check) {
@@ -442,16 +442,25 @@ public class Plist extends HashMap<String, Object> {
 
 	/**
 	 * Check if the difference between <code>ref</code> and <code>check</code> is
-	 * due to rounding errors.
-	 * 
+	 * due to rounding errors. The comparison is scale aware, i.e. it tolerates an
+	 * absolute difference of up to {@code 10^-digits} relative to the magnitude of
+	 * <code>ref</code>/<code>check</code>, rather than a fixed absolute tolerance.
+	 * This matters because state variables in EvoLudo can legitimately span many
+	 * orders of magnitude, e.g. from vanishingly small frequencies to densities
+	 * that have diverged to huge but finite values in an unstable/blown-up model.
+	 * <p>
+	 * <strong>Note:</strong> a magnitude of at least <code>1.0</code> is assumed
+	 * to avoid an ever-shrinking, and eventually meaningless, tolerance for values
+	 * close to zero.
+	 *
 	 * @param ref    the reference value
 	 * @param check  the value to check
 	 * @param digits the number of significant digits
 	 */
 	private void checkRounding(Double ref, Double check, Integer digits) {
-		int order = (int) Math.floor(Math.log10(1.0 + ref));
-		double scale = Combinatorics.pow(10.0, digits - order);
-		if ((int) Math.abs(Math.floor(ref * scale) - Math.floor(check * scale)) <= 1)
+		double diff = Math.abs(ref - check);
+		double magnitude = Math.max(Math.max(Math.abs(ref), Math.abs(check)), 1.0);
+		if (diff <= magnitude * Combinatorics.pow(10.0, -digits))
 			nNumerical++;
 	}
 
