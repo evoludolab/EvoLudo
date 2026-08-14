@@ -55,7 +55,8 @@ public class TriangularGeometry extends AbstractLattice {
 	@Override
 	public boolean parse(String arg) {
 		String numeric = stripBoundary(arg);
-		if (numeric == null || numeric.isEmpty()) {
+		if (numeric.isEmpty()) {
+			// degree not specified - silently default to k=3, see #init()
 			connectivity = 3;
 		} else {
 			connectivity = Integer.parseInt(numeric);

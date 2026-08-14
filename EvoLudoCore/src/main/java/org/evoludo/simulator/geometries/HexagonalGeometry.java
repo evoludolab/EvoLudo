@@ -54,6 +54,11 @@ public class HexagonalGeometry extends AbstractLattice {
 	@Override
 	public boolean parse(String arg) {
 		String numeric = stripBoundary(arg);
+		if (numeric.isEmpty()) {
+			// degree not specified - silently default to k=6, see #init()
+			connectivity = 6;
+			return true;
+		}
 		connectivity = CLOParser.parseInteger(numeric);
 		if (connectivity != 1 && connectivity != 6) {
 			Logger logger = engine.getLogger();
