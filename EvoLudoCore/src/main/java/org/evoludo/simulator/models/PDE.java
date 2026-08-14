@@ -383,10 +383,18 @@ public class PDE extends ODE {
 	@Override
 	public boolean next(double step) {
 		gwtHalt = getNextHalt();
-		// continue if milestone reached in previous step, i.e. deltat < 1e-8
+		// continue if milestone reached in previous call, i.e. deltat < 1e-8. this
+		// guards against a redundant call after a previous call already reached
+		// gwtHalt and reported so - e.g. EvoLudoGWT's timer-driven scheduling can
+		// queue one more step before it gets to cancel itself, see
+		// EvoLudoGWT#scheduleStep(). without this check the redundant call would
+		// integrate a full extra, unclipped step because deltat is too small to
+		// clip against but not quite zero. mirrors the equivalent guard in
+		// ODE#next(double).
 		double deltat = Math.abs(gwtHalt - time);
-		if (deltat >= 1e-8)
-			step = Math.min(step, deltat);
+		if (deltat < 1e-8)
+			return false;
+		step = Math.min(step, deltat);
 		connect = true;
 		final double timeStop = getTime() + step;
 		final double dt = getDt();
@@ -404,6 +412,8 @@ public class PDE extends ODE {
 			// the new density distribution is in 'next'
 			incrementTime(dt);
 			timeRemain = timeStop - getTime();
+			if (!Double.isFinite(change))
+				return stopDiverged();
 			if (change > acc2dt2)
 				continue;
 			setConverged();
@@ -417,6 +427,8 @@ public class PDE extends ODE {
 			change = react(timeRemain);
 			incrementTime(timeRemain);
 		}
+		if (!Double.isFinite(change))
+			return stopDiverged();
 		if (change <= acc2 * timeRemain * timeRemain) {
 			setConverged();
 			return false;

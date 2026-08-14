@@ -823,6 +823,8 @@ public class ODE extends Model implements DModel {
 		while (Math.abs(step - elapsed) > 1e-8) {
 			double nextstep = Math.min(dtTry, step - elapsed);
 			double d2 = deStep(forward ? nextstep : -nextstep);
+			if (!Double.isFinite(d2))
+				return stopDiverged();
 			// elapsed may not change if dtTaken is too small
 			double prev = elapsed;
 			elapsed += dtTaken;
@@ -843,6 +845,30 @@ public class ODE extends Model implements DModel {
 		if (Math.abs(nextHalt - time) < 1e-8)
 			return false;
 		return !converged;
+	}
+
+	/**
+	 * Report that the numerical integration has diverged - i.e. accumulated a
+	 * non-finite ({@code NaN} or infinite) change in state, typically the result
+	 * of a numerical overflow, e.g. an excessively steep
+	 * {@link org.evoludo.simulator.modules.Map2Fitness Map2Fitness} - and request
+	 * a stop.
+	 * <p>
+	 * <strong>Important:</strong> a non-finite squared distance must not be
+	 * treated as converged, and must not be silently ignored either. Comparisons
+	 * against a {@code NaN} value are always {@code false}, so a naive comparison
+	 * such as {@code dist2 < acc*acc} could easily and silently return the wrong
+	 * verdict depending on how the comparison happens to be written; e.g. treating
+	 * divergence as convergence, or never detecting it at all and looping
+	 * indefinitely while {@link #time} itself becomes {@code NaN}.
+	 *
+	 * @return {@code false} to request a stop
+	 */
+	protected boolean stopDiverged() {
+		if (logger.isLoggable(Level.SEVERE))
+			logger.severe(getClass().getSimpleName() + ": integration diverged (non-finite change in state) at time="
+					+ Formatter.formatFix(time, 4) + " - stopping.");
+		return false;
 	}
 
 	/**
