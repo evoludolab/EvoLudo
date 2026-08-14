@@ -1280,7 +1280,7 @@ public class EvoLudoJRE extends EvoLudo implements Runnable {
 
 	@Override
 	public void showHelp() {
-		output.println("EvoLudo (JRE):\n" + getCLOHelp());
+		output.println("EvoLudo (JRE): " + getGit() + " (Java " + getJavaVersion() + ")\n" + getCLOHelp());
 		exit(exitStatus);
 	}
 

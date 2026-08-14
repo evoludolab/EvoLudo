@@ -2045,7 +2045,8 @@ public class EvoLudoWeb extends Composite
 	 */
 	public void showHelp() {
 		guiState.view = viewConsole;
-		logger.info(TAG_PRE_OPEN + "EvoLudo (GWT):\n" + engine.getCLOHelp() + TAG_PRE_CLOSE);
+		logger.info(TAG_PRE_OPEN + "EvoLudo (GWT): " + engine.getGit() + " (GWT " + GWT.getVersion() + ")\n"
+				+ engine.getCLOHelp() + TAG_PRE_CLOSE);
 		// no view may be available if things went wrong from the start,
 		// or neither a module or a model may be available...
 		if (evoludoDeck.getWidgetCount() == 0
