@@ -484,8 +484,8 @@ public abstract class ColorMap3D extends ColorMap<MeshLambertMaterial> {
 		 */
 		@Override
 		public MeshLambertMaterial translate(double[] data) {
-			for (int n = 0; n < nTraits; n++)
-				weights[n] = (data[n] - min[n]) * map[n];
+			if (!weightsOf(data))
+				return getFailedColor();
 			return color2Color(blendColors(traits, weights));
 		}
 

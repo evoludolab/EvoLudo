@@ -357,8 +357,8 @@ public abstract class ColorMapJRE extends ColorMap<Color> {
 		 */
 		@Override
 		public Color translate(double[] data) {
-			for (int n = 0; n < nTraits; n++)
-				weights[n] = (data[n] - min[n]) * map[n];
+			if (!weightsOf(data))
+				return getFailedColor();
 			return blendColors(traits, weights);
 		}
 

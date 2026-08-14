@@ -538,8 +538,8 @@ public abstract class ColorMapCSS extends ColorMap<String> {
 		 */
 		@Override
 		public String translate(double[] data) {
-			for (int n = 0; n < nTraits; n++)
-				weights[n] = (data[n] - min[n]) * map[n];
+			if (!weightsOf(data))
+				return getFailedColor();
 			return color2Color(blendColors(traits, weights));
 		}
 
