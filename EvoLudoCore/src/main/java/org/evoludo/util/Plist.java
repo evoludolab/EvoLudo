@@ -423,8 +423,12 @@ public class Plist extends HashMap<String, Object> {
 	/**
 	 * The number of significant digits. This is used to distinguish between minor
 	 * numerical issues and major differences.
+	 * <p>
+	 * <strong>Note:</strong> calibrated against observed JRE-vs-GWT differences,
+	 * presumably from platform differences in the ULPs of {@code Math.exp} and
+	 * similar functions, accumulated over many integration steps.
 	 */
-	private static final int PRECISION_DIGITS = 12;
+	private static final int PRECISION_DIGITS = 10;
 
 	/**
 	 * Check if the difference between <code>ref</code> and <code>check</code> is
