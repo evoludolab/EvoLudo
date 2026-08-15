@@ -965,6 +965,14 @@ public abstract class ColorMap<T extends Object> {
 				return;
 			}
 			// create color gradient on simplex
+			// pre-fill the entire (square) array with the failed color first: only the
+			// triangular region with bin0+bin1<=nGradient is populated below, e.g.
+			// because rounding in binOf (or bin0,bin1 that end up on inconsistent
+			// scales, see #setRange(double[], double[], int)) can land outside the
+			// triangle; the array is allocated in full regardless, so this costs no
+			// additional memory, just replaces its default null entries
+			for (T[] row : gradient)
+				Arrays.fill(row, getFailedColor());
 			Color colordep = colors[dep];
 			for (int i = 0; i <= nGradient; i++) {
 				Color start = blendColors(color1, colordep, w1);
@@ -1082,26 +1090,23 @@ public abstract class ColorMap<T extends Object> {
 
 		/**
 		 * Set the range of data values for <em>three</em> dimensional data with
-		 * dependent trait. The index of the dependent trait is <code>idx</code>. The
-		 * data range for the first trait is <code>[min[0], max[0]]</code> and for the
-		 * second trait <code>[min[1], max[1]</code>, assuming that <code>idx=2</code>
-		 * for the above illustration.
-		 * 
+		 * dependent trait. The index of the dependent trait is <code>idx</code> and is
+		 * skipped. For every other trait <code>n</code> (<code>n&ne;idx</code>) the
+		 * data range is <code>[min[n], max[n]]</code>, matching the indices used by
+		 * {@link #trait1} and {@link #trait2} in {@link #binOf(double[], int)}.
+		 *
 		 * @param min the array with the minimum values
 		 * @param max the array with the maximum values
 		 * @param idx the index of the dependent trait
 		 */
 		public void setRange(double[] min, double[] max, int idx) {
-			int trait = 0;
 			for (int n = 0; n < nTraits; n++) {
 				if (n == idx)
 					continue;
 				double minn = min[n];
 				double maxn = max[n];
-				this.min[trait] = minn;
-				double mapt = maxn <= minn ? 0.0 : nGradient / (maxn - minn);
-				map[trait] = mapt;
-				trait++;
+				this.min[n] = minn;
+				this.map[n] = maxn <= minn ? 0.0 : nGradient / (maxn - minn);
 			}
 		}
 

@@ -792,7 +792,17 @@ public class PDE extends ODE {
 			return;
 		}
 		ColorMap.Gradient2D<T> map = (ColorMap.Gradient2D<T>) colorMap;
-		map.setRange(minDensity, maxDensity, dependent);
+		if (dependent < 0) {
+			// no dependent trait: the two traits are independent axes with no
+			// simplex constraint between them, so each can be freely auto-scaled
+			map.setRange(minDensity, maxDensity);
+		}
+		// with a dependent trait the gradient is triangular, built on the simplex
+		// assumption that both independent traits share the same [0,1] scale (see
+		// ColorMap.Gradient2D(Color[], int, Object[][])); auto-scaling each trait
+		// independently to its own observed range would break that assumption and
+		// push valid data points off the populated triangle, so the natural [0,1]
+		// range fixed by the constructor is kept instead - analogous to GradientND
 		map.translate(density, colors);
 	}
 
