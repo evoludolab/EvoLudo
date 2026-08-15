@@ -283,9 +283,40 @@ public class ODE extends Model implements DModel {
 	 * {@link #updateBest} and {@link #processBR} to avoid discrete rule flips
 	 * being driven by platform-dependent floating-point noise (e.g. last-ULP
 	 * differences between the JRE and GWT/JavaScript builds) rather than a
-	 * genuine fitness difference.
+	 * genuine fitness difference. Allocated only if at least one species uses
+	 * {@link PlayerUpdate.Type#BEST}, {@link PlayerUpdate.Type#BEST_RANDOM} or
+	 * {@link PlayerUpdate.Type#BEST_RESPONSE}; entries are left at the default
+	 * {@link #TIE_TOLERANCE_RELATIVE} for species that don't need them.
 	 */
 	double[] tieTolerance;
+
+	/**
+	 * Relative tolerance, as a fraction of each species' (static) fitness range
+	 * <code>maxFitness - minFitness</code>, for declaring the best-response
+	 * dynamics converged (payoff spread negligible) and freezing further
+	 * updates. Deliberately much looser than {@link #TIE_TOLERANCE_RELATIVE}:
+	 * this only ever triggers once the state is essentially settled, whereas a
+	 * game such as rock-paper-scissors passes through momentary near-ties in
+	 * the payoff spread whenever the best response switches from one trait to
+	 * another (a kink in the trajectory) without actually having converged - a
+	 * tolerance as tight as {@link #TIE_TOLERANCE_RELATIVE} would risk freezing
+	 * the dynamics right at such a kink instead of letting the state move
+	 * through it.
+	 *
+	 * @see #convToleranceBR
+	 */
+	private static final double CONV_TOLERANCE_RELATIVE_BR = 1e-4;
+
+	/**
+	 * Array containing the absolute convergence tolerance for each species,
+	 * <code>{@link #CONV_TOLERANCE_RELATIVE_BR} * (maxFitness -
+	 * minFitness)</code>, precomputed once whenever the species configuration
+	 * changes (see {@link #evaluateSpecies()}). Used by
+	 * {@link #updateBestResponse} to detect when the payoff spread has become
+	 * negligible and the dynamics can be frozen. Allocated only if at least one
+	 * species uses {@link PlayerUpdate.Type#BEST_RESPONSE}.
+	 */
+	double[] convToleranceBR;
 
 	/**
 	 * Reusable scratch space for the effective birth rate of every trait of
@@ -402,6 +433,7 @@ public class ODE extends Model implements DModel {
 		names = null;
 		invFitRange = null;
 		tieTolerance = null;
+		convToleranceBR = null;
 		idxSpecies = null;
 		cloInit.clearKeys();
 		super.unload();
@@ -429,6 +461,7 @@ public class ODE extends Model implements DModel {
 	private boolean evaluateSpecies() {
 		invFitRange = null;
 		tieTolerance = null;
+		convToleranceBR = null;
 		idxSpecies = new int[nSpecies + 1];
 		nDim = 0;
 		boolean doReset = false;
@@ -444,10 +477,24 @@ public class ODE extends Model implements DModel {
 				if (!hasPayoffs) {
 					invFitRange = new double[nSpecies];
 					Arrays.fill(invFitRange, 1.0);
+				}
+				hasPayoffs = true;
+				// tieTolerance/convTolerance are only ever read by updateBest/processBR
+				// (BEST, BEST_RANDOM, BEST_RESPONSE) and updateBestResponse (BEST_RESPONSE),
+				// respectively - allocate and populate them only for species that use those
+				// player updates.
+				PlayerUpdate.Type put = mod.getPlayerUpdate().getType();
+				boolean needsTie = put == PlayerUpdate.Type.BEST || put == PlayerUpdate.Type.BEST_RANDOM
+						|| put == PlayerUpdate.Type.BEST_RESPONSE;
+				boolean needsConv = put == PlayerUpdate.Type.BEST_RESPONSE;
+				if (needsTie && tieTolerance == null) {
 					tieTolerance = new double[nSpecies];
 					Arrays.fill(tieTolerance, TIE_TOLERANCE_RELATIVE);
 				}
-				hasPayoffs = true;
+				if (needsConv && convToleranceBR == null) {
+					convToleranceBR = new double[nSpecies];
+					Arrays.fill(convToleranceBR, CONV_TOLERANCE_RELATIVE_BR);
+				}
 				Map2Fitness map2fit = mod.getMap2Fitness();
 				Payoffs pmod = (Payoffs) mod;
 				double mappedMin = map2fit.map(pmod.getMinPayoff());
@@ -456,7 +503,10 @@ public class ODE extends Model implements DModel {
 				double range = mappedMax - mappedMin;
 				if (range > 0.0) {
 					invFitRange[idx] = 1.0 / range;
-					tieTolerance[idx] = TIE_TOLERANCE_RELATIVE * range;
+					if (needsTie)
+						tieTolerance[idx] = TIE_TOLERANCE_RELATIVE * range;
+					if (needsConv)
+						convToleranceBR[idx] = CONV_TOLERANCE_RELATIVE_BR * range;
 				}
 			}
 			idx++;
@@ -1708,12 +1758,11 @@ public class ODE extends Model implements DModel {
 
 		double diff = max - min;
 		// note:
-		// - the threshold to signal convergence in terms of payoff range is
-		// completely heuristic... convergence no longer triggered for CDL with
-		// threshold of 1e-4. this should be done in a more systematic manner.
+		// - the payoff-range-threshold to signal convergence is delicate. e.g.
+		// convergence no longer triggered for CDL with threshold of 1e-4.
 		// - the second condition already triggers early on whenever approaching
 		// points where another trait becomes the best response.
-		if (diff < 1e-3 && diff * dtTry < accuracy) {
+		if (diff < convToleranceBR[index] && diff * dtTry < accuracy) {
 			for (int n = skip; n < end; n++)
 				change[n] = 0.0;
 			return 0.0;
