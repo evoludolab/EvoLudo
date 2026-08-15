@@ -83,13 +83,35 @@ public class StateEncoder {
 		if (java != null)
 			plist.append(Plist.encodeKey("JavaVersion", java));
 		String clo = engine.cloController.getParserCLO();
-		clo = clo.replaceAll("--run *", "");
+		// strip options added by test/GUI harnesses beyond those in the module's
+		// own command line, so that references and replicates remain comparable
+		clo = stripOption(clo, "--run");
+		clo = stripOption(clo, "--snap");
+		clo = stripOption(clo, "--view");
 		plist.append(Plist.encodeKey("CLO", clo));
 		engine.activeModel.encodeState(plist);
 		// the mersenne twister state is pretty long (and uninteresting) keep at end
 		plist.append("<key>RNG state</key>\n" + "<dict>\n" + (engine.rng.getRNG().encodeState()) + "</dict>\n");
 		plist.append("</dict>\n" + "</plist>");
 		return plist.toString();
+	}
+
+	/**
+	 * Remove {@code option} and its argument from {@code clo}, up to (but not
+	 * including) the next option or the end of the string. Mirrors
+	 * {@code stripExport} in {@code guitests.js}.
+	 *
+	 * @param clo    the command line options
+	 * @param option the option to remove, including its leading {@code --}
+	 * @return {@code clo} with all occurrences of {@code option} removed
+	 */
+	private static String stripOption(String clo, String option) {
+		int idx;
+		while ((idx = clo.indexOf(option)) >= 0) {
+			int end = clo.indexOf("--", idx + option.length());
+			clo = (clo.substring(0, idx) + (end < 0 ? "" : clo.substring(end))).trim();
+		}
+		return clo;
 	}
 
 	/**

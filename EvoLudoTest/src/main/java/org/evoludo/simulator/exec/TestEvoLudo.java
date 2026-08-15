@@ -199,7 +199,9 @@ public class TestEvoLudo implements RunListener {
 	int nTestMinor;
 
 	/**
-	 * The number of tests with warnings.
+	 * The number of tests with warnings. Excludes genuine failures - those are
+	 * tracked separately in {@link #nTestFailures} and must not be double
+	 * counted here, since the more severe classification takes precedence.
 	 */
 	int nTestWarnings;
 
@@ -658,14 +660,14 @@ public class TestEvoLudo implements RunListener {
 		// create 'plist' of current state and compare to 'reference'
 		// ignore some plist entries
 		int nIssues = replicate.diff(reference, SHA_EXCLUDE);
-		// check option strings only if some tests failed
+		// check option strings only if some tests failed; report as a diagnostic
+		// but don't tally separately - the test is already counted as a failure
+		// below, and the more severe classification takes precedence
 		if (replicate.getNMajor() > 0) {
 			String rclo = (String) reference.get("CLO");
 			String mclo = (String) replicate.get("CLO");
-			if (!rclo.equals(mclo)) {
+			if (!rclo.equals(mclo))
 				logWarning("CLO strings differ!\n me: " + mclo + "\nref: " + rclo);
-				nTestWarnings++;
-			}
 		}
 		int nMinor = replicate.getNMinor();
 		String msg;
