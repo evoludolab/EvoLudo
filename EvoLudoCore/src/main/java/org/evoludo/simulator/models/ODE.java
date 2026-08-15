@@ -804,14 +804,10 @@ public class ODE extends Model implements DModel {
 	public boolean next(double step) {
 		if (converged)
 			return false;
+		atHalt = false;
 		double nextHalt = getNextHalt();
-		// continue if milestone reached in previous call, i.e. deltat < 1e-8. this
-		// guards against a redundant call after a previous call already reached
-		// nextHalt and reported so - e.g. EvoLudoGWT's timer-driven scheduling can
-		// queue one more step before it gets to cancel itself, see
-		// EvoLudoGWT#scheduleStep(). without this check the redundant call would
-		// integrate a full extra, unclipped step because deltat is too small to
-		// clip against but not quite zero.
+		// continue if milestone reached in previous call, i.e. deltat < 1e-8, see
+		// IBS#next(double).
 		double deltat = Math.abs(nextHalt - time);
 		if (deltat < 1e-8)
 			return false;
@@ -842,10 +838,24 @@ public class ODE extends Model implements DModel {
 		}
 		// try to minimize rounding errors
 		time = timeBefore + (forward ? elapsed : -elapsed);
-		if (Math.abs(nextHalt - time) < 1e-8)
+		if (Math.abs(nextHalt - time) < 1e-8) {
+			// snap to the milestone exactly rather than leaving a floating-point
+			// residual - lets getNextHalt() recognize the milestone as reached with
+			// a plain equality-based comparison, same as e.g. IBS's exact update
+			// counter, instead of requiring an epsilon-tolerant comparison there.
+			time = nextHalt;
+			atHalt = true;
 			return false;
+		}
 		return !converged;
 	}
+
+	/**
+	 * Indicates whether {@link #next(double)} halted in its most recent call
+	 * because the model's time reached the next requested milestone (see
+	 * {@link #getNextHalt()}), as opposed to converging or diverging.
+	 */
+	protected boolean atHalt = false;
 
 	/**
 	 * Report that the numerical integration has diverged - i.e. accumulated a

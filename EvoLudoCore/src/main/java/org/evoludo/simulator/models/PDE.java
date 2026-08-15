@@ -382,15 +382,10 @@ public class PDE extends ODE {
 	 */
 	@Override
 	public boolean next(double step) {
+		atHalt = false;
 		gwtHalt = getNextHalt();
-		// continue if milestone reached in previous call, i.e. deltat < 1e-8. this
-		// guards against a redundant call after a previous call already reached
-		// gwtHalt and reported so - e.g. EvoLudoGWT's timer-driven scheduling can
-		// queue one more step before it gets to cancel itself, see
-		// EvoLudoGWT#scheduleStep(). without this check the redundant call would
-		// integrate a full extra, unclipped step because deltat is too small to
-		// clip against but not quite zero. mirrors the equivalent guard in
-		// ODE#next(double).
+		// continue if milestone reached in previous call, i.e. deltat < 1e-8, see
+		// IBS#next(double).
 		double deltat = Math.abs(gwtHalt - time);
 		if (deltat < 1e-8)
 			return false;
@@ -433,8 +428,12 @@ public class PDE extends ODE {
 			setConverged();
 			return false;
 		}
-		if (Math.abs(gwtHalt - time) < 1e-8)
+		if (Math.abs(gwtHalt - time) < 1e-8) {
+			// snap to the milestone exactly, see ODE#next(double).
+			time = gwtHalt;
+			atHalt = true;
 			return false;
+		}
 		return !converged;
 	}
 

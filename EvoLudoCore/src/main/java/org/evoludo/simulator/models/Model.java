@@ -584,7 +584,7 @@ public abstract class Model implements CLOProvider {
 
 	/**
 	 * Milestone: Reset this model
-	 * 
+	 *
 	 * @see RunListener#modelDidReset()
 	 */
 	public void reset() {
