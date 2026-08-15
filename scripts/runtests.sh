@@ -415,7 +415,6 @@ if [[ "$GENERATE" == true ]]; then
 			--generate "$EVOLUDO_TEST_TEST/generators" \
 			--references "$REFERENCES_DIR" \
 			--reports "$REPORTS_DIR" \
-			--compress \
 			${PASSTHROUGH_ARGS[@]+"${PASSTHROUGH_ARGS[@]}"}
 		exit $?
 	fi
@@ -428,7 +427,6 @@ if [[ "$GENERATE" == true ]]; then
 			--generate "$testfile" \
 			--references "$REFERENCES_DIR" \
 			--reports "$REPORTS_DIR" \
-			--compress \
 			${PASSTHROUGH_ARGS[@]+"${PASSTHROUGH_ARGS[@]}"} || teststatus=$?
 		if ((teststatus != 0)); then
 			status=$teststatus
