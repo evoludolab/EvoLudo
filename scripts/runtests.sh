@@ -43,17 +43,17 @@ print_help() {
 	echo
 	echo "Options are passed to the EvoLudo test jar:"
 	echo "  --exports <directory>     Exported states (requires --gui)"
-	echo "  --generate                Generate reference test cases instead of"
-	echo "                            running tests, replacing any existing"
-	echo "                            reference with a mismatching SHA (prompts"
-	echo "                            for confirmation); cannot be combined with"
-	echo "                            --gui"
+	echo "  --generate                Generate reference tests or update failing"
+	echo "                            ones after confirmation (conflicts with --gui)"
 	echo "  -h, --help                Show this help screen"
-	echo "  --headful, --headed [<v>] Show the browser window (requires --gui);"
+	echo "  --headful, --headed [<v>] Show the browser window (implies --gui);"
 	echo "                            <v> optional view index; defaults to first"
 	echo "  --gui [<v>]               Run test through GUI using playwright"
 	echo "                            (requires server, see 'mvn gwt:devmode')"
 	echo "                            <v> optional view index; defaults to console"
+	echo "  --jobs <n>                Run <n> module tests in parallel (max "
+	echo "                            processor count JVM's or 4 playwright;"
+	echo "                            --headed defaults to 1)"
 	echo "  --minor                   Dump differences for minor failures"
 	echo "  --nosha                   Disable SHA checks"
 	echo "  --snap <seconds>          Timeout for laying out networks (default 20)"
@@ -81,13 +81,14 @@ GUI=false
 GENERATE=false
 HEADED=false
 GUI_VIEW=
+USER_JOBS=
 TEST_FILES=()
 PASSTHROUGH_ARGS=()
 GUI_ARGS=()
 while [[ $# -gt 0 ]]; do
 	arg="$1"
 	case "$arg" in
-		--ref|--references|--report|--reports|--export|--exports|--timeout|--snap)
+		--ref|--references|--report|--reports|--export|--exports|--timeout|--snap|--jobs)
 			if [[ $# -lt 2 ]]; then
 				echo "Missing value for option '$arg' - aborting!"
 				exit 1
@@ -97,6 +98,7 @@ while [[ $# -gt 0 ]]; do
 				--report|--reports) REPORTS_DIR="$2" ;;
 				--export|--exports) EXPORTS_DIR="$2" ;;
 				--timeout|--snap) GUI_ARGS+=("$arg" "$2") ;;
+				--jobs) USER_JOBS="$2" ;;
 			esac
 			shift 2
 			;;
@@ -114,6 +116,7 @@ while [[ $# -gt 0 ]]; do
 			shift
 			;;
 		--headed|--headful)
+			GUI=true
 			GUI_ARGS+=("--headed")
 			HEADED=true
 			# optional numeric view index, same as for '--gui' above
@@ -247,6 +250,133 @@ print_aggregate_summary() {
 	fi
 }
 
+# scratch space for the parallel workers' logs/tallies (not reports - those go
+# straight into REPORTS_DIR, see the note by its 'mkdir -p' below); removed on
+# exit, whether clean, failing, or interrupted
+WORKDIR="$(mktemp -d)"
+trap 'rm -rf "$WORKDIR"' EXIT
+
+# every worker JVM/node process, run in parallel or not, is handed the same
+# REPORTS_DIR/REFERENCES_DIR; TestEvoLudo no longer creates or deletes the
+# reports directory itself (it used to, but that raced when several JVMs
+# shared one reports directory - see TestEvoLudo#run() and #parse()), so
+# creating it once up front, before any worker starts, is now runtests.sh's
+# job
+mkdir -p "$REPORTS_DIR"
+
+# stash the passthrough option arrays as NUL-delimited files once, since they
+# can't cross the process boundary 'xargs' spawns runtests-worker.sh across -
+# see runtests-worker.sh for the read-back side of this
+printf '%s\0' ${PASSTHROUGH_ARGS[@]+"${PASSTHROUGH_ARGS[@]}"} >"$WORKDIR/passthrough-java.args"
+printf '%s\0' ${GUI_ARGS[@]+"${GUI_ARGS[@]}"} >"$WORKDIR/passthrough-gui.args"
+
+# Determine how many modules to run in parallel: an explicit '--jobs' always
+# wins; otherwise default to one less than the number of available processors
+# so the machine stays responsive, optionally capped (e.g. for --gui, where
+# each worker is a full headless browser instance rather than a comparatively
+# light JVM), and never more workers than there are modules to run.
+effective_jobs() {
+	local count=$1 cap=${2:-0} jobs
+	if [[ -n "$USER_JOBS" ]]; then
+		jobs=$USER_JOBS
+	else
+		jobs=$(num_processors)
+		((jobs > 1)) && jobs=$((jobs - 1))
+		((cap > 0 && jobs > cap)) && jobs=$cap
+	fi
+	((jobs > count)) && jobs=$count
+	((jobs < 1)) && jobs=1
+	echo "$jobs"
+}
+
+# Run 'modules' (generator .clo files) in parallel through runtests-worker.sh,
+# one 'jre-run' or 'jre-check' worker per module, then fold each module's
+# results into modules_checked/total_* (initialized by the caller) exactly as
+# run_and_tally does for a single module, so print_aggregate_summary works
+# unchanged. Modules are reported in their original order (not completion
+# order) once every worker has finished, so full per-module output is never
+# interleaved and runs stay reproducible/diffable - see runtests-worker.sh for
+# why the output can't simply be streamed live as each module completes.
+run_parallel_and_tally() {
+	local mode=$1 jobs=$2
+	shift 2
+	local modules=("$@")
+	printf '%s\0' "${modules[@]}" | xargs -0 -P "$jobs" -I{} "$SCRIPT_DIR/runtests-worker.sh" \
+		--mode "$mode" --jar "$LATEST_TEST_JAR" --references "$REFERENCES_DIR" \
+		--reports "$REPORTS_DIR" --exports "$EXPORTS_DIR" --workdir "$WORKDIR" \
+		--passthrough-file "$WORKDIR/passthrough-java.args" --testfile {}
+	local testfile name logfile tallyfile key value
+	local teststatus tests passed warnings minor failures
+	for testfile in "${modules[@]}"; do
+		name="$(basename "$testfile" .clo)"
+		echo "Running EvoLudo test file '$testfile'..."
+		logfile="$WORKDIR/logs/$name.log"
+		[[ -f "$logfile" ]] && cat "$logfile"
+		tallyfile="$WORKDIR/tally/$name.tally"
+		teststatus=1
+		tests=0
+		passed=0
+		warnings=0
+		minor=0
+		failures=0
+		if [[ -f "$tallyfile" ]]; then
+			while IFS='=' read -r key value; do
+				case "$key" in
+					STATUS) teststatus=$value ;;
+					TESTS) tests=$value ;;
+					PASSED) passed=$value ;;
+					WARNINGS) warnings=$value ;;
+					MINOR) minor=$value ;;
+					FAILURES) failures=$value ;;
+				esac
+			done <"$tallyfile"
+		else
+			echo "No result reported for '$testfile' - treating as failed."
+		fi
+		modules_checked=$((modules_checked + 1))
+		total_tests=$((total_tests + tests))
+		total_passed=$((total_passed + passed))
+		total_warnings=$((total_warnings + warnings))
+		total_minor=$((total_minor + minor))
+		total_failures=$((total_failures + failures))
+		if ((teststatus != 0)); then
+			status=$teststatus
+		fi
+	done
+}
+
+# Run 'modules' in parallel through runtests-worker.sh's 'gui-export' mode,
+# one playwright instance per module. Unlike run_parallel_and_tally, exports
+# aren't tallied against modules_checked/total_* here - only the subsequent
+# GUI-check pass (run through run_parallel_and_tally like the JRE tests) is,
+# matching today's sequential GUI flow where the export pass only ever sets
+# $status.
+run_parallel_export() {
+	local jobs=$1
+	shift
+	local modules=("$@")
+	printf '%s\0' "${modules[@]}" | xargs -0 -P "$jobs" -I{} "$SCRIPT_DIR/runtests-worker.sh" \
+		--mode gui-export --node-script "$SCRIPT_DIR/guitests.js" --url "$EVOLUDO_URL" \
+		--references "$REFERENCES_DIR" --exports "$EXPORTS_DIR" --workdir "$WORKDIR" \
+		--passthrough-file "$WORKDIR/passthrough-gui.args" --testfile {}
+	local testfile name logfile tallyfile key value teststatus
+	for testfile in "${modules[@]}"; do
+		name="$(basename "$testfile" .clo)"
+		logfile="$WORKDIR/logs/$name.log"
+		[[ -f "$logfile" ]] && cat "$logfile"
+		tallyfile="$WORKDIR/tally/$name.tally"
+		teststatus=1
+		if [[ -f "$tallyfile" ]]; then
+			while IFS='=' read -r key value; do
+				[[ "$key" == STATUS ]] && teststatus=$value
+			done <"$tallyfile"
+		fi
+		if ((teststatus != 0)); then
+			status=$teststatus
+		fi
+	done
+}
+
 if [[ "$GENERATE" == true ]]; then
 	echo "Preparing to generate EvoLudo tests..."
 else
@@ -325,17 +455,27 @@ if [[ "$GUI" == false ]]; then
 		done
 	fi
 
-	for testfile in "${TEST_FILES[@]}"; do
-		echo "Running EvoLudo test file '$testfile'..."
-		run_and_tally \
-			--tests "$testfile" \
-			--references "$REFERENCES_DIR" \
-			--reports "$REPORTS_DIR" \
-			${PASSTHROUGH_ARGS[@]+"${PASSTHROUGH_ARGS[@]}"}
-		if ((teststatus != 0)); then
-			status=$teststatus
-		fi
-	done
+	if ((${#TEST_FILES[@]} > 1)); then
+		JOBS=$(effective_jobs ${#TEST_FILES[@]})
+	else
+		JOBS=1
+	fi
+	if ((JOBS > 1)); then
+		echo "Running ${#TEST_FILES[@]} EvoLudo test files using $JOBS parallel workers..."
+		run_parallel_and_tally jre-run "$JOBS" "${TEST_FILES[@]}"
+	else
+		for testfile in "${TEST_FILES[@]}"; do
+			echo "Running EvoLudo test file '$testfile'..."
+			run_and_tally \
+				--tests "$testfile" \
+				--references "$REFERENCES_DIR" \
+				--reports "$REPORTS_DIR" \
+				${PASSTHROUGH_ARGS[@]+"${PASSTHROUGH_ARGS[@]}"}
+			if ((teststatus != 0)); then
+				status=$teststatus
+			fi
+		done
+	fi
 	if ((modules_checked > 1)); then
 		print_aggregate_summary
 	fi
@@ -348,9 +488,17 @@ fi
 # references. JRE and GWT must return the same results.
 #
 
-# testing the GUI only makes sense with a running development server
+# testing the GUI only makes sense with a running development server; prefer
+# 'nc', which resolves 'localhost' the same way curl/browsers do (trying both
+# IPv4 and IPv6) - bash's own '/dev/tcp' can fail to find a port that's only
+# listening on the IPv6 loopback address, which is how the jetty dev server
+# binds by default on some systems
 port_open() {
-	(exec 3<>"/dev/tcp/localhost/$1") 2>/dev/null
+	if command -v nc >/dev/null 2>&1; then
+		nc -z -w 2 localhost "$1" 2>/dev/null
+	else
+		(exec 3<>"/dev/tcp/localhost/$1") 2>/dev/null
+	fi
 }
 
 JETTY_PORT=$(sed -n 's:.*<evoludo\.jettyPort>\([0-9]*\)</evoludo\.jettyPort>.*:\1:p' pom.xml | head -1)
@@ -383,17 +531,33 @@ if ((${#TEST_FILES[@]} == 0)); then
 	done
 fi
 
-# run the tests in the browser and save the states exported by the GUI
+# run the tests in the browser and save the states exported by the GUI; each
+# worker is a full headless browser instance (heavier than a JVM), so the
+# default worker cap is more conservative, and a headed run - meant to be
+# watched - defaults to a single browser unless '--jobs' overrides it
 echo "Running EvoLudo tests in the GUI on ${EVOLUDO_URL}..."
-node "${SCRIPT_DIR}/guitests.js" \
-	--url "$EVOLUDO_URL" \
-	--exports "$EXPORTS_DIR" \
-	--references "$REFERENCES_DIR" \
-	${GUI_ARGS[@]+"${GUI_ARGS[@]}"} \
-	"${TEST_FILES[@]}" || status=$?
+if ((${#TEST_FILES[@]} > 1)); then
+	GUI_JOBS_CAP=4
+	[[ "$HEADED" == true ]] && GUI_JOBS_CAP=1
+	JOBS=$(effective_jobs ${#TEST_FILES[@]} "$GUI_JOBS_CAP")
+else
+	JOBS=1
+fi
+if ((JOBS > 1)); then
+	echo "Using $JOBS parallel playwright workers..."
+	run_parallel_export "$JOBS" "${TEST_FILES[@]}"
+else
+	node "${SCRIPT_DIR}/guitests.js" \
+		--url "$EVOLUDO_URL" \
+		--exports "$EXPORTS_DIR" \
+		--references "$REFERENCES_DIR" \
+		${GUI_ARGS[@]+"${GUI_ARGS[@]}"} \
+		"${TEST_FILES[@]}" || status=$?
+fi
 
 # compare the exported states to the references, one module per invocation,
 # tallying totals across all modules checked
+CHECK_FILES=()
 for testfile in "${TEST_FILES[@]}"; do
 	name="$(basename "$testfile" .clo)"
 	if [ ! -d "$EXPORTS_DIR/$name" ]; then
@@ -402,6 +566,20 @@ for testfile in "${TEST_FILES[@]}"; do
 		modules_skipped=$((modules_skipped + 1))
 		continue
 	fi
+	CHECK_FILES+=("$testfile")
+done
+
+if ((${#CHECK_FILES[@]} > 1)); then
+	JOBS=$(effective_jobs ${#CHECK_FILES[@]})
+else
+	JOBS=1
+fi
+if ((JOBS > 1)); then
+	echo "Checking ${#CHECK_FILES[@]} EvoLudo GUI test files using $JOBS parallel workers..."
+	run_parallel_and_tally jre-check "$JOBS" "${CHECK_FILES[@]}"
+elif ((${#CHECK_FILES[@]} == 1)); then
+	testfile="${CHECK_FILES[0]}"
+	name="$(basename "$testfile" .clo)"
 	echo "Checking EvoLudo GUI test file '$testfile'..."
 	run_and_tally \
 		--gui \
@@ -412,7 +590,7 @@ for testfile in "${TEST_FILES[@]}"; do
 	if ((teststatus != 0)); then
 		status=$teststatus
 	fi
-done
+fi
 if ((modules_checked > 1)); then
 	print_aggregate_summary
 fi

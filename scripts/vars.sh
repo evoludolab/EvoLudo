@@ -81,6 +81,18 @@ latest_test_jar() {
 	latest_file "${EVOLUDO_TEST_HOME}/target" 'EvoLudoTest.*.jar'
 }
 
+num_processors() {
+	if command -v nproc >/dev/null 2>&1; then
+		nproc
+	elif command -v getconf >/dev/null 2>&1 && getconf _NPROCESSORS_ONLN >/dev/null 2>&1; then
+		getconf _NPROCESSORS_ONLN
+	elif command -v sysctl >/dev/null 2>&1; then
+		sysctl -n hw.ncpu
+	else
+		echo 1
+	fi
+}
+
 LATEST_JAVA=$(latest_java)
 LATEST_GWT=$(latest_gwt)
 LATEST_JAR=$(latest_jar)

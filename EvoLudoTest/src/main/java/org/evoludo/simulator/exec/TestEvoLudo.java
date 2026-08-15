@@ -895,8 +895,6 @@ public class TestEvoLudo implements RunListener {
 					+ " tests successfully passed.");
 		if (nTestFailures > 0 || nTestMinor > 0 || nTestWarnings > 0)
 			logTitle("Review issues carefully!");
-		// remove reports directory if empty
-		reportsDir.delete();
 		return (nTestFailures == 0);
 	}
 
@@ -1023,16 +1021,8 @@ public class TestEvoLudo implements RunListener {
 			testsDir = referencesDir;
 		if (referencesDir == null)
 			referencesDir = testsDir;
-		if (reportsDir == null) {
-			if (testsDir.isDirectory()) {
-				reportsDir = new File(testsDir.getPath());
-				if (!reportsDir.exists() && !reportsDir.mkdir()) {
-					logError("failed to create directory '" + reportsDir.getPath() + "' for reports.");
-					engine.exit(1);
-				}
-			} else
-				reportsDir = new File(".");
-		}
+		if (reportsDir == null)
+			reportsDir = testsDir.isDirectory() ? new File(testsDir.getPath()) : new File(".");
 		if (generator != null) {
 			// for generating reference tests, generator file/directory must be readable and
 			// the reference directory must exist and must be writable
@@ -1068,12 +1058,12 @@ public class TestEvoLudo implements RunListener {
 			}
 		}
 		// for generating and testing, the directory for reports must exist and be
-		// writeable
+		// writeable; the caller is responsible for creating it (e.g. so that
+		// concurrent test runs sharing one reports directory don't race on its
+		// creation)
 		if (reportsDir != null && !reportsDir.exists()) {
-			if (!reportsDir.mkdirs()) {
-				logError("failed to create directory '" + reportsDir.getPath() + "' for reports.");
-				engine.exit(1);
-			}
+			logError("report directory '" + reportsDir.getPath() + "' does not exist.");
+			engine.exit(1);
 		}
 		if (reportsDir != null && !reportsDir.canWrite()) {
 			logError("report directory '" + reportsDir.getPath() + "' not writable.");
