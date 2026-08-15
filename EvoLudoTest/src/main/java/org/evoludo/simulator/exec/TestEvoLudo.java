@@ -52,6 +52,8 @@ import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
 
 import org.evoludo.simulator.EvoLudoJRE;
+import org.evoludo.simulator.models.Model;
+import org.evoludo.simulator.models.ModelType;
 import org.evoludo.simulator.models.RunListener;
 import org.evoludo.util.Plist;
 import org.evoludo.util.PlistParser;
@@ -91,6 +93,28 @@ public class TestEvoLudo implements RunListener {
 	 * The prefix to mark the beginning of the SHA hash in the filename.
 	 */
 	static final String SHA_PREFIX = "-SHA";
+
+	/**
+	 * Relaxed precision (one digit looser than {@code Plist}'s default) used when
+	 * comparing SDE test results. SDE models draw many Gaussian random numbers
+	 * per run via {@code Math.log} in the Box-Muller transform, which is not
+	 * guaranteed to yield identical results across hardware and software
+	 * implementations.
+	 */
+	static final int SDE_PRECISION_DIGITS = 9;
+
+	/**
+	 * Check whether the test described by {@code reference} is an SDE model.
+	 * Note, {@code engine.getModel()} may not be available e.g. when
+	 * comparing an already exported GUI/GWT state against its reference,
+	 * without running the module locally.
+	 *
+	 * @param reference the reference {@code Plist} to inspect
+	 * @return {@code true} if {@code reference} is an SDE model
+	 */
+	private static boolean isSDE(Plist reference) {
+		return ModelType.SDE.toString().equals(reference.get("Model"));
+	}
 
 	/**
 	 * Pointer to engine. Engine has EvoLudoJRE class but do not rely on JRE
@@ -313,7 +337,8 @@ public class TestEvoLudo implements RunListener {
 				if (wasStale) {
 					try {
 						Plist reference = engine.readPlist(existing.getAbsolutePath());
-						int nIssues = plist.diff(reference, SHA_EXCLUDE);
+						int nIssues = (isSDE(reference) ? plist.diff(reference, SHA_EXCLUDE, SDE_PRECISION_DIGITS)
+								: plist.diff(reference, SHA_EXCLUDE));
 						if (nIssues == 0) {
 							nSHAMismatches++;
 							logWarning(dest + " SHA mismatch! - content unchanged, refreshing reference...");
@@ -659,7 +684,8 @@ public class TestEvoLudo implements RunListener {
 		nTests++;
 		// create 'plist' of current state and compare to 'reference'
 		// ignore some plist entries
-		int nIssues = replicate.diff(reference, SHA_EXCLUDE);
+		int nIssues = (isSDE(reference) ? replicate.diff(reference, SHA_EXCLUDE, SDE_PRECISION_DIGITS)
+				: replicate.diff(reference, SHA_EXCLUDE));
 		// check option strings only if some tests failed; report as a diagnostic
 		// but don't tally separately - the test is already counted as a failure
 		// below, and the more severe classification takes precedence
