@@ -33,6 +33,7 @@ package org.evoludo.simulator.models;
 import java.util.logging.Level;
 
 import org.evoludo.math.ArrayMath;
+import org.evoludo.math.Functions;
 import org.evoludo.simulator.EvoLudo;
 import org.evoludo.simulator.modules.Module;
 
@@ -145,24 +146,11 @@ public class RungeKutta extends ODE {
 	private static final double SAFETY = 0.9;
 
 	/**
-	 * The exponent for increasing the time step if error outside margin. Magic
-	 * number from Numerical Recipes in C.
-	 * 
-	 * @see #ERRCON
-	 */
-	private static final double PGROW = -0.2;
-
-	/**
-	 * The exponent for decreasing the time step if error outside margin. Magic
-	 * number from Numerical Recipes in C.
-	 * 
-	 * @see #ACCURACY
-	 */
-	private static final double PSHRNK = -0.25;
-
-	/**
 	 * The maximum error in a single step. The value {@code ERRCON} equals
-	 * {@code (5/SAFETY)^(1/PGROW)}. Magic number from Numerical Recipes in C.
+	 * {@code (5/SAFETY)^(-5)}, i.e. {@code (5/SAFETY)^(1/PGROW)} for the
+	 * time-step growth exponent {@code PGROW = -0.2} (see
+	 * {@link Functions#fifthRoot(double)}). Magic number from Numerical Recipes
+	 * in C.
 	 */
 	private static final double ERRCON = 1.89e-4;
 
@@ -233,7 +221,12 @@ public class RungeKutta extends ODE {
 			errmax /= ACCURACY; // scale relative to required tolerance.
 			if (errmax <= 1.0)
 				break; // step succeeded - compute size of next step.
-			double htemp = SAFETY * h * Math.pow(errmax, PSHRNK);
+			// shrink exponent from Numerical Recipes in C is -1/4; computed as
+			// 1/sqrt(sqrt(errmax)) rather than Math.pow(errmax, -0.25) - mathematically
+			// identical, but Math.sqrt is IEEE-754 correctly-rounded on every platform
+			// (unlike Math.pow with a non-trivial exponent), keeping JRE and GWT
+			// step-size selection bit-identical instead of drifting apart over time
+			double htemp = SAFETY * h / Math.sqrt(Math.sqrt(errmax));
 			// truncation error too large, reduce step size.
 			h = (h >= 0.0 ? Math.max(htemp, 0.1 * h) : Math.min(htemp, 0.1 * h));
 			// no more than a factor of 10.
@@ -249,7 +242,10 @@ public class RungeKutta extends ODE {
 		// ensure that dtTry and dtTaken remain positive
 		h = Math.abs(h);
 		if (errmax > ERRCON)
-			dtTry = SAFETY * h * Math.pow(errmax, PGROW);
+			// growth exponent from Numerical Recipes in C is -0.2 (= -1/5); computed
+			// via Functions.fifthRoot rather than Math.pow(errmax, -0.2) to keep JRE
+			// and GWT step-size selection bit-identical (see Functions#fifthRoot)
+			dtTry = SAFETY * h / Functions.fifthRoot(errmax);
 		else
 			dtTry = 2.0 * h; // no more than doubling.
 		dtTaken = h;
