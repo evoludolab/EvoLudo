@@ -82,7 +82,9 @@ public class StateEncoder {
 		String java = engine.getJavaVersion();
 		if (java != null)
 			plist.append(Plist.encodeKey("JavaVersion", java));
-		String clo = engine.cloController.getParserCLO();
+		// CLOParser.getCLO() always prepends a leading space to every option, so
+		// trim it here to keep the stored CLO comparable across platforms
+		String clo = engine.cloController.getParserCLO().trim();
 		// strip options added by test/GUI harnesses beyond those in the module's
 		// own command line, so that references and replicates remain comparable
 		clo = stripOption(clo, "--run");
