@@ -267,6 +267,27 @@ public class ODE extends Model implements DModel {
 	double[] invFitRange;
 
 	/**
+	 * Relative tolerance, as a fraction of each species' (static) fitness range
+	 * <code>maxFitness - minFitness</code>, for treating two fitness values as
+	 * tied.
+	 *
+	 * @see #tieTolerance
+	 */
+	private static final double TIE_TOLERANCE_RELATIVE = 1e-6;
+
+	/**
+	 * Array containing the absolute payoff-tie tolerance for each species,
+	 * <code>{@link #TIE_TOLERANCE_RELATIVE} * (maxFitness - minFitness)</code>,
+	 * precomputed once whenever the species configuration changes (see
+	 * {@link #evaluateSpecies()}) rather than recomputed on every call. Used by
+	 * {@link #updateBest} and {@link #processBR} to avoid discrete rule flips
+	 * being driven by platform-dependent floating-point noise (e.g. last-ULP
+	 * differences between the JRE and GWT/JavaScript builds) rather than a
+	 * genuine fitness difference.
+	 */
+	double[] tieTolerance;
+
+	/**
 	 * Reusable scratch space for the effective birth rate of every trait of
 	 * every species, indexed globally exactly like {@link #yt}/{@link #dyt}
 	 * (see {@link #idxSpecies}). Used by single-threaded ODE and SDE models;
@@ -380,6 +401,7 @@ public class ODE extends Model implements DModel {
 		staticfit = null;
 		names = null;
 		invFitRange = null;
+		tieTolerance = null;
 		idxSpecies = null;
 		cloInit.clearKeys();
 		super.unload();
@@ -406,6 +428,7 @@ public class ODE extends Model implements DModel {
 	 */
 	private boolean evaluateSpecies() {
 		invFitRange = null;
+		tieTolerance = null;
 		idxSpecies = new int[nSpecies + 1];
 		nDim = 0;
 		boolean doReset = false;
@@ -421,6 +444,8 @@ public class ODE extends Model implements DModel {
 				if (!hasPayoffs) {
 					invFitRange = new double[nSpecies];
 					Arrays.fill(invFitRange, 1.0);
+					tieTolerance = new double[nSpecies];
+					Arrays.fill(tieTolerance, TIE_TOLERANCE_RELATIVE);
 				}
 				hasPayoffs = true;
 				Map2Fitness map2fit = mod.getMap2Fitness();
@@ -428,8 +453,11 @@ public class ODE extends Model implements DModel {
 				double mappedMin = map2fit.map(pmod.getMinPayoff());
 				double mappedMax = map2fit.map(pmod.getMaxPayoff());
 				minFit = Math.min(minFit, mappedMin);
-				if (mappedMax > mappedMin)
-					invFitRange[idx] = 1.0 / (mappedMax - mappedMin);
+				double range = mappedMax - mappedMin;
+				if (range > 0.0) {
+					invFitRange[idx] = 1.0 / range;
+					tieTolerance[idx] = TIE_TOLERANCE_RELATIVE * range;
+				}
 			}
 			idx++;
 			nDim += nTraits;
@@ -1446,10 +1474,11 @@ public class ODE extends Model implements DModel {
 			double[] change) {
 		int skip = idxSpecies[index];
 		int end = skip + mod.getNTraits();
+		double tol = tieTolerance[index];
 		double err = 0.0;
 		for (int n = skip; n < end; n++) {
 			double dyn = 0.0;
-			double ftn = fitness[n] - 1e-8;
+			double ftn = fitness[n] - tol;
 			for (int i = skip; i < end; i++) {
 				if (i == n)
 					continue;
@@ -1691,7 +1720,7 @@ public class ODE extends Model implements DModel {
 		}
 
 		// second pass: mark all best responses
-		processBR(max, active, fitness, skip, end, change);
+		processBR(max, active, fitness, skip, end, tieTolerance[index], change);
 
 		// apply dynamics: move towards best response profile
 		double err = 0.0;
@@ -1712,12 +1741,15 @@ public class ODE extends Model implements DModel {
 	 * @param fitness the fitness values
 	 * @param start   the start index
 	 * @param end     the end index
+	 * @param tol     the absolute tolerance for treating a fitness value as tied
+	 *                with {@code max} (see {@link #tieTolerance})
 	 * @param change  the change array
 	 */
-	private void processBR(double max, boolean[] active, double[] fitness, int start, int end, double[] change) {
+	private void processBR(double max, boolean[] active, double[] fitness, int start, int end, double tol,
+			double[] change) {
 		int nMax = 0;
 		for (int i = start; i < end; i++) {
-			if ((active == null || active[i - start]) && Math.abs(fitness[i] - max) < 1e-6) {
+			if ((active == null || active[i - start]) && Math.abs(fitness[i] - max) < tol) {
 				change[i] = 1.0;
 				nMax++;
 			}
