@@ -72,6 +72,7 @@ public class StateEncoder {
 	 *
 	 * @return encoded state
 	 */
+	@SuppressWarnings("java:S2143") // no java.time emulation in GWT
 	public String encodeState() {
 		StringBuilder plist = new StringBuilder("<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n"
 				+ "<!DOCTYPE plist PUBLIC \"-//Apple//DTD PLIST 1.0//EN\" \"http://www.apple.com/DTDs/PropertyList-1.0.dtd\">\n"

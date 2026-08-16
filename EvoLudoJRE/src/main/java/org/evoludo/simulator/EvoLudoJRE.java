@@ -41,8 +41,9 @@ import java.io.PrintStream;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.text.DecimalFormat;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.util.ArrayList;
-import java.util.Date;
 import java.util.Iterator;
 import java.util.Properties;
 import java.util.logging.Level;
@@ -1149,7 +1150,7 @@ public class EvoLudoJRE extends EvoLudo implements Runnable {
 				// containing multiple simulation runs - e.g. for graphical representations in
 				// Mathematica or MATLAB
 				"! New Record" + "\n# " + activeModule.getTitle() + "\n# " + getVersion() + "\n# today:                "
-						+ (new Date().toString()));
+						+ LocalDateTime.now(ZoneId.systemDefault()));
 		output.println("# arguments:            " + cloController.getParserCLO());
 		output.println("# data:");
 		output.flush();
@@ -1808,7 +1809,7 @@ public class EvoLudoJRE extends EvoLudo implements Runnable {
 		 */
 		@Override
 		public void run() {
-			engine.exportState("panic-t%d-" + new Date().toString());
+			engine.exportState("panic-t%d-" + LocalDateTime.now(ZoneId.systemDefault()));
 		}
 	}
 }

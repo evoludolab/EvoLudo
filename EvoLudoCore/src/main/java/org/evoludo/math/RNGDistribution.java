@@ -30,7 +30,6 @@
 
 package org.evoludo.math;
 
-import java.util.Date;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -104,7 +103,7 @@ public abstract class RNGDistribution {
 	 * @param rng random number generator
 	 */
 	protected RNGDistribution(MersenneTwister rng) {
-		this.rng = (rng == null ? new MersenneTwister(new Date().getTime()) : rng);
+		this.rng = (rng == null ? new MersenneTwister(System.currentTimeMillis()) : rng);
 	}
 
 	/**

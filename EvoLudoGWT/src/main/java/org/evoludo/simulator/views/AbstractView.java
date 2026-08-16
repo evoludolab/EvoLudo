@@ -1330,6 +1330,7 @@ public abstract class AbstractView<G extends AbstractGraph<?>> extends Composite
 	 * 
 	 * @return the header as a string builder
 	 */
+	@SuppressWarnings("java:S2143") // no java.time emulation in GWT
 	protected StringBuilder exportDataHeader() {
 		StringBuilder export = new StringBuilder("# data exported at " +
 				DateTimeFormat.getFormat("yyyy-MM-dd HH:mm:ss").format(new Date()) + "\n");
