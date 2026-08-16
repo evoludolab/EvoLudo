@@ -104,6 +104,42 @@ num_processors() {
 	fi
 }
 
+# 1-minute load average, e.g. '2.35' - used to size worker pools down when the
+# system is already busy (measured to matter: a background game running
+# inflated an otherwise-clean parallel-vs-serial comparison)
+current_load1min() {
+	if [[ -r /proc/loadavg ]]; then
+		awk '{print $1}' /proc/loadavg
+	elif command -v sysctl >/dev/null 2>&1; then
+		sysctl -n vm.loadavg 2>/dev/null | awk '{print $2}'
+	else
+		echo 0
+	fi
+}
+
+# free + inactive memory in KiB (inactive pages are reclaimable on demand, so
+# counting them - not just free - avoids under-estimating headroom on a
+# machine that just isn't under memory pressure). Echoes 0, meaning "unknown",
+# if neither source is available, so callers can skip the memory-based cap
+# rather than divide by a bogus number.
+available_memory_kb() {
+	if [[ -r /proc/meminfo ]]; then
+		awk '/MemAvailable/ {print $2; exit}' /proc/meminfo
+	elif command -v vm_stat >/dev/null 2>&1 && command -v sysctl >/dev/null 2>&1; then
+		local page_size
+		page_size=$(sysctl -n hw.pagesize 2>/dev/null || echo 4096)
+		vm_stat | awk -v ps="$page_size" '
+			/Pages free/ { free = $3 }
+			/Pages inactive/ { inactive = $3 }
+			END {
+				gsub(/\./, "", free); gsub(/\./, "", inactive)
+				printf "%d", (free + inactive) * ps / 1024
+			}'
+	else
+		echo 0
+	fi
+}
+
 LATEST_JAVA=$(latest_java)
 LATEST_GWT=$(latest_gwt)
 LATEST_JAR=$(latest_jar)

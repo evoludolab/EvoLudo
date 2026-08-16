@@ -51,9 +51,9 @@ print_help() {
 	echo "  --gui [<v>]               Run test through GUI using playwright"
 	echo "                            (requires server, see 'mvn gwt:devmode')"
 	echo "                            <v> optional view index; defaults to console"
-	echo "  --jobs <n>                Run <n> module tests in parallel (max "
-	echo "                            processor count JVM's or 4 playwright;"
-	echo "                            --headed defaults to 1)"
+	echo "  --jobs <n>                Run <n> module tests in parallel (default:"
+	echo "                            auto-sized from processor count, system"
+	echo "                            load and free memory; --headed defaults to 1)"
 	echo "  --minor                   Dump differences for minor failures"
 	echo "  --nosha                   Disable SHA checks"
 	echo "  --snap <seconds>          Timeout for laying out networks (default 20)"
@@ -300,19 +300,53 @@ mkdir -p "$REPORTS_DIR"
 printf '%s\0' ${PASSTHROUGH_ARGS[@]+"${PASSTHROUGH_ARGS[@]}"} >"$WORKDIR/passthrough-java.args"
 printf '%s\0' ${GUI_ARGS[@]+"${GUI_ARGS[@]}"} >"$WORKDIR/passthrough-gui.args"
 
+# Measured per-worker memory footprints (peak RSS, rounded up for headroom):
+# ~1.3GB for a JRE test JVM and ~750MB for playwright (chrome-headless-shell,
+# gpu-process, network utility, and renderer). check against available memory
+# to avoid swapping.
+JRE_JOB_MEM_MB=1536
+GUI_JOB_MEM_MB=1024
+
 # Determine how many modules to run in parallel: an explicit '--jobs' always
-# wins; otherwise default to one less than the number of available processors
-# so the machine stays responsive, optionally capped (e.g. for --gui, where
-# each worker is a full headless browser instance rather than a comparatively
-# light JVM), and never more workers than there are modules to run.
+# wins and is trusted as-is (only clamped to the number of modules); otherwise
+# start from one less than the number of available processors, then back off
+# further for whichever of these three is tightest:
+#   - load:   an already-busy system has fewer idle cores to hand a new
+#             worker (measured to matter: a background game running
+#             materially changed parallel-vs-serial timings)
+#   - memory: 'mem_per_job_mb' workers' worth must fit in free+inactive
+#             memory, or the OS falls back to compressing/decompressing and
+#             swapping pages - real kernel-mode work that shows up as system
+#             time, confirmed via vm_stat sampling and page-reclaim counts
+#             during a 10-way parallel run vs. a serial one
+#   - hard_cap: an optional caller-imposed ceiling (e.g. a headed --gui run,
+#             which stays at 1 so there's exactly one window to watch)
+# ...and never more workers than there are modules to run.
 effective_jobs() {
-	local count=$1 cap=${2:-0} jobs
+	local count=$1 mem_per_job_mb=${2:-0} hard_cap=${3:-0}
+	local jobs cpu load1min load_jobs avail_kb mem_jobs
 	if [[ -n "$USER_JOBS" ]]; then
 		jobs=$USER_JOBS
 	else
-		jobs=$(num_processors)
+		cpu=$(num_processors)
+		jobs=$cpu
 		((jobs > 1)) && jobs=$((jobs - 1))
-		((cap > 0 && jobs > cap)) && jobs=$cap
+
+		load1min=$(current_load1min)
+		load_jobs=$(awk -v c="$cpu" -v l="$load1min" \
+			'BEGIN { j = c - l; if (j < 1) j = 1; printf "%d", j }')
+		((load_jobs < jobs)) && jobs=$load_jobs
+
+		if ((mem_per_job_mb > 0)); then
+			avail_kb=$(available_memory_kb)
+			if ((avail_kb > 0)); then
+				mem_jobs=$((avail_kb / (mem_per_job_mb * 1024)))
+				((mem_jobs < 1)) && mem_jobs=1
+				((mem_jobs < jobs)) && jobs=$mem_jobs
+			fi
+		fi
+
+		((hard_cap > 0 && jobs > hard_cap)) && jobs=$hard_cap
 	fi
 	((jobs > count)) && jobs=$count
 	((jobs < 1)) && jobs=1
@@ -490,7 +524,7 @@ if [[ "$GUI" == false ]]; then
 	fi
 
 	if ((${#TEST_FILES[@]} > 1)); then
-		JOBS=$(effective_jobs ${#TEST_FILES[@]})
+		JOBS=$(effective_jobs ${#TEST_FILES[@]} "$JRE_JOB_MEM_MB")
 	else
 		JOBS=1
 	fi
@@ -567,14 +601,14 @@ if ((${#TEST_FILES[@]} == 0)); then
 fi
 
 # run the tests in the browser and save the states exported by the GUI; each
-# worker is a full headless browser instance (heavier than a JVM), so the
-# default worker cap is more conservative, and a headed run - meant to be
-# watched - defaults to a single browser unless '--jobs' overrides it
+# worker is a full headless browser instance, sized down the same way the JRE
+# workers are (load + memory, see effective_jobs), and a headed run - meant
+# to be watched - is hard-capped to a single browser unless '--jobs' overrides
 echo "Running EvoLudo tests in the GUI on ${EVOLUDO_URL}..."
 if ((${#TEST_FILES[@]} > 1)); then
-	GUI_JOBS_CAP=4
+	GUI_JOBS_CAP=0
 	[[ "$HEADED" == true ]] && GUI_JOBS_CAP=1
-	JOBS=$(effective_jobs ${#TEST_FILES[@]} "$GUI_JOBS_CAP")
+	JOBS=$(effective_jobs ${#TEST_FILES[@]} "$GUI_JOB_MEM_MB" "$GUI_JOBS_CAP")
 else
 	JOBS=1
 fi
@@ -614,7 +648,7 @@ for testfile in "${TEST_FILES[@]}"; do
 done
 
 if ((${#CHECK_FILES[@]} > 1)); then
-	JOBS=$(effective_jobs ${#CHECK_FILES[@]})
+	JOBS=$(effective_jobs ${#CHECK_FILES[@]} "$JRE_JOB_MEM_MB")
 else
 	JOBS=1
 fi
