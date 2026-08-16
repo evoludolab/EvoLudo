@@ -81,6 +81,17 @@ latest_test_jar() {
 	latest_file "${EVOLUDO_TEST_HOME}/target" 'EvoLudoTest.*.jar'
 }
 
+format_duration() {
+	local total=$1 h m s
+	h=$((total / 3600))
+	m=$(((total % 3600) / 60))
+	s=$((total % 60))
+	printf '%d:%02d:%02d' "$h" "$m" "$s"
+}
+# exported so runtests-worker.sh - a separate bash process xargs spawns, not
+# sourced - can call it too without duplicating the definition
+export -f format_duration
+
 num_processors() {
 	if command -v nproc >/dev/null 2>&1; then
 		nproc

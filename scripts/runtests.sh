@@ -189,10 +189,15 @@ COLOR_RESET='\033[0m'
 # reflects the last module checked, not the entire run. Sets $teststatus to
 # the java process' exit status.
 run_and_tally() {
-	local tmpout content
+	local tmpout content wstart wend name
+	wstart=$(date +%s)
+	# $testfile isn't a parameter - both call sites happen to loop over a
+	# variable of that name, and bash's dynamic scoping picks it up here
+	name="$(basename "${testfile:-unknown}" .clo)"
 	tmpout="$(mktemp)"
 	java -jar "$LATEST_TEST_JAR" "$@" 2>&1 | tee "$tmpout" || true
 	teststatus=${PIPESTATUS[0]}
+	wend=$(date +%s)
 	modules_checked=$((modules_checked + 1))
 	content="$(<"$tmpout")"
 	rm -f "$tmpout"
@@ -215,6 +220,8 @@ run_and_tally() {
 	if [[ $content =~ ([0-9]+)\ out\ of\ [0-9]+\ tests\ had\ errors ]]; then
 		total_failures=$((total_failures + ${BASH_REMATCH[1]}))
 	fi
+	printf 'Completed %s.clo @ %s   Total: %s\n' \
+		"$name" "$(format_duration $((wend - wstart)))" "$(format_duration $((wend - RUN_START)))"
 }
 
 # Print the aggregate summary across all modules_checked. Only called when
@@ -256,6 +263,29 @@ print_aggregate_summary() {
 WORKDIR="$(mktemp -d)"
 trap 'rm -rf "$WORKDIR"' EXIT
 
+# wall-clock start of the actual test run (build time excluded); stashed in a
+# file so the worker processes runtests-worker.sh spawns - each a separate
+# bash invocation with its own $SECONDS - can compute the same running total
+RUN_START=$(date +%s)
+echo "$RUN_START" >"$WORKDIR/start_epoch"
+
+print_total_elapsed() {
+	printf "${COLOR_TITLE}Total elapsed: %s${COLOR_RESET}\n" \
+		"$(format_duration $(($(date +%s) - RUN_START)))"
+}
+
+# Reset the shared started/completed/total_modules counters a parallel batch's
+# workers use (via runtests-worker.sh) to report "Tasks: N pending, N in
+# process, N completed" whenever one of them clocks in or out, and print the
+# beginning-of-batch state (everything still pending) right away.
+init_task_counters() {
+	local count=$1
+	echo 0 >"$WORKDIR/started"
+	echo 0 >"$WORKDIR/completed"
+	echo "$count" >"$WORKDIR/total_modules"
+	printf 'Tasks: %d pending, 0 in process, 0 completed\n' "$count"
+}
+
 # every worker JVM/node process, run in parallel or not, is handed the same
 # REPORTS_DIR/REFERENCES_DIR; TestEvoLudo no longer creates or deletes the
 # reports directory itself (it used to, but that raced when several JVMs
@@ -293,14 +323,16 @@ effective_jobs() {
 # one 'jre-run' or 'jre-check' worker per module, then fold each module's
 # results into modules_checked/total_* (initialized by the caller) exactly as
 # run_and_tally does for a single module, so print_aggregate_summary works
-# unchanged. Modules are reported in their original order (not completion
-# order) once every worker has finished, so full per-module output is never
-# interleaved and runs stay reproducible/diffable - see runtests-worker.sh for
-# why the output can't simply be streamed live as each module completes.
+# unchanged. Each worker prints its own progress trail (Starting/Elapsed/
+# Total/Tasks lines) live as it clocks in and out - see runtests-worker.sh -
+# but its full result is only printed here, in original module order, once
+# every worker has finished, so full per-module output is never interleaved
+# and runs stay reproducible/diffable.
 run_parallel_and_tally() {
 	local mode=$1 jobs=$2
 	shift 2
 	local modules=("$@")
+	init_task_counters "${#modules[@]}"
 	printf '%s\0' "${modules[@]}" | xargs -0 -P "$jobs" -I{} "$SCRIPT_DIR/runtests-worker.sh" \
 		--mode "$mode" --jar "$LATEST_TEST_JAR" --references "$REFERENCES_DIR" \
 		--reports "$REPORTS_DIR" --exports "$EXPORTS_DIR" --workdir "$WORKDIR" \
@@ -350,11 +382,15 @@ run_parallel_and_tally() {
 # aren't tallied against modules_checked/total_* here - only the subsequent
 # GUI-check pass (run through run_parallel_and_tally like the JRE tests) is,
 # matching today's sequential GUI flow where the export pass only ever sets
-# $status.
+# $status. Each worker prints its own progress trail (Starting/Elapsed/Total/
+# Tasks lines) live as it clocks in and out - see runtests-worker.sh - but its
+# export log is only printed here, in original module order, once every
+# worker has finished, so full per-module output is never interleaved.
 run_parallel_export() {
 	local jobs=$1
 	shift
 	local modules=("$@")
+	init_task_counters "${#modules[@]}"
 	printf '%s\0' "${modules[@]}" | xargs -0 -P "$jobs" -I{} "$SCRIPT_DIR/runtests-worker.sh" \
 		--mode gui-export --node-script "$SCRIPT_DIR/guitests.js" --url "$EVOLUDO_URL" \
 		--references "$REFERENCES_DIR" --exports "$EXPORTS_DIR" --workdir "$WORKDIR" \
@@ -477,6 +513,7 @@ if [[ "$GUI" == false ]]; then
 	if ((modules_checked > 1)); then
 		print_aggregate_summary
 	fi
+	print_total_elapsed
 	exit $status
 fi
 
@@ -545,12 +582,21 @@ if ((JOBS > 1)); then
 	echo "Using $JOBS parallel playwright workers..."
 	run_parallel_export "$JOBS" "${TEST_FILES[@]}"
 else
+	wstart=$(date +%s)
 	node "${SCRIPT_DIR}/guitests.js" \
 		--url "$EVOLUDO_URL" \
 		--exports "$EXPORTS_DIR" \
 		--references "$REFERENCES_DIR" \
 		${GUI_ARGS[@]+"${GUI_ARGS[@]}"} \
 		"${TEST_FILES[@]}" || status=$?
+	wend=$(date +%s)
+	if ((${#TEST_FILES[@]} == 1)); then
+		label="$(basename "${TEST_FILES[0]}" .clo).clo"
+	else
+		label="${#TEST_FILES[@]} files"
+	fi
+	printf 'Completed %s @ %s   Total: %s\n' "$label" \
+		"$(format_duration $((wend - wstart)))" "$(format_duration $((wend - RUN_START)))"
 fi
 
 # compare the exported states to the references, one module per invocation,

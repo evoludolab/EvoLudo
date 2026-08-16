@@ -32,14 +32,17 @@
 
 #
 # Run a single EvoLudo test module and stash its result for the caller. Called
-# once per module by runtests.sh's 'xargs -P' worker pool, so that several
-# modules can run concurrently (one JVM or one Playwright/node instance each)
-# without their output interleaving on the terminal: everything the module
-# produces is captured into '<workdir>/logs/<module>.log', and a short summary
-# is written to '<workdir>/tally/<module>.tally' for runtests.sh to fold into
-# its aggregate totals once every module has finished. A one-line progress
-# note goes to stderr as each module completes, since that's short enough to
-# never interleave, even while the full logs are still being collected.
+# once per module by runtests.sh's 'xargs -P' worker pool. Full output is
+# captured to '<workdir>/logs/<module>.log' and a tally to
+# '<workdir>/tally/<module>.tally' for runtests.sh to print/fold in original
+# module order once every worker is done (interleaving-free, reproducible).
+#
+# What prints live is just a one-line progress trail (Starting/Elapsed/Total/
+# Tasks) built from shared 'started'/'completed' counters every worker in the
+# pool increments. Those counters need the 'mkdir'-based lock below (portable
+# flock stand-in, unavailable on macOS): concurrent unlocked increments lose
+# updates (verified - 30 racing increments collapsed to 1), not because the
+# short print lines themselves would garble.
 #
 # Usage: runtests-worker.sh --mode <jre-run|jre-check|gui-export>
 #          --jar <jar> | --node-script <js> --url <url>
@@ -103,6 +106,28 @@ if [[ -n "$PASSTHROUGH_FILE" && -s "$PASSTHROUGH_FILE" ]]; then
 	done < "$PASSTHROUGH_FILE"
 fi
 
+wstart=$(date +%s)
+start_elapsed=0
+[[ -s "$WORKDIR/start_epoch" ]] && start_elapsed=$((wstart - $(<"$WORKDIR/start_epoch")))
+
+LOCKDIR="$WORKDIR/print.lock"
+until mkdir "$LOCKDIR" 2>/dev/null; do
+	sleep 0.05
+done
+trap 'rmdir "$LOCKDIR" 2>/dev/null' EXIT
+n_started=1
+[[ -s "$WORKDIR/started" ]] && n_started=$(($(<"$WORKDIR/started") + 1))
+echo "$n_started" >"$WORKDIR/started"
+n_completed=0
+[[ -s "$WORKDIR/completed" ]] && n_completed=$(<"$WORKDIR/completed")
+n_total=$n_started
+[[ -s "$WORKDIR/total_modules" ]] && n_total=$(<"$WORKDIR/total_modules")
+echo "Starting $name.clo @ $(format_duration "$start_elapsed")"
+printf 'Tasks: %d pending, %d in process, %d completed\n' \
+	"$((n_total - n_started))" "$((n_started - n_completed))" "$n_completed"
+rmdir "$LOCKDIR" 2>/dev/null
+trap - EXIT
+
 status=0
 parse_tally=false
 case "$MODE" in
@@ -156,7 +181,36 @@ esac
 	fi
 } >"$tallyfile"
 
-echo "[$name] finished (status $status)" >&2
+wend=$(date +%s)
+worker_elapsed=$((wend - wstart))
+total_elapsed=$worker_elapsed
+if [[ -s "$WORKDIR/start_epoch" ]]; then
+	total_elapsed=$((wend - $(<"$WORKDIR/start_epoch")))
+fi
+
+# clock out: bump the shared 'completed' counter and report it, under the
+# same lock (and for the same lost-update reason) as the clock-in above. The
+# module's own full result is left in '$logfile' for runtests.sh to print
+# later, in original module order, once every worker has finished.
+LOCKDIR="$WORKDIR/print.lock"
+until mkdir "$LOCKDIR" 2>/dev/null; do
+	sleep 0.05
+done
+trap 'rmdir "$LOCKDIR" 2>/dev/null' EXIT
+n_completed=1
+[[ -s "$WORKDIR/completed" ]] && n_completed=$(($(<"$WORKDIR/completed") + 1))
+echo "$n_completed" >"$WORKDIR/completed"
+n_started=$n_completed
+[[ -s "$WORKDIR/started" ]] && n_started=$(<"$WORKDIR/started")
+n_total=$n_started
+[[ -s "$WORKDIR/total_modules" ]] && n_total=$(<"$WORKDIR/total_modules")
+printf 'Completed %s.clo @ %s   Total: %s\n' \
+	"$name" "$(format_duration "$worker_elapsed")" "$(format_duration "$total_elapsed")"
+printf 'Tasks: %d pending, %d in process, %d completed\n' \
+	"$((n_total - n_started))" "$((n_started - n_completed))" "$n_completed"
+rmdir "$LOCKDIR" 2>/dev/null
+trap - EXIT
+
 # always exit 0: a failing test module must not stop 'xargs' from dispatching
 # the remaining modules; the real per-module status lives in the tally file
 exit 0
