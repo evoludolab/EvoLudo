@@ -32,10 +32,11 @@ package org.evoludo.util;
 
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 import org.evoludo.math.Combinatorics;
 
@@ -134,6 +135,11 @@ public class Plist extends HashMap<String, Object> {
 	 * String constant for reporting differences in keys.
 	 */
 	static final String DIFF_KEY = "key '";
+
+	/**
+	 * The logger for this class.
+	 */
+	private static final Logger LOGGER = Logger.getLogger(Plist.class.getName());
 
 	/**
 	 * Construct a new plist.
@@ -539,15 +545,15 @@ public class Plist extends HashMap<String, Object> {
 			// arrays are most likely candidates for excessive repeated messages
 			// 'array real[' is the shortest header - use first 11 characters
 			prevmsg = msg.substring(0, 11);
-			if (repeat > nRepeat)
-				reportDiff("\nThe previous message was reported a total of " + repeat + " times.");
+			if (repeat > nRepeat && LOGGER.isLoggable(Level.WARNING))
+				LOGGER.warning("\nThe previous message was reported a total of " + repeat + " times.");
 			repeat = 1;
 		} else {
 			if (repeat++ > nRepeat)
 				return;
 		}
-		if (nRepeat > 0)
-			System.err.println((new Date().toString()) + " - Plist.diff: " + msg);
+		if (nRepeat > 0 && LOGGER.isLoggable(Level.WARNING))
+			LOGGER.warning("Plist.diff: " + msg);
 	}
 
 	/**
