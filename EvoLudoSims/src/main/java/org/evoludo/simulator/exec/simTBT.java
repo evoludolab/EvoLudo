@@ -343,7 +343,7 @@ public class simTBT extends TBT implements ChangeListener {
 	@Override
 	public synchronized void modelStopped() {
 		double generation = ibs.getUpdates();
-		if (model.isRelaxing() || prevsample >= generation) {
+		if (prevsample >= generation) {
 			return;
 		}
 		// absorbing state reached
