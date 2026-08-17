@@ -826,36 +826,11 @@ public class LineGraph extends AbstractGraph<double[]>
 		g.translate(w, h);
 		g.scale(1.0, -1.0);
 
-		// compute y transform and draw content
-		double[] yinfo = computeYScale(h);
-
-		g.save();
-		g.beginPath();
-		// with -w a small strip on left is not drawn... proper fix needed!
-		g.rect(style.markerSize, 0.0, -(w + 3.0), h);
-		g.clip();
-		drawLines(w, yinfo, nLines);
-		drawMarkers(w, yinfo, nLines);
-		g.restore();
-
-		drawLatestMarkers(w, yinfo, nLines);
-		g.restore();
-		g.restore();
-		return false;
-	}
-
-	/**
-	 * Compute y-axis scale info: [ymin, yScale]. Uses the same linear (or
-	 * logarithmic) mapping of {@code [yMin, yMax]} onto {@code [0, h]} as the
-	 * tick labels ({@code AbstractGraph#computeYRange}) and tooltips
-	 * ({@link #getTooltipAt(double, double)}), so a data point at {@code yMin}
-	 * or {@code yMax} is drawn exactly on the frame border, with no gap and no
-	 * discrepancy between what is plotted, labelled, and reported in tooltips.
-	 *
-	 * @param h the height of the plotting area
-	 * @return an array containing [ymin, yScale]
-	 */
-	private double[] computeYScale(double h) {
+		// map [yMin, yMax] (or their logs) onto [0, h] - the same mapping used by
+		// the tick labels (AbstractGraph#computeYRange) and tooltips
+		// (getTooltipAt(double, double)), so a data point at yMin or yMax is
+		// drawn exactly on the frame border, with no gap and no discrepancy
+		// between what is plotted, labelled, and reported in tooltips
 		double ymin;
 		double yrange;
 		if (style.logScaleY) {
@@ -866,28 +841,32 @@ public class LineGraph extends AbstractGraph<double[]>
 			yrange = style.yMax - ymin;
 		}
 		double yScale = (yrange == 0.0) ? 1.0 : h / yrange;
-		return new double[] { ymin, yScale };
-	}
 
-	/**
-	 * Map a normalized y-value into the plotting area.
-	 *
-	 * @param y     the y-value relative to the lower graph bound
-	 * @param yinfo the y-axis transform info
-	 * @return the mapped y-coordinate inside the plotting area
-	 */
-	private double mapY(double y, double[] yinfo) {
-		return y * yinfo[1];
+		g.save();
+		g.beginPath();
+		// with -w a small strip on left is not drawn... proper fix needed!
+		g.rect(style.markerSize, 0.0, -(w + 3.0), h);
+		g.clip();
+		drawLines(w, ymin, yScale);
+		drawMarkers(w, ymin, yScale);
+		g.restore();
+
+		drawLatestMarkers(w, ymin, yScale);
+		g.restore();
+		g.restore();
+		return false;
 	}
 
 	/**
 	 * Draw the line plots.
-	 * 
+	 *
 	 * @param width  the width of the plotting area
-	 * @param yinfo  the y-axis transform info
-	 * @param nLines the number of lines to draw
+	 * @param ymin   the {@code y}-value (or its log) mapped to the bottom of the
+	 *               plotting area
+	 * @param yScale the scale factor mapping a {@code y}-value relative to
+	 *               {@code ymin} to a pixel offset
 	 */
-	private void drawLines(double width, double[] yinfo, int nLines) {
+	private void drawLines(double width, double ymin, double yScale) {
 		Iterator<double[]> it = buffer.iterator();
 		if (!it.hasNext() || nLines <= 0)
 			return;
@@ -907,7 +886,7 @@ public class LineGraph extends AbstractGraph<double[]>
 			if (span > 0.0) {
 				start -= span * xScale;
 				if (start < 0.0) {
-					drawSegmentClipped(start, end, prev, current, nLines, yinfo, width);
+					drawSegmentClipped(start, end, prev, current, ymin, yScale, width);
 					if (start <= -width)
 						break;
 				}
@@ -923,12 +902,14 @@ public class LineGraph extends AbstractGraph<double[]>
 
 	/**
 	 * Draw markers for the newest sample (extracted helper).
-	 * 
+	 *
 	 * @param width  the width of the plotting area
-	 * @param yinfo  the y-axis transform info
-	 * @param nLines the number of lines to draw
+	 * @param ymin   the {@code y}-value (or its log) mapped to the bottom of the
+	 *               plotting area
+	 * @param yScale the scale factor mapping a {@code y}-value relative to
+	 *               {@code ymin} to a pixel offset
 	 */
-	private void drawLatestMarkers(double width, double[] yinfo, int nLines) {
+	private void drawLatestMarkers(double width, double ymin, double yScale) {
 		if (buffer == null || buffer.isEmpty() || nLines <= 0)
 			return;
 		double[] current = buffer.last();
@@ -942,27 +923,28 @@ public class LineGraph extends AbstractGraph<double[]>
 			if (style.logScaleY && current[n + 1] <= 0.0)
 				continue;
 			g.setFillStyle(colors[n]);
-			double y = (style.logScaleY ? Math.log10(current[n + 1]) : current[n + 1]) - yinfo[0];
-			fillCircle(start, mapY(y, yinfo), style.markerSize);
+			double y = (style.logScaleY ? Math.log10(current[n + 1]) : current[n + 1]) - ymin;
+			fillCircle(start, y * yScale, style.markerSize);
 		}
 	}
 
 	/**
 	 * Draw a historical segment between 'start' and 'end', handling clipping
 	 * against the visible window (-w .. 0) and log/linear y transforms.
-	 * 
+	 *
 	 * @param start   starting x-coordinate of the segment
 	 * @param end     ending x-coordinate of the segment
 	 * @param prev    the previous data array
 	 * @param current the current data array
-	 * @param nLines  the number of lines to draw
-	 * @param yinfo   the y-axis transform info
+	 * @param ymin    the {@code y}-value (or its log) mapped to the bottom of
+	 *                the plotting area
+	 * @param yScale  the scale factor mapping a {@code y}-value relative to
+	 *                {@code ymin} to a pixel offset
 	 * @param width   the width of the plotting area
 	 */
 	private void drawSegmentClipped(double start, double end,
-			double[] prev, double[] current, int nLines,
-			double[] yinfo, double width) {
-		double ymin = yinfo[0];
+			double[] prev, double[] current,
+			double ymin, double yScale, double width) {
 		boolean reverse = current[0] < prev[0];
 		for (int n = 0; n < nLines; n++) {
 			setStrokeStyleAt(n);
@@ -984,7 +966,7 @@ public class LineGraph extends AbstractGraph<double[]>
 			}
 			// fully inside visible area
 			if (start >= -width && end <= 0.0) {
-				strokeLine(start, mapY(pi, yinfo), end, mapY(ci, yinfo));
+				strokeLine(start, pi * yScale, end, ci * yScale);
 			} else {
 				double s = Math.max(-width, start);
 				double e = Math.min(0, end);
@@ -992,7 +974,7 @@ public class LineGraph extends AbstractGraph<double[]>
 				double m = (denom == 0.0) ? 0.0 : (ci - pi) / denom;
 				if (style.logScaleY && m > 0.0)
 					m = Math.log10(m);
-				strokeLine(s, mapY(pi + m * (s - start), yinfo), e, mapY(ci - m * (end - e), yinfo));
+				strokeLine(s, (pi + m * (s - start)) * yScale, e, (ci - m * (end - e)) * yScale);
 			}
 		}
 		g.setLineDash(style.solidLine);
@@ -1000,22 +982,23 @@ public class LineGraph extends AbstractGraph<double[]>
 
 	/**
 	 * Draw horizontal marker lines (if any) using the same y transform.
-	 * 
+	 *
 	 * @param width  the width of the plotting area
-	 * @param yinfo  the y-axis transform info
-	 * @param nLines the number of lines to draw
+	 * @param ymin   the {@code y}-value (or its log) mapped to the bottom of the
+	 *               plotting area
+	 * @param yScale the scale factor mapping a {@code y}-value relative to
+	 *               {@code ymin} to a pixel offset
 	 */
-	private void drawMarkers(double width, double[] yinfo, int nLines) {
+	private void drawMarkers(double width, double ymin, double yScale) {
 		if (nLines <= 0 || markers.isEmpty())
 			return;
-		double ymin = yinfo[0];
 		for (double[] mark : markers) {
 			g.setLineDash(mark[0] > 0.0 ? style.dashedLine : style.dottedLine);
 			for (int n = 0; n < nLines; n++) {
 				double mn1 = mark[n + 1];
 				if (style.logScaleY && mn1 <= 0.0)
 					continue;
-				double myn = mapY((style.logScaleY ? Math.log10(mn1) : mn1) - ymin, yinfo);
+				double myn = ((style.logScaleY ? Math.log10(mn1) : mn1) - ymin) * yScale;
 				g.setStrokeStyle(markerColors[n % markerColors.length]);
 				strokeLine(-width, myn, 0.0, myn);
 			}
