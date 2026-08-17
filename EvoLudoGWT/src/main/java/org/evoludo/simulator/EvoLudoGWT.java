@@ -446,12 +446,6 @@ public class EvoLudoGWT extends EvoLudo {
 	RunTimer timer = new RunTimer();
 
 	/**
-	 * The original report interval while scheduled, chunked updates are in
-	 * progress.
-	 */
-	private double chunkTimeStepOrig = 0.0;
-
-	/**
 	 * The update milestone at which the current visible step is complete.
 	 */
 	private double chunkTargetUpdates = 0.0;
@@ -603,9 +597,15 @@ public class EvoLudoGWT extends EvoLudo {
 		if (stepScheduled || activeModel == null)
 			return;
 		stepScheduled = true;
-		chunkTimeStepOrig = activeModel.getTimeStep();
-		chunkTargetUpdates = getNextChunkedReport();
-		if (activeModel instanceof IBS)
+		double timeStep = activeModel.getTimeStep();
+		double startUpdates = activeModel.getUpdates();
+		double lastBoundary = Math.floor((startUpdates + IBS_EPS) / timeStep) * timeStep;
+		chunkTargetUpdates = Math.min(lastBoundary + timeStep, activeModel.getNextHalt());
+		// only clear 'new' markers when starting a fresh timestep; if resuming a
+		// timestep that was interrupted by a stop, keep the markers accumulated so
+		// far so completing the timestep doesn't lose them
+		boolean atTimeStepBoundary = (startUpdates - lastBoundary) < IBS_EPS;
+		if (activeModel instanceof IBS && atTimeStepBoundary)
 			((IBS) activeModel).clearTraits();
 		runController.startCPUSample();
 		Scheduler.get().scheduleIncremental(() -> runGuarded("running a chunked model step", () -> {
@@ -644,18 +644,6 @@ public class EvoLudoGWT extends EvoLudo {
 	}
 
 	/**
-	 * Calculate the next regular report boundary for the active chunked model.
-	 * 
-	 * @return the update milestone for the next visible step
-	 */
-	private double getNextChunkedReport() {
-		double updates = activeModel.getUpdates();
-		double nextHalt = activeModel.getNextHalt();
-		double nextReport = (Math.floor((updates + IBS_EPS) / chunkTimeStepOrig) + 1.0) * chunkTimeStepOrig;
-		return Math.min(nextReport, nextHalt);
-	}
-
-	/**
 	 * Complete the current hidden chunked step and forward the visible-step
 	 * result.
 	 * 
@@ -674,7 +662,6 @@ public class EvoLudoGWT extends EvoLudo {
 	 */
 	private void resetStepScheduling() {
 		stepScheduled = false;
-		chunkTimeStepOrig = 0.0;
 		chunkTargetUpdates = 0.0;
 	}
 
