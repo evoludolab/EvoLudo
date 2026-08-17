@@ -30,7 +30,7 @@
 //
 -->
 
-<Configure class="org.eclipse.jetty.webapp.WebAppContext">
+<Configure class="org.eclipse.jetty.ee10.webapp.WebAppContext">
   <Call name="setInitParameter">
     <Arg>org.eclipse.jetty.servlet.Default.useFileMappedBuffer</Arg>
     <Arg>false</Arg>
