@@ -33,6 +33,7 @@ package org.evoludo.graphics;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
+import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import org.evoludo.geom.Node2D;
@@ -537,6 +538,28 @@ public abstract class AbstractGraph<B> extends FocusPanel
 	 * Logger for keeping track of and reporting events and issues.
 	 */
 	protected Logger logger;
+
+	/**
+	 * Report {@code msg} as a warning through {@link #logger}, if warnings are
+	 * loggable.
+	 *
+	 * @param msg the warning message
+	 */
+	protected void warn(String msg) {
+		if (logger.isLoggable(Level.WARNING))
+			logger.warning(msg);
+	}
+
+	/**
+	 * Report {@code msg} as a severe issue through {@link #logger}, if severe
+	 * messages are loggable.
+	 *
+	 * @param msg the severe message
+	 */
+	protected void severe(String msg) {
+		if (logger.isLoggable(Level.SEVERE))
+			logger.severe(msg);
+	}
 
 	/**
 	 * Handle to the object's underlying DOM element.

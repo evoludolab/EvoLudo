@@ -383,7 +383,7 @@ public class PopGraph2D extends GenericPopGraph<String, Network2D> implements Sh
 				drawSquareNeumann2nd();
 				break;
 			default:
-				logger.warning("Unsupported geometry: " + type.getTitle());
+				warn("Unsupported geometry: " + type.getTitle());
 		}
 		g.restore();
 		legend.draw();
