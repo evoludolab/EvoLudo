@@ -697,6 +697,11 @@ public class EvoLudoLab extends JFrame
 	}
 
 	@Override
+	public synchronized void modelRelaxed() {
+		modelStopped();
+	}
+
+	@Override
 	public synchronized void modelStopped() {
 		for (MultiView mvp : activeViews.getViews())
 			mvp.end();

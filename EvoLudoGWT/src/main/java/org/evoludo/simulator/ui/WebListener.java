@@ -144,6 +144,11 @@ public class WebListener implements LifecycleListener, RunListener, ChangeListen
 	}
 
 	@Override
+	public void modelRelaxed() {
+		modelStopped();
+	}
+
+	@Override
 	public void modelStopped() {
 		SettingsController.onModelStopped(gui);
 		gui.updateGUI();

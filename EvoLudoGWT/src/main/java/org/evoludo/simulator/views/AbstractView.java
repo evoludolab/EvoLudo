@@ -533,6 +533,11 @@ public abstract class AbstractView<G extends AbstractGraph<?>> extends Composite
 	}
 
 	@Override
+	public void modelRelaxed() {
+		modelStopped();
+	}
+
+	@Override
 	public void modelStopped() {
 		if (!isReset)
 			return;
