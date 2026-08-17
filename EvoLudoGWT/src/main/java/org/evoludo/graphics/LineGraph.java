@@ -810,11 +810,19 @@ public class LineGraph extends AbstractGraph<double[]>
 		g.scale(scale, scale);
 		clearCanvas();
 		g.translate(bounds.getX(), bounds.getY());
-		g.save();
 
 		double w = bounds.getWidth();
 		double h = bounds.getHeight();
 
+		// draw the frame (border, gridlines, ticks, labels) first so that data
+		// drawn afterwards is never hidden underneath the frame stroke
+		if (style.offsetXTickLabels)
+			updateXTickOffset();
+		else
+			style.xTickOffset = 0.0;
+		drawFrame(4, 4);
+
+		g.save();
 		g.translate(w, h);
 		g.scale(1.0, -1.0);
 
@@ -832,20 +840,20 @@ public class LineGraph extends AbstractGraph<double[]>
 
 		drawLatestMarkers(w, yinfo, nLines);
 		g.restore();
-		if (style.offsetXTickLabels)
-			updateXTickOffset();
-		else
-			style.xTickOffset = 0.0;
-		drawFrame(4, 4);
 		g.restore();
 		return false;
 	}
 
 	/**
-	 * Compute y-axis scale info: [ymin, yScale, yInset]
-	 * 
+	 * Compute y-axis scale info: [ymin, yScale]. Uses the same linear (or
+	 * logarithmic) mapping of {@code [yMin, yMax]} onto {@code [0, h]} as the
+	 * tick labels ({@code AbstractGraph#computeYRange}) and tooltips
+	 * ({@link #getTooltipAt(double, double)}), so a data point at {@code yMin}
+	 * or {@code yMax} is drawn exactly on the frame border, with no gap and no
+	 * discrepancy between what is plotted, labelled, and reported in tooltips.
+	 *
 	 * @param h the height of the plotting area
-	 * @return an array containing [ymin, yScale, yInset]
+	 * @return an array containing [ymin, yScale]
 	 */
 	private double[] computeYScale(double h) {
 		double ymin;
@@ -857,21 +865,19 @@ public class LineGraph extends AbstractGraph<double[]>
 			ymin = style.yMin;
 			yrange = style.yMax - ymin;
 		}
-		double yInset = Math.max(1.0, Math.max(style.markerSize, 0.5 * Math.max(style.frameWidth, style.lineWidth)));
-		double usableHeight = Math.max(0.0, h - 2.0 * yInset);
-		double yScale = (yrange == 0.0) ? 1.0 : usableHeight / yrange;
-		return new double[] { ymin, yScale, yInset };
+		double yScale = (yrange == 0.0) ? 1.0 : h / yrange;
+		return new double[] { ymin, yScale };
 	}
 
 	/**
-	 * Map a normalized y-value into the inset plotting area.
+	 * Map a normalized y-value into the plotting area.
 	 *
 	 * @param y     the y-value relative to the lower graph bound
 	 * @param yinfo the y-axis transform info
 	 * @return the mapped y-coordinate inside the plotting area
 	 */
 	private double mapY(double y, double[] yinfo) {
-		return yinfo[2] + y * yinfo[1];
+		return y * yinfo[1];
 	}
 
 	/**
@@ -1176,15 +1182,18 @@ public class LineGraph extends AbstractGraph<double[]>
 	public String getTooltipAt(int x, int y) {
 		if (leftMouseButton)
 			return null;
-		if (!inside(x, y))
-			return null;
-		double sx = (x - bounds.getX() - 0.5) / bounds.getWidth();
-		if (sx < 0.0 || sx > 1.0)
-			return null;
+		// include the frame border itself, not just its interior, so hovering
+		// over the (possibly several pixels wide) frame stroke still resolves to
+		// a tooltip instead of going blank right at the edges
+		double frame = style.showFrame ? style.frameWidth : 0.0;
+		double relX = x - canvasPadX() - bounds.getX();
+		double relY = y - canvasPadY() - bounds.getY();
+		double width = bounds.getWidth();
 		double height = bounds.getHeight();
-		double sy = (height - (y - bounds.getY() + 0.5)) / height;
-		if (sy < 0.0 || sy > 1.0)
+		if (relX < -frame || relX > width + frame || relY < -frame || relY > height + frame)
 			return null;
+		double sx = Math.max(0.0, Math.min(1.0, (relX - 0.5) / width));
+		double sy = Math.max(0.0, Math.min(1.0, (height - (relY + 0.5)) / height));
 		return tooltipProvider.getTooltipAt(sx, sy);
 	}
 

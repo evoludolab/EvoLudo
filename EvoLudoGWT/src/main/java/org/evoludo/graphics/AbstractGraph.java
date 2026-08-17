@@ -2400,6 +2400,33 @@ public abstract class AbstractGraph<B> extends FocusPanel
 	}
 
 	/**
+	 * The horizontal offset between this widget's own (border-box) edge and the
+	 * canvas's, e.g. from CSS padding reserved for visual spacing between
+	 * adjacent graphs. Mouse coordinates delivered to {@code onMouse*} handlers
+	 * and {@code getTooltipAt(int, int)} are relative to this widget's edge,
+	 * whereas {@link #bounds} is relative to the canvas - subtract this (and
+	 * {@link #canvasPadY()}) from incoming {@code x}/{@code y} before using
+	 * {@link #bounds}, so that hit-testing lines up with what is actually
+	 * drawn rather than with this widget's outer edge.
+	 *
+	 * @return the horizontal canvas inset, or {@code 0} if there is no canvas
+	 *         (e.g. {@link PopGraph3D})
+	 */
+	protected double canvasPadX() {
+		return canvas == null ? 0.0 : (double) canvas.getAbsoluteLeft() - getAbsoluteLeft();
+	}
+
+	/**
+	 * The vertical counterpart of {@link #canvasPadX()}.
+	 *
+	 * @return the vertical canvas inset, or {@code 0} if there is no canvas
+	 *         (e.g. {@link PopGraph3D})
+	 */
+	protected double canvasPadY() {
+		return canvas == null ? 0.0 : (double) canvas.getAbsoluteTop() - getAbsoluteTop();
+	}
+
+	/**
 	 * {@inheritDoc}
 	 * <p>
 	 * If mouse leaves graph while shifting the view stop shifting. Mouse events are

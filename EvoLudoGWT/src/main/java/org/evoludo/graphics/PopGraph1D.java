@@ -500,8 +500,8 @@ public class PopGraph1D extends PopGraph2D {
 		// the frame border is a centered stroke drawn inside the zoomed content
 		// transform, so only half its width extends past the content origin that
 		// bounds refers to; both axes need the identical correction
-		double sx = (viewCorner.getX() + x - bounds.getX()) / zoomFactor - style.frameWidth * 0.5;
-		double sy = (viewCorner.getY() + y - bounds.getY()) / zoomFactor - style.frameWidth * 0.5;
+		double sx = (viewCorner.getX() + x - canvasPadX() - bounds.getX()) / zoomFactor - style.frameWidth * 0.5;
+		double sy = (viewCorner.getY() + y - canvasPadY() - bounds.getY()) / zoomFactor - style.frameWidth * 0.5;
 		if (sx < 0.0 || sx > bounds.getWidth() || sy < 0.0 || sy > bounds.getHeight())
 			return FINDNODEAT_OUT_OF_BOUNDS;
 		int isx = (int) (sx + 0.5);

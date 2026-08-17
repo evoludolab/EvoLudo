@@ -702,7 +702,7 @@ public class S3Graph extends AbstractGraph<double[]> implements Zooming, Shiftin
 	 * @return the scaled coordinate
 	 */
 	double scaledX(double x) {
-		return ((viewCorner.getX() + x - bounds.getX()) / zoomFactor + 0.5) / (bounds.getWidth() - 1.0);
+		return ((viewCorner.getX() + x - canvasPadX() - bounds.getX()) / zoomFactor + 0.5) / (bounds.getWidth() - 1.0);
 	}
 
 	/**
@@ -713,7 +713,7 @@ public class S3Graph extends AbstractGraph<double[]> implements Zooming, Shiftin
 	 * @return the scaled coordinate
 	 */
 	double scaledY(double y) {
-		return 1.0 - ((viewCorner.getY() + y - bounds.getY()) / zoomFactor + 0.5) / (bounds.getHeight() - 1.0);
+		return 1.0 - ((viewCorner.getY() + y - canvasPadY() - bounds.getY()) / zoomFactor + 0.5) / (bounds.getHeight() - 1.0);
 	}
 
 	/**

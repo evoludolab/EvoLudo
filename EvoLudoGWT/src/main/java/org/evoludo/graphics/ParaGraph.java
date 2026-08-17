@@ -1342,8 +1342,8 @@ public class ParaGraph extends AbstractGraph<double[]> implements Zooming, Shift
 	public String getTooltipAt(int x, int y) {
 		if (!inside(x, y))
 			return null;
-		double localX = x - bounds.getX();
-		double localY = y - bounds.getY();
+		double localX = x - canvasPadX() - bounds.getX();
+		double localY = y - canvasPadY() - bounds.getY();
 		ViewState state = currentViewState();
 		if (!state.valid)
 			return null;
@@ -1370,7 +1370,7 @@ public class ParaGraph extends AbstractGraph<double[]> implements Zooming, Shift
 
 	@Override
 	protected boolean inside(int x, int y) {
-		return inside(x - bounds.getX(), y - bounds.getY());
+		return inside(x - canvasPadX() - bounds.getX(), y - canvasPadY() - bounds.getY());
 	}
 
 	@Override

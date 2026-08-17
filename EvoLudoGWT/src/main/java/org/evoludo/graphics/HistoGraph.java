@@ -837,7 +837,7 @@ public class HistoGraph extends AbstractGraph<double[]> implements BasicTooltipP
 			return -1;
 		if (!inside(x, y))
 			return -1;
-		int adjX = x - (int) (3 * style.frameWidth);
+		int adjX = x - (int) canvasPadX();
 		double ibarwidth = nBins / bounds.getWidth();
 		return (int) ((adjX - bounds.getX()) * ibarwidth);
 	}
@@ -853,8 +853,7 @@ public class HistoGraph extends AbstractGraph<double[]> implements BasicTooltipP
 
 	@Override
 	protected boolean inside(int x, int y) {
-		int adjX = x - (int) (3 * style.frameWidth);
-		return bounds.contains(adjX, y);
+		return bounds.contains(x - (int) canvasPadX(), y - (int) canvasPadY());
 	}
 
 	@Override

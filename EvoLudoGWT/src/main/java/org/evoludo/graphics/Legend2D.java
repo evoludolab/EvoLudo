@@ -736,11 +736,13 @@ public class Legend2D {
 		double barY = bar.getY();
 		double barWidth = bar.getWidth();
 		double barHeight = bar.getHeight();
-		if (x < barX || x > barX + barWidth || y < barY || y > barY + barHeight)
+		double relX = x - owner.canvasPadX();
+		double relY = y - owner.canvasPadY();
+		if (relX < barX || relX > barX + barWidth || relY < barY || relY > barY + barHeight)
 			return Double.NaN;
 		if (owner.style.legendPos.isVertical())
-			return Math.max(0.0, Math.min(1.0, (y - barY) / barHeight));
-		return Math.max(0.0, Math.min(1.0, (x - barX) / barWidth));
+			return Math.max(0.0, Math.min(1.0, (relY - barY) / barHeight));
+		return Math.max(0.0, Math.min(1.0, (relX - barX) / barWidth));
 	}
 
 	/**
