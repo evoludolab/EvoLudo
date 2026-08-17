@@ -111,7 +111,7 @@ public class Functions {
 				magnitude++;
 			}
 		} else {
-			while (value <= 1.0) {
+			while (value < 1.0) {
 				value *= 10.0;
 				magnitude--;
 			}

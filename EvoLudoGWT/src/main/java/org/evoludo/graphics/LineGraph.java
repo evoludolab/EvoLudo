@@ -33,6 +33,7 @@ package org.evoludo.graphics;
 import java.awt.Color;
 import java.util.Arrays;
 import java.util.Iterator;
+import java.util.logging.Level;
 
 import org.evoludo.geom.Point2D;
 import org.evoludo.graphics.AbstractGraph.HasLogScaleY;
@@ -199,6 +200,13 @@ public class LineGraph extends AbstractGraph<double[]>
 	 * Padding applied when fitting the y-axis to visible data.
 	 */
 	private static final double ZOOM_FIT_MARGIN = 0.05;
+
+	/**
+	 * Fraction of {@code yMax} below which a linear {@code y}-axis minimum is
+	 * considered insignificant and snapped to zero rather than given its own
+	 * (arbitrarily fine-grained) axis floor.
+	 */
+	private static final double MIN_YMAX_FRACTION = 0.01;
 
 	/**
 	 * Whether the model tracks real time for the current run (as opposed to only
@@ -589,11 +597,28 @@ public class LineGraph extends AbstractGraph<double[]>
 		if (style.autoscaleY) {
 			// dynamically extend range if needed - never reduce (would need to
 			// consult RingBuffer for this)
-			if (min != Double.POSITIVE_INFINITY)
-				style.yMin = Math.min(style.yMin, Functions.roundDown(min));
 			if (max != Double.NEGATIVE_INFINITY)
 				style.yMax = Math.max(style.yMax, Functions.roundUp(max));
+			if (min != Double.POSITIVE_INFINITY) {
+				double newMin = (!style.logScaleY && min > 0.0) ? roundLinearYMin(min, style.yMax)
+						: Functions.roundDown(min);
+				style.yMin = Math.min(style.yMin, newMin);
+			}
 		}
+	}
+
+	/**
+	 * Round a candidate linear {@code y}-axis minimum down, snapping it to zero
+	 * if it is an insignificant fraction of the overall range.
+	 *
+	 * @param min  the candidate minimum (must be {@code > 0})
+	 * @param yMax the current {@code y}-axis maximum
+	 * @return the rounded minimum, or {@code 0.0} if snapped
+	 */
+	private double roundLinearYMin(double min, double yMax) {
+		if (yMax <= 0.0 || min < MIN_YMAX_FRACTION * yMax)
+			return 0.0;
+		return Functions.roundDown(min);
 	}
 
 	/**
@@ -730,10 +755,8 @@ public class LineGraph extends AbstractGraph<double[]>
 			return;
 		}
 		if (logY && bufmin == 0.0)
-			bufmin = 0.01 * style.yMax;
-		if (!logY && bufmin > 0.0 && bufmin < 0.01 * style.yMax)
-			bufmin = 0.0;
-		style.yMin = Functions.roundDown(bufmin);
+			bufmin = MIN_YMAX_FRACTION * style.yMax;
+		style.yMin = logY ? Functions.roundDown(bufmin) : roundLinearYMin(bufmin, style.yMax);
 	}
 
 	/**
@@ -1560,10 +1583,17 @@ public class LineGraph extends AbstractGraph<double[]>
 			if (min <= 0.0)
 				min = max * 0.01;
 		}
-		double newMin = Functions.roundDown(min);
 		double newMax = Functions.roundUp(max);
-		if (style.logScaleY && newMin <= 0.0)
-			newMin = min;
+		double newMin;
+		if (style.logScaleY) {
+			newMin = Functions.roundDown(min);
+			if (newMin <= 0.0)
+				newMin = min;
+		} else if (min > 0.0) {
+			newMin = roundLinearYMin(min, newMax);
+		} else {
+			newMin = Functions.roundDown(min);
+		}
 		style.yMin = newMin;
 		style.yMax = newMax;
 		return true;
