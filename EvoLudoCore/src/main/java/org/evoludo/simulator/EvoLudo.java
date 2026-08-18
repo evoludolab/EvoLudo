@@ -148,7 +148,8 @@ public abstract class EvoLudo
 	 * @param msg information message
 	 */
 	public void logMessage(String msg) {
-		logger.info(msg);
+		if (logger.isLoggable(Level.INFO))
+			logger.info(msg);
 	}
 
 	/**
@@ -157,7 +158,8 @@ public abstract class EvoLudo
 	 * @param msg warning message
 	 */
 	public void logWarning(String msg) {
-		logger.warning(msg);
+		if (logger.isLoggable(Level.WARNING))
+			logger.warning(msg);
 	}
 
 	/**
@@ -166,7 +168,8 @@ public abstract class EvoLudo
 	 * @param msg error message
 	 */
 	public void logError(String msg) {
-		logger.severe(msg);
+		if (logger.isLoggable(Level.SEVERE))
+			logger.severe(msg);
 	}
 
 	/**
@@ -1291,7 +1294,7 @@ public abstract class EvoLudo
 			fireModelStopped();
 			pendingAction = PendingAction.NONE;
 		}
-		logger.severe(msg);
+		logError(msg);
 		throw new IllegalStateException(msg);
 	}
 

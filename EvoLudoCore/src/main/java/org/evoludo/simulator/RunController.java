@@ -169,7 +169,7 @@ class RunController {
 		engine.isSuspended = false;
 		for (RunListener i : runListeners)
 			i.modelRunning();
-		engine.logger.info("Model running");
+		engine.logMessage("Model running");
 	}
 
 	/**
@@ -195,7 +195,7 @@ class RunController {
 			engine.isRunning = false;
 			for (RunListener i : runListeners)
 				i.modelDidInit();
-			engine.logger.info("Model init");
+			engine.logMessage("Model init");
 		}
 	}
 
@@ -211,7 +211,7 @@ class RunController {
 			return;
 		for (RunListener i : runListeners)
 			i.modelDidReset();
-		engine.logger.info("Model reset");
+		engine.logMessage("Model reset");
 	}
 
 	/**
@@ -223,7 +223,7 @@ class RunController {
 	public void fireModelRelaxed() {
 		for (RunListener i : runListeners)
 			i.modelRelaxed();
-		engine.logger.info("Model relaxed");
+		engine.logMessage("Model relaxed");
 	}
 
 	/**
@@ -238,7 +238,7 @@ class RunController {
 		engine.isRunning = false;
 		for (RunListener i : runListeners)
 			i.modelStopped();
-		engine.logger.info("Model stopped");
+		engine.logMessage("Model stopped");
 	}
 
 	/**

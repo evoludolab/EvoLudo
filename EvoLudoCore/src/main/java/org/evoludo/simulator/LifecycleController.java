@@ -33,7 +33,6 @@ package org.evoludo.simulator;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
-import java.util.logging.Level;
 
 import org.evoludo.simulator.models.LifecycleListener;
 import org.evoludo.simulator.models.Model;
@@ -101,7 +100,7 @@ class LifecycleController {
 		for (LifecycleListener i : lifecycleListeners)
 			i.moduleLoaded();
 		String authors = engine.activeModule.getAuthors();
-		engine.logger.info(
+		engine.logMessage(
 				"Module loaded: " + engine.activeModule.getTitle() + (authors == null ? "" : " by " + authors));
 	}
 
@@ -115,7 +114,7 @@ class LifecycleController {
 		for (LifecycleListener i : lifecycleListeners)
 			i.moduleUnloaded();
 		if (engine.activeModule != null)
-			engine.logger.info("Module '" + engine.activeModule.getTitle() + "' unloaded");
+			engine.logMessage("Module '" + engine.activeModule.getTitle() + "' unloaded");
 	}
 
 	/**
@@ -128,7 +127,7 @@ class LifecycleController {
 	public void fireModuleRestored() {
 		for (LifecycleListener i : lifecycleListeners)
 			i.moduleRestored();
-		engine.logger.info("Module restored");
+		engine.logMessage("Module restored");
 	}
 
 	/**
@@ -140,7 +139,7 @@ class LifecycleController {
 	public void fireModelLoaded() {
 		for (LifecycleListener i : lifecycleListeners)
 			i.modelLoaded();
-		engine.logger.info("Model '" + engine.activeModel.getType() + "' loaded");
+		engine.logMessage("Model '" + engine.activeModel.getType() + "' loaded");
 	}
 
 	/**
@@ -153,7 +152,7 @@ class LifecycleController {
 		for (LifecycleListener i : lifecycleListeners)
 			i.modelUnloaded();
 		if (engine.activeModel != null)
-			engine.logger.info("Model '" + engine.activeModel.getType() + "' unloaded");
+			engine.logMessage("Model '" + engine.activeModel.getType() + "' unloaded");
 	}
 
 	/**
@@ -171,10 +170,9 @@ class LifecycleController {
 		if (newModule == null) {
 			if (engine.activeModule == null)
 				return false;
-			if (engine.logger.isLoggable(Level.WARNING))
-				engine.logger.warning("module '" + newModuleKey +
-						"' not found - keeping '" +
-						engine.activeModule.getKey() + "'.");
+			engine.logWarning("module '" + newModuleKey +
+					"' not found - keeping '" +
+					engine.activeModule.getKey() + "'.");
 			return true;
 		}
 		if (engine.activeModule != null) {
@@ -229,13 +227,11 @@ class LifecycleController {
 		}
 		Model newModel = engine.activeModule.createModel(type);
 		if (newModel == null) {
-			if (engine.logger.isLoggable(Level.WARNING)) {
-				String msg = "model type '" + type + "' not supported.";
-				if (engine.activeModel == null)
-					engine.logger.warning(msg);
-				else
-					engine.logger.warning(msg + " keeping '" + engine.activeModel.getType() + "'.");
-			}
+			String msg = "model type '" + type + "' not supported.";
+			if (engine.activeModel == null)
+				engine.logWarning(msg);
+			else
+				engine.logWarning(msg + " keeping '" + engine.activeModel.getType() + "'.");
 			return;
 		}
 		// Model aliases such as PDE/ODE may resolve to the already loaded concrete

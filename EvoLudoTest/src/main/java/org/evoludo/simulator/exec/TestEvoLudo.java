@@ -37,12 +37,12 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.ObjectOutputStream;
 import java.io.PrintStream;
-import java.text.DecimalFormat;
 import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
+import java.text.DecimalFormat;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
@@ -52,7 +52,6 @@ import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
 
 import org.evoludo.simulator.EvoLudoJRE;
-import org.evoludo.simulator.models.Model;
 import org.evoludo.simulator.models.ModelType;
 import org.evoludo.simulator.models.RunListener;
 import org.evoludo.util.Plist;
@@ -1102,7 +1101,7 @@ public class TestEvoLudo implements RunListener {
 	 * Print help screen.
 	 */
 	public void help() {
-		System.out.println(
+		logMessage(
 				"EvoLudo tests: " + engine.getVersion() + //
 						"\nUsage: java -jar TestEvoLudo.jar with options\n" + //
 						"       --generate <directory|file>: generate test files from option sets\n" + //

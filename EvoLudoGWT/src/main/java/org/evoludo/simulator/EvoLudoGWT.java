@@ -833,7 +833,7 @@ public class EvoLudoGWT extends EvoLudo {
 		if (state == null)
 			return;
 		NativeJS.export("data:text/x-plist;base64," + NativeJS.b64encode(state), "evoludo.plist");
-		logger.info("state saved in 'evoludo.plist'.");
+		logMessage("state saved in 'evoludo.plist'.");
 	}
 
 	/**

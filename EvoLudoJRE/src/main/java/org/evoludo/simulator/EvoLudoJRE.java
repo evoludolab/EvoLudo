@@ -46,7 +46,6 @@ import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.Properties;
-import java.util.logging.Level;
 import java.util.zip.GZIPInputStream;
 import java.util.zip.ZipInputStream;
 
@@ -306,7 +305,7 @@ public class EvoLudoJRE extends EvoLudo implements Runnable {
 			fireModelRunning();
 			// this is the EDT, check if engine thread alive and kicking
 			if (engineThread == null) {
-				logger.severe("engine crashed. resetting and relaunching.");
+				logError("engine crashed. resetting and relaunching.");
 				modelReset();
 				launchEngine();
 			}
@@ -343,7 +342,7 @@ public class EvoLudoJRE extends EvoLudo implements Runnable {
 				// we do not really catch this error but rather spread the word...
 				// the error will be reported in the console anyways, therefore only check
 				// we have a front-end and if so raise alert.
-				logger.severe("Engine crashed: " + e.getMessage());
+				logError("Engine crashed: " + e.getMessage());
 				throw e;
 			}
 			if (!isRunning) {
@@ -1213,7 +1212,7 @@ public class EvoLudoJRE extends EvoLudo implements Runnable {
 				nParams--;
 				if (plistname.isEmpty()) {
 					plistname = null;
-					logger.warning("file name to restore state missing - ignored.");
+					logWarning("file name to restore state missing - ignored.");
 					break;
 				}
 				plist = readPlist(plistname);
@@ -1221,7 +1220,7 @@ public class EvoLudoJRE extends EvoLudo implements Runnable {
 					continue;
 				String restoreOptions = (String) plist.get("CLO");
 				if (restoreOptions == null) {
-					logger.warning("state in '" + plistname + "' corrupt (CLO key missing) - ignored.");
+					logWarning("state in '" + plistname + "' corrupt (CLO key missing) - ignored.");
 					plist = null;
 					plistname = null;
 					continue;
@@ -1243,8 +1242,8 @@ public class EvoLudoJRE extends EvoLudo implements Runnable {
 	@Override
 	public boolean restoreFromFile() {
 		boolean success = restoreState(plist);
-		if (!success && logger.isLoggable(Level.WARNING))
-			logger.warning("failed to restore state in '" + plistname + "'");
+		if (!success)
+			logWarning("failed to restore state in '" + plistname + "'");
 		plistname = null;
 		return success;
 	}
@@ -1269,8 +1268,8 @@ public class EvoLudoJRE extends EvoLudo implements Runnable {
 		if (plistname == null)
 			// not restoring state - continue
 			return issues;
-		if (issues > 0 && logger.isLoggable(Level.WARNING))
-			logger.warning("problems parsing CLO from '" + plistname + "'...");
+		if (issues > 0)
+			logWarning("problems parsing CLO from '" + plistname + "'...");
 		// parseCLO does not reset model - do it now to be ready for restore
 		modelReset();
 		// finish restoring
@@ -1321,8 +1320,7 @@ public class EvoLudoJRE extends EvoLudo implements Runnable {
 						}
 					}
 					setOutput(null);
-					if (logger.isLoggable(Level.WARNING))
-						logger.warning("failed to open '" + arg + "'.");
+					logWarning("failed to open '" + arg + "'.");
 					return false;
 				}
 			});
@@ -1354,8 +1352,7 @@ public class EvoLudoJRE extends EvoLudo implements Runnable {
 						}
 					}
 					setOutput(null);
-					if (logger.isLoggable(Level.WARNING))
-						logger.warning("failed to append to '" + arg + "'.");
+					logWarning("failed to append to '" + arg + "'.");
 					return false;
 				}
 			});
@@ -1438,7 +1435,7 @@ public class EvoLudoJRE extends EvoLudo implements Runnable {
 						if (data == null)
 							return false;
 						if (dataTypes.contains(data))
-							logger.warning("Duplicate data type '" + type + "' or bad match - ignored.");
+							logWarning("Duplicate data type '" + type + "' or bad match - ignored.");
 						else
 							dataTypes.add(data);
 					}
@@ -1453,7 +1450,7 @@ public class EvoLudoJRE extends EvoLudo implements Runnable {
 					while (i.hasNext()) {
 						MultiView.DataTypes type = i.next();
 						if (isDynamicsDataType(type) != isDynamic) {
-							logger.warning(
+							logWarning(
 									"Cannot mix data from dynamics and statistics - ignoring '" + type.getKey() + "'");
 							i.remove();
 							// note: cannot use 'for (Module.DataTypes type : dataTypes)'
@@ -1463,7 +1460,7 @@ public class EvoLudoJRE extends EvoLudo implements Runnable {
 							continue;
 						}
 						if (!isDynamicsDataType(type) && getModule().getNSpecies() > 1) {
-							logger.warning("Statistics not (yet) implemented for multi-species modules - ignoring '"
+							logWarning("Statistics not (yet) implemented for multi-species modules - ignoring '"
 									+ type.getKey() + "'");
 							i.remove();
 							success = false;
@@ -1537,7 +1534,7 @@ public class EvoLudoJRE extends EvoLudo implements Runnable {
 				while ((line = in.readLine()) != null)
 					sb.append(line);
 			} catch (Exception e) {
-				logger.warning("failed to read state in '" + name + "'");
+				logWarning("failed to read state in '" + name + "'");
 				return new Plist();
 			}
 			content = sb.toString();
@@ -1545,7 +1542,7 @@ public class EvoLudoJRE extends EvoLudo implements Runnable {
 			try {
 				content = new String(Files.readAllBytes(Paths.get(name)));
 			} catch (Exception e) {
-				logger.warning("failed to read state in '" + name + "'");
+				logWarning("failed to read state in '" + name + "'");
 				// e.printStackTrace(); // for debugging
 				return new Plist();
 			}
@@ -1607,22 +1604,22 @@ public class EvoLudoJRE extends EvoLudo implements Runnable {
 	 */
 	private boolean fileCheck(File file, boolean unique) {
 		if (file.isDirectory()) {
-			logger.warning("'" + file.getPath() + "' is a directory");
+			logWarning("'" + file.getPath() + "' is a directory");
 			return false;
 		}
 		if (unique || !file.exists()) {
 			try {
 				if (!file.createNewFile()) {
-					logger.warning("file '" + file.getPath() + "' already exists");
+					logWarning("file '" + file.getPath() + "' already exists");
 					return false;
 				}
 			} catch (IOException io) {
-				logger.warning("failed to create file '" + file.getPath() + "'");
+				logWarning("failed to create file '" + file.getPath() + "'");
 				return false;
 			}
 		}
 		if (!file.canWrite()) {
-			logger.warning("file '" + file.getPath() + "' not writable");
+			logWarning("file '" + file.getPath() + "' not writable");
 			return false;
 		}
 		return true;
@@ -1678,12 +1675,12 @@ public class EvoLudoJRE extends EvoLudo implements Runnable {
 		else
 			export = uniqueFile(filename, "plist");
 		if (export == null) {
-			logger.severe("failed to create export file.");
+			logError("failed to create export file.");
 			return;
 		}
 		String state = encodeState();
 		if (state == null) {
-			logger.severe("failed to encode state.");
+			logError("failed to encode state.");
 			return;
 		}
 		try {
@@ -1691,11 +1688,11 @@ public class EvoLudoJRE extends EvoLudo implements Runnable {
 			try (PrintStream stream = new PrintStream(export)) {
 				stream.println(state);
 			}
-			logger.info("state saved in '" + export.getName() + "'.");
+			logMessage("state saved in '" + export.getName() + "'.");
 		} catch (Exception e) {
 			String msg = "";
 			msg = "to '" + export.getPath() + "' ";
-			logger.warning("failed to export state " + msg + "- using '"
+			logWarning("failed to export state " + msg + "- using '"
 					+ (cloAppend.isSet() ? cloAppend.getArg() : cloOutput.getArg()) + "'");
 			output.println(state);
 		}

@@ -417,7 +417,7 @@ public class CLOController {
 			String[] moduleArgs = param.split("[\\s+,=]");
 			if (moduleArgs == null || moduleArgs.length < 2) {
 				if (!helpRequested)
-					engine.logger.severe("module key missing");
+					engine.logError("module key missing");
 				if (engine.getModule() != null)
 					engine.unloadModule();
 				return helpCLO;
@@ -434,9 +434,9 @@ public class CLOController {
 		if (moduleKey == null || !engine.loadModule(moduleKey.getKey())) {
 			if (!helpRequested) {
 				if (!moduleName.isEmpty())
-					engine.logger.severe("module '" + moduleName + "' not found.");
+					engine.logError("module '" + moduleName + "' not found.");
 				else
-					engine.logger.severe("Use --module to load a module or --help for more information.");
+					engine.logError("Use --module to load a module or --help for more information.");
 			}
 			if (engine.getModule() != null)
 				engine.unloadModule();
@@ -459,7 +459,7 @@ public class CLOController {
 				continue;
 			String verbosity = CLOption.stripKey(verboseName, param).trim();
 			if (verbosity.isEmpty()) {
-				engine.logger.warning("verbose level missing - ignored.");
+				engine.logWarning("verbose level missing - ignored.");
 				// remove verbose option
 				return ArrayMath.drop(cloarray, i);
 			}
