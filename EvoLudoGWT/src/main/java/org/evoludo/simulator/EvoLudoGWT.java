@@ -446,7 +446,9 @@ public class EvoLudoGWT extends EvoLudo {
 	RunTimer timer = new RunTimer();
 
 	/**
-	 * The update milestone at which the current visible step is complete.
+	 * The update milestone at which the current visible step is complete, or
+	 * <code>0.0</code> if not yet computed for the chunked step currently in
+	 * progress, see {@link #scheduleChunkedStep(double)}.
 	 */
 	private double chunkTargetUpdates = 0.0;
 
@@ -597,16 +599,6 @@ public class EvoLudoGWT extends EvoLudo {
 		if (stepScheduled || activeModel == null)
 			return;
 		stepScheduled = true;
-		double timeStep = activeModel.getTimeStep();
-		double startUpdates = activeModel.getUpdates();
-		double lastBoundary = Math.floor((startUpdates + IBS_EPS) / timeStep) * timeStep;
-		chunkTargetUpdates = Math.min(lastBoundary + timeStep, activeModel.getNextHalt());
-		// only clear 'new' markers when starting a fresh timestep; if resuming a
-		// timestep that was interrupted by a stop, keep the markers accumulated so
-		// far so completing the timestep doesn't lose them
-		boolean atTimeStepBoundary = (startUpdates - lastBoundary) < IBS_EPS;
-		if (activeModel instanceof IBS && atTimeStepBoundary)
-			((IBS) activeModel).clearTraits();
 		runController.startCPUSample();
 		Scheduler.get().scheduleIncremental(() -> runGuarded("running a chunked model step", () -> {
 			if (!stepScheduled)
@@ -622,21 +614,35 @@ public class EvoLudoGWT extends EvoLudo {
 				processPendingAction();
 				return false;
 			}
-			double remaining = chunkTargetUpdates - activeModel.getUpdates();
+			double updates = activeModel.getUpdates();
+			if (chunkTargetUpdates == 0.0) {
+				// first hidden substep of this visible timestep: compute its target
+				// and only now clear 'new' markers, so that a stop requested before
+				// this point leaves the previous step's markers intact instead of
+				// blanking them for a step that never happened. If resuming a
+				// timestep that was interrupted by a stop, updates is already
+				// past the boundary, so the accumulated markers are kept.
+				double timeStep = activeModel.getTimeStep();
+				double lastBoundary = Math.floor((updates + IBS_EPS) / timeStep) * timeStep;
+				chunkTargetUpdates = Math.min(lastBoundary + timeStep, activeModel.getNextHalt());
+				if (activeModel instanceof IBS && (updates - lastBoundary) < IBS_EPS)
+					((IBS) activeModel).clearTraits();
+			}
+			double remaining = chunkTargetUpdates - updates;
 			if (remaining <= IBS_EPS) {
-				finishChunkedStep(activeModel.getUpdates() + IBS_EPS < activeModel.getNextHalt());
+				finishChunkedStep(updates + IBS_EPS < activeModel.getNextHalt());
 				return false;
 			}
 			double chunk = Math.min(chunkStep, remaining);
 			boolean cont = activeModel.next(chunk);
-			double updates = activeModel.getUpdates();
+			updates = activeModel.getUpdates();
 			boolean reachedTarget = (updates + IBS_EPS >= chunkTargetUpdates);
 			if (!cont) {
 				finishChunkedStep(false);
 				return false;
 			}
 			if (reachedTarget) {
-				finishChunkedStep(activeModel.getUpdates() + IBS_EPS < activeModel.getNextHalt());
+				finishChunkedStep(updates + IBS_EPS < activeModel.getNextHalt());
 				return false;
 			}
 			return true;
