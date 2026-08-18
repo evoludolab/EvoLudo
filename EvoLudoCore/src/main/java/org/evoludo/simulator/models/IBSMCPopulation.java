@@ -960,7 +960,7 @@ public class IBSMCPopulation extends IBSPopulation<Continuous, IBSMCPopulation> 
 		if (interaction.isType(GeometryType.WELLMIXED) && interGroup.isSampling(IBSGroup.SAMPLING_ALL)) {
 			// interacting with everyone in mean-field simulations is not feasible - except
 			// for discrete traits
-			logger.warning(
+			engine.logWarning(
 					"interaction type 'all' unfeasible in well-mixed populations - using single interaction!");
 			interGroup.setNSamples(1);
 			// change of sampling may affect whether scores can be adjusted
@@ -968,10 +968,10 @@ public class IBSMCPopulation extends IBSPopulation<Continuous, IBSMCPopulation> 
 		}
 
 		if (interaction.isInterspecies())
-			logger.warning("multi-species interactions with continuous traits have NOT been tested...");
+			engine.logWarning("multi-species interactions with continuous traits have NOT been tested...");
 
 		if (module.getNGroup() > 2)
-			logger.warning("group interactions with continuous traits have NOT been tested...");
+			engine.logWarning("group interactions with continuous traits have NOT been tested...");
 
 		if (traits == null || traits.length != nPopulation * nTraits)
 			traits = new double[nPopulation * nTraits];

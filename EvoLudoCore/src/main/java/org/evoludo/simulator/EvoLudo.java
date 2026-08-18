@@ -130,8 +130,14 @@ public abstract class EvoLudo
 
 	/**
 	 * The logger for keeping track of and reporting events and issues.
+	 * <p>
+	 * Package-private: within {@code org.evoludo.simulator} a few classes (e.g.
+	 * {@link CLOController}, {@link RunController}) still need direct access to
+	 * the {@link Logger} instance for configuration (level, handlers); everyone
+	 * else should use {@link #logMessage(String)}, {@link #logWarning(String)},
+	 * {@link #logError(String)}, or {@link #getLogger()}.
 	 */
-	protected Logger logger;
+	Logger logger;
 
 	/**
 	 * Utility method to log progress of simulations. For implementation details see

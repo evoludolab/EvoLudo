@@ -463,7 +463,7 @@ public abstract class AbstractGraph extends JLayeredPane implements ActionListen
 				} catch (OutOfMemoryError e) {
 					// reset zoom and try to start all over - this triggers another component
 					// resized event etc.
-					controller.getLogger().severe("Out of memory! - resetting view.");
+					controller.getEngine().logError("Out of memory! - resetting view.");
 					zoom();
 					return false;
 				}

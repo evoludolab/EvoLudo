@@ -266,14 +266,14 @@ public class simCDLPQ extends CDLPQ implements ChangeListener {
 				try {
 					ImageIO.write(snapimage, "PNG", snapfile);
 				} catch (IOException x) {
-					logger.warning("writing image to " + snapfile.getAbsolutePath() + " failed!");
+					engine.logWarning("writing image to " + snapfile.getAbsolutePath() + " failed!");
 					return;
 				}
 				out.println("image written to " + snapfile.getAbsolutePath());
 				return;
 
 			default:
-				logger.warning("unknown file format (" + format + ")");
+				engine.logWarning("unknown file format (" + format + ")");
 		}
 	}
 

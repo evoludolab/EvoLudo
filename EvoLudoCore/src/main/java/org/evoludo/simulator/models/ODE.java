@@ -32,7 +32,6 @@ package org.evoludo.simulator.models;
 
 import java.util.Arrays;
 import java.util.List;
-import java.util.logging.Level;
 
 import org.evoludo.math.ArrayMath;
 import org.evoludo.math.Functions;
@@ -515,7 +514,7 @@ public class ODE extends Model implements DModel {
 		idxSpecies[nSpecies] = nDim;
 		if (hasPayoffs && isAdjustedDynamics && minFit <= 0.0) {
 			// fitness is not guaranteed to be positive
-			logger.warning(getClass().getSimpleName()
+			engine.logWarning(getClass().getSimpleName()
 					+ " - fitness >0 must hold for adjusted dynamics (revert to standard dynamics).");
 			isAdjustedDynamics = false;
 		}
@@ -617,9 +616,8 @@ public class ODE extends Model implements DModel {
 	public void setDt(double deltat) {
 		deltat = Math.max(0.0, deltat);
 		if (deltat == 0.0) {
-			if (logger.isLoggable(Level.WARNING))
-				logger.warning(getClass().getSimpleName() + " - time step must be >0 (dt=" + Formatter.formatSci(dt, 5)
-						+ " kept; requested dt=" + Formatter.formatSci(deltat, 5) + " ignored).");
+			engine.logWarning(getClass().getSimpleName() + " - time step must be >0 (dt=" + Formatter.formatSci(dt, 5)
+					+ " kept; requested dt=" + Formatter.formatSci(deltat, 5) + " ignored).");
 			return;
 		}
 		dt = deltat;
@@ -904,9 +902,8 @@ public class ODE extends Model implements DModel {
 			elapsed += dtTaken;
 			if (Math.abs(elapsed - prev) <= 1e-16) {
 				// emergency brake - step size too small
-				if (logger.isLoggable(Level.WARNING))
-					logger.warning(getClass().getSimpleName()
-							+ ": aborted, step size too small, dt=" + Formatter.formatSci(dtTaken, 5));
+				engine.logWarning(getClass().getSimpleName()
+						+ ": aborted, step size too small, dt=" + Formatter.formatSci(dtTaken, 5));
 				converged = true;
 			} else {
 				converged = checkConvergence(d2);
@@ -953,9 +950,8 @@ public class ODE extends Model implements DModel {
 	 * @return {@code false} to request a stop
 	 */
 	protected boolean stopDiverged() {
-		if (logger.isLoggable(Level.SEVERE))
-			logger.severe(getClass().getSimpleName() + ": integration diverged (non-finite change in state) at time="
-					+ Formatter.formatFix(time, 4) + " - stopping.");
+		engine.logError(getClass().getSimpleName() + ": integration diverged (non-finite change in state) at time="
+				+ Formatter.formatFix(time, 4) + " - stopping.");
 		return false;
 	}
 
@@ -2112,13 +2108,11 @@ public class ODE extends Model implements DModel {
 		accuracy = (Double) plist.get("Accuracy");
 		connect = false;
 		if (!restoreTraits(plist)) {
-			if (logger.isLoggable(Level.WARNING))
-				logger.warning("restore traits in " + type + "-model failed.");
+			engine.logWarning("restore traits in " + type + "-model failed.");
 			success = false;
 		}
 		if (!restoreFitness(plist)) {
-			if (logger.isLoggable(Level.WARNING))
-				logger.warning("restore fitness in " + type + "-model failed.");
+			engine.logWarning("restore fitness in " + type + "-model failed.");
 			success = false;
 		}
 		return success;

@@ -128,7 +128,7 @@ public class Network3DGWT extends Network3D {
 			return;
 		}
 		if (nLinks > MAX_LINK_COUNT) {
-			engine.getLogger().warning("Too many links to draw - skipping!");
+			engine.logWarning("Too many links to draw - skipping!");
 			links = null;
 			return;
 		}

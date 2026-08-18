@@ -284,7 +284,7 @@ public class RSP extends Discrete implements Payoffs,
 			// kaleidoscopes only available for some geometries
 			if (!(interaction.isType(GeometryType.SQUARE) || interaction.isType(GeometryType.SQUARE_MOORE)
 					|| interaction.isType(GeometryType.SQUARE_NEUMANN))) {
-				logger.warning("kaleidoscopes require square lattices - using uniform initialization.");
+				engine.logWarning("kaleidoscopes require square lattices - using uniform initialization.");
 				initUniform();
 				return;
 			}

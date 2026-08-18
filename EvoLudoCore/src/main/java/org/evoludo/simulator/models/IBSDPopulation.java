@@ -32,7 +32,6 @@ package org.evoludo.simulator.models;
 
 import java.util.Arrays;
 import java.util.List;
-import java.util.logging.Level;
 
 import org.evoludo.math.ArrayMath;
 import org.evoludo.math.Combinatorics;
@@ -1893,12 +1892,10 @@ public class IBSDPopulation extends IBSPopulation<Discrete, IBSDPopulation> {
 				if (compRates[n] > 0.0 && pop.getPopulationSize() > 0)
 					return false;
 			}
-			if (logger.isLoggable(Level.WARNING)) {
-				String name = module.getName();
-				logger.warning(
-						"Population" + (name != null && !name.isEmpty() ? " of " + name : "")
-								+ " at maximum (no death, no competition).");
-			}
+			String name = module.getName();
+			engine.logWarning(
+					"Population" + (name != null && !name.isEmpty() ? " of " + name : "")
+							+ " at maximum (no death, no competition).");
 			return true;
 		}
 		// death rate > 0 and/or vacant sites
@@ -2141,7 +2138,7 @@ public class IBSDPopulation extends IBSPopulation<Discrete, IBSDPopulation> {
 				int nPop = opponent.getModule().getNPopulation();
 				Combinatorics.combinations(nPop - 1, nGroup - 1);
 			} catch (ArithmeticException ae) {
-				logger.warning(
+				engine.logWarning(
 						"accumulated payoffs in mean-field geometry with group interactions exceed max interaction count.\n"
 								+
 								"    switching to averaged payoffs.");
@@ -2159,11 +2156,11 @@ public class IBSDPopulation extends IBSPopulation<Discrete, IBSDPopulation> {
 		// optimized Moran type processes are incompatible with mutations!
 		if (!populationUpdate.isMoran()) {
 			optimizeMoran = false;
-			logger.warning("optimizations require Moran-type updates - disabled.");
+			engine.logWarning("optimizations require Moran-type updates - disabled.");
 			doReset = true;
 		} else if (mutation.getProbability() > 0.0) {
 			optimizeMoran = false;
-			logger.warning("optimized Moran-type updates are incompatible with mutations - disabled.");
+			engine.logWarning("optimized Moran-type updates are incompatible with mutations - disabled.");
 			doReset = true;
 		} else // no need to report both warnings
 				// optimized Moran type processes are incompatible with well mixed populations!
@@ -2171,7 +2168,7 @@ public class IBSDPopulation extends IBSPopulation<Discrete, IBSDPopulation> {
 				(interaction.isType(GeometryType.HIERARCHY) &&
 						((HierarchicalGeometry) interaction).isSubtype(GeometryType.WELLMIXED))) {
 			optimizeMoran = false;
-			logger.warning("optimized Moran-type updates are incompatible with mean-field geometry - disabled.");
+			engine.logWarning("optimized Moran-type updates are incompatible with mean-field geometry - disabled.");
 			doReset = true;
 		}
 		return doReset;
@@ -2234,8 +2231,7 @@ public class IBSDPopulation extends IBSPopulation<Discrete, IBSDPopulation> {
 					residentType = (mutantType + 1) % nTraits;
 				boolean[] active = module.getActiveTraits();
 				if (!active[mutantType] || !active[residentType]) {
-					if (logger.isLoggable(Level.WARNING))
-						logger.warning("resident/mutant traits disabled - using uniform.");
+						engine.logWarning("resident/mutant traits disabled - using uniform.");
 					initUniform();
 					break;
 				}
@@ -2298,8 +2294,7 @@ public class IBSDPopulation extends IBSPopulation<Discrete, IBSDPopulation> {
 			cumFreqs[i] = cumFreqs[i - 1] + (i < nInit && active[i] ? init.args[i] : 0.0);
 		double norm = cumFreqs[nTraits - 1];
 		if (norm < 1e-8) {
-			if (logger.isLoggable(Level.WARNING))
-				logger.warning("zero total frequency - using uniform.");
+			engine.logWarning("zero total frequency - using uniform.");
 			initUniform();
 			return;
 		}
@@ -2388,9 +2383,8 @@ public class IBSDPopulation extends IBSPopulation<Discrete, IBSDPopulation> {
 	public void initMono(int monoType, double monoFreq) {
 		monoType = monoType % nTraits;
 		if (!module.getActiveTraits()[monoType] || (monoType == vacantIdx && monoFreq < 1.0 - 1e-8)) {
-			if (logger.isLoggable(Level.WARNING))
-				logger.warning("mono trait " + module.getTraitName(monoType)
-						+ (monoType == vacantIdx ? " cannot be vacant" : " is disabled") + " - using uniform.");
+			engine.logWarning("mono trait " + module.getTraitName(monoType)
+					+ (monoType == vacantIdx ? " cannot be vacant" : " is disabled") + " - using uniform.");
 			initUniform();
 			return;
 		}
@@ -2552,7 +2546,7 @@ public class IBSDPopulation extends IBSPopulation<Discrete, IBSDPopulation> {
 	 * @see IBSD.Init.Type#KALEIDOSCOPE
 	 */
 	protected void initKaleidoscope() {
-		logger.warning("init 'kaleidoscope': not implemented - using 'uniform'.");
+		engine.logWarning("init 'kaleidoscope': not implemented - using 'uniform'.");
 		initUniform();
 	}
 
@@ -2572,7 +2566,7 @@ public class IBSDPopulation extends IBSPopulation<Discrete, IBSDPopulation> {
 						|| type == GeometryType.SQUARE_NEUMANN
 						|| type == GeometryType.SQUARE_MOORE
 						|| type == GeometryType.LINEAR)) {
-			logger.warning("init 'stripes': 2D lattice structures required - using 'uniform'.");
+			engine.logWarning("init 'stripes': 2D lattice structures required - using 'uniform'.");
 			initUniform();
 			return;
 		}

@@ -59,7 +59,7 @@ public class LinearGeometry extends AbstractLattice {
 		String numeric = stripBoundary(arg);
 		int[] conn = CLOParser.parseIntVector(numeric);
 		if (conn.length > 2)
-			logger.warning("too many arguments for linear geometry.");
+			engine.logWarning("too many arguments for linear geometry.");
 		if (conn.length >= 2) {
 			connectivity = Math.max(2, conn[0] + conn[1]);
 			setLinearAsymmetry(conn[0] - conn[1]);

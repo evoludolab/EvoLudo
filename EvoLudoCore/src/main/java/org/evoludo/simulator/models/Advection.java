@@ -31,7 +31,6 @@
 package org.evoludo.simulator.models;
 
 import java.util.Arrays;
-import java.util.logging.Level;
 
 import org.evoludo.math.ArrayMath;
 import org.evoludo.simulator.EvoLudo;
@@ -280,7 +279,7 @@ public class Advection extends PDE {
 			// parsed (see cloPdeAdvection) - validate advcoeff's dimensions accordingly
 			int dim = dependent < 0 ? nDim : nDim - 1;
 			if (advcoeff.length != dim || advcoeff[0].length != dim) {
-				logger.warning("advection matrix dimensions do not match number of independent traits - disabling advection.");
+				engine.logWarning("advection matrix dimensions do not match number of independent traits - disabling advection.");
 				doAdvection = false;
 				advcoeff = null;
 			}
@@ -304,9 +303,8 @@ public class Advection extends PDE {
 			// migrates! this can introduce artifacts!
 			if (dt < 1e-5 || nDim * maxA * maxK * dt > 0.5) {
 				double deltat = Math.max(0.5 / (nDim * maxA * maxK), Double.MIN_VALUE);
-				if (logger.isLoggable(Level.INFO))
-					logger.info("PDE time scale adjusted (advection): dt=" + Formatter.formatSci(deltat, 4)
-							+ " (was dt=" + Formatter.formatSci(dt, 4) + ").");
+				engine.logMessage("PDE time scale adjusted (advection): dt=" + Formatter.formatSci(deltat, 4)
+						+ " (was dt=" + Formatter.formatSci(dt, 4) + ").");
 				dt = deltat;
 			}
 		}

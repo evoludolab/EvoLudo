@@ -35,8 +35,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 
 import org.evoludo.math.ArrayMath;
 import org.evoludo.math.RNGDistribution;
@@ -103,11 +101,6 @@ public abstract class Module<T extends Module<T>>
 	protected EvoLudo engine;
 
 	/**
-	 * Logger for keeping track of and reporting events and issues.
-	 */
-	protected Logger logger;
-
-	/**
 	 * Reference to current model.
 	 */
 	protected Model model;
@@ -160,7 +153,6 @@ public abstract class Module<T extends Module<T>>
 	@SuppressWarnings("unchecked")
 	protected Module(EvoLudo engine, T partner) {
 		this.engine = engine;
-		logger = engine.getLogger();
 		T mod = (T) this;
 		if (partner == null) {
 			id = 0;
@@ -493,7 +485,7 @@ public abstract class Module<T extends Module<T>>
 		Collection<CLOption.Key> keys = cloModel.getKeys();
 		if (keys.isEmpty()) {
 			if (!helpRequested)
-				logger.severe("model not found!");
+				engine.logError("model not found!");
 			return helpCLO;
 		}
 		ModelType defaulttype = (ModelType) cloModel.match(cloModel.getDefault());
@@ -518,8 +510,8 @@ public abstract class Module<T extends Module<T>>
 				Model activeModel = engine.getModel();
 				if (activeModel != null) {
 					type = activeModel.getType();
-					if (!helpRequested && logger.isLoggable(Level.WARNING))
-						logger.warning(
+					if (!helpRequested)
+						engine.logWarning(
 								"invalid model type " + newModel + " - keep current type " + type.getKey() + ".");
 				} else {
 					type = defaulttype;
@@ -534,8 +526,8 @@ public abstract class Module<T extends Module<T>>
 		// NOTE: currently models cannot be mix'n'matched between species
 		engine.loadModel(type);
 		if (engine.getModel() == null) {
-			if (!helpRequested && logger.isLoggable(Level.SEVERE))
-				logger.severe("model type " + (type == null ? "" : "'" + type.getKey() + "' not supported!"));
+			if (!helpRequested)
+				engine.logError("model type " + (type == null ? "" : "'" + type.getKey() + "' not supported!"));
 			return helpCLO;
 		}
 		return cloarray;
@@ -548,9 +540,8 @@ public abstract class Module<T extends Module<T>>
 	 * @param type   the model type
 	 */
 	private void warnModel(String prefix, ModelType type) {
-		if (logger.isLoggable(Level.WARNING))
-			logger.warning(
-					prefix + " - " + (type == null ? "no default type." : "use default type " + type.getKey() + "."));
+		engine.logWarning(
+				prefix + " - " + (type == null ? "no default type." : "use default type " + type.getKey() + "."));
 	}
 
 	/**
@@ -1119,19 +1110,17 @@ public abstract class Module<T extends Module<T>>
 	 * @see #cloBirthRate
 	 */
 	public void setBirthRate(double[] rates) {
-		if (rates.length > 1 && logger.isLoggable(Level.WARNING)) {
+		if (rates.length > 1) {
 			String sn = getName();
-			logger.warning("birth rate" + (sn.isEmpty() ? "" : " of " + sn)
+			engine.logWarning("birth rate" + (sn.isEmpty() ? "" : " of " + sn)
 					+ " only supports a single value - ignoring " + (rates.length - 1)
 					+ " additional value(s).");
 		}
 		double rate = rates[0];
 		if (rate < 0.0) {
-			if (logger.isLoggable(Level.WARNING)) {
-				String sn = getName();
-				logger.warning("birth rate" + (sn.isEmpty() ? "" : " of " + sn)
-						+ " must be non-negative (changed to 0).");
-			}
+			String sn = getName();
+			engine.logWarning("birth rate" + (sn.isEmpty() ? "" : " of " + sn)
+					+ " must be non-negative (changed to 0).");
 			rate = 0.0;
 		}
 		setBirthRate(rate);
@@ -1164,19 +1153,17 @@ public abstract class Module<T extends Module<T>>
 	 * @see #cloDeathRate
 	 */
 	public void setDeathRate(double[] rates) {
-		if (rates.length > 1 && logger.isLoggable(Level.WARNING)) {
+		if (rates.length > 1) {
 			String sn = getName();
-			logger.warning("death rate" + (sn.isEmpty() ? "" : " of " + sn)
+			engine.logWarning("death rate" + (sn.isEmpty() ? "" : " of " + sn)
 					+ " only supports a single value - ignoring " + (rates.length - 1)
 					+ " additional value(s).");
 		}
 		double rate = rates[0];
 		if (rate < 0.0) {
-			if (logger.isLoggable(Level.WARNING)) {
-				String sn = getName();
-				logger.warning("death rate" + (sn.isEmpty() ? "" : " of " + sn)
-						+ " must be non-negative (changed to 0).");
-			}
+			String sn = getName();
+			engine.logWarning("death rate" + (sn.isEmpty() ? "" : " of " + sn)
+					+ " must be non-negative (changed to 0).");
 			rate = 0.0;
 		}
 		setDeathRate(rate);
@@ -1478,11 +1465,9 @@ public abstract class Module<T extends Module<T>>
 							pop.setBirthRate(rate);
 							continue;
 						}
-						if (logger.isLoggable(Level.WARNING)) {
-							String sn = pop.getName();
-							logger.warning("birth rate" + (sn.isEmpty() ? "" : " of " + sn)
-									+ " must be non-negative (changed to 0).");
-						}
+						String sn = pop.getName();
+						engine.logWarning("birth rate" + (sn.isEmpty() ? "" : " of " + sn)
+								+ " must be non-negative (changed to 0).");
 						pop.setBirthRate(0.0);
 					}
 					return true;
@@ -1546,11 +1531,9 @@ public abstract class Module<T extends Module<T>>
 							pop.setDeathRate(rate);
 							continue;
 						}
-						if (logger.isLoggable(Level.WARNING)) {
-							String sn = pop.getName();
-							logger.warning("death rate" + (sn.isEmpty() ? "" : " of " + sn)
-									+ " must be non-negative (changed to 0).");
-						}
+						String sn = pop.getName();
+						engine.logWarning("death rate" + (sn.isEmpty() ? "" : " of " + sn)
+								+ " must be non-negative (changed to 0).");
 						pop.setDeathRate(0.0);
 					}
 					return true;
@@ -1612,11 +1595,9 @@ public abstract class Module<T extends Module<T>>
 							pop.setCompetitionRates(cVec);
 							continue;
 						}
-						if (logger.isLoggable(Level.WARNING)) {
-							String sn = pop.getName();
-							logger.warning("competition rate" + (sn.isEmpty() ? "" : " of " + sn + " with kin ")
-									+ " must be non-negative.");
-						}
+						String sn = pop.getName();
+						engine.logWarning("competition rate" + (sn.isEmpty() ? "" : " of " + sn + " with kin ")
+								+ " must be non-negative.");
 						return false;
 					}
 					return true;

@@ -30,8 +30,6 @@
 
 package org.evoludo.simulator.models;
 
-import java.util.logging.Level;
-
 import org.evoludo.math.ArrayMath;
 import org.evoludo.math.Functions;
 import org.evoludo.simulator.EvoLudo;
@@ -132,7 +130,7 @@ public class RungeKutta extends ODE {
 	public boolean check() {
 		boolean doReset = super.check();
 		if (!autoDt) {
-			logger.warning(getClass().getSimpleName()
+			engine.logWarning(getClass().getSimpleName()
 					+ " - Runge-Kutta with fixed time increments requested - revert to Euler method.");
 			doEuler = true;
 		}
@@ -232,8 +230,7 @@ public class RungeKutta extends ODE {
 			// no more than a factor of 10.
 			double tnew = time + h;
 			if (tnew == time) {
-				if (logger.isLoggable(Level.WARNING))
-					logger.warning("stepsize underflow in ODE method RungeKutta.deStep() at time " + time + ".");
+				engine.logWarning("stepsize underflow in ODE method RungeKutta.deStep() at time " + time + ".");
 				dtTaken = 0.0;
 				return -1.0;
 			}

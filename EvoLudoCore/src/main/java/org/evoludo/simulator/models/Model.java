@@ -32,8 +32,6 @@ package org.evoludo.simulator.models;
 
 import java.awt.Color;
 import java.util.List;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 
 import org.evoludo.math.RNGDistribution;
 import org.evoludo.simulator.ColorMap;
@@ -42,11 +40,11 @@ import org.evoludo.simulator.models.ChangeListener.PendingAction;
 import org.evoludo.simulator.modules.Features;
 import org.evoludo.simulator.modules.Module;
 import org.evoludo.simulator.views.HasHistogram;
+import org.evoludo.util.CLOCategory;
 import org.evoludo.util.CLODelegate;
 import org.evoludo.util.CLOParser;
 import org.evoludo.util.CLOProvider;
 import org.evoludo.util.CLOption;
-import org.evoludo.util.CLOCategory;
 import org.evoludo.util.Formatter;
 import org.evoludo.util.Plist;
 
@@ -451,11 +449,6 @@ public abstract class Model implements CLOProvider {
 	protected EvoLudo engine;
 
 	/**
-	 * Logger for keeping track of and reporting events and issues.
-	 */
-	protected Logger logger;
-
-	/**
 	 * The shared random number generator to ensure reproducibility of results.
 	 * 
 	 * @see EvoLudo#getRNG()
@@ -538,7 +531,6 @@ public abstract class Model implements CLOProvider {
 	 */
 	protected Model(EvoLudo engine) {
 		this.engine = engine;
-		logger = engine.getLogger();
 	}
 
 	/**
@@ -570,13 +562,18 @@ public abstract class Model implements CLOProvider {
 
 	/**
 	 * Check consistency of parameters and adjust if necessary (and possible). All
-	 * issues and modifications should be reported through <code>logger</code>. Some
-	 * parameters can be adjusted while the model remains active or even while
-	 * running, whereas others require a reset. An example of the former category is
-	 * in general simple adjustments of payoffs, while an example of the latter
-	 * category is a change of the population structure.
+	 * issues and modifications should be reported through through the
+	 * <code>engine</code>'s logger. Some parameters can be adjusted while the model
+	 * remains active or even while running, whereas others require a reset. An
+	 * example of the former category is in general simple adjustments of payoffs,
+	 * while an example of the latter category is a change of the population
+	 * structure.
 	 *
 	 * @return <code>true</code> if reset required
+	 * 
+	 * @see EvoLudo#logError(String)
+	 * @see EvoLudo#logWarning(String)
+	 * @see EvoLudo#logMessage(String)
 	 */
 	public boolean check() {
 		return false;
@@ -702,7 +699,7 @@ public abstract class Model implements CLOProvider {
 		if (hasConverged()) {
 			// no point in reporting failed initializations for statistics
 			if (mode != Mode.STATISTICS_SAMPLE)
-				logger.warning("extinction during relaxation.");
+				engine.logWarning("extinction during relaxation.");
 			return true;
 		}
 		return false;
@@ -822,7 +819,7 @@ public abstract class Model implements CLOProvider {
 		if (!permitsMode(mode))
 			return false;
 		if (mode == Mode.STATISTICS_UPDATE && cloTimeStop.isSet() && cloSamples.isSet())
-			logger.warning("--timestop and --samples are equivalent for stationary distributions: "
+			engine.logWarning("--timestop and --samples are equivalent for stationary distributions: "
 					+ "halting at whichever comes first.");
 		boolean changed = (this.mode != mode);
 		this.mode = mode;
@@ -960,7 +957,8 @@ public abstract class Model implements CLOProvider {
 
 	/**
 	 * The minimum number of consecutive failed statistics samples before giving up.
-	 * This applies in particular if the number of samples, {@link #nSamples}, is not
+	 * This applies in particular if the number of samples, {@link #nSamples}, is
+	 * not
 	 * set or small. Chance runs of failures are perfectly possible, for example if
 	 * mutants are placed on nodes without outgoing links.
 	 *
@@ -1051,15 +1049,6 @@ public abstract class Model implements CLOProvider {
 	}
 
 	/**
-	 * Return the logger for reporting information.
-	 *
-	 * @return the logger
-	 */
-	public Logger getLogger() {
-		return logger;
-	}
-
-	/**
 	 * Returns the minimum score that individuals of species with ID <code>id</code>
 	 * can achieve in this model. Takes into account potential adjustments due to
 	 * population structure and payoff accounting.
@@ -1127,11 +1116,14 @@ public abstract class Model implements CLOProvider {
 	 * the GUI.
 	 * <p>
 	 * <strong>Note:</strong> if the model runs into difficulties, problems should
-	 * be reported through the logging mechanism. Messages with severity
-	 * {@link Level#WARNING} or higher are displayed in the status of the GUI and
-	 * override status messages returned here.
+	 * be reported through the logging mechanism provided by {@code engine}. Errors
+	 * and warnings are displayed in the status of the GUI and override status
+	 * messages returned here.
 	 *
 	 * @return status of active model
+	 * 
+	 * @see EvoLudo#logError(String)
+	 * @see EvoLudo#logWarning(String)
 	 */
 	public abstract String getStatus();
 
@@ -1704,9 +1696,12 @@ public abstract class Model implements CLOProvider {
 	 * Command line option to set the number of samples to take for statistical
 	 * measurements.
 	 * <p>
-	 * <strong>Note:</strong> for stationary distributions, {@link Mode#STATISTICS_UPDATE},
-	 * one sample is taken in every reporting interval, see {@link #cloTimeStep}. Hence
-	 * {@code --samples} and {@link #cloTimeStop} are equivalent ways to request the end
+	 * <strong>Note:</strong> for stationary distributions,
+	 * {@link Mode#STATISTICS_UPDATE},
+	 * one sample is taken in every reporting interval, see {@link #cloTimeStep}.
+	 * Hence
+	 * {@code --samples} and {@link #cloTimeStop} are equivalent ways to request the
+	 * end
 	 * state and the model halts at whichever comes first.
 	 */
 	public final CLOption cloSamples = new CLOption("samples", "none", CLOCategory.Simulation,

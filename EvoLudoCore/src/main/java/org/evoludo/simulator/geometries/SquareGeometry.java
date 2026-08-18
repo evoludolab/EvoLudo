@@ -30,9 +30,6 @@
 
 package org.evoludo.simulator.geometries;
 
-import java.util.logging.Level;
-import java.util.logging.Logger;
-
 import org.evoludo.simulator.EvoLudo;
 
 /**
@@ -68,11 +65,8 @@ public class SquareGeometry extends AbstractLattice {
 	 * @param numeric connectivity string passed on the CLI
 	 */
 	protected void warnIfConnectivityProvided(String numeric) {
-		if (numeric != null && !numeric.isEmpty()) {
-			Logger log = engine.getLogger();
-			if (log.isLoggable(Level.WARNING))
-				log.warning("connectivity ignored for " + getType() + " geometry");
-		}
+		if (numeric != null && !numeric.isEmpty())
+			engine.logWarning("connectivity ignored for " + getType() + " geometry");
 	}
 
 	/**

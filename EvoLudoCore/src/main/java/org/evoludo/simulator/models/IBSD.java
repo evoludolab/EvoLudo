@@ -123,7 +123,7 @@ public class IBSD extends IBS implements DModel {
 					continue;
 				// samples end only once the population went extinct, which is recorded as
 				// fixation of the vacant trait rather than of a resident or mutant
-				logger.warning("extinction is the only absorbing state - "
+				engine.logWarning("extinction is the only absorbing state - "
 						+ "consider --monostop for fixation statistics.");
 				break;
 			}
@@ -529,7 +529,7 @@ public class IBSD extends IBS implements DModel {
 							case HOMO:
 								// skip homogeneous populations (single species only)
 								if (isMultispecies) {
-									logger.warning("homogeneous optimizations require single species - disabled.");
+									engine.logWarning("homogeneous optimizations require single species - disabled.");
 									continue;
 								}
 								for (Module<?> mod : species) {

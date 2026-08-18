@@ -115,11 +115,6 @@ public abstract class AbstractView<G extends AbstractGraph<?>> extends Composite
 	Data type;
 
 	/**
-	 * Logger for keeping track of and reporting events and issues.
-	 */
-	protected Logger logger;
-
-	/**
 	 * The list of graphs that are displayed in this view.
 	 */
 	protected final List<G> graphs;
@@ -193,7 +188,6 @@ public abstract class AbstractView<G extends AbstractGraph<?>> extends Composite
 	protected AbstractView(EvoLudoGWT engine, Data type) {
 		this.engine = engine;
 		this.type = type;
-		logger = engine.getLogger();
 		this.graphs = new ArrayList<>();
 		wrapper = new FlowPanel();
 		wrapper.getElement().getStyle().setPosition(Position.RELATIVE);
@@ -371,7 +365,7 @@ public abstract class AbstractView<G extends AbstractGraph<?>> extends Composite
 	 * @return the logger for messages
 	 */
 	public Logger getLogger() {
-		return logger;
+		return engine.getLogger();
 	}
 
 	/**
@@ -1042,7 +1036,7 @@ public abstract class AbstractView<G extends AbstractGraph<?>> extends Composite
 				if (!graphs.isEmpty())
 					update(force);
 			} catch (Exception e) {
-				logger.severe("Error updating view: " + e.getMessage());
+				engine.logError("Error updating view: " + e.getMessage());
 			}
 			updateScheduled = false;
 		});

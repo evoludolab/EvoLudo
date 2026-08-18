@@ -31,7 +31,6 @@
 package org.evoludo.simulator.models;
 
 import java.util.Arrays;
-import java.util.logging.Level;
 
 import org.evoludo.math.ArrayMath;
 import org.evoludo.simulator.EvoLudo;
@@ -110,8 +109,7 @@ class ODEInitialize {
 					// no previous match and no fallback available - give up
 					success = false;
 					itype = (InitType) ode.cloInit.match(ode.cloInit.getDefault());
-					if (ode.logger.isLoggable(Level.WARNING))
-						ode.logger.warning("invalid init type '" + inittype + "' - using " + itype.getKey() + ".");
+					ode.engine.logWarning("invalid init type '" + inittype + "' - using " + itype.getKey() + ".");
 				} else {
 					itype = ode.initType[idx - 1];
 					iargs = typeargs[0];
@@ -122,9 +120,8 @@ class ODEInitialize {
 			if (!processInit(pop, itype, iargs, start)) {
 				success = false;
 				InitType deftype = (InitType) ode.cloInit.match(ode.cloInit.getDefault());
-				if (ode.logger.isLoggable(Level.WARNING))
-					ode.logger.warning("invalid init args '" + iargs + "' for init type '" + itype.getKey()
-							+ "' - using " + deftype.getKey() + ".");
+				ode.engine.logWarning("invalid init args '" + iargs + "' for init type '" + itype.getKey()
+						+ "' - using " + deftype.getKey() + ".");
 				// fall back to the option's default initialization
 				itype = deftype;
 				processInit(pop, itype, null, start);

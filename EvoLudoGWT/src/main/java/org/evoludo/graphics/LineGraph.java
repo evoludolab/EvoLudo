@@ -33,7 +33,6 @@ package org.evoludo.graphics;
 import java.awt.Color;
 import java.util.Arrays;
 import java.util.Iterator;
-import java.util.logging.Level;
 
 import org.evoludo.geom.Point2D;
 import org.evoludo.graphics.AbstractGraph.HasLogScaleY;

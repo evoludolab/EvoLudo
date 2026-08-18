@@ -35,8 +35,6 @@ import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Objects;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 
 import org.evoludo.math.ArrayMath;
 import org.evoludo.math.RNGDistribution;
@@ -215,11 +213,6 @@ public abstract class AbstractGeometry {
 	final EvoLudo engine;
 
 	/**
-	 * Logger for keeping track of and reporting events and issues.
-	 */
-	final Logger logger;
-
-	/**
 	 * Local storage for the 2D representation of this graph.
 	 */
 	Network2D network2D = null;
@@ -352,7 +345,6 @@ public abstract class AbstractGeometry {
 	 */
 	protected AbstractGeometry(EvoLudo engine) {
 		this.engine = engine;
-		this.logger = engine.getLogger();
 		this.isInterspecies = engine.getModule().getNSpecies() > 1;
 		this.geometryId = nextGeometryId++;
 	}
@@ -780,8 +772,7 @@ public abstract class AbstractGeometry {
 	 * @param message the message to log
 	 */
 	protected void warn(String message) {
-		if (logger.isLoggable(Level.WARNING))
-			logger.warning(getLabel() + message);
+		engine.logWarning(getLabel() + message);
 	}
 
 	/**
@@ -1648,7 +1639,7 @@ public abstract class AbstractGeometry {
 	 * @return {@code true} if no multiple connections found
 	 */
 	private boolean checkMultiple(int[] degree, int[][] links, String type) {
-		logger.info("Checking multiple " + type + "-connections... ");
+		engine.logMessage("Checking multiple " + type + "-connections... ");
 		boolean ok = true;
 		for (int i = 0; i < size; i++) {
 			// double connections 'in'
@@ -1673,7 +1664,7 @@ public abstract class AbstractGeometry {
 	 * @return {@code true} if all connections are consistent
 	 */
 	private boolean checkInOut() {
-		logger.info("Checking consistency of in-, out-connections... ");
+		engine.logMessage("Checking consistency of in-, out-connections... ");
 		boolean ok = true;
 		for (int i = 0; i < size; i++) {
 			// each 'out' connection must be balanced by an 'in' connection
@@ -1694,7 +1685,7 @@ public abstract class AbstractGeometry {
 	 */
 	private boolean checkSelfing() {
 		// self-connections are only acceptable for inter-species interactions
-		logger.info("Checking self-connections... ");
+		engine.logMessage("Checking self-connections... ");
 		boolean ok = true;
 		for (int i = 0; i < size; i++) {
 			// report loops
@@ -1726,7 +1717,7 @@ public abstract class AbstractGeometry {
 	 */
 	private boolean checkRegular() {
 		boolean ok = true;
-		logger.info("Checking regularity... ");
+		engine.logMessage("Checking regularity... ");
 		GeometryFeatures f = getFeatures();
 		int nout = f.minOut;
 		int nin = f.minIn;
@@ -1751,7 +1742,7 @@ public abstract class AbstractGeometry {
 	 * @return {@code true} if the graph is undirected
 	 */
 	private boolean checkUndirected() {
-		logger.info("Checking undirected structure... ");
+		engine.logMessage("Checking undirected structure... ");
 		boolean ok = true;
 		for (int i = 0; i < size; i++) {
 			// each connection must go both ways
@@ -1777,9 +1768,9 @@ public abstract class AbstractGeometry {
 	 */
 	private void logCheckResult(String label, boolean ok) {
 		if (ok)
-			logger.info(label + " pass");
+			engine.logMessage(label + " pass");
 		else
-			logger.warning(label + " failed!");
+			engine.logWarning(label + " failed!");
 	}
 
 	/**
@@ -1789,7 +1780,7 @@ public abstract class AbstractGeometry {
 	 * @param message message suffix describing the issue
 	 */
 	private void logNodeIssue(int node, String message) {
-		logger.warning("Node " + node + " " + message);
+		engine.logWarning("Node " + node + " " + message);
 	}
 
 	/**

@@ -33,7 +33,6 @@ package org.evoludo.simulator.models;
 import java.util.Arrays;
 import java.util.Comparator;
 import java.util.List;
-import java.util.logging.Level;
 
 import org.evoludo.math.ArrayMath;
 import org.evoludo.simulator.ColorMap;
@@ -297,13 +296,13 @@ public class PDE extends ODE {
 	public boolean check() {
 		boolean doReset = false;
 		if (species.size() > 1) {
-			logger.warning("PDE model for inter-species interactions not (yet?) implemented - reverting to ODE.");
+			engine.logWarning("PDE model for inter-species interactions not (yet?) implemented - reverting to ODE.");
 			engine.loadModel(ModelType.ODE);
 			return true;
 		}
 		space = module.getGeometry();
 		if (space.isType(GeometryType.WELLMIXED) || space.isType(GeometryType.COMPLETE)) {
-			logger.warning("unstructured population - reverting to ODE.");
+			engine.logWarning("unstructured population - reverting to ODE.");
 			engine.loadModel(ModelType.ODE);
 			return true;
 		}
@@ -315,7 +314,7 @@ public class PDE extends ODE {
 		if (!space.isLattice() && (initType == PDEInitialize.Type.CIRCLE || initType == PDEInitialize.Type.SQUARE
 				|| initType == PDEInitialize.Type.GAUSSIAN
 				|| initType == PDEInitialize.Type.RING)) {
-			logger.warning("initialization type " + initType.getKey()
+			engine.logWarning("initialization type " + initType.getKey()
 					+ " requires lattice geometries - reverting to UNIFORM.");
 			initType = PDEInitialize.Type.UNIFORM;
 		}
@@ -331,7 +330,7 @@ public class PDE extends ODE {
 		// space.isLattice are only available after geometry is initialized.
 		isSymmetric = (requestSymmetric && space.isLattice());
 		if (requestSymmetric != isSymmetric)
-			logger.warning("request to preserve symmetry cannot be honoured.");
+			engine.logWarning("request to preserve symmetry cannot be honoured.");
 		return doReset;
 	}
 
@@ -1131,7 +1130,7 @@ public class PDE extends ODE {
 
 		initType = (PDEInitialize.Type) cloInit.match(typeargs[0]);
 		if (!isValidInitForType(init)) {
-			logger.warning("initialization type '" + (initType == null ? typeargs[0] : initType.getKey())
+			engine.logWarning("initialization type '" + (initType == null ? typeargs[0] : initType.getKey())
 					+ "' requires " + nt + " densities - reverting to 'random'.");
 			success = false;
 			initType = PDEInitialize.Type.RANDOM;
@@ -1166,7 +1165,7 @@ public class PDE extends ODE {
 		int vacant = module.getVacantIdx();
 		if (vacant < 0) {
 			// no vacant trait to fill the background with
-			logger.warning("initialization type '" + initType.getKey()
+			engine.logWarning("initialization type '" + initType.getKey()
 					+ "' requires background densities, '<d1,...,dn;b1,...,bn>', for modules"
 					+ " without vacant trait - reverting to 'random'.");
 			success = false;
@@ -1251,9 +1250,8 @@ public class PDE extends ODE {
 		// migrates! this can introduce artifacts!
 		if (dt < 1e-5 || maxK * maxD * dt > 0.5) {
 			double deltat = Math.max(0.5 / (maxD * maxK), Double.MIN_VALUE);
-			if (logger.isLoggable(Level.WARNING))
-				logger.warning("PDE time scale adjusted (diffusion): dt=" + Formatter.formatSci(deltat, 4)
-						+ " (was dt=" + Formatter.formatSci(dt, 4) + ").");
+			engine.logWarning("PDE time scale adjusted (diffusion): dt=" + Formatter.formatSci(deltat, 4)
+					+ " (was dt=" + Formatter.formatSci(dt, 4) + ").");
 			dt = deltat;
 		}
 		// dynamical dt
@@ -1513,13 +1511,13 @@ public class PDE extends ODE {
 			for (Module<?> pop : species) {
 				Plist pplist = (Plist) plist.get(pop.getName());
 				if (!restoreGeometry(pplist)) {
-					logger.warning("restore geometry in " + type.getKey() + "-model failed (" + pop.getName() + ").");
+					engine.logWarning("restore geometry in " + type.getKey() + "-model failed (" + pop.getName() + ").");
 					success = false;
 				}
 			}
 		} else {
 			if (!restoreGeometry(plist)) {
-				logger.warning("restore geometry in " + type.getKey() + "-model failed.");
+				engine.logWarning("restore geometry in " + type.getKey() + "-model failed.");
 				success = false;
 			}
 		}

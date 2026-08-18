@@ -37,7 +37,6 @@ import java.awt.Insets;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.util.logging.Level;
-import java.util.logging.Logger;
 
 import javax.swing.BorderFactory;
 import javax.swing.JComponent;
@@ -58,7 +57,6 @@ public class MVConsole extends JComponent implements MultiView {
 	private static final long serialVersionUID = 20110423L;
 
 	EvoLudoLab lab;
-	Logger logger;
 	private final JTextPane text;
 	private final JPopupMenu menu = new JPopupMenu();
 	private static final Color transparent = new Color(0, 0, 0, 0);
@@ -82,7 +80,6 @@ public class MVConsole extends JComponent implements MultiView {
 
 	public MVConsole(EvoLudoLab lab) {
 		this.lab = lab;
-		logger = lab.getEngine().getLogger();
 		setLayout(new BorderLayout());
 		setOpaque(false);
 		text = new JTextPane();

@@ -392,9 +392,11 @@ public class EvoLudoWeb extends Composite
 	private final KeyHandler keyController = new KeyHandler(this);
 
 	/**
-	 * Logger for keeping track of and reporting events and issues.
+	 * {@code true} once the engine's logger has had its initial level configured.
+	 * Ensures the one-time setup in {@link #setupEngine()} only runs once, even if
+	 * the widget is reattached.
 	 */
-	protected Logger logger;
+	private boolean loggerLevelInitialized = false;
 
 	/**
 	 * Handler for the log framework to report notifications etc. in EvoLudo's
@@ -682,7 +684,7 @@ public class EvoLudoWeb extends Composite
 			settingsController = new SettingsController(evoludoCLO, evoludoApply, evoludoDefault,
 					evoludoHelp, evoludoSettings);
 			setupEngine();
-			setupConsole(logger);
+			setupConsole(engine.getLogger());
 			logFeatures();
 			viewController = new ViewController(engine, evoludoDeck, evoludoViews, viewConsole, this::updateGUI);
 			webListener = new WebListener(this, engine, keyController);
@@ -709,9 +711,10 @@ public class EvoLudoWeb extends Composite
 	private void setupEngine() {
 		if (engine == null)
 			engine = new EvoLudoGWT(this);
-		if (logger == null) {
-			logger = engine.getLogger();
+		Logger logger = engine.getLogger();
+		if (!loggerLevelInitialized) {
 			logger.setLevel(Level.INFO);
+			loggerLevelInitialized = true;
 		}
 		if (logHandler == null) {
 			// note: log handler needs to know whether this is an ePub (regardless of any
@@ -814,7 +817,8 @@ public class EvoLudoWeb extends Composite
 				fsController.unload();
 				fsController = null;
 			}
-			if (logger != null) {
+			if (engine != null) {
+				Logger logger = engine.getLogger();
 				if (logEvoHandler != null) {
 					logger.removeHandler(logEvoHandler);
 					logEvoHandler.close();
@@ -889,7 +893,7 @@ public class EvoLudoWeb extends Composite
 		} catch (RuntimeException ignored) {
 			// Fatal error handling must continue even if the UI update fails.
 		}
-		logger.log(Level.SEVERE, msg, error);
+		engine.getLogger().log(Level.SEVERE, msg, error);
 		displayStatusThresholdLevel = Integer.MAX_VALUE;
 		if (engine != null && engine.cloSnap.isSet())
 			// unblock whoever is waiting for the snapshot
@@ -1576,7 +1580,7 @@ public class EvoLudoWeb extends Composite
 		if (engine.isRunning() || SettingsController.isReady())
 			engine.startStop();
 		else
-			logger.warning("another EvoLudo instance is already running!");
+			engine.logWarning("another EvoLudo instance is already running!");
 	}
 
 	/**
@@ -1726,13 +1730,12 @@ public class EvoLudoWeb extends Composite
 		// open standalone lab (ePubs only)
 		RootPanel root = RootPanel.get(elementID);
 		if (root == null) {
-			if (logger.isLoggable(Level.SEVERE))
-				logger.severe("Failed to open standalone lab (element '" + elementID + "' not found in DOM).");
+			engine.logError("Failed to open standalone lab (element '" + elementID + "' not found in DOM).");
 			return;
 		}
 		String href = root.getElement().getAttribute("data-href").trim();
 		if (href.isEmpty()) {
-			logger.severe("Failed to open standalone lab (invalid reference).");
+			engine.logError("Failed to open standalone lab (invalid reference).");
 			return;
 		}
 		Window.Location.assign(href);
@@ -1800,7 +1803,7 @@ public class EvoLudoWeb extends Composite
 	 */
 	private void doApplyCLO() {
 		if (engine.isRunning()) {
-			logger.warning("Cannot apply parameters while engine is running.");
+			engine.logWarning("Cannot apply parameters while engine is running.");
 			return;
 		}
 		displayStatusThresholdLevel = Level.ALL.intValue();
@@ -1853,7 +1856,7 @@ public class EvoLudoWeb extends Composite
 			engine.setSuspended(guiState.resume || engine.isSuspended());
 		}
 		if (viewController.isInitialViewSet())
-			guiState.view = viewController.resolveInitialView(logger);
+			guiState.view = viewController.resolveInitialView();
 		else if ((moduleChanged && guiState.view == viewController.getConsoleView())
 				|| !viewController.containsView(guiState.view))
 			guiState.view = null;
@@ -1905,7 +1908,7 @@ public class EvoLudoWeb extends Composite
 			case DYNAMICS:
 				hasStop = Double.isFinite(activeModel.getTimeStop());
 				if (activeModel.getNSamples() > 0.0)
-					logger.warning("--samples found: wrong mode for statistics, use --view option.");
+					engine.logWarning("--samples found: wrong mode for statistics, use --view option.");
 				break;
 			case STATISTICS_UPDATE:
 				// stationary distributions accept --timestop and --samples alike
@@ -1914,7 +1917,7 @@ public class EvoLudoWeb extends Composite
 			case STATISTICS_SAMPLE:
 				hasStop = activeModel.getNSamples() > 0.0;
 				if (Double.isFinite(activeModel.getTimeStop()))
-					logger.warning("--timestop found: wrong mode for dynamics, use --view option.");
+					engine.logWarning("--timestop found: wrong mode for dynamics, use --view option.");
 				break;
 			default:
 		}
@@ -2045,7 +2048,7 @@ public class EvoLudoWeb extends Composite
 	 */
 	public void showHelp() {
 		guiState.view = viewConsole;
-		logger.info(TAG_PRE_OPEN + "EvoLudo (GWT): " + engine.getGit() + " (GWT " + GWT.getVersion() + ")\n"
+		engine.logMessage(TAG_PRE_OPEN + "EvoLudo (GWT): " + engine.getGit() + " (GWT " + GWT.getVersion() + ")\n"
 				+ engine.getCLOHelp() + TAG_PRE_CLOSE);
 		// no view may be available if things went wrong from the start,
 		// or neither a module or a model may be available...
@@ -2194,8 +2197,7 @@ public class EvoLudoWeb extends Composite
 	public void restoreFromString(String filename, String content) {
 		Plist parsed = PlistParser.parse(content);
 		if (parsed == null || !parsed.containsKey("CLO")) {
-			if (logger.isLoggable(Level.SEVERE))
-				logger.severe("failed to parse contents of file '" + filename + "'.");
+			engine.logError("failed to parse contents of file '" + filename + "'.");
 			return;
 		}
 		engine.unloadModule();
@@ -2478,7 +2480,7 @@ public class EvoLudoWeb extends Composite
 		// platforms TextFields are disabled through shadow DOM.
 		boolean editCLO = settingsController.applyUiToggles(this::updateDropHandlers);
 		if (logEvoHandler != null)
-			logEvoHandler.setLevel(editCLO ? logger.getLevel() : Level.OFF);
+			logEvoHandler.setLevel(editCLO ? engine.getLogger().getLevel() : Level.OFF);
 	}
 
 	/**
@@ -2505,7 +2507,7 @@ public class EvoLudoWeb extends Composite
 	 * Log GWT features and GUI specifics.
 	 */
 	void logFeatures() {
-		if (!logger.isLoggable(Level.INFO))
+		if (!engine.getLogger().isLoggable(Level.INFO))
 			return;
 		StringBuilder sb = new StringBuilder("GUI Version: ");
 		sb.append(GWT.getVersion());
@@ -2522,7 +2524,7 @@ public class EvoLudoWeb extends Composite
 			sb.append(settingsController.hasTouch() ? "touch " : "");
 			sb.append(")");
 		}
-		logger.info(sb.toString());
+		engine.logMessage(sb.toString());
 	}
 
 	/**

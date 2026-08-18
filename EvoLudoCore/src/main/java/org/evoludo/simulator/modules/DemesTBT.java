@@ -213,7 +213,7 @@ public class DemesTBT extends TBT {
 					&& ((HierarchicalGeometry) interaction).getHierarchyLevels().length == 2))) {
 				// the only acceptable geometries are well-mixed and hierarchical structures
 				// with two levels of well-mixed demes
-				logger.severe("invalid geometry - forcing well-mixed population (single deme)!");
+				engine.logError("invalid geometry - forcing well-mixed population (single deme)!");
 				interaction = AbstractGeometry.create(engine, GeometryType.WELLMIXED);
 				doReset = true;
 			}
@@ -233,7 +233,7 @@ public class DemesTBT extends TBT {
 				// rates - the analytical machinery below (distrMigration,
 				// distrMutationMigration) assumes a single, homogeneous rate; a
 				// tangent not currently worth pursuing, see IBS#cloMigration
-				logger.warning("per-trait migration rates not supported for deme-structured populations "
+				engine.logWarning("per-trait migration rates not supported for deme-structured populations "
 						+ "- using first rate only");
 				setMigrationProb(getMigrationProb(0));
 			}
@@ -243,7 +243,7 @@ public class DemesTBT extends TBT {
 				optimizeMigration = false;
 			}
 			if (nDemes > 1 && !adjustScores) {
-				logger.severe("invalid sampling - forcing well-mixed population (single deme)!");
+				engine.logError("invalid sampling - forcing well-mixed population (single deme)!");
 				interaction = AbstractGeometry.create(engine, GeometryType.WELLMIXED);
 				doReset = true;
 			}

@@ -33,7 +33,6 @@ package org.evoludo.graphics;
 import java.awt.Color;
 import java.awt.Graphics2D;
 import java.awt.Point;
-import java.util.logging.Logger;
 
 import javax.swing.JPopupMenu;
 
@@ -110,8 +109,6 @@ public interface GraphListener {
 	public default boolean verifyMarkedBins(HistoFrameLayer frame, int tag) {
 		return false;
 	}
-
-	public Logger getLogger();
 
 	public EvoLudo getEngine();
 }

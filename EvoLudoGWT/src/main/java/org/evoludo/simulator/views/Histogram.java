@@ -1379,7 +1379,7 @@ public class Histogram extends AbstractView<HistoGraph> {
 
 			case STATISTICS_STATIONARY:
 				if (model.hasConverged()) {
-					logger.warning("Non ergodic system - no stationary distribution!");
+					engine.logWarning("Non ergodic system - no stationary distribution!");
 					return "";
 				}
 				//$FALL-THROUGH$
@@ -1423,7 +1423,7 @@ public class Histogram extends AbstractView<HistoGraph> {
 		for (HistoGraph graph : graphs) {
 			double[][] data = graph.getData();
 			if (data == null) {
-				logger.warning("Average fixation times not available!");
+				engine.logWarning("Average fixation times not available!");
 				return "";
 			}
 			Module<?> module = graph.getModule();

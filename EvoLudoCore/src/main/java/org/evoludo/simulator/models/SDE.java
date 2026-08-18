@@ -130,7 +130,7 @@ public class SDE extends ODE {
 		if (isAdjustedDynamics) {
 			// XXX check min/max fitness instead
 			// fitness is not guaranteed to be positive
-			logger.warning(getClass().getSimpleName()
+			engine.logWarning(getClass().getSimpleName()
 					+ " - adjusted dynamics for SDE's not (yet) implemented (revert to standard dynamics).");
 			isAdjustedDynamics = false;
 		}
@@ -144,7 +144,7 @@ public class SDE extends ODE {
 	 * @return {@code true} to signal a reset
 	 */
 	private boolean revertToODE(String message) {
-		logger.warning(() -> getClass().getSimpleName() + ": " + message);
+		engine.logWarning(getClass().getSimpleName() + ": " + message);
 		engine.loadModel(ModelType.ODE);
 		return true;
 	}

@@ -30,9 +30,6 @@
 
 package org.evoludo.simulator.geometries;
 
-import java.util.logging.Level;
-import java.util.logging.Logger;
-
 import org.evoludo.simulator.EvoLudo;
 import org.evoludo.util.CLOParser;
 
@@ -61,9 +58,7 @@ public class HexagonalGeometry extends AbstractLattice {
 		}
 		connectivity = CLOParser.parseInteger(numeric);
 		if (connectivity != 1 && connectivity != 6) {
-			Logger logger = engine.getLogger();
-			if (logger.isLoggable(Level.WARNING))
-				logger.warning("invalid connectivity " + connectivity + " - using default k=6.");
+			engine.logWarning("invalid connectivity " + connectivity + " - using default k=6.");
 			connectivity = 6;
 		}
 		return true;

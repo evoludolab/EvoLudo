@@ -215,7 +215,7 @@ public class MVPop2D extends MVAbstract implements PopListener {
 					case 3: // three traits red, green, blue - calculate on the fly? fewer colors?
 					default:
 						colorMap = new ColorMapJRE.GradientND(Arrays.copyOf(tColors, module.getNTraits()));
-						logger.warning("MVPop: display of >2 continuous traits is experimental...");
+						engine.logWarning("MVPop: display of >2 continuous traits is experimental...");
 						break;
 				}
 				break;
@@ -515,10 +515,10 @@ public class MVPop2D extends MVAbstract implements PopListener {
 		try {
 			ImageIO.write(snapimage, "PNG", snapfile);
 		} catch (IOException x) {
-			engine.getLogger().warning("writing PNG image to " + snapfile.getAbsolutePath() + " failed!");
+			engine.logWarning("writing PNG image to " + snapfile.getAbsolutePath() + " failed!");
 			return;
 		}
-		engine.getLogger().info("PNG image written to " + snapfile.getAbsolutePath());
+		engine.logMessage("PNG image written to " + snapfile.getAbsolutePath());
 		return;
 	}
 
@@ -554,10 +554,10 @@ public class MVPop2D extends MVAbstract implements PopListener {
 			vg2.endExport();
 			vg2.dispose();
 		} catch (IOException x) {
-			engine.getLogger().warning("writing SVG graphics to " + snapfile.getAbsolutePath() + " failed!");
+			engine.logWarning("writing SVG graphics to " + snapfile.getAbsolutePath() + " failed!");
 			return;
 		}
-		engine.getLogger().info("SVG graphics written to " + snapfile.getAbsolutePath());
+		engine.logMessage("SVG graphics written to " + snapfile.getAbsolutePath());
 		return;
 	}
 }

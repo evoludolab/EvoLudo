@@ -33,8 +33,6 @@ package org.evoludo.simulator.models;
 import java.awt.GraphicsEnvironment;
 import java.util.List;
 import java.util.function.BiFunction;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 
 import org.evoludo.simulator.EvoLudo;
 import org.evoludo.simulator.EvoLudoJRE;
@@ -182,9 +180,6 @@ final class PDEWorkerPool {
 	 * @param nUnits   the number of PDE units
 	 */
 	private static void logWorkers(EvoLudo engine, int nWorkers, int nUnits) {
-		Logger logger = engine.getLogger();
-		if (!logger.isLoggable(Level.INFO))
-			return;
-		logger.info("Using " + nWorkers + " threads for integrating " + nUnits + " PDE units.");
+		engine.logMessage("Using " + nWorkers + " threads for integrating " + nUnits + " PDE units.");
 	}
 }

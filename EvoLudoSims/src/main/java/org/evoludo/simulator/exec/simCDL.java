@@ -173,7 +173,7 @@ public class simCDL extends CDL implements ChangeListener {
 			icount = new int[nTraits];
 			int nSamples = (int) model.getNSamples();
 			if (model.isODE() && model.getNSamples() > 1) {
-				logger.warning("ODE models are deterministic, no point in taking multiple samples.");
+				engine.logWarning("ODE models are deterministic, no point in taking multiple samples.");
 				nSamples = 1;
 			}
 			for (int c = dim; c >= 0; c--) {
@@ -256,7 +256,7 @@ public class simCDL extends CDL implements ChangeListener {
 			mean = new double[nTraits];
 			variance = new double[nTraits];
 			state = new double[nTraits];
-			progress |= (logger.getLevel().intValue() <= Level.FINE.intValue());
+			progress |= (engine.getLogger().getLevel().intValue() <= Level.FINE.intValue());
 			int tot = (int) ((scanNL[1] - scanNL[0]) / scanNL[2]) + 1;
 			int done = 0;
 			timeStop += timeRelax;

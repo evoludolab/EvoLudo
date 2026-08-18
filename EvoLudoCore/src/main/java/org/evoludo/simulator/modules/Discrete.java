@@ -32,7 +32,6 @@ package org.evoludo.simulator.modules;
 
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.logging.Level;
 
 import org.evoludo.math.ArrayMath;
 import org.evoludo.simulator.EvoLudo;
@@ -187,9 +186,8 @@ public abstract class Discrete extends Module<Discrete> {
 		for (int i = 0; i < newRates.length; i++) {
 			if (newRates[i] >= 0.0)
 				continue;
-			if (logger.isLoggable(Level.WARNING))
-				logger.warning("birth rate" + (sn.isEmpty() ? "" : " of " + sn)
-						+ " must be non-negative (changed to 0).");
+			engine.logWarning("birth rate" + (sn.isEmpty() ? "" : " of " + sn)
+					+ " must be non-negative (changed to 0).");
 			newRates[i] = 0.0;
 		}
 		birthRates = newRates;
@@ -269,9 +267,8 @@ public abstract class Discrete extends Module<Discrete> {
 		for (int i = 0; i < newRates.length; i++) {
 			if (newRates[i] >= 0.0)
 				continue;
-			if (logger.isLoggable(Level.WARNING))
-				logger.warning("death rate" + (sn.isEmpty() ? "" : " of " + sn)
-						+ " must be non-negative (changed to 0).");
+			engine.logWarning("death rate" + (sn.isEmpty() ? "" : " of " + sn)
+					+ " must be non-negative (changed to 0).");
 			newRates[i] = 0.0;
 		}
 		deathRates = newRates;

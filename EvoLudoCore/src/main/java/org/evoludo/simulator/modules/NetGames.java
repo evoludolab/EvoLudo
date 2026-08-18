@@ -394,7 +394,7 @@ public class NetGames extends Discrete implements Payoffs,
 						case 0:
 							return false;
 						default: // more than three colors - ignore but first three
-							logger.warning("too many colors - ignored");
+							engine.logWarning("too many colors - ignored");
 							return false;
 					}
 				}

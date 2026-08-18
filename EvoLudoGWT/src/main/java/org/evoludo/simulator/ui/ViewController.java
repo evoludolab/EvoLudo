@@ -35,7 +35,6 @@ import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.logging.Logger;
 
 import org.evoludo.simulator.EvoLudoGWT;
 import org.evoludo.simulator.models.Data;
@@ -452,13 +451,12 @@ public class ViewController {
 	 * view name that is a prefix of it (followed by a space or nothing); anything
 	 * beyond that name is passed on as options.
 	 *
-	 * @param logger logger for diagnostics (optional)
 	 * @return the initial view or {@code null} if the {@code --view} option was not
 	 *         provided
 	 *
 	 * @see #cloView
 	 */
-	public AbstractView<?> resolveInitialView(Logger logger) {
+	public AbstractView<?> resolveInitialView() {
 		if (!cloView.isSet())
 			return null;
 
@@ -488,8 +486,7 @@ public class ViewController {
 			try {
 				idx = CLOParser.parseInteger(iv[0]);
 			} catch (NumberFormatException e) {
-				if (logger != null)
-					logger.warning("failed to set view '" + iv[0] + "' - using default.");
+				engine.logWarning("failed to set view '" + iv[0] + "' - using default.");
 			}
 			idx = Math.min(Math.max(idx, 1), availableViews.size());
 			newView = availableViews.get(idx - 1);

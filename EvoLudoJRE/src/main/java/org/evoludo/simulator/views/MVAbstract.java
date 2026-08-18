@@ -42,7 +42,6 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Properties;
-import java.util.logging.Logger;
 
 import javax.imageio.ImageIO;
 import javax.swing.BoxLayout;
@@ -79,19 +78,9 @@ public abstract class MVAbstract extends JComponent
 	protected EvoLudoLab lab;
 	protected EvoLudoJRE engine;
 
-	/**
-	 * Logger for keeping track of and reporting events and issues.
-	 */
-	protected Logger logger;
-
 	@Override
 	public EvoLudo getEngine() {
 		return engine;
-	}
-
-	@Override
-	public Logger getLogger() {
-		return logger;
 	}
 
 	// note: maybe we can do some optimization because the majority of panes will
@@ -113,7 +102,6 @@ public abstract class MVAbstract extends JComponent
 	public MVAbstract(EvoLudoLab lab) {
 		this.lab = lab;
 		engine = lab.getEngine();
-		logger = engine.getLogger();
 
 		// check if freehep graphics libraries are available
 		try {
@@ -122,7 +110,7 @@ public abstract class MVAbstract extends JComponent
 			hasSVG = true;
 		} catch (ClassNotFoundException e) {
 			// ignore exception - freehep graphics libraries seem missing
-			engine.getLogger().warning("freehep library not found - disabling vector graphics export.");
+			engine.logWarning("freehep library not found - disabling vector graphics export.");
 		}
 		setLayout(new BoxLayout(this, BoxLayout.Y_AXIS));
 	}
@@ -450,7 +438,7 @@ public abstract class MVAbstract extends JComponent
 			case AbstractGraph.SNAPSHOT_PNG:
 				break; // now we are talking
 			default:
-				logger.warning("unknown file format (" + format + ")");
+				engine.logWarning("unknown file format (" + format + ")");
 				return;
 		}
 
@@ -483,10 +471,10 @@ public abstract class MVAbstract extends JComponent
 				try {
 					ImageIO.write(snapimage, "PNG", snapfile);
 				} catch (IOException x) {
-					logger.warning("writing image to " + snapfile.getAbsolutePath() + " failed!");
+					engine.logWarning("writing image to " + snapfile.getAbsolutePath() + " failed!");
 					return;
 				}
-				logger.info("image written to " + snapfile.getAbsolutePath());
+				engine.logMessage("image written to " + snapfile.getAbsolutePath());
 				return;
 
 			case AbstractGraph.SNAPSHOT_SVG:
@@ -502,7 +490,7 @@ public abstract class MVAbstract extends JComponent
 				return;
 
 			default:
-				logger.warning("unknown file format (" + format + ")");
+				engine.logWarning("unknown file format (" + format + ")");
 		}
 	}
 
@@ -533,10 +521,10 @@ public abstract class MVAbstract extends JComponent
 					vg2.endExport();
 					vg2.dispose();
 				} catch (IOException x) {
-					logger.warning("writing image to " + snapfile.getAbsolutePath() + " failed!");
+					engine.logWarning("writing image to " + snapfile.getAbsolutePath() + " failed!");
 					return;
 				}
-				logger.info("image written to " + snapfile.getAbsolutePath());
+				engine.logMessage("image written to " + snapfile.getAbsolutePath());
 				return;
 			}
 			try {
@@ -553,10 +541,10 @@ public abstract class MVAbstract extends JComponent
 				vg2.endExport();
 				vg2.dispose();
 			} catch (IOException x) {
-				logger.warning("writing SVG graphics to " + snapfile.getAbsolutePath() + " failed!");
+				engine.logWarning("writing SVG graphics to " + snapfile.getAbsolutePath() + " failed!");
 				return;
 			}
-			logger.info("SVG graphics written to " + snapfile.getAbsolutePath());
+			engine.logMessage("SVG graphics written to " + snapfile.getAbsolutePath());
 		}
 
 		void exportPDF(int tag, boolean inViewport) {
@@ -580,10 +568,10 @@ public abstract class MVAbstract extends JComponent
 					vg2.endExport();
 					vg2.dispose();
 				} catch (IOException x) {
-					logger.warning("writing PDF graphics to " + snapfile.getAbsolutePath() + " failed!");
+					engine.logWarning("writing PDF graphics to " + snapfile.getAbsolutePath() + " failed!");
 					return;
 				}
-				logger.info("PDF graphics written to " + snapfile.getAbsolutePath());
+				engine.logMessage("PDF graphics written to " + snapfile.getAbsolutePath());
 				return;
 			}
 			try {
@@ -600,10 +588,10 @@ public abstract class MVAbstract extends JComponent
 				vg2.endExport();
 				vg2.dispose();
 			} catch (IOException x) {
-				logger.warning("writing PDF graphics to " + snapfile.getAbsolutePath() + " failed!");
+				engine.logWarning("writing PDF graphics to " + snapfile.getAbsolutePath() + " failed!");
 				return;
 			}
-			logger.info("PDF graphics written to " + snapfile.getAbsolutePath());
+			engine.logMessage("PDF graphics written to " + snapfile.getAbsolutePath());
 		}
 
 		void exportEPS(int tag, boolean inViewport) {
@@ -626,10 +614,10 @@ public abstract class MVAbstract extends JComponent
 					vg2.endExport();
 					vg2.dispose();
 				} catch (IOException x) {
-					logger.warning("writing EPS graphics to " + snapfile.getAbsolutePath() + " failed!");
+					engine.logWarning("writing EPS graphics to " + snapfile.getAbsolutePath() + " failed!");
 					return;
 				}
-				logger.info("EPS graphics written to " + snapfile.getAbsolutePath());
+				engine.logMessage("EPS graphics written to " + snapfile.getAbsolutePath());
 				return;
 			}
 			try {
@@ -646,10 +634,10 @@ public abstract class MVAbstract extends JComponent
 				vg2.endExport();
 				vg2.dispose();
 			} catch (IOException x) {
-				logger.warning("writing EPS graphics to " + snapfile.getAbsolutePath() + " failed!");
+				engine.logWarning("writing EPS graphics to " + snapfile.getAbsolutePath() + " failed!");
 				return;
 			}
-			logger.info("EPS graphics written to " + snapfile.getAbsolutePath());
+			engine.logMessage("EPS graphics written to " + snapfile.getAbsolutePath());
 		}
 	}
 

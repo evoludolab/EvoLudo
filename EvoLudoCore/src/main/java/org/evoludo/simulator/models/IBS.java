@@ -246,13 +246,13 @@ public abstract class IBS extends Model {
 			PopulationUpdate pu = mod.getIBSPopulation().getPopulationUpdate();
 			if (pu.isSynchronous() != isSynchronous) {
 				pu.setType(PopulationUpdate.Type.SYNC);
-				logger.warning("forcing " + PopulationUpdate.Type.SYNC + " for population " + mod.getName() + ".");
+				engine.logWarning("forcing " + PopulationUpdate.Type.SYNC + " for population " + mod.getName() + ".");
 				doReset = true;
 			}
 		}
 		if (isMultispecies && speciesUpdate.getType() == SpeciesUpdate.Type.FITNESS && !positiveMinFitness()) {
 			// fitness based picking of focal species requires positive fitness
-			logger.warning("multispecies models with '" + SpeciesUpdate.Type.FITNESS
+			engine.logWarning("multispecies models with '" + SpeciesUpdate.Type.FITNESS
 					+ "' require positive minimum fitness - switching to '"
 					+ SpeciesUpdate.Type.RATE + "'");
 			speciesUpdate.setType(SpeciesUpdate.Type.RATE);
@@ -1348,19 +1348,17 @@ public abstract class IBS extends Model {
 							if (vacant >= 0)
 								rates[vacant] = 0.0;
 						} else if (rates.length > 1) {
-							if (logger.isLoggable(Level.WARNING))
-								logger.warning((isMultispecies ? mod.getName() + ": " : "")
-										+ "per-trait migration rates only supported for discrete modules "
-										+ "- using first rate only");
+							engine.logWarning((isMultispecies ? mod.getName() + ": " : "")
+									+ "per-trait migration rates only supported for discrete modules "
+									+ "- using first rate only");
 							rates = new double[] { rates[0] };
 						}
 						pop.setMigrationProb(rates);
 						double mig = pop.getMaxMigrationProb();
 						if (mig < 1e-8) {
-							if (logger.isLoggable(Level.WARNING))
-								logger.warning((isMultispecies ? mod.getName() + ": " : "")
-										+ "migration rate too small (" + Formatter.formatSci(mig, 4)
-										+ ") - reverting to no migration");
+							engine.logWarning((isMultispecies ? mod.getName() + ": " : "")
+									+ "migration rate too small (" + Formatter.formatSci(mig, 4)
+									+ ") - reverting to no migration");
 							pop.setMigrationType(MigrationType.NONE);
 							pop.setMigrationProb(0.0);
 						}
@@ -1574,12 +1572,21 @@ public abstract class IBS extends Model {
 				/**
 				 * {@inheritDoc}
 				 * <p>
-				 * Parse method to enable consistency checks.
+				 * Parse method to enable consistency checks. Consistency issues are only ever
+				 * reported as warnings, so checks are pointless (and disabled) unless warnings
+				 * are loggable; {@code --verbose} is parsed before all other options, see
+				 * {@link org.evoludo.simulator.CLOController#cloVerbose}, so the log level is
+				 * already final at this point.
 				 *
-				 * @param arg the ignored argument
+				 * @param isSet {@code true} if {@code --consistency} was set
 				 */
 				@Override
 				public boolean parse(boolean isSet) {
+					if (isSet && !engine.getLogger().isLoggable(Level.WARNING)) {
+						engine.logWarning("consistency checks require warnings to be loggable"
+								+ " (--verbose warning or lower) - ignored.");
+						isSet = false;
+					}
 					for (Module<?> mod : species) {
 						IBSPopulation<?, ?> pop = mod.getIBSPopulation();
 						pop.setCheckConsistency(isSet);
@@ -2070,9 +2077,8 @@ public abstract class IBS extends Model {
 	 * @param name the name of the population (for logging)
 	 */
 	private void logRestoreWarning(String what, String name) {
-		if (logger.isLoggable(Level.WARNING))
-			logger.warning("restore " + what + " in " + type.getKey() + "-model failed"
-					+ (name != null ? " (" + name + ")." : "."));
+		engine.logWarning("restore " + what + " in " + type.getKey() + "-model failed"
+				+ (name != null ? " (" + name + ")." : "."));
 	}
 
 	/**

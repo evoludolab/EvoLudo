@@ -128,7 +128,7 @@ public class EvoLudoLab extends JFrame
 	public EvoLudoLab(EvoLudoJRE engine) {
 		// instantiate engine
 		this.engine = engine;
-		logger = engine.getLogger();
+		Logger logger = engine.getLogger();
 		logger.setLevel(Level.WARNING);
 		// allocate console early to catch all log messages
 		console = new MVConsole(this);
@@ -476,10 +476,6 @@ public class EvoLudoLab extends JFrame
 		evoludoSlider.addChangeListener(e -> engine.setDelay(lin2log(evoludoSlider.getValue())));
 	}
 
-	/**
-	 * Logger for keeping track of and reporting events and issues.
-	 */
-	protected Logger logger;
 	MVConsole console;
 
 	/**
@@ -489,7 +485,7 @@ public class EvoLudoLab extends JFrame
 	 */
 	public void applyCLO() {
 		if (engine.isRunning()) {
-			logger.warning("Cannot apply parameters while engine is running.");
+			engine.logWarning("Cannot apply parameters while engine is running.");
 			return;
 		}
 		// parse command line options

@@ -108,11 +108,6 @@ public abstract class IBSPopulation<M extends Module<?>, P extends IBSPopulation
 	protected P opponent;
 
 	/**
-	 * Logger for keeping track of and reporting events and issues.
-	 */
-	protected Logger logger;
-
-	/**
 	 * The shared random number generator to ensure reproducibility of results.
 	 * 
 	 * @see EvoLudo#getRNG()
@@ -139,7 +134,6 @@ public abstract class IBSPopulation<M extends Module<?>, P extends IBSPopulation
 	@SuppressWarnings("unchecked")
 	protected IBSPopulation(EvoLudo engine, M module) {
 		this.engine = engine;
-		logger = engine.getLogger();
 		opponent = (P) this;
 		this.module = module;
 		// initialize helper variables
@@ -1496,6 +1490,7 @@ public abstract class IBSPopulation<M extends Module<?>, P extends IBSPopulation
 	 * @param hit the 'left-over fitness' from picking
 	 */
 	protected void debugScores(double hit) {
+		Logger logger = engine.getLogger();
 		if (!logger.isLoggable(Level.FINE))
 			return;
 		logger.fine("aborted in generation: " + Formatter.format(engine.getModel().getUpdates(), 2) + "\nscore dump:");
@@ -2190,7 +2185,7 @@ public abstract class IBSPopulation<M extends Module<?>, P extends IBSPopulation
 			case ECOLOGY:
 				return updatePlayerEcology();
 			default:
-				logger.warning("unknown population update type (" + populationUpdate.getType().getKey() + ").");
+				engine.logWarning("unknown population update type (" + populationUpdate.getType().getKey() + ").");
 				return -1;
 		}
 	}
@@ -2408,7 +2403,7 @@ public abstract class IBSPopulation<M extends Module<?>, P extends IBSPopulation
 				break;
 
 			default:
-				logger.warning("unknown population update type (" + populationUpdate.getType().getKey() + ").");
+				engine.logWarning("unknown population update type (" + populationUpdate.getType().getKey() + ").");
 				return;
 		}
 		debugMarkChange();
@@ -2454,7 +2449,7 @@ public abstract class IBSPopulation<M extends Module<?>, P extends IBSPopulation
 		// getScoreAt(me) + ") adopts "
 		// + getTraitNameAt(you) + " " + you + " (" + getScoreAt(you) + ")");
 		// // jf>
-		if (logger.isLoggable(Level.FINE) && debugFocal >= 0) {
+		if (engine.getLogger().isLoggable(Level.FINE) && debugFocal >= 0) {
 			StringBuilder sb = new StringBuilder();
 			sb.append("focal:").append(formatInfoAt(debugFocal, -1)).append(", ");
 			switch (debugNModels) {
@@ -2477,7 +2472,7 @@ public abstract class IBSPopulation<M extends Module<?>, P extends IBSPopulation
 			}
 			if (!debugSame)
 				sb.append(" changed");
-			logger.fine(sb.toString());
+			engine.getLogger().fine(sb.toString());
 		}
 	}
 
@@ -3325,6 +3320,7 @@ public abstract class IBSPopulation<M extends Module<?>, P extends IBSPopulation
 	 * @param choice     sampled random value that failed to match a candidate
 	 */
 	protected void debugUpdate(int me, int rGroupSize, double nProb, double norm, double choice) {
+		Logger logger = engine.getLogger();
 		if (!logger.isLoggable(Level.FINE))
 			return;
 		StringBuilder sb = new StringBuilder();
@@ -3507,8 +3503,8 @@ public abstract class IBSPopulation<M extends Module<?>, P extends IBSPopulation
 		int nContacts = compGroup.getNSamples();
 		int nOthers = nPopulation - 1;
 		int k = (nContacts == IBSGroup.SAMPLING_ALL || nContacts >= nOthers) ? nOthers : nContacts;
-		if (k > 1 && logger.isLoggable(Level.WARNING))
-			logger.warning(
+		if (k > 1)
+			engine.logWarning(
 					"effective rates scale with the number of contacts (" + k
 							+ ") and may saturate; use --contacts 1 for mean-field dynamics.");
 	}
@@ -3566,7 +3562,7 @@ public abstract class IBSPopulation<M extends Module<?>, P extends IBSPopulation
 				// try checking interaction geometry again
 				doReset |= updateGeometry(interaction, competition.getSize());
 				if (interaction.getSize() != competition.getSize()) {
-					logger.severe("incompatible interaction and competition geometries!");
+					engine.logError("incompatible interaction and competition geometries!");
 				}
 			}
 		}
@@ -3574,7 +3570,7 @@ public abstract class IBSPopulation<M extends Module<?>, P extends IBSPopulation
 		module.setNPopulation(interaction.getSize());
 		nPopulation = interaction.getSize(); // keep local copy in sync
 		// check consistency of geometry (only if --consistency is set)
-		if (checkConsistency && logger.isLoggable(Level.WARNING)) {
+		if (checkConsistency) {
 			if (!interaction.checkConsistency())
 				nIssues++;
 			if (!interaction.isSingle() && !competition.checkConsistency())
@@ -3684,13 +3680,13 @@ public abstract class IBSPopulation<M extends Module<?>, P extends IBSPopulation
 			return;
 		}
 		if (!interaction.isUndirected()) {
-			logger.warning("no migration on directed graphs!");
+			engine.logWarning("no migration on directed graphs!");
 			setMigrationType(MigrationType.NONE);
 		} else if (!interaction.isSingle()) {
-			logger.warning("no migration on graphs with different interaction and competition neighborhoods!");
+			engine.logWarning("no migration on graphs with different interaction and competition neighborhoods!");
 			setMigrationType(MigrationType.NONE);
 		} else if (interaction.isType(GeometryType.WELLMIXED)) {
-			logger.warning("no migration in well-mixed populations!");
+			engine.logWarning("no migration in well-mixed populations!");
 			setMigrationType(MigrationType.NONE);
 		} else if (populationUpdate.getType() == PopulationUpdate.Type.ECOLOGY
 				&& migrationType != MigrationType.DIFFUSION) {
@@ -3699,7 +3695,7 @@ public abstract class IBSPopulation<M extends Module<?>, P extends IBSPopulation
 			// been folded into that same rate-based draw (see IBSDPopulation), but
 			// birth-death/death-birth migration - a global, non-local process - has
 			// no equivalent there and remains unsupported for this population update
-			logger.warning("only diffusive migration supported for ecological population updates!");
+			engine.logWarning("only diffusive migration supported for ecological population updates!");
 			setMigrationType(MigrationType.NONE);
 		}
 	}
@@ -3720,22 +3716,20 @@ public abstract class IBSPopulation<M extends Module<?>, P extends IBSPopulation
 			// group size between 2 and 8 (excluding boundaries is not allowed because this
 			// pattern requires a particular (internal) arrangement of the neighbors.
 			interGroup.setNSamples(1);
-			if (logger.isLoggable(Level.WARNING))
-				logger.warning(
-						"square " + interaction.getName()
-								+ " geometry has incompatible interaction pattern and neighborhood size"
-								+ " - using random sampling of interaction partners!");
+			engine.logWarning(
+					"square " + interaction.getName()
+							+ " geometry has incompatible interaction pattern and neighborhood size"
+							+ " - using random sampling of interaction partners!");
 		}
 		if (interaction.isType(GeometryType.CUBE) && interGroup.isSampling(IBSGroup.SAMPLING_ALL) &&
 				nGroup > 2 && nGroup <= interaction.getConnectivity()) {
 			// Group.SAMPLING_ALL only works with pairwise interactions or all neighbors
 			// restrictions do not apply for PDE's
 			interGroup.setNSamples(1);
-			if (logger.isLoggable(Level.WARNING))
-				logger.warning(
-						"cubic " + interaction.getName()
-								+ " geometry has incompatible interaction pattern and neighborhood size"
-								+ " - using random sampling of interaction partners!");
+			engine.logWarning(
+					"cubic " + interaction.getName()
+							+ " geometry has incompatible interaction pattern and neighborhood size"
+							+ " - using random sampling of interaction partners!");
 		}
 
 		// currently: if pop has interaction structure different from WELLMIXED its
@@ -3749,7 +3743,7 @@ public abstract class IBSPopulation<M extends Module<?>, P extends IBSPopulation
 						|| !opponent.interaction.isType(GeometryType.WELLMIXED))) {
 			// at least for now, both populations need to be of the same size - except for
 			// well-mixed populations
-			logger.warning(
+			engine.logWarning(
 					"inter-species interactions with populations of different size limited to well-mixed structures"
 							+ " - well-mixed structure forced!");
 			interaction = ensureWellmixed(interaction, module.getNPopulation());
@@ -3764,7 +3758,7 @@ public abstract class IBSPopulation<M extends Module<?>, P extends IBSPopulation
 				(interaction.isType(GeometryType.WELLMIXED) ||
 						opponent.interaction.isType(GeometryType.WELLMIXED))) {
 			// enforce after both species were checked
-			logger.warning(
+			engine.logWarning(
 					"interspecies interactions combining well-mixed and structured populations not (yet) tested"
 							+ " - well-mixed structure forced!");
 			interaction = ensureWellmixed(interaction, module.getNPopulation());
@@ -3795,7 +3789,7 @@ public abstract class IBSPopulation<M extends Module<?>, P extends IBSPopulation
 				// non-adjustable and accumulated scores result in potentially unbounded payoffs
 				// - revert to averaged scores
 				setPlayerScoreAveraged(true);
-				logger.warning("accumulated scores may result in unbounded fitness - forcing averaged scores.");
+				engine.logWarning("accumulated scores may result in unbounded fitness - forcing averaged scores.");
 				adjustScores = doAdjustScores(); // should now be true
 			}
 		}
@@ -3929,8 +3923,7 @@ public abstract class IBSPopulation<M extends Module<?>, P extends IBSPopulation
 			// 010320 using everyone as a reference in mean-field simulations is not
 			// feasible - except for best-response
 			// ecological updates are based on births and deaths rather than references
-			if (logger.isLoggable(Level.WARNING))
-				logger.warning("reference type 'all' unfeasible in well-mixed populations - using single reference!");
+			engine.logWarning("reference type 'all' unfeasible in well-mixed populations - using single reference!");
 			compGroup.setNSamples(1);
 		}
 	}
@@ -3948,23 +3941,22 @@ public abstract class IBSPopulation<M extends Module<?>, P extends IBSPopulation
 		boolean doReset = false;
 		if (populationUpdate.getType() == PopulationUpdate.Type.ECOLOGY) {
 			optimizeHomo = false;
-			logger.warning(
+			engine.logWarning(
 					"optimizations for homogeneous states disabled (incompatible with variable population sizes).");
 			doReset = true;
 		}
 		double pMutation = mutation.getProbability();
 		if (pMutation <= 0.0) {
 			optimizeHomo = false;
-			logger.warning("optimizations for homogeneous states disabled (small mutations required).");
+			engine.logWarning("optimizations for homogeneous states disabled (small mutations required).");
 			doReset = true;
 		}
 		if (pMutation < 0.0 || pMutation > 0.1 * nPopulation) {
-			if (logger.isLoggable(Level.WARNING))
-				logger.warning(
-						"optimizations for homogeneous states not recommended (mutations in [0, "
-								+ (0.1 / nPopulation)
-								+ ") recommended, now " + Formatter.format(pMutation, 4)
-								+ ", proceeding)");
+			engine.logWarning(
+					"optimizations for homogeneous states not recommended (mutations in [0, "
+							+ (0.1 / nPopulation)
+							+ ") recommended, now " + Formatter.format(pMutation, 4)
+							+ ", proceeding)");
 			doReset = true;
 		}
 		return doReset;
@@ -3978,14 +3970,14 @@ public abstract class IBSPopulation<M extends Module<?>, P extends IBSPopulation
 	 * implementation.
 	 */
 	protected void checkLimitedTesting() {
-		if (!logger.isLoggable(Level.WARNING))
+		if (!engine.getLogger().isLoggable(Level.WARNING))
 			return;
 		if (!interaction.isUndirected()
 				&& !module.isStatic())
-			logger.warning((isMultispecies ? module.getName() + ": " : "")
+			engine.logWarning((isMultispecies ? module.getName() + ": " : "")
 					+ "interactions on directed graphs have received very limited testing...");
 		if (vacantIdx >= 0 && module.getNGroup() > 2)
-			logger.warning("group interactions with vacant sites have NOT been tested...");
+			engine.logWarning("group interactions with vacant sites have NOT been tested...");
 	}
 
 	/**
@@ -4113,10 +4105,9 @@ public abstract class IBSPopulation<M extends Module<?>, P extends IBSPopulation
 			// note: the maximum selection strength may be significantly higher if
 			// populations,
 			// on average, are unable to achieve the highest individual payoffs
-			if (logger.isLoggable(Level.WARNING))
-				logger.warning(
-						"selection strength too strong (numerical overflow) - reduced to (conservative) maximum of "
-								+ Formatter.format(map2fit.getSelection(), 4));
+			engine.logWarning(
+					"selection strength too strong (numerical overflow) - reduced to (conservative) maximum of "
+							+ Formatter.format(map2fit.getSelection(), 4));
 			updateMinMaxScores();
 		}
 
@@ -4159,12 +4150,11 @@ public abstract class IBSPopulation<M extends Module<?>, P extends IBSPopulation
 			return;
 		// avoid negative fitness for Moran type updates
 		if (minFitness < 0.0) {
-			if (logger.isLoggable(Level.WARNING))
-				logger.warning("Moran updates require fitness>=0 (score range [" + Formatter.format(minScore, 6)
-						+ ", " + Formatter.format(maxScore, 6) + "]; " + "fitness range ["
-						+ Formatter.format(minFitness, 6) + ", " + Formatter.format(maxFitness, 6) + "]).\n"
-						+ "Changed baseline fitness to " + map2fit.getBaseline()
-						+ (!map2fit.isMap(Map2Fitness.Map.STATIC) ? " with static payoff-to-fitness map" : ""));
+			engine.logWarning("Moran updates require fitness>=0 (score range [" + Formatter.format(minScore, 6)
+					+ ", " + Formatter.format(maxScore, 6) + "]; " + "fitness range ["
+					+ Formatter.format(minFitness, 6) + ", " + Formatter.format(maxFitness, 6) + "]).\n"
+					+ "Changed baseline fitness to " + map2fit.getBaseline()
+					+ (!map2fit.isMap(Map2Fitness.Map.STATIC) ? " with static payoff-to-fitness map" : ""));
 			// just change to something meaningful
 			map2fit.setMap(Map2Fitness.Map.STATIC);
 			map2fit.setBaseline(-minFitness);
@@ -4249,7 +4239,11 @@ public abstract class IBSPopulation<M extends Module<?>, P extends IBSPopulation
 	/**
 	 * Enable consistency checks of the state of the IBS model. Never use in
 	 * production.
-	 * 
+	 * <p>
+	 * Consistency issues are only ever reported as warnings; callers should check
+	 * whether warnings are loggable before requesting checks, see
+	 * {@link IBS#cloConsistency}.
+	 *
 	 * @param check {@code true} to request consistency checks
 	 */
 	public void setCheckConsistency(boolean check) {
@@ -4268,7 +4262,7 @@ public abstract class IBSPopulation<M extends Module<?>, P extends IBSPopulation
 	 *         are disabled, or inconsistencies already found.
 	 */
 	public final boolean checkConsistency() {
-		if (!checkConsistency || nIssues > 0 || !logger.isLoggable(Level.WARNING))
+		if (!checkConsistency || nIssues > 0)
 			return true;
 		checkState();
 		if (module instanceof Payoffs)
@@ -4280,7 +4274,7 @@ public abstract class IBSPopulation<M extends Module<?>, P extends IBSPopulation
 				nIssues++;
 		}
 		if (nIssues > 0) {
-			logger.warning(nIssues + " inconsistencies found @ " + engine.getModel().getUpdates());
+			engine.logWarning(nIssues + " inconsistencies found @ " + engine.getModel().getUpdates());
 			return false;
 		}
 		return true;
@@ -4454,8 +4448,7 @@ public abstract class IBSPopulation<M extends Module<?>, P extends IBSPopulation
 	 * @param issue  the issue description
 	 */
 	void logScoringIssue(int idx, double actual, String issue) {
-		if (logger.isLoggable(Level.WARNING))
-			logger.warning("score issue @ " + idx + ": score=" + actual + " " + issue);
+		engine.logWarning("score issue @ " + idx + ": score=" + actual + " " + issue);
 		nIssues++;
 	}
 
@@ -4483,9 +4476,8 @@ public abstract class IBSPopulation<M extends Module<?>, P extends IBSPopulation
 	 * @param expected the expected score
 	 */
 	void logMapIssue(int idx, double actual, double expected) {
-		if (logger.isLoggable(Level.WARNING))
-			logger.warning("map issue @ " + idx + ": score=" + actual + " maps to " + map2fit.map(actual)
-					+ INSTEAD_OF + expected);
+		engine.logWarning("map issue @ " + idx + ": score=" + actual + " maps to " + map2fit.map(actual)
+				+ INSTEAD_OF + expected);
 		nIssues++;
 	}
 
@@ -4497,8 +4489,7 @@ public abstract class IBSPopulation<M extends Module<?>, P extends IBSPopulation
 	 * @param expected the expected fitness
 	 */
 	void logFitnessIssue(int idx, double actual, double expected) {
-		if (logger.isLoggable(Level.WARNING))
-			logger.warning("fit issue @ " + idx + ": fitness=" + actual + INSTEAD_OF + expected);
+		engine.logWarning("fit issue @ " + idx + ": fitness=" + actual + INSTEAD_OF + expected);
 		nIssues++;
 	}
 
@@ -4521,9 +4512,8 @@ public abstract class IBSPopulation<M extends Module<?>, P extends IBSPopulation
 	 * @param issue    the issue description
 	 */
 	void logAccountingIssue(String descr, double actual, double expected, String issue) {
-		if (logger.isLoggable(Level.WARNING))
-			logger.warning(
-					"accounting issue: " + descr + actual + INSTEAD_OF + expected + " " + issue);
+		engine.logWarning(
+				"accounting issue: " + descr + actual + INSTEAD_OF + expected + " " + issue);
 		nIssues++;
 	}
 
@@ -5228,10 +5218,10 @@ public abstract class IBSPopulation<M extends Module<?>, P extends IBSPopulation
 				return i;
 			pi *= f;
 		}
-		if (logger.isLoggable(Level.WARNING)) {
+		if (engine.getLogger().isLoggable(Level.WARNING)) {
 			StringBuilder sb = new StringBuilder("What the heck are you doing here!!! (rand: ");
 			sb.append(uRand).append(", p: ").append(p).append(", n: ").append(n).append(" → ").append(sum).append(")");
-			logger.warning(sb.toString());
+			engine.logWarning(sb.toString());
 		}
 		return -1;
 	}

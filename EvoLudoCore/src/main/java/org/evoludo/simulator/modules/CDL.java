@@ -917,7 +917,7 @@ public class CDL extends Discrete implements Payoffs,
 		protected void initKaleidoscope() {
 			// kaleidoscopes only available for lattice geometries
 			if (!interaction.isLattice()) {
-				logger.warning("kaleidoscopes require lattices - using default initialization.");
+				engine.logWarning("kaleidoscopes require lattices - using default initialization.");
 				initUniform();
 				return;
 			}

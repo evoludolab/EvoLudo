@@ -349,7 +349,7 @@ public abstract class Network2D extends Network<Node2D> {
 		if (nLinks <= 0 || fLinks <= 0.0)
 			return; // nothing to do
 		if (nLinks > MAX_LINK_COUNT) {
-			engine.getLogger().warning("Too many links to draw - skipping!");
+			engine.logWarning("Too many links to draw - skipping!");
 			return;
 		}
 		boolean isDirected = !geometry.isUndirected();

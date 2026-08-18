@@ -30,9 +30,6 @@
 
 package org.evoludo.simulator.models;
 
-import java.util.logging.Logger;
-import java.util.logging.Level;
-
 import org.evoludo.math.ArrayMath;
 import org.evoludo.simulator.EvoLudo;
 import org.evoludo.simulator.modules.Module;
@@ -177,10 +174,8 @@ public class SDEN extends SDE {
 		if (nDim > 2 && (mutation[0].type == Mutation.Discrete.Type.NONE || mutation[0].getProbability() <= 0.0)) {
 			mutation[0].type = Mutation.Discrete.Type.OTHER;
 			mutation[0].setProbability(1.0 / module.getNPopulation());
-			Logger logger = engine.getLogger();
-			if (logger.isLoggable(Level.WARNING))
-				logger.warning("non-zero mutation rate required for n>2 traits, changed to "
-						+ Formatter.formatSci(mutation[0].getProbability(), 2) + ".");
+			engine.logWarning("non-zero mutation rate required for n>2 traits, changed to "
+					+ Formatter.formatSci(mutation[0].getProbability(), 2) + ".");
 		}
 		return doReset;
 	}
@@ -225,7 +220,7 @@ public class SDEN extends SDE {
 		try {
 			solver.factor(matB);
 		} catch (no.uib.cipr.matrix.NotConvergedException nce) {
-			engine.getLogger().warning("matrix factorization failed...");
+			engine.logWarning("matrix factorization failed...");
 		}
 		double[] ev = solver.getEigenvalues();
 		// IMPORTANT: this procedure fails if one (or more) type(s) goes extinct with
