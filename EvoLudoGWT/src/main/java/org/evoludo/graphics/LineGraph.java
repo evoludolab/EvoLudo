@@ -363,7 +363,7 @@ public class LineGraph extends AbstractGraph<double[]>
 			String keyname = split < 0 ? arg : arg.substring(0, split);
 			GraphOption option = CLOption.match(keyname, GraphOption.values());
 			if (option == null) {
-				warn("view '" + view.getName() + "': unknown option '" + arg + "' - ignored.");
+				view.logWarning("view '" + view.getName() + "': unknown option '" + arg + "' - ignored.");
 				ok = false;
 				continue;
 			}
@@ -375,7 +375,7 @@ public class LineGraph extends AbstractGraph<double[]>
 			try {
 				param = Double.parseDouble(split < 0 ? "" : arg.substring(split + 1).trim());
 			} catch (NumberFormatException e) {
-				warn("view '" + view.getName() + "': option '" + option.getKey()
+				view.logWarning("view '" + view.getName() + "': option '" + option.getKey()
 						+ "' requires a numerical parameter - ignored.");
 				ok = false;
 				continue;
@@ -763,7 +763,7 @@ public class LineGraph extends AbstractGraph<double[]>
 	 */
 	private void noLogY() {
 		if (style.logScaleY)
-			warn("Log scale requires positive values");
+			view.logWarning("Log scale requires positive values");
 		style.logScaleY = false;
 	}
 

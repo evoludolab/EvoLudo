@@ -799,7 +799,7 @@ public class PopGraph3D extends GenericPopGraph<MeshLambertMaterial, Network3DGW
 					continue;
 				Mode match = Mode.match(arg);
 				if (match == null) {
-					warn("view '" + view.getName() + "': unknown option '" + arg + "' - ignored.");
+					view.logWarning("view '" + view.getName() + "': unknown option '" + arg + "' - ignored.");
 					ok = false;
 					continue;
 				}
@@ -810,7 +810,7 @@ public class PopGraph3D extends GenericPopGraph<MeshLambertMaterial, Network3DGW
 		}
 		if (mode.isEffect() && view.getNGraphs() > 1) {
 			// the effects are available for a single graph only
-			warn("view '" + view.getName() + "': '" + mode.getKey()
+			view.logWarning("view '" + view.getName() + "': '" + mode.getKey()
 					+ "' requires a single graph - ignored.");
 			mode = Mode.PERSPECTIVE;
 			ok = false;
@@ -1263,7 +1263,7 @@ public class PopGraph3D extends GenericPopGraph<MeshLambertMaterial, Network3DGW
 
 	@Override
 	public void onContextError(Context3dErrorEvent event) {
-		severe("Context3D error: " + event.getMessage());
+		view.logError("Context3D error: " + event.getMessage());
 	}
 
 	@Override

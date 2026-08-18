@@ -33,8 +33,6 @@ package org.evoludo.graphics;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 
 import org.evoludo.geom.Node2D;
 import org.evoludo.geom.Path2D;
@@ -535,33 +533,6 @@ public abstract class AbstractGraph<B> extends FocusPanel
 	protected Label msgLabel;
 
 	/**
-	 * Logger for keeping track of and reporting events and issues.
-	 */
-	protected Logger logger;
-
-	/**
-	 * Report {@code msg} as a warning through {@link #logger}, if warnings are
-	 * loggable.
-	 *
-	 * @param msg the warning message
-	 */
-	protected void warn(String msg) {
-		if (logger.isLoggable(Level.WARNING))
-			logger.warning(msg);
-	}
-
-	/**
-	 * Report {@code msg} as a severe issue through {@link #logger}, if severe
-	 * messages are loggable.
-	 *
-	 * @param msg the severe message
-	 */
-	protected void severe(String msg) {
-		if (logger.isLoggable(Level.SEVERE))
-			logger.severe(msg);
-	}
-
-	/**
 	 * Handle to the object's underlying DOM element.
 	 */
 	protected Element element;
@@ -698,7 +669,6 @@ public abstract class AbstractGraph<B> extends FocusPanel
 	protected AbstractGraph(AbstractView<?> view, Module<?> module) {
 		this.view = view;
 		this.module = module;
-		logger = view.getLogger();
 		if (this instanceof Zooming) {
 			viewCorner = new Point2D();
 			zoomInertiaTimer = new Timer() {
@@ -748,9 +718,6 @@ public abstract class AbstractGraph<B> extends FocusPanel
 		// no delays - at least for debugging...
 		// weird delay remains on ibooks (ios)
 		tooltip.setDelays(0, 0);
-		// note: testing/debugging touch events with ibooks on iOS is a bit of a pain.
-		// provide access to logger for minimal feedback through status line.
-		// tooltip.logger = logger;
 	}
 
 	@Override

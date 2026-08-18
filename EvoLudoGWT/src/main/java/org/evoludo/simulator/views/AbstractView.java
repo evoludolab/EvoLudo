@@ -34,7 +34,6 @@ import java.util.ArrayList;
 import java.util.Date;
 import java.util.Iterator;
 import java.util.List;
-import java.util.logging.Logger;
 
 import org.evoludo.graphics.AbstractGraph;
 import org.evoludo.graphics.AbstractGraph.HasTrajectory;
@@ -360,12 +359,30 @@ public abstract class AbstractView<G extends AbstractGraph<?>> extends Composite
 	}
 
 	/**
-	 * Get the logger for returning progress, problems and messages to user.
+	 * Convenience method to log messages, e.g. of graphs belonging to this view.
 	 *
-	 * @return the logger for messages
+	 * @param msg information message
 	 */
-	public Logger getLogger() {
-		return engine.getLogger();
+	public void logMessage(String msg) {
+		engine.logMessage(msg);
+	}
+
+	/**
+	 * Convenience method to log warnings, e.g. of graphs belonging to this view.
+	 *
+	 * @param msg warning message
+	 */
+	public void logWarning(String msg) {
+		engine.logWarning(msg);
+	}
+
+	/**
+	 * Convenience method to log errors, e.g. of graphs belonging to this view.
+	 *
+	 * @param msg error message
+	 */
+	public void logError(String msg) {
+		engine.logError(msg);
 	}
 
 	/**
