@@ -773,6 +773,7 @@ public abstract class EvoLudo
 	 * 
 	 * @return the active module
 	 */
+	@SuppressWarnings("java:S1452") // impossible to specify generic type here
 	public Module<?> getModule() {
 		return activeModule;
 	}

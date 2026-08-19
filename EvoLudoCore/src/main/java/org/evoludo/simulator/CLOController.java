@@ -31,6 +31,7 @@
 package org.evoludo.simulator;
 
 import java.awt.Color;
+import java.util.Iterator;
 import java.util.Locale;
 import java.util.logging.Level;
 
@@ -492,9 +493,10 @@ public class CLOController {
 				globalMsg += " (select model for more options)";
 			globalMsg += "\n\nGlobal options:";
 
-			int idx = 0;
 			StringBuilder sb = new StringBuilder();
-			for (Module<?> mod : module.getSpecies()) {
+			int idx = 0;
+			for (Iterator<? extends Module<?>> it = module.getSpecies().iterator(); it.hasNext();) {
+				Module<?> mod = it.next();
 				String name = mod.getName();
 				int namelen = name.length();
 				if (namelen > 0)
