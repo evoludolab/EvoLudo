@@ -1132,14 +1132,17 @@ public class CLOption implements Comparable<CLOption> {
 				sb.append(String.join(",", argsn));
 			} else {
 				Key key = matchOptionalKey(argsn[keypos]);
-				if (key == null) {
+				if (key == null)
 					key = prev;
-				}
 				if (key == null) {
-					sb.append("INVALID '").append(args[n].trim()).append("'");
-					break;
+					// no preset key matched (and none from an earlier species to
+					// inherit); getArg() only ever returns arguments already accepted
+					// by the delegate's parse(), so this is a legitimate keyless
+					// format (e.g. an explicit matrix/vector), not an invalid entry
+					sb.append(args[n].trim());
+				} else {
+					prev = buildKey(sb, key, argsn, keypos);
 				}
-				prev = buildKey(sb, key, argsn, keypos);
 			}
 			if (n != args.length - 1)
 				sb.append(CLOParser.SPECIES_DELIMITER);
