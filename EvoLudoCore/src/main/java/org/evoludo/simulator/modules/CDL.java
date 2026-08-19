@@ -503,13 +503,13 @@ public class CDL extends Discrete implements Payoffs,
 
 	@Override
 	public boolean check() {
-		super.check();
+		boolean doReset = super.check();
 		if (!cloLoneCooperator.isSet())
 			setPayLoneCoop(getPayLoner());
 		if (!cloLoneDefector.isSet())
 			setPayLoneDefect(getPayLoner());
 		initInterest();
-		return false;
+		return doReset;
 	}
 
 	/**

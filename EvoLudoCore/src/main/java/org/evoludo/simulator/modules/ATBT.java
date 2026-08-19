@@ -241,7 +241,7 @@ public class ATBT extends TBT implements HasS3, HasPhase2D {
 
 	@Override
 	public boolean check() {
-		super.check();
+		boolean doReset = super.check();
 		// build payoff matrix (for all models) - if necessary
 		if (!init4x4) {
 			payoffs[COOPERATE_RICH][COOPERATE_RICH] = payoffs[COOPERATE_RICH][COOPERATE_POOR] //
@@ -267,7 +267,7 @@ public class ATBT extends TBT implements HasS3, HasPhase2D {
 		// thought.
 		for (int i = 0; i < nTraits; i++)
 			feedback[i] = Math.max(0.0, Math.min(1.0, feedback[i]));
-		return false;
+		return doReset;
 	}
 
 	/**
