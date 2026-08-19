@@ -480,11 +480,27 @@ public class CLOption implements Comparable<CLOption> {
 
 	/**
 	 * Return the default argument for command line option.
-	 * 
+	 *
 	 * @return default argument
 	 */
 	public String getDefault() {
 		return defaultArg;
+	}
+
+	/**
+	 * Set the delegate handling the parsing and description of this option,
+	 * replacing the one supplied at construction. This lets a subclass
+	 * customize the behaviour of an option inherited from a superclass - e.g.
+	 * to accept a richer argument format - without removing and re-adding it
+	 * under a different identity, which would change its position in the
+	 * option listing.
+	 *
+	 * @param delegate the new delegate for command line option
+	 */
+	public void setCLODelegate(CLODelegate delegate) {
+		if (delegate == null)
+			throw new IllegalArgumentException("CLOption: delegate must not be null");
+		this.delegate = delegate;
 	}
 
 	/**
