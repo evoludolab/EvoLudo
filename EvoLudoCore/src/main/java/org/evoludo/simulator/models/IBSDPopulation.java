@@ -1882,16 +1882,11 @@ public class IBSDPopulation extends IBSPopulation<Discrete, IBSDPopulation> {
 		if (getPopulationSize() == 0)
 			// extinction trumps everything
 			return true;
-		// ecological populations: a fully occupied lattice with no death and no
-		// competition is a dead end regardless of trait composition.
-		if (vacantIdx >= 0 && traitsCount[vacantIdx] == 0 && module.getMaxDeathRate() <= 0.0) {
-			// no vacant sites and no deaths: check competition
-			double[] compRates = module.getCompetitionRates();
-			for (int n = 0; n < compRates.length; n++) {
-				IBSPopulation<?, ?> pop = module.getSpecies(n).getIBSPopulation();
-				if (compRates[n] > 0.0 && pop.getPopulationSize() > 0)
-					return false;
-			}
+		// mutations aren't confined to birth events (see IBS#pickEvent), so a
+		// jammed population can still change if mutations or optimizeHomo are active.
+		if (mutation.getProbability() > 0.0 || optimizeHomo)
+			return false;
+		if (isJammed()) {
 			String name = module.getName();
 			engine.logWarning(
 					"Population" + (name != null && !name.isEmpty() ? " of " + name : "")
@@ -1903,6 +1898,49 @@ public class IBSDPopulation extends IBSPopulation<Discrete, IBSDPopulation> {
 			return false;
 		// monomorphic stop requested or no ecological events possible
 		return module.getMonoStop() || vacantIdx < 0;
+	}
+
+	/**
+	 * {@inheritDoc}
+	 * <p>
+	 * Genuinely absorbing only without mutations, and only if jammed or
+	 * monomorphic without vacant sites; a monomorphic population with vacant
+	 * sites keeps evolving, so a {@code --monostop} halt there is resumable.
+	 */
+	@Override
+	public boolean isAbsorbed() {
+		if (getPopulationSize() == 0)
+			return true;
+		if (mutation.getProbability() > 0.0 || optimizeHomo)
+			return false;
+		if (isJammed())
+			return true;
+		if (!super.checkConvergence())
+			return false;
+		return vacantIdx < 0;
+	}
+
+	/**
+	 * Check if the population occupies a fully occupied lattice with no death
+	 * or competition among present types - a dead end regardless of composition.
+	 * <p>
+	 * <strong>Note:</strong> relies on the framework's (kin) competition rate,
+	 * which some modules only synchronize to a conservative proxy; such modules
+	 * should override with a precise, per-type version, e.g.
+	 * {@code EcoRSP.IBSPop#isJammed()}, {@code EcoTraits.IBSPop#isJammed()}.
+	 *
+	 * @return {@code true} if no further ecological events are possible
+	 */
+	protected boolean isJammed() {
+		if (!(vacantIdx >= 0 && traitsCount[vacantIdx] == 0 && module.getMaxDeathRate() <= 0.0))
+			return false;
+		double[] compRates = module.getCompetitionRates();
+		for (int n = 0; n < compRates.length; n++) {
+			IBSPopulation<?, ?> pop = module.getSpecies(n).getIBSPopulation();
+			if (compRates[n] > 0.0 && pop.getPopulationSize() > 0)
+				return false;
+		}
+		return true;
 	}
 
 	@Override

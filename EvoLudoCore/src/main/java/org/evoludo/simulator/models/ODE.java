@@ -362,6 +362,16 @@ public class ODE extends Model implements DModel {
 	protected boolean monoStop = false;
 
 	/**
+	 * <code>true</code> if {@link #next(double)} halted merely because the
+	 * population turned monomorphic under {@link #monoStop}, not true numerical
+	 * convergence (see {@link #converged}). Unlike {@link #converged}, it
+	 * doesn't block future calls - it remains resumable, like {@code --timestop}.
+	 *
+	 * @see #checkConvergence(double)
+	 */
+	protected boolean monoStopped = false;
+
+	/**
 	 * <code>true</code> if the adjusted replicator dynamics should be applied.
 	 * Compared to the standard replicator equation nothing changes in terms of
 	 * trajectories, location of fixed points or their stability. However, the speed
@@ -881,6 +891,7 @@ public class ODE extends Model implements DModel {
 		if (converged)
 			return false;
 		atHalt = false;
+		monoStopped = false;
 		double nextHalt = getNextHalt();
 		// continue if milestone reached in previous call, i.e. deltat < 1e-8, see
 		// IBS#next(double).
@@ -906,9 +917,9 @@ public class ODE extends Model implements DModel {
 						+ ": aborted, step size too small, dt=" + Formatter.formatSci(dtTaken, 5));
 				converged = true;
 			} else {
-				converged = checkConvergence(d2);
+				checkConvergence(d2);
 			}
-			if (converged)
+			if (converged || monoStopped)
 				break;
 		}
 		// try to minimize rounding errors
@@ -922,7 +933,8 @@ public class ODE extends Model implements DModel {
 			atHalt = true;
 			return false;
 		}
-		return !converged;
+		// re-evaluated fresh on the next call, so a --monostop halt stays resumable
+		return !(converged || monoStopped);
 	}
 
 	/**
@@ -981,9 +993,10 @@ public class ODE extends Model implements DModel {
 			return true;
 		double acc = accuracy * dtTaken;
 		converged = (dist2 < acc * acc);
+		// monoStop alone isn't true convergence - keep it resumable, see #monoStopped
 		if (!converged && monoStop)
-			converged = isMonomorphic();
-		return converged;
+			monoStopped = isMonomorphic();
+		return converged || monoStopped;
 	}
 
 	/**

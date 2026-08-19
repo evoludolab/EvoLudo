@@ -436,7 +436,10 @@ public abstract class IBS extends Model {
 		step = Math.min(step, incr);
 		connect = true;
 		if (!ibsStep(step)) {
-			converged = true;
+			// converged is already true here; demote unless genuinely absorbed, so a
+			// --monostop halt stays resumable, just like --timestop.
+			if (converged && !isAbsorbed())
+				converged = false;
 			return false;
 		}
 		// note: time resolution is limited. need to allow for some slack when
@@ -446,6 +449,22 @@ public abstract class IBS extends Model {
 		// rates.
 		double minIncr = 1.0 / species.get(0).getNPopulation();
 		return (updates + minIncr < nextHalt);
+	}
+
+	/**
+	 * Check if any species is genuinely absorbing - unlike {@code converged},
+	 * which also turns {@code true} for a resumable {@code --monostop} halt.
+	 *
+	 * @return {@code true} if the model can never resume progressing
+	 *
+	 * @see IBSPopulation#isAbsorbed()
+	 */
+	private boolean isAbsorbed() {
+		for (Module<?> mod : species) {
+			if (mod.getIBSPopulation().isAbsorbed())
+				return true;
+		}
+		return false;
 	}
 
 	/**

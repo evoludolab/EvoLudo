@@ -380,6 +380,19 @@ public abstract class IBSPopulation<M extends Module<?>, P extends IBSPopulation
 	}
 
 	/**
+	 * Check if the population has reached a genuinely absorbing state that no
+	 * parameter change can escape without a full reset. Unlike
+	 * {@link #checkConvergence()}, this excludes halts merely requested through
+	 * {@code --monostop} - those remain resumable, exactly like
+	 * {@code --timestop}, see {@link IBSDPopulation#isAbsorbed()}.
+	 *
+	 * @return {@code true} if no further dynamics are possible
+	 */
+	public boolean isAbsorbed() {
+		return checkConvergence();
+	}
+
+	/**
 	 * Backing field for {@link #isInitialized()}. Defaults to {@code true};
 	 * subclasses with vacancy-like content must manage it themselves, see there.
 	 */

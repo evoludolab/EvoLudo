@@ -205,8 +205,10 @@ public class SDE extends ODE {
 				hasMutation = true;
 				// if dist2 is zero (or very small) and (at least) one trait is absent,
 				// random noise may be invalid (pushing state outside of permissible values)
-				if (dist2 < accuracy && min(yt, start, end) < accuracy)
+				if (dist2 < accuracy && min(yt, start, end) < accuracy) {
+					converged = false;
 					return false;
+				}
 				int vacant = mod.getVacantIdx();
 				// extinction is absorbing even with mutations
 				if (vacant < 0 || yt[start + vacant] <= 1.0 - accuracy) {
@@ -218,9 +220,27 @@ public class SDE extends ODE {
 				break;
 			}
 		}
-		if (monoStop && !hasMutation)
-			converged = isMonomorphic();
-		return converged;
+		if (monoStop && !hasMutation) {
+			// without vacant sites, monomorphic is genuinely absorbing; with vacant
+			// sites, ecological turnover continues - a resumable --monostop halt.
+			if (isMonomorphic() && hasVacantSpecies())
+				monoStopped = true;
+			else
+				converged = isMonomorphic();
+		}
+		return converged || monoStopped;
+	}
+
+	/**
+	 * Check whether any species admits vacant sites.
+	 *
+	 * @return {@code true} if at least one species has a vacant trait
+	 */
+	private boolean hasVacantSpecies() {
+		for (int idx = 0; idx < nSpecies; idx++)
+			if (species.get(idx).getVacantIdx() >= 0)
+				return true;
+		return false;
 	}
 
 	/**
