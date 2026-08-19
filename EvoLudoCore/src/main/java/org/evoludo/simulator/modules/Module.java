@@ -1479,6 +1479,10 @@ public abstract class Module<T extends Module<T>>
 					int nSpecies = species.size();
 					switch (nSpecies) {
 						case 1:
+							T pop = species.get(0);
+							if (pop instanceof Discrete && pop.getNTraits() > 1)
+								return "--birthrate <b0[,...,b" + pop.getNTraits()
+										+ "]>  per capita rates of reproduction of each trait";
 							return "--birthrate <b>  per capita rate of reproduction";
 						case 2:
 							descr = "--birthrate <b0[,b1]>  per capita rates of reproduction";
@@ -1545,6 +1549,9 @@ public abstract class Module<T extends Module<T>>
 					int nSpecies = species.size();
 					switch (nSpecies) {
 						case 1:
+							T pop = species.get(0);
+							if (pop instanceof Discrete && pop.getNTraits() > 1)
+								return "--deathrate <d0[,...,d" + pop.getNTraits() + "]>  rates of dying of each trait";
 							return "--deathrate <d>  rate of dying";
 						case 2:
 							descr = "--deathrate <d0[,d1]>  rates of dying";
