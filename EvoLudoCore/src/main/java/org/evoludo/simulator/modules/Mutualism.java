@@ -155,11 +155,11 @@ public class Mutualism extends Discrete implements Payoffs,
 	 * <li>Otherwise, species specific settings can be moved to the constructor. In
 	 * case the species differ more and e.g. use different variables additional
 	 * species can be defined as inner classes that extend the outer class (here
-	 * {@code Mutualism}), see {@code EcoMutualism} for an example.
+	 * {@code Mutualism}), see {@code Phi6} for an example.
 	 * </ul>
 	 */
 	// TODO(public-docs): restore a {@code @link} to
-	// org.evoludo.simulator.modules.EcoMutualism once the module becomes public.
+	// org.evoludo.simulator.modules.Phi6 once the module becomes public.
 	@Override
 	public void load() {
 		super.load();
