@@ -135,7 +135,7 @@ public class ViewController {
 		@Override
 		public String getDescription() {
 			StringBuilder descr = new StringBuilder("--view <v[ <o>]>  select view (v: index or title,\n"
-					+ "                o: view specific options)");
+					+ "                   o: view specific options)");
 			int idx = 1;
 			if (engine.getModel() == null)
 				refreshViews();
@@ -145,8 +145,9 @@ public class ViewController {
 				descr.append("\n").append(keycode.substring(len - 16, len)).append(view.getName());
 				String opts = view.getOptionsDescription();
 				if (opts != null)
-					// continuation lines of multi-line descriptions align with 'o: '
-					descr.append("\n                o: ").append(opts.replace("\n", "\n                   "));
+					// sub-option colons align 6 chars right of the view-index colon
+					// ('o:' is already explained above and not repeated here)
+					descr.append("\n      ").append(opts.replace("\n", "\n      "));
 			}
 			return descr.toString();
 		}
@@ -398,10 +399,10 @@ public class ViewController {
 	/**
 	 * Formats the selector label with a simple prefixed shortcut.
 	 *
-	 * @param viewName          the visible view name
-	 * @param shortcut          the shortcut text, or {@code null} if none is shown
-	 * @param hasExtraViews     {@code true} if there are more than nine active
-	 *                          views
+	 * @param viewName      the visible view name
+	 * @param shortcut      the shortcut text, or {@code null} if none is shown
+	 * @param hasExtraViews {@code true} if there are more than nine active
+	 *                      views
 	 * @return formatted selector label
 	 */
 	private String formatSelectorLabel(String viewName, String shortcut, boolean hasExtraViews) {
