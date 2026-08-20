@@ -674,8 +674,12 @@ public class IBSDPopulation extends IBSPopulation<Discrete, IBSDPopulation> {
 		debugNModels = 0;
 		if (dest >= 0 && (undirected ? peerVacant : isVacantAt(dest))) {
 			// destination vacant: add fitness contribution if module implements Payoffs
-			if (module instanceof Payoffs)
+			if (module instanceof Payoffs) {
+				// ephemeral scores are never persisted; compute freshly right before use
+				if (playerScoring.equals(ScoringType.EPHEMERAL))
+					playGameAt(me);
 				rBirth += getFitnessAt(me);
+			}
 		} else
 			rBirth = 0.0; // birth not possible if destination occupied or none exists
 		// determine event
