@@ -301,8 +301,15 @@ public abstract class ColorMap<T extends Object> {
 		protected final int nColors;
 
 		/**
+		 * Flag to indicate whether individuals that changed trait since the
+		 * previous report are marked with a distinct color (the upper half of
+		 * {@link #colors}, see {@link #translate(int[], Object[])}).
+		 */
+		protected boolean markChanged = true;
+
+		/**
 		 * Constructs a new index color map.
-		 * 
+		 *
 		 * @param size the number of colors
 		 */
 		protected Index(int size) {
@@ -326,11 +333,31 @@ public abstract class ColorMap<T extends Object> {
 
 		/**
 		 * Get the array of colors tha backs this color map.
-		 * 
+		 *
 		 * @return the array of colors
 		 */
 		public T[] getColors() {
 			return colors;
+		}
+
+		/**
+		 * Set whether individuals that changed trait since the previous report are
+		 * marked with a distinct color.
+		 *
+		 * @param markChanged {@code true} to mark recently changed traits
+		 */
+		public void setMarkChanged(boolean markChanged) {
+			this.markChanged = markChanged;
+		}
+
+		/**
+		 * Check whether individuals that changed trait since the previous report are
+		 * marked with a distinct color.
+		 *
+		 * @return {@code true} if recently changed traits are marked
+		 */
+		public boolean getMarkChanged() {
+			return markChanged;
 		}
 
 		/**
@@ -366,8 +393,16 @@ public abstract class ColorMap<T extends Object> {
 		@Override
 		public boolean translate(int[] data, T[] color) {
 			int len = data.length;
-			for (int n = 0; n < len; n++)
-				color[n] = colors[data[n]];
+			// if not marking changes, ignore the "recently changed" flag encoded in
+			// the upper half of data
+			if (markChanged) {
+				for (int n = 0; n < len; n++)
+					color[n] = colors[data[n]];
+			} else {
+				int nt = nColors / 2;
+				for (int n = 0; n < len; n++)
+					color[n] = colors[data[n] % nt];
+			}
 			return true;
 		}
 
@@ -401,7 +436,8 @@ public abstract class ColorMap<T extends Object> {
 		}
 
 		/**
-		 * Cached, lazily converted {@link #FAILED_COLOR}, see {@link #getFailedColor()}.
+		 * Cached, lazily converted {@link #FAILED_COLOR}, see
+		 * {@link #getFailedColor()}.
 		 */
 		private T failedColor;
 

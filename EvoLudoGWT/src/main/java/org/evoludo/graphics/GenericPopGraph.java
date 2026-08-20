@@ -224,6 +224,15 @@ public abstract class GenericPopGraph<T, N extends Network<?>> extends AbstractG
 	protected ColorMap<T> colorMap;
 
 	/**
+	 * The flag to indicate whether individuals that changed trait since the
+	 * previous report are marked with a distinct color. Defaults to
+	 * {@code true} for modules without vacant sites and to {@code false} for
+	 * ecological modules, where turnover is fast enough that marking recent
+	 * changes tends to be more distracting than informative.
+	 */
+	protected boolean markChanged;
+
+	/**
 	 * The label of the graph.
 	 */
 	protected Label label;
@@ -241,6 +250,7 @@ public abstract class GenericPopGraph<T, N extends Network<?>> extends AbstractG
 	 */
 	protected GenericPopGraph(AbstractView<?> view, Module<?> module) {
 		super(view, module);
+		markChanged = !module.hasVacant();
 	}
 
 	@Override
@@ -312,20 +322,44 @@ public abstract class GenericPopGraph<T, N extends Network<?>> extends AbstractG
 
 	/**
 	 * Set the map for translating trait values into colors.
-	 * 
+	 *
 	 * @param colorMap the trait-to-colour map
 	 */
 	public void setColorMap(ColorMap<T> colorMap) {
 		this.colorMap = colorMap;
+		if (colorMap instanceof ColorMap.Index)
+			((ColorMap.Index<T>) colorMap).setMarkChanged(markChanged);
 	}
 
 	/**
 	 * Get the map for translating trait values into colors.
-	 * 
+	 *
 	 * @return the trait-to-colour map
 	 */
 	public ColorMap<T> getColorMap() {
 		return colorMap;
+	}
+
+	/**
+	 * Set whether individuals that changed trait since the previous report are
+	 * marked with a distinct color.
+	 *
+	 * @param markChanged {@code true} to mark recently changed traits
+	 */
+	public void setMarkChanged(boolean markChanged) {
+		this.markChanged = markChanged;
+		if (colorMap instanceof ColorMap.Index)
+			((ColorMap.Index<T>) colorMap).setMarkChanged(markChanged);
+	}
+
+	/**
+	 * Check whether individuals that changed trait since the previous report are
+	 * marked with a distinct color.
+	 *
+	 * @return {@code true} if recently changed traits are marked
+	 */
+	public boolean getMarkChanged() {
+		return markChanged;
 	}
 
 	/**
@@ -613,6 +647,14 @@ public abstract class GenericPopGraph<T, N extends Network<?>> extends AbstractG
 			menu.add(new ContextMenuItem("Shake", () -> network.shake(GenericPopGraph.this, 0.05), "S"));
 			menu.add(new ContextMenuCheckBoxItem("Animate layout", animate, () -> animate = !animate));
 		}
+		if (colorMap instanceof ColorMap.Index)
+			menu.add(new ContextMenuCheckBoxItem("Mark recent changes", markChanged, () -> {
+				setMarkChanged(!markChanged);
+				Model model = view.getModel();
+				if (model != null)
+					model.getTraitData(module.getId(), data, colorMap);
+				paint(true);
+			}));
 		addClearMenu(menu);
 		// process debug node update
 		addDebugSubmenu(menu, x, y);
