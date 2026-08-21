@@ -283,8 +283,11 @@ public class Moran extends Discrete implements Static,
 	private double[] getReferenceTime(int trait) {
 		if (tAi < 0.0) {
 			// calculate reference fixation times
-			// numerical evaluations take too long for large populations
-			if (nPopulation > 500)
+			// rhoA(), t1(), tA1(), ti() and tAi() run in O(N) (see their javadoc),
+			// not the O(N^2)-O(N^3) their naive nested-loop form would cost, so this
+			// cutoff is no longer about raw runtime (benchmarked at <10ms even for
+			// N=1'000'000) but simply bounds the O(N) array allocations
+			if (nPopulation > 1000000)
 				return new double[0];
 			double[] init = new double[nTraits];
 			((org.evoludo.simulator.models.DModel) model).getInitialTraits(init);
@@ -353,11 +356,10 @@ public class Moran extends Discrete implements Static,
 	 * The ratio of transition probabilities to go from {@code i} to {@code i+1}
 	 * mutants over the reverse, i.e. \(T_i^-/T_i^+). In the classical Moran process
 	 * this is simply a constant and, in particular, independent of {@code i}.
-	 * 
-	 * @param i the number of mutants
+	 *
 	 * @return the ratio of transition probabilities
 	 */
-	private double Tratio(int i) {
+	private double Tratio() {
 		double fA = typeScores[MUTANT];
 		double fB = typeScores[RESIDENT];
 		return fB / fA;
@@ -366,27 +368,50 @@ public class Moran extends Discrete implements Static,
 	/**
 	 * The fixation probability of {@code i} mutants in a population of constant
 	 * size {@code N} (and {@code N-i} residents).
-	 * 
+	 * <p>
+	 * Runs in {@code O(N)} by carrying a single running product of
+	 * {@link #Tratio()} terms across the loop instead of recomputing it from
+	 * scratch for every term, i.e. Algorithm 2 (not the naive, quadratic
+	 * Algorithm 1) in Hindersin, Wu, Traulsen &amp; Garc&iacute;a (2019)
+	 * "Computation and Simulation of Evolutionary Game Dynamics in Finite
+	 * Populations", Sci. Rep. 9:6946. The original, {@code O(N^2)} nested-loop
+	 * version (kept here for reference) read:
+	 *
+	 * <pre>
+	 * double gamma = Tratio();
+	 * double num = 1.0;
+	 * for (int k = 1; k &lt; i; k++) {
+	 * 	double prod = 1.0;
+	 * 	for (int j = 1; j &lt;= k; j++)
+	 * 		prod *= gamma;
+	 * 	num += prod;
+	 * }
+	 * double denom = num;
+	 * for (int k = i; k &lt; n; k++) {
+	 * 	double prod = 1.0;
+	 * 	for (int j = 1; j &lt;= k; j++)
+	 * 		prod *= gamma;
+	 * 	denom += prod;
+	 * }
+	 * return num / denom;
+	 * </pre>
+	 * <p>
+	 *
 	 * @param i the number of mutants
 	 * @param n the size of the population
 	 * @return the fixation probability
 	 */
 	protected double rhoA(int i, int n) {
-		int N = n;
+		double gamma = Tratio();
 		double num = 1.0;
+		double prod = 1.0;
 		for (int k = 1; k < i; k++) {
-			double prod = 1.0;
-			for (int j = 1; j <= k; j++) {
-				prod *= Tratio(j);
-			}
+			prod *= gamma;
 			num += prod;
 		}
 		double denom = num;
-		for (int k = i; k < N; k++) {
-			double prod = 1.0;
-			for (int j = 1; j <= k; j++) {
-				prod *= Tratio(j);
-			}
+		for (int k = i; k < n; k++) {
+			prod *= gamma;
 			denom += prod;
 		}
 		return num / denom;
@@ -395,41 +420,88 @@ public class Moran extends Discrete implements Static,
 	/**
 	 * The absorption time (in generations) of a single mutant in a population of
 	 * constant size {@code N} (and {@code N-1} residents).
-	 * 
+	 * <p>
+	 * Runs in {@code O(N)}, analogous to Algorithm 3 (the {@code R}-recursion) in
+	 * Hindersin, Wu, Traulsen &amp; Garc&iacute;a (2019), Sci. Rep. 9:6946: the
+	 * inner sum {@code psi(l) = sum_{k=l}^{N-1} prod_{m=l+1}^{k} gamma}
+	 * satisfies the backward recursion {@code psi(l-1) = 1 + gamma*psi(l)}
+	 * with {@code psi(N-1) = 1}, avoiding recomputing the product from scratch
+	 * for every {@code l}. The original, {@code O(N^3)} nested-loop version (kept
+	 * here for reference) read:
+	 *
+	 * <pre>
+	 * double gamma = Tratio();
+	 * double sum = 0.0;
+	 * for (int l = 1; l &lt; n; l++) {
+	 * 	double sumprod = 0.0;
+	 * 	for (int k = l; k &lt; n; k++) {
+	 * 		double prod = 1.0;
+	 * 		for (int m = l + 1; m &lt;= k; m++)
+	 * 			prod *= gamma;
+	 * 		sumprod += prod;
+	 * 	}
+	 * 	sum += sumprod / Tplus(l, n);
+	 * }
+	 * return (sum * rhoA) / n;
+	 * </pre>
+	 * <p>
+	 * As in {@link #rhoA(int, int)}, {@link #Tratio()} is constant here and so
+	 * cached once in a local {@code gamma} rather than re-evaluated per iteration.
+	 *
 	 * @param rhoA the fixation probability of a single mutant
 	 * @param n    the size of the population
 	 * @return the absorption time
-	 * 
+	 *
 	 * @see #rhoA(int, int)
 	 */
 	protected double t1(double rhoA, int n) {
-		int N = n;
+		double gamma = Tratio();
 		double sum = 0.0;
-		for (int l = 1; l < N; l++) {
-			double sumprod = 0.0;
-			for (int k = l; k < N; k++) {
-				double prod = 1.0;
-				for (int m = l + 1; m <= k; m++) {
-					prod *= Tratio(m);
-				}
-				sumprod += prod;
-			}
-			sum += sumprod / Tplus(l, n);
+		double psi = 1.0;
+		for (int l = n - 1; l >= 1; l--) {
+			sum += psi / Tplus(l, n);
+			psi = 1.0 + gamma * psi;
 		}
-		return (sum * rhoA) / N;
+		return (sum * rhoA) / n;
 	}
 
 	/**
 	 * The absorption time (in generations) of {@code i} mutants in a population of
 	 * constant size {@code N} (and {@code N-i} residents).
 	 * <p>
-	 * Derived from the first-step recursion {@code d_{k+1} = Tratio(k)*d_k -
+	 * Derived from the first-step recursion {@code d_{k+1} = gamma*d_k -
 	 * 1/Tplus(k,n)} for {@code d_k = tau_k - tau_{k-1}} (in elementary update
 	 * steps), unrolled and summed to give
 	 * {@code tau_i = tau_1*phi_i - sum_{k=1}^{i-1} psi(k,i-1)/Tplus(k,n)}, where
 	 * {@code phi_i} is the (unnormalized) fixation numerator used in
 	 * {@link #rhoA(int, int)} and {@code psi(k,m) = sum_{l=k}^{m}
-	 * prod_{j=k+1}^{l} Tratio(j)}.
+	 * prod_{j=k+1}^{l} gamma}. This is the same style of recursion as
+	 * Algorithm 3 in Hindersin, Wu, Traulsen &amp; Garc&iacute;a (2019), Sci.
+	 * Rep. 9:6946 (see {@link #t1(double, int)}), here truncated at {@code i-1}
+	 * instead of {@code N-1} since {@link #t1(double, int)} only ever needs the
+	 * single-mutant case.
+	 * <p>
+	 * {@code psi(k,i-1)} itself satisfies the backward recursion
+	 * {@code psi(k-1,i-1) = 1 + gamma*psi(k,i-1)}, so it can be swept once in
+	 * {@code O(i)} instead of being recomputed from scratch for every {@code k},
+	 * which is what the correct but quadratic version below (kept for reference)
+	 * did:
+	 *
+	 * <pre>
+	 * double gamma = Tratio();
+	 * double sum = 0.0;
+	 * for (int k = 1; k &lt; i; k++) {
+	 * 	double psi = 0.0;
+	 * 	double p = 1.0;
+	 * 	for (int l = k; l &lt; i; l++) {
+	 * 		psi += p;
+	 * 		p *= gamma;
+	 * 	}
+	 * 	sum += psi / Tplus(k, n);
+	 * }
+	 * return t1 * phi - sum / n;
+	 * </pre>
+	 * <p>
 	 *
 	 * @param i  the number of mutants
 	 * @param n  the size of the population
@@ -439,21 +511,21 @@ public class Moran extends Discrete implements Static,
 	 * @see #t1(double, int)
 	 */
 	protected double ti(int i, int n, double t1) {
+		double gamma = Tratio();
 		double phi = 1.0;
 		double prod = 1.0;
 		for (int k = 1; k < i; k++) {
-			prod *= Tratio(k);
+			prod *= gamma;
 			phi += prod;
 		}
 		double sum = 0.0;
-		for (int k = 1; k < i; k++) {
-			double psi = 0.0;
-			double p = 1.0;
-			for (int l = k; l < i; l++) {
-				psi += p;
-				p *= Tratio(l + 1);
+		if (i > 1) {
+			double psi = 1.0;
+			sum += psi / Tplus(i - 1, n);
+			for (int k = i - 2; k >= 1; k--) {
+				psi = 1.0 + gamma * psi;
+				sum += psi / Tplus(k, n);
 			}
-			sum += psi / Tplus(k, n);
 		}
 		return t1 * phi - sum / n;
 	}
@@ -461,25 +533,55 @@ public class Moran extends Discrete implements Static,
 	/**
 	 * The conditional fixation time of a single mutant in a population of fixed
 	 * size {@code N} (and {@code N-1} residents) measured in generations.
-	 * 
+	 * <p>
+	 * Runs in {@code O(N)}: the same backward {@code psi(l)} recursion as
+	 * {@link #t1(double, int)} is combined with a single forward pass that
+	 * accumulates the fixation numerator {@code phi_l} (as in
+	 * {@link #rhoA(int, int)}) for every {@code l}, so {@code rhoA(l,n)} needed
+	 * inside the sum is a plain lookup rather than an {@code O(N)} recomputation
+	 * per term (which would otherwise make the whole sum {@code O(N^2)}). This
+	 * mirrors the memoized {@code prod-gamma-list} used by Algorithm 4 in
+	 * Hindersin, Wu, Traulsen &amp; Garc&iacute;a (2019), Sci. Rep. 9:6946. The
+	 * original, {@code O(N^3)} nested-loop version (kept here for reference)
+	 * read:
+	 *
+	 * <pre>
+	 * double gamma = Tratio();
+	 * double sum = 0.0;
+	 * for (int l = 1; l &lt; n; l++) {
+	 * 	double sumprod = 0.0;
+	 * 	for (int k = l; k &lt; n; k++) {
+	 * 		double prod = 1.0;
+	 * 		for (int m = l + 1; m &lt;= k; m++)
+	 * 			prod *= gamma;
+	 * 		sumprod += prod;
+	 * 	}
+	 * 	sum += sumprod * rhoA(l, n) / Tplus(l, n);
+	 * }
+	 * return sum / n;
+	 * </pre>
+	 * <p>
+	 *
 	 * @param n the size of the population
 	 * @return the conditional fixation time
 	 */
 	protected double tA1(int n) {
-		int N = n;
-		double sum = 0.0;
-		for (int l = 1; l < N; l++) {
-			double sumprod = 0.0;
-			for (int k = l; k < N; k++) {
-				double prod = 1.0;
-				for (int m = l + 1; m <= k; m++) {
-					prod *= Tratio(m);
-				}
-				sumprod += prod;
-			}
-			sum += sumprod * rhoA(l, n) / Tplus(l, n);
+		double gamma = Tratio();
+		double[] phi = new double[n + 1];
+		phi[1] = 1.0;
+		double prod = 1.0;
+		for (int l = 2; l <= n; l++) {
+			prod *= gamma;
+			phi[l] = phi[l - 1] + prod;
 		}
-		return sum / N;
+		double phiN = phi[n];
+		double sum = 0.0;
+		double psi = 1.0;
+		for (int l = n - 1; l >= 1; l--) {
+			sum += psi * (phi[l] / phiN) / Tplus(l, n);
+			psi = 1.0 + gamma * psi;
+		}
+		return sum / n;
 	}
 
 	/**
@@ -488,10 +590,42 @@ public class Moran extends Discrete implements Static,
 	 * <p>
 	 * Derived analogously to {@link #ti(int, int, double)}: the recursion for
 	 * {@code e_k = f_k - f_{k-1}}, with {@code f_k = rhoA(k,n)*(conditional
-	 * fixation time from k mutants)}, is {@code e_{k+1} = Tratio(k)*e_k -
+	 * fixation time from k mutants)}, is {@code e_{k+1} = gamma*e_k -
 	 * rhoA(k,n)/Tplus(k,n)}. Unrolling gives {@code f_i = f_1*phi_i -
 	 * sum_{k=1}^{i-1} psi(k,i-1)*rhoA(k,n)/Tplus(k,n)}, and the conditional
 	 * fixation time of {@code i} mutants is {@code f_i/rhoAi}.
+	 * <p>
+	 * Runs in {@code O(N)}: as in {@link #tA1(int)}, {@code phi_k} for every
+	 * {@code k=1..i-1} (needed for the {@code rhoA(k,n)} lookups) is accumulated
+	 * once in a forward pass instead of being recomputed per term, and the same
+	 * pass is continued up to {@code n} to obtain the fixation-probability
+	 * denominator (see {@link #rhoA(int, int)}); {@code psi(k,i-1)} uses the same
+	 * backward recursion as {@link #ti(int, int, double)}. The original,
+	 * quadratic-in-{@code rhoA} (and thus effectively {@code O(N^2)}) version
+	 * (kept here for reference) read:
+	 *
+	 * <pre>
+	 * double gamma = Tratio();
+	 * double rhoA1 = rhoA(1, n);
+	 * double phi = 1.0;
+	 * double prod = 1.0;
+	 * for (int k = 1; k &lt; i; k++) {
+	 * 	prod *= gamma;
+	 * 	phi += prod;
+	 * }
+	 * double sum = 0.0;
+	 * for (int k = 1; k &lt; i; k++) {
+	 * 	double psi = 0.0;
+	 * 	double p = 1.0;
+	 * 	for (int l = k; l &lt; i; l++) {
+	 * 		psi += p;
+	 * 		p *= gamma;
+	 * 	}
+	 * 	sum += psi * rhoA(k, n) / Tplus(k, n);
+	 * }
+	 * return (rhoA1 * tA1 * phi - sum / n) / rhoAi;
+	 * </pre>
+	 * <p>
 	 *
 	 * @param i     the number of mutants
 	 * @param n     the size of the population
@@ -500,25 +634,34 @@ public class Moran extends Discrete implements Static,
 	 * @return the conditional fixation time
 	 *
 	 * @see #ti(int, int, double)
+	 * @see #tA1(int)
 	 */
 	protected double tAi(int i, int n, double rhoAi, double tA1) {
-		double rhoA1 = rhoA(1, n);
-		double phi = 1.0;
+		double gamma = Tratio();
+		double[] phik = new double[Math.max(i, 1)];
 		double prod = 1.0;
+		double phi = 1.0;
 		for (int k = 1; k < i; k++) {
-			prod *= Tratio(k);
+			phik[k] = phi;
+			prod *= gamma;
 			phi += prod;
 		}
-		double sum = 0.0;
-		for (int k = 1; k < i; k++) {
-			double psi = 0.0;
-			double p = 1.0;
-			for (int l = k; l < i; l++) {
-				psi += p;
-				p *= Tratio(l + 1);
-			}
-			sum += psi * rhoA(k, n) / Tplus(k, n);
+		double phiI = phi;
+		for (int k = i; k < n; k++) {
+			prod *= gamma;
+			phi += prod;
 		}
-		return (rhoA1 * tA1 * phi - sum / n) / rhoAi;
+		double phiN = phi;
+		double rhoA1 = 1.0 / phiN;
+		double sum = 0.0;
+		if (i > 1) {
+			double psi = 1.0;
+			sum += psi * (phik[i - 1] / phiN) / Tplus(i - 1, n);
+			for (int k = i - 2; k >= 1; k--) {
+				psi = 1.0 + gamma * psi;
+				sum += psi * (phik[k] / phiN) / Tplus(k, n);
+			}
+		}
+		return (rhoA1 * tA1 * phiI - sum / n) / rhoAi;
 	}
 }
