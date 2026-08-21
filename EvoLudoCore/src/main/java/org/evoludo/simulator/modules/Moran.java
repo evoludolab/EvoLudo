@@ -295,12 +295,12 @@ public class Moran extends Discrete implements Static,
 			double t1 = t1(rhoA1, nPopulation);
 			if (m > 1) {
 				rhoAi = rhoA(m, nPopulation);
-				tAi = tAi(m, nPopulation, rhoAi, tA1) / nPopulation;
-				taui = ti(m, nPopulation, t1) / nPopulation;
+				tAi = tAi(m, nPopulation, rhoAi, tA1);
+				taui = ti(m, nPopulation, t1);
 			} else {
 				rhoAi = rhoA1;
-				tAi = tA1 / nPopulation;
-				taui = t1 / nPopulation;
+				tAi = tA1;
+				taui = t1;
 			}
 		}
 		if (trait == MUTANT)
@@ -309,13 +309,6 @@ public class Moran extends Discrete implements Static,
 			return new double[] { taui };
 		return new double[] { (taui - rhoAi * tAi) / (1.0 - rhoAi) };
 	}
-
-	// fixation probability of m mutants in resident population of size n with
-	// fitness ratio r (mutant/resident)
-	// private double moranFixationProb(double r, int m, int n) {
-	// double ir = 1.0/r;
-	// return (1.0-ChHMath.pow(ir, m))/(1.0-ChHMath.pow(ir, n));
-	// }
 
 	/**
 	 * Command line option to set the fitness values for residents and mutants.
@@ -356,13 +349,6 @@ public class Moran extends Discrete implements Static,
 		return (N - i) * i * fA / (N * (i * fA + (N - i) * fB));
 	}
 
-	// private double Tminus(int i) {
-	// double fA = typeScores[MUTANT];
-	// double fB = typeScores[RESIDENT];
-	// int N = nPopulation;
-	// return i*(N-i)*fB/(N*(i*fA+(N-i)*fB));
-	// }
-
 	/**
 	 * The ratio of transition probabilities to go from {@code i} to {@code i+1}
 	 * mutants over the reverse, i.e. \(T_i^-/T_i^+). In the classical Moran process
@@ -376,12 +362,6 @@ public class Moran extends Discrete implements Static,
 		double fB = typeScores[RESIDENT];
 		return fB / fA;
 	}
-
-	// private double Toitar(int i) {
-	// double fA = typeScores[MUTANT];
-	// double fB = typeScores[RESIDENT];
-	// return fA / fB;
-	// }
 
 	/**
 	 * The fixation probability of {@code i} mutants in a population of constant
@@ -411,19 +391,6 @@ public class Moran extends Discrete implements Static,
 		}
 		return num / denom;
 	}
-
-	// private double rhoA() {
-	// return rhoA(1);
-	// }
-
-	// private double rhoB(int i) {
-	// return 1.0-rhoA(i);
-	// }
-
-	// private double rhoB() {
-	// int N1 = nPopulation-1;
-	// return rhoB(N1);
-	// }
 
 	/**
 	 * The absorption time (in generations) of a single mutant in a population of
@@ -455,57 +422,41 @@ public class Moran extends Discrete implements Static,
 	/**
 	 * The absorption time (in generations) of {@code i} mutants in a population of
 	 * constant size {@code N} (and {@code N-i} residents).
-	 * 
+	 * <p>
+	 * Derived from the first-step recursion {@code d_{k+1} = Tratio(k)*d_k -
+	 * 1/Tplus(k,n)} for {@code d_k = tau_k - tau_{k-1}} (in elementary update
+	 * steps), unrolled and summed to give
+	 * {@code tau_i = tau_1*phi_i - sum_{k=1}^{i-1} psi(k,i-1)/Tplus(k,n)}, where
+	 * {@code phi_i} is the (unnormalized) fixation numerator used in
+	 * {@link #rhoA(int, int)} and {@code psi(k,m) = sum_{l=k}^{m}
+	 * prod_{j=k+1}^{l} Tratio(j)}.
+	 *
 	 * @param i  the number of mutants
 	 * @param n  the size of the population
 	 * @param t1 the absorption time of a single mutant
 	 * @return the absorption time of {@code i} mutants
-	 * 
+	 *
 	 * @see #t1(double, int)
 	 */
 	protected double ti(int i, int n, double t1) {
-		int N = n;
-		double sum1 = 0.0;
-		for (int k = i; k < N; k++) {
-			double prod = 1.0;
-			for (int m = 1; m <= k; m++) {
-				prod *= Tratio(m);
-			}
-			sum1 += prod;
+		double phi = 1.0;
+		double prod = 1.0;
+		for (int k = 1; k < i; k++) {
+			prod *= Tratio(k);
+			phi += prod;
 		}
-		sum1 *= -t1;
-		double sum2 = 0.0;
-		for (int k = i; k < N; k++) {
-			double sumprod = 0.0;
-			for (int l = 1; l <= k; l++) {
-				double prod = 1.0;
-				for (int m = l + 1; m <= k; m++) {
-					prod *= Tratio(m);
-				}
-				sumprod += prod / Tplus(l, n);
+		double sum = 0.0;
+		for (int k = 1; k < i; k++) {
+			double psi = 0.0;
+			double p = 1.0;
+			for (int l = k; l < i; l++) {
+				psi += p;
+				p *= Tratio(l + 1);
 			}
-			sum2 += sumprod;
+			sum += psi / Tplus(k, n);
 		}
-		return (sum1 + sum2) / N;
+		return t1 * phi - sum / n;
 	}
-
-	// // requires rhoB
-	// private double tN1(double rhoB) {
-	// int N = nPopulation;
-	// double sum = 0.0;
-	// for( int l=1; l<N; l++ ) {
-	// double sumprod = 0.0;
-	// for( int k=l; k<N; k++ ) {
-	// double prod = 1.0;
-	// for( int m=l+1; m<=k; m++ ) {
-	// prod *= Toitar(m);
-	// }
-	// sumprod += prod;
-	// }
-	// sum += sumprod/Tminus(l);
-	// }
-	// return sum*rhoB;
-	// }
 
 	/**
 	 * The conditional fixation time of a single mutant in a population of fixed
@@ -534,84 +485,40 @@ public class Moran extends Discrete implements Static,
 	/**
 	 * The conditional fixation time of {@code i} mutants in a population of fixed
 	 * size {@code N} (and {@code N-i} residents) measured in generations.
-	 * 
-	 * @param i    the number of mutants
-	 * @param n    the size of the population
-	 * @param rhoA the fixation probability of a single mutant
-	 * @param tA1  the fixation time of a single mutant
+	 * <p>
+	 * Derived analogously to {@link #ti(int, int, double)}: the recursion for
+	 * {@code e_k = f_k - f_{k-1}}, with {@code f_k = rhoA(k,n)*(conditional
+	 * fixation time from k mutants)}, is {@code e_{k+1} = Tratio(k)*e_k -
+	 * rhoA(k,n)/Tplus(k,n)}. Unrolling gives {@code f_i = f_1*phi_i -
+	 * sum_{k=1}^{i-1} psi(k,i-1)*rhoA(k,n)/Tplus(k,n)}, and the conditional
+	 * fixation time of {@code i} mutants is {@code f_i/rhoAi}.
+	 *
+	 * @param i     the number of mutants
+	 * @param n     the size of the population
+	 * @param rhoAi the fixation probability of {@code i} mutants
+	 * @param tA1   the fixation time of a single mutant
 	 * @return the conditional fixation time
+	 *
+	 * @see #ti(int, int, double)
 	 */
-	protected double tAi(int i, int n, double rhoA, double tA1) {
-		int N = n;
-		double sum1 = 0.0;
-		for (int k = i; k < N; k++) {
-			double prod = 1.0;
-			for (int m = 1; m <= k; m++) {
-				prod *= Tratio(m);
-			}
-			sum1 += prod;
+	protected double tAi(int i, int n, double rhoAi, double tA1) {
+		double rhoA1 = rhoA(1, n);
+		double phi = 1.0;
+		double prod = 1.0;
+		for (int k = 1; k < i; k++) {
+			prod *= Tratio(k);
+			phi += prod;
 		}
-		double irhoAi = 1.0 / rhoA(i, n);
-		sum1 *= -tA1 * rhoA * irhoAi;
-		double sum2 = 0.0;
-		for (int k = i; k < N; k++) {
-			double sumprod = 0.0;
-			for (int l = 1; l <= k; l++) {
-				double prod = 1.0;
-				for (int m = l + 1; m <= k; m++) {
-					prod *= Tratio(m);
-				}
-				sumprod += prod / Tplus(l, n) * rhoA(l, n) * irhoAi;
+		double sum = 0.0;
+		for (int k = 1; k < i; k++) {
+			double psi = 0.0;
+			double p = 1.0;
+			for (int l = k; l < i; l++) {
+				psi += p;
+				p *= Tratio(l + 1);
 			}
-			sum2 += sumprod;
+			sum += psi * rhoA(k, n) / Tplus(k, n);
 		}
-		return (sum1 + sum2) / N;
+		return (rhoA1 * tA1 * phi - sum / n) / rhoAi;
 	}
-
-	// private double tBN1() {
-	// int N = nPopulation;
-	// double sum = 0.0;
-	// for( int l=1; l<N; l++ ) {
-	// double sumprod = 0.0;
-	// for( int k=l; k<N; k++ ) {
-	// double prod = 1.0;
-	// for( int m=l+1; m<=k; m++ ) {
-	// prod *= Toitar(N-m);
-	// }
-	// sumprod += prod;
-	// }
-	// sum += sumprod*rhoB(N-l)/Tminus(N-l);
-	// }
-	// return sum;
-	// }
-
-	// tBi() seems to be incorrect... calculate the simpler absorption time instead
-	// and derive tBi that way...
-	// // requires tBN1, rhoB
-	// private double tBi(int i, double rhoB, double tBN1) {
-	// int N = nPopulation;
-	// double sum1 = 0.0;
-	// for( int k=1; k<=i; k++ ) {
-	// double prod = 1.0;
-	// for( int m=1; m<=k; m++ ) {
-	// prod *= Toitar(N-m);
-	// }
-	// sum1 += prod;
-	// }
-	// double irhoBi = 1.0/rhoB(i);
-	// sum1 *= -tBN1*rhoB*irhoBi;
-	// double sum2 = 0.0;
-	// for( int k=1; k<=i; k++ ) {
-	// double sumprod = 0.0;
-	// for( int l=1; l<=k; l++ ) {
-	// double prod = 1.0;
-	// for( int m=l+1; m<=k; m++ ) {
-	// prod *= Toitar(N-m);
-	// }
-	// sumprod += prod/Tminus(N-l)*rhoB(N-l)*irhoBi;
-	// }
-	// sum2 += sumprod;
-	// }
-	// return sum1+sum2;
-	// }
 }
