@@ -625,7 +625,14 @@ public class EvoLudoGWT extends EvoLudo {
 				double timeStep = activeModel.getTimeStep();
 				double lastBoundary = Math.floor((updates + IBS_EPS) / timeStep) * timeStep;
 				chunkTargetUpdates = Math.min(lastBoundary + timeStep, activeModel.getNextHalt());
-				if (activeModel instanceof IBS && (updates - lastBoundary) < IBS_EPS)
+				// the final hidden substep of a generation is rounded up to a whole
+				// elementary IBS event (see IBS#ibsStepAsync), which can leave 'updates'
+				// past the boundary by up to one event, i.e. chunkStep/IBS_CHUNK_TARGET
+				// (= 1/nTotal). For populations above IBS_CHUNK_TARGET that residual
+				// dwarfs IBS_EPS, so scale the tolerance to the actual event granularity
+				// instead of a population-agnostic constant.
+				double boundaryTol = Math.max(IBS_EPS, chunkStep / IBS_CHUNK_TARGET);
+				if (activeModel instanceof IBS && (updates - lastBoundary) < boundaryTol)
 					((IBS) activeModel).clearTraits();
 			}
 			double remaining = chunkTargetUpdates - updates;
