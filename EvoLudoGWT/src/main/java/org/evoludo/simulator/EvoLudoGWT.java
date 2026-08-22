@@ -72,11 +72,6 @@ public class EvoLudoGWT extends EvoLudo {
 	private static final int OSDE_CHUNK_TARGET = 100;
 
 	/**
-	 * Tolerance for floating point comparisons of update milestones.
-	 */
-	private static final double IBS_EPS = 1e-8;
-
-	/**
 	 * Create timer to measure execution times since instantiation.
 	 */
 	private final Duration elapsedTime = new Duration();
@@ -229,7 +224,7 @@ public class EvoLudoGWT extends EvoLudo {
 		if (activeModel.getTimeRelax() < 1.0) {
 			return;
 		}
-		if (remaining <= IBS_EPS) {
+		if (remaining <= IBS.EPS) {
 			if (!quiet)
 				fireModelRelaxed();
 			return;
@@ -257,13 +252,13 @@ public class EvoLudoGWT extends EvoLudo {
 				return false;
 			}
 			double relaxRemaining = activeModel.getTimeRelax() - activeModel.getUpdates();
-			if (relaxRemaining <= IBS_EPS) {
+			if (relaxRemaining <= IBS.EPS) {
 				finishScheduledRelaxation(false, quiet);
 				return false;
 			}
 			double chunk = Math.min(relaxationChunkStep, relaxRemaining);
 			boolean cont = activeModel.next(chunk);
-			if (!cont || activeModel.getTimeRelax() - activeModel.getUpdates() <= IBS_EPS) {
+			if (!cont || activeModel.getTimeRelax() - activeModel.getUpdates() <= IBS.EPS) {
 				finishScheduledRelaxation(false, quiet);
 				return false;
 			}
@@ -583,7 +578,7 @@ public class EvoLudoGWT extends EvoLudo {
 			double dt = ((ODE) model).getDt();
 			if (dt > 0.0) {
 				double chunkStep = OSDE_CHUNK_TARGET * dt;
-				if (model.getTimeStep() > chunkStep + IBS_EPS)
+				if (model.getTimeStep() > chunkStep + IBS.EPS)
 					return chunkStep;
 			}
 		}
@@ -614,42 +609,51 @@ public class EvoLudoGWT extends EvoLudo {
 				processPendingAction();
 				return false;
 			}
+			// ibsStepAsync's last hidden substep rounds up to a whole elementary IBS
+			// event, overshooting a boundary by up to chunkStep/IBS_CHUNK_TARGET -
+			// far more than IBS.EPS for populations above IBS_CHUNK_TARGET.
+			double nextHalt = activeModel.getNextHalt();
+			double boundaryTol = (activeModel instanceof IBS)
+					? Math.max(IBS.EPS, chunkStep / IBS_CHUNK_TARGET)
+					: IBS.EPS;
 			double updates = activeModel.getUpdates();
-			if (chunkTargetUpdates == 0.0) {
-				// first hidden substep of this visible timestep: compute its target
-				// and only now clear 'new' markers, so that a stop requested before
-				// this point leaves the previous step's markers intact instead of
-				// blanking them for a step that never happened. If resuming a
-				// timestep that was interrupted by a stop, updates is already
-				// past the boundary, so the accumulated markers are kept.
-				double timeStep = activeModel.getTimeStep();
-				double lastBoundary = Math.floor((updates + IBS_EPS) / timeStep) * timeStep;
-				chunkTargetUpdates = Math.min(lastBoundary + timeStep, activeModel.getNextHalt());
-				// the final hidden substep of a generation is rounded up to a whole
-				// elementary IBS event (see IBS#ibsStepAsync), which can leave 'updates'
-				// past the boundary by up to one event, i.e. chunkStep/IBS_CHUNK_TARGET
-				// (= 1/nTotal). For populations above IBS_CHUNK_TARGET that residual
-				// dwarfs IBS_EPS, so scale the tolerance to the actual event granularity
-				// instead of a population-agnostic constant.
-				double boundaryTol = Math.max(IBS_EPS, chunkStep / IBS_CHUNK_TARGET);
-				if (activeModel instanceof IBS && (updates - lastBoundary) < boundaryTol)
-					((IBS) activeModel).clearTraits();
+			if (chunkTargetUpdates == 0.0 && activeModel instanceof IBS && !activeModel.hasConverged()
+					&& Math.abs(nextHalt - updates) < IBS.EPS) {
+				// a fresh Start right at an already-reached but not yet snapped
+				// milestone: settle the snap (see IBS#next) without treating it as a
+				// real substep - no clearTraits, no chunkTargetUpdates - then retry
+				// with the now-current nextHalt so this same click can make progress.
+				activeModel.next(0.0);
+				return true;
 			}
+			boolean freshBoundary = false;
+			if (chunkTargetUpdates == 0.0) {
+				// first substep of this visible timestep: compute its target, but defer
+				// clearing 'new' markers until remaining (below) confirms a step is
+				// actually taken, so a step that never happens doesn't blank them.
+				double timeStep = activeModel.getTimeStep();
+				double lastBoundary = Math.floor((updates + IBS.EPS) / timeStep) * timeStep;
+				chunkTargetUpdates = Math.min(lastBoundary + timeStep, nextHalt);
+				freshBoundary = (updates - lastBoundary) < boundaryTol;
+			}
+			// any nonzero remaining goes to activeModel.next(), which snaps its own
+			// updates onto nextHalt when within IBS.EPS (see IBS#next) - guessing
+			// "close enough" here instead would skip that snap.
 			double remaining = chunkTargetUpdates - updates;
-			if (remaining <= IBS_EPS) {
-				finishChunkedStep(updates + IBS_EPS < activeModel.getNextHalt());
+			if (remaining <= 0.0) {
+				finishChunkedStep(updates + boundaryTol < nextHalt);
 				return false;
 			}
+			if (activeModel instanceof IBS && freshBoundary)
+				((IBS) activeModel).clearTraits();
 			double chunk = Math.min(chunkStep, remaining);
-			boolean cont = activeModel.next(chunk);
-			updates = activeModel.getUpdates();
-			boolean reachedTarget = (updates + IBS_EPS >= chunkTargetUpdates);
-			if (!cont) {
+			if (!activeModel.next(chunk)) {
 				finishChunkedStep(false);
 				return false;
 			}
-			if (reachedTarget) {
-				finishChunkedStep(updates + IBS_EPS < activeModel.getNextHalt());
+			updates = activeModel.getUpdates();
+			if (updates >= chunkTargetUpdates) {
+				finishChunkedStep(updates + boundaryTol < nextHalt);
 				return false;
 			}
 			return true;

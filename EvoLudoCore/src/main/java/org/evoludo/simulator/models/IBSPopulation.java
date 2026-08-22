@@ -3687,30 +3687,26 @@ public abstract class IBSPopulation<M extends Module<?>, P extends IBSPopulation
 	 * feasible).
 	 */
 	void checkMigration() {
-		if (getMaxMigrationProb() < 1e-10 || migrationType == MigrationType.NONE) {
-			setMigrationType(MigrationType.NONE);
-			setMigrationProb(0.0);
+		if (migrationType == MigrationType.NONE)
 			return;
-		}
-		if (!interaction.isUndirected()) {
-			engine.logWarning("no migration on directed graphs!");
-			setMigrationType(MigrationType.NONE);
-		} else if (!interaction.isSingle()) {
-			engine.logWarning("no migration on graphs with different interaction and competition neighborhoods!");
-			setMigrationType(MigrationType.NONE);
-		} else if (interaction.isType(GeometryType.WELLMIXED)) {
-			engine.logWarning("no migration in well-mixed populations!");
-			setMigrationType(MigrationType.NONE);
-		} else if (populationUpdate.getType() == PopulationUpdate.Type.ECOLOGY
-				&& migrationType != MigrationType.DIFFUSION) {
+		String incompatible = null;
+		if (!interaction.isUndirected())
+			incompatible = "no migration on directed graphs!";
+		else if (!interaction.isSingle())
+			incompatible = "no migration on graphs with different interaction and competition neighborhoods!";
+		else if (interaction.isType(GeometryType.WELLMIXED))
+			incompatible = "no migration in well-mixed populations!";
+		else if (populationUpdate.getType() == PopulationUpdate.Type.ECOLOGY && migrationType != MigrationType.DIFFUSION)
 			// ecological (vacancy) populations draw death/birth/competition as
 			// competing rates in updatePlayerEcologyAt(); diffusive migration has
 			// been folded into that same rate-based draw (see IBSDPopulation), but
 			// birth-death/death-birth migration - a global, non-local process - has
 			// no equivalent there and remains unsupported for this population update
-			engine.logWarning("only diffusive migration supported for ecological population updates!");
-			setMigrationType(MigrationType.NONE);
-		}
+			incompatible = "only diffusive migration supported for ecological population updates!";
+		if (incompatible == null)
+			return;
+		engine.logWarning(incompatible);
+		setMigrationType(MigrationType.NONE);
 	}
 
 	/**
@@ -4893,12 +4889,16 @@ public abstract class IBSPopulation<M extends Module<?>, P extends IBSPopulation
 	}
 
 	/**
-	 * Sets the type of migrations to {@code type}.
-	 * 
+	 * Sets the type of migrations to {@code type}. Setting {@link MigrationType#NONE}
+	 * also resets the migration probability to {@code 0.0}, keeping the two in
+	 * sync without relying on every caller to pair them.
+	 *
 	 * @param type the new type of migrations
 	 */
 	public void setMigrationType(MigrationType type) {
 		migrationType = type == null ? MigrationType.NONE : type;
+		if (migrationType == MigrationType.NONE)
+			pMigration = new double[] { 0.0 };
 	}
 
 	/**

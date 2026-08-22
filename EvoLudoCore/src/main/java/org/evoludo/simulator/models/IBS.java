@@ -61,6 +61,12 @@ import org.evoludo.util.Plist;
 public abstract class IBS extends Model {
 
 	/**
+	 * Slack for floating point comparisons, e.g. of {@link #updates} against a
+	 * milestone, see {@link #next(double)}.
+	 */
+	public static final double EPS = 1e-8;
+
+	/**
 	 * Keeps track of the time elapsed, measured in number of updates. One unit of
 	 * time corresponds to one generation or one Monte-Carlo step, such that in a
 	 * population of size <code>N</code> one generation corresponds to
@@ -429,10 +435,13 @@ public abstract class IBS extends Model {
 			return false;
 		}
 		double nextHalt = getNextHalt();
-		// continue if milestone reached in previous step, i.e. deltat < 1e-8
+		// milestone reached: snap updates onto it exactly, so getNextHalt() reports
+		// the next one instead of this same one forever.
 		double incr = Math.abs(nextHalt - updates);
-		if (incr < 1e-8)
+		if (incr < EPS) {
+			updates = nextHalt;
 			return false;
+		}
 		step = Math.min(step, incr);
 		connect = true;
 		if (!ibsStep(step)) {
@@ -562,7 +571,7 @@ public abstract class IBS extends Model {
 		// process at least one update.
 		// NOTE: nUpdates can exceed Integer.MAX_VALUE (notably for large populations
 		// and long relaxation times). using long is not an option because of GWT!
-		double dUpdates = Math.max(1.0, Math.ceil(stepDt * nTotal - 1e-8));
+		double dUpdates = Math.max(1.0, Math.ceil(stepDt * nTotal - EPS));
 		double stepDone = 0.0;
 		double gStart = updates;
 		while (dUpdates >= 1.0) {
@@ -1343,10 +1352,8 @@ public abstract class IBS extends Model {
 						if (mt == null)
 							return false;
 						pop.setMigrationType(mt);
-						if (mt == MigrationType.NONE) {
-							pop.setMigrationProb(0.0);
+						if (mt == MigrationType.NONE)
 							continue;
-						}
 						String keyarg = CLOption.stripKey(mt, migt);
 						if (keyarg.isEmpty())
 							continue;
@@ -1373,13 +1380,10 @@ public abstract class IBS extends Model {
 							rates = new double[] { rates[0] };
 						}
 						pop.setMigrationProb(rates);
-						double mig = pop.getMaxMigrationProb();
-						if (mig < 1e-8) {
+						if (pop.getMaxMigrationProb() == 0.0) {
 							engine.logWarning((isMultispecies ? mod.getName() + ": " : "")
-									+ "migration rate too small (" + Formatter.formatSci(mig, 4)
-									+ ") - reverting to no migration");
+									+ "migration rate is zero - reverting to no migration");
 							pop.setMigrationType(MigrationType.NONE);
-							pop.setMigrationProb(0.0);
 						}
 					}
 					return true;
