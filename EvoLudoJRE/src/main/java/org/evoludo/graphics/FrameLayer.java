@@ -47,6 +47,7 @@ import java.util.ArrayList;
 import javax.swing.JComponent;
 
 import org.evoludo.math.Combinatorics;
+import org.evoludo.simulator.models.Model;
 
 class FrameThreshold {
 	public double level;
@@ -186,7 +187,7 @@ public class FrameLayer extends JComponent {
 				double range = (double) canvas.width / (double) DEFAULT_DX * xaxis.step;
 				double order = Combinatorics.pow(10.0, (int) Math.floor(Math.log10(range)));
 				double max = xaxis.min + Math.floor(range / order * 10.0) * 0.1 * order;
-				if (Math.abs(xaxis.max - max) > 1e-8) {
+				if (Math.abs(xaxis.max - max) > Model.EPS) {
 					xaxis.max = max;
 					xaxis.restore();
 				}
@@ -195,7 +196,7 @@ public class FrameLayer extends JComponent {
 				double range = -(double) canvas.width / DEFAULT_DX * xaxis.step;
 				double order = Combinatorics.pow(10.0, (int) Math.floor(Math.log10(range)));
 				double min = xaxis.max - Math.floor(range / order * 10.0) * 0.1 * order;
-				if (Math.abs(xaxis.min - min) > 1e-8) {
+				if (Math.abs(xaxis.min - min) > Model.EPS) {
 					xaxis.min = min;
 					xaxis.restore();
 				}
@@ -208,7 +209,7 @@ public class FrameLayer extends JComponent {
 					max = yaxis.min + yaxis.steps * yaxis.step;
 				else
 					max = yaxis.min + (yaxis.majorTicks + 1) * (yaxis.minorTicks + 1) * yaxis.step;
-				if (Math.abs(yaxis.max - max) > 1e-8) {
+				if (Math.abs(yaxis.max - max) > Model.EPS) {
 					yaxis.max = max;
 					yaxis.restore();
 				}
@@ -219,7 +220,7 @@ public class FrameLayer extends JComponent {
 					min = yaxis.max + yaxis.steps * yaxis.step;
 				else
 					min = yaxis.max + (yaxis.majorTicks + 1) * (yaxis.minorTicks + 1) * yaxis.step;
-				if (Math.abs(yaxis.min - min) > 1e-8) {
+				if (Math.abs(yaxis.min - min) > Model.EPS) {
 					yaxis.min = min;
 					yaxis.restore();
 				}
@@ -493,7 +494,7 @@ public class FrameLayer extends JComponent {
 		}
 		boolean changed = false;
 		FrameThreshold t = thresholds.get(idx);
-		if (Math.abs(level - t.level) > 1e-8)
+		if (Math.abs(level - t.level) > Model.EPS)
 			changed = true;
 		if (!color.equals(t.color))
 			changed = true;

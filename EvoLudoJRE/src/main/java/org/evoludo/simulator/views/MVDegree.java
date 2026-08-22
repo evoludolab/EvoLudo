@@ -51,6 +51,7 @@ import org.evoludo.simulator.EvoLudoLab;
 import org.evoludo.simulator.geometries.AbstractGeometry;
 import org.evoludo.simulator.geometries.GeometryFeatures;
 import org.evoludo.simulator.geometries.GeometryType;
+import org.evoludo.simulator.models.Model;
 
 public class MVDegree extends MVAbstract implements HistoGraphListener {
 
@@ -151,26 +152,6 @@ public class MVDegree extends MVAbstract implements HistoGraphListener {
 				BorderFactory.createEmptyBorder(0, 0, 0, getFontMetrics(style.labelFont).stringWidth(xLabelText)));
 	}
 
-	/*
-	 * // implement HistoGraphListener - mostly done in MVAbstract
-	 * 
-	 * @Override
-	 * public boolean verifyXAxis(GraphAxis x, int tag) {
-	 * boolean changed = false;
-	 * double min = population.getMinScore();
-	 * if( Math.abs(x.min-min)>1e-8 ) {
-	 * x.min = min;
-	 * changed = true;
-	 * }
-	 * double max = population.getMaxScore();
-	 * if( Math.abs(x.max-max)>1e-8 ) {
-	 * x.max = max;
-	 * changed = true;
-	 * }
-	 * return changed;
-	 * }
-	 */
-
 	/**
 	 * Calculate the maximum degree for displaying the degree distribution. This
 	 * rounds {@code max} up to {@code 10, 20, 50, 100, 200, 500, 1000} etc. The
@@ -257,21 +238,21 @@ public class MVDegree extends MVAbstract implements HistoGraphListener {
 			data.binwidth = binwidth;
 			changed = true;
 		}
-		if (Math.abs(data.xmin - 0) > 1e-8) {
+		if (Math.abs(data.xmin - 0) > Model.EPS) {
 			data.xmin = 0;
 			changed = true;
 		}
-		if (Math.abs(data.xmax - kmax) > 1e-8) {
+		if (Math.abs(data.xmax - kmax) > Model.EPS) {
 			data.xmax = kmax;
 			changed = true;
 		}
-		if (Math.abs(data.ymin - minBin * norm) > 1e-8) {
+		if (Math.abs(data.ymin - minBin * norm) > Model.EPS) {
 			data.ymin = minBin * norm;
 			if (data.logy && data.ymin <= 0.0)
 				data.ymin = 1.0 / accuBin;
 			changed = true;
 		}
-		if (Math.abs(data.ymax - maxBin * norm) > 1e-8) {
+		if (Math.abs(data.ymax - maxBin * norm) > Model.EPS) {
 			data.ymax = maxBin * norm;
 			changed = true;
 		}
@@ -283,55 +264,6 @@ public class MVDegree extends MVAbstract implements HistoGraphListener {
 		return changed;
 	}
 
-	/*
-	 * needs more thought...
-	 * private static boolean changed(int[] out) {
-	 * double minBin = Double.MAX_VALUE, maxBin = -Double.MAX_VALUE, accuBin = 0.0;
-	 * int len = out.length;
-	 * for( int i=0; i<len; i++ ) {
-	 * double aBin = out[i];
-	 * if( aBin>0 ) {
-	 * minBin = Math.min(minBin, aBin);
-	 * maxBin = Math.max(maxBin, aBin);
-	 * accuBin += aBin;
-	 * }
-	 * }
-	 * double norm = 100.0/accuBin;
-	 * boolean changed = false;
-	 * if( data.bins!=b ) {
-	 * data.bins = b;
-	 * changed = true;
-	 * }
-	 * if( data.binwidth!=binwidth ) {
-	 * data.binwidth = binwidth;
-	 * changed = true;
-	 * }
-	 * if( Math.abs(data.xmin-0)>1e-8 ) {
-	 * data.xmin = 0;
-	 * changed = true;
-	 * }
-	 * if( Math.abs(data.xmax-kmax)>1e-8 ) {
-	 * data.xmax = kmax;
-	 * changed = true;
-	 * }
-	 * if( Math.abs(data.ymin-minBin*norm)>1e-8 ) {
-	 * data.ymin = minBin*norm;
-	 * if( data.logy && data.ymin<=0.0 ) data.ymin = 1.0/accuBin;
-	 * changed = true;
-	 * }
-	 * if( Math.abs(data.ymax-maxBin*norm)>1e-8 ) {
-	 * data.ymax = maxBin*norm;
-	 * changed = true;
-	 * }
-	 * if( data.logy ) {
-	 * ChHMath.log10(out);
-	 * ChHMath.add(out, Math.log10(norm));
-	 * }
-	 * else
-	 * ChHMath.multiply(out, norm);
-	 * return changed;
-	 * }
-	 */
 
 	/**
 	 * Calculate the total degrees, i.e. the sum of the in- and out-degrees, of all
@@ -358,7 +290,7 @@ public class MVDegree extends MVAbstract implements HistoGraphListener {
 		double now = engine.getModel().getUpdates();
 		boolean changed = false;
 		// System.out.println("MVDegree - getData: tag="+tag);
-		if (data.timestamp < 0.0 || (now - data.timestamp > 1e-10 && !isStatic)) {
+		if (data.timestamp < 0.0 || (now - data.timestamp > Model.EPS && !isStatic)) {
 			AbstractGeometry geometry;
 			if (engine.getModel().isIBS())
 				geometry = module.getIBSPopulation().getInteractionGeometry();

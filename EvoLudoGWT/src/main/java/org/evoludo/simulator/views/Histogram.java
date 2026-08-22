@@ -52,6 +52,7 @@ import org.evoludo.simulator.models.Data;
 import org.evoludo.simulator.models.FixationData;
 import org.evoludo.simulator.models.IBSPopulation;
 import org.evoludo.simulator.models.Mode;
+import org.evoludo.simulator.models.Model;
 import org.evoludo.simulator.modules.Continuous;
 import org.evoludo.simulator.modules.Discrete;
 import org.evoludo.simulator.modules.Module;
@@ -1178,7 +1179,7 @@ public class Histogram extends AbstractView<HistoGraph> {
 		if (!isActive || type != Data.STATISTICS_STATIONARY)
 			return;
 		double newtime = model.getUpdates();
-		if (Math.abs(timestamp - newtime) > 1e-8) {
+		if (Math.abs(timestamp - newtime) > Model.EPS) {
 			timestamp = newtime;
 			updateStationary();
 		}
@@ -1190,7 +1191,7 @@ public class Histogram extends AbstractView<HistoGraph> {
 			return;
 
 		double newtime = model.getUpdates();
-		if (Math.abs(timestamp - newtime) > 1e-8) {
+		if (Math.abs(timestamp - newtime) > Model.EPS) {
 			timestamp = newtime;
 			switch (type) {
 				case TRAIT:

@@ -35,6 +35,7 @@ import java.awt.Color;
 import org.evoludo.geom.Point2D;
 import org.evoludo.math.Combinatorics;
 import org.evoludo.simulator.EvoLudo;
+import org.evoludo.simulator.models.Model;
 import org.evoludo.simulator.models.Model.HasDE;
 import org.evoludo.simulator.models.Model.HasIBS;
 import org.evoludo.simulator.modules.Features.Payoffs;
@@ -216,7 +217,7 @@ public class EcoPGG extends Discrete implements Payoffs,
 		double z = dens[VACANT];
 		double zn1 = Combinatorics.pow(z, n - 1); // pow is really evil... try to make good pow...
 		double zn = zn1 * z;
-		double fn = (z > 1.0 - 1e-8) ? 2.0 : (1.0 - (1.0 - zn) / (n * (1.0 - z))) / (1.0 - z);
+		double fn = (z > 1.0 - Model.EPS) ? 2.0 : (1.0 - (1.0 - zn) / (n * (1.0 - z))) / (1.0 - z);
 		avgscores[COOPERATE] = payLoneCoop * zn1 + ((interest - 1.0) * (1.0 - zn1) - interest * y * fn) * cost;
 		avgscores[DEFECT] = payLoneDefect * zn1 + interest * x * fn * cost;
 		avgscores[VACANT] = Double.NaN;

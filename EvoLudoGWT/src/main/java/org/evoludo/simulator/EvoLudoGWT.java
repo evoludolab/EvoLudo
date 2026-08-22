@@ -224,7 +224,7 @@ public class EvoLudoGWT extends EvoLudo {
 		if (activeModel.getTimeRelax() < 1.0) {
 			return;
 		}
-		if (remaining <= IBS.EPS) {
+		if (remaining <= Model.EPS) {
 			if (!quiet)
 				fireModelRelaxed();
 			return;
@@ -252,13 +252,13 @@ public class EvoLudoGWT extends EvoLudo {
 				return false;
 			}
 			double relaxRemaining = activeModel.getTimeRelax() - activeModel.getUpdates();
-			if (relaxRemaining <= IBS.EPS) {
+			if (relaxRemaining <= Model.EPS) {
 				finishScheduledRelaxation(false, quiet);
 				return false;
 			}
 			double chunk = Math.min(relaxationChunkStep, relaxRemaining);
 			boolean cont = activeModel.next(chunk);
-			if (!cont || activeModel.getTimeRelax() - activeModel.getUpdates() <= IBS.EPS) {
+			if (!cont || activeModel.getTimeRelax() - activeModel.getUpdates() <= Model.EPS) {
 				finishScheduledRelaxation(false, quiet);
 				return false;
 			}
@@ -578,7 +578,7 @@ public class EvoLudoGWT extends EvoLudo {
 			double dt = ((ODE) model).getDt();
 			if (dt > 0.0) {
 				double chunkStep = OSDE_CHUNK_TARGET * dt;
-				if (model.getTimeStep() > chunkStep + IBS.EPS)
+				if (model.getTimeStep() > chunkStep + Model.EPS)
 					return chunkStep;
 			}
 		}
@@ -611,14 +611,14 @@ public class EvoLudoGWT extends EvoLudo {
 			}
 			// ibsStepAsync's last hidden substep rounds up to a whole elementary IBS
 			// event, overshooting a boundary by up to chunkStep/IBS_CHUNK_TARGET -
-			// far more than IBS.EPS for populations above IBS_CHUNK_TARGET.
+			// far more than Model.EPS for populations above IBS_CHUNK_TARGET.
 			double nextHalt = activeModel.getNextHalt();
 			double boundaryTol = (activeModel instanceof IBS)
-					? Math.max(IBS.EPS, chunkStep / IBS_CHUNK_TARGET)
-					: IBS.EPS;
+					? Math.max(Model.EPS, chunkStep / IBS_CHUNK_TARGET)
+					: Model.EPS;
 			double updates = activeModel.getUpdates();
 			if (chunkTargetUpdates == 0.0 && activeModel instanceof IBS && !activeModel.hasConverged()
-					&& Math.abs(nextHalt - updates) < IBS.EPS) {
+					&& Math.abs(nextHalt - updates) < Model.EPS) {
 				// a fresh Start right at an already-reached but not yet snapped
 				// milestone: settle the snap (see IBS#next) without treating it as a
 				// real substep - no clearTraits, no chunkTargetUpdates - then retry
@@ -632,12 +632,12 @@ public class EvoLudoGWT extends EvoLudo {
 				// clearing 'new' markers until remaining (below) confirms a step is
 				// actually taken, so a step that never happens doesn't blank them.
 				double timeStep = activeModel.getTimeStep();
-				double lastBoundary = Math.floor((updates + IBS.EPS) / timeStep) * timeStep;
+				double lastBoundary = Math.floor((updates + Model.EPS) / timeStep) * timeStep;
 				chunkTargetUpdates = Math.min(lastBoundary + timeStep, nextHalt);
 				freshBoundary = (updates - lastBoundary) < boundaryTol;
 			}
 			// any nonzero remaining goes to activeModel.next(), which snaps its own
-			// updates onto nextHalt when within IBS.EPS (see IBS#next) - guessing
+			// updates onto nextHalt when within Model.EPS (see IBS#next) - guessing
 			// "close enough" here instead would skip that snap.
 			double remaining = chunkTargetUpdates - updates;
 			if (remaining <= 0.0) {
@@ -896,7 +896,7 @@ public class EvoLudoGWT extends EvoLudo {
 					if (activeModel != null) {
 						double tStop = activeModel.getTimeStop();
 						// special case: --timestop 0 does not run, see EvoLudo#modelCheck()
-						hasEnd = (Double.isFinite(tStop) && Math.abs(tStop) > 1e-8)
+						hasEnd = (Double.isFinite(tStop) && Math.abs(tStop) > Model.EPS)
 								|| activeModel.getNSamples() > 0.0;
 					}
 					setSuspended(hasEnd || cloRun.isSet());

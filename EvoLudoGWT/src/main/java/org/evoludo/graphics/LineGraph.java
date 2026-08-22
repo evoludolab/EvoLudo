@@ -41,6 +41,7 @@ import org.evoludo.graphics.AbstractGraph.Zooming;
 import org.evoludo.math.Functions;
 import org.evoludo.simulator.ColorMapCSS;
 import org.evoludo.simulator.models.Data;
+import org.evoludo.simulator.models.Model;
 import org.evoludo.simulator.modules.Continuous;
 import org.evoludo.simulator.modules.Module;
 import org.evoludo.simulator.views.BasicTooltipProvider;
@@ -508,7 +509,7 @@ public class LineGraph extends AbstractGraph<double[]>
 		if (!buffer.isEmpty()) {
 			double[] last = buffer.last();
 			double dt = data[0] - last[0];
-			if (Math.abs(dt) < 1e-8) {
+			if (Math.abs(dt) < Model.EPS) {
 				System.arraycopy(data, 0, last, 0, last.length);
 				return;
 			}
@@ -650,7 +651,7 @@ public class LineGraph extends AbstractGraph<double[]>
 	 */
 	private int timeStepDirection(double newerTime, double olderTime) {
 		double dt = newerTime - olderTime;
-		if (!Double.isFinite(dt) || Math.abs(dt) < 1e-8)
+		if (!Double.isFinite(dt) || Math.abs(dt) < Model.EPS)
 			return 0;
 		return dt > 0.0 ? 1 : -1;
 	}
@@ -1114,7 +1115,7 @@ public class LineGraph extends AbstractGraph<double[]>
 
 	@Override
 	public void zoom(double zoom, double x, double y) {
-		if (zoom <= 0.0 || Math.abs(zoom - 1.0) < 1e-6)
+		if (zoom <= 0.0 || Math.abs(zoom - 1.0) < Model.EPS)
 			return;
 		double oldXMin = style.xMin;
 		double oldXMax = style.xMax;
@@ -1135,7 +1136,7 @@ public class LineGraph extends AbstractGraph<double[]>
 				return;
 			style.xMin = style.xMax - style.xIncr;
 		}
-		if (Math.abs(style.xMin - oldXMin) < 1e-8 && Math.abs(style.xMax - oldXMax) < 1e-8)
+		if (Math.abs(style.xMin - oldXMin) < Model.EPS && Math.abs(style.xMax - oldXMax) < Model.EPS)
 			return;
 		if (zoomInertiaTimer != null && zoomInertiaTimer.isRunning())
 			element.addClassName(zoom > 1.0 ? CURSOR_ZOOM_IN_CLASS : CURSOR_ZOOM_OUT_CLASS);

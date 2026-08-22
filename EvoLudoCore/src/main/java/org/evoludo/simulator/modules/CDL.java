@@ -37,6 +37,7 @@ import org.evoludo.simulator.EvoLudo;
 import org.evoludo.simulator.models.IBSD;
 import org.evoludo.simulator.models.IBSD.Init;
 import org.evoludo.simulator.models.IBSDPopulation;
+import org.evoludo.simulator.models.Model;
 import org.evoludo.simulator.models.Model.HasDE;
 import org.evoludo.simulator.models.Model.HasIBS;
 import org.evoludo.simulator.modules.Features.Payoffs;
@@ -465,7 +466,7 @@ public class CDL extends Discrete implements Payoffs,
 		double z = density[LONER];
 
 		avgscores[LONER] = payLoner;
-		if (z > 1.0 - 1e-7) {
+		if (z > 1.0 - Model.EPS) {
 			avgscores[COOPERATE] = payLoneCoop;
 			avgscores[DEFECT] = payLoneDefect;
 			return;

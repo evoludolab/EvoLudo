@@ -843,7 +843,7 @@ public class ODE extends Model implements DModel {
 		double minFit = map2fit.map(pmod.getMinPayoff());
 		double maxFit = map2fit.map(pmod.getMaxPayoff());
 		double map;
-		if (maxFit - minFit < 1e-8) {
+		if (maxFit - minFit < EPS) {
 			// close enough to neutral
 			map = nBins * 0.5;
 			minFit -= 1.0;
@@ -893,17 +893,17 @@ public class ODE extends Model implements DModel {
 		atHalt = false;
 		monoStopped = false;
 		double nextHalt = getNextHalt();
-		// continue if milestone reached in previous call, i.e. deltat < 1e-8, see
+		// continue if milestone reached in previous call, i.e. deltat < EPS, see
 		// IBS#next(double).
 		double deltat = Math.abs(nextHalt - time);
-		if (deltat < 1e-8)
+		if (deltat < EPS)
 			return false;
 		connect = true;
 		step = Math.min(step, deltat);
 		// NOTE: dt is always >0
 		double elapsed = 0.0;
 		double timeBefore = time;
-		while (Math.abs(step - elapsed) > 1e-8) {
+		while (Math.abs(step - elapsed) > EPS) {
 			double nextstep = Math.min(dtTry, step - elapsed);
 			double d2 = deStep(forward ? nextstep : -nextstep);
 			if (!Double.isFinite(d2))
@@ -924,7 +924,7 @@ public class ODE extends Model implements DModel {
 		}
 		// try to minimize rounding errors
 		time = timeBefore + (forward ? elapsed : -elapsed);
-		if (Math.abs(nextHalt - time) < 1e-8) {
+		if (Math.abs(nextHalt - time) < EPS) {
 			// snap to the milestone exactly rather than leaving a floating-point
 			// residual - lets getNextHalt() recognize the milestone as reached with
 			// a plain equality-based comparison, same as e.g. IBS's exact update

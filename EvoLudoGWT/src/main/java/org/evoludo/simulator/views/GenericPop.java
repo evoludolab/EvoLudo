@@ -47,6 +47,7 @@ import org.evoludo.simulator.geometries.GeometryType;
 import org.evoludo.simulator.models.Data;
 import org.evoludo.simulator.models.IBS;
 import org.evoludo.simulator.models.IBSPopulation;
+import org.evoludo.simulator.models.Model;
 import org.evoludo.simulator.models.PDE;
 import org.evoludo.simulator.modules.Features.Payoffs;
 import org.evoludo.simulator.modules.Map2Fitness;
@@ -242,7 +243,7 @@ public abstract class GenericPop<T, N extends Network<?>, G extends GenericPopGr
 			return;
 		// always read data for the selected graph set
 		double newtime = model.getUpdates();
-		boolean isNext = (Math.abs(timestamp - newtime) > 1e-8);
+		boolean isNext = (Math.abs(timestamp - newtime) > Model.EPS);
 		boolean updated = false;
 		for (G graph : graphs) {
 			boolean doUpdate = (isActive || graph.hasHistory());

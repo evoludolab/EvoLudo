@@ -761,9 +761,9 @@ public class ATBT extends TBT implements HasS3, HasPhase2D {
 			// yp'[t] == (yr[t] ft[[3]] + yp[t] ft[[4]]) xp[t] - (xr[t] ft[[1]] + xp[t]
 			// ft[[2]]) yp[t] - lambda rho yp[t]
 
-			// restrict to active traits
-			// note float resolution is 1.1920929E-7
-			if (Math.abs(err) > 1e-7 * nActive) {
+			// restrict to active traits; err accumulates one rounding
+			// contribution per active trait, hence the nActive scaling
+			if (Math.abs(err) > Model.EPS * nActive) {
 				if (active == null) {
 					// assume all active
 					for (int n = 0; n < nTraits; n++)

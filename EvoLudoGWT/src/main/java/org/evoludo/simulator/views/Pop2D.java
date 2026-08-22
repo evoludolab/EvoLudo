@@ -48,6 +48,7 @@ import org.evoludo.simulator.geometries.GeometryType;
 import org.evoludo.simulator.models.CModel;
 import org.evoludo.simulator.models.DModel;
 import org.evoludo.simulator.models.Data;
+import org.evoludo.simulator.models.Model;
 import org.evoludo.simulator.models.Model.HasDE;
 import org.evoludo.simulator.models.PDE;
 import org.evoludo.simulator.modules.Continuous;
@@ -412,7 +413,7 @@ public class Pop2D extends GenericPop<String, Network2D, PopGraph2D> implements 
 				double marker = map2fit.map(mono);
 				boolean duplicate = false;
 				for (int i = 0; i < count; i++) {
-					if (Math.abs(values[i] - marker) <= 1e-8 * Math.max(1.0, Math.abs(marker))) {
+					if (Math.abs(values[i] - marker) <= Model.EPS * Math.max(1.0, Math.abs(marker))) {
 						duplicate = true;
 						break;
 					}
@@ -427,7 +428,7 @@ public class Pop2D extends GenericPop<String, Network2D, PopGraph2D> implements 
 			if (Double.isFinite(minMarker))
 				values[count++] = minMarker;
 			if (Double.isFinite(maxMarker)
-					&& (count == 0 || Math.abs(values[0] - maxMarker) > 1e-8 * Math.max(1.0, Math.abs(maxMarker))))
+					&& (count == 0 || Math.abs(values[0] - maxMarker) > Model.EPS * Math.max(1.0, Math.abs(maxMarker))))
 				values[count++] = maxMarker;
 		}
 		if (count == values.length)
@@ -475,7 +476,7 @@ public class Pop2D extends GenericPop<String, Network2D, PopGraph2D> implements 
 			style.yLabel = "time";
 			double rFreq = model.getTimeStep();
 			// if report frequency did not change, we're done
-			if (Math.abs(-style.yIncr - rFreq) > 1e-8) {
+			if (Math.abs(-style.yIncr - rFreq) > Model.EPS) {
 				style.yIncr = -rFreq;
 				// require hard reset when report frequency changed
 				style.yMax = 0.0;

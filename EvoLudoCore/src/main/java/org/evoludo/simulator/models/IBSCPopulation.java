@@ -93,12 +93,12 @@ public class IBSCPopulation extends IBSMCPopulation {
 
 	@Override
 	public boolean haveSameTrait(int a, int b) {
-		return (Math.abs(traits[a] - traits[b]) < 1e-8);
+		return (Math.abs(traits[a] - traits[b]) < Model.EPS);
 	}
 
 	@Override
 	public boolean isSameTrait(int a) {
-		return (Math.abs(traits[a] - traitsNext[a]) < 1e-8);
+		return (Math.abs(traits[a] - traitsNext[a]) < Model.EPS);
 	}
 
 	@Override

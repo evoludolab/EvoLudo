@@ -484,7 +484,7 @@ public abstract class EvoLudo
 	public final boolean modelCheck() {
 		// special case: if --generation 0 model should not run regardless of
 		// whether --run option was provided.
-		if (Math.abs(activeModel.getTimeStop()) < 1e-8)
+		if (Math.abs(activeModel.getTimeStop()) < Model.EPS)
 			setSuspended(false);
 		// check module first; model may contact module
 		boolean doReset = false;

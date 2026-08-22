@@ -2335,7 +2335,7 @@ public class IBSDPopulation extends IBSPopulation<Discrete, IBSDPopulation> {
 		for (int i = 1; i < nTraits; i++)
 			cumFreqs[i] = cumFreqs[i - 1] + (i < nInit && active[i] ? init.args[i] : 0.0);
 		double norm = cumFreqs[nTraits - 1];
-		if (norm < 1e-8) {
+		if (norm < Model.EPS) {
 			engine.logWarning("zero total frequency - using uniform.");
 			initUniform();
 			return;
@@ -2424,14 +2424,14 @@ public class IBSDPopulation extends IBSPopulation<Discrete, IBSDPopulation> {
 	 */
 	public void initMono(int monoType, double monoFreq) {
 		monoType = monoType % nTraits;
-		if (!module.getActiveTraits()[monoType] || (monoType == vacantIdx && monoFreq < 1.0 - 1e-8)) {
+		if (!module.getActiveTraits()[monoType] || (monoType == vacantIdx && monoFreq < 1.0 - Model.EPS)) {
 			engine.logWarning("mono trait " + module.getTraitName(monoType)
 					+ (monoType == vacantIdx ? " cannot be vacant" : " is disabled") + " - using uniform.");
 			initUniform();
 			return;
 		}
 		Arrays.fill(traitsCount, 0);
-		if (monoFreq > 1.0 - 1e-8) {
+		if (monoFreq > 1.0 - Model.EPS) {
 			Arrays.fill(traits, monoType);
 			traitsCount[monoType] = nPopulation;
 			return;

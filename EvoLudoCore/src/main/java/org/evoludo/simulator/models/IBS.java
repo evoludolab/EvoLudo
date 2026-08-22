@@ -61,12 +61,6 @@ import org.evoludo.util.Plist;
 public abstract class IBS extends Model {
 
 	/**
-	 * Slack for floating point comparisons, e.g. of {@link #updates} against a
-	 * milestone, see {@link #next(double)}.
-	 */
-	public static final double EPS = 1e-8;
-
-	/**
 	 * Keeps track of the time elapsed, measured in number of updates. One unit of
 	 * time corresponds to one generation or one Monte-Carlo step, such that in a
 	 * population of size <code>N</code> one generation corresponds to

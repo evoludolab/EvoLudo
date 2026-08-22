@@ -286,7 +286,7 @@ public class IBSMCPopulation extends IBSPopulation<Continuous, IBSMCPopulation> 
 		int idxa = a * nTraits;
 		int idxb = b * nTraits;
 		for (int i = 0; i < nTraits; i++)
-			if (Math.abs(traits[idxa + i] - traits[idxb + i]) > 1e-8)
+			if (Math.abs(traits[idxa + i] - traits[idxb + i]) > Model.EPS)
 				return false;
 		return true;
 	}
@@ -295,7 +295,7 @@ public class IBSMCPopulation extends IBSPopulation<Continuous, IBSMCPopulation> 
 	public boolean isSameTrait(int a) {
 		int idxa = a * nTraits;
 		for (int i = 0; i < nTraits; i++)
-			if (Math.abs(traits[idxa + i] - traitsNext[idxa + i]) > 1e-8)
+			if (Math.abs(traits[idxa + i] - traitsNext[idxa + i]) > Model.EPS)
 				return false;
 		return true;
 	}
@@ -354,7 +354,7 @@ public class IBSMCPopulation extends IBSPopulation<Continuous, IBSMCPopulation> 
 	@Override
 	public boolean preferredPlayerBest(int me, int best, int sample) {
 		double distmesample = deltaTraits(me, sample);
-		if (distmesample < 1e-8)
+		if (distmesample < Model.EPS)
 			return true;
 		double distmebest = deltaTraits(me, best);
 		return (distmesample < distmebest);

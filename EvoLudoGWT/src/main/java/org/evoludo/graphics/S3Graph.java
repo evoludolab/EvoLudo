@@ -39,6 +39,7 @@ import org.evoludo.graphics.AbstractGraph.HasTrajectory;
 import org.evoludo.graphics.AbstractGraph.Shifting;
 import org.evoludo.graphics.AbstractGraph.Zooming;
 import org.evoludo.simulator.ColorMapCSS;
+import org.evoludo.simulator.models.Model;
 import org.evoludo.simulator.modules.Module;
 import org.evoludo.simulator.views.HasS3;
 import org.evoludo.simulator.views.S3;
@@ -291,7 +292,7 @@ public class S3Graph extends AbstractGraph<double[]> implements Zooming, Shiftin
 		}
 		double[] last = buffer.last();
 		double lastt = last[0];
-		if (Math.abs(t - lastt) < 1e-8) {
+		if (Math.abs(t - lastt) < Model.EPS) {
 			buffer.replace(prependTime2Data(t, data));
 			System.arraycopy(last, 0, init, 0, last.length);
 			return;

@@ -1484,13 +1484,13 @@ public abstract class IBSPopulation<M extends Module<?>, P extends IBSPopulation
 		for (int n = 0; n < excl; n++) {
 			second = Math.max(second, getScoreAt(n));
 			// if a second individual has maximum score, no need to look further
-			if (Math.abs(second - max) < 1e-8)
+			if (Math.abs(second - max) < Model.EPS)
 				return second;
 		}
 		for (int n = excl + 1; n < nPopulation; n++) {
 			second = Math.max(second, getScoreAt(n));
 			// if a second individual has maximum score, no need to look further
-			if (Math.abs(second - max) < 1e-8)
+			if (Math.abs(second - max) < Model.EPS)
 				return second;
 		}
 		return second;
@@ -1571,7 +1571,7 @@ public abstract class IBSPopulation<M extends Module<?>, P extends IBSPopulation
 				totFitness += getFitnessAt(neigh);
 		}
 		// negligible fitness, pick uniformly at random; same as neutral above
-		if (totFitness <= 1e-8)
+		if (totFitness <= Model.EPS)
 			return pickNeutralNeighbourAt(me, withSelf);
 
 		double hit = random01() * totFitness - myFit;
@@ -2835,20 +2835,20 @@ public abstract class IBSPopulation<M extends Module<?>, P extends IBSPopulation
 		int bestPlayer = me;
 		// if the individual's score is highest but ties with a reference, the
 		// individual sticks to it's trait.
-		double bestScore = getFitnessAt(me) + 1e-8;
+		double bestScore = getFitnessAt(me) + Model.EPS;
 		boolean switched = false;
 
 		for (int i = 0; i < rGroupSize; i++) {
 			int aPlayer = refGroup[i];
 			double aScore = getFitnessAt(aPlayer);
 			double bScore = aScore;
-			if (Math.abs(bestScore - bScore) < 1e-8) {
+			if (Math.abs(bestScore - bScore) < Model.EPS) {
 				// we need some expert advice on which trait is the preferred one
 				// does 'me' prefer 'aPlayer' over 'bestPlayer'?
 				if (preferredPlayerBest(me, bestPlayer, aPlayer))
-					bScore += 1e-8;
+					bScore += Model.EPS;
 				else
-					bScore -= 1e-8;
+					bScore -= Model.EPS;
 			}
 			if (bestScore > bScore)
 				continue;
@@ -2898,7 +2898,7 @@ public abstract class IBSPopulation<M extends Module<?>, P extends IBSPopulation
 				switched = true;
 				continue;
 			}
-			if (Math.abs(aScore - bestScore) < 1e-8 && random01() < 0.5) {
+			if (Math.abs(aScore - bestScore) < Model.EPS && random01() < 0.5) {
 				// equal scores - switch with probability 50%
 				bestPlayer = aPlayer;
 				switched = true;
@@ -3619,12 +3619,12 @@ public abstract class IBSPopulation<M extends Module<?>, P extends IBSPopulation
 			double next = pAddwire[0];
 			double prev = interaction.getAddwire();
 			interaction.setAddwire(next);
-			doReset |= (Math.abs(prev - next) > 1e-8);
+			doReset |= (Math.abs(prev - next) > Model.EPS);
 			if (!interaction.isSingle()) {
 				next = pAddwire[1];
 				prev = competition.getAddwire();
 				competition.setAddwire(next);
-				doReset |= (Math.abs(prev - next) > 1e-8);
+				doReset |= (Math.abs(prev - next) > Model.EPS);
 			}
 		}
 		// set rewiring of links in geometries
@@ -3632,12 +3632,12 @@ public abstract class IBSPopulation<M extends Module<?>, P extends IBSPopulation
 			double next = pRewire[0];
 			double prev = interaction.getRewire();
 			interaction.setRewire(next);
-			doReset |= (Math.abs(prev - next) > 1e-8);
+			doReset |= (Math.abs(prev - next) > Model.EPS);
 			if (!interaction.isSingle()) {
 				next = pRewire[1];
 				prev = competition.getRewire();
 				competition.setRewire(next);
-				doReset |= (Math.abs(prev - next) > 1e-8);
+				doReset |= (Math.abs(prev - next) > Model.EPS);
 			}
 		}
 		return doReset;
@@ -4849,7 +4849,7 @@ public abstract class IBSPopulation<M extends Module<?>, P extends IBSPopulation
 			return false;
 		double old = tags[idx];
 		tags[idx] = tag;
-		return (Math.abs(tag - old) < 1e-8);
+		return (Math.abs(tag - old) > Model.EPS);
 	}
 
 	/**
@@ -4874,7 +4874,7 @@ public abstract class IBSPopulation<M extends Module<?>, P extends IBSPopulation
 	 * @param sync the fraction that gets updated
 	 */
 	public void setSyncFraction(double sync) {
-		if (sync <= 0.0 || sync > 1.0 || Math.abs(syncFraction - sync) < 1e-8)
+		if (sync <= 0.0 || sync > 1.0 || Math.abs(syncFraction - sync) < Model.EPS)
 			return;
 		syncFraction = sync;
 	}
@@ -5212,7 +5212,7 @@ public abstract class IBSPopulation<M extends Module<?>, P extends IBSPopulation
 	public int nextBinomial(double p, int n) {
 		if (n == 0)
 			return 0;
-		if (p > 1.0 - 1e-8)
+		if (p > 1.0 - Model.EPS)
 			return 0;
 
 		// check if gaussian approximation is suitable

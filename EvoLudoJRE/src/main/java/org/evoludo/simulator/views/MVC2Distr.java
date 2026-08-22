@@ -139,12 +139,12 @@ public class MVC2Distr extends MVAbstract implements PopListener {
 		boolean changed = false;
 		// requires exactly 2 traits
 		double min = module.getTraitMin()[0];
-		if (Math.abs(x.min - min) > 1e-8) {
+		if (Math.abs(x.min - min) > Model.EPS) {
 			x.min = min;
 			changed = true;
 		}
 		double max = module.getTraitMax()[0];
-		if (Math.abs(x.max - max) > 1e-8) {
+		if (Math.abs(x.max - max) > Model.EPS) {
 			x.max = max;
 			changed = true;
 		}
@@ -156,12 +156,12 @@ public class MVC2Distr extends MVAbstract implements PopListener {
 		boolean changed = false;
 		// requires exactly 2 traits
 		double min = module.getTraitMin()[1];
-		if (Math.abs(y.min - min) > 1e-8) {
+		if (Math.abs(y.min - min) > Model.EPS) {
 			y.min = min;
 			changed = true;
 		}
 		double max = module.getTraitMax()[1];
-		if (Math.abs(y.max - max) > 1e-8) {
+		if (Math.abs(y.max - max) > Model.EPS) {
 			y.max = max;
 			changed = true;
 		}
@@ -180,7 +180,7 @@ public class MVC2Distr extends MVAbstract implements PopListener {
 		Model model = engine.getModel();
 		// check if we need to process data first
 		double now = model.getUpdates();
-		if (now - timestamp > 1e-8) {
+		if (now - timestamp > Model.EPS) {
 			// process data first
 			// ((CXPopulation)population).getTraitDensityData(data, colorMap, bins, true);
 			((CModel) model).get2DTraitHistogramData(0, bins, 0, 1);

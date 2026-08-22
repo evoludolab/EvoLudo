@@ -47,6 +47,7 @@ import org.evoludo.simulator.EvoLudoGWT;
 import org.evoludo.simulator.models.DModel;
 import org.evoludo.simulator.models.Data;
 import org.evoludo.simulator.models.IBSC;
+import org.evoludo.simulator.models.Model;
 import org.evoludo.simulator.modules.Module;
 import org.evoludo.util.CLOption;
 
@@ -259,12 +260,12 @@ public class Mean extends AbstractView<LineGraph> implements Shifter, Zoomer {
 		int id = module.getId();
 		double min = model.getMinScore(id);
 		double max = model.getMaxScore(id);
-		if (max - min < 1e-8) {
+		if (max - min < Model.EPS) {
 			min -= 1.0;
 			max += 1.0;
 		}
 		GraphStyle style = graph.getStyle();
-		boolean rangeChanged = Math.abs(min - style.yMin) > 1e-8 || Math.abs(max - style.yMax) > 1e-8;
+		boolean rangeChanged = Math.abs(min - style.yMin) > Model.EPS || Math.abs(max - style.yMax) > Model.EPS;
 		if (rangeChanged) {
 			style.yMin = min;
 			style.yMax = max;
@@ -353,7 +354,7 @@ public class Mean extends AbstractView<LineGraph> implements Shifter, Zoomer {
 		graph.setRealTimeAvailable(model.getTime() != Double.POSITIVE_INFINITY);
 		style.showXLevels = false;
 		double rFreq = model.getTimeStep();
-		if (Math.abs(style.xIncr - rFreq) > 1e-8) {
+		if (Math.abs(style.xIncr - rFreq) > Model.EPS) {
 			style.xIncr = rFreq;
 			style.xMin = -graph.getSteps() * style.xIncr;
 			hard = true;
@@ -379,7 +380,7 @@ public class Mean extends AbstractView<LineGraph> implements Shifter, Zoomer {
 	@Override
 	protected void updateData() {
 		double newtime = model.getUpdates();
-		if (Math.abs(timestamp - newtime) > 1e-8) {
+		if (Math.abs(timestamp - newtime) > Model.EPS) {
 			double realTime = model.getTime();
 			if (realTime == Double.POSITIVE_INFINITY)
 				realTime = Double.NaN;

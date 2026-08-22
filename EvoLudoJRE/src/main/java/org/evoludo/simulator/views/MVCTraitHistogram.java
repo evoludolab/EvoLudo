@@ -131,12 +131,12 @@ public class MVCTraitHistogram extends MVAbstract implements HistoGraphListener 
 	public boolean verifyXAxis(GraphAxis x, int tag) {
 		boolean changed = false;
 		double m = module.getTraitMin()[tag];
-		if (Math.abs(x.min - m) > 1e-8) {
+		if (Math.abs(x.min - m) > Model.EPS) {
 			x.min = m;
 			changed = true;
 		}
 		m = module.getTraitMax()[tag];
-		if (Math.abs(x.max - m) > 1e-8) {
+		if (Math.abs(x.max - m) > Model.EPS) {
 			x.max = m;
 			changed = true;
 		}
@@ -152,7 +152,7 @@ public class MVCTraitHistogram extends MVAbstract implements HistoGraphListener 
 		Model model = engine.getModel();
 		// check if we need to process data first
 		double now = model.getUpdates();
-		if (now - data.timestamp > 1e-10) {
+		if (now - data.timestamp > Model.EPS) {
 			// process data first
 			((CModel) model).getTraitHistogramData(0, bins);
 			// convert to percentages - also need to keep track of maxima

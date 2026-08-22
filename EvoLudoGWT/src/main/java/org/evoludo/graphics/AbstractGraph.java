@@ -39,6 +39,7 @@ import org.evoludo.geom.Path2D;
 import org.evoludo.geom.PathIterator;
 import org.evoludo.geom.Point2D;
 import org.evoludo.geom.Rectangle2D;
+import org.evoludo.simulator.models.Model;
 import org.evoludo.simulator.modules.Module;
 import org.evoludo.simulator.views.AbstractView;
 import org.evoludo.simulator.views.BasicTooltipProvider;
@@ -2309,7 +2310,7 @@ public abstract class AbstractGraph<B> extends FocusPanel
 			return;
 		double newZoomFactor = Math.min(Zooming.ZOOM_MAX, Math.max(1.0, zoomFactor * zoom));
 		double dz = newZoomFactor - zoomFactor;
-		if (Math.abs(dz) < 1e-8)
+		if (Math.abs(dz) < Model.EPS)
 			return;
 		double w = bounds.getWidth();
 		double h = bounds.getHeight();

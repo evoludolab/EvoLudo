@@ -140,16 +140,16 @@ public class MVFitHistogram extends MVAbstract implements HistoGraphListener {
 		boolean changed = false;
 		Model model = engine.getModel();
 		double min = model.getMinScore(tag);
-		if (Math.abs(x.min - min) > 1e-8) {
+		if (Math.abs(x.min - min) > Model.EPS) {
 			x.min = min;
 			changed = true;
 		}
 		double m = model.getMaxScore(tag);
-		if (Math.abs(x.max - m) > 1e-8) {
+		if (Math.abs(x.max - m) > Model.EPS) {
 			x.max = m;
 			changed = true;
 		}
-		if (m - min < 1e-6) {
+		if (m - min < Model.EPS) {
 			x.min = min - 1.0;
 			x.max = m + 1.0;
 			changed = true;
@@ -186,7 +186,7 @@ public class MVFitHistogram extends MVAbstract implements HistoGraphListener {
 	public boolean getData(HistoData data, int tag) {
 		// check if we need to process data first
 		double now = engine.getModel().getUpdates();
-		if (now - data.timestamp > 1e-10) {
+		if (now - data.timestamp > Model.EPS) {
 			// process data first
 			// for neutral selection we have minScore==maxScore in that case
 			// Population/DPopulation

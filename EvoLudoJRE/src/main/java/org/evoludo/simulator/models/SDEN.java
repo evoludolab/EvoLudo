@@ -200,7 +200,7 @@ public class SDEN extends SDE {
 		int vacant = module.getVacantIdx();
 		if (vacant >= 0) {
 			double ytv = yt[vacant];
-			if (ytv > 1.0 - 1e-8)
+			if (ytv > 1.0 - EPS)
 				return 0.0;
 			effnoise /= (1.0 - ytv);
 		}

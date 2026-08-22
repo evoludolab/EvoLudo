@@ -41,6 +41,7 @@ import org.evoludo.simulator.geometries.GeometryFeatures;
 import org.evoludo.simulator.geometries.GeometryType;
 import org.evoludo.simulator.models.IBSDPopulation;
 import org.evoludo.simulator.models.IBSGroup;
+import org.evoludo.simulator.models.Model;
 import org.evoludo.simulator.models.Model.HasIBS;
 import org.evoludo.simulator.modules.Features.Payoffs;
 import org.evoludo.simulator.views.HasHistogram;
@@ -200,7 +201,15 @@ public class NetGames extends Discrete implements Payoffs,
 	public void setRatio(double ratio) {
 		// costs could exceed benefits but then the getMax/MinGameScore methods need to
 		// be adjusted
-		this.ratio = Math.max(0.0, Math.min(1.0, ratio));
+		ratio = Math.max(0.0, Math.min(1.0, ratio));
+		if (ratio > 0.0 && ratio < Model.EPS) {
+			// a ratio this small is indistinguishable from zero anywhere it gets
+			// compared with Model.EPS slack (e.g. loner-node detection below); round
+			// down rather than let a genuine, if tiny, connection masquerade as none
+			engine.logWarning("ratio " + ratio + " too small - using 0");
+			ratio = 0.0;
+		}
+		this.ratio = ratio;
 	}
 
 	/**
@@ -658,7 +667,7 @@ public class NetGames extends Discrete implements Payoffs,
 			for (int n = 0; n < nPopulation; n++) {
 				double c = interaction.kout[n] * ratio;
 				double b = interaction.kin[n];
-				if (b + c < 1e-10) {
+				if (b + c < Model.EPS) {
 					// loner node
 					scores[n] = 0.0;
 					continue;
@@ -671,7 +680,7 @@ public class NetGames extends Discrete implements Payoffs,
 			performance[1] = ArrayMath.min(scores);
 			performance[2] = ArrayMath.max(scores);
 			meanPerformance = meanPerformance * p + performance[0] * q;
-			if (Math.abs(performance[1] - performance[0]) < 1e-8) {
+			if (Math.abs(performance[1] - performance[0]) < Model.EPS) {
 				performance[1] = -1.0;
 				performance[2] = 1.0;
 			}
@@ -746,7 +755,7 @@ public class NetGames extends Discrete implements Payoffs,
 				int p = interaction.kout[n];
 				double b = p * ratio;
 				int q = interaction.kin[n];
-				if (b + q < 1e-10)
+				if (b + q < Model.EPS)
 					score = 0.0;
 				else
 					score = (q - b) / (b + q);
@@ -799,7 +808,7 @@ public class NetGames extends Discrete implements Payoffs,
 			GeometryFeatures gFeats = interaction.getFeatures();
 			double min = gFeats.minIn - gFeats.maxOut * ratio;
 			double max = gFeats.maxIn - gFeats.minOut * ratio;
-			if (Math.abs(max - min) < 1e-10)
+			if (Math.abs(max - min) < Model.EPS)
 				return -1.0;
 			return min;
 		}
@@ -812,7 +821,7 @@ public class NetGames extends Discrete implements Payoffs,
 			GeometryFeatures gFeats = interaction.getFeatures();
 			double min = gFeats.minIn - gFeats.maxOut * ratio;
 			double max = gFeats.maxIn - gFeats.minOut * ratio;
-			if (Math.abs(max - min) < 1e-10)
+			if (Math.abs(max - min) < Model.EPS)
 				return 1.0;
 			return max;
 		}

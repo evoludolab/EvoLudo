@@ -770,7 +770,7 @@ public abstract class Network<N extends Node> extends AbstractList<N> implements
 	 */
 	public Status getStatus() {
 		if (geometry.isType(GeometryType.DYNAMIC) && status == Status.HAS_LAYOUT
-				&& Math.abs(engine.getModel().getUpdates() - timestamp) > 1e-8)
+				&& Math.abs(engine.getModel().getUpdates() - timestamp) > Model.EPS)
 			status = Status.ADJUST_LAYOUT;
 		return status;
 	}

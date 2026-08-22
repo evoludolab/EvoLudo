@@ -383,10 +383,10 @@ public class PDE extends ODE {
 	public boolean next(double step) {
 		atHalt = false;
 		gwtHalt = getNextHalt();
-		// continue if milestone reached in previous call, i.e. deltat < 1e-8, see
+		// continue if milestone reached in previous call, i.e. deltat < EPS, see
 		// IBS#next(double).
 		double deltat = Math.abs(gwtHalt - time);
-		if (deltat < 1e-8)
+		if (deltat < EPS)
 			return false;
 		step = Math.min(step, deltat);
 		connect = true;
@@ -427,7 +427,7 @@ public class PDE extends ODE {
 			setConverged();
 			return false;
 		}
-		if (Math.abs(gwtHalt - time) < 1e-8) {
+		if (Math.abs(gwtHalt - time) < EPS) {
 			// snap to the milestone exactly, see ODE#next(double).
 			time = gwtHalt;
 			atHalt = true;
@@ -879,7 +879,7 @@ public class PDE extends ODE {
 		double min = map2fit.map(pmod.getMinPayoff());
 		double max = map2fit.map(pmod.getMaxPayoff());
 		double map;
-		if (max - min < 1e-8) {
+		if (max - min < EPS) {
 			// close enough to neutral
 			map = nBins * 0.5;
 			min -= 1.0;
@@ -1024,7 +1024,7 @@ public class PDE extends ODE {
 	 */
 	public boolean incrementTime(double incr) {
 		time += incr;
-		return (Math.abs(gwtHalt - time) > 1e-8);
+		return (Math.abs(gwtHalt - time) > EPS);
 	}
 
 	/**

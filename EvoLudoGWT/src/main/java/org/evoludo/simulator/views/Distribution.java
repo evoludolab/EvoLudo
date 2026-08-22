@@ -48,6 +48,7 @@ import org.evoludo.simulator.geometries.AbstractGeometry;
 import org.evoludo.simulator.geometries.GeometryType;
 import org.evoludo.simulator.models.CModel;
 import org.evoludo.simulator.models.Data;
+import org.evoludo.simulator.models.Model;
 import org.evoludo.simulator.modules.Continuous;
 import org.evoludo.simulator.modules.Module;
 import org.evoludo.ui.ContextMenu;
@@ -322,7 +323,7 @@ public class Distribution extends AbstractView<PopGraph2D> implements TooltipPro
 		// force intentionally ignored; update policy depends on active/history state.
 		// always read data - some nodes may have changed due to user actions
 		double newtime = model.getUpdates();
-		boolean isNext = (Math.abs(timestamp - newtime) > 1e-8);
+		boolean isNext = (Math.abs(timestamp - newtime) > Model.EPS);
 		boolean updated = false;
 		for (PopGraph2D graph : graphs) {
 			boolean doUpdate = (isActive || graph.hasHistory());

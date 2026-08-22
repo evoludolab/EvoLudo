@@ -464,7 +464,7 @@ public class EvoLudoJRE extends EvoLudo implements Runnable {
 			modelReset();
 			// register hook to dump state when receiving SIGINT
 			registerHook();
-			simulationRunning = (Math.abs(activeModel.getTimeStop()) > 1e-8);
+			simulationRunning = (Math.abs(activeModel.getTimeStop()) > Model.EPS);
 			setSuspended(simulationRunning);
 			while (simulationRunning) {
 				synchronized (this) {

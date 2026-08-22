@@ -36,6 +36,7 @@ import org.evoludo.simulator.ColorMapCSS;
 import org.evoludo.simulator.EvoLudoGWT;
 import org.evoludo.simulator.models.DModel;
 import org.evoludo.simulator.models.Data;
+import org.evoludo.simulator.models.Model;
 import org.evoludo.simulator.modules.Discrete;
 import org.evoludo.simulator.modules.Module;
 
@@ -177,7 +178,7 @@ public class S3 extends AbstractView<S3Graph> {
 	@Override
 	protected void updateData(boolean force) {
 		double newtime = model.getUpdates();
-		boolean isNext = (Math.abs(timestamp - newtime) > 1e-8);
+		boolean isNext = (Math.abs(timestamp - newtime) > Model.EPS);
 		for (S3Graph graph : graphs) {
 			if (isNext) {
 				model.getMeanTraits(graph.getModule().getId(), state);

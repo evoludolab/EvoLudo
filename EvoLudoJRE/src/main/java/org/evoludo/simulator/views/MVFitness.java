@@ -121,32 +121,17 @@ public class MVFitness extends MVAbstract implements StateGraphListener {
 		return changed;
 	}
 
-	/*
-	 * really adjust x-axis upon changing report frequency?
-	 * public boolean verifyXAxis(GraphAxis x, int tag) {
-	 * boolean changed = false;
-	 * double step = -population.getReportFreq();
-	 * if( Math.abs(x.step-step)>1e-8 ) {
-	 * double steps = (x.max-x.min)/x.step;
-	 * x.min = x.max-steps*step;
-	 * x.step = step;
-	 * changed = true;
-	 * }
-	 * return changed;
-	 * }
-	 */
-
 	@Override
 	public boolean verifyYAxis(GraphAxis y, int tag) {
 		boolean changed = false;
 		Model model = engine.getModel();
 		double min = model.getMinScore(tag);
-		if (Math.abs(y.min - min) > 1e-8) {
+		if (Math.abs(y.min - min) > Model.EPS) {
 			y.min = min;
 			changed = true;
 		}
 		double max = model.getMaxScore(tag);
-		if (Math.abs(y.max - max) > 1e-8) {
+		if (Math.abs(y.max - max) > Model.EPS) {
 			y.max = max;
 			changed = true;
 		}

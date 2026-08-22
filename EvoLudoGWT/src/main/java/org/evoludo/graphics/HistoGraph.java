@@ -36,6 +36,7 @@ import java.util.Arrays;
 import org.evoludo.math.ArrayMath;
 import org.evoludo.math.Functions;
 import org.evoludo.simulator.models.Data;
+import org.evoludo.simulator.models.Model;
 import org.evoludo.simulator.modules.Module;
 import org.evoludo.simulator.views.BasicTooltipProvider;
 import org.evoludo.simulator.views.Histogram;
@@ -755,7 +756,7 @@ public class HistoGraph extends AbstractGraph<double[]> implements BasicTooltipP
 		boolean nodata = true;
 		for (int n = 0; n < nBins; n++) {
 			double nnorm = norm[n];
-			if (nnorm < 1e-8)
+			if (nnorm < Model.EPS)
 				continue;
 			double val = myData[n] / nnorm;
 			yMin = Math.min(yMin, val);
@@ -783,7 +784,7 @@ public class HistoGraph extends AbstractGraph<double[]> implements BasicTooltipP
 		if (norm != null) {
 			for (int n = 0; n < nBins; n++) {
 				double nnorm = norm[n];
-				double barheight = nnorm < 1e-8 ? 0.0
+				double barheight = nnorm < Model.EPS ? 0.0
 						: Math.min(Math.max(1.0, map * (myData[n] / nnorm - style.yMin)), h - 1);
 				fillRect(xshift, h - barheight, barwidth - 1.0, barheight);
 				xshift += barwidth;

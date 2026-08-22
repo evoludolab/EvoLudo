@@ -59,6 +59,13 @@ import org.evoludo.util.Plist;
 public abstract class Model implements CLOProvider {
 
 	/**
+	 * Slack for floating point comparisons: e.g. has {@link #time} reached a
+	 * milestone, do two scores tie, has a value reached 0, and threshold below
+	 * which values is rounded down to exactly zero.
+	 */
+	public static final double EPS = 1e-8;
+
+	/**
 	 * Methods that every {@link Module} must implement, which advertises numerical
 	 * solutions based on differential equations.
 	 */
@@ -1501,13 +1508,13 @@ public abstract class Model implements CLOProvider {
 		if (isTimeReversed()) {
 			// time is 'decreasing' find next smaller milestone
 			double halt = stop < updt ? stop : Double.NEGATIVE_INFINITY;
-			double relax = (Math.abs(timeRelax) > 1e-8 && timeRelax < updt) ? timeRelax
+			double relax = (Math.abs(timeRelax) > EPS && timeRelax < updt) ? timeRelax
 					: Double.NEGATIVE_INFINITY;
 			return Math.max(halt, relax);
 		}
 		// time is 'increasing'
 		double halt = stop > updt ? stop : Double.POSITIVE_INFINITY;
-		double relax = (Math.abs(timeRelax) > 1e-8 && timeRelax > updt) ? timeRelax : Double.POSITIVE_INFINITY;
+		double relax = (Math.abs(timeRelax) > EPS && timeRelax > updt) ? timeRelax : Double.POSITIVE_INFINITY;
 		return Math.min(halt, relax);
 	}
 

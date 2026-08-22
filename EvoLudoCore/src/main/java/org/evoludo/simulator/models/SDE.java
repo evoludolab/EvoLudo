@@ -844,7 +844,7 @@ public class SDE extends ODE {
 		if (vacant < 0)
 			return effnoise;
 		double ytv = yt[vacant];
-		if (ytv > 1.0 - 1e-8)
+		if (ytv > 1.0 - EPS)
 			return 0.0;
 		return effnoise / (1.0 - ytv);
 	}

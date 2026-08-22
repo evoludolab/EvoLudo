@@ -38,6 +38,7 @@ import org.evoludo.graphics.AbstractGraph.HasTrajectory;
 import org.evoludo.graphics.AbstractGraph.Shifting;
 import org.evoludo.graphics.AbstractGraph.Zooming;
 import org.evoludo.math.Functions;
+import org.evoludo.simulator.models.Model;
 import org.evoludo.simulator.modules.Module;
 import org.evoludo.simulator.views.BasicTooltipProvider;
 import org.evoludo.simulator.views.Phase2D;
@@ -230,7 +231,7 @@ public class ParaGraph extends AbstractGraph<double[]> implements Zooming, Shift
 		double[] last = buffer.last();
 		double lastt = last[0];
 		int len = last.length;
-		if (Math.abs(t - lastt) < 1e-8) {
+		if (Math.abs(t - lastt) < Model.EPS) {
 			buffer.replace(prependTime2Data(t, data));
 			System.arraycopy(data, 0, init, 1, len - 1);
 			updateAutoscale();
@@ -582,7 +583,7 @@ public class ParaGraph extends AbstractGraph<double[]> implements Zooming, Shift
 		}
 		double oldZoom = zoomFactor;
 		double newZoom = Math.min(Zooming.ZOOM_MAX, Math.max(minZoom, zoomFactor * zoom));
-		if (Math.abs(newZoom - zoomFactor) < 1e-8)
+		if (Math.abs(newZoom - zoomFactor) < Model.EPS)
 			return;
 		double relX = (ux - state.baseXMin) / state.baseRangeX;
 		double baseYMax = state.baseYMin + state.baseRangeY;
