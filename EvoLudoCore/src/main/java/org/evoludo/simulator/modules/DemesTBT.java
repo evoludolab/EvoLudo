@@ -383,20 +383,21 @@ public class DemesTBT extends TBT {
 			for (int n = start; n < start + sizeDemes; n++)
 				vacantFitness += getFitnessAt(n);
 
-			// decrease interval slightly to prevent roundoff errors
-			double hit = random01() * (sumFitness - vacantFitness - RNGDistribution.EPS_PICK);
+			double hit = random01() * (sumFitness - vacantFitness);
+			int last = -1;
 			for (int n = 0; n < nPopulation; n++) {
 				// skip destination deme by adjusting loop counter
 				if (n == start)
 					n += sizeDemes; // NOSONAR
+				last = n;
 				hit -= getFitnessAt(n);
 				if (hit < 0.0) {
 					migrateMoran(n, vacant);
 					return;
 				}
 			}
-			// last resort
-			throw new IllegalStateException("Dispersal failed... (" + hit + ")");
+			// last resort: rescue the last individual actually visited above
+			migrateMoran(pickLastResort(hit, last), vacant);
 		}
 
 		@Override

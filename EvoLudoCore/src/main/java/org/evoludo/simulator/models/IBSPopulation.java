@@ -1139,6 +1139,24 @@ public abstract class IBSPopulation<M extends Module<?>, P extends IBSPopulation
 	}
 
 	/**
+	 * Last-resort recovery for a roulette-wheel draw: if accumulated rounding
+	 * left <code>hit</code> just short of dipping below zero on the last
+	 * candidate visited by the draw loop, award the pick to that candidate
+	 * provided its fitness is non-negligible. Otherwise the residual reflects a
+	 * genuine problem rather than roundoff.
+	 *
+	 * @param hit       the residual after subtracting every visited candidate's
+	 *                  fitness from the initial draw
+	 * @param candidate the last individual visited by the draw loop
+	 * @return the index of the picked individual
+	 */
+	protected int pickLastResort(double hit, int candidate) {
+		if (hit < RNGDistribution.EPS_PICK && getFitnessAt(candidate) > RNGDistribution.EPS_PICK)
+			return candidate;
+		return pickFailed(hit);
+	}
+
+	/**
 	 * Draws the index of a individual of the population uniformly at random but
 	 * excluding the individual with index <code>excl</code>. Vacant sites are
 	 * skipped.
@@ -1229,10 +1247,7 @@ public abstract class IBSPopulation<M extends Module<?>, P extends IBSPopulation
 			if (hit < 0.0)
 				return n;
 		}
-		if (hit < RNGDistribution.EPS_PICK && getFitnessAt(nPopulation - 1) > RNGDistribution.EPS_PICK)
-			return nPopulation - 1;
-		// should not get here, does not return control
-		return pickFailed(hit);
+		return pickLastResort(hit, nPopulation - 1);
 	}
 
 	/**
@@ -1274,10 +1289,7 @@ public abstract class IBSPopulation<M extends Module<?>, P extends IBSPopulation
 			if (hit <= 0.0)
 				return n;
 		}
-		if (hit < RNGDistribution.EPS_PICK && getFitnessAt(nPopulation - 1) > RNGDistribution.EPS_PICK)
-			return nPopulation - 1;
-		// should not get here, does not return control
-		return pickFailed(hit);
+		return pickLastResort(hit, nPopulation - 1);
 	}
 
 	/**
@@ -1333,15 +1345,8 @@ public abstract class IBSPopulation<M extends Module<?>, P extends IBSPopulation
 			if (hit < 0.0)
 				return n;
 		}
-		// last resort...
-		if (excl == nPopulation - 1) {
-			if (hit < RNGDistribution.EPS_PICK && getFitnessAt(nPopulation - 2) > RNGDistribution.EPS_PICK)
-				return nPopulation - 2;
-			if (hit < RNGDistribution.EPS_PICK && getFitnessAt(nPopulation - 1) > RNGDistribution.EPS_PICK)
-				return nPopulation - 1;
-		}
-		// should not get here, does not return control
-		return pickFailed(hit);
+		// last resort: rescue the last individual actually visited above
+		return pickLastResort(hit, excl == nPopulation - 1 ? nPopulation - 2 : nPopulation - 1);
 	}
 
 	/**
@@ -1404,7 +1409,7 @@ public abstract class IBSPopulation<M extends Module<?>, P extends IBSPopulation
 	private int pickFitFocalSkipVacant(int excl) {
 		// vacancies require some extra care
 		if (nPopulation >= GILLESPIE_OPTIMIZATION_THRESHOLD)
-			pickFitFocalSkipVacantGillespieOptimized(excl);
+			return pickFitFocalSkipVacantGillespieOptimized(excl);
 		double hit = random01() * (sumFitness - getFitnessAt(excl));
 		// two loops prevent repeated checks concerning excl
 		for (int n = 0; n < excl; n++) {
@@ -1421,8 +1426,8 @@ public abstract class IBSPopulation<M extends Module<?>, P extends IBSPopulation
 			if (hit <= 0.0)
 				return n;
 		}
-		// should not get here, does not return control
-		return pickFailed(hit);
+		// last resort: rescue the last individual actually visited above
+		return pickLastResort(hit, excl == nPopulation - 1 ? nPopulation - 2 : nPopulation - 1);
 	}
 
 	/**
