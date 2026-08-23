@@ -3696,7 +3696,8 @@ public abstract class IBSPopulation<M extends Module<?>, P extends IBSPopulation
 			incompatible = "no migration on graphs with different interaction and competition neighborhoods!";
 		else if (interaction.isType(GeometryType.WELLMIXED))
 			incompatible = "no migration in well-mixed populations!";
-		else if (populationUpdate.getType() == PopulationUpdate.Type.ECOLOGY && migrationType != MigrationType.DIFFUSION)
+		else if (populationUpdate.getType() == PopulationUpdate.Type.ECOLOGY
+				&& migrationType != MigrationType.DIFFUSION)
 			// ecological (vacancy) populations draw death/birth/competition as
 			// competing rates in updatePlayerEcologyAt(); diffusive migration has
 			// been folded into that same rate-based draw (see IBSDPopulation), but
@@ -4312,7 +4313,12 @@ public abstract class IBSPopulation<M extends Module<?>, P extends IBSPopulation
 				checkAdjustScores();
 
 		} else {
-			checkNoAdjustScores();
+			double checkFitness = 0.0;
+			for (int n = 0; n < nPopulation; n++)
+				checkFitness += getFitnessAt(n);
+			// see checkFitnessSum for why the tolerance is scaled to sumFitness
+			if (Math.abs(checkFitness - sumFitness) > Combinatorics.pow(10, -12 + Functions.magnitude(sumFitness)))
+				logAccountingIssue(checkFitness, sumFitness);
 		}
 	}
 
@@ -4398,10 +4404,13 @@ public abstract class IBSPopulation<M extends Module<?>, P extends IBSPopulation
 		for (int n = 0; n < nPopulation; n++)
 			checkFitness += getFitnessAt(n);
 
-		if (Math.abs(sumFitness - checkFitness) > Combinatorics.pow(10, -11 + Functions.magnitude(sumFitness)))
+		// tolerance scales with sumFitness's magnitude (re-summing nPopulation
+		// doubles in a different order can drift by more than a flat epsilon);
+		// -12 matches EPS_SMALL at the low end of each magnitude bracket
+		if (Math.abs(sumFitness - checkFitness) > Combinatorics.pow(10, -12 + Functions.magnitude(sumFitness)))
 			logAccountingIssue("sum of fitness is ", sumFitnessStore, sumFitness,
 					"(delta=" + Math.abs(sumFitness - checkFitness) + ", max="
-							+ Combinatorics.pow(10, -11 + Functions.magnitude(sumFitness)) + ")");
+							+ Combinatorics.pow(10, -12 + Functions.magnitude(sumFitness)) + ")");
 	}
 
 	/**
@@ -4429,24 +4438,14 @@ public abstract class IBSPopulation<M extends Module<?>, P extends IBSPopulation
 			logAccountingIssue(sumFitnessStore, sumFitness);
 
 		double checkFitness = ArrayMath.norm(fitness);
-		if (Math.abs(sumFitness - checkFitness) > Model.EPS_SMALL)
+		// see checkFitnessSum for why the tolerance is scaled to sumFitness
+		if (Math.abs(sumFitness - checkFitness) > Combinatorics.pow(10, -12 + Functions.magnitude(sumFitness)))
 			logAccountingIssue(checkFitness, sumFitness);
 
 		// restore data
 		scores = scoresStore;
 		fitness = fitnessStore;
 		sumFitness = sumFitnessStore;
-	}
-
-	/**
-	 * Check consistency when scores are not adjusted.
-	 */
-	private void checkNoAdjustScores() {
-		double checkFitness = 0.0;
-		for (int n = 0; n < nPopulation; n++)
-			checkFitness += getFitnessAt(n);
-		if (Math.abs(checkFitness - sumFitness) > Model.EPS_SMALL)
-			logAccountingIssue(checkFitness, sumFitness);
 	}
 
 	/**
@@ -4889,7 +4888,8 @@ public abstract class IBSPopulation<M extends Module<?>, P extends IBSPopulation
 	}
 
 	/**
-	 * Sets the type of migrations to {@code type}. Setting {@link MigrationType#NONE}
+	 * Sets the type of migrations to {@code type}. Setting
+	 * {@link MigrationType#NONE}
 	 * also resets the migration probability to {@code 0.0}, keeping the two in
 	 * sync without relying on every caller to pair them.
 	 *
