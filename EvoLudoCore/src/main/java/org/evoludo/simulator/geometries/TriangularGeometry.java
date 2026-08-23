@@ -30,6 +30,7 @@
 
 package org.evoludo.simulator.geometries;
 
+import org.evoludo.math.RNGDistribution;
 import org.evoludo.simulator.EvoLudo;
 
 /**
@@ -148,8 +149,8 @@ public class TriangularGeometry extends AbstractLattice {
 	@Override
 	protected boolean checkSettings() {
 		boolean doReset = ensureSquareSize(true);
-		if ((Math.abs(connectivity - 3) > 1e-8 && Math.abs(1.0 - connectivity) > 1e-8)
-				|| (Math.abs(1.0 - connectivity) < 1e-8 && !isInterspecies())) {
+		if ((Math.abs(connectivity - 3) > RNGDistribution.EPS && Math.abs(1.0 - connectivity) > RNGDistribution.EPS)
+				|| (Math.abs(1.0 - connectivity) < RNGDistribution.EPS && !isInterspecies())) {
 			connectivity = 3;
 			warn("requires connectivity 3!");
 		}

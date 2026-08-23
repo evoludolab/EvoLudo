@@ -100,7 +100,7 @@ public class ScalefreeGeometry extends AbstractNetwork {
 		double[] distr = new double[size];
 		RNGDistribution rng = engine.getRNG();
 
-		if (Math.abs(sfExponent) > 1e-8) {
+		if (Math.abs(sfExponent) > RNGDistribution.EPS) {
 			for (int n = 0; n < size; n++)
 				distr[n] = Math.pow((double) n / (double) size, sfExponent);
 		} else {

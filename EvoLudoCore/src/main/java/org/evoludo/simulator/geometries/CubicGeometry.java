@@ -30,6 +30,7 @@
 
 package org.evoludo.simulator.geometries;
 
+import org.evoludo.math.RNGDistribution;
 import org.evoludo.simulator.EvoLudo;
 import org.evoludo.util.CLOParser;
 
@@ -335,9 +336,9 @@ public class CubicGeometry extends AbstractLattice {
 			range = Math.min(4, Math.max(1, (int) (Math.pow(connectivity + 1.5, 1.0 / 3.0) / 2.0)));
 		}
 		int count = (2 * range + 1) * (2 * range + 1) * (2 * range + 1) - 1;
-		boolean invalid = (Math.abs(count - connectivity) > 1e-8 && Math.abs(6.0 - connectivity) > 1e-8
-				&& Math.abs(1.0 - connectivity) > 1e-8)
-				|| (Math.abs(1.0 - connectivity) < 1e-8 && !isInterspecies());
+		boolean invalid = (Math.abs(count - connectivity) > RNGDistribution.EPS && Math.abs(6.0 - connectivity) > RNGDistribution.EPS
+				&& Math.abs(1.0 - connectivity) > RNGDistribution.EPS)
+				|| (Math.abs(1.0 - connectivity) < RNGDistribution.EPS && !isInterspecies());
 		if (invalid) {
 			connectivity = count;
 			if (connectivity >= size)

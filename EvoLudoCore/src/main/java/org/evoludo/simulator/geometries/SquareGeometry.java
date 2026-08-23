@@ -30,6 +30,7 @@
 
 package org.evoludo.simulator.geometries;
 
+import org.evoludo.math.RNGDistribution;
 import org.evoludo.simulator.EvoLudo;
 
 /**
@@ -220,9 +221,9 @@ public class SquareGeometry extends AbstractLattice {
 		int side = (int) Math.floor(Math.sqrt(size) + 0.5);
 		int range = Math.min(side / 2, Math.max(1, (int) (Math.sqrt(connectivity + 1.5) / 2.0)));
 		int count = (2 * range + 1) * (2 * range + 1) - 1;
-		boolean invalid = (Math.abs(count - connectivity) > 1e-8 && Math.abs(4.0 - connectivity) > 1e-8
-				&& Math.abs(1.0 - connectivity) > 1e-8)
-				|| (Math.abs(1.0 - connectivity) < 1e-8 && !isInterspecies());
+		boolean invalid = (Math.abs(count - connectivity) > RNGDistribution.EPS && Math.abs(4.0 - connectivity) > RNGDistribution.EPS
+				&& Math.abs(1.0 - connectivity) > RNGDistribution.EPS)
+				|| (Math.abs(1.0 - connectivity) < RNGDistribution.EPS && !isInterspecies());
 		if (invalid) {
 			connectivity = count;
 			if (connectivity >= size)

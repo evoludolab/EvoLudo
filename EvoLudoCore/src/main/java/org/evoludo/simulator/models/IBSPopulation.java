@@ -1229,7 +1229,7 @@ public abstract class IBSPopulation<M extends Module<?>, P extends IBSPopulation
 			if (hit < 0.0)
 				return n;
 		}
-		if (hit < 1e-6 && getFitnessAt(nPopulation - 1) > 1e-6)
+		if (hit < RNGDistribution.EPS_PICK && getFitnessAt(nPopulation - 1) > RNGDistribution.EPS_PICK)
 			return nPopulation - 1;
 		// should not get here, does not return control
 		return pickFailed(hit);
@@ -1274,7 +1274,7 @@ public abstract class IBSPopulation<M extends Module<?>, P extends IBSPopulation
 			if (hit <= 0.0)
 				return n;
 		}
-		if (hit < 1e-6 && getFitnessAt(nPopulation - 1) > 1e-6)
+		if (hit < RNGDistribution.EPS_PICK && getFitnessAt(nPopulation - 1) > RNGDistribution.EPS_PICK)
 			return nPopulation - 1;
 		// should not get here, does not return control
 		return pickFailed(hit);
@@ -1335,9 +1335,9 @@ public abstract class IBSPopulation<M extends Module<?>, P extends IBSPopulation
 		}
 		// last resort...
 		if (excl == nPopulation - 1) {
-			if (hit < 1e-6 && getFitnessAt(nPopulation - 2) > 1e-6)
+			if (hit < RNGDistribution.EPS_PICK && getFitnessAt(nPopulation - 2) > RNGDistribution.EPS_PICK)
 				return nPopulation - 2;
-			if (hit < 1e-6 && getFitnessAt(nPopulation - 1) > 1e-6)
+			if (hit < RNGDistribution.EPS_PICK && getFitnessAt(nPopulation - 1) > RNGDistribution.EPS_PICK)
 				return nPopulation - 1;
 		}
 		// should not get here, does not return control

@@ -30,6 +30,7 @@
 
 package org.evoludo.simulator.geometries;
 
+import org.evoludo.math.RNGDistribution;
 import org.evoludo.simulator.EvoLudo;
 
 /**
@@ -91,7 +92,7 @@ public class MooreGeometry extends SquareGeometry {
 	 */
 	public static void initMoore(AbstractGeometry geometry, int side, int fullside, int offset,
 			boolean fixedBoundary) {
-		if (Math.abs(geometry.connectivity - 8.0) > 1e-8)
+		if (Math.abs(geometry.connectivity - 8.0) > RNGDistribution.EPS)
 			throw new IllegalStateException("Moore geometry requires connectivity 8, found " + geometry.connectivity);
 		SquareGeometry.initSquare(geometry, side, fullside, offset, fixedBoundary);
 	}

@@ -459,7 +459,7 @@ public class Distributions {
 			mean += (i + 0.5) * wi;
 			norm += wi;
 		}
-		if (norm < 1e-8)
+		if (norm < RNGDistribution.EPS)
 			return 0.0;
 		return mean / (n * norm); // NOSONAR norm check above
 	}
@@ -568,7 +568,7 @@ public class Distributions {
 			moment += wi * Combinatorics.pow(xi, m);
 			norm += wi;
 		}
-		if (norm < 1e-8)
+		if (norm < RNGDistribution.EPS)
 			return 0.0;
 		return moment / norm; // NOSONAR norm check above
 	}
@@ -629,7 +629,7 @@ public class Distributions {
 			moment += wi * Combinatorics.pow(xi - m1, m);
 			norm += wi;
 		}
-		if (norm < 1e-8)
+		if (norm < RNGDistribution.EPS)
 			return 0.0;
 		return moment / norm; // NOSONAR norm check above
 	}

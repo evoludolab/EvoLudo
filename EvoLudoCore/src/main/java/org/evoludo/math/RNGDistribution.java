@@ -77,6 +77,24 @@ import org.evoludo.util.Formatter;
 public abstract class RNGDistribution {
 
 	/**
+	 * Slack for floating point comparisons in {@code org.evoludo.math} and
+	 * {@code org.evoludo.simulator.geometries}, which must not depend on
+	 * {@code org.evoludo.simulator.models} and hence cannot share
+	 * {@code Model.EPS}.
+	 */
+	public static final double EPS = 1e-8;
+
+	/**
+	 * Slack for the last-resort catch of accumulated rounding errors when drawing
+	 * a weighted random index by exhausting a random draw against a running total
+	 * (Gillespie/roulette-wheel sampling), used here in {@link #nextHit} and, for
+	 * the same purpose, in {@code IBSPopulation}'s {@code pickFit*} methods and
+	 * {@code DemesTBT}. Deliberately looser than {@link #EPS}: the accumulation
+	 * runs over up to a few hundred terms of potentially large magnitude.
+	 */
+	public static final double EPS_PICK = 1e-6;
+
+	/**
 	 * Reference to the {@link MersenneTwister} that supplies the random numbers for
 	 * the different distributions.
 	 */
@@ -1096,7 +1114,7 @@ public abstract class RNGDistribution {
 			if (p <= 0.0 || p >= 1.0)
 				throw new IllegalArgumentException("success probability must be in (0, 1).");
 			rng.p = p;
-			if (rng.cdf != null && Math.abs(rng.cdf[1] - p) < 1e-8) {
+			if (rng.cdf != null && Math.abs(rng.cdf[1] - p) < EPS) {
 				// success probability did not change - nothing to do
 				return;
 			}
@@ -2042,7 +2060,7 @@ public abstract class RNGDistribution {
 			}
 			// last resort; try to catch rounding errors
 			int len1 = weights.length - 1;
-			if (hit < 1e-6 && weights[len1] > 1e-6)
+			if (hit < EPS_PICK && weights[len1] > EPS_PICK)
 				return len1;
 			throw new IllegalArgumentException("Gillespie algorithm failed to pick individual...");
 		}

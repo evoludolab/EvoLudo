@@ -384,7 +384,7 @@ public class DemesTBT extends TBT {
 				vacantFitness += getFitnessAt(n);
 
 			// decrease interval slightly to prevent roundoff errors
-			double hit = random01() * (sumFitness - vacantFitness - 1e-6);
+			double hit = random01() * (sumFitness - vacantFitness - RNGDistribution.EPS_PICK);
 			for (int n = 0; n < nPopulation; n++) {
 				// skip destination deme by adjusting loop counter
 				if (n == start)

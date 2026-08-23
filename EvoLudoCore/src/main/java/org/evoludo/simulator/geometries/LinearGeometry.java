@@ -30,6 +30,7 @@
 
 package org.evoludo.simulator.geometries;
 
+import org.evoludo.math.RNGDistribution;
 import org.evoludo.simulator.EvoLudo;
 import org.evoludo.util.CLOParser;
 
@@ -132,7 +133,7 @@ public class LinearGeometry extends AbstractLattice {
 	protected boolean checkSettings() {
 		boolean doReset = false;
 		connectivity = Math.max(1, Math.rint(connectivity));
-		boolean invalidConn = (Math.abs(1.0 - connectivity) < 1e-8 && (!isInterspecies() && linearAsymmetry == 0))
+		boolean invalidConn = (Math.abs(1.0 - connectivity) < RNGDistribution.EPS && (!isInterspecies() && linearAsymmetry == 0))
 				|| ((int) (connectivity + 0.5) % 2 == 1 && linearAsymmetry == 0) || connectivity >= size;
 		if (invalidConn) {
 			double size1 = size - 1.0;
