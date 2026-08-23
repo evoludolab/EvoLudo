@@ -1088,7 +1088,7 @@ public class ParaGraph extends AbstractGraph<double[]> implements Zooming, Shift
 		boolean clampY = Double.isFinite(domain.getHeight());
 		double scaleX = rangeX / w;
 		double scaleY = rangeY / h;
-		if (Math.abs(scaleX - scaleY) < 1e-12)
+		if (Math.abs(scaleX - scaleY) < Model.EPS_SMALL)
 			return;
 		if (scaleX > scaleY) {
 			double targetRangeY = scaleX * h;

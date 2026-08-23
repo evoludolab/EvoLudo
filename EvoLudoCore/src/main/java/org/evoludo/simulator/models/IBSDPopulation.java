@@ -1853,14 +1853,14 @@ public class IBSDPopulation extends IBSPopulation<Discrete, IBSDPopulation> {
 			if (checkTraitCount[n] != traitsCount[n])
 				logAccountingIssue("trait count of " + module.getTraitName(n) + " is ", checkTraitCount[n],
 						traitsCount[n], "");
-			if (Math.abs(checkAccuTypeScores[n] - accuTypeScores[n]) > 1e-8)
+			if (Math.abs(checkAccuTypeScores[n] - accuTypeScores[n]) > Model.EPS_SMALL)
 				logAccountingIssue("accumulated scores of trait " + module.getTraitName(n) + " are ",
 						checkAccuTypeScores[n], accuTypeScores[n], "");
 			if (n == vacantIdx)
 				continue;
 			accScores += accuTypeScores[n];
 		}
-		if (Math.abs(checkScores - accScores) > 1e-8)
+		if (Math.abs(checkScores - accScores) > Model.EPS_SMALL)
 			logAccountingIssue("sum of trait scores is ", checkScores, accScores,
 					" (" + Formatter.format(accuTypeScores, 8) + ")");
 	}

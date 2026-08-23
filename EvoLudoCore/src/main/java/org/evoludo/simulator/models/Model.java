@@ -66,6 +66,15 @@ public abstract class Model implements CLOProvider {
 	public static final double EPS = 1e-8;
 
 	/**
+	 * Tighter slack for floating point comparisons where {@link #EPS} would mask
+	 * genuine differences: internal consistency checks (e.g. comparing scores or
+	 * fitness recomputed from scratch against cached values) and numerically
+	 * sensitive branch selection (e.g. deciding whether a matrix coefficient is
+	 * negligible before normalizing by it).
+	 */
+	public static final double EPS_SMALL = 1e-12;
+
+	/**
 	 * Methods that every {@link Module} must implement, which advertises numerical
 	 * solutions based on differential equations.
 	 */

@@ -4326,16 +4326,16 @@ public abstract class IBSPopulation<M extends Module<?>, P extends IBSPopulation
 		if (Double.isNaN(scoren))
 			logScoringIssue(n, scoren, "is NaN...");
 
-		if (isVacantAt(n) && scoren > 1e-12)
+		if (isVacantAt(n) && scoren > Model.EPS_SMALL)
 			logScoringIssue(n, scoren, "of vacant site should be zero");
 		// check score range
-		if (scoren + 1e-12 < minScore || scoren - 1e-12 > maxScore)
+		if (scoren + Model.EPS_SMALL < minScore || scoren - Model.EPS_SMALL > maxScore)
 			logScoringIssue(n, scoren, "not in [" + minScore + ", " + maxScore + "]");
 		// check fitness
 		double fitn = getFitnessAt(n);
-		if (fitn + 1e-12 < minFitness || fitn - 1e-12 > maxFitness)
+		if (fitn + Model.EPS_SMALL < minFitness || fitn - Model.EPS_SMALL > maxFitness)
 			logScoringIssue(n, fitn, "not in [" + minFitness + ", " + maxFitness + "]");
-		if (Math.abs(map2fit.map(scoren) - fitn) > 1e-12)
+		if (Math.abs(map2fit.map(scoren) - fitn) > Model.EPS_SMALL)
 			logMapIssue(n, scoren, fitn);
 	}
 
@@ -4374,13 +4374,13 @@ public abstract class IBSPopulation<M extends Module<?>, P extends IBSPopulation
 		for (int n = 0; n < nTraits; n++) {
 			if (n == vacantIdx && typeScores[n] != typeScoresStore[n])
 				logScoringIssue(n, typeScoresStore[n], "instead of " + typeScores[n] + " (NaN)");
-			if (Math.abs(typeScores[n] - typeScoresStore[n]) > 1e-12)
+			if (Math.abs(typeScores[n] - typeScoresStore[n]) > Model.EPS_SMALL)
 				logScoringIssue(n, typeScoresStore[n], typeScores[n]);
 
 			typeFitness[n] = map2fit.map(typeScores[n]);
-			if (Math.abs(typeFitness[n] - typeFitnessStore[n]) > 1e-12)
+			if (Math.abs(typeFitness[n] - typeFitnessStore[n]) > Model.EPS_SMALL)
 				logFitnessIssue(n, typeFitnessStore[n], typeFitness[n]);
-			if (Math.abs(map2fit.map(typeScores[n]) - typeFitness[n]) > 1e-12)
+			if (Math.abs(map2fit.map(typeScores[n]) - typeFitness[n]) > Model.EPS_SMALL)
 				logMapIssue(n, typeScores[n], typeFitness[n]);
 		}
 	}
@@ -4391,7 +4391,7 @@ public abstract class IBSPopulation<M extends Module<?>, P extends IBSPopulation
 	 * @param sumFitnessStore the stored fitness sum
 	 */
 	private void checkFitnessSum(double sumFitnessStore) {
-		if (Math.abs(sumFitness - sumFitnessStore) > 1e-12)
+		if (Math.abs(sumFitness - sumFitnessStore) > Model.EPS_SMALL)
 			logAccountingIssue(sumFitnessStore, sumFitness);
 
 		double checkFitness = 0.0;
@@ -4417,19 +4417,19 @@ public abstract class IBSPopulation<M extends Module<?>, P extends IBSPopulation
 		engine.getModel().update();
 
 		for (int n = 0; n < nPopulation; n++) {
-			if (Math.abs(scores[n] - scoresStore[n]) > 1e-12)
+			if (Math.abs(scores[n] - scoresStore[n]) > Model.EPS_SMALL)
 				logScoringIssue(n, scoresStore[n], scores[n]);
-			if (Math.abs(fitness[n] - fitnessStore[n]) > 1e-12)
+			if (Math.abs(fitness[n] - fitnessStore[n]) > Model.EPS_SMALL)
 				logFitnessIssue(n, fitnessStore[n], fitness[n]);
-			if (Math.abs(map2fit.map(scores[n]) - fitness[n]) > 1e-12)
+			if (Math.abs(map2fit.map(scores[n]) - fitness[n]) > Model.EPS_SMALL)
 				logMapIssue(n, scores[n], fitness[n]);
 		}
 
-		if (Math.abs(sumFitness - sumFitnessStore) > 1e-12)
+		if (Math.abs(sumFitness - sumFitnessStore) > Model.EPS_SMALL)
 			logAccountingIssue(sumFitnessStore, sumFitness);
 
 		double checkFitness = ArrayMath.norm(fitness);
-		if (Math.abs(sumFitness - checkFitness) > 1e-12)
+		if (Math.abs(sumFitness - checkFitness) > Model.EPS_SMALL)
 			logAccountingIssue(checkFitness, sumFitness);
 
 		// restore data
@@ -4445,7 +4445,7 @@ public abstract class IBSPopulation<M extends Module<?>, P extends IBSPopulation
 		double checkFitness = 0.0;
 		for (int n = 0; n < nPopulation; n++)
 			checkFitness += getFitnessAt(n);
-		if (Math.abs(checkFitness - sumFitness) > 1e-8)
+		if (Math.abs(checkFitness - sumFitness) > Model.EPS_SMALL)
 			logAccountingIssue(checkFitness, sumFitness);
 	}
 

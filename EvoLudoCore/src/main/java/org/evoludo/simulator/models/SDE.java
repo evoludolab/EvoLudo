@@ -593,6 +593,12 @@ public class SDE extends ODE {
 		double effnoise = getEffectiveNoise(module, 0);
 		double bxx = (x - x2 + mu * ((1.0 - x) * 0.5 + x2)) * effnoise;
 		double bxy = -(xy + mu * ((x + y) * 0.5 - xy)) * effnoise;
+		// negligible off-diagonal/diagonal terms are treated as exactly zero,
+		// simplifying the eigenvector selection below
+		if (Math.abs(bxx) < EPS_SMALL)
+			bxx = 0.0;
+		if (Math.abs(bxy) < EPS_SMALL)
+			bxy = 0.0;
 		double byx = bxy;
 		double byy = (y - y2 + mu * ((1.0 - y) * 0.5 + y2)) * effnoise;
 
@@ -612,7 +618,7 @@ public class SDE extends ODE {
 		// avoid problems due to roundoff errors
 		if (yt[2] <= 0.0 || e2 < 0.0)
 			e2 = 0.0;
-		if (Math.abs(bxy) > 1e-12) {
+		if (bxy != 0.0) {
 			u1 = e1 - byy;
 			u2 = bxy;
 			double norm = Math.sqrt(u1 * u1 + u2 * u2);
@@ -623,7 +629,7 @@ public class SDE extends ODE {
 			norm = Math.sqrt(v1 * v1 + v2 * v2);
 			v1 /= norm;
 			v2 /= norm;
-		} else if (Math.abs(bxx) > 1e-12) {
+		} else if (bxx != 0.0) {
 			// eigenvectors u, v of B (sync with eigenvalues: e1 -> u, e2 -> v)
 			u1 = 1.0;
 			u2 = 0.0;

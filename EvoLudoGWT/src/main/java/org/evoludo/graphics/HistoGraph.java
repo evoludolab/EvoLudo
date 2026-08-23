@@ -594,11 +594,6 @@ public class HistoGraph extends AbstractGraph<double[]> implements BasicTooltipP
 		double range = style.xMax - style.xMin;
 		// center of bin
 		x = style.xMin + range * (x + norm * 0.5);
-		// would it be nice to round to nearest rational?
-		// Math.round involves longs, which are evil in GWT...
-		// double rounded = Math.round(x);
-		// if (Math.abs(x - rounded) < 1e-12)
-		// return rounded;
 		return x;
 	}
 
@@ -680,7 +675,7 @@ public class HistoGraph extends AbstractGraph<double[]> implements BasicTooltipP
 			return;
 		double roundedMax = roundAutoscale(yMax, true);
 		if (roundedMax <= style.yMin) {
-			double delta = Math.max(Math.abs(style.yMin) * 0.1, 1e-12);
+			double delta = Math.max(Math.abs(style.yMin) * 0.1, Model.EPS_SMALL);
 			roundedMax = roundAutoscale(style.yMin + delta, true);
 			if (roundedMax <= style.yMin)
 				roundedMax = style.yMin + delta;
@@ -699,7 +694,7 @@ public class HistoGraph extends AbstractGraph<double[]> implements BasicTooltipP
 			return;
 		double roundedMin = roundAutoscale(yMin, false);
 		if (roundedMin >= style.yMax) {
-			double delta = Math.max(Math.abs(style.yMax) * 0.1, 1e-12);
+			double delta = Math.max(Math.abs(style.yMax) * 0.1, Model.EPS_SMALL);
 			roundedMin = roundAutoscale(style.yMax - delta, false);
 			if (roundedMin >= style.yMax)
 				roundedMin = style.yMax - delta;
@@ -1086,7 +1081,7 @@ public class HistoGraph extends AbstractGraph<double[]> implements BasicTooltipP
 			style.yMax = 1.0;
 			return;
 		}
-		style.yMax = Math.max(Functions.roundUp(yMax), 1e-12);
+		style.yMax = Math.max(Functions.roundUp(yMax), Model.EPS_SMALL);
 	}
 
 	/**
