@@ -158,7 +158,7 @@ public class CLOption implements Comparable<CLOption> {
 	/**
 	 * The name of the command line option (required).
 	 */
-	final String name;
+	String name;
 
 	/**
 	 * The type of the command line option with no, optional, or required argument.
@@ -1002,6 +1002,17 @@ public class CLOption implements Comparable<CLOption> {
 	 */
 	public String getName() {
 		return name;
+	}
+
+	/**
+	 * Rename the option. Only safe before the option is registered with a
+	 * {@link CLOParser} (see {@link CLOParser#addCLO(CLOption)}) - renaming
+	 * afterwards leaves stale bookkeeping keyed by the old name.
+	 *
+	 * @param name the new name of the option
+	 */
+	public void setName(String name) {
+		this.name = name;
 	}
 
 	/**
