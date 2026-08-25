@@ -34,7 +34,8 @@ import java.util.Arrays;
 
 import org.evoludo.math.ArrayMath;
 import org.evoludo.simulator.EvoLudo;
-import org.evoludo.simulator.models.Model.HasDE;
+import org.evoludo.simulator.models.Model.DualDynamics;
+import org.evoludo.simulator.models.Model.DualDynamics.Dynamics;
 import org.evoludo.simulator.modules.Module;
 import org.evoludo.util.CLOParser;
 import org.evoludo.util.CLOption;
@@ -99,11 +100,28 @@ class ODEInitialize {
 			String[] typeargs = inittype.split(CLOParser.SPLIT_ARG_REGEX);
 			InitType itype = (InitType) ode.cloInit.match(inittype);
 			String iargs = null;
-			// if matching of inittype failed assume it was omitted; use previous type
-			if (itype == null) {
+			DualDynamics dd = (pop instanceof DualDynamics) ? (DualDynamics) pop : null;
+			// an explicit --init key naming the other regime is only a genuine conflict
+			// if both --dynamics and --init were actually given by the user
+			if (dd != null && itype != null && ode.cloInit.isSet() && dd.getCLODynamics().isSet()
+					&& (dd.isDensity() ? itype.isFrequency() : itype.isDensity())) {
+				// fully resolved right here - no need to have the caller retry with
+				// cloInit's own default, which would just re-trigger this same check
+				boolean density = dd.isDensity();
+				itype = density ? InitType.UNITY : InitType.UNIFORM;
+				ode.engine.logWarning("init type '" + inittype + "' conflicts with --dynamics "
+						+ (density ? Dynamics.DENSITY : Dynamics.FREQUENCY).getKey() + " - using " + itype.getKey()
+						+ ".");
+			} else if (itype == null) {
+				// if matching of inittype failed assume it was omitted; use previous type
 				// try optional-key fallback (single or default+one active type)
 				itype = (InitType) ode.cloInit.matchOptionalKey(inittype);
 				if (itype != null) {
+					iargs = typeargs[0];
+				} else if (idx == 0 && dd != null) {
+					// no keyword given - assume the values match the active dynamics mode;
+					// the processInit() failure handling below still falls back safely
+					itype = dd.isDensity() ? InitType.DENSITY : InitType.FREQUENCY;
 					iargs = typeargs[0];
 				} else if (idx == 0) {
 					// no previous match and no fallback available - give up
@@ -116,6 +134,14 @@ class ODEInitialize {
 				}
 			} else if (typeargs.length > 1)
 				iargs = typeargs[1];
+			// preserve the historical shortcut of picking the regime through a
+			// mode-specific --init key alone, but only if --dynamics wasn't given
+			if (dd != null && idx == 0 && !dd.getCLODynamics().isSet()) {
+				if (itype.isDensity())
+					dd.setDensity(true);
+				else if (itype.isFrequency())
+					dd.setDensity(false);
+			}
 			int nTraits = pop.getNTraits();
 			if (!processInit(pop, itype, iargs, start)) {
 				success = false;
@@ -297,17 +323,19 @@ class ODEInitialize {
 
 		/**
 		 * Set initial densities as specified. In models that support both density and
-		 * frequency based dynamics, this selects the density based dynamics.
+		 * frequency based dynamics, this selects the density based dynamics unless
+		 * {@code --dynamics} was given explicitly.
 		 *
-		 * @see HasDE.DualDynamics
+		 * @see DualDynamics
 		 */
 		DENSITY("density", "initial trait densities <d1,...,dn>"),
 
 		/**
 		 * Set initial frequencies as specified. In models that support both density and
-		 * frequency based dynamics, this selects the frequency based dynamics.
+		 * frequency based dynamics, this selects the frequency based dynamics unless
+		 * {@code --dynamics} was given explicitly.
 		 *
-		 * @see HasDE.DualDynamics
+		 * @see DualDynamics
 		 */
 		FREQUENCY("frequency", "initial trait frequencies <f1,...,fn>"),
 
@@ -323,9 +351,10 @@ class ODEInitialize {
 
 		/**
 		 * Uniform initial trait densities of one. In models that support both density
-		 * and frequency based dynamics, this selects the density based dynamics.
+		 * and frequency based dynamics, this selects the density based dynamics unless
+		 * {@code --dynamics} was given explicitly.
 		 *
-		 * @see HasDE.DualDynamics
+		 * @see DualDynamics
 		 */
 		UNITY("unity", "unit densities"),
 
@@ -377,6 +406,27 @@ class ODEInitialize {
 		@Override
 		public String toString() {
 			return key;
+		}
+
+		/**
+		 * Check whether this initialization type is specific to density based
+		 * dynamics.
+		 *
+		 * @return {@code true} for {@link #DENSITY} and {@link #UNITY}
+		 */
+		public boolean isDensity() {
+			return this == DENSITY || this == UNITY;
+		}
+
+		/**
+		 * Check whether this initialization type is specific to frequency based
+		 * dynamics.
+		 *
+		 * @return {@code true} for {@link #FREQUENCY}, {@link #UNIFORM} and
+		 *         {@link #RANDOM}
+		 */
+		public boolean isFrequency() {
+			return this == FREQUENCY || this == UNIFORM || this == RANDOM;
 		}
 	}
 }

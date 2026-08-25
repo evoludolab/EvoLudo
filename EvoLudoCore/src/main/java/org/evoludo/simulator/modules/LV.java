@@ -34,6 +34,7 @@ import java.awt.Color;
 import org.evoludo.simulator.EvoLudo;
 import org.evoludo.simulator.models.IBSDPopulation;
 import org.evoludo.simulator.models.Model;
+import org.evoludo.simulator.models.Model.DualDynamics;
 import org.evoludo.simulator.models.Model.HasDE;
 import org.evoludo.simulator.models.Model.HasIBS;
 import org.evoludo.simulator.models.ModelType;
@@ -52,7 +53,7 @@ import org.evoludo.simulator.views.HasPop3D;
  * 
  * @author Christoph Hauert
  */
-public class LV extends Discrete implements HasDE.ODE, HasDE.SDE, HasDE.DualDynamics, HasIBS,
+public class LV extends Discrete implements HasDE.ODE, HasDE.SDE, DualDynamics, HasIBS,
 		HasPop2D.Traits, HasPop3D.Traits, HasMean.Traits, HasPhase2D {
 
 	/**
@@ -77,7 +78,7 @@ public class LV extends Discrete implements HasDE.ODE, HasDE.SDE, HasDE.DualDyna
 
 	/**
 	 * Create a new instance of the Lotka-Volterra module.
-	 * 
+	 *
 	 * @param engine the pacemaker for running the module
 	 */
 	public LV(EvoLudo engine) {

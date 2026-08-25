@@ -47,6 +47,8 @@ import org.evoludo.simulator.models.IBS;
 import org.evoludo.simulator.models.IBSPopulation;
 import org.evoludo.simulator.models.LifecycleListener;
 import org.evoludo.simulator.models.Model;
+import org.evoludo.simulator.models.Model.DualDynamics;
+import org.evoludo.simulator.models.Model.DualDynamics.Dynamics;
 import org.evoludo.simulator.models.Model.HasDE;
 import org.evoludo.simulator.models.Model.HasIBS;
 import org.evoludo.simulator.models.ModelType;
@@ -153,6 +155,9 @@ public abstract class Module<T extends Module<T>>
 	@SuppressWarnings("unchecked")
 	protected Module(EvoLudo engine, T partner) {
 		this.engine = engine;
+		cloDynamics.addKeys(Dynamics.values());
+		// parse before any option whose meaning depends on the regime, e.g. --init
+		cloDynamics.setPriority(-1);
 		T mod = (T) this;
 		if (partner == null) {
 			id = 0;
@@ -1952,6 +1957,65 @@ public abstract class Module<T extends Module<T>>
 				}
 			});
 
+	/**
+	 * Whether the active dynamics regime is density based, for modules that
+	 * implement {@link DualDynamics}. Declared here - like {@link Model#isDensity()}
+	 * - so the plumbing is available to any module that needs it without every
+	 * implementer duplicating it; unused by modules that don't implement
+	 * {@link DualDynamics}.
+	 */
+	protected boolean isDensity = false;
+
+	/**
+	 * Check whether the active dynamics regime is density based.
+	 *
+	 * @return {@code true} if the dynamics regime is density based
+	 * @see DualDynamics
+	 */
+	public boolean isDensity() {
+		return isDensity;
+	}
+
+	/**
+	 * Set the active dynamics regime.
+	 *
+	 * @param isDensity {@code true} for density based, {@code false} for
+	 *                  frequency based dynamics
+	 * @see DualDynamics
+	 */
+	public void setDensity(boolean isDensity) {
+		this.isDensity = isDensity;
+	}
+
+	/**
+	 * Command line option to select the dynamics regime, for modules that
+	 * implement {@link DualDynamics}.
+	 * <p>
+	 * <strong>Note:</strong> option not automatically added. Modules that
+	 * implement {@link DualDynamics} get it registered by
+	 * {@link #collectCLO(CLOParser)} below.
+	 */
+	public final CLOption cloDynamics = new CLOption("dynamics", Dynamics.FREQUENCY.getKey(), CLOCategory.Module,
+			"--dynamics <d>  growth regime:", new CLODelegate() {
+				@Override
+				public boolean parse(String arg) {
+					Dynamics d = CLOption.match(arg, Dynamics.values());
+					if (d == null)
+						return false;
+					setDensity(d == Dynamics.DENSITY);
+					return true;
+				}
+			});
+
+	/**
+	 * Get the command line option for selecting the dynamics regime.
+	 *
+	 * @return the command line option for {@code --dynamics}
+	 */
+	public CLOption getCLODynamics() {
+		return cloDynamics;
+	}
+
 	@Override
 	public void collectCLO(CLOParser parser) {
 		if (this instanceof Features.Multispecies)
@@ -1960,6 +2024,8 @@ public abstract class Module<T extends Module<T>>
 		// prepare command line options
 		if (this instanceof Features.Groups)
 			parser.addCLO(cloNGroup);
+		if (this instanceof DualDynamics)
+			parser.addCLO(cloDynamics);
 
 		if (nTraits > 0) {
 			parser.addCLO(cloTraitColors);

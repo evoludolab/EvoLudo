@@ -102,13 +102,6 @@ public abstract class Model implements CLOProvider {
 		public int getDependent();
 
 		/**
-		 * Interface for modules that support differential equation models with both
-		 * frequency and density based dynamics.
-		 */
-		public interface DualDynamics {
-		}
-
-		/**
 		 * Interface for differential equation models with pairwise interactions.
 		 */
 		public interface DPairs extends HasDE, Features.Pairs {
@@ -193,6 +186,86 @@ public abstract class Model implements CLOProvider {
 		 */
 		public interface PDEADV extends PDE {
 		}
+	}
+
+	/**
+	 * Interface for modules that support both frequency and density based
+	 * dynamics. Not tied to {@link HasDE}: a module can offer both regimes purely
+	 * for individual based simulations, without any differential equation model
+	 * at all (see e.g. {@code EcoMeta} in the private package).
+	 */
+	public interface DualDynamics {
+
+		/**
+		 * The two dynamics regimes.
+		 */
+		public enum Dynamics implements CLOption.Key {
+
+			/**
+			 * Frequency based dynamics.
+			 */
+			FREQUENCY("frequency", "frequency-based dynamics"),
+
+			/**
+			 * Density based dynamics.
+			 */
+			DENSITY("density", "density-based dynamics");
+
+			/**
+			 * The key for parsing command line options.
+			 */
+			final String key;
+
+			/**
+			 * The title for the help screen.
+			 */
+			final String title;
+
+			Dynamics(String key, String title) {
+				this.key = key;
+				this.title = title;
+			}
+
+			@Override
+			public String getKey() {
+				return key;
+			}
+
+			@Override
+			public String getTitle() {
+				return title;
+			}
+
+			@Override
+			public String toString() {
+				return key + ": " + title;
+			}
+		}
+
+		/**
+		 * Check whether the active dynamics regime is density based. Species within
+		 * one model never mix regimes, so a single boolean - rather than the
+		 * {@link Dynamics} key itself - is all any consumer ever needs; the enum
+		 * exists only for the {@code --dynamics} command line syntax.
+		 *
+		 * @return {@code true} if the dynamics regime is density based
+		 */
+		public boolean isDensity();
+
+		/**
+		 * Set the active dynamics regime.
+		 *
+		 * @param isDensity {@code true} for density based, {@code false} for
+		 *                  frequency based dynamics
+		 */
+		public void setDensity(boolean isDensity);
+
+		/**
+		 * Get the command line option for selecting the dynamics regime.
+		 *
+		 * @return the command line option for {@code --dynamics}
+		 */
+		public CLOption getCLODynamics();
 	}
 
 	/**
@@ -511,6 +584,13 @@ public abstract class Model implements CLOProvider {
 	protected List<? extends Module<?>> species;
 
 	/**
+	 * Cached answer to {@link #isDensity()}, refreshed once per {@link #check()}
+	 * cycle rather than recomputed on every call - subclasses with hot paths that
+	 * consult it repeatedly (e.g. {@code ODE}) benefit from the field directly.
+	 */
+	protected boolean isDensity = false;
+
+	/**
 	 * Markers for annotating graphical representations of the state of the model.
 	 */
 	protected Markers markers;
@@ -592,6 +672,7 @@ public abstract class Model implements CLOProvider {
 	 * @see EvoLudo#logMessage(String)
 	 */
 	public boolean check() {
+		isDensity = species != null && !species.isEmpty() && species.get(0).isDensity();
 		return false;
 	}
 
@@ -855,13 +936,18 @@ public abstract class Model implements CLOProvider {
 	 * Check if the current model performs density based dynamics. The default is
 	 * frequency based dynamics.
 	 * <p>
-	 * <strong>Note:</strong> Currently this only applies to differential equation
-	 * models.
+	 * Returns the {@link #isDensity} field refreshed in {@link #check()} from the
+	 * first species' own {@link Module#isDensity()}: it already defaults to
+	 * {@code false} and only ever reports {@code true} for a module that
+	 * implements {@link DualDynamics} and was actually switched to density, so no
+	 * subclass need override either method. Fixed-regime density-only modules
+	 * aren't a use case yet; they would need their own marker interface rather
+	 * than piggybacking on this one.
 	 *
 	 * @return {@code true} if the model is density based
 	 */
 	public boolean isDensity() {
-		return false;
+		return isDensity;
 	}
 
 	/**

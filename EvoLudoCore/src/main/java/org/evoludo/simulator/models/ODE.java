@@ -37,6 +37,7 @@ import org.evoludo.math.ArrayMath;
 import org.evoludo.math.Functions;
 import org.evoludo.simulator.ColorMap;
 import org.evoludo.simulator.EvoLudo;
+import org.evoludo.simulator.models.Model.DualDynamics;
 import org.evoludo.simulator.models.Model.HasDE;
 import org.evoludo.simulator.models.ODEInitialize.InitType;
 import org.evoludo.simulator.modules.Discrete;
@@ -251,12 +252,6 @@ public class ODE extends Model implements DModel {
 	int[] dependents;
 
 	/**
-	 * Convenience variable to indicate whether the model is based on densities.
-	 * This is {@code true} if none of the species has a dependent trait.
-	 */
-	protected boolean isDensity = false;
-
-	/**
 	 * Array containing the inverse of the fitness range:
 	 * <code>1.0/(maxFitness - minFitness)</code> for each species. This is used to
 	 * normalize imitation rules of players.
@@ -450,14 +445,25 @@ public class ODE extends Model implements DModel {
 
 	@Override
 	public boolean check() {
+		boolean wasDensity = isDensity;
+		// super.check() refreshes isDensity from species.get(0) before it's used below
 		boolean doReset = super.check();
 		dstate = null;
 		doReset |= evaluateSpecies();
 		names = getMeanNames();
 
-		// check if dynamics mode changed (cannot mix and match density and frequency
-		// based dynamics)
-		doReset |= updateDynamicsMode();
+		// refresh dependent indices for the (possibly new) dynamics mode; cannot mix
+		// and match density and frequency based dynamics
+		if (isDensity) {
+			Arrays.fill(dependents, -1);
+		} else {
+			int idx = 0;
+			for (Module<?> mod : species) {
+				dependents[idx] = ((HasDE) mod).getDependent();
+				idx++;
+			}
+		}
+		doReset |= (wasDensity != isDensity);
 		return doReset;
 	}
 
@@ -551,29 +557,6 @@ public class ODE extends Model implements DModel {
 		}
 	}
 
-	/**
-	 * Determine whether the current setup should use density- or frequency-based
-	 * dynamics and refresh dependent indices accordingly.
-	 * 
-	 * @return {@code true} if the mode changed and a reset is required
-	 */
-	private boolean updateDynamicsMode() {
-		InitType init = initType[0];
-		boolean isDensityNow = (init == InitType.DENSITY || init == InitType.UNITY);
-		boolean modeChanged = (isDensity != isDensityNow);
-		isDensity = isDensityNow;
-		if (isDensity) {
-			Arrays.fill(dependents, -1);
-		} else {
-			int idx = 0;
-			for (Module<?> mod : species) {
-				dependents[idx] = ((HasDE) mod).getDependent();
-				idx++;
-			}
-		}
-		return modeChanged;
-	}
-
 	@Override
 	public void reset() {
 		int skip = 0;
@@ -606,11 +589,6 @@ public class ODE extends Model implements DModel {
 		if (isPDE())
 			return; // PDE models handle initialization themselves
 		init(true);
-	}
-
-	@Override
-	public boolean isDensity() {
-		return isDensity;
 	}
 
 	/**
@@ -2080,7 +2058,16 @@ public class ODE extends Model implements DModel {
 		parser.addCLO(cloInit);
 		cloInit.clearKeys();
 		cloInit.addKeys(InitType.values());
-		if (!(mod instanceof HasDE.DualDynamics)) {
+		if (mod instanceof DualDynamics) {
+			// deliberately not pruned, unlike the fixed-regime branch below:
+			// (1) --init <key> alone (no --dynamics) must still be able to pick the
+			// regime, which needs all the other keys to still be registered, and
+			// (2) ODEInitialize.parse() needs a mismatched key to still match so it
+			// can reject it by content ("conflicts with --dynamics ..."). just point the
+			// default at the active one - isDensity already mirrors it, see Model#check()
+			cloInit.setDefault(isDensity ? InitType.UNITY.getKey() : InitType.UNIFORM.getKey());
+		} else {
+			// fixed regime: prune the keys of the other one from --init
 			if (isDensity) {
 				// remove frequency specific initialization options; 'uniform' is no longer
 				// a valid default, fall back to unit densities instead
