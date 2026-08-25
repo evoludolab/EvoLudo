@@ -253,7 +253,7 @@ public class CLOParser {
 	 */
 	private int processMatchedOption(CLOption opt, String[] args, String clo) {
 		@SuppressWarnings("cast") // the 'unnecessary' cast is necessary for GWT to compile
-		String arg = Formatter.format((String[]) ArrayMath.drop(args, 0), " ");
+		String arg = stripQuotes(Formatter.format((String[]) ArrayMath.drop(args, 0), " "));
 
 		switch (opt.getType()) {
 			case REQUIRED:
@@ -273,6 +273,25 @@ public class CLOParser {
 				logWarning(OPTION_PREFIX + clo + " does not accept an argument - ignored.");
 				return 1;
 		}
+	}
+
+	/**
+	 * Discards a single matching pair of leading/trailing quotes ({@code '} or
+	 * {@code "}) from {@code arg}, if present. This makes it easier to protect
+	 * special characters (such as {@code ;}) from the shell by quoting the
+	 * argument of an option.
+	 *
+	 * @param arg the argument to strip quotes from
+	 * @return the argument without enclosing quotes
+	 */
+	private static String stripQuotes(String arg) {
+		int len = arg.length();
+		if (len < 2)
+			return arg;
+		char first = arg.charAt(0);
+		if ((first == '\'' || first == '"') && arg.charAt(len - 1) == first)
+			return arg.substring(1, len - 1);
+		return arg;
 	}
 
 	/**
