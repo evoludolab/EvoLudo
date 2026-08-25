@@ -1404,17 +1404,18 @@ public abstract class Module<T extends Module<T>>
 				public String getDescription() {
 					String descr = "";
 					int nSpecies = species.size();
+					String flag = "--" + cloNPopulation.getName();
 					switch (nSpecies) {
 						case 1:
-							return "--popsize <n>|<nxn>  population size n (or nxn, nXn)";
+							return flag + " <n>|<nxn>  population size n (or nxn, nXn)";
 						case 2:
-							descr = "--popsize <n0,n1>  size ni of population i, with\n";
+							descr = flag + " <n0,n1>  size ni of population i, with\n";
 							break;
 						case 3:
-							descr = "--popsize <n0,n1,n2>  size ni of population i, with\n";
+							descr = flag + " <n0,n1,n2>  size ni of population i, with\n";
 							break;
 						default:
-							descr = "--popsize <n0,...,n" + nSpecies + ">  size ni of population i, with\n";
+							descr = flag + " <n0,...,n" + nSpecies + ">  size ni of population i, with\n";
 					}
 					StringBuilder sb = new StringBuilder(descr);
 					for (int i = 0; i < nSpecies; i++)
