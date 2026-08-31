@@ -889,6 +889,9 @@ public class EvoLudoWeb extends Composite
 			evoludoCLO.getElement().setAttribute("contenteditable", "false");
 			evoludoPanel.getElement().getStyle().setOpacity(0.6);
 			evoludoDeck.getElement().getStyle().setProperty("pointerEvents", "none");
+			if (viewConsole != null)
+				// keep the console scrollable so the reported stack trace remains accessible
+				viewConsole.getElement().getStyle().setProperty("pointerEvents", "auto");
 			keyController.unregister();
 		} catch (RuntimeException ignored) {
 			// Fatal error handling must continue even if the UI update fails.
@@ -2570,6 +2573,9 @@ public class EvoLudoWeb extends Composite
 				return;
 
 			String lograw = rec.getMessage();
+			Throwable thrown = rec.getThrown();
+			if (thrown != null)
+				lograw = lograw + "\n" + TAG_PRE_OPEN + formatStackTrace(thrown) + TAG_PRE_CLOSE;
 			int preBegin = lograw.indexOf(TAG_PRE_OPEN);
 			if (preBegin < 0) {
 				// no <pre> tag found - simple encoding
@@ -2597,6 +2603,29 @@ public class EvoLudoWeb extends Composite
 				start = preEnd + TAG_PRE_CLOSE.length();
 			} while ((preBegin = lograw.indexOf(TAG_PRE_OPEN, start)) >= 0);
 			console.log(rl, log.toString());
+		}
+
+		/**
+		 * Format a throwable's stack trace, including any chained causes, for
+		 * display in the console.
+		 *
+		 * @param error the throwable to format
+		 * @return the formatted stack trace
+		 */
+		private String formatStackTrace(Throwable error) {
+			StringBuilder sb = new StringBuilder();
+			Throwable t = error;
+			int depth = 0;
+			while (t != null && depth++ < 10) {
+				if (depth > 1)
+					sb.append("Caused by: ");
+				sb.append(t).append('\n');
+				for (StackTraceElement frame : t.getStackTrace())
+					sb.append("\tat ").append(frame).append('\n');
+				Throwable cause = t.getCause();
+				t = (cause == t) ? null : cause;
+			}
+			return sb.toString();
 		}
 
 		/**

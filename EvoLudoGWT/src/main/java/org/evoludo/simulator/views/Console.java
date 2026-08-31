@@ -265,8 +265,8 @@ public class Console extends AbstractView<AbstractGraph<?>> implements ContextMe
 		else
 			sb.append(msg);
 		Element ele = log.getElement();
-		int scroll = ele.getScrollHeight();
-		int top = ele.getScrollTop();
+		// was the log already scrolled (near) to the bottom before adding msg?
+		boolean nearBottom = ele.getScrollHeight() - ele.getScrollTop() - ele.getClientHeight() < 1;
 		if (log.getCapacity() == 0) {
 			// unlimited log messages
 			if (level != Level.CONFIG)
@@ -278,10 +278,13 @@ public class Console extends AbstractView<AbstractGraph<?>> implements ContextMe
 				log.add(sb.toString());
 			else
 				log.replace(sb.toString());
-			if (scroll - top - ele.getClientHeight() < 1)
-				ele.setScrollTop(scroll);
 			log.show();
 		}
+		// fatal/severe errors (e.g. stack traces) must remain visible and hence force
+		// scrolling to the end; otherwise only scroll along if already at the bottom
+		// to keep the log scrollable, e.g. to review earlier entries while running.
+		if (level == Level.SEVERE || nearBottom)
+			ele.setScrollTop(ele.getScrollHeight());
 	}
 
 	@Override
