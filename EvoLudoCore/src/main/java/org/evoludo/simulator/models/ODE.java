@@ -1409,6 +1409,42 @@ public class ODE extends Model implements DModel {
 	}
 
 	/**
+	 * Computes the equilibrium frequency of vacant sites, \(z^*\), for a
+	 * monomorphic resident population of trait {@code idx} of {@code module} in
+	 * the mean-field limit, i.e. the non-trivial fixed point \(x^*=1-z^*>0\) of
+	 * \[\dot x = x\big((1-x)(b+f+\beta) - d - x\gamma\big),\]
+	 * where \(b\), \(f\) (only for modules implementing {@link Payoffs}; \(0\)
+	 * otherwise) and \(d\) are the resident's birth rate, fitness and death
+	 * rate, and \(\beta=\max(0,-c)\), \(\gamma=\max(0,c)\) are the birth/death
+	 * adjustments for interactions with kin: a positive \(c\) is
+	 * competition/predation and raises the death rate with density, a negative
+	 * \(c\) is synergy/mutualism and boosts the birth rate at a constant rate.
+	 * Solving for \(z^*\) gives
+	 * \[z^*=\frac{d+\gamma}{b+f+\beta+\gamma}.\]
+	 * Useful e.g. to mark monomorphic equilibria on time series or phase
+	 * planes, or to seed individual based simulations at their estimated
+	 * carrying capacity, see {@link IBSDPopulation#getVacantEstimate(int)}.
+	 *
+	 * @param module the module of the resident type
+	 * @param idx    the index of the resident trait
+	 * @return the equilibrium frequency of vacant sites, or {@link Double#NaN}
+	 *         if there is no net growth
+	 */
+	public static double getVacantAtEQ(Discrete module, int idx) {
+		double birth = module.getBirthRate(idx);
+		double death = module.getDeathRate(idx);
+		Map2Fitness map2fit = module.getMap2Fitness();
+		double fitness = (map2fit == null) ? 0.0 : map2fit.map(module.getMonoPayoff(idx));
+		double competition = module.getCompetitionRate();
+		double gamma = Math.max(0.0, competition);
+		double effBirth = birth + fitness + Math.max(0.0, -competition);
+		double denom = effBirth + gamma;
+		if (denom <= 0.0)
+			return Double.NaN;
+		return Math.min(Math.max((death + gamma) / denom, 0.0), 1.0);
+	}
+
+	/**
 	 * Implementation of the player update {@link PlayerUpdate.Type#THERMAL}. This
 	 * calculates the rates of change for each type in species <code>mod</code> for
 	 * the popular choice for 'pairwise comparisons' where the focal player \(i\)

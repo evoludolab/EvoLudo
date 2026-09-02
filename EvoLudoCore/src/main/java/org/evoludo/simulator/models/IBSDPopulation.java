@@ -2371,37 +2371,36 @@ public class IBSDPopulation extends IBSPopulation<Discrete, IBSDPopulation> {
 			// if present the second argument indicates the frequency of vacant sites
 			// if not use estimate for carrying capacity
 			monoFreq = (init.args.length > 1 ? Math.max(0.0, 1.0 - init.args[1])
-					: 1.0 - estimateVacantFrequency(monoType));
+					: 1.0 - getVacantEstimate(monoType));
 		}
 		initMono(monoType, monoFreq);
 	}
 
 	/**
-	 * Helper method to determine the frequency of vacant sites based on an estimate
-	 * of the carrying capacity. In well-mixed populations this is \(1-d/r\), where
-	 * \(d\) is the death rate and \(r\) the fitness of the resident type.
-	 * Similarly, on regular graphs the carrying capacity is
-	 * \(1-(k-1)d/(r(k-1)-d)\), where \(k\) is the degree of the graph. Finally, on
-	 * generic structures, the estimate of the carrying capacity is based on the
-	 * average out-degree of all nodes.
+	 * Estimates the frequency of vacant sites for a monomorphic resident
+	 * population from the mean-field equilibrium of the corresponding ODE
+	 * system, see {@link ODE#getVacantAtEQ(Discrete, int)}.
 	 * <p>
-	 * <strong>Note:</strong> residents in structured populations additionally have
-	 * a characteristic distribution, which is not accounted for in this estimate.
-	 * 
+	 * <strong>Note:</strong> this mean-field estimate ignores both the
+	 * structure of the population and the characteristic distribution of
+	 * residents therein. This method is {@code protected} precisely so that
+	 * subclasses can refine the estimate for specific dynamics or structures -
+	 * see e.g. {@code EcoMoran.IBSPop#getVacantEstimate(int)} for a
+	 * correction tailored to regular graphs.
+	 *
 	 * @param type the resident type
 	 * @return the estimated frequency of vacant sites
 	 */
-	private double estimateVacantFrequency(int type) {
-		double d = module.getDeathRate(type % nTraits);
-		double fit = map2fit.map(module.getMonoPayoff(type % nTraits));
-		AbstractGeometry geometry = module.getGeometry();
-		if (geometry.isType(GeometryType.WELLMIXED))
-			// carrying capacity is 1.0 - d / fit
-			return d / fit;
-		double k1 = geometry.getFeatures().avgOut - 1.0;
-		// carrying capacity on a k-regular graph is 1.0 - (k - 1) * d / (fit * (k - 1)
-		// - d)
-		return Math.min(Math.max(k1 * d / (fit * k1 - d), 0.0), 1.0);
+	protected double getVacantEstimate(int type) {
+		double z = ODE.getVacantAtEQ(module, type % nTraits);
+		if (Double.isNaN(z)) {
+			// no net growth - carrying capacity estimate undefined; default to fully
+			// occupied and let the user specify an explicit vacant frequency (see
+			// IBSD.Init.Type#MONO/MUTANT/TEMPERATURE)
+			engine.logWarning("no net growth - assume fully occupied.");
+			return 0.0;
+		}
+		return z;
 	}
 
 	/**
@@ -2477,7 +2476,7 @@ public class IBSDPopulation extends IBSPopulation<Discrete, IBSDPopulation> {
 		int loc = -1;
 		if (vacantIdx >= 0) {
 			double monoFreq = (init.args.length > 2 ? Math.max(0.0, 1.0 - init.args[2])
-					: 1.0 - estimateVacantFrequency(residentType));
+					: 1.0 - getVacantEstimate(residentType));
 			initMono(residentType, monoFreq);
 			// check if resident population went extinct or only a single survivor
 			if (traitsCount[vacantIdx] < nPopulation - 1) {
@@ -2522,7 +2521,7 @@ public class IBSDPopulation extends IBSPopulation<Discrete, IBSDPopulation> {
 		int loc = -1;
 		if (vacantIdx >= 0) {
 			double monoFreq = (init.args.length > 2 ? Math.max(0.0, 1.0 - init.args[2])
-					: 1.0 - estimateVacantFrequency(residentType));
+					: 1.0 - getVacantEstimate(residentType));
 			initMono(residentType, monoFreq);
 			int size = nPopulation - traitsCount[vacantIdx];
 			if (size > 1) {
