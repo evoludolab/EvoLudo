@@ -37,8 +37,6 @@ import org.evoludo.math.ArrayMath;
 import org.evoludo.math.Functions;
 import org.evoludo.simulator.ColorMap;
 import org.evoludo.simulator.EvoLudo;
-import org.evoludo.simulator.models.Model.DualDynamics;
-import org.evoludo.simulator.models.Model.HasDE;
 import org.evoludo.simulator.models.ODEInitialize.InitType;
 import org.evoludo.simulator.modules.Discrete;
 import org.evoludo.simulator.modules.Features;
@@ -47,10 +45,10 @@ import org.evoludo.simulator.modules.Map2Fitness;
 import org.evoludo.simulator.modules.Module;
 import org.evoludo.simulator.modules.Mutation;
 import org.evoludo.simulator.modules.PlayerUpdate;
+import org.evoludo.util.CLOCategory;
 import org.evoludo.util.CLODelegate;
 import org.evoludo.util.CLOParser;
 import org.evoludo.util.CLOption;
-import org.evoludo.util.CLOCategory;
 import org.evoludo.util.Formatter;
 import org.evoludo.util.Plist;
 
@@ -1111,7 +1109,7 @@ public class ODE extends Model implements DModel {
 	 * 
 	 * @see #updateBest(Module, double[], double[], int, int, double[])
 	 * @see #updateBestResponse(Module, double[], double[], int, int, double[])
-	 * @see #updateEcology(Module, double[], double[], int, int, double[], double[],
+	 * @see #updateEcology(Module, double[], double[], int, double[], double[],
 	 *      double[])
 	 * @see #updateImitate(Module, double[], double[], int, int, double[])
 	 * @see #updateThermal(Module, double[], double[], int, int, double[])
@@ -1174,16 +1172,15 @@ public class ODE extends Model implements DModel {
 		computeEffRates(state, eBirth, eDeath);
 		int index = 0;
 		for (Module<?> mod : species) {
-			int nGroup = mod.getNGroup();
-			int nTraits = mod.getNTraits();
-			int skip = idxSpecies[index];
-
 			if (mod.getVacantIdx() >= 0) {
-				updateEcology(mod, state, fitness, nGroup, index, change, eBirth, eDeath);
+				updateEcology(mod, state, fitness, index, change, eBirth, eDeath);
 				index++;
 				continue;
 			}
 
+			int nGroup = mod.getNGroup();
+			int nTraits = mod.getNTraits();
+			int skip = idxSpecies[index];
 			double totDelta;
 			PlayerUpdate.Type put = mod.getPlayerUpdate().getType();
 			switch (put) {
@@ -1265,7 +1262,6 @@ public class ODE extends Model implements DModel {
 	 * @param mod     the module representing the current species
 	 * @param state   array of frequencies/densities denoting the state population
 	 * @param fitness array of fitness values of types in population
-	 * @param nGroup  the interaction group size
 	 * @param index   the index of the module <code>mod</code> in multi-species
 	 *                modules
 	 * @param change  array to return the rate of change of each type in the
@@ -1274,10 +1270,11 @@ public class ODE extends Model implements DModel {
 	 *                see {@link #computeEffRates(double[], double[], double[])}
 	 * @param eDeath  the effective death rate of every trait, globally indexed,
 	 *                see {@link #computeEffRates(double[], double[], double[])}
+	 * 
 	 * @return the total change (should be zero in theory)
 	 */
-	protected double updateEcology(Module<?> mod, double[] state, double[] fitness, int nGroup, int index,
-			double[] change, double[] eBirth, double[] eDeath) {
+	protected double updateEcology(Module<?> mod, double[] state, double[] fitness, int index, double[] change,
+			double[] eBirth, double[] eDeath) {
 		// XXX what happens if one trait is deactivated!?
 		int vacant = mod.getVacantIdx();
 		int skip = idxSpecies[index];

@@ -199,7 +199,7 @@ public class EvoLudoPanel extends JPanel implements ItemListener {
 				return;
 			activeView.deactivate();
 		}
-		active = Math.min(Math.max(idx, 0), views.size() - 1);
+		active = Math.clamp(idx, 0, views.size() - 1);
 		activeView = views.get(active);
 		activeView.activate();
 		viewChoice.setSelectedIndex(active);

@@ -169,9 +169,10 @@ public class SDEN extends SDE {
 	public boolean check() {
 		boolean doReset = super.check();
 		// super may change the model to ODE
-		if (engine.getModel() != this)
-			return doReset;
-		if (nDim > 2 && (mutation[0].type == Mutation.Discrete.Type.NONE || mutation[0].getProbability() <= 0.0)) {
+		if (engine.getModel() == this && nDim > 2
+				&& (mutation[0].type == Mutation.Discrete.Type.NONE || mutation[0].getProbability() <= 0.0)) {
+			// module hasn't changed but SDE's with d>2 traits require non-zero mutation
+			// rates
 			mutation[0].type = Mutation.Discrete.Type.OTHER;
 			mutation[0].setProbability(1.0 / module.getNPopulation());
 			engine.logWarning("non-zero mutation rate required for n>2 traits, changed to "
@@ -314,7 +315,7 @@ public class SDEN extends SDE {
 			// roundoff may still leave other entries marginally outside their
 			// bound even at the corrected step - clamp defensively
 			for (int i = 0; i < nDim; i++)
-				yout[i] = Math.min(1.0, Math.max(0.0, yout[i]));
+				yout[i] = Math.clamp(yout[i], 0.0, 1.0);
 		}
 		normalizeState(yout);
 		// the new state is in yout - swap and determine new fitness

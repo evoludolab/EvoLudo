@@ -887,19 +887,19 @@ public class EvoLudoGWT extends EvoLudo {
 			new CLODelegate() {
 				@Override
 				public boolean parse(String arg, boolean isSet) {
-					if (!isSet)
-						return true;
-					snapLayoutTimeout = Math.max(1, CLOParser.parseInteger(arg)) * 1000;
-					// check whether an end state is requested, i.e. a stopping time or a
-					// number of samples
-					boolean hasEnd = false;
-					if (activeModel != null) {
-						double tStop = activeModel.getTimeStop();
-						// special case: --timestop 0 does not run, see EvoLudo#modelCheck()
-						hasEnd = (Double.isFinite(tStop) && Math.abs(tStop) > Model.EPS)
-								|| activeModel.getNSamples() > 0.0;
+					if (isSet) {
+						snapLayoutTimeout = Math.max(1, CLOParser.parseInteger(arg)) * 1000;
+						// check whether an end state is requested, i.e. a stopping time or a
+						// number of samples
+						boolean hasEnd = false;
+						if (activeModel != null) {
+							double tStop = activeModel.getTimeStop();
+							// special case: --timestop 0 does not run, see EvoLudo#modelCheck()
+							hasEnd = (Double.isFinite(tStop) && Math.abs(tStop) > Model.EPS)
+									|| activeModel.getNSamples() > 0.0;
+						}
+						setSuspended(hasEnd || cloRun.isSet());
 					}
-					setSuspended(hasEnd || cloRun.isSet());
 					return true;
 				}
 			}).setPriority(1);

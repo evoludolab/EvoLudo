@@ -38,7 +38,6 @@ import org.evoludo.math.Combinatorics;
 import org.evoludo.math.RNGDistribution;
 import org.evoludo.simulator.ColorMap;
 import org.evoludo.simulator.EvoLudo;
-import org.evoludo.simulator.geometries.AbstractGeometry;
 import org.evoludo.simulator.geometries.GeometryType;
 import org.evoludo.simulator.geometries.HierarchicalGeometry;
 import org.evoludo.simulator.models.IBS.MigrationType;
@@ -520,8 +519,11 @@ public class IBSDPopulation extends IBSPopulation<Discrete, IBSDPopulation> {
 		}
 		for (int t = 0; t < nTraits; t++) {
 			double diffusion = getMigrationProb(t);
-			exchangeRates[t] = (diffusion <= 0.0) ? 0.0
-					: (delta == 0) ? diffusion : diffusion * delta * Math.pow(nPopulation, 2.0 / delta);
+			if (diffusion <= 0.0) {
+				exchangeRates[t] = 0.0;
+				continue;
+			}
+			exchangeRates[t] = ((delta == 0) ? diffusion : diffusion * delta * Math.pow(nPopulation, 2.0 / delta));
 		}
 	}
 
@@ -2273,7 +2275,7 @@ public class IBSDPopulation extends IBSPopulation<Discrete, IBSDPopulation> {
 					residentType = (mutantType + 1) % nTraits;
 				boolean[] active = module.getActiveTraits();
 				if (!active[mutantType] || !active[residentType]) {
-						engine.logWarning("resident/mutant traits disabled - using uniform.");
+					engine.logWarning("resident/mutant traits disabled - using uniform.");
 					initUniform();
 					break;
 				}

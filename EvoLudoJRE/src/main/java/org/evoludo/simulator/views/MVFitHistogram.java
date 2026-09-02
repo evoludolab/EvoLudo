@@ -58,12 +58,12 @@ public class MVFitHistogram extends MVAbstract implements HistoGraphListener {
 	double[][] bins;
 	double[] max;
 	int nData = -1;
-	static final String xLabelText = "fitness";
+	static final String X_LABEL = "fitness";
 	private final JLabel xLabel;
 
 	public MVFitHistogram(EvoLudoLab lab) {
 		super(lab);
-		xLabel = new JLabel(xLabelText, SwingConstants.RIGHT);
+		xLabel = new JLabel(X_LABEL, SwingConstants.RIGHT);
 		xLabel.setAlignmentX(0.5f);
 		add(xLabel);
 	}
@@ -80,7 +80,7 @@ public class MVFitHistogram extends MVAbstract implements HistoGraphListener {
 	private void addGraph() {
 		HistoGraph graph = new HistoGraph(this, module, graphs.size());
 		GraphAxis x = graph.getXAxis();
-		x.label = xLabelText; // this is needed for tooltips
+		x.label = X_LABEL; // this is needed for tooltips
 		x.showLabel = false;
 		x.grid = 0;
 		x.majorTicks = 3;
@@ -131,7 +131,7 @@ public class MVFitHistogram extends MVAbstract implements HistoGraphListener {
 		super.initStyle(style, owner);
 		xLabel.setFont(style.labelFont);
 		xLabel.setBorder(
-				BorderFactory.createEmptyBorder(0, 0, 0, getFontMetrics(style.labelFont).stringWidth(xLabelText)));
+				BorderFactory.createEmptyBorder(0, 0, 0, getFontMetrics(style.labelFont).stringWidth(X_LABEL)));
 	}
 
 	// implement HistoGraphListener - mostly done in MVAbstract
@@ -196,7 +196,8 @@ public class MVFitHistogram extends MVAbstract implements HistoGraphListener {
 			// deal with multiple species this can be hardcoded to 0.
 			engine.getModel().getFitnessHistogramData(0, bins);
 			for (int n = 0; n < nData; n++) {
-				double maxBin = 0.0, accuBin = 0.0;
+				double maxBin = 0.0;
+				double accuBin = 0.0;
 				double[] myBins = bins[n];
 				int nBins = myBins.length;
 				for (int i = 0; i < nBins; i++) {

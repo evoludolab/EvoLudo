@@ -111,7 +111,6 @@ public class MVConsole extends JComponent implements MultiView {
 			String cmd = e.getActionCommand();
 			if (cmd.equals(MENU_CLEAR)) {
 				clear();
-				return;
 			}
 		}
 	}

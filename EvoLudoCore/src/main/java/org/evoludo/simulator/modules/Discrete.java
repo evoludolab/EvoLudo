@@ -181,16 +181,7 @@ public abstract class Discrete extends Module<Discrete> {
 			setBirthRate(rates.length == 0 ? 0.0 : rates[0]);
 			return;
 		}
-		double[] newRates = ArrayMath.clone(rates);
-		String sn = getName();
-		for (int i = 0; i < newRates.length; i++) {
-			if (newRates[i] >= 0.0)
-				continue;
-			engine.logWarning("birth rate" + (sn.isEmpty() ? "" : " of " + sn)
-					+ " must be non-negative (changed to 0).");
-			newRates[i] = 0.0;
-		}
-		birthRates = newRates;
+		birthRates = checkRates(rates, "birth rate");
 	}
 
 	@Override
@@ -262,16 +253,7 @@ public abstract class Discrete extends Module<Discrete> {
 			setDeathRate(rates.length == 0 ? 0.0 : rates[0]);
 			return;
 		}
-		double[] newRates = ArrayMath.clone(rates);
-		String sn = getName();
-		for (int i = 0; i < newRates.length; i++) {
-			if (newRates[i] >= 0.0)
-				continue;
-			engine.logWarning("death rate" + (sn.isEmpty() ? "" : " of " + sn)
-					+ " must be non-negative (changed to 0).");
-			newRates[i] = 0.0;
-		}
-		deathRates = newRates;
+		deathRates = checkRates(rates, "death rate");
 	}
 
 	@Override

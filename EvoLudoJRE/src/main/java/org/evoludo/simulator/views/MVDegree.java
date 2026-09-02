@@ -57,9 +57,10 @@ public class MVDegree extends MVAbstract implements HistoGraphListener {
 
 	private static final long serialVersionUID = 20110423L;
 
-	static final String xLabelText = "degree";
+	static final String X_LABEL = "degree";
 	private final JLabel xLabel;
-	private boolean isStatic = false, isDirected = false;
+	private boolean isStatic = false;
+	private boolean isDirected = false;
 
 	protected static final int K_OUT = 0;
 	protected static final int K_IN = 1;
@@ -68,7 +69,7 @@ public class MVDegree extends MVAbstract implements HistoGraphListener {
 
 	public MVDegree(EvoLudoLab lab) {
 		super(lab);
-		xLabel = new JLabel(xLabelText, SwingConstants.RIGHT);
+		xLabel = new JLabel(X_LABEL, SwingConstants.RIGHT);
 		xLabel.setAlignmentX(0.5f);
 		add(xLabel);
 	}
@@ -76,7 +77,7 @@ public class MVDegree extends MVAbstract implements HistoGraphListener {
 	private void addGraph(int row) {
 		HistoGraph graph = new HistoGraph(this, module, row);
 		GraphAxis x = graph.getXAxis();
-		x.label = xLabelText;
+		x.label = X_LABEL;
 		x.showLabel = false;
 		x.grid = 0;
 		x.majorTicks = 3;
@@ -149,7 +150,7 @@ public class MVDegree extends MVAbstract implements HistoGraphListener {
 		super.initStyle(style, owner);
 		xLabel.setFont(style.labelFont);
 		xLabel.setBorder(
-				BorderFactory.createEmptyBorder(0, 0, 0, getFontMetrics(style.labelFont).stringWidth(xLabelText)));
+				BorderFactory.createEmptyBorder(0, 0, 0, getFontMetrics(style.labelFont).stringWidth(X_LABEL)));
 	}
 
 	/**
@@ -219,7 +220,9 @@ public class MVDegree extends MVAbstract implements HistoGraphListener {
 			out[Math.min(in[i] / binwidth, b - 1)]++;
 		// return ( changed || changed(out) );
 
-		double minBin = Double.MAX_VALUE, maxBin = -Double.MAX_VALUE, accuBin = 0.0;
+		double minBin = Double.MAX_VALUE;
+		double maxBin = -Double.MAX_VALUE;
+		double accuBin = 0.0;
 		for (int i = 0; i < b; i++) {
 			double aBin = out[i];
 			if (aBin > 0) {
@@ -264,7 +267,6 @@ public class MVDegree extends MVAbstract implements HistoGraphListener {
 		return changed;
 	}
 
-
 	/**
 	 * Calculate the total degrees, i.e. the sum of the in- and out-degrees, of all
 	 * nodes in {@code geometry}.
@@ -299,11 +301,6 @@ public class MVDegree extends MVAbstract implements HistoGraphListener {
 			GeometryFeatures features = geometry.getFeatures();
 
 			switch (tag) {
-				// case K_OUT:
-				default:
-					changed = process(data, geometry.kout, features.maxOut);
-					break;
-
 				case K_IN:
 					changed = process(data, geometry.kin, features.maxIn);
 					break;
@@ -311,6 +308,12 @@ public class MVDegree extends MVAbstract implements HistoGraphListener {
 				case K_TOT:
 					changed = process(data, totalDegrees(geometry), features.maxTot);
 					break;
+
+				// case K_OUT:
+				default:
+					changed = process(data, geometry.kout, features.maxOut);
+					break;
+
 			}
 		}
 		data.timestamp = now;

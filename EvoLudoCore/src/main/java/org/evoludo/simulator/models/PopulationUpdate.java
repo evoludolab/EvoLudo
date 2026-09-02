@@ -220,9 +220,9 @@ public class PopulationUpdate {
 		 */
 		SYNC("synchronous", "synchronized population updates"),
 
-		/**
-		 * Wright-Fisher process (synchronous). (not yet implemented!)
-		 */
+		// /**
+		// * Wright-Fisher process (synchronous). (not yet implemented!)
+		// */
 		// TODO add WRIGHT_FISHER("Wright-Fisher", "Wright-Fisher process
 		// (synchronous)"),
 

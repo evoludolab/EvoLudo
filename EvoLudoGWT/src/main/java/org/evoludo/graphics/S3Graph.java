@@ -465,7 +465,7 @@ public class S3Graph extends AbstractGraph<double[]> implements Zooming, Shiftin
 	/**
 	 * Constant for \(\sqrt{2}\). Aspect ratio of equilateral triangle.
 	 */
-	static final double SQRT_2 = 1.41421356237;
+	static final double SQRT_2 = Math.sqrt(2);
 
 	@Override
 	public void calcBounds(int width, int height) {
@@ -714,7 +714,8 @@ public class S3Graph extends AbstractGraph<double[]> implements Zooming, Shiftin
 	 * @return the scaled coordinate
 	 */
 	double scaledY(double y) {
-		return 1.0 - ((viewCorner.getY() + y - canvasPadY() - bounds.getY()) / zoomFactor + 0.5) / (bounds.getHeight() - 1.0);
+		return 1.0 - ((viewCorner.getY() + y - canvasPadY() - bounds.getY()) / zoomFactor + 0.5)
+				/ (bounds.getHeight() - 1.0);
 	}
 
 	/**

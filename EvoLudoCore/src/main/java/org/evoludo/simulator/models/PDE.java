@@ -278,7 +278,7 @@ public class PDE extends ODE {
 	public void load() {
 		super.load();
 		module = engine.getModule();
-		sorting = (o1, o2) -> (int) Math.signum(o1[0] - o2[0]);
+		sorting = (o1, o2) -> Double.compare(o1[0], o2[0]);
 	}
 
 	@Override

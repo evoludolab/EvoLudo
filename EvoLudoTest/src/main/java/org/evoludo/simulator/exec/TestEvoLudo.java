@@ -289,8 +289,7 @@ public class TestEvoLudo implements RunListener {
 			return;
 		}
 		int nTest = 0;
-		try {
-			Scanner scanner = new Scanner(clo);
+		try (Scanner scanner = new Scanner(clo)) {
 			while (scanner.hasNextLine()) {
 				String cloLine = scanner.nextLine().trim();
 				// skip comments and empty lines
@@ -332,74 +331,11 @@ public class TestEvoLudo implements RunListener {
 				// message and nSHAMismatches/nTestMinor bookkeeping here; either way the
 				// reference gets refreshed, so this uncounted check must not touch
 				// nTests or nTestFailures, see above.
-				boolean wasStale = existing != null;
-				if (wasStale) {
-					try {
-						Plist reference = engine.readPlist(existing.getAbsolutePath());
-						int nIssues = (isSDE(reference) ? plist.diff(reference, SHA_EXCLUDE, SDE_PRECISION_DIGITS)
-								: plist.diff(reference, SHA_EXCLUDE));
-						if (nIssues == 0) {
-							nSHAMismatches++;
-							logWarning(dest + " SHA mismatch! - content unchanged, refreshing reference...");
-						} else if (nIssues == plist.getNMinor()) {
-							nTestMinor++;
-							logWarning(dest
-									+ " SHA mismatch! - minor (likely numerical) differences, refreshing reference...");
-						} else {
-							logWarning(dest + " SHA mismatch! - content changed, refreshing reference...");
-						}
-					} catch (Exception e) {
-						logWarning(dest + " SHA mismatch! - refreshing reference...");
-					}
-					// copy stale reference to reports directory
-					try {
-						String ext = ".plist" + (existing.getName().endsWith(".zip") ? ".zip" : "");
-						// a leftover from an earlier failed generation attempt may already
-						// occupy the default quarantine name; keep it and pick the next
-						// free "-old-<n>" name instead of overwriting or aborting
-						Path dst = uniqueReportPath(dest + "-old", ext);
-						Files.move(existing.toPath(), dst);
-					} catch (IOException e) {
-						logError("failed to move '" + referencesDir + File.separator + dest
-								+ "' to '" + reportsDir + File.separator + dest + "'.");
-						continue;
-					}
-				}
+				boolean wasStale = inspectReference(existing, plist, dest);
+				if (existing != null && !wasStale)
+					continue;
 				dest += SHA_PREFIX + sha + ".plist";
-				// save new reference
-				File ref;
-				if (useCompression) {
-					// with compression
-					ref = exportDir.toPath().resolve(dest + ".zip").toFile();
-					try {
-						ZipOutputStream zos = new ZipOutputStream(
-								new FileOutputStream(ref));
-						zos.putNextEntry(new ZipEntry(dest));
-						zos.write(result.getBytes());
-						zos.finish();
-						zos.close();
-					} catch (FileNotFoundException e) {
-						logError("failed to open '" + dest + "' for writing.");
-						nTestFailures++;
-					} catch (IOException e) {
-						logError("failed to write to '" + dest + "'.");
-						nTestFailures++;
-					}
-				} else {
-					// no compression
-					ref = exportDir.toPath().resolve(dest).toFile();
-					try {
-						FileOutputStream fos = new FileOutputStream(ref);
-						fos.write(result.getBytes());
-						fos.close();
-					} catch (FileNotFoundException e) {
-						logError("failed to open '" + dest + "' for writing.");
-						nTestFailures++;
-					} catch (IOException e) {
-						logError("failed to write to '" + dest + "'.");
-						nTestFailures++;
-					}
-				}
+				File ref = writeReference(exportDir, dest, result);
 				String name = ref.getName();
 				int idx = name.indexOf(SHA_PREFIX);
 				logOk(name.substring(0, idx) + ": test generated/updated.");
@@ -409,10 +345,81 @@ public class TestEvoLudo implements RunListener {
 				if (wasStale && nTestFailures == nTestFailuresBeforeVerify)
 					nRegenerated++;
 			}
-			scanner.close();
 		} catch (FileNotFoundException fnfe) {
 			logWarning("file '" + clo + "' not found!");
 		}
+	}
+
+	/**
+	 * Inspects a reference before replacing it. Missing references require no
+	 * action. Stale references are compared for diagnostics and moved to the
+	 * reports directory before replacement.
+	 *
+	 * @param referenceFile the reference file, or {@code null} if none exists
+	 * @param result        the generated state
+	 * @param name          the reference base name
+	 * @return {@code true} if a stale reference was inspected and quarantined;
+	 *         {@code false} if no reference exists or it could not be moved
+	 */
+	private boolean inspectReference(File referenceFile, Plist result, String name) {
+		if (referenceFile == null)
+			return false;
+		try {
+			Plist reference = engine.readPlist(referenceFile.getAbsolutePath());
+			int nIssues = (isSDE(reference) ? result.diff(reference, SHA_EXCLUDE, SDE_PRECISION_DIGITS)
+					: result.diff(reference, SHA_EXCLUDE));
+			if (nIssues == 0) {
+				nSHAMismatches++;
+				logWarning(name + " SHA mismatch! - content unchanged, refreshing reference...");
+			} else if (nIssues == result.getNMinor()) {
+				nTestMinor++;
+				logWarning(name + " SHA mismatch! - minor (likely numerical) differences, refreshing reference...");
+			} else {
+				logWarning(name + " SHA mismatch! - content changed, refreshing reference...");
+			}
+		} catch (Exception e) {
+			logWarning(name + " SHA mismatch! - refreshing reference...");
+		}
+		String ext = ".plist" + (referenceFile.getName().endsWith(".zip") ? ".zip" : "");
+		try {
+			Files.move(referenceFile.toPath(), uniqueReportPath(name + "-old", ext));
+			return true;
+		} catch (IOException e) {
+			logError("failed to move '" + referencesDir + File.separator + name
+					+ "' to '" + reportsDir + File.separator + name + "'.");
+			return false;
+		}
+	}
+
+	/**
+	 * Writes a generated reference, optionally with ZIP compression.
+	 *
+	 * @param exportDir the directory for the new reference
+	 * @param name      the reference file name
+	 * @param state     the encoded state to write
+	 * @return the reference file, even if writing failed
+	 */
+	private File writeReference(File exportDir, String name, String state) {
+		File reference = exportDir.toPath().resolve(name + (useCompression ? ".zip" : "")).toFile();
+		try {
+			if (useCompression) {
+				try (ZipOutputStream zos = new ZipOutputStream(new FileOutputStream(reference))) {
+					zos.putNextEntry(new ZipEntry(name));
+					zos.write(state.getBytes());
+				}
+			} else {
+				try (FileOutputStream fos = new FileOutputStream(reference)) {
+					fos.write(state.getBytes());
+				}
+			}
+		} catch (FileNotFoundException e) {
+			logError("failed to open '" + name + "' for writing.");
+			nTestFailures++;
+		} catch (IOException e) {
+			logError("failed to write to '" + name + "'.");
+			nTestFailures++;
+		}
+		return reference;
 	}
 
 	/**

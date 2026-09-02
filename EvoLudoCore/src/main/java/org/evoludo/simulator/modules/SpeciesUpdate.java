@@ -161,9 +161,9 @@ public class SpeciesUpdate {
 		 */
 		TURNS("turns", "pick sequentially"); //
 
-		/**
-		 * Simultaneous updates of all species. Not implemented
-		 */
+		// /**
+		// * Simultaneous updates of all species. Not implemented
+		// */
 		// SYNC("sync", "simultaneous updates of all species"); //
 
 		/**

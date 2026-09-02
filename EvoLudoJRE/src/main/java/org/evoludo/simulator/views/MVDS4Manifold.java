@@ -60,30 +60,29 @@ public class MVDS4Manifold extends MVAbstract implements StateGraphListener {
 
 	@Override
 	public void reset(boolean clear) {
-		if (graphs.size() > 0) {
-			super.reset(clear);
-			return;
+		if (graphs.isEmpty()) {
+			ParaGraph graph = new ParaGraph(this, module);
+			GraphAxis x = graph.getXAxis();
+			GraphAxis y = graph.getYAxis();
+			x.showLabel = false;
+			x.max = 1.0;
+			x.min = 0.0;
+			y.showLabel = false;
+			y.max = 1.0;
+			y.min = 0.0;
+			JScrollPane scroll = new JScrollPane(graph, ScrollPaneConstants.VERTICAL_SCROLLBAR_NEVER,
+					ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER);
+			scroll.getViewport().setOpaque(false);
+			scroll.setOpaque(false);
+			graph.setOpaque(false);
+			add(scroll);
+			wklabel = new JLabel("-");
+			wklabel.setAlignmentX(Component.CENTER_ALIGNMENT);
+			add(wklabel);
+			graphs.add(graph);
+			clear = true;
 		}
-		ParaGraph graph = new ParaGraph(this, module);
-		GraphAxis x = graph.getXAxis();
-		GraphAxis y = graph.getYAxis();
-		x.showLabel = false;
-		x.max = 1.0;
-		x.min = 0.0;
-		y.showLabel = false;
-		y.max = 1.0;
-		y.min = 0.0;
-		JScrollPane scroll = new JScrollPane(graph, ScrollPaneConstants.VERTICAL_SCROLLBAR_NEVER,
-				ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER);
-		scroll.getViewport().setOpaque(false);
-		scroll.setOpaque(false);
-		graph.setOpaque(false);
-		add(scroll);
-		wklabel = new JLabel("-");
-		wklabel.setAlignmentX(Component.CENTER_ALIGNMENT);
-		add(wklabel);
-		graphs.add(graph);
-		super.reset(true);
+		super.reset(clear);
 	}
 
 	// implement GraphListener - mostly done in MVAbstract
@@ -153,7 +152,7 @@ public class MVDS4Manifold extends MVAbstract implements StateGraphListener {
 	}
 
 	private void updateWK() {
-		if (wk != wk)
+		if (Double.isNaN(wk))
 			wk = 0.0; // catch NaN from 0/0
 		wklabel.setText("K=" + Formatter.format(wk, 2));
 	}

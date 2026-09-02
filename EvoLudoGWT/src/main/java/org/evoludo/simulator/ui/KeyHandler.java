@@ -183,8 +183,6 @@ public class KeyHandler {
 			return;
 		unregisterGlobal(this);
 		registered = false;
-		if (active == this)
-			active = null;
 	}
 
 	/**
@@ -194,6 +192,16 @@ public class KeyHandler {
 	 */
 	private static void setActive(KeyHandler handler) {
 		active = handler;
+	}
+
+	/**
+	 * Clears the active handler when it is the specified handler.
+	 *
+	 * @param handler the handler that may be active
+	 */
+	private static void clearActive(KeyHandler handler) {
+		if (active == handler)
+			active = null;
 	}
 
 	/**
@@ -217,6 +225,7 @@ public class KeyHandler {
 	 */
 	private static synchronized void unregisterGlobal(KeyHandler handler) {
 		keyHandlers.remove(handler);
+		clearActive(handler);
 		if (registrationCount > 0)
 			registrationCount--;
 		if (registrationCount == 0 && listenersInstalled) {
@@ -696,8 +705,7 @@ public class KeyHandler {
 		List<AbstractView<?>> views = gui.getActiveViews();
 		if (views.isEmpty())
 			return false;
-		AbstractView<?> active = gui.getActiveView();
-		int idx = views.indexOf(active);
+		int idx = views.indexOf(gui.getActiveView());
 		int next = Math.floorMod(idx + (forward ? 1 : -1), views.size());
 		gui.changeView(views.get(next));
 		return true;
@@ -713,12 +721,12 @@ public class KeyHandler {
 		if (views.isEmpty())
 			return false;
 		AbstractView<?> consoleView = views.get(views.size() - 1);
-		AbstractView<?> active = gui.getActiveView();
-		if (active == consoleView) {
+		AbstractView<?> av = gui.getActiveView();
+		if (av == consoleView) {
 			if (toggleView != null && views.contains(toggleView))
 				gui.changeView(toggleView);
 		} else {
-			toggleView = active;
+			toggleView = av;
 			gui.changeView(consoleView);
 		}
 		return true;
@@ -855,8 +863,8 @@ public class KeyHandler {
 	 * Releases priority when this handler's CLO field loses focus.
 	 */
 	public void onCLOFocusLost() {
-		if (!gui.hasPopup() && active == this)
-			active = null;
+		if (!gui.hasPopup())
+			clearActive(this);
 	}
 
 	/**

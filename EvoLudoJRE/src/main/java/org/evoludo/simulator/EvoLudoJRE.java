@@ -320,7 +320,7 @@ public class EvoLudoJRE extends EvoLudo implements Runnable {
 		// this is the engine thread, start waiting for tasks
 		isWaiting = true;
 		me.setPriority(Thread.MIN_PRIORITY);
-		while (true) {
+		while (!Thread.currentThread().isInterrupted()) {
 			// Possible optimization:
 			// to reduce waiting times the next state should be calculated while waiting but
 			// this makes synchronization with frontend much more difficult - engine would
@@ -332,18 +332,20 @@ public class EvoLudoJRE extends EvoLudo implements Runnable {
 					try {
 						wait();
 					} catch (InterruptedException e) {
+						Thread.currentThread().interrupt();
+						return;
 					}
 				}
 			}
 			// woke up; calculate next step
 			try {
 				modelNext();
-			} catch (Error e) {
+			} catch (Exception e) {
 				// we do not really catch this error but rather spread the word...
 				// the error will be reported in the console anyways, therefore only check
 				// we have a front-end and if so raise alert.
 				logError("Engine crashed: " + e.getMessage());
-				throw e;
+				throw new RuntimeException("Engine crashed", e);
 			}
 			if (!isRunning) {
 				timer.stop();
@@ -472,6 +474,7 @@ public class EvoLudoJRE extends EvoLudo implements Runnable {
 					try {
 						wait();
 					} catch (InterruptedException e) {
+						Thread.currentThread().interrupt();
 						break;
 					}
 				}
@@ -1528,8 +1531,8 @@ public class EvoLudoJRE extends EvoLudo implements Runnable {
 					? new ZipInputStream(new FileInputStream(name))
 					: new GZIPInputStream(new FileInputStream(name));
 					BufferedReader in = new BufferedReader(new InputStreamReader(cs))) {
-				if (cs instanceof ZipInputStream)
-					((ZipInputStream) cs).getNextEntry();
+				if (cs instanceof ZipInputStream zis)
+					zis.getNextEntry();
 				String line;
 				while ((line = in.readLine()) != null)
 					sb.append(line);
@@ -1715,10 +1718,11 @@ public class EvoLudoJRE extends EvoLudo implements Runnable {
 		String dir = getExportDir();
 		if (!dir.endsWith(File.separator))
 			dir += File.separator;
-		File snapfile = new File(dir + String.format("evoludo-%d." + ext, (int) activeModel.getUpdates()));
+		File snapfile = new File(dir + String.format("evoludo-%d.%s", (int) activeModel.getUpdates(), ext));
 		int counter = 0;
 		while (snapfile.exists() && counter < 1000)
-			snapfile = new File(dir + String.format("evoludo-%d-%d." + ext, (int) activeModel.getUpdates(), ++counter));
+			snapfile = new File(
+					dir + String.format("evoludo-%d-%d.%s", (int) activeModel.getUpdates(), ++counter, ext));
 		if (counter >= 1000)
 			return null;
 		return snapfile;

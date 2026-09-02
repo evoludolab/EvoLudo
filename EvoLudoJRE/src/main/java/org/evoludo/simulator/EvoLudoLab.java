@@ -238,8 +238,7 @@ public class EvoLudoLab extends JFrame
 
 		public void addKeyListenerRecursively(Component c) {
 			c.addKeyListener(keyHandler);
-			if (c instanceof Container) {
-				Container cont = (Container) c;
+			if (c instanceof Container cont) {
 				cont.addContainerListener(this);
 				Component[] children = cont.getComponents();
 				for (Component child : children) {
@@ -250,8 +249,7 @@ public class EvoLudoLab extends JFrame
 
 		public void removeKeyListenerRecursively(Component c) {
 			c.removeKeyListener(keyHandler);
-			if (c instanceof Container) {
-				Container cont = (Container) c;
+			if (c instanceof Container cont) {
 				cont.addContainerListener(this);
 				Component[] children = cont.getComponents();
 				for (Component child : children) {
@@ -282,6 +280,7 @@ public class EvoLudoLab extends JFrame
 
 		@Override
 		public void keyTyped(KeyEvent e) {
+			// only Alt press/release processed
 		}
 	}
 
@@ -540,11 +539,12 @@ public class EvoLudoLab extends JFrame
 		// strategies related views
 		Module<?> module = engine.getModule();
 		Model model = engine.getModel();
-		if (module instanceof HasPop2D.Traits)
+		if (module instanceof HasPop2D.Traits) {
 			if (model.isContinuous())
 				addMultiView(new MVPop2D(this, MVPop2D.Data.CSTRAT));
 			else
 				addMultiView(new MVPop2D(this, MVPop2D.Data.DSTRAT));
+		}
 		if (module instanceof HasMean.Traits) {
 			if (model.isContinuous())
 				addMultiView(new MVCMean(this));
@@ -939,7 +939,7 @@ public class EvoLudoLab extends JFrame
 		int posX = 50;
 		int posY = 10;
 
-		setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+		setDefaultCloseOperation(javax.swing.WindowConstants.EXIT_ON_CLOSE);
 
 		/*
 		 * the java focus system is buggy but i guess this is apple's call...

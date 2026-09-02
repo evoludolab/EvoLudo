@@ -52,29 +52,28 @@ public class MVFitness extends MVAbstract implements StateGraphListener {
 
 	@Override
 	public void reset(boolean clear) {
-		if (graphs.size() > 0) {
-			super.reset(clear);
-			return;
+		if (graphs.isEmpty()) {
+			LineGraph graph = new LineGraph(this, module, module.getId());
+			GraphAxis x = graph.getXAxis();
+			GraphAxis y = graph.getYAxis();
+			x.label = "time";
+			x.showLabel = true;
+			x.max = 0.0;
+			x.min = 1.0; // min>max forces recalculation
+			x.step = -engine.getModel().getTimeStep();
+			x.grid = 0;
+			x.majorTicks = 3;
+			x.minorTicks = 1;
+			y.label = "fitness";
+			y.showLabel = true;
+			y.grid = 3;
+			y.majorTicks = 3;
+			y.minorTicks = 1;
+			add(graph);
+			graphs.add(graph);
+			clear = true;
 		}
-		LineGraph graph = new LineGraph(this, module, module.getId());
-		GraphAxis x = graph.getXAxis();
-		GraphAxis y = graph.getYAxis();
-		x.label = "time";
-		x.showLabel = true;
-		x.max = 0.0;
-		x.min = 1.0; // min>max forces recalculation
-		x.step = -engine.getModel().getTimeStep();
-		x.grid = 0;
-		x.majorTicks = 3;
-		x.minorTicks = 1;
-		y.label = "fitness";
-		y.showLabel = true;
-		y.grid = 3;
-		y.majorTicks = 3;
-		y.minorTicks = 1;
-		add(graph);
-		graphs.add(graph);
-		super.reset(true);
+		super.reset(clear);
 	}
 
 	// implement GraphListener - mostly done in MVAbstract

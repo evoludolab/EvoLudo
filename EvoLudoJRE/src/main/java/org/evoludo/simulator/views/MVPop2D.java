@@ -77,7 +77,7 @@ public class MVPop2D extends MVAbstract implements PopListener {
 
 	private static final long serialVersionUID = 20110423L;
 
-	public static enum Data {
+	public enum Data {
 		VOID,
 		DSTRAT,
 		CSTRAT,
@@ -101,19 +101,17 @@ public class MVPop2D extends MVAbstract implements PopListener {
 		setOpaque(false);
 	}
 
-	protected String DIM = "";
-
 	@Override
 	public String getName() {
 		switch (type) {
 			case DSTRAT:
-				return "Strategy " + DIM + "- Structure";
+				return "Strategy - 2D Structure";
 			case CSTRAT:
-				return "Trait " + DIM + "- Structure";
+				return "Trait - 2D Structure";
 			case FITNESS:
-				return "Fitness " + DIM + "- Structure";
+				return "Fitness - 2D Structure";
 			case TAG:
-				return "Tags " + DIM + "- Structure";
+				return "Tags - 2D Structure";
 			default:
 				return "Unknown...";
 		}
@@ -519,7 +517,6 @@ public class MVPop2D extends MVAbstract implements PopListener {
 			return;
 		}
 		engine.logMessage("PNG image written to " + snapfile.getAbsolutePath());
-		return;
 	}
 
 	/**
@@ -558,6 +555,5 @@ public class MVPop2D extends MVAbstract implements PopListener {
 			return;
 		}
 		engine.logMessage("SVG graphics written to " + snapfile.getAbsolutePath());
-		return;
 	}
 }

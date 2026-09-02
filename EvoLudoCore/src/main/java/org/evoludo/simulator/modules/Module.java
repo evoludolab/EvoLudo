@@ -1099,7 +1099,7 @@ public abstract class Module<T extends Module<T>>
 	 * @param birthRate the birth rate
 	 */
 	public void setBirthRate(double birthRate) {
-		this.birthRate = birthRate;
+		this.birthRate = checkRate(birthRate, "birth rate");
 	}
 
 	/**
@@ -1121,14 +1121,7 @@ public abstract class Module<T extends Module<T>>
 					+ " only supports a single value - ignoring " + (rates.length - 1)
 					+ " additional value(s).");
 		}
-		double rate = rates[0];
-		if (rate < 0.0) {
-			String sn = getName();
-			engine.logWarning("birth rate" + (sn.isEmpty() ? "" : " of " + sn)
-					+ " must be non-negative (changed to 0).");
-			rate = 0.0;
-		}
-		setBirthRate(rate);
+		setBirthRate(rates[0]);
 	}
 
 	/**
@@ -1142,7 +1135,7 @@ public abstract class Module<T extends Module<T>>
 	 * @param rate the death rate
 	 */
 	public void setDeathRate(double rate) {
-		deathRate = Math.max(0.0, rate);
+		deathRate = checkRate(rate, "death rate");
 	}
 
 	/**
@@ -1164,14 +1157,75 @@ public abstract class Module<T extends Module<T>>
 					+ " only supports a single value - ignoring " + (rates.length - 1)
 					+ " additional value(s).");
 		}
-		double rate = rates[0];
-		if (rate < 0.0) {
-			String sn = getName();
-			engine.logWarning("death rate" + (sn.isEmpty() ? "" : " of " + sn)
-					+ " must be non-negative (changed to 0).");
-			rate = 0.0;
+		setDeathRate(rates[0]);
+	}
+
+	/**
+	 * Ensures that an ecological rate is non-negative.
+	 *
+	 * @param rate     the rate to validate
+	 * @param rateName the name of the rate for warnings
+	 * @return {@code rate}, or {@code 0.0} when it is negative
+	 */
+	protected double checkRate(double rate, String rateName) {
+		if (rate >= 0.0)
+			return rate;
+		String sn = getName();
+		engine.logWarning(rateName + (sn.isEmpty() ? "" : " of " + sn)
+				+ " must be non-negative (changed to 0).");
+		return 0.0;
+	}
+
+	/**
+	 * Makes a validated copy of ecological rates.
+	 *
+	 * @param rates    the rates to copy and validate
+	 * @param rateName the name of the rate for warnings
+	 * @return a copy of {@code rates} with negative entries replaced by {@code 0.0}
+	 */
+	protected double[] checkRates(double[] rates, String rateName) {
+		double[] checkedRates = ArrayMath.clone(rates);
+		for (int i = 0; i < checkedRates.length; i++)
+			checkedRates[i] = checkRate(checkedRates[i], rateName);
+		return checkedRates;
+	}
+
+	/**
+	 * Parses a per-capita rate argument and assigns its values to all species. A
+	 * single-species module receives the full vector so that discrete modules can
+	 * apply individual rates to their traits. For multiple species, vector entries
+	 * are cycled across species.
+	 *
+	 * @param arg         the rate argument
+	 * @param isBirthRate {@code true} for birth rates, {@code false} for death
+	 *                    rates
+	 * @return {@code true} if at least one rate was parsed
+	 */
+	private boolean parseRates(String arg, boolean isBirthRate) {
+		double[] rates;
+		// allow vector delimiter as well as species delimiter for multiple species
+		if (arg.contains(CLOParser.SPECIES_DELIMITER))
+			rates = CLOParser.parseVector(arg, CLOParser.SPECIES_DELIMITER);
+		else
+			rates = CLOParser.parseVector(arg);
+		if (rates.length == 0)
+			return false;
+		if (species.size() == 1) {
+			if (isBirthRate)
+				species.get(0).setBirthRate(rates);
+			else
+				species.get(0).setDeathRate(rates);
+			return true;
 		}
-		setDeathRate(rate);
+		int n = 0;
+		for (T pop : species) {
+			double rate = rates[n++ % rates.length];
+			if (isBirthRate)
+				pop.setBirthRate(rate);
+			else
+				pop.setDeathRate(rate);
+		}
+		return true;
 	}
 
 	/**
@@ -1448,35 +1502,7 @@ public abstract class Module<T extends Module<T>>
 				 */
 				@Override
 				public boolean parse(String arg) {
-					double[] rates;
-					// allow vector delimiter as well as species delimiter for multiple species
-					if (arg.contains(CLOParser.SPECIES_DELIMITER))
-						rates = CLOParser.parseVector(arg, CLOParser.SPECIES_DELIMITER);
-					else
-						rates = CLOParser.parseVector(arg);
-					if (rates.length == 0)
-						return false;
-					if (species.size() == 1) {
-						// single species: hand the whole vector to it - discrete-trait modules
-						// interpret multiple values as one rate per trait, see
-						// Discrete#setBirthRate(double[])
-						species.get(0).setBirthRate(rates);
-						return true;
-					}
-					int n = 0;
-					for (T pop : species) {
-						double rate = rates[n++ % rates.length];
-						// sanity checks
-						if (rate >= 0.0) {
-							pop.setBirthRate(rate);
-							continue;
-						}
-						String sn = pop.getName();
-						engine.logWarning("birth rate" + (sn.isEmpty() ? "" : " of " + sn)
-								+ " must be non-negative (changed to 0).");
-						pop.setBirthRate(0.0);
-					}
-					return true;
+					return parseRates(arg, true);
 				}
 
 				@Override
@@ -1518,35 +1544,7 @@ public abstract class Module<T extends Module<T>>
 				 */
 				@Override
 				public boolean parse(String arg) {
-					double[] rates;
-					// allow vector delimiter as well as species delimiter for multiple species
-					if (arg.contains(CLOParser.SPECIES_DELIMITER))
-						rates = CLOParser.parseVector(arg, CLOParser.SPECIES_DELIMITER);
-					else
-						rates = CLOParser.parseVector(arg);
-					if (rates.length == 0)
-						return false;
-					if (species.size() == 1) {
-						// single species: hand the whole vector to it - discrete-trait modules
-						// interpret multiple values as one rate per trait, see
-						// Discrete#setDeathRate(double[])
-						species.get(0).setDeathRate(rates);
-						return true;
-					}
-					int n = 0;
-					for (T pop : species) {
-						double rate = rates[n++ % rates.length];
-						// sanity checks
-						if (rate >= 0.0) {
-							pop.setDeathRate(rate);
-							continue;
-						}
-						String sn = pop.getName();
-						engine.logWarning("death rate" + (sn.isEmpty() ? "" : " of " + sn)
-								+ " must be non-negative (changed to 0).");
-						pop.setDeathRate(0.0);
-					}
-					return true;
+					return parseRates(arg, false);
 				}
 
 				@Override
@@ -1959,10 +1957,10 @@ public abstract class Module<T extends Module<T>>
 
 	/**
 	 * Whether the active dynamics regime is density based, for modules that
-	 * implement {@link DualDynamics}. Declared here - like {@link Model#isDensity()}
-	 * - so the plumbing is available to any module that needs it without every
-	 * implementer duplicating it; unused by modules that don't implement
-	 * {@link DualDynamics}.
+	 * implement {@link DualDynamics}. Declared here - like
+	 * {@link Model#isDensity()} - so the plumbing is available to any module that
+	 * needs it without every implementer duplicating it; unused by modules that
+	 * don't implement {@link DualDynamics}.
 	 */
 	protected boolean isDensity = false;
 

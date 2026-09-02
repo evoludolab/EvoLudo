@@ -1287,6 +1287,17 @@ public abstract class AbstractView<G extends AbstractGraph<?>> extends Composite
 	private static boolean hasSVGjs = false;
 
 	/**
+	 * Injects the canvas-to-SVG script once for the application.
+	 */
+	private static void ensureSVGjs() {
+		if (hasSVGjs)
+			return;
+
+		ScriptInjector.fromString(Resources.INSTANCE.canvas2SVG().getText()).inject();
+		hasSVGjs = true;
+	}
+
+	/**
 	 * Export the view as a PNG image.
 	 */
 	protected void exportPNG() {
@@ -1306,11 +1317,7 @@ public abstract class AbstractView<G extends AbstractGraph<?>> extends Composite
 	 * Export the view as a SVG image.
 	 */
 	protected void exportSVG() {
-		if (!hasSVGjs) {
-			// script (hopefully) needs to be injected only once
-			ScriptInjector.fromString(Resources.INSTANCE.canvas2SVG().getText()).inject();
-			hasSVGjs = true;
-		}
+		ensureSVGjs();
 		double scale = NativeJS.getDevicePixelRatio();
 		MyContext2d ctx = NativeJS.createSVGContext((int) Math.round(getOffsetWidth() * scale),
 				(int) Math.round(getOffsetHeight() * scale));

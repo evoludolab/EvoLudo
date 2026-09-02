@@ -722,17 +722,19 @@ public class EvoLudoWeb extends Composite
 			// needed).
 			logHandler = new Handler() {
 				@Override
-				public void publish(LogRecord record) {
-					if (isLoggable(record))
-						NativeJS.log(record.getLevel().intValue(), getFormatter().format(record));
+				public void publish(LogRecord rec) {
+					if (isLoggable(rec))
+						NativeJS.log(rec.getLevel().intValue(), getFormatter().format(rec));
 				}
 
 				@Override
 				public void flush() {
+					// Logging is forwarded immediately to NativeJS.log; nothing is buffered.
 				}
 
 				@Override
 				public void close() {
+					// The browser console has no handler-owned resource that requires closing.
 				}
 			};
 			logHandler.setFormatter(new XMLLogFormatter(true,
@@ -898,7 +900,7 @@ public class EvoLudoWeb extends Composite
 		}
 		engine.getLogger().log(Level.SEVERE, msg, error);
 		displayStatusThresholdLevel = Integer.MAX_VALUE;
-		if (engine != null && engine.cloSnap.isSet())
+		if (engine.cloSnap.isSet())
 			// unblock whoever is waiting for the snapshot
 			snapshotFailed(msg);
 	}
@@ -969,8 +971,15 @@ public class EvoLudoWeb extends Composite
 	 * @return description of the current lab state
 	 */
 	private String describeFailureScope() {
-		StringBuilder scope = new StringBuilder("lab ").append(elementID)
-				.append(popup != null ? (popup.isAttached() ? ", popup" : ", popup-detached") : ", inline");
+		String popupState;
+		if (popup == null) {
+			popupState = ", inline";
+		} else if (popup.isAttached()) {
+			popupState = ", popup";
+		} else {
+			popupState = ", popup-detached";
+		}
+		StringBuilder scope = new StringBuilder("lab ").append(elementID).append(popupState);
 		Module<?> module = (engine != null ? engine.getModule() : null);
 		if (module != null && !module.getName().isEmpty())
 			scope.append(", module ").append(module.getName());
@@ -2231,9 +2240,8 @@ public class EvoLudoWeb extends Composite
 	 */
 	public void updateKeys() {
 		Model model = engine.getModel();
-		boolean statistics = (model != null && model.getMode() == Mode.STATISTICS_SAMPLE);
-		// only 'reset' in statistics mode
-		if (statistics) {
+		if (model != null && model.getMode() == Mode.STATISTICS_SAMPLE) {
+			// statistics mode
 			evoludoInitReset.setText(BUTTON_RESET);
 			evoludoInitReset.setTitle("Reset statistics [Esc]");
 			evoludoStep.setText(BUTTON_SAMPLE);
@@ -2243,6 +2251,8 @@ public class EvoLudoWeb extends Composite
 		if (keyController.isAltDown()) {
 			evoludoInitReset.setText(BUTTON_RESET);
 			evoludoInitReset.setTitle("Initialize population [Esc] and regenerate structure [⎇ Esc]");
+			if (model == null)
+				return;
 			if (model.permitsTimeReversal()) {
 				evoludoStep.setText(BUTTON_PREV);
 				evoludoStep.setTitle("Backtrack single simulation step [← or P]");

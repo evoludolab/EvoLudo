@@ -98,7 +98,7 @@ public class StrongAmplifierGeometry extends AbstractGeometry {
 
 	@Override
 	protected boolean checkSettings() {
-		int unit13 = Math.max(5, (int) Math.pow(size / 4, 1.0 / 3.0));
+		int unit13 = Math.max(5, (int) Math.pow(size / 4.0, 1.0 / 3.0));
 		int unit23 = unit13 * unit13;
 		int unit = unit23 * unit13;
 		double lnunit = 3.0 * Math.log(unit13);

@@ -42,7 +42,6 @@ import com.google.gwt.dom.client.Style.Position;
 import com.google.gwt.dom.client.Style.TextAlign;
 import com.google.gwt.dom.client.Style.Unit;
 import com.google.gwt.dom.client.Style.VerticalAlign;
-import com.google.gwt.event.dom.client.DomEvent;
 import com.google.gwt.event.dom.client.KeyCodes;
 import com.google.gwt.event.dom.client.MouseDownEvent;
 import com.google.gwt.event.dom.client.TouchMoveEvent;
@@ -144,6 +143,7 @@ public class EvoLudoTrigger extends PushButton {
 		/**
 		 * Create a new lightbox panel.
 		 */
+		@SuppressWarnings("java:S1612") // Lambda retains GWT TouchMoveEvent generic type safety.
 		public LightboxPanel() {
 			// track window focus
 			WindowGlobal.addEventListener("focus", focusListener);
@@ -163,7 +163,7 @@ public class EvoLudoTrigger extends PushButton {
 					return;
 				close();
 			}, MouseDownEvent.getType());
-			addBitlessDomHandler(DomEvent::preventDefault, TouchMoveEvent.getType());
+			addBitlessDomHandler(event -> event.preventDefault(), TouchMoveEvent.getType());
 		}
 
 		@Override
