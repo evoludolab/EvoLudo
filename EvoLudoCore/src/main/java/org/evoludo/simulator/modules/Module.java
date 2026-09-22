@@ -1191,10 +1191,31 @@ public abstract class Module<T extends Module<T>>
 	}
 
 	/**
-	 * Parses a per-capita rate argument and assigns its values to all species. A
-	 * single-species module receives the full vector so that discrete modules can
-	 * apply individual rates to their traits. For multiple species, vector entries
-	 * are cycled across species.
+	 * Checks whether, among multiple species, any is a discrete-trait module with
+	 * more than one trait and hence able to accept per trait rates, see
+	 * {@link #parseRates(String, boolean)}.
+	 *
+	 * @return {@code true} if there is more than one species and any species has
+	 *         more than one discrete trait
+	 */
+	private boolean hasMultitraitSpecies() {
+		if (species.size() <= 1)
+			return false;
+		for (T pop : species)
+			if (pop instanceof Discrete && pop.getNTraits() > 1)
+				return true;
+		return false;
+	}
+
+	/**
+	 * Parses a per-capita rate argument and assigns its values to all species.
+	 * {@code arg} is a list of per-species entries separated by
+	 * {@value CLOParser#SPECIES_DELIMITER}, each of which is itself a rate or, for
+	 * discrete-trait species, a vector of per-trait rates separated by
+	 * {@value CLOParser#VECTOR_DELIMITER}. As with other multi-species options,
+	 * entries are cycled across species if fewer are provided than there are
+	 * species - in particular a single entry (no
+	 * {@value CLOParser#SPECIES_DELIMITER} at all) is applied to every species.
 	 *
 	 * @param arg         the rate argument
 	 * @param isBirthRate {@code true} for birth rates, {@code false} for death
@@ -1202,28 +1223,16 @@ public abstract class Module<T extends Module<T>>
 	 * @return {@code true} if at least one rate was parsed
 	 */
 	private boolean parseRates(String arg, boolean isBirthRate) {
-		double[] rates;
-		// allow vector delimiter as well as species delimiter for multiple species
-		if (arg.contains(CLOParser.SPECIES_DELIMITER))
-			rates = CLOParser.parseVector(arg, CLOParser.SPECIES_DELIMITER);
-		else
-			rates = CLOParser.parseVector(arg);
-		if (rates.length == 0)
-			return false;
-		if (species.size() == 1) {
-			if (isBirthRate)
-				species.get(0).setBirthRate(rates);
-			else
-				species.get(0).setDeathRate(rates);
-			return true;
-		}
+		String[] byspecies = arg.split(CLOParser.SPECIES_DELIMITER);
 		int n = 0;
 		for (T pop : species) {
-			double rate = rates[n++ % rates.length];
+			double[] rates = CLOParser.parseVector(byspecies[n++ % byspecies.length]);
+			if (rates.length == 0)
+				return false;
 			if (isBirthRate)
-				pop.setBirthRate(rate);
+				pop.setBirthRate(rates);
 			else
-				pop.setDeathRate(rate);
+				pop.setDeathRate(rates);
 		}
 		return true;
 	}
@@ -1494,10 +1503,8 @@ public abstract class Module<T extends Module<T>>
 				 * {@inheritDoc}
 				 * <p>
 				 * Parse birth rate for ecological population updates for a single or multiple
-				 * populations/species. {@code arg} can be a single value or an array of
-				 * values. The parser cycles through {@code arg} until all populations/species
-				 * have the birth rate set.
-				 * 
+				 * populations/species, see {@link #parseRates(String, boolean)}.
+				 *
 				 * @param arg birth rate
 				 */
 				@Override
@@ -1522,6 +1529,10 @@ public abstract class Module<T extends Module<T>>
 						default:
 							descr = "--birthrate <b0[,...,b" + nSpecies + "]>  per capita rates of reproduction";
 					}
+					if (hasMultitraitSpecies())
+						descr += "\n            (or <b0trait0,...>" + CLOParser.SPECIES_DELIMITER
+								+ "<b1trait0,...>... for per trait rates;\n            entries cycle if fewer than "
+								+ nSpecies + " given, e.g. a single\n            <btrait0,...> applies to every species)";
 					return descr;
 				}
 			});
@@ -1536,10 +1547,8 @@ public abstract class Module<T extends Module<T>>
 				 * {@inheritDoc}
 				 * <p>
 				 * Parse death rate for ecological population updates for a single or multiple
-				 * populations/species. {@code arg} can be a single value or an array of
-				 * values. The parser cycles through {@code arg} until all populations/species
-				 * have the death rate set.
-				 * 
+				 * populations/species, see {@link #parseRates(String, boolean)}.
+				 *
 				 * @param arg the (array of) death rate(s)
 				 */
 				@Override
@@ -1563,6 +1572,10 @@ public abstract class Module<T extends Module<T>>
 						default:
 							descr = "--deathrate <d0[,...,d" + nSpecies + "]>  rates of dying";
 					}
+					if (hasMultitraitSpecies())
+						descr += "\n            (or <d0trait0,...>" + CLOParser.SPECIES_DELIMITER
+								+ "<d1trait0,...>... for per trait rates;\n            entries cycle if fewer than "
+								+ nSpecies + " given, e.g. a single\n            <dtrait0,...> applies to every species)";
 					return descr;
 				}
 			});
