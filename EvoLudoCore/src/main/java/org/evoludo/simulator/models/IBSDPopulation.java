@@ -1288,20 +1288,28 @@ public class IBSDPopulation extends IBSPopulation<Discrete, IBSDPopulation> {
 			tmpCount[opponent.getTraitAt(neigh[n])]++;
 		int nInter = nNeigh - (vacantIdx < 0 ? 0 : tmpCount[vacantIdx]);
 		// my type has changed otherwise we wouldn't get here
-		// old/newScore are the total accumulated scores
-		double oldScore = u2 * pairmodule.pairScores(oldType, tmpCount, tmpScore);
-		double newScore = u2 * pairmodule.pairScores(newType, tmpCount, tmpTraitScore);
+		// note: pairScores(vacantIdx, ...) is meaningless (a vacant site contributes
+		// nothing to any interaction) and its trait score outputs are deliberately
+		// NaN - so it must never be called with a vacant type, nor may its outputs
+		// be used as an actual (zero) contribution below.
 		if (newType == vacantIdx) {
-			// focal individual became vacant
+			// focal individual became vacant; oldType was occupied, so its
+			// contribution to each neighbour's score is well defined
+			pairmodule.pairScores(oldType, tmpCount, tmpScore);
 			adjustVacantScoreAt(me, oldType, neigh, nNeigh, u2);
 			return;
 		}
 		if (oldType == vacantIdx) {
-			// focal individual became occupied
+			// focal individual became occupied; it contributed nothing to any
+			// neighbour's score before, so only the new contribution matters
+			double newScore = u2 * pairmodule.pairScores(newType, tmpCount, tmpTraitScore);
 			updateScoreAt(me, newScore, u2 * nInter);
 			adjustOccupiedScoreAt(neigh, nNeigh, u2);
 			return;
 		}
+		// old/newScore are the total accumulated scores
+		double oldScore = u2 * pairmodule.pairScores(oldType, tmpCount, tmpScore);
+		double newScore = u2 * pairmodule.pairScores(newType, tmpCount, tmpTraitScore);
 		// interaction count remains the same but old/newScore are accumulated
 		if (playerScoreAveraged && nInter > 0) {
 			double iInter = 1.0 / (u2 * nInter);
@@ -1337,7 +1345,9 @@ public class IBSDPopulation extends IBSPopulation<Discrete, IBSDPopulation> {
 		for (int n = 0; n < nNeigh; n++) {
 			int you = neigh[n];
 			int type = opponent.getTraitAt(you);
-			opponent.removeScoreAt(you, u2 * (tmpScore[type] - tmpTraitScore[type]), u2);
+			if (type == vacantIdx)
+				continue;
+			opponent.removeScoreAt(you, u2 * tmpScore[type], u2);
 		}
 	}
 
@@ -1354,7 +1364,9 @@ public class IBSDPopulation extends IBSPopulation<Discrete, IBSDPopulation> {
 		for (int n = 0; n < nNeigh; n++) {
 			int you = neigh[n];
 			int type = opponent.getTraitAt(you);
-			opponent.updateScoreAt(you, u2 * (tmpTraitScore[type] - tmpScore[type]), u2);
+			if (type == vacantIdx)
+				continue;
+			opponent.updateScoreAt(you, u2 * tmpTraitScore[type], u2);
 		}
 	}
 
