@@ -4137,6 +4137,9 @@ public abstract class IBSPopulation<M extends Module<?>, P extends IBSPopulation
 			competition.init();
 			competition.rewire();
 		}
+		// competition may have just been replaced with a new instance; keep
+		// compGroup in sync (checkGeometry() set it to the pre-reset instance)
+		compGroup.setGeometry(competition);
 		// determine maximum reasonable group size
 		GeometryFeatures iFeats = interaction.getFeatures();
 		GeometryFeatures cFeats = competition.getFeatures();
@@ -5166,6 +5169,7 @@ public abstract class IBSPopulation<M extends Module<?>, P extends IBSPopulation
 		interaction.decodeGeometry(igeo);
 		if (interaction.isSingle()) {
 			competition = interaction.deriveCompetitionGeometry();
+			compGroup.setGeometry(competition);
 			return true;
 		}
 		Plist rgeo = (Plist) plist.get(competition.getEncodeKey());
