@@ -1856,7 +1856,8 @@ public class EvoLudoWeb extends Composite
 			deferStatusThresholdReset = true;
 			engine.modelCheck();
 			loadViews();
-			engine.modelReset(false);
+			// modelCheck() just ran above; skip the redundant re-check in modelReset()
+			engine.modelReset(false, false);
 		} else {
 			boolean didReset = engine.paramsDidChange();
 			loadViews(didReset);

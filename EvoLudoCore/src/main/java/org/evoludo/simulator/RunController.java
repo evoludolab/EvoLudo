@@ -376,7 +376,7 @@ class RunController {
 		boolean wasRunning = engine.isRunning;
 		if (engine.activeModel.setMode(mode)) {
 			if (mode == Mode.STATISTICS_SAMPLE)
-				modelReset(true);
+				modelReset(true, true);
 			if (wasRunning) {
 				engine.setSuspended(false);
 				engine.fireModelStopped();
@@ -394,22 +394,27 @@ class RunController {
 	 * @see EvoLudo#modelReset()
 	 */
 	public void modelReset() {
-		modelReset(false);
+		modelReset(false, true);
 	}
 
 	/**
 	 * Reset all populations and optionally notify listeners.
-	 * 
+	 *
 	 * @param quiet set to {@code true} to skip notifying listeners
-	 * 
-	 * @see EvoLudo#modelReset(boolean)
+	 * @param check set to {@code true} to check consistency of parameters before
+	 *              resetting; set to {@code false} if the caller already invoked
+	 *              {@link EvoLudo#modelCheck()} immediately before this call, to
+	 *              avoid a redundant (and potentially expensive) re-check
+	 *
+	 * @see EvoLudo#modelReset(boolean, boolean)
 	 */
-	public void modelReset(boolean quiet) {
+	public void modelReset(boolean quiet, boolean check) {
 		if (engine.activeModel == null)
 			return;
 		if (engine.rng.isSeedSet())
 			engine.rng.reset();
-		engine.modelCheck();
+		if (check)
+			engine.modelCheck();
 		for (Module<?> mod : engine.activeModule.getSpecies())
 			mod.reset();
 		engine.activeModel.reset();

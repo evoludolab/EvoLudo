@@ -514,18 +514,22 @@ public abstract class EvoLudo
 	 * Reset all populations and notify all listeners.
 	 */
 	public final void modelReset() {
-		runController.modelReset(false);
+		runController.modelReset(false, true);
 	}
 
 	/**
-	 * Reset all populations and notify all listeners if requested.
+	 * Reset all populations and optionally notify all listeners.
 	 * <p>
 	 * <strong>Note:</strong> if {@code quiet == true} statistics are preserved.
-	 * 
+	 *
 	 * @param quiet set to {@code true} to skip notifying listeners
+	 * @param check set to {@code true} to check consistency of parameters before
+	 *              resetting; set to {@code false} if the caller already invoked
+	 *              {@link #modelCheck()} immediately before this call, to avoid
+	 *              a redundant (and potentially expensive) re-check
 	 */
-	public final void modelReset(boolean quiet) {
-		runController.modelReset(quiet);
+	public final void modelReset(boolean quiet, boolean check) {
+		runController.modelReset(quiet, check);
 	}
 
 	/**
@@ -537,7 +541,7 @@ public abstract class EvoLudo
 
 	/**
 	 * Initialize all populations and notify all listeners if requested. In contrast
-	 * to {@link #modelReset(boolean)} this method does not re-generate the
+	 * to {@link #modelReset(boolean, boolean)} this method does not re-generate the
 	 * population structures.
 	 * 
 	 * @param quiet set to {@code true} to skip notifying listeners
@@ -606,8 +610,11 @@ public abstract class EvoLudo
 	 */
 	public boolean paramsDidChange() {
 		if (activeModel != null) {
+			// modelCheck() is skipped by the || short-circuit exactly when
+			// resetRequested is true; only then does modelReset() still need to run it
+			boolean checkPending = resetRequested;
 			if (resetRequested || modelCheck()) {
-				modelReset();
+				modelReset(false, checkPending);
 				return true;
 			}
 			activeModel.update();
