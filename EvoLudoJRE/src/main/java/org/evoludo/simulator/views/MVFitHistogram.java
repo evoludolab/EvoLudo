@@ -101,10 +101,11 @@ public class MVFitHistogram extends MVAbstract implements HistoGraphListener {
 
 	@Override
 	public void reset(boolean clear) {
-		nData = engine.getModel().isContinuous() ? 1 : module.getNTraits();
+		boolean isContinuous = engine.getModel().isContinuous();
+		nData = isContinuous ? 1 : module.getNTraits();
 		int nGraphs = graphs.size();
-		int vacant = module.getVacantIdx();
-		if (vacant >= 0)
+		// vacant sites are a trait only in discrete modules
+		if (module.getVacantIdx() >= 0 && !isContinuous)
 			nData--;
 		if (nData == nGraphs) {
 			super.reset(clear);

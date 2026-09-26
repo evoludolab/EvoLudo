@@ -185,6 +185,19 @@ public class IBSC extends IBS implements CModel {
 						}
 						return true;
 					}
+
+					@Override
+					public String getDescription() {
+						String descr = "--init <t>      type of initial configuration:\n" + clo.getDescriptionKey();
+						for (Module<?> mod : ibs.species) {
+							if (mod.getVacantIdx() < 0)
+								continue;
+							return descr + "\n                with vacant sites, an optional additional argument v"
+									+ "\n                (after those of the first trait) sets the frequency"
+									+ "\n                of vacant sites (default: carrying capacity estimate)";
+						}
+						return descr;
+					}
 				});
 
 		/**
@@ -203,6 +216,10 @@ public class IBSC extends IBS implements CModel {
 		 * <dd>Monomorphic resident population with trait {@code r} and single mutant
 		 * with trait {@code m}.
 		 * </dl>
+		 * For modules with vacant sites, an optional additional argument
+		 * {@code v}, following those of the first trait, sets the frequency of
+		 * vacant sites. By default, the population is initialized at its
+		 * estimated carrying capacity.
 		 * 
 		 * @see #clo
 		 * @see IBSMCPopulation#getInit()

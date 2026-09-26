@@ -957,8 +957,8 @@ public class Histogram extends AbstractView<HistoGraph> {
 				idx = 0;
 			}
 			int nTraits = (model.isContinuous() ? 1 : module.getNTraits());
-			int vacant = module.getVacantIdx();
-			if (vacant >= 0)
+			// vacant sites are a trait only in discrete modules
+			if (module.getVacantIdx() >= 0 && !model.isContinuous())
 				nTraits--;
 			if (newPop || data == null || data.length != nTraits || data[0].length != histogramBins)
 				data = new double[nTraits][histogramBins];

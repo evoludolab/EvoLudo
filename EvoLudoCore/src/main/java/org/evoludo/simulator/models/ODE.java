@@ -1428,11 +1428,28 @@ public class ODE extends Model implements DModel {
 	 *         if there is no net growth
 	 */
 	public static double getVacantAtEQ(Discrete module, int idx) {
-		double birth = module.getBirthRate(idx);
-		double death = module.getDeathRate(idx);
 		Map2Fitness map2fit = module.getMap2Fitness();
 		double fitness = (map2fit == null) ? 0.0 : map2fit.map(module.getMonoPayoff(idx));
-		double competition = module.getCompetitionRate();
+		return getVacantAtEQ(module.getBirthRate(idx), module.getDeathRate(idx), fitness,
+				module.getCompetitionRate());
+	}
+
+	/**
+	 * Computes the equilibrium frequency of vacant sites, \(z^*\), for a
+	 * monomorphic resident population with birth rate {@code birth}, death rate
+	 * {@code death}, fitness {@code fitness} and competition rate with kin
+	 * {@code competition} in the mean-field limit, see
+	 * {@link #getVacantAtEQ(Discrete, int)} for details.
+	 *
+	 * @param birth       the birth rate of the resident
+	 * @param death       the death rate of the resident
+	 * @param fitness     the fitness of the resident
+	 * @param competition the rate of competition (positive) or synergy (negative)
+	 *                    with kin
+	 * @return the equilibrium frequency of vacant sites, or {@link Double#NaN}
+	 *         if there is no net growth
+	 */
+	public static double getVacantAtEQ(double birth, double death, double fitness, double competition) {
 		double gamma = Math.max(0.0, competition);
 		double effBirth = birth + fitness + Math.max(0.0, -competition);
 		double denom = effBirth + gamma;

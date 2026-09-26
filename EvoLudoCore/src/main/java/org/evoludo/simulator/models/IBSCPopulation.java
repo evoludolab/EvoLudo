@@ -93,12 +93,16 @@ public class IBSCPopulation extends IBSMCPopulation {
 
 	@Override
 	public boolean haveSameTrait(int a, int b) {
-		return (Math.abs(traits[a] - traits[b]) < Model.EPS);
+		// note: vacant sites are NaN and comparisons with NaN are always false
+		return (Math.abs(traits[a] - traits[b]) < Model.EPS)
+				|| (isVacantAt(a) && isVacantAt(b));
 	}
 
 	@Override
 	public boolean isSameTrait(int a) {
-		return (Math.abs(traits[a] - traitsNext[a]) < Model.EPS);
+		// note: vacant sites are NaN and comparisons with NaN are always false
+		return (Math.abs(traits[a] - traitsNext[a]) < Model.EPS)
+				|| (isVacantAt(a) && becomesVacantAt(a));
 	}
 
 	@Override
@@ -117,10 +121,13 @@ public class IBSCPopulation extends IBSMCPopulation {
 	@Override
 	public void playPairGameAt(IBSGroup group) {
 		int me = group.focal;
+		if (isVacantAt(me))
+			return;
+		stripGroupVacancies(group);
 		// for ephemeral scores calculate score of focal only
 		boolean ephemeralScores = playerScoring.equals(ScoringType.EPHEMERAL);
 		if (group.nSampled <= 0) {
-			// isolated individual
+			// isolated individual (or surrounded by vacant sites)
 			if (ephemeralScores) {
 				// no need to update scores of everyone else
 				resetScoreAt(me);
@@ -150,76 +157,16 @@ public class IBSCPopulation extends IBSMCPopulation {
 	 * <p>
 	 * Continuous modules with multiple traits never get here.
 	 * 
-	 * @see IBSMCPopulation#adjustPairGameScoresAt(int)
-	 */
-	@Override
-	public void adjustPairGameScoresAt(int me) {
-		// gather players
-		double[] opptraits = opponent.traits;
-		int nIn = 0;
-		int nOut = interaction.kout[me];
-		int[] in = null;
-		int[] out = interaction.out[me];
-		for (int n = 0; n < nOut; n++)
-			tmpGroup[n] = opptraits[out[n]];
-		int u2 = 2;
-		if (!interaction.isUndirected()) {
-			// directed graph, count in-neighbors
-			u2 = 1;
-			nIn = interaction.kin[me];
-			in = interaction.in[me];
-			for (int n = 0; n < nIn; n++)
-				tmpGroup[nOut + n] = opptraits[in[n]];
-		}
-		int nInter = nOut + nIn;
-		double oldScore = cpairmodule.pairScores(traits[me], tmpGroup, nInter, oldScores);
-		double newScore = cpairmodule.pairScores(traitsNext[me], tmpGroup, nInter, groupScores);
-		commitTraitAt(me);
-		// on undirected graphs every partner is interacted with twice, once as
-		// the focal and once as the partner, see playGameSyncAt(int)
-		if (playerScoreAveraged) {
-			if (nInter > 0) {
-				double iInter = 1.0 / nInter;
-				newScore *= iInter;
-				oldScore *= iInter;
-			}
-		} else {
-			newScore *= u2;
-			oldScore *= u2;
-		}
-		adjustScoreAt(me, oldScore, newScore);
-		for (int n = 0; n < nOut; n++) {
-			int you = out[n];
-			double diff = u2 * (groupScores[n] - oldScores[n]);
-			if (playerScoreAveraged)
-				diff /= interactions[you];
-			opponent.adjustScoreAt(you, diff);
-		}
-		// same as !interaction.isUndirected() because in != null implies directed graph
-		// (see above)
-		if (in != null) {
-			for (int n = 0; n < nIn; n++) {
-				int you = in[n];
-				double diff = u2 * (groupScores[nOut + n] - oldScores[nOut + n]);
-				if (playerScoreAveraged)
-					diff /= interactions[you];
-				opponent.adjustScoreAt(you, diff);
-			}
-		}
-	}
-
-	/**
-	 * {@inheritDoc}
-	 * <p>
-	 * Continuous modules with multiple traits never get here.
-	 * 
 	 * @see IBSMCPopulation#playGroupGameAt(IBSGroup)
 	 */
 	@Override
 	public void playGroupGameAt(IBSGroup group) {
+		if (isVacantAt(group.focal))
+			return;
+		stripGroupVacancies(group);
 		int size = group.nSampled;
 		if (size <= 0) {
-			// isolated individual
+			// isolated individual (or surrounded by vacant sites)
 			playNoGameAt(group.focal);
 			return;
 		}
@@ -290,6 +237,9 @@ public class IBSCPopulation extends IBSMCPopulation {
 	 */
 	@Override
 	public void yalpGroupGameAt(IBSGroup group) {
+		if (isVacantAt(group.focal))
+			return;
+		stripGroupVacancies(group);
 		if (group.nSampled <= 0)
 			return;
 
@@ -326,11 +276,6 @@ public class IBSCPopulation extends IBSMCPopulation {
 	@Override
 	public void prepareTraits() {
 		System.arraycopy(traits, 0, traitsNext, 0, nPopulation);
-	}
-
-	@Override
-	public void commitTraitAt(int me) {
-		traits[me] = traitsNext[me];
 	}
 
 	/**

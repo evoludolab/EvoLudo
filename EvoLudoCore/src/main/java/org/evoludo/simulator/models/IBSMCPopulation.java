@@ -30,6 +30,7 @@
 
 package org.evoludo.simulator.models;
 
+import java.awt.Color;
 import java.util.Arrays;
 import java.util.List;
 
@@ -42,6 +43,8 @@ import org.evoludo.simulator.models.IBS.ScoringType;
 import org.evoludo.simulator.models.IBSC.Init;
 import org.evoludo.simulator.models.Model.HasIBS;
 import org.evoludo.simulator.modules.Continuous;
+import org.evoludo.simulator.modules.Features.Payoffs;
+import org.evoludo.simulator.modules.Module;
 import org.evoludo.util.Formatter;
 import org.evoludo.util.Plist;
 
@@ -52,6 +55,9 @@ import org.evoludo.util.Plist;
  * steps to super. Note that some further optimizations and simplifications are
  * possible in the special case of a single continuous trait, which is handled
  * in the subclass {@link IBSCPopulation}.
+ * <p>
+ * Modules that admit vacant sites (see {@link Continuous#hasVacant()}) mark
+ * empty sites by setting all their traits to {@link Double#NaN}.
  * 
  * @author Christoph Hauert
  * 
@@ -105,8 +111,53 @@ public class IBSMCPopulation extends IBSPopulation<Continuous, IBSMCPopulation> 
 
 	@Override
 	public boolean checkConvergence() {
-		// takes more than just the absence of mutations
-		return false;
+		// extinction is absorbing but otherwise convergence takes more than just
+		// the absence of mutations
+		return vacantIdx >= 0 && nOccupied == 0;
+	}
+
+	/**
+	 * The number of occupied (non-vacant) sites. Only maintained for modules
+	 * admitting vacant sites.
+	 * 
+	 * @see #getPopulationSize()
+	 */
+	int nOccupied;
+
+	@Override
+	public int getPopulationSize() {
+		if (vacantIdx < 0)
+			return nPopulation;
+		return nOccupied;
+	}
+
+	/**
+	 * Count the number of occupied sites, {@link #nOccupied}, from scratch. Must be
+	 * called after bulk changes to the traits that bypass
+	 * {@link #commitTraitAt(int)}.
+	 */
+	private void countOccupied() {
+		nOccupied = 0;
+		for (int n = 0; n < nPopulation; n++)
+			if (!isVacantAt(n))
+				nOccupied++;
+		invalidateOccupancyIndex();
+	}
+
+	@Override
+	public boolean isVacantAt(int index) {
+		return vacantIdx >= 0 && Double.isNaN(traits[index * nTraits]);
+	}
+
+	@Override
+	public boolean becomesVacantAt(int index) {
+		return vacantIdx >= 0 && Double.isNaN(traitsNext[index * nTraits]);
+	}
+
+	@Override
+	protected void setNextVacantAt(int idx) {
+		int offset = idx * nTraits;
+		Arrays.fill(traitsNext, offset, offset + nTraits, Double.NaN);
 	}
 
 	/**
@@ -275,6 +326,65 @@ public class IBSMCPopulation extends IBSPopulation<Continuous, IBSMCPopulation> 
 	 */
 	double[] oldScores;
 
+	/**
+	 * Temporary storage for the indices of the occupied members of an interaction
+	 * group.
+	 * 
+	 * @see #stripGroupVacancies(IBSGroup)
+	 * @see #gatherNeighbours(int[], int, int)
+	 */
+	int[] groupIdxs;
+
+	/**
+	 * Eliminate vacant sites from the interaction group {@code group}.
+	 * <p>
+	 * <strong>Important:</strong> {@code group.group} is untouchable! It may be a
+	 * reference to {@code AbstractGeometry.out[group.focal]} and hence any changes
+	 * would actually alter the geometry! Instead, the occupied members are copied
+	 * to {@link #groupIdxs}, which then replaces {@code group.group}.
+	 *
+	 * @param group the interaction group, which potentially includes vacant sites
+	 */
+	void stripGroupVacancies(IBSGroup group) {
+		if (vacantIdx < 0)
+			return;
+		int[] members = group.group;
+		int nMembers = 0;
+		for (int i = 0; i < group.nSampled; i++) {
+			int member = members[i];
+			if (!opponent.isVacantAt(member))
+				groupIdxs[nMembers++] = member;
+		}
+		group.group = groupIdxs;
+		group.nSampled = nMembers;
+	}
+
+	/**
+	 * Gather the indices and traits of the occupied sites among the {@code nNeigh}
+	 * neighbours {@code neigh} in the opponent population and append them to
+	 * {@link #groupIdxs} and {@link #tmpGroup}, respectively, starting at position
+	 * {@code start}.
+	 *
+	 * @param neigh  the indices of the neighbours
+	 * @param nNeigh the number of neighbours
+	 * @param start  the position of the first neighbour to append
+	 * @return the total number of gathered neighbours
+	 */
+	int gatherNeighbours(int[] neigh, int nNeigh, int start) {
+		double[] opptraits = opponent.traits;
+		int oppntraits = opponent.nTraits;
+		int n = start;
+		for (int i = 0; i < nNeigh; i++) {
+			int you = neigh[i];
+			if (opponent.isVacantAt(you))
+				continue;
+			groupIdxs[n] = you;
+			System.arraycopy(opptraits, you * oppntraits, tmpGroup, n * oppntraits, oppntraits);
+			n++;
+		}
+		return n;
+	}
+
 	@Override
 	public void updateFromModelAt(int index, int modelPlayer) {
 		super.updateFromModelAt(index, modelPlayer); // deal with tags
@@ -283,6 +393,8 @@ public class IBSMCPopulation extends IBSPopulation<Continuous, IBSMCPopulation> 
 
 	@Override
 	public boolean haveSameTrait(int a, int b) {
+		if (isVacantAt(a) || isVacantAt(b))
+			return isVacantAt(a) && isVacantAt(b);
 		int idxa = a * nTraits;
 		int idxb = b * nTraits;
 		for (int i = 0; i < nTraits; i++)
@@ -293,6 +405,8 @@ public class IBSMCPopulation extends IBSPopulation<Continuous, IBSMCPopulation> 
 
 	@Override
 	public boolean isSameTrait(int a) {
+		if (isVacantAt(a) || becomesVacantAt(a))
+			return isVacantAt(a) && becomesVacantAt(a);
 		int idxa = a * nTraits;
 		for (int i = 0; i < nTraits; i++)
 			if (Math.abs(traits[idxa + i] - traitsNext[idxa + i]) > Model.EPS)
@@ -441,10 +555,13 @@ public class IBSMCPopulation extends IBSPopulation<Continuous, IBSMCPopulation> 
 	@Override
 	public void playPairGameAt(IBSGroup group) {
 		int me = group.focal;
+		if (isVacantAt(me))
+			return;
+		stripGroupVacancies(group);
 		// for ephemeral scores calculate score of focal only
 		boolean ephemeralScores = playerScoring.equals(ScoringType.EPHEMERAL);
 		if (group.nSampled <= 0) {
-			// isolated individual
+			// isolated individual (or surrounded by vacant sites)
 			if (ephemeralScores) {
 				// no need to update scores of everyone else
 				resetScoreAt(me);
@@ -471,67 +588,78 @@ public class IBSMCPopulation extends IBSPopulation<Continuous, IBSMCPopulation> 
 	/**
 	 * {@inheritDoc}
 	 * <p>
-	 * Continuous modules with a single trait never get here.
-	 * 
-	 * @see IBSCPopulation#adjustPairGameScoresAt(int)
+	 * Handles single and multiple traits alike. Vacant neighbours do not
+	 * interact. If the focal site becomes vacant, its score is reset and its
+	 * contributions to the scores of its neighbours are removed; if a vacant
+	 * focal site becomes occupied, its contributions are added.
 	 */
 	@Override
 	public void adjustPairGameScoresAt(int me) {
-		// gather players
-		double[] opptraits = opponent.traits;
-		int oppntraits = opponent.nTraits;
-		int nIn = 0;
-		int nOut = interaction.kout[me];
-		int[] in = null;
-		int[] out = interaction.out[me];
-		for (int n = 0; n < nOut; n++)
-			System.arraycopy(opptraits, out[n] * oppntraits, tmpGroup, n * oppntraits, oppntraits);
+		// gather occupied interaction partners: out-neighbours as well as
+		// in-neighbours on directed graphs
+		int nInter = gatherNeighbours(interaction.out[me], interaction.kout[me], 0);
 		int u2 = 2;
 		if (!interaction.isUndirected()) {
-			// directed graph, count in-neighbors
+			// directed graph, add in-neighbors
 			u2 = 1;
-			nIn = interaction.kin[me];
-			in = interaction.in[me];
-			for (int n = 0; n < nIn; n++)
-				System.arraycopy(opptraits, in[n] * oppntraits, tmpGroup, (nOut + n) * oppntraits, oppntraits);
+			nInter = gatherNeighbours(interaction.in[me], interaction.kin[me], nInter);
 		}
-		int nInter = nOut + nIn;
+		boolean wasVacant = isVacantAt(me);
+		boolean isVacant = becomesVacantAt(me);
 		int offset = me * nTraits;
-		System.arraycopy(traits, offset, oldTraits, 0, nTraits);
-		System.arraycopy(traitsNext, offset, myTraits, 0, nTraits);
-		double oldScore = pairmodule.pairScores(oldTraits, tmpGroup, nInter, oldScores);
-		double newScore = pairmodule.pairScores(myTraits, tmpGroup, nInter, groupScores);
-		commitTraitAt(me);
-		// on undirected graphs every partner is interacted with twice, once as
-		// the focal and once as the partner, see playGameSyncAt(int)
-		if (playerScoreAveraged) {
-			if (nInter > 0) {
-				double iInter = 1.0 / nInter;
-				newScore *= iInter;
-				oldScore *= iInter;
-			}
-		} else {
-			newScore *= u2;
-			oldScore *= u2;
+		// old/newScore are the scores of single interactions with each partner
+		double oldScore = 0.0;
+		if (wasVacant)
+			Arrays.fill(oldScores, 0, nInter, 0.0);
+		else {
+			System.arraycopy(traits, offset, oldTraits, 0, nTraits);
+			oldScore = pairmodule.pairScores(oldTraits, tmpGroup, nInter, oldScores);
 		}
-		adjustScoreAt(me, oldScore, newScore);
-		for (int n = 0; n < nOut; n++) {
-			int you = out[n];
+		double newScore = 0.0;
+		if (isVacant)
+			Arrays.fill(groupScores, 0, nInter, 0.0);
+		else {
+			System.arraycopy(traitsNext, offset, myTraits, 0, nTraits);
+			newScore = pairmodule.pairScores(myTraits, tmpGroup, nInter, groupScores);
+		}
+		commitTraitAt(me);
+		// adjust score of focal; on undirected graphs every partner is interacted
+		// with twice, once as the focal and once as the partner, see
+		// playGameSyncAt(int)
+		if (isVacant)
+			resetScoreAt(me);
+		else if (wasVacant)
+			updateScoreAt(me, u2 * newScore, u2 * nInter);
+		else {
+			if (playerScoreAveraged) {
+				if (nInter > 0) {
+					double iInter = 1.0 / nInter;
+					newScore *= iInter;
+					oldScore *= iInter;
+				}
+			} else {
+				newScore *= u2;
+				oldScore *= u2;
+			}
+			adjustScoreAt(me, oldScore, newScore);
+		}
+		// adjust scores of partners
+		for (int n = 0; n < nInter; n++) {
+			int you = groupIdxs[n];
+			if (wasVacant) {
+				// gained interaction partner
+				opponent.updateScoreAt(you, u2 * groupScores[n], u2);
+				continue;
+			}
+			if (isVacant) {
+				// lost interaction partner
+				opponent.removeScoreAt(you, u2 * oldScores[n], u2);
+				continue;
+			}
 			double diff = u2 * (groupScores[n] - oldScores[n]);
 			if (playerScoreAveraged)
-				diff /= interactions[you];
+				diff /= opponent.interactions[you];
 			opponent.adjustScoreAt(you, diff);
-		}
-		// same as !interaction.isUndirected() because in != null implies directed graph
-		// (see above)
-		if (in != null) {
-			for (int n = 0; n < nIn; n++) {
-				int you = in[n];
-				double diff = u2 * (groupScores[nOut + n] - oldScores[nOut + n]);
-				if (playerScoreAveraged)
-					diff /= interactions[you];
-				opponent.adjustScoreAt(you, diff);
-			}
 		}
 	}
 
@@ -545,8 +673,11 @@ public class IBSMCPopulation extends IBSPopulation<Continuous, IBSMCPopulation> 
 	@Override
 	public void playGroupGameAt(IBSGroup group) {
 		int me = group.focal;
+		if (isVacantAt(me))
+			return;
+		stripGroupVacancies(group);
 		if (group.nSampled <= 0) {
-			// isolated individual
+			// isolated individual (or surrounded by vacant sites)
 			playNoGameAt(me);
 			return;
 		}
@@ -642,6 +773,11 @@ public class IBSMCPopulation extends IBSPopulation<Continuous, IBSMCPopulation> 
 	 */
 	@Override
 	public void yalpGroupGameAt(IBSGroup group) {
+		if (isVacantAt(group.focal))
+			return;
+		stripGroupVacancies(group);
+		if (group.nSampled <= 0)
+			return;
 		double myScore;
 		gatherPlayers(group);
 
@@ -679,17 +815,42 @@ public class IBSMCPopulation extends IBSPopulation<Continuous, IBSMCPopulation> 
 		double[] swap = traits;
 		traits = traitsNext;
 		traitsNext = swap;
+		if (vacantIdx >= 0)
+			countOccupied();
 	}
 
 	@Override
 	public void commitTraitAt(int me) {
 		int idx = me * nTraits;
+		if (vacantIdx < 0) {
+			System.arraycopy(traitsNext, idx, traits, idx, nTraits);
+			return;
+		}
+		boolean wasVacant = isVacantAt(me);
 		System.arraycopy(traitsNext, idx, traits, idx, nTraits);
+		boolean isVacant = isVacantAt(me);
+		if (wasVacant == isVacant)
+			return;
+		// keep the population size and the compact occupancy index (see
+		// IBSPopulation#occupiedSites) in sync with this single-site change
+		if (isVacant) {
+			nOccupied--;
+			trackSiteVacated(me);
+			return;
+		}
+		nOccupied++;
+		trackSiteOccupied(me);
 	}
 
 	@Override
 	public synchronized <T> void getTraitData(T[] colors, ColorMap<T> colorMap) {
 		colorMap.translate(traits, colors);
+		if (vacantIdx < 0)
+			return;
+		T vacant = colorMap.color2Color(Color.WHITE);
+		for (int n = 0; n < nPopulation; n++)
+			if (isVacantAt(n))
+				colors[n] = vacant;
 	}
 
 	/**
@@ -718,9 +879,16 @@ public class IBSMCPopulation extends IBSPopulation<Continuous, IBSMCPopulation> 
 		int nBins = bins.length;
 		double scale = (nBins - 1);
 		// fill bins
-		for (int n = trait; n < nPopulation * nTraits; n += nTraits)
+		for (int n = trait; n < nPopulation * nTraits; n += nTraits) {
+			double aTrait = traits[n];
+			// skip vacant sites
+			if (Double.isNaN(aTrait))
+				continue;
 			// continuous traits are stored in normalized form
-			bins[(int) (traits[n] * scale + 0.5)]++;
+			bins[(int) (aTrait * scale + 0.5)]++;
+		}
+		// note: with vacant sites the histogram is normalized by the number of
+		// sites rather than the population size (cf. fitness histograms)
 		double norm = 1.0 / nPopulation;
 		for (int n = 0; n < nBins; n++)
 			bins[n] *= norm;
@@ -745,16 +913,24 @@ public class IBSMCPopulation extends IBSPopulation<Continuous, IBSMCPopulation> 
 			// ignore trait1 and trait2
 			int size = bins.length;
 			double scale = (size - 1);
-			for (int n = 0; n < nPopulation; n++)
+			for (int n = 0; n < nPopulation; n++) {
+				// skip vacant sites
+				if (Double.isNaN(traits[n]))
+					continue;
 				// continuous traits are stored in normalized form
 				bins[(int) (traits[n] * scale + 0.5)] += incr;
+			}
 		} else {
 			int size = (int) Math.sqrt(bins.length);
 			double scale = (size - 1);
 			// fill bins
-			for (int n = 0; n < nPopulation * nTraits; n += nTraits)
+			for (int n = 0; n < nPopulation * nTraits; n += nTraits) {
+				// skip vacant sites
+				if (Double.isNaN(traits[n]))
+					continue;
 				bins[(int) (traits[n + trait2] * scale + 0.5) * size
 						+ (int) (traits[n + trait1] * scale + 0.5)] += incr;
+			}
 		}
 	}
 
@@ -772,6 +948,8 @@ public class IBSMCPopulation extends IBSPopulation<Continuous, IBSMCPopulation> 
 
 	@Override
 	public String getTraitNameAt(int index) {
+		if (isVacantAt(index))
+			return Module.VACANT_NAME;
 		StringBuilder aName = new StringBuilder();
 		int idx = index * nTraits;
 		String[] names = module.getTraitNames();
@@ -804,17 +982,22 @@ public class IBSMCPopulation extends IBSPopulation<Continuous, IBSMCPopulation> 
 			int idx = i;
 			double avg = 0.0;
 			double variance = 0.0;
-			for (int n = 1; n <= nPopulation; n++) {
+			int count = 0;
+			for (int n = 0; n < nPopulation; n++) {
 				double aTrait = traits[idx];
-				double delta = aTrait - avg;
-				avg += delta / n;
-				variance += delta * (aTrait - avg);
 				idx += nTraits;
+				// skip vacant sites
+				if (Double.isNaN(aTrait))
+					continue;
+				double delta = aTrait - avg;
+				avg += delta / ++count;
+				variance += delta * (aTrait - avg);
 			}
 			double scale = traitRangeMax[i] - traitRangeMin[i];
 			double shift = traitRangeMin[i];
-			mean[i] = avg * scale + shift;
-			mean[i + nTraits] = Math.sqrt(variance / (nPopulation - 1)) * scale;
+			// mean undefined in extinct populations
+			mean[i] = (count > 0 ? avg * scale + shift : Double.NaN);
+			mean[i + nTraits] = (count > 1 ? Math.sqrt(variance / (count - 1)) * scale : 0.0);
 		}
 		return mean;
 	}
@@ -837,15 +1020,12 @@ public class IBSMCPopulation extends IBSPopulation<Continuous, IBSMCPopulation> 
 	 * @return the array with the minimal trait values (same as input)
 	 */
 	public double[] getMinTraits(double[] min) {
-		if (nTraits == 1) {
-			min[0] = ArrayMath.min(traits);
-			return min;
-		}
 		for (int i = 0; i < nTraits; i++) {
 			int idx = i;
 			double m = Double.MAX_VALUE;
 			for (int n = 0; n < nPopulation; n++) {
 				double aTrait = traits[idx];
+				// note: comparisons with NaN (vacant sites) are always false
 				if (aTrait < m)
 					m = aTrait;
 				idx += nTraits;
@@ -875,15 +1055,12 @@ public class IBSMCPopulation extends IBSPopulation<Continuous, IBSMCPopulation> 
 	 * @return the array with the maximal trait values (same as input)
 	 */
 	public double[] getMaxTraits(double[] max) {
-		if (nTraits == 1) {
-			max[0] = ArrayMath.max(traits);
-			return max;
-		}
 		for (int i = 0; i < nTraits; i++) {
 			int idx = i;
 			double m = -Double.MAX_VALUE;
 			for (int n = 0; n < nPopulation; n++) {
 				double aTrait = traits[idx];
+				// note: comparisons with NaN (vacant sites) are always false
 				if (aTrait > m)
 					m = aTrait;
 				idx += nTraits;
@@ -906,14 +1083,19 @@ public class IBSMCPopulation extends IBSPopulation<Continuous, IBSMCPopulation> 
 	public double[] getMeanFitness(double[] mean) {
 		double avg = 0.0;
 		double variance = 0.0;
+		int count = 0;
 		for (int n = 0; n < nPopulation; n++) {
+			// skip vacant sites
+			if (isVacantAt(n))
+				continue;
 			double aScore = scores[n];
 			double delta = aScore - avg;
-			avg += delta / (n + 1);
+			avg += delta / ++count;
 			variance += delta * (aScore - avg);
 		}
-		mean[0] = avg;
-		mean[1] = Math.sqrt(variance / (nPopulation - 1));
+		// mean undefined in extinct populations
+		mean[0] = (count > 0 ? avg : Double.NaN);
+		mean[1] = (count > 1 ? Math.sqrt(variance / (count - 1)) : 0.0);
 		return mean;
 	}
 
@@ -955,6 +1137,9 @@ public class IBSMCPopulation extends IBSPopulation<Continuous, IBSMCPopulation> 
 					.append(" ± ")
 					.append(Formatter.formatFix(meantrait[i + nTraits], 3));
 		}
+		if (vacantIdx >= 0)
+			status.append("; Density: ")
+					.append(Formatter.formatPercent((double) nOccupied / nPopulation, 1));
 		return status.toString();
 	}
 
@@ -982,8 +1167,12 @@ public class IBSMCPopulation extends IBSPopulation<Continuous, IBSMCPopulation> 
 		if (module.getNGroup() > 2)
 			engine.logWarning("group interactions with continuous traits have NOT been tested...");
 
-		if (traits == null || traits.length != nPopulation * nTraits)
+		if (traits == null || traits.length != nPopulation * nTraits) {
 			traits = new double[nPopulation * nTraits];
+			// traits are now allocated but do not reflect an actual configuration
+			// until init() runs
+			initialized = false;
+		}
 		if (traitsNext == null || traitsNext.length != nPopulation * nTraits)
 			traitsNext = new double[nPopulation * nTraits];
 		if (myTraits == null || myTraits.length != nTraits)
@@ -1022,6 +1211,8 @@ public class IBSMCPopulation extends IBSPopulation<Continuous, IBSMCPopulation> 
 	@Override
 	public void init() {
 		super.init();
+		// the mutant (if any) must not be removed when placing vacant sites
+		int keep = -1;
 		switch (init.type) {
 			default:
 			case UNIFORM:
@@ -1034,9 +1225,81 @@ public class IBSMCPopulation extends IBSPopulation<Continuous, IBSMCPopulation> 
 				initGaussian();
 				break;
 			case MUTANT:
-				initMutant();
+				keep = initMutant();
 				break;
 		}
+		if (vacantIdx >= 0) {
+			initVacancies(keep);
+			// initialization bypasses the single-site bookkeeping in commitTraitAt(int)
+			countOccupied();
+		}
+		initialized = true;
+	}
+
+	/**
+	 * Vacate sites uniformly at random such that the fraction of occupied sites
+	 * matches the initial population density. The frequency of vacant sites
+	 * {@code v} is specified by an optional, additional argument for the first
+	 * trait of the initialization type, see {@link Init#clo}, or, if omitted,
+	 * the density is estimated from the equilibrium density of a monomorphic
+	 * population with the mean trait(s), see {@link #getDensityEstimate()}. At
+	 * least one site always remains occupied.
+	 *
+	 * @param keep the index of the site that must remain occupied or {@code -1}
+	 */
+	private void initVacancies(int keep) {
+		double[] args = init.args[0];
+		int nParams = init.type.nParams;
+		double density = (args != null && args.length > nParams) ? 1.0 - args[nParams] : getDensityEstimate();
+		int nOcc = Math.max(1, Math.min(nPopulation, (int) (density * nPopulation + 0.5)));
+		int[] sites = new int[nPopulation];
+		for (int n = 0; n < nPopulation; n++)
+			sites[n] = n;
+		int nFree = nPopulation;
+		if (keep >= 0) {
+			// move site keep to the end and exclude it from the draw
+			sites[keep] = nPopulation - 1;
+			sites[nPopulation - 1] = keep;
+			nFree--;
+		}
+		// partial Fisher-Yates shuffle to draw the sites to vacate
+		int nVacant = nPopulation - nOcc;
+		for (int n = 0; n < nVacant; n++) {
+			int pick = n + random0n(nFree - n);
+			int site = sites[pick];
+			sites[pick] = sites[n];
+			int offset = site * nTraits;
+			Arrays.fill(traits, offset, offset + nTraits, Double.NaN);
+		}
+	}
+
+	/**
+	 * Estimates the equilibrium population density for a monomorphic population
+	 * with the mean trait(s) of the current, fully occupied population in the
+	 * mean-field limit, see {@link ODE#getVacantAtEQ(double, double, double, double)}.
+	 * For modules implementing {@link Payoffs} the fitness is based on the
+	 * payoff of a single pairwise interaction.
+	 *
+	 * @return the estimated population density
+	 */
+	protected double getDensityEstimate() {
+		double fitness = 0.0;
+		if (module instanceof Payoffs && pairmodule != null) {
+			double[] mean = new double[nTraits];
+			for (int n = 0; n < nPopulation * nTraits; n++)
+				mean[n % nTraits] += traits[n];
+			ArrayMath.multiply(mean, 1.0 / nPopulation);
+			fitness = map2fit.map(pairmodule.pairScores(mean, mean, 1, new double[1]));
+		}
+		double z = ODE.getVacantAtEQ(module.getBirthRate(), module.getDeathRate(), fitness,
+				module.getCompetitionRate());
+		if (Double.isNaN(z)) {
+			// no net growth - carrying capacity estimate undefined; default to fully
+			// occupied and let the user specify an explicit density
+			engine.logWarning("no net growth - assume fully occupied.");
+			return 1.0;
+		}
+		return 1.0 - z;
 	}
 
 	/**
@@ -1079,8 +1342,10 @@ public class IBSMCPopulation extends IBSPopulation<Continuous, IBSMCPopulation> 
 
 	/**
 	 * Initialize a monomorphic resident population with a single mutant.
+	 * 
+	 * @return the index of the mutant
 	 */
-	void initMutant() {
+	int initMutant() {
 		int mutidx = random0n(nPopulation);
 		for (int s = 0; s < nTraits; s++) {
 			double resident = Math.min(Math.max(init.args[s][0], traitRangeMin[s]), traitRangeMax[s]);
@@ -1090,6 +1355,7 @@ public class IBSMCPopulation extends IBSPopulation<Continuous, IBSMCPopulation> 
 			double mut = Math.min(Math.max(init.args[s][1], traitRangeMin[s]), traitRangeMax[s]);
 			traits[mutidx * nTraits + s] = (mut - traitRangeMin[s]) / (traitRangeMax[s] - traitRangeMin[s]);
 		}
+		return mutidx;
 	}
 
 	@Override
@@ -1103,6 +1369,8 @@ public class IBSMCPopulation extends IBSPopulation<Continuous, IBSMCPopulation> 
 			smallTrait = new double[maxGroup * nTraits];
 		if (meantrait == null || meantrait.length != 2 * nTraits)
 			meantrait = new double[2 * nTraits];
+		if (groupIdxs == null || groupIdxs.length != maxGroup)
+			groupIdxs = new int[maxGroup];
 		if (adjustScores) {
 			if (oldTraits == null || oldTraits.length != nTraits)
 				oldTraits = new double[nTraits];
@@ -1116,8 +1384,8 @@ public class IBSMCPopulation extends IBSPopulation<Continuous, IBSMCPopulation> 
 
 	@Override
 	public boolean mouseHitNode(int hit, boolean alt) {
-		if (hit < 0 || hit >= nPopulation)
-			return false; // invalid argument
+		if (hit < 0 || hit >= nPopulation || isVacantAt(hit))
+			return false; // invalid argument or vacant site
 		int offset = hit * nTraits;
 		for (int n = 0; n < nTraits; n++)
 			traitsNext[offset + n] = Math.min(Math.max(traits[offset + n] + (alt ? -0.1 : 0.1), 0.0), 1.0);
@@ -1148,6 +1416,8 @@ public class IBSMCPopulation extends IBSPopulation<Continuous, IBSMCPopulation> 
 			return false;
 		for (int n = 0; n < size; n++)
 			traits[n] = config.get(n);
+		if (vacantIdx >= 0)
+			countOccupied();
 		return true;
 	}
 }

@@ -411,8 +411,8 @@ public abstract class IBSPopulation<M extends Module<?>, P extends IBSPopulation
 	 * consistent even though its content (e.g. trait counts) is not yet
 	 * meaningful, and {@link #checkConvergence()} must not be trusted on it.
 	 * Declared here, rather than in an individual subclass, because any
-	 * population admitting vacant sites - currently {@link IBSDPopulation}, in
-	 * principle also {@link IBSCPopulation}/{@link IBSMCPopulation} - is
+	 * population admitting vacant sites - {@link IBSDPopulation} as well as
+	 * {@link IBSCPopulation}/{@link IBSMCPopulation} - is
 	 * equally at risk. Subclasses that maintain such content are responsible
 	 * for clearing {@link #initialized} where they (re)allocate it in
 	 * {@link #check()}, and setting it again at the end of their {@link #init()}.

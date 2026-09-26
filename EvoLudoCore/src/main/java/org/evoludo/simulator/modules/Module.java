@@ -605,8 +605,10 @@ public abstract class Module<T extends Module<T>>
 	/**
 	 * Get the index for the vacant type or {@code -1} if Module does not admit
 	 * empty sites. In {@link Discrete} modules this is the index of the vacant type
-	 * e.g. in the name or color vectors. Currently unused in {@link Continuous}
-	 * modules.
+	 * e.g. in the name or color vectors. In {@link Continuous} modules vacant sites
+	 * are not a trait; by convention they set {@code vacantIdx = nTraits}, i.e.
+	 * past the last trait, so that a non-negative value merely flags that empty
+	 * sites are admitted, without affecting the trait names or colors.
 	 * 
 	 * @return the index of the vacant type
 	 */
