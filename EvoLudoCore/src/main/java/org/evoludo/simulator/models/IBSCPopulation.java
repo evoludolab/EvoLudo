@@ -173,17 +173,22 @@ public class IBSCPopulation extends IBSMCPopulation {
 		double oldScore = cpairmodule.pairScores(traits[me], tmpGroup, nInter, oldScores);
 		double newScore = cpairmodule.pairScores(traitsNext[me], tmpGroup, nInter, groupScores);
 		commitTraitAt(me);
+		// on undirected graphs every partner is interacted with twice, once as
+		// the focal and once as the partner, see playGameSyncAt(int)
 		if (playerScoreAveraged) {
 			double iInter = 1.0 / nInter;
 			newScore *= iInter;
 			oldScore *= iInter;
+		} else {
+			newScore *= u2;
+			oldScore *= u2;
 		}
 		adjustScoreAt(me, oldScore, newScore);
 		for (int n = 0; n < nOut; n++) {
 			int you = out[n];
-			double diff = groupScores[n] - oldScores[n];
+			double diff = u2 * (groupScores[n] - oldScores[n]);
 			if (playerScoreAveraged)
-				diff = u2 * diff / interactions[you];
+				diff /= interactions[you];
 			opponent.adjustScoreAt(you, diff);
 		}
 		// same as !interaction.isUndirected() because in != null implies directed graph
@@ -191,9 +196,9 @@ public class IBSCPopulation extends IBSMCPopulation {
 		if (in != null) {
 			for (int n = 0; n < nIn; n++) {
 				int you = in[n];
-				double diff = groupScores[nOut + n] - oldScores[nOut + n];
+				double diff = u2 * (groupScores[nOut + n] - oldScores[nOut + n]);
 				if (playerScoreAveraged)
-					diff = u2 * diff / interactions[you];
+					diff /= interactions[you];
 				opponent.adjustScoreAt(you, diff);
 			}
 		}
