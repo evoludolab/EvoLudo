@@ -114,6 +114,30 @@ public abstract class Mutation {
 	public boolean temperature = false;
 
 	/**
+	 * Extract the optional mutation process, {@code temperature} (mutations tied
+	 * to reproduction) or {@code random} (mutations arise uniformly distributed,
+	 * cosmic rays), from the arguments {@code args} of the {@code --mutation}
+	 * option and set {@link #temperature} accordingly. The process keyword may
+	 * appear at any position; {@code random} must match in full to be
+	 * distinguishable from the mutation type {@code range}. If no process is
+	 * specified, {@link #temperature} remains unchanged.
+	 *
+	 * @param args the arguments of the {@code --mutation} option
+	 * @return the arguments without the process keyword
+	 */
+	String[] parseProcess(String[] args) {
+		for (int i = 0; i < args.length; i++) {
+			String process = args[i].toLowerCase();
+			boolean isRandom = process.equals("random");
+			if (isRandom || process.startsWith("t")) {
+				temperature = !isRandom;
+				return ArrayMath.drop(args, i);
+			}
+		}
+		return args;
+	}
+
+	/**
 	 * Check if a mutation arises.
 	 * 
 	 * @return {@code true} if a mutation should be performed
@@ -336,10 +360,7 @@ public abstract class Mutation {
 							mut.range = 0.0;
 							mut.type = Type.NONE;
 							// deal with optional temperature|random flag first
-							if (args.length > 1 && args[1].toLowerCase().startsWith("t")) {
-								mut.temperature = true;
-								args = ArrayMath.drop(args, 1);
-							}
+							args = mut.parseProcess(args);
 							switch (args.length) {
 								case 3:
 									mut.range = CLOParser.parseDouble(args[2]);
@@ -360,8 +381,11 @@ public abstract class Mutation {
 										mut.type = Type.OTHER;
 									break;
 								case 0:
-								default:
 									// no arguments, stick to defaults
+									break;
+								default:
+									// too many arguments
+									return false;
 							}
 						}
 						return true;
@@ -468,6 +492,8 @@ public abstract class Mutation {
 			clo.addKeys(Type.values());
 			// defaults to no mutations
 			type = Type.NONE;
+			// continuous traits mutate at reproduction by default
+			temperature = true;
 		}
 
 		@Override
@@ -515,7 +541,7 @@ public abstract class Mutation {
 		 */
 		public final CLOption clo = new CLOption("mutation", "0.0",
 				CLOCategory.Model,
-				"--mutation <p> [temperature|random (default)] [<t> [<r>]>  with\n" +
+				"--mutation <p> [temperature (default)|random] [<t> [<r>]>  with\n" +
 						"             p: mutation probability\n" + //
 						"             r: mutation range (fraction of interval)\n" + //
 						"       process: reproduction vs cosmic rays\n" + //
@@ -543,16 +569,13 @@ public abstract class Mutation {
 							String mutts = mutations[n++ % mutations.length];
 							String[] args = mutts.split("\\s+|=|,");
 							Mutation mut = mod.getMutation();
-							// set defaults
+							// set defaults; continuous traits mutate at reproduction by default
 							mut.probability = 0.0;
-							mut.temperature = false;
+							mut.temperature = true;
 							mut.range = 0.0;
 							mut.type = Type.NONE;
 							// deal with optional temperature|random flag first
-							if (args.length > 1 && args[1].toLowerCase().startsWith("t")) {
-								mut.temperature = true;
-								args = ArrayMath.drop(args, 1);
-							}
+							args = mut.parseProcess(args);
 							switch (args.length) {
 								case 3:
 									mut.range = CLOParser.parseDouble(args[2]);
@@ -593,8 +616,14 @@ public abstract class Mutation {
 									}
 									break;
 								case 0:
-								default:
 									// no arguments, stick to defaults
+									break;
+								default:
+									// too many arguments
+									module.engine.logWarning((species.size() > 1 ? mod.getName() + ": " : "") + //
+											"too many mutation arguments '" + mutts + "' - using '"
+											+ mut.type + "'");
+									success = false;
 							}
 						}
 						return success;
