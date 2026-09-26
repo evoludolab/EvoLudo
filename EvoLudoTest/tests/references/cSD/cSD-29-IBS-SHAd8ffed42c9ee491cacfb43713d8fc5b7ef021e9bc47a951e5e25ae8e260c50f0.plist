@@ -3,15 +3,15 @@
 <plist version="1.0">
 <dict>
 <key>Export date</key>
-<string>Sat Aug 15 16:51:00 PDT 2026</string>
+<string>Sat Sep 26 12:16:37 PDT 2026</string>
 <key>Title</key>
 <string>Continuous Snowdrift</string>
 <key>Version</key>
-<string>EvoLudo: v2.2.5-166-g6bf95b7X &#169; Christoph Hauert</string>
+<string>EvoLudo: v2.3.0-RC1-22-g4cece89X &#169; Christoph Hauert</string>
 <key>JavaVersion</key>
 <string>25</string>
 <key>CLO</key>
-<string>--benefits 11 6,-1.4 --costs 1 4.56,-1.6 --delay 0 --fitnessmap static --geometry n --init uniform --interactions all --model IBS --module cSD --mutation 0.1 gaussian 0.01 --playerupdate thermal 0.1 --popsize 50x --popupdate async --references 1 --seed 0 --timestep 1 --timestop 1000</string>
+<string>--benefits 11 6,-1.4 --costs 1 4.56,-1.6 --delay 0 --fitnessmap static --geometry n --init uniform --interactions all --model IBS --module cSD --mutation 0.1 random gaussian 0.01 --playerupdate thermal 0.1 --popsize 50x --popupdate async --references 1 --seed 0 --timestep 1 --timestop 1000</string>
 <key>Time</key>
 <real>4643223941443009429L</real>
 <key>Model</key>
