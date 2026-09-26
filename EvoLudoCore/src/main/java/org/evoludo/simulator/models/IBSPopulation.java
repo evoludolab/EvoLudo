@@ -4131,6 +4131,10 @@ public abstract class IBSPopulation<M extends Module<?>, P extends IBSPopulation
 		GeometryFeatures cFeats = competition.getFeatures();
 		int maxGroup = Math.max(Math.max(iFeats.maxIn, iFeats.maxOut),
 				Math.max(cFeats.maxIn, cFeats.maxOut));
+		// on directed graphs, adjusting scores may involve in- as well as
+		// out-neighbours, see e.g. IBSMCPopulation#adjustPairGameScoresAt(int)
+		if (!interaction.isUndirected())
+			maxGroup = Math.max(maxGroup, iFeats.maxIn + iFeats.maxOut);
 		int nGroup = module.getNGroup();
 		maxGroup = Math.max(maxGroup, nGroup) + 1; // add 1 in case focal is part of group
 		if (groupScores == null || groupScores.length != maxGroup)
