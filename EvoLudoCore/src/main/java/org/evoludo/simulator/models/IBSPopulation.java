@@ -4311,7 +4311,7 @@ public abstract class IBSPopulation<M extends Module<?>, P extends IBSPopulation
 			for (int n = 0; n < nPopulation; n++)
 				checkFitness += getFitnessAt(n);
 			// see checkFitnessSum for why the tolerance is scaled to sumFitness
-			if (Math.abs(checkFitness - sumFitness) > Combinatorics.pow(10, -12 + Functions.magnitude(sumFitness)))
+			if (Math.abs(checkFitness - sumFitness) > Combinatorics.pow(10.0, -12 + Functions.magnitude(sumFitness)))
 				logAccountingIssue(checkFitness, sumFitness);
 		}
 	}
@@ -4401,10 +4401,10 @@ public abstract class IBSPopulation<M extends Module<?>, P extends IBSPopulation
 		// tolerance scales with sumFitness's magnitude (re-summing nPopulation
 		// doubles in a different order can drift by more than a flat epsilon);
 		// -12 matches EPS_SMALL at the low end of each magnitude bracket
-		if (Math.abs(sumFitness - checkFitness) > Combinatorics.pow(10, -12 + Functions.magnitude(sumFitness)))
+		if (Math.abs(sumFitness - checkFitness) > Combinatorics.pow(10.0, -12 + Functions.magnitude(sumFitness)))
 			logAccountingIssue("sum of fitness is ", sumFitnessStore, sumFitness,
 					"(delta=" + Math.abs(sumFitness - checkFitness) + ", max="
-							+ Combinatorics.pow(10, -12 + Functions.magnitude(sumFitness)) + ")");
+							+ Combinatorics.pow(10.0, -12 + Functions.magnitude(sumFitness)) + ")");
 	}
 
 	/**
@@ -4428,12 +4428,13 @@ public abstract class IBSPopulation<M extends Module<?>, P extends IBSPopulation
 				logMapIssue(n, scores[n], fitness[n]);
 		}
 
-		if (Math.abs(sumFitness - sumFitnessStore) > Model.EPS_SMALL)
+		// see checkFitnessSum for why the tolerance is scaled to sumFitness
+		double tolerance = Combinatorics.pow(10.0, -12 + Functions.magnitude(sumFitness));
+		if (Math.abs(sumFitness - sumFitnessStore) > tolerance)
 			logAccountingIssue(sumFitnessStore, sumFitness);
 
 		double checkFitness = ArrayMath.norm(fitness);
-		// see checkFitnessSum for why the tolerance is scaled to sumFitness
-		if (Math.abs(sumFitness - checkFitness) > Combinatorics.pow(10, -12 + Functions.magnitude(sumFitness)))
+		if (Math.abs(sumFitness - checkFitness) > tolerance)
 			logAccountingIssue(checkFitness, sumFitness);
 
 		// restore data
