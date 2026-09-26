@@ -207,6 +207,7 @@ public abstract class Discrete extends Module<Discrete> {
 	 *
 	 * @return the largest birth rate across all traits
 	 */
+	@Override
 	public double getMaxBirthRate() {
 		return birthRates == null ? getBirthRate() : ArrayMath.max(birthRates);
 	}
@@ -279,6 +280,7 @@ public abstract class Discrete extends Module<Discrete> {
 	 *
 	 * @return the largest death rate across all traits
 	 */
+	@Override
 	public double getMaxDeathRate() {
 		return deathRates == null ? getDeathRate() : ArrayMath.max(deathRates);
 	}

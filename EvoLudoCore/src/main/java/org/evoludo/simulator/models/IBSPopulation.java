@@ -2171,7 +2171,7 @@ public abstract class IBSPopulation<M extends Module<?>, P extends IBSPopulation
 	 * footing with mutation and replication, rather than handled here - see
 	 * {@link #doMigration()}. Ecological (vacancy) population updates are the
 	 * exception: only diffusive migration is supported there, folded directly
-	 * into the ecological rate draw instead (see {@code IBSDPopulation}), see
+	 * into the ecological rate draw instead (see {@link #updatePlayerEcologyAt(int)}), see
 	 * {@link #checkMigration()}.
 	 *
 	 * @return the number of elapsed realtime units
@@ -2328,6 +2328,11 @@ public abstract class IBSPopulation<M extends Module<?>, P extends IBSPopulation
 	 * @see EvoLudo#modelNext()
 	 */
 	public double getSpeciesUpdateRate() {
+		if (populationUpdate.getType() == PopulationUpdate.Type.ECOLOGY) {
+			if (maxRate < 0.0)
+				updateMaxRate();
+			return maxRate * getPopulationSize();
+		}
 		if (module instanceof Payoffs && minFitness > 0.0)
 			return getTotalFitness();
 		return getPopulationSize();
@@ -2703,17 +2708,354 @@ public abstract class IBSPopulation<M extends Module<?>, P extends IBSPopulation
 	}
 
 	/**
-	 * Perform a single ecological update of the site with index {@code index}.
-	 * <p>
-	 * <strong>Important:</strong> No default implementation is possible. Modules
-	 * with ecological updates need to subclass {@code IBSPopulation} and provide
-	 * their own implementations.
+	 * The maximum rate at which ecological events can occur. This is used to
+	 * convert rates into transition probabilities. Negative if it needs to be
+	 * (re)calculated, see {@link #updateMaxRate()}.
+	 */
+	protected double maxRate = -1.0;
+
+	/**
+	 * The microscopic rate at which two adjacent sites exchange occupants,
+	 * indexed by trait (see {@link #getExchangeRateAt(int)}), derived from the
+	 * diffusion coefficient(s) set through {@code --migration D<i>&lt;D&gt;</i>}
+	 * - cached alongside {@link #maxRate} since both depend only on quantities
+	 * that are fixed for the duration of a run (rates, population size and
+	 * geometry). Protected so that subclasses overriding
+	 * {@link #updateMaxRate()} with their own (non-generic) rate structure -
+	 * e.g. because they support a full competition matrix among more than two
+	 * types, which {@link Module#getCompetitionRates()} cannot represent - can
+	 * still fold diffusion into their own bound via
+	 * {@link #updateExchangeRates()}, instead of duplicating the
+	 * diffusion-coefficient machinery themselves.
 	 *
-	 * @param index the index of the focal site
+	 * @see #updateExchangeRates()
+	 */
+	protected double[] exchangeRates;
+
+	/**
+	 * Derive the microscopic exchange rate(s) \(\epsilon\) at which two adjacent
+	 * sites swap occupants from the migration probability(ies)
+	 * {@link #pMigration}, one per trait, interpreted here as diffusion
+	 * coefficient(s) \(D\) (only {@link IBS.MigrationType#DIFFUSION} is supported
+	 * for ecological population updates, see {@link #checkMigration()}). On
+	 * lattice geometries with a well defined spatial dimension \(\delta\) -
+	 * disregarding boundary conditions, i.e. {@link GeometryType#LINEAR}
+	 * (\(\delta=1\)), {@link GeometryType#SQUARE},
+	 * {@link GeometryType#SQUARE_MOORE}, {@link GeometryType#SQUARE_NEUMANN},
+	 * {@link GeometryType#SQUARE_NEUMANN_2ND}, {@link GeometryType#HEXAGONAL} and
+	 * {@link GeometryType#TRIANGULAR} (\(\delta=2\)), as well as
+	 * {@link GeometryType#CUBE} (\(\delta=3\)) - each migration probability is
+	 * interpreted as the macroscopic diffusion coefficient \(D\) and converted
+	 * according to \(\epsilon = D\,\delta\,N^{2/\delta}\), where \(N\) is the
+	 * total number of sites. For all other geometries, where the spatial
+	 * dimension is not defined, the migration probability is used directly as
+	 * \(\epsilon\). Populates {@link #exchangeRates}, one entry per trait (see
+	 * {@link #getMigrationProb(int)} for how fewer rates than traits are cycled
+	 * to allow different traits to migrate at different rates).
+	 */
+	protected void updateExchangeRates() {
+		if (exchangeRates == null || exchangeRates.length != nTraits)
+			exchangeRates = new double[nTraits];
+		if (getMigrationType() != MigrationType.DIFFUSION) {
+			Arrays.fill(exchangeRates, 0.0);
+			return;
+		}
+		int delta;
+		switch (competition.getType()) {
+			case LINEAR:
+				delta = 1;
+				break;
+			case SQUARE:
+			case SQUARE_MOORE:
+			case SQUARE_NEUMANN:
+			case SQUARE_NEUMANN_2ND:
+			case HEXAGONAL:
+			case TRIANGULAR:
+				delta = 2;
+				break;
+			case CUBE:
+				delta = 3;
+				break;
+			default:
+				// spatial dimension not defined - use each migration probability directly
+				delta = 0;
+		}
+		for (int t = 0; t < nTraits; t++) {
+			double diffusion = getMigrationProb(t);
+			if (diffusion <= 0.0) {
+				exchangeRates[t] = 0.0;
+				continue;
+			}
+			exchangeRates[t] = ((delta == 0) ? diffusion : diffusion * delta * Math.pow(nPopulation, 2.0 / delta));
+		}
+	}
+
+	/**
+	 * Computes the maximum ecological event rate for this species given the current
+	 * set of rates. Needed both for rejection sampling of events and to weight
+	 * species selection in multi-species simulations.
+	 */
+	protected void updateMaxRate() {
+		// updates always involve focal, peer, opponent; cover all combinations
+		updateExchangeRates();
+		double maxExchangeRate = 0.0;
+		for (double rate : exchangeRates) {
+			if (rate > maxExchangeRate)
+				maxExchangeRate = rate;
+		}
+		double rBirth = module.getMaxBirthRate();
+		double rDeath = module.getMaxDeathRate();
+		double[] compRates = module.getCompetitionRates();
+		// determine maximum rates for birth and death events
+		// note, updates always involve one focal and one peer as well as one model
+		// in multi-species scenarios. hence we need to determine the maximum rates
+		// of the following interactions:
+		// focal, peer, other
+		// X, 0, 0: birth (birth rate + fitness)
+		// X, X, 0: competition (competition rate)
+		// X, 0, Y: birth (birth rate + fitness + synergy with Y) or
+		// death (competition with Y)
+		// X, X, Y: death (competition with X and Y)
+		// X, -, -: death happens in all cases with death rate
+		//
+		int idx = module.getId();
+		double peerRate = (idx >= 0 && idx < compRates.length) ? compRates[idx] : 0.0;
+		double peerComp = (peerRate > 0.0) ? peerRate : 0.0;
+		double peerSynergy = (peerRate < 0.0) ? -peerRate : 0.0;
+		double maxOppPos = 0.0;
+		double maxOppNeg = 0.0;
+		for (int n = 0; n < compRates.length; n++) {
+			if (n == idx)
+				continue;
+			double comp = compRates[n];
+			if (comp > maxOppPos)
+				maxOppPos = comp;
+			if (comp < 0.0 && -comp > maxOppNeg)
+				maxOppNeg = -comp;
+		}
+		if (competition.isUndirected()) {
+			// peer and the site available for placing offspring are the same site,
+			// so birth (peer vacant) and same-species competition (peer occupied)
+			// remain mutually exclusive; use the tighter, scenario-specific bound.
+			// diffusion can apply regardless of whether the peer is vacant or
+			// occupied, so it adds to both
+			double maxVacant = rDeath + rBirth + maxFitness + peerSynergy + Math.max(maxOppPos, maxOppNeg);
+			double maxOccupied = rDeath + peerComp + maxOppPos;
+			maxRate = Math.max(maxVacant, maxOccupied) + maxExchangeRate;
+		} else {
+			// peer (upstream) and the site available for placing offspring
+			// (downstream) are drawn independently, so birth and same-/cross-species
+			// competition are no longer mutually exclusive and must be summed;
+			// peerComp/peerSynergy are mutually exclusive by the sign of peerRate,
+			// and the opponent term already takes the tighter of its two directions,
+			// so this sum is exact, not an overestimate. maxExchangeRate is always 0.0
+			// here since diffusion requires an undirected geometry, see
+			// IBSPopulation#checkMigration()
+			maxRate = rDeath + rBirth + maxFitness + peerSynergy + peerComp + Math.max(maxOppPos, maxOppNeg)
+					+ maxExchangeRate;
+		}
+	}
+
+	/**
+	 * Gets the per capita birth rate of the individual at site {@code idx}, in
+	 * the absence of any payoff/fitness contribution, see
+	 * {@link #updatePlayerEcologyAt(int)}. By default this is the
+	 * trait-independent rate of the module.
+	 *
+	 * @param idx the index of the (occupied) site
+	 * @return the birth rate
+	 */
+	protected double getBirthRateAt(int idx) {
+		return module.getBirthRate();
+	}
+
+	/**
+	 * Gets the death rate of the individual at site {@code idx}, see
+	 * {@link #updatePlayerEcologyAt(int)}. By default this is the
+	 * trait-independent rate of the module.
+	 *
+	 * @param idx the index of the (occupied) site
+	 * @return the death rate
+	 */
+	protected double getDeathRateAt(int idx) {
+		return module.getDeathRate();
+	}
+
+	/**
+	 * Gets the rate at which the individual at site {@code idx} exchanges places
+	 * with a neighbour, see {@link #exchangeRates}. By default this is the rate of
+	 * the first trait, which applies to every individual.
+	 *
+	 * @param idx the index of the (occupied) site
+	 * @return the exchange rate
+	 */
+	protected double getExchangeRateAt(int idx) {
+		return exchangeRates[0];
+	}
+
+	/**
+	 * Mark site {@code idx} to become vacant, i.e. set its next trait to vacant.
+	 * The change still needs to be committed. Must be implemented by populations
+	 * admitting vacant sites that rely on the default
+	 * {@link #updatePlayerEcologyAt(int)}.
+	 *
+	 * @param idx the index of the site to vacate
+	 */
+	protected void setNextVacantAt(int idx) {
+		throw new UnsupportedOperationException("setNextVacantAt not implemented.");
+	}
+
+	/**
+	 * Place the offspring of the individual at site {@code parent} onto the
+	 * (vacant) site {@code dest}, including mutations (if any), and commit the
+	 * change. By default, this is a Moran-type reproduction event, see
+	 * {@link #maybeMutateMoran(int, int)}.
+	 *
+	 * @param parent the index of the parent
+	 * @param dest   the index of the site that receives the offspring
+	 */
+	protected void reproduceAt(int parent, int dest) {
+		maybeMutateMoran(parent, dest);
+	}
+
+	/**
+	 * Perform a single ecological update of the individual with index {@code me}:
+	 * <ol>
+	 * <li>Focal individual dies with probability proportional to the death rate.
+	 * <li>Otherwise, draw a random neighbour and, if unoccupied, place clonal
+	 * offspring on neighboring site with probability proportional to fitness.
+	 * </ol>
+	 * Trait-specific rates are obtained from {@link #getBirthRateAt(int)},
+	 * {@link #getDeathRateAt(int)} and {@link #getExchangeRateAt(int)}, while
+	 * {@link #setNextVacantAt(int)} and {@link #reproduceAt(int, int)} implement
+	 * death and birth, respectively.
+	 *
+	 * @param me the index of the focal site
 	 * @return the number of elapsed realtime units
 	 */
-	protected int updatePlayerEcologyAt(int index) {
-		throw new UnsupportedOperationException("updatePlayerEcologyAt not implemented.");
+	protected int updatePlayerEcologyAt(int me) {
+		debugFocal = me;
+		debugModel = -1;
+		// pickUpstreamSiteAt/pickDownstreamSiteAt below set debugModels/debugNModels
+		// as a side effect, but only on some branches (e.g. never on focalDies());
+		// reset here so a stale group from an earlier, unrelated event doesn't leak
+		// into debugMarkChange()
+		debugNModels = 0;
+		if (maxRate < 0.0)
+			updateMaxRate();
+		double rDeath = getDeathRateAt(me);
+		int nPop = getPopulationSize();
+		double randomEvent = random01() * maxRate;
+		if (randomEvent < rDeath)
+			return focalDies(me, nPop);
+
+		randomEvent -= rDeath;
+		rDeath = 0.0;
+		double[] compRates = module.getCompetitionRates();
+		double rBirth = getBirthRateAt(me);
+		int nSpecies = compRates.length;
+		if (nSpecies > 1) {
+			// multi-species scenario: pick opponent species; oppIdx < 0 means no
+			// upstream neighbour in the opponent population (source node on a
+			// directed geometry) and hence no cross-species effect
+			int specIdx = (module.getId() + 1
+					+ (nSpecies == 2 ? 0 : random0n(nSpecies - 1))) % nSpecies;
+			IBSPopulation<?, ?> oppPop = module.getSpecies(specIdx).getIBSPopulation();
+			int oppIdx = oppPop.pickUpstreamSiteAt(me);
+			if (oppIdx >= 0 && !oppPop.isVacantAt(oppIdx)) {
+				double comp = compRates[specIdx];
+				if (comp > 0.0)
+					rDeath += comp; // cross-species competition
+				else
+					rBirth -= comp; // cross-species synergy
+			}
+		}
+		// peer interactions: an upstream neighbour threatens to invade this site
+		// (analogous to death-Birth updating, where a vacant site is filled by one
+		// of its incoming neighbours) and so drives competition/synergy affecting
+		// this individual's own rates; no upstream neighbour (peer < 0) means
+		// nothing threatens to invade and neither applies
+		int peer = pickUpstreamSiteAt(me);
+		boolean peerVacant = false;
+		if (peer >= 0) {
+			peerVacant = isVacantAt(peer);
+			double rate = compRates[module.getId()];
+			if (peerVacant) {
+				if (rate < 0.0)
+					rBirth -= rate; // peer synergy/mutualism
+			} else if (rate > 0.0)
+				rDeath += rate; // peer competition
+		}
+		// diffusion: focal and peer trade places if they differ, including peer
+		// being vacant (focal hops into the empty neighbouring site); the rate is
+		// that of the focal's own trait (each individual carries its own mobility
+		// when it is its turn to update); requires an undirected geometry, already
+		// enforced by IBSPopulation#checkMigration()
+		double focalExchangeRate = getExchangeRateAt(me);
+		double rDiff = (peer >= 0 && focalExchangeRate > 0.0 && !haveSameTrait(peer, me)) ? focalExchangeRate
+				: 0.0;
+		// offspring, in turn, is placed on a downstream neighbour (analogous to
+		// Birth-death updating); on undirected geometries upstream and downstream
+		// neighbours coincide, so reuse peer instead of drawing (and checking) again;
+		// no downstream neighbour (dest < 0) means nowhere to place offspring
+		boolean undirected = competition.isUndirected();
+		int dest = undirected ? peer : pickDownstreamSiteAt(me);
+		// pickUpstreamSiteAt/pickDownstreamSiteAt above set debugModels/debugNModels
+		// as a side effect (for the benefit of other update rules); ecology only ever
+		// highlights debugFocal/debugModel, so discard that side effect again
+		debugNModels = 0;
+		if (dest >= 0 && (undirected ? peerVacant : isVacantAt(dest))) {
+			// destination vacant: add fitness contribution if module implements Payoffs
+			if (module instanceof Payoffs) {
+				// ephemeral scores are never persisted; compute freshly right before use
+				if (playerScoring.equals(ScoringType.EPHEMERAL))
+					playGameAt(me);
+				rBirth += getFitnessAt(me);
+			}
+		} else
+			rBirth = 0.0; // birth not possible if destination occupied or none exists
+		// determine event
+		if (randomEvent > rBirth + rDeath + rDiff) {
+			// nothing happened, no time elapsed
+			return 0;
+		}
+		if (randomEvent < rBirth) {
+			// birth event: fill vacant neighbor site
+			reproduceAt(me, dest);
+			debugModel = dest;
+			updateMaxRate();
+			return 1;
+		}
+		randomEvent -= rBirth;
+		if (randomEvent < rDeath)
+			return focalDies(me, nPop);
+		// diffusion: focal and peer trade places; use the generic swap path so
+		// scores, fitnesses and interaction counts remain consistent with the move.
+		swapSitesAt(me, peer);
+		debugModel = peer;
+		updateMaxRate();
+		return 1;
+	}
+
+	/**
+	 * Helper method to perform the death of the focal individual. Returns
+	 * {@code -1} if the population goes extinct and {@code 1} otherwise.
+	 *
+	 * @param me   the index of the focal individual
+	 * @param nPop the current population size
+	 * @return {@code -1} if the population goes extinct and {@code 1} otherwise
+	 */
+	private int focalDies(int me, int nPop) {
+		// vacate focal site
+		setNextVacantAt(me);
+		if (module instanceof Payoffs)
+			updateScoreAt(me, true);
+		else
+			commitTraitAt(me);
+		if (nPop == 1)
+			return -1;
+		updateMaxRate();
+		return 1;
 	}
 
 	/**
@@ -3425,6 +3767,8 @@ public abstract class IBSPopulation<M extends Module<?>, P extends IBSPopulation
 	 * {@link Module}.
 	 */
 	public void updateMinMaxScores() {
+		// maximum rate of ecological events depends on maxFitness
+		maxRate = -1.0;
 		if (!(module instanceof Payoffs))
 			return;
 		minScore = getMinScore();
@@ -3456,6 +3800,8 @@ public abstract class IBSPopulation<M extends Module<?>, P extends IBSPopulation
 		nPopulation = module.getNPopulation();
 		map2fit = module.getMap2Fitness();
 		playerUpdate = module.getPlayerUpdate();
+		// rates of ecological events may have changed
+		maxRate = -1.0;
 
 		doReset |= checkGeometry();
 		// Note: now that interaction and competition are set, we still cannot set
@@ -3691,7 +4037,7 @@ public abstract class IBSPopulation<M extends Module<?>, P extends IBSPopulation
 				&& migrationType != MigrationType.DIFFUSION)
 			// ecological (vacancy) populations draw death/birth/competition as
 			// competing rates in updatePlayerEcologyAt(); diffusive migration has
-			// been folded into that same rate-based draw (see IBSDPopulation), but
+			// been folded into that same rate-based draw (see updatePlayerEcologyAt()), but
 			// birth-death/death-birth migration - a global, non-local process - has
 			// no equivalent there and remains unsupported for this population update
 			incompatible = "only diffusive migration supported for ecological population updates!";
@@ -4227,6 +4573,7 @@ public abstract class IBSPopulation<M extends Module<?>, P extends IBSPopulation
 				tags[n] = n;
 		// reset issue counter for the current model state
 		nIssues = 0;
+		maxRate = -1.0;
 	}
 
 	/**

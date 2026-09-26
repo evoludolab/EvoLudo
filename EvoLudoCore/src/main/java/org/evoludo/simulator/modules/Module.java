@@ -1094,6 +1094,17 @@ public abstract class Module<T extends Module<T>>
 	}
 
 	/**
+	 * Gets the largest per capita birth rate of any individual. Trivially equal to
+	 * {@link #getBirthRate()} unless birth rates differ between traits, see e.g.
+	 * {@code Discrete#getMaxBirthRate()}.
+	 *
+	 * @return the largest birth rate
+	 */
+	public double getMaxBirthRate() {
+		return getBirthRate();
+	}
+
+	/**
 	 * Set the per capita birth rate for ecological population updates.
 	 *
 	 * @param birthRate the birth rate
@@ -1244,6 +1255,17 @@ public abstract class Module<T extends Module<T>>
 	 */
 	public double getDeathRate() {
 		return deathRate;
+	}
+
+	/**
+	 * Gets the largest death rate of any individual. Trivially equal to
+	 * {@link #getDeathRate()} unless death rates differ between traits, see e.g.
+	 * {@code Discrete#getMaxDeathRate()}.
+	 *
+	 * @return the largest death rate
+	 */
+	public double getMaxDeathRate() {
+		return getDeathRate();
 	}
 
 	/**

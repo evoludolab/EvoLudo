@@ -1056,7 +1056,7 @@ public abstract class IBS extends Model {
 	 * {@link PopulationUpdate.Type#ECOLOGY}: ecological (vacancy) populations
 	 * already draw death/birth/competition as competing rates in
 	 * {@code updatePlayerEcologyAt()}, and diffusive migration is folded into
-	 * that same draw instead (see {@code IBSDPopulation}); other migration
+	 * that same draw instead (see {@code IBSPopulation#updatePlayerEcologyAt(int)}); other migration
 	 * types have no equivalent there and remain disabled for such populations,
 	 * see {@link IBSPopulation#checkMigration()}.
 	 *
@@ -1326,7 +1326,7 @@ public abstract class IBS extends Model {
 				 * rates. For modules with vacant sites, the vacant trait's rate is forced to
 				 * zero: diffusive migration ({@link MigrationType#DIFFUSION}) folds this
 				 * directly into the per-site rate draw for ecological (vacancy) populations
-				 * (see {@code IBSDPopulation}); for {@link MigrationType#BIRTH_DEATH} and
+				 * (see {@code IBSPopulation#updatePlayerEcologyAt(int)}); for {@link MigrationType#BIRTH_DEATH} and
 				 * {@link MigrationType#DEATH_BIRTH}, and for diffusive migration outside
 				 * ecological populations, the trait of the (fitness- or randomly-selected)
 				 * proposed migrant thins the event relative to the largest rate across all
