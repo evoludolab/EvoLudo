@@ -150,8 +150,8 @@ public class LinearGeometry extends AbstractLattice {
 	}
 
 	@Override
-	public LinearGeometry clone() {
-		LinearGeometry clone = (LinearGeometry) super.clone();
+	protected LinearGeometry cloneConfig() {
+		LinearGeometry clone = (LinearGeometry) super.cloneConfig();
 		clone.linearAsymmetry = linearAsymmetry;
 		return clone;
 	}

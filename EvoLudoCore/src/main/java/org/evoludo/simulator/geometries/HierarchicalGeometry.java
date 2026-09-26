@@ -305,8 +305,8 @@ public class HierarchicalGeometry extends AbstractLattice {
 	}
 
 	@Override
-	public HierarchicalGeometry clone() {
-		HierarchicalGeometry clone = (HierarchicalGeometry) super.clone();
+	protected HierarchicalGeometry cloneConfig() {
+		HierarchicalGeometry clone = (HierarchicalGeometry) super.cloneConfig();
 		clone.subType = subType;
 		if (hierarchy != null)
 			clone.hierarchy = Arrays.copyOf(hierarchy, hierarchy.length);

@@ -1818,11 +1818,8 @@ public abstract class AbstractGeometry {
 	 */
 	// @Override
 	@SuppressWarnings("all")
-	public AbstractGeometry clone() {
-		AbstractGeometry clone = AbstractGeometry.create(engine, type);
-		clone.specs = specs;
-		clone.cli = cli;
-		clone.name = name;
+	public final AbstractGeometry clone() {
+		AbstractGeometry clone = cloneConfig();
 		if (kin != null)
 			clone.kin = Arrays.copyOf(kin, kin.length);
 		if (kout != null)
@@ -1837,6 +1834,24 @@ public abstract class AbstractGeometry {
 			for (int i = 0; i < out.length; i++)
 				clone.out[i] = Arrays.copyOf(out[i], out[i].length);
 		}
+		return clone;
+	}
+
+	/**
+	 * Clone geometry configuration/parameters but not the (potentially large)
+	 * adjacency structure. Subclasses with additional parameters must override
+	 * this method to also copy those. Used by {@link #clone()} as well as
+	 * {@link #updateSize(int)}, which only needs {@link #similar(AbstractGeometry)}
+	 * and hence no adjacency structure.
+	 *
+	 * @return clone of geometry configuration, without {@code kin}/{@code
+	 *         kout}/{@code in}/{@code out}
+	 */
+	protected AbstractGeometry cloneConfig() {
+		AbstractGeometry clone = AbstractGeometry.create(engine, type);
+		clone.specs = specs;
+		clone.cli = cli;
+		clone.name = name;
 		clone.size = size;
 		clone.type = type;
 		clone.features = features == null ? null : new GeometryFeatures(features);
@@ -1851,6 +1866,20 @@ public abstract class AbstractGeometry {
 		clone.isValid = isValid;
 		clone.derivedId = derivedId;
 		return clone;
+	}
+
+	/**
+	 * Update this geometry to the requested population size if this changes its
+	 * effective structure.
+	 *
+	 * @param populationSize the requested population size
+	 * @return {@code true} if the geometry changed and a reset is required
+	 */
+	public boolean updateSize(int populationSize) {
+		AbstractGeometry previous = cloneConfig();
+		setSize(populationSize);
+		boolean doReset = check();
+		return doReset || !previous.similar(this);
 	}
 
 	@Override

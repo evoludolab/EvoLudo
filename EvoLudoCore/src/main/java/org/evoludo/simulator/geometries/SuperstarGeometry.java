@@ -137,8 +137,8 @@ public class SuperstarGeometry extends AbstractGeometry {
 	}
 
 	@Override
-	public SuperstarGeometry clone() {
-		SuperstarGeometry clone = (SuperstarGeometry) super.clone();
+	protected SuperstarGeometry cloneConfig() {
+		SuperstarGeometry clone = (SuperstarGeometry) super.cloneConfig();
 		clone.petals = petals;
 		clone.amplification = amplification;
 		return clone;

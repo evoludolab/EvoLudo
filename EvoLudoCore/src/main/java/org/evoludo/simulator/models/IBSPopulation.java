@@ -3571,14 +3571,14 @@ public abstract class IBSPopulation<M extends Module<?>, P extends IBSPopulation
 		// Warning: there is a small chance that the interaction and competition
 		// geometries require different population sizes, which does not make sense
 		// and would most likely result in a never ending initialization loop...
-		doReset |= updateGeometry(interaction, nPopulation);
+		doReset |= interaction.updateSize(nPopulation);
 		if (!interaction.isSingle()) {
 			module.setNPopulation(interaction.getSize());
 			nPopulation = interaction.getSize(); // keep local copy in sync
-			doReset |= updateGeometry(competition, nPopulation);
+			doReset |= competition.updateSize(nPopulation);
 			if (competition.getSize() != nPopulation) {
 				// try checking interaction geometry again
-				doReset |= updateGeometry(interaction, competition.getSize());
+				doReset |= interaction.updateSize(competition.getSize());
 				if (interaction.getSize() != competition.getSize()) {
 					engine.logError("incompatible interaction and competition geometries!");
 				}
@@ -3597,20 +3597,6 @@ public abstract class IBSPopulation<M extends Module<?>, P extends IBSPopulation
 		return doReset;
 	}
 
-	/**
-	 * Update a geometry to the requested population size if this changes its
-	 * effective structure.
-	 *
-	 * @param geometry       the geometry to validate and update
-	 * @param populationSize the requested population size
-	 * @return {@code true} if the geometry changed and a reset is required
-	 */
-	private boolean updateGeometry(AbstractGeometry geometry, int populationSize) {
-		AbstractGeometry previous = geometry.clone();
-		geometry.setSize(populationSize);
-		boolean doReset = geometry.check();
-		return doReset || !previous.similar(geometry);
-	}
 
 	/**
 	 * Rewire the interaction and competition geometries if requested.

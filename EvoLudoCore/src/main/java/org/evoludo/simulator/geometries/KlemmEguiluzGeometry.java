@@ -177,8 +177,8 @@ public class KlemmEguiluzGeometry extends AbstractNetwork {
 	}
 
 	@Override
-	public KlemmEguiluzGeometry clone() {
-		KlemmEguiluzGeometry clone = (KlemmEguiluzGeometry) super.clone();
+	protected KlemmEguiluzGeometry cloneConfig() {
+		KlemmEguiluzGeometry clone = (KlemmEguiluzGeometry) super.cloneConfig();
 		clone.pSmallWorld = pSmallWorld;
 		return clone;
 	}

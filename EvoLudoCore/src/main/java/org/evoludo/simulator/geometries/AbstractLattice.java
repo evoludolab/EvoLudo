@@ -118,8 +118,8 @@ public abstract class AbstractLattice extends AbstractGeometry {
 	}
 
 	@Override
-	public AbstractLattice clone() {
-		AbstractLattice clone = (AbstractLattice) super.clone();
+	protected AbstractLattice cloneConfig() {
+		AbstractLattice clone = (AbstractLattice) super.cloneConfig();
 		clone.fixedBoundary = fixedBoundary;
 		return clone;
 	}
