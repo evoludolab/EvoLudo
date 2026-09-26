@@ -52,15 +52,18 @@ public class HexagonalGeometry extends AbstractLattice {
 	@Override
 	public boolean parse(String arg) {
 		String numeric = stripBoundary(arg);
+		// interspecies geometries add a self-loop (see init()) on top of the six
+		// lattice neighbours
+		double k = isInterspecies() ? 7 : 6;
 		if (numeric.isEmpty()) {
-			// degree not specified - silently default to k=6, see #init()
-			connectivity = 6;
+			// degree not specified - silently default to k, see #init()
+			connectivity = k;
 			return true;
 		}
 		connectivity = CLOParser.parseInteger(numeric);
-		if (connectivity != 1 && connectivity != 6) {
-			engine.logWarning("invalid connectivity " + connectivity + " - using default k=6.");
-			connectivity = 6;
+		if (connectivity != 1 && connectivity != k) {
+			engine.logWarning("invalid connectivity " + connectivity + " - using default k=" + (int) k + ".");
+			connectivity = k;
 		}
 		return true;
 	}
@@ -178,18 +181,19 @@ public class HexagonalGeometry extends AbstractLattice {
 			int l = (j - 1 + side) % side;
 			if (!fixedBoundary || l < side - 1)
 				addLinkAt(aPlayer, x + l);
-			if (!fixedBoundary || l < side - 1)
-				addLinkAt(aPlayer, x + l);
 		}
 	}
 
 	@Override
 	protected boolean checkSettings() {
 		boolean doReset = ensureSquareSize(true);
-		if ((Math.abs(connectivity - 6) > RNGDistribution.EPS && Math.abs(1.0 - connectivity) > RNGDistribution.EPS)
+		// interspecies geometries add a self-loop (see init()) on top of the six
+		// lattice neighbours
+		double k = isInterspecies() ? 7 : 6;
+		if ((Math.abs(connectivity - k) > RNGDistribution.EPS && Math.abs(1.0 - connectivity) > RNGDistribution.EPS)
 				|| (Math.abs(1.0 - connectivity) < RNGDistribution.EPS && !isInterspecies())) {
-			connectivity = 6;
-			warn("requires connectivity 6!");
+			connectivity = k;
+			warn("requires connectivity " + (int) k + "!");
 		}
 		return doReset;
 	}

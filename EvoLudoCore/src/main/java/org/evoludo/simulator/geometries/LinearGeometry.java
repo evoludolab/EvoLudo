@@ -61,18 +61,35 @@ public class LinearGeometry extends AbstractLattice {
 		int[] conn = CLOParser.parseIntVector(numeric);
 		if (conn.length > 2)
 			engine.logWarning("too many arguments for linear geometry.");
+		double k;
 		if (conn.length >= 2) {
-			connectivity = Math.max(2, conn[0] + conn[1]);
+			k = Math.max(2, conn[0] + conn[1]);
 			setLinearAsymmetry(conn[0] - conn[1]);
 		} else if (conn.length == 1) {
-			connectivity = Math.max(2, conn[0]);
+			k = Math.max(2, conn[0]);
 			setLinearAsymmetry(0);
 		} else {
-			int defaultConn = connectivity > 0 ? (int) connectivity : 2;
-			connectivity = Math.max(2, defaultConn);
+			// keep the previously configured spatial neighbour count
+			k = Math.max(2, connectivity > 0 ? degree() : 2);
 			setLinearAsymmetry(0);
 		}
+		// interspecies geometries add a self-loop on top of the spatial neighbours
+		// (see #init()); connectivity must reflect the total node degree for the
+		// shared buffer-sizing logic in AbstractGeometry#alloc()
+		connectivity = (isInterspecies() && k > 1.0 + RNGDistribution.EPS) ? k + 1 : k;
 		return true;
+	}
+
+	/**
+	 * Recover the requested number of spatial (left+right) neighbours from
+	 * {@link #connectivity}, undoing the extra self-loop that interspecies
+	 * geometries add on top (see {@link #init()}). Connectivity {@code 1} already
+	 * means "self only" and is left untouched.
+	 *
+	 * @return the spatial neighbour count
+	 */
+	private double degree() {
+		return (isInterspecies() && connectivity > 1.0 + RNGDistribution.EPS) ? connectivity - 1 : connectivity;
 	}
 
 	/**
@@ -95,7 +112,7 @@ public class LinearGeometry extends AbstractLattice {
 		isRegular = !fixedBoundary;
 		boolean interspecies = isInterspecies();
 
-		int neighbors = (int) (connectivity + 0.5);
+		int neighbors = (int) (degree() + 0.5);
 		int left = (neighbors + linearAsymmetry) / 2;
 		int right = (neighbors - linearAsymmetry) / 2;
 		isUndirected = (left == right);
@@ -132,16 +149,20 @@ public class LinearGeometry extends AbstractLattice {
 	@Override
 	protected boolean checkSettings() {
 		boolean doReset = false;
-		connectivity = Math.max(1, Math.rint(connectivity));
-		boolean invalidConn = (Math.abs(1.0 - connectivity) < RNGDistribution.EPS && (!isInterspecies() && linearAsymmetry == 0))
-				|| ((int) (connectivity + 0.5) % 2 == 1 && linearAsymmetry == 0) || connectivity >= size;
+		boolean interspecies = isInterspecies();
+		double k = Math.max(1, Math.rint(degree()));
+		boolean invalidConn = (Math.abs(1.0 - k) < RNGDistribution.EPS && (!interspecies && linearAsymmetry == 0))
+				|| ((int) (k + 0.5) % 2 == 1 && linearAsymmetry == 0) || k >= size;
 		if (invalidConn) {
 			double size1 = size - 1.0;
-			double newConn = Math.min(Math.max(2, connectivity + 1), size1 - size1 % 2);
-			connectivity = newConn;
-			warn("requires even integer number of neighbors - using " + (int) connectivity + "!");
+			double newConn = Math.min(Math.max(2, k + 1), size1 - size1 % 2);
+			k = newConn;
+			warn("requires even integer number of neighbors - using " + (int) k + "!");
 			doReset = true;
 		}
+		// interspecies geometries add a self-loop on top of the spatial neighbours,
+		// unless spatial==1 already means "self only" (see #init())
+		connectivity = (interspecies && k > 1.0 + RNGDistribution.EPS) ? k + 1 : k;
 		if (pRewire > 0.0 && connectivity < 2.0 + 1.0 / size) {
 			warn("cannot rewire links for '" + type + "' - ignored!");
 			pRewire = 0.0;

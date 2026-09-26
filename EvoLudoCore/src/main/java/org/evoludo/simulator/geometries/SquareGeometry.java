@@ -53,7 +53,9 @@ public class SquareGeometry extends AbstractLattice {
 	public boolean parse(String arg) {
 		String numeric = stripBoundary(arg);
 		if (numeric == null || numeric.isEmpty())
-			connectivity = 4;
+			// default 3x3 (Moore-equivalent) neighbourhood; interspecies geometries add
+			// a self-loop on top of the eight spatial neighbours, see #init()
+			connectivity = isInterspecies() ? 9 : 8;
 		else
 			connectivity = Integer.parseInt(numeric);
 		return true;
@@ -78,10 +80,11 @@ public class SquareGeometry extends AbstractLattice {
 	 * <h3>Requirements/notes:</h3>
 	 * <ol>
 	 * <li>Population size must be a perfect square \(N=n^2\).
-	 * <li>Admissible connectivities are \(4\) (von Neumann) or
-	 * \((2m+1)^2-1\) for Moore-type stencils.
-	 * <li>Inter-species interactions add the focal node as a neighbour and allow
-	 * connectivity \(1\).
+	 * <li>Admissible connectivities are \((2m+1)^2-1\) for Moore-type stencils
+	 * (defaults to \(m=1\), i.e. connectivity \(8\)).
+	 * <li>Inter-species interactions add the focal node as a neighbour - the
+	 * effective connectivity is one higher than the spatial neighbourhood alone
+	 * (see {@link #checkSettings()}) - and allow connectivity \(1\) (self only).
 	 * <li>Boundaries are periodic by default but can be fixed.</li>
 	 * </ol>
 	 */
@@ -221,13 +224,16 @@ public class SquareGeometry extends AbstractLattice {
 		int side = (int) Math.floor(Math.sqrt(size) + 0.5);
 		int range = Math.min(side / 2, Math.max(1, (int) (Math.sqrt(connectivity + 1.5) / 2.0)));
 		int count = (2 * range + 1) * (2 * range + 1) - 1;
-		boolean invalid = (Math.abs(count - connectivity) > RNGDistribution.EPS && Math.abs(4.0 - connectivity) > RNGDistribution.EPS
-				&& Math.abs(1.0 - connectivity) > RNGDistribution.EPS)
-				|| (Math.abs(1.0 - connectivity) < RNGDistribution.EPS && !isInterspecies());
+		// interspecies geometries add a self-loop on top of the spatial neighbours
+		boolean interspecies = isInterspecies();
+		if (interspecies)
+			count++;
+		boolean invalid = (Math.abs(count - connectivity) > RNGDistribution.EPS && Math.abs(1.0 - connectivity) > RNGDistribution.EPS)
+				|| (Math.abs(1.0 - connectivity) < RNGDistribution.EPS && !interspecies);
 		if (invalid) {
 			connectivity = count;
 			if (connectivity >= size)
-				connectivity = 4;
+				connectivity = interspecies ? 9 : 8;
 			warn("has invalid connectivity - using " + (int) connectivity + "!");
 			doReset = true;
 		}

@@ -53,7 +53,9 @@ public class MooreGeometry extends SquareGeometry {
 	public boolean parse(String arg) {
 		String numeric = stripBoundary(arg);
 		warnIfConnectivityProvided(numeric);
-		connectivity = 8;
+		// interspecies geometries add a self-loop (see initMoore()) on top of the
+		// eight lattice neighbours
+		connectivity = isInterspecies() ? 9 : 8;
 		return true;
 	}
 
@@ -92,14 +94,19 @@ public class MooreGeometry extends SquareGeometry {
 	 */
 	public static void initMoore(AbstractGeometry geometry, int side, int fullside, int offset,
 			boolean fixedBoundary) {
-		if (Math.abs(geometry.connectivity - 8.0) > RNGDistribution.EPS)
-			throw new IllegalStateException("Moore geometry requires connectivity 8, found " + geometry.connectivity);
+		// interspecies geometries add a self-loop on top of the eight neighbours
+		double expected = geometry.isInterspecies() ? 9.0 : 8.0;
+		if (Math.abs(geometry.connectivity - expected) > RNGDistribution.EPS)
+			throw new IllegalStateException(
+					"Moore geometry requires connectivity " + expected + ", found " + geometry.connectivity);
 		SquareGeometry.initSquare(geometry, side, fullside, offset, fixedBoundary);
 	}
 
 	@Override
 	protected boolean checkSettings() {
-		connectivity = 8;
+		// interspecies geometries add a self-loop (see initMoore()) on top of the
+		// eight lattice neighbours
+		connectivity = isInterspecies() ? 9 : 8;
 		return ensureSquareSize(false);
 	}
 }

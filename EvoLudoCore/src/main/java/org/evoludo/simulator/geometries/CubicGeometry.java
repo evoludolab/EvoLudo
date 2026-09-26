@@ -53,8 +53,11 @@ public class CubicGeometry extends AbstractLattice {
 	public boolean parse(String arg) {
 		String numeric = stripBoundary(arg);
 		connectivity = CLOParser.parseInteger(numeric);
-		if (connectivity != 1 && connectivity != 6) {
-			connectivity = Math.max(6, connectivity);
+		// interspecies geometries add a self-loop (see initSixNeighbors()) on top of
+		// the six lattice neighbours
+		double six = isInterspecies() ? 7 : 6;
+		if (connectivity != 1 && connectivity != six) {
+			connectivity = Math.max(six, connectivity);
 		}
 		return true;
 	}
@@ -80,16 +83,16 @@ public class CubicGeometry extends AbstractLattice {
 			lz = 10;
 		}
 
-		switch ((int) Math.rint(connectivity)) {
-			case 1:
-				initSelf(l, lz);
-				break;
-			case 6:
-				initSixNeighbors(l, lz);
-				break;
-			default:
-				initRange(l, lz);
-		}
+		int conn = (int) Math.rint(connectivity);
+		// interspecies geometries add a self-loop (see initSixNeighbors()) on top of
+		// the six lattice neighbours
+		int six = isInterspecies() ? 7 : 6;
+		if (conn == 1)
+			initSelf(l, lz);
+		else if (conn == six)
+			initSixNeighbors(l, lz);
+		else
+			initRange(l, lz);
 		isValid = true;
 	}
 
@@ -336,13 +339,19 @@ public class CubicGeometry extends AbstractLattice {
 			range = Math.min(4, Math.max(1, (int) (Math.pow(connectivity + 1.5, 1.0 / 3.0) / 2.0)));
 		}
 		int count = (2 * range + 1) * (2 * range + 1) * (2 * range + 1) - 1;
-		boolean invalid = (Math.abs(count - connectivity) > RNGDistribution.EPS && Math.abs(6.0 - connectivity) > RNGDistribution.EPS
+		// interspecies geometries add a self-loop on top of the spatial neighbours
+		boolean interspecies = isInterspecies();
+		if (interspecies)
+			count++;
+		double k = interspecies ? 7 : 6;
+		boolean invalid = (Math.abs(count - connectivity) > RNGDistribution.EPS
+				&& Math.abs(k - connectivity) > RNGDistribution.EPS
 				&& Math.abs(1.0 - connectivity) > RNGDistribution.EPS)
-				|| (Math.abs(1.0 - connectivity) < RNGDistribution.EPS && !isInterspecies());
+				|| (Math.abs(1.0 - connectivity) < RNGDistribution.EPS && !interspecies);
 		if (invalid) {
 			connectivity = count;
 			if (connectivity >= size)
-				connectivity = 6;
+				connectivity = k;
 			warn("has invalid connectivity - using " + (int) connectivity + "!");
 			doReset = true;
 		}

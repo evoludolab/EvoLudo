@@ -57,8 +57,9 @@ public class TriangularGeometry extends AbstractLattice {
 	public boolean parse(String arg) {
 		String numeric = stripBoundary(arg);
 		if (numeric.isEmpty()) {
-			// degree not specified - silently default to k=3, see #init()
-			connectivity = 3;
+			// degree not specified - silently default to k, see #init(); interspecies
+			// geometries add a self-loop on top of the three lattice neighbours
+			connectivity = isInterspecies() ? 4 : 3;
 		} else {
 			connectivity = Integer.parseInt(numeric);
 		}
@@ -149,10 +150,13 @@ public class TriangularGeometry extends AbstractLattice {
 	@Override
 	protected boolean checkSettings() {
 		boolean doReset = ensureSquareSize(true);
-		if ((Math.abs(connectivity - 3) > RNGDistribution.EPS && Math.abs(1.0 - connectivity) > RNGDistribution.EPS)
+		// interspecies geometries add a self-loop (see init()) on top of the three
+		// lattice neighbours
+		double k = isInterspecies() ? 4 : 3;
+		if ((Math.abs(connectivity - k) > RNGDistribution.EPS && Math.abs(1.0 - connectivity) > RNGDistribution.EPS)
 				|| (Math.abs(1.0 - connectivity) < RNGDistribution.EPS && !isInterspecies())) {
-			connectivity = 3;
-			warn("requires connectivity 3!");
+			connectivity = k;
+			warn("requires connectivity " + (int) k + "!");
 		}
 		return doReset;
 	}

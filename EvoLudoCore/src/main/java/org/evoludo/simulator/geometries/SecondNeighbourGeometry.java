@@ -52,7 +52,9 @@ public class SecondNeighbourGeometry extends SquareGeometry {
 	public boolean parse(String arg) {
 		String numeric = stripBoundary(arg);
 		warnIfConnectivityProvided(numeric);
-		connectivity = 4;
+		// interspecies geometries add a self-loop (see initSecondNeighbour()) on top
+		// of the four diagonal neighbours
+		connectivity = isInterspecies() ? 5 : 4;
 		return true;
 	}
 
@@ -182,7 +184,9 @@ public class SecondNeighbourGeometry extends SquareGeometry {
 
 	@Override
 	protected boolean checkSettings() {
-		connectivity = 4;
+		// interspecies geometries add a self-loop (see initSecondNeighbour()) on top
+		// of the four diagonal neighbours
+		connectivity = isInterspecies() ? 5 : 4;
 		return ensureSquareSize(true);
 	}
 }
