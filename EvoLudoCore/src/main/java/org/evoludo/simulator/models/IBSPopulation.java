@@ -1920,8 +1920,14 @@ public abstract class IBSPopulation<M extends Module<?>, P extends IBSPopulation
 	 * @param idx the index of the individual
 	 */
 	public void updateFitnessAt(int idx) {
+		if (isVacantAt(idx)) {
+			// vacant sites have no fitness, regardless of the payoff-to-fitness map
+			sumFitness -= fitness[idx];
+			fitness[idx] = 0.0;
+			return;
+		}
 		double after = map2fit.map(scores[idx]);
-		double diff = after - (isVacantAt(idx) ? 0.0 : fitness[idx]);
+		double diff = after - fitness[idx];
 		fitness[idx] = after;
 		sumFitness += diff;
 		// whenever sumFitness decreases dramatically rounding errors become an issue
@@ -2551,8 +2557,12 @@ public abstract class IBSPopulation<M extends Module<?>, P extends IBSPopulation
 		}
 		// no need to update ephemeral scores
 		if (playerScoring.equals(ScoringType.EPHEMERAL)) {
-			if (switched)
-				commitTraitAt(me);
+			if (!switched)
+				return;
+			// vacated sites must not retain a score
+			if (becomesVacantAt(me))
+				resetScoreAt(me);
+			commitTraitAt(me);
 			return;
 		}
 		if (switched || playerScoring.equals(ScoringType.RESET_ALWAYS))
@@ -3702,6 +3712,9 @@ public abstract class IBSPopulation<M extends Module<?>, P extends IBSPopulation
 	 */
 	public double getMinScore() {
 		double min = ((Payoffs) module).getMinPayoff();
+		// with vacant sites, isolated individuals do not interact and score zero
+		if (vacantIdx >= 0)
+			min = Math.min(min, 0.0);
 		if (playerScoreAveraged)
 			return min;
 		// accumulated payoffs
@@ -3717,6 +3730,9 @@ public abstract class IBSPopulation<M extends Module<?>, P extends IBSPopulation
 	 */
 	public double getMaxScore() {
 		double max = ((Payoffs) module).getMaxPayoff();
+		// with vacant sites, isolated individuals do not interact and score zero
+		if (vacantIdx >= 0)
+			max = Math.max(max, 0.0);
 		if (playerScoreAveraged)
 			return max;
 		// accumulated payoffs
@@ -4677,8 +4693,14 @@ public abstract class IBSPopulation<M extends Module<?>, P extends IBSPopulation
 		if (Double.isNaN(scoren))
 			logScoringIssue(n, scoren, "is NaN...");
 
-		if (isVacantAt(n) && scoren > Model.EPS_SMALL)
-			logScoringIssue(n, scoren, "of vacant site should be zero");
+		if (isVacantAt(n)) {
+			// vacant sites have neither scores nor fitness
+			if (Math.abs(scoren) > Model.EPS_SMALL)
+				logScoringIssue(n, scoren, "of vacant site should be zero");
+			if (Math.abs(getFitnessAt(n)) > Model.EPS_SMALL)
+				logScoringIssue(n, getFitnessAt(n), "fitness of vacant site should be zero");
+			return;
+		}
 		// check score range
 		if (scoren + Model.EPS_SMALL < minScore || scoren - Model.EPS_SMALL > maxScore)
 			logScoringIssue(n, scoren, "not in [" + minScore + ", " + maxScore + "]");
@@ -4775,7 +4797,8 @@ public abstract class IBSPopulation<M extends Module<?>, P extends IBSPopulation
 				logScoringIssue(n, scoresStore[n], scores[n]);
 			if (Math.abs(fitness[n] - fitnessStore[n]) > Model.EPS_SMALL)
 				logFitnessIssue(n, fitnessStore[n], fitness[n]);
-			if (Math.abs(map2fit.map(scores[n]) - fitness[n]) > Model.EPS_SMALL)
+			// vacant sites have zero fitness, regardless of the payoff-to-fitness map
+			if (!isVacantAt(n) && Math.abs(map2fit.map(scores[n]) - fitness[n]) > Model.EPS_SMALL)
 				logMapIssue(n, scores[n], fitness[n]);
 		}
 
