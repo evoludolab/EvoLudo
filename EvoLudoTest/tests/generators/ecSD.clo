@@ -1,0 +1,29 @@
+# testing ecSD, ecological continuous snowdrift game (continuous trait, variable population sizes)
+
+# IBS
+# base scenario
+--module ecSD --model IBS --timestep 1 --geometry M --popsize 1000 --deathrate 0.5 --birthrate 0.1 --interactions 1 --init uniform --mutation 0.1 gaussian 0.01 --benefits 11 6,-1.4 --costs 1 4.56,-1.6 --timestop 1000
+# initialization (with and without explicit frequency of vacant sites)
+--module ecSD --model IBS --timestep 1 --geometry M --popsize 1000 --deathrate 0.5 --birthrate 0.1 --interactions 1 --init mono 0.3 --mutation 0.1 gaussian 0.01 --benefits 11 6,-1.4 --costs 1 4.56,-1.6 --timestop 1000
+--module ecSD --model IBS --timestep 1 --geometry M --popsize 1000 --deathrate 0.5 --birthrate 0.1 --interactions 1 --init mono 0.3,0.5 --mutation 0.1 gaussian 0.01 --benefits 11 6,-1.4 --costs 1 4.56,-1.6 --timestop 1000
+--module ecSD --model IBS --timestep 1 --geometry M --popsize 1000 --deathrate 0.5 --birthrate 0.1 --interactions 1 --init gaussian 0.3,0.05 --mutation 0.1 gaussian 0.01 --benefits 11 6,-1.4 --costs 1 4.56,-1.6 --timestop 1000
+--module ecSD --model IBS --timestep 1 --geometry M --popsize 1000 --deathrate 0.5 --birthrate 0.1 --interactions 1 --init mutant 0.3,0.4,0.2 --benefits 11 6,-1.4 --costs 1 4.56,-1.6 --timestop 1000
+# interactions and geometries
+--module ecSD --model IBS --timestep 1 --geometry r4 --popsize 1000 --deathrate 0.5 --birthrate 0.1 --interactions 1 --init uniform --mutation 0.1 gaussian 0.01 --benefits 11 6,-1.4 --costs 1 4.56,-1.6 --timestop 1000
+--module ecSD --model IBS --timestep 1 --geometry r4 --popsize 1000 --deathrate 0.5 --birthrate 0.1 --interactions all --init uniform --mutation 0.1 gaussian 0.01 --benefits 11 6,-1.4 --costs 1 4.56,-1.6 --timestop 1000
+--module ecSD --model IBS --timestep 1 --geometry n --popsize 50x --deathrate 0.5 --birthrate 0.1 --interactions all --init uniform --mutation 0.1 gaussian 0.01 --benefits 11 6,-1.4 --costs 1 4.56,-1.6 --timestop 1000
+--module ecSD --model IBS --timestep 1 --geometry n --popsize 30x --deathrate 0.5 --birthrate 0.1 --interactions all --accuscores --init uniform --mutation 0.1 gaussian 0.01 --benefits 11 6,-1.4 --costs 1 4.56,-1.6 --timestop 300
+--module ecSD --model IBS --timestep 1 --geometry D4 --popsize 1000 --deathrate 0.5 --birthrate 0.1 --interactions all --init uniform --mutation 0.1 gaussian 0.01 --benefits 11 6,-1.4 --costs 1 4.56,-1.6 --timestop 1000
+--module ecSD --model IBS --timestep 1 --geometry f4 --popsize 500 --deathrate 0.5 --birthrate 0.1 --interactions all --init uniform --mutation 0.1 gaussian 0.01 --benefits 11 6,-1.4 --costs 1 4.56,-1.6 --timestop 1000
+# ecology: competition and diffusion
+--module ecSD --model IBS --timestep 1 --geometry n --popsize 50x --deathrate 0.2 --birthrate 0.1 --comprate 0.3 --interactions all --init uniform --mutation 0.1 gaussian 0.01 --benefits 11 6,-1.4 --costs 1 4.56,-1.6 --timestop 1000
+--module ecSD --model IBS --timestep 1 --geometry n --popsize 30x --deathrate 0.5 --birthrate 0.1 --migration D0.0001 --interactions all --init uniform --mutation 0.1 gaussian 0.01 --benefits 11 6,-1.4 --costs 1 4.56,-1.6 --timestop 1000
+# mutation
+--module ecSD --model IBS --timestep 1 --geometry n --popsize 30x --deathrate 0.5 --birthrate 0.1 --interactions all --init uniform --mutation 0.1 random gaussian 0.01 --benefits 11 6,-1.4 --costs 1 4.56,-1.6 --timestop 1000
+# scoring
+--module ecSD --model IBS --timestep 1 --geometry n --popsize 50x --deathrate 0.5 --birthrate 0.1 --interactions all --resetscores ephemeral --init uniform --mutation 0.1 gaussian 0.01 --benefits 11 6,-1.4 --costs 1 4.56,-1.6 --timestop 1000
+# fitness map and selection
+--module ecSD --model IBS --timestep 1 --geometry n --popsize 50x --deathrate 1.5 --interactions all --init uniform --mutation 0.1 gaussian 0.01 --benefits 11 6,-1.4 --costs 1 4.56,-1.6 --timestop 1000 --fitnessmap static
+--module ecSD --model IBS --timestep 1 --geometry n --popsize 50x --deathrate 0.5 --interactions all --init uniform --mutation 0.1 gaussian 0.01 --benefits 11 6,-1.4 --costs 1 4.56,-1.6 --timestop 1000 --fitnessmap exp 1.0,0.1
+# extinction
+--module ecSD --model IBS --timestep 1 --geometry n --popsize 50x --deathrate 1000 --interactions all --init uniform --mutation 0.1 gaussian 0.01 --benefits 11 6,-1.4 --costs 1 4.56,-1.6 --timestop 10
