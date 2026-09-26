@@ -192,13 +192,28 @@ public abstract class AbstractGeometry {
 		if (!isSingle)
 			throw new IllegalStateException(
 					"Cannot derive competition geometry when isSingle == false.");
+		// nothing to remove: competition coincides exactly with interaction, no
+		// need to pay for a deep clone of the (potentially huge) adjacency lists
+		if (isType(GeometryType.WELLMIXED) || !hasSelfLinks())
+			return this;
 		AbstractGeometry competition = clone();
 		competition.markDerivedFrom(this);
 		// remove competition with self
-		if (!competition.isType(GeometryType.WELLMIXED))
-			for (int n = 0; n < size; n++)
-				competition.removeLinkAt(n, n);
+		for (int n = 0; n < size; n++)
+			competition.removeLinkAt(n, n);
 		return competition;
+	}
+
+	/**
+	 * Check whether any node in this geometry links to itself.
+	 *
+	 * @return {@code true} if at least one node has a self-link
+	 */
+	private boolean hasSelfLinks() {
+		for (int n = 0; n < size; n++)
+			if (isNeighborOf(n, n))
+				return true;
+		return false;
 	}
 
 	/**
