@@ -4456,9 +4456,6 @@ public abstract class IBSPopulation<M extends Module<?>, P extends IBSPopulation
 		// unbounded for accumulated scores with random interactions (not adjustable)
 		updateMinMaxScores();
 
-		// ensure positive fitness for Moran updates
-		resetMoran();
-
 		// avoid numerical overflow for strong selection (mainly applies to exponential
 		// payoff-to-fitness mapping)
 		if (maxFitness > Double.MAX_VALUE / nPopulation) {
@@ -4488,6 +4485,9 @@ public abstract class IBSPopulation<M extends Module<?>, P extends IBSPopulation
 		// competition may have just been replaced with a new instance; keep
 		// compGroup in sync (checkGeometry() set it to the pre-reset instance)
 		compGroup.setGeometry(competition);
+		// ensure positive fitness for Moran updates; must run after competition is
+		// finalized above, because it reads competition's (new) type for compGroup
+		resetMoran();
 		// determine maximum reasonable group size
 		GeometryFeatures iFeats = interaction.getFeatures();
 		GeometryFeatures cFeats = competition.getFeatures();
@@ -4512,7 +4512,14 @@ public abstract class IBSPopulation<M extends Module<?>, P extends IBSPopulation
 
 	/**
 	 * Ensure that Moran type population updates have non-negative fitness values.
-	 * Adjust the payoff-to-fitness mapping if necessary.
+	 * Adjust the payoff-to-fitness mapping if necessary. Also configures
+	 * {@code compGroup} for the Moran process based on the current
+	 * {@code competition} geometry.
+	 * <p>
+	 * <strong>Note:</strong> must be called from {@link #reset()} only after
+	 * {@code competition} has been finalized for the current reset, otherwise
+	 * {@code compGroup} would be configured based on the geometry type from the
+	 * previous reset.
 	 */
 	void resetMoran() {
 		// check for specific population update types
