@@ -120,12 +120,14 @@ public class IBSCPopulation extends IBSMCPopulation {
 		// for ephemeral scores calculate score of focal only
 		boolean ephemeralScores = playerScoring.equals(ScoringType.EPHEMERAL);
 		if (group.nSampled <= 0) {
+			// isolated individual
 			if (ephemeralScores) {
 				// no need to update scores of everyone else
 				resetScoreAt(me);
 				return;
 			}
-			updateScoreAt(me, 0.0);
+			// no interactions
+			updateScoreAt(me, 0.0, 0);
 			return;
 		}
 		double[] opptraits = opponent.traits;
@@ -176,9 +178,11 @@ public class IBSCPopulation extends IBSMCPopulation {
 		// on undirected graphs every partner is interacted with twice, once as
 		// the focal and once as the partner, see playGameSyncAt(int)
 		if (playerScoreAveraged) {
-			double iInter = 1.0 / nInter;
-			newScore *= iInter;
-			oldScore *= iInter;
+			if (nInter > 0) {
+				double iInter = 1.0 / nInter;
+				newScore *= iInter;
+				oldScore *= iInter;
+			}
 		} else {
 			newScore *= u2;
 			oldScore *= u2;
@@ -215,7 +219,8 @@ public class IBSCPopulation extends IBSMCPopulation {
 	public void playGroupGameAt(IBSGroup group) {
 		int size = group.nSampled;
 		if (size <= 0) {
-			updateScoreAt(group.focal, 0.0);
+			// isolated individual
+			playNoGameAt(group.focal);
 			return;
 		}
 		double[] opptraits = opponent.traits;

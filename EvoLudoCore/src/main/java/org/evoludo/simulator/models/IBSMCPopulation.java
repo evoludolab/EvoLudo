@@ -450,7 +450,8 @@ public class IBSMCPopulation extends IBSPopulation<Continuous, IBSMCPopulation> 
 				resetScoreAt(me);
 				return;
 			}
-			updateScoreAt(me, 0.0);
+			// no interactions
+			updateScoreAt(me, 0.0, 0);
 			return;
 		}
 		gatherPlayers(group);
@@ -504,9 +505,11 @@ public class IBSMCPopulation extends IBSPopulation<Continuous, IBSMCPopulation> 
 		// on undirected graphs every partner is interacted with twice, once as
 		// the focal and once as the partner, see playGameSyncAt(int)
 		if (playerScoreAveraged) {
-			double iInter = 1.0 / nInter;
-			newScore *= iInter;
-			oldScore *= iInter;
+			if (nInter > 0) {
+				double iInter = 1.0 / nInter;
+				newScore *= iInter;
+				oldScore *= iInter;
+			}
 		} else {
 			newScore *= u2;
 			oldScore *= u2;
@@ -573,7 +576,8 @@ public class IBSMCPopulation extends IBSPopulation<Continuous, IBSMCPopulation> 
 			resetScoreAt(me);
 			return;
 		}
-		updateScoreAt(me, 0.0);
+		// no interactions
+		updateScoreAt(me, 0.0, 0);
 	}
 
 	/**
