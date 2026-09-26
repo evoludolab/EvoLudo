@@ -141,7 +141,7 @@ public class MVFitness extends MVAbstract implements StateGraphListener {
 	public void getData(StateData data, int tag) {
 		Model model = engine.getModel();
 		data.time = model.getUpdates();
-		data.connect = model.getMeanFitness(data.state);
+		data.connect = model.getMeanFitness(tag, data.state);
 	}
 
 	@Override
