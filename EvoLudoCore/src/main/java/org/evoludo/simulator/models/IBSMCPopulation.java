@@ -226,7 +226,7 @@ public class IBSMCPopulation extends IBSPopulation<Continuous, IBSMCPopulation> 
 	public double[] getTraitsAt(int idx, double[] idxtraits) {
 		if (nTraits == 1)
 			throw new UnsupportedOperationException("use getTraitAt(idx) instead.");
-		System.arraycopy(traits, idx, idxtraits, 0, nTraits);
+		System.arraycopy(traits, idx * nTraits, idxtraits, 0, nTraits);
 		return idxtraits;
 	}
 
@@ -240,7 +240,7 @@ public class IBSMCPopulation extends IBSPopulation<Continuous, IBSMCPopulation> 
 	public void setTraitsAt(int idx, double[] idxtraits) {
 		if (nTraits == 1)
 			throw new UnsupportedOperationException("use setTraitAt(idx) instead.");
-		System.arraycopy(idxtraits, 0, traits, idx, nTraits);
+		System.arraycopy(idxtraits, 0, traits, idx * nTraits, nTraits);
 	}
 
 	/**
@@ -1088,7 +1088,7 @@ public class IBSMCPopulation extends IBSPopulation<Continuous, IBSMCPopulation> 
 			for (int n = s; n < nPopulation * nTraits; n += nTraits)
 				traits[n] = scaledresident;
 			double mut = Math.min(Math.max(init.args[s][1], traitRangeMin[s]), traitRangeMax[s]);
-			traits[mutidx] = (mut - traitRangeMin[s]) / (traitRangeMax[s] - traitRangeMin[s]);
+			traits[mutidx * nTraits + s] = (mut - traitRangeMin[s]) / (traitRangeMax[s] - traitRangeMin[s]);
 		}
 	}
 
