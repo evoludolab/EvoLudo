@@ -837,7 +837,7 @@ public class EvoLudoLab extends JFrame
 			"--gui           launch legacy java GUI",
 			new CLODelegate() {
 				@Override
-				public boolean parse(String arg) {
+				public boolean parse(boolean isSet) {
 					// nothing to do - already handled in main()
 					return true;
 				}
