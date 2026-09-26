@@ -2129,6 +2129,15 @@ public class IBSDPopulation extends IBSPopulation<Discrete, IBSDPopulation> {
 	 * subclasses can refine the estimate for specific dynamics or structures -
 	 * see e.g. {@code EcoMoran.IBSPop#getVacantEstimate(int)} for a
 	 * correction tailored to regular graphs.
+	 * <p>
+	 * <strong>Note:</strong> for multi-species modules the estimate also only
+	 * accounts for the resident's own (kin) competition/synergy rate,
+	 * {@link org.evoludo.simulator.modules.Module#getCompetitionRate()
+	 * Module.getCompetitionRate()}, and ignores cross-species competition or
+	 * synergy with any other, currently co-resident species - unlike
+	 * {@link ODE#computeEffRates(double[], double[], double[])}, which accounts
+	 * for cross-species terms in the full ODE dynamics. This is only logged as
+	 * a warning for now; the estimate is not corrected.
 	 *
 	 * @param type the resident type
 	 * @return the estimated frequency of vacant sites
@@ -2141,6 +2150,22 @@ public class IBSDPopulation extends IBSPopulation<Discrete, IBSDPopulation> {
 			// IBSD.Init.Type#MONO/MUTANT/TEMPERATURE)
 			engine.logWarning("no net growth - assume fully occupied.");
 			return 0.0;
+		}
+		if (isMultispecies) {
+			// carrying capacity estimate ignores cross-species terms (see ODE's
+			// computeEffRates) - warn if another co-resident species could actually
+			// contribute one
+			double[] compRates = module.getCompetitionRates();
+			int self = module.getId();
+			for (int n = 0; n < compRates.length; n++) {
+				if (n == self || compRates[n] == 0.0)
+					continue;
+				if (module.getSpecies(n).getIBSPopulation().getPopulationSize() > 0) {
+					engine.logWarning("carrying capacity estimate ignores cross-species "
+							+ "competition/synergy with co-resident species - may be inaccurate.");
+					break;
+				}
+			}
 		}
 		return z;
 	}
