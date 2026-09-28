@@ -1703,6 +1703,22 @@ public abstract class Continuous extends Module<Continuous> {
 	}
 
 	/**
+	 * The payoff of a focal individual with traits {@code me} when interacting with
+	 * opponents with traits {@code opp}. Used to numerically determine the extremal
+	 * payoffs, see {@link #setExtremalScores()}. By default, the payoff is
+	 * determined by the pairwise interactions defined by {@link Traits2Payoff}.
+	 * Modules with other interactions must override this method. Traits that
+	 * return {@code NaN} are ignored, e.g. infeasible traits.
+	 * 
+	 * @param me  the traits of the focal individual
+	 * @param opp the traits of the opponents
+	 * @return the payoff of the focal individual
+	 */
+	protected double extremalPayoff(double[] me, double[] opp) {
+		return traits2payoff.payoff(me, opp);
+	}
+
+	/**
 	 * The linear grid size to sample payoffs in the (possibly multi-dimensional)
 	 * trait space.
 	 */
@@ -1840,7 +1856,7 @@ public abstract class Continuous extends Module<Continuous> {
 							mutInterval, resScale, mutScale, resMax, mutMax, scoreMax, trait - 1, minmax));
 					continue;
 				}
-				double traitScore = minmax * traits2payoff.payoff(resTrait, mutTrait);
+				double traitScore = minmax * extremalPayoff(resTrait, mutTrait);
 				if (traitScore > scoreMax) {
 					scoreMax = traitScore;
 					int len = resIdx.length; // nTraits
@@ -1942,7 +1958,7 @@ public abstract class Continuous extends Module<Continuous> {
 						findExtrema(resTrait, resIdx, resInterval, resScale, resMax, scoreMax, trait - 1, minmax));
 				continue;
 			}
-			double traitScore = minmax * traits2payoff.payoff(resTrait, resTrait);
+			double traitScore = minmax * extremalPayoff(resTrait, resTrait);
 			if (traitScore > scoreMax) {
 				scoreMax = traitScore;
 				int len = resIdx.length; // nTraits
