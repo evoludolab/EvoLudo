@@ -990,13 +990,20 @@ public class IBSMCPopulation extends IBSPopulation<Continuous, IBSMCPopulation> 
 	/**
 	 * Gets all traits of all individuals. The traits are returned as a formatted
 	 * string with an accuracy of {@code digits} decimals. With multiple traits they
-	 * are listed sequentially for each individual.
+	 * are listed sequentially for each individual. Traits are reported in the
+	 * units of their respective trait ranges.
 	 * 
 	 * @param digits the number of decimals of the formatted string
 	 * @return the formatted traits
 	 */
 	public String getTraits(int digits) {
-		return Formatter.format(traits, digits);
+		int len = nPopulation * nTraits;
+		double[] scaled = new double[len];
+		for (int n = 0; n < len; n++) {
+			int s = n % nTraits;
+			scaled[n] = traitRangeMin[s] + traits[n] * (traitRangeMax[s] - traitRangeMin[s]);
+		}
+		return Formatter.format(scaled, digits);
 	}
 
 	@Override
