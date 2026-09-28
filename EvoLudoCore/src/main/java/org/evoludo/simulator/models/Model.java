@@ -496,10 +496,12 @@ public abstract class Model implements CLOProvider {
 		}
 
 		/**
-		 * Modules that offer individual based simulation models with continuous traits
-		 * and interactions in groups must implement this interface.
+		 * Modules that offer individual based simulation models with multiple
+		 * continuous traits and interactions in groups must implement this interface.
+		 * For groups of size {@code nGroup==2} interactions revert to
+		 * {@link MCPairs#pairScores(double[], double[], int, double[])}.
 		 */
-		interface MCGroups extends CGroups {
+		interface MCGroups extends MCPairs, Features.Groups {
 
 			/**
 			 * Calculate the payoff/score for modules with interactions in groups and
@@ -519,7 +521,7 @@ public abstract class Model implements CLOProvider {
 			 * <h3>Important:</h3> must be overridden and implemented in subclasses that
 			 * define game interactions among groups of individuals with multiple continuous
 			 * traits (for groups with sizes {@code nGroup&gt;2}, otherwise see
-			 * {@link CPairs#pairScores(double, double[], int, double[])}).
+			 * {@link MCPairs#pairScores(double[], double[], int, double[])}).
 			 * 
 			 * @param me      the traits of the focal individual
 			 * @param group   the traits of the group members
