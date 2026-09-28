@@ -3764,14 +3764,21 @@ public abstract class IBSPopulation<M extends Module<?>, P extends IBSPopulation
 			return module.getNGroup() * score;
 		}
 		if (playerScoring == ScoringType.EPHEMERAL) {
-			if (module.isPairwise()) {
-				if (interGroup.nSamples > 0)
-					return interGroup.nSamples * score;
-				if (count == 0)
-					return (nPopulation - 1) * score;
-				return count * score;
+			// count == 0 for well-mixed populations
+			int nNeigh = (count == 0 ? nPopulation - 1 : count);
+			if (interGroup.nSamples > 0) {
+				// random sampling of nSamples interactions, see IBSGroup#nMembers
+				if (module.isPairwise())
+					// distinct partners, limited by the number of neighbours
+					return Math.min(interGroup.nSamples, nNeigh) * score;
+				// independently sampled groups; a single group if all neighbours are
+				// needed to fill it
+				return (nNeigh <= module.getNGroup() - 1 ? 1 : interGroup.nSamples) * score;
 			}
-			// each individual participates in a single group interaction
+			// pairwise interactions with all neighbours
+			if (module.isPairwise())
+				return nNeigh * score;
+			// a single group interaction with all neighbours
 			return score;
 		}
 		// not ready for unbounded accumulated payoffs... check() should catch this
@@ -4072,6 +4079,8 @@ public abstract class IBSPopulation<M extends Module<?>, P extends IBSPopulation
 	boolean checkInteractions(int nGroup) {
 		boolean doReset = false;
 		interaction.setInterspecies(opponent != this);
+		// each random interaction involves nGroup-1 neighbours
+		interGroup.setNMembers(nGroup - 1);
 		// check sampling in special geometries
 		if (interaction.isType(GeometryType.SQUARE) && interaction.isRegular() && interaction.getConnectivity() > 8 &&
 				interGroup.isSampling(IBSGroup.SAMPLING_ALL) && nGroup > 2 && nGroup < 9) {
@@ -4498,7 +4507,13 @@ public abstract class IBSPopulation<M extends Module<?>, P extends IBSPopulation
 		if (!interaction.isUndirected())
 			maxGroup = Math.max(maxGroup, iFeats.maxIn + iFeats.maxOut);
 		int nGroup = module.getNGroup();
-		maxGroup = Math.max(maxGroup, nGroup) + 1; // add 1 in case focal is part of group
+		maxGroup = Math.max(maxGroup, nGroup);
+		// random sampling of pairwise interactions with nSamples distinct partners (at
+		// most the entire population); groups are processed one at a time
+		int nSamples = interGroup.getNSamples();
+		if (nSamples > 0 && nGroup == 2)
+			maxGroup = Math.max(maxGroup, Math.min(nSamples, opponent.getModule().getNPopulation()));
+		maxGroup++; // add 1 in case focal is part of group
 		if (groupScores == null || groupScores.length != maxGroup)
 			groupScores = new double[maxGroup]; // can hold scores for any group size!
 		if (smallScores == null || smallScores.length != maxGroup)
@@ -4575,7 +4590,8 @@ public abstract class IBSPopulation<M extends Module<?>, P extends IBSPopulation
 			}
 			return;
 		}
-		Arrays.fill(interactions, Combinatorics.combinations(interGroup.nSamples, nGroup - 1));
+		// random sampling: nSamples interactions in pairs or groups
+		Arrays.fill(interactions, interGroup.nSamples);
 	}
 
 	/**

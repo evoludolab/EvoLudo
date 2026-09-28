@@ -1129,6 +1129,12 @@ public class IBSDPopulation extends IBSPopulation<Discrete, IBSDPopulation> {
 		int myType = getTraitAt(me);
 		if (myType == vacantIdx)
 			return;
+		int nGroup = module.getNGroup();
+		if (!group.isSampling(IBSGroup.SAMPLING_ALL) && group.nSampled > nGroup - 1) {
+			// random sampling: independently sampled groups, see IBSGroup#nMembers
+			playGroupsAt(me, myType, group, nGroup, group.nSampled / (nGroup - 1));
+			return;
+		}
 		stripGroupVacancies(group, tmpTraits, tmpGroup);
 		countTraits(tmpCount, tmpTraits, 0, group.nSampled);
 		if (group.nSampled <= 0) {
@@ -1137,16 +1143,13 @@ public class IBSDPopulation extends IBSPopulation<Discrete, IBSDPopulation> {
 			return;
 		}
 
-		if (group.isSampling(IBSGroup.SAMPLING_ALL)) {
+		if (group.isSampling(IBSGroup.SAMPLING_ALL) && nGroup < group.nSampled + 1) {
 			// interact with all neighbors - interact repeatedly if nGroup<nSampled+1
-			int nGroup = module.getNGroup();
-			if (nGroup < group.nSampled + 1) {
-				playGroupSequentiallyAt(me, myType, group, nGroup);
-				return;
-			}
-			// interact with full group (random graphs or all neighbors)
+			playGroupSequentiallyAt(me, myType, group, nGroup);
+			return;
 		}
-		// interact with sampled neighbors
+		// interact with full group (random graphs, all neighbors or sampled
+		// neighbors)
 		playGroupOnceAt(me, myType, group);
 	}
 
@@ -1206,6 +1209,60 @@ public class IBSDPopulation extends IBSPopulation<Discrete, IBSDPopulation> {
 		updateScoreAt(me, myScore, group.nSampled);
 		for (int i = 0; i < group.nSampled; i++)
 			opponent.updateScoreAt(group.group[i], smallScores[i], nGroup - 1);
+	}
+
+	/**
+	 * Focal individual plays games in {@code nGroups} independently sampled groups.
+	 * The members of the groups are stored consecutively in {@code group}, with
+	 * {@code nGroup-1} members each. Vacant sites are skipped within each group.
+	 * 
+	 * @param me      the index of the focal individual
+	 * @param myType  the trait type of the focal individual
+	 * @param group   the sampled members of all groups
+	 * @param nGroup  the size of the groups (including the focal individual)
+	 * @param nGroups the number of groups
+	 */
+	void playGroupsAt(int me, int myType, IBSGroup group, int nGroup, int nGroups) {
+		double myScore = 0.0;
+		int nPlayed = 0;
+		// for ephemeral scores calculate score of focal only
+		boolean ephemeralScores = playerScoring.equals(ScoringType.EPHEMERAL);
+		int nOthers = nGroup - 1;
+		for (int g = 0; g < nGroups; g++) {
+			Arrays.fill(tmpCount, 0);
+			int nMembers = 0;
+			for (int i = g * nOthers; i < (g + 1) * nOthers; i++) {
+				int member = group.group[i];
+				int type = opponent.getTraitAt(member);
+				if (type == vacantIdx)
+					continue;
+				tmpTraits[nMembers] = type;
+				tmpGroup[nMembers++] = member;
+				tmpCount[type]++;
+			}
+			if (nMembers == 0)
+				continue;
+			tmpCount[myType]++;
+			groupmodule.groupScores(tmpCount, tmpTraitScore);
+			myScore += tmpTraitScore[myType];
+			nPlayed++;
+			if (ephemeralScores)
+				continue;
+			for (int i = 0; i < nMembers; i++)
+				opponent.updateScoreAt(tmpGroup[i], tmpTraitScore[tmpTraits[i]]);
+		}
+		if (nPlayed == 0) {
+			// surrounded by vacant sites
+			Arrays.fill(tmpCount, 0);
+			playNoGameAt(me, myType);
+			return;
+		}
+		if (ephemeralScores) {
+			resetScoreAt(me);
+			setScoreAt(me, myScore / nPlayed, nPlayed);
+			return;
+		}
+		updateScoreAt(me, myScore, nPlayed);
 	}
 
 	/**

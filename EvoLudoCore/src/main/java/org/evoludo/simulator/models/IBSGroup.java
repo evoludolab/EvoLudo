@@ -114,9 +114,19 @@ public class IBSGroup {
 	/**
 	 * The sample size requested: {@code SAMPLING_ALL} samples all neighbours,
 	 * {@code SAMPLING_NONE} skips sampling, and {@code k>0} samples {@code k}
-	 * random neighbours.
+	 * random interactions with {@link #nMembers} random neighbours each.
 	 */
 	int nSamples = SAMPLING_ALL;
+
+	/**
+	 * The number of neighbours per random interaction, e.g. {@code nGroup-1} for
+	 * interactions in groups of size {@code nGroup}. For a single neighbour per
+	 * interaction, {@code nSamples} distinct neighbours are drawn. Otherwise, the
+	 * {@code nSamples} groups are drawn independently, i.e. neighbours are
+	 * distinct within but not across groups. If at most {@code nMembers}
+	 * neighbours are available, all of them form a single group.
+	 */
+	int nMembers = 1;
 
 	/**
 	 * The effective sample size. {@code nSampled &lt; nSamples} may hold depending
@@ -145,8 +155,30 @@ public class IBSGroup {
 		if (nSamples < SAMPLING_NONE)
 			return;
 		this.nSamples = nSamples;
-		if (nSamples > 0 && (mem == null || mem.length < nSamples))
-			mem = new int[nSamples];
+		allocMem();
+	}
+
+	/**
+	 * Set the number of neighbours per random interaction, e.g. {@code nGroup-1}
+	 * for interactions in groups of size {@code nGroup}. Values less than
+	 * {@code 1} are ignored.
+	 *
+	 * @param nMembers the number of neighbours per interaction
+	 */
+	public void setNMembers(int nMembers) {
+		if (nMembers < 1)
+			return;
+		this.nMembers = nMembers;
+		allocMem();
+	}
+
+	/**
+	 * Ensure that the memory for picking random neighbours is sufficient.
+	 */
+	private void allocMem() {
+		int nDraw = nSamples * nMembers;
+		if (nDraw > 0 && (mem == null || mem.length < nDraw))
+			mem = new int[nDraw];
 	}
 
 	/**
@@ -295,31 +327,45 @@ public class IBSGroup {
 	}
 
 	/**
-	 * Pick group of {@code nSamples} random individual with indices
-	 * {@code 0 - (size-1)}. The focal individual is included if {@code self==true}.
+	 * Pick random individuals with indices {@code 0 - (size-1)}. For a single
+	 * neighbour per interaction, {@code nSamples} distinct individuals are picked.
+	 * Otherwise, {@code nSamples} groups of {@code nMembers} individuals are picked
+	 * independently, i.e. individuals are distinct within but not across groups.
+	 * If at most {@code nMembers} individuals are available, all of them form a
+	 * single group. The focal individual is included if {@code self==true}.
 	 * 
 	 * @param size the maximum index to pick
-	 * @return the picked group
+	 * @return the picked individuals (groups are stored consecutively)
+	 * 
+	 * @see #nMembers
 	 */
 	private int[] pickRandom(int size) {
 		group = mem;
-		nSampled = Math.min(nSamples, size);
-
-		if (nSampled == 1) {
-			pickSingle(size);
+		int avail = (self ? size : size - 1);
+		if (nMembers == 1) {
+			nSampled = Math.min(nSamples, avail);
+			pickGroup(null, size, 0, nSampled);
 			return group;
 		}
-
-		if (self)
-			pickGroup(size);
-		else
-			pickGroup(size, focal);
+		if (avail <= nMembers) {
+			nSampled = avail;
+			pickGroup(null, size, 0, avail);
+			return group;
+		}
+		nSampled = nSamples * nMembers;
+		for (int n = 0; n < nSampled; n += nMembers)
+			pickGroup(null, size, n, nMembers);
 		return group;
 	}
 
 	/**
-	 * Pick group of {@code nSamples} random individual in structured populations
-	 * either from the outgoing (downstream) or incoming (upstream) neighbours.
+	 * Pick random individuals in structured populations either from the outgoing
+	 * (downstream) or incoming (upstream) neighbours. For a single neighbour per
+	 * interaction, {@code nSamples} distinct neighbours are picked. Otherwise,
+	 * {@code nSamples} groups of {@code nMembers} neighbours are picked
+	 * independently, i.e. neighbours are distinct within but not across groups.
+	 * If at most {@code nMembers} neighbours are available, all of them form a
+	 * single group.
 	 * 
 	 * @param downstream the flag to indicating sampling from ownstream
 	 * @return the picked group
@@ -327,6 +373,19 @@ public class IBSGroup {
 	private int[] pickRandomStructured(boolean downstream) {
 		int[] src = (downstream ? geometry.out[focal] : geometry.in[focal]);
 		int len = (downstream ? geometry.kout[focal] : geometry.kin[focal]);
+		if (nMembers > 1) {
+			// independent groups; a single group if all neighbours are needed to fill it
+			if (len <= nMembers) {
+				nSampled = len;
+				group = src;
+				return group;
+			}
+			group = mem;
+			nSampled = nSamples * nMembers;
+			for (int n = 0; n < nSampled; n += nMembers)
+				pickGroup(src, len, n, nMembers);
+			return group;
+		}
 		if (len <= nSamples) {
 			nSampled = len;
 			group = src;
@@ -370,7 +429,7 @@ public class IBSGroup {
 	 * @return the picked group
 	 */
 	private int[] pickRandomHierarchy(boolean downstream) {
-		if (nSamples != 1) {
+		if (nSamples * nMembers != 1) {
 			throw new UnsupportedOperationException(
 					"sampling of groups (≥2) in hierarchical structures not (yet) implemented!");
 		}
@@ -555,63 +614,33 @@ public class IBSGroup {
 	}
 
 	/**
-	 * Pick a single random individual with indices {@code 0 - (size-1)}. The focal
-	 * individual is included if {@code self==true}.
+	 * Pick {@code count} distinct random individuals and store them in
+	 * {@code group} starting at index {@code offset}. If {@code src==null},
+	 * individuals are picked among the indices {@code 0 - (size-1)} and the focal
+	 * individual is included if {@code self==true}. Otherwise, individuals are
+	 * picked among the first {@code size} entries of {@code src}, e.g. the
+	 * neighbours of the focal individual.
 	 * 
-	 * @param size the upper bound of indices to pick (excluding)
+	 * @param src    the individuals to pick from or {@code null} for all
+	 * @param size   the number of individuals to pick from (including the focal
+	 *               individual if {@code src==null})
+	 * @param offset the index in {@code group} of the first pick
+	 * @param count  the number of individuals to pick
 	 */
-	private void pickSingle(int size) {
-		if (self) {
-			group[0] = rng.random0n(size);
-			return;
-		}
-		int aPick = rng.random0n(size - 1);
-		if (aPick >= focal)
-			aPick++;
-		group[0] = aPick;
-	}
-
-	/**
-	 * Pick group of {@code nSampled} random individuals with indices
-	 * {@code 0 - (size-1)}. The focal individual is included.
-	 * 
-	 * @param size the upper bound of indices to pick (excluding)
-	 */
-	void pickGroup(int size) {
-		int n = 0;
-		while (n < nSampled) {
-			int aPick = rng.random0n(size);
-			// sample without replacement
-			boolean duplicate = false;
-			for (int i = 0; i < n; i++)
-				if (group[i] == aPick) {
-					duplicate = true;
-					break;
-				}
-			if (duplicate)
-				continue;
-			group[n++] = aPick;
-		}
-	}
-
-	/**
-	 * Pick group of {@code nSampled} random individuals with indices
-	 * {@code 0 - (size-1)}. The focal individual is excluded.
-	 * 
-	 * @param size  the upper bound of indices to pick (excluding)
-	 * @param focal the index of the individual to exclude
-	 */
-	void pickGroup(int size, int focal) {
-		// exclude focal
-		int max1 = size - 1;
-		int n = 0;
-		while (n < nSampled) {
-			int aPick = rng.random0n(max1);
-			if (aPick >= focal)
+	private void pickGroup(int[] src, int size, int offset, int count) {
+		boolean exclFocal = (src == null && !self);
+		int max = (exclFocal ? size - 1 : size);
+		int end = offset + count;
+		int n = offset;
+		while (n < end) {
+			int aPick = rng.random0n(max);
+			if (exclFocal && aPick >= focal)
 				aPick++;
+			if (src != null)
+				aPick = src[aPick];
 			// sample without replacement
 			boolean duplicate = false;
-			for (int i = 0; i < n; i++)
+			for (int i = offset; i < n; i++)
 				if (group[i] == aPick) {
 					duplicate = true;
 					break;

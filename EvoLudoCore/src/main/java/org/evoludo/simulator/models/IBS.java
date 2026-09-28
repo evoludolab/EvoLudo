@@ -38,6 +38,7 @@ import org.evoludo.simulator.EvoLudo;
 import org.evoludo.simulator.geometries.AbstractGeometry;
 import org.evoludo.simulator.geometries.GeometryType;
 import org.evoludo.simulator.modules.Discrete;
+import org.evoludo.simulator.modules.Features;
 import org.evoludo.simulator.modules.Features.Payoffs;
 import org.evoludo.simulator.modules.Map2Fitness;
 import org.evoludo.simulator.modules.Module;
@@ -1171,11 +1172,12 @@ public abstract class IBS extends Model {
 
 	/**
 	 * Command line option to set whether players interact with all their neighbours
-	 * or a random subsample.
+	 * or in {@code k} random interactions. Each random interaction involves
+	 * {@code nGroup-1} distinct random neighbours, i.e. a single neighbour for
+	 * pairwise interactions.
 	 */
 	public final CLOption cloInteractions = new CLOption("interactions", "all",
-			CLOCategory.Model,
-			"--interactions <all|k>  interact with all or k random neighbours",
+			CLOCategory.Model, null,
 			new CLODelegate() {
 
 				/**
@@ -1201,6 +1203,15 @@ public abstract class IBS extends Model {
 							return false;
 					}
 					return true;
+				}
+
+				@Override
+				public String getDescription() {
+					for (Module<?> mod : species) {
+						if (mod instanceof Features.Groups)
+							return "--interactions <all|k>  interact with all neighbours or in k random groups";
+					}
+					return "--interactions <all|k>  interact with all neighbours or in k random pairs";
 				}
 			});
 

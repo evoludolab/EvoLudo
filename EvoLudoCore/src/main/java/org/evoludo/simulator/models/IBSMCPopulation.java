@@ -675,6 +675,12 @@ public class IBSMCPopulation extends IBSPopulation<Continuous, IBSMCPopulation> 
 		int me = group.focal;
 		if (isVacantAt(me))
 			return;
+		int nGroup = module.getNGroup();
+		if (!group.isSampling(IBSGroup.SAMPLING_ALL) && group.nSampled > nGroup - 1) {
+			// random sampling: independently sampled groups, see IBSGroup#nMembers
+			playGroupsAt(me, group, nGroup, group.nSampled / (nGroup - 1));
+			return;
+		}
 		stripGroupVacancies(group);
 		if (group.nSampled <= 0) {
 			// isolated individual (or surrounded by vacant sites)
@@ -683,16 +689,13 @@ public class IBSMCPopulation extends IBSPopulation<Continuous, IBSMCPopulation> 
 		}
 		gatherPlayers(group);
 
-		if (group.isSampling(IBSGroup.SAMPLING_ALL)) {
+		if (group.isSampling(IBSGroup.SAMPLING_ALL) && nGroup < group.nSampled + 1) {
 			// interact with all neighbors - interact repeatedly if nGroup<nSampled+1
-			int nGroup = module.getNGroup();
-			if (nGroup < group.nSampled + 1) {
-				playGroupSequentiallyAt(me, group, nGroup);
-				return;
-			}
-			// interact with full group (random graphs, all neighbors)
+			playGroupSequentiallyAt(me, group, nGroup);
+			return;
 		}
-		// interact with sampled neighbors
+		// interact with full group (random graphs, all neighbors or sampled
+		// neighbors)
 		playGroupOnceAt(me, group);
 	}
 
@@ -743,6 +746,56 @@ public class IBSMCPopulation extends IBSPopulation<Continuous, IBSMCPopulation> 
 		updateScoreAt(me, myScore, group.nSampled);
 		for (int i = 0; i < group.nSampled; i++)
 			opponent.updateScoreAt(group.group[i], smallScores[i], nGroup - 1);
+	}
+
+	/**
+	 * Evaluate interactions in {@code nGroups} independently sampled groups. The
+	 * members of the groups are stored consecutively in {@code group}, with
+	 * {@code nGroup-1} members each. Vacant sites are skipped within each group.
+	 * 
+	 * @param me      focal player index
+	 * @param group   sampled members of all groups
+	 * @param nGroup  size of the groups (including the focal individual)
+	 * @param nGroups number of groups
+	 */
+	void playGroupsAt(int me, IBSGroup group, int nGroup, int nGroups) {
+		System.arraycopy(traits, me * nTraits, myTraits, 0, nTraits);
+		double[] opptraits = opponent.traits;
+		int oppntraits = opponent.nTraits;
+		double myScore = 0.0;
+		int nPlayed = 0;
+		// for ephemeral scores calculate score of focal only
+		boolean ephemeralScores = playerScoring.equals(ScoringType.EPHEMERAL);
+		int nOthers = nGroup - 1;
+		for (int g = 0; g < nGroups; g++) {
+			int nMembers = 0;
+			for (int i = g * nOthers; i < (g + 1) * nOthers; i++) {
+				int member = group.group[i];
+				if (opponent.isVacantAt(member))
+					continue;
+				System.arraycopy(opptraits, member * oppntraits, smallTrait, nMembers * oppntraits, oppntraits);
+				groupIdxs[nMembers++] = member;
+			}
+			if (nMembers == 0)
+				continue;
+			myScore += groupmodule.groupScores(myTraits, smallTrait, nMembers, groupScores);
+			nPlayed++;
+			if (ephemeralScores)
+				continue;
+			for (int i = 0; i < nMembers; i++)
+				opponent.updateScoreAt(groupIdxs[i], groupScores[i]);
+		}
+		if (nPlayed == 0) {
+			// surrounded by vacant sites
+			playNoGameAt(me);
+			return;
+		}
+		if (ephemeralScores) {
+			resetScoreAt(me);
+			setScoreAt(me, myScore / nPlayed, nPlayed);
+			return;
+		}
+		updateScoreAt(me, myScore, nPlayed);
 	}
 
 	/**
