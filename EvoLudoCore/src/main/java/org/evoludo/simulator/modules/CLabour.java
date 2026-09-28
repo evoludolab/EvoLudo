@@ -59,10 +59,6 @@ public class CLabour extends Continuous implements Payoffs,
 		HasPop2D.Fitness, HasPop3D.Fitness, HasMean.Fitness, HasHistogram.Fitness,
 		HasHistogram.Degree {
 
-	// NOTE: in order to introduce a maximum total investment, this module needs to
-	// extend models to properly deal with constraints on mutations
-	// protected double maxInvest = -1.0;
-
 	/**
 	 * Temporary storage for the traits of the opponent.
 	 */
@@ -119,24 +115,4 @@ public class CLabour extends Continuous implements Payoffs,
 		}
 		return myScore;
 	}
-
-	// /**
-	// * Set the maximum combined investment. This is the maximum an individual can
-	// * invest in in all traits combined.
-	// *
-	// * @param aValue the maximum investment
-	// */
-	// public void setMaxInvestment(double aValue) {
-	// maxInvest = aValue;
-	// }
-
-	// /**
-	// * Get the maximum combined investment. This is the maximum an individual can
-	// * invest in in all traits combined.
-	// *
-	// * @return the maximum investment
-	// */
-	// public double getMaxInvestment() {
-	// return maxInvest;
-	// }
 }

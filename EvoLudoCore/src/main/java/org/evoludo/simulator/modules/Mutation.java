@@ -482,12 +482,28 @@ public abstract class Mutation {
 	public static class Continuous extends Mutation {
 
 		/**
+		 * The maximum number of attempts to draw (uniformly distributed) traits that
+		 * do not exceed the maximum combined trait value, or to reflect traits back
+		 * into the feasible region.
+		 *
+		 * @see org.evoludo.simulator.modules.Continuous#getMaxInvest()
+		 */
+		public static final int MAX_REDRAWS = 100;
+
+		/**
+		 * The continuous module using this mutation. Convenience field to avoid
+		 * casts.
+		 */
+		private final org.evoludo.simulator.modules.Continuous cmodule;
+
+		/**
 		 * Construct mutator for continuous traits.
 		 * 
 		 * @param module the module using this mutation
 		 */
-		public Continuous(Module<?> module) {
+		public Continuous(org.evoludo.simulator.modules.Continuous module) {
 			super(module);
+			cmodule = module;
 			// add all keys by default
 			clo.addKeys(Type.values());
 			// defaults to no mutations
@@ -526,6 +542,198 @@ public abstract class Mutation {
 					return reflect(trait + rng.random01() * range * 2 - range);
 				default:
 					return trait;
+			}
+		}
+
+		/**
+		 * Temporary storage for the (remaining) displacement of a mutant in trait
+		 * space.
+		 */
+		private double[] step;
+
+		/**
+		 * Mutate all {@code nTraits} traits of a single individual stored in
+		 * {@code traits} starting at index {@code offset}. The traits are mutated in
+		 * place. Without a maximum combined trait value, each trait is mutated
+		 * independently and reflected at the boundaries of its interval, see
+		 * {@link #mutate(double)}. Otherwise, the mutant moves along its displacement
+		 * vector and is reflected like a billiard ball whenever it hits a boundary of
+		 * the feasible region, i.e. the trait intervals or the hyperplane of the
+		 * maximum combined trait value. For isotropic mutations, e.g. Gaussian
+		 * mutations with the same standard deviation for all traits, reflecting the
+		 * path of the mutant does not bias the trait distribution for any shape of the
+		 * feasible region. Note that reflecting only the endpoint of the displacement
+		 * sequentially at the individual boundaries does introduce biases near
+		 * corners. Uniform mutants are redrawn to preserve the uniform distribution on
+		 * the feasible region.
+		 *
+		 * @param traits the array of traits
+		 * @param offset the index of the first trait of the individual
+		 *
+		 * @see org.evoludo.simulator.modules.Continuous#getMaxInvest()
+		 */
+		public void mutate(double[] traits, int offset) {
+			int nTraits = cmodule.getNTraits();
+			if (type == Type.UNIFORM) {
+				int attempts = MAX_REDRAWS;
+				do {
+					for (int n = 0; n < nTraits; n++)
+						traits[offset + n] = rng.random01();
+				} while (getExcessInvest(traits, offset) > 0.0 && --attempts > 0);
+				reflectMaxInvest(traits, offset);
+				return;
+			}
+			double maxInvest = cmodule.getMaxInvest();
+			if (maxInvest == Double.POSITIVE_INFINITY || !(type == Type.GAUSSIAN || type == Type.RANGE)) {
+				for (int n = 0; n < nTraits; n++)
+					traits[offset + n] = mutate(traits[offset + n]);
+				return;
+			}
+			if (step == null || step.length != nTraits)
+				step = new double[nTraits];
+			for (int n = 0; n < nTraits; n++)
+				step[n] = (type == Type.GAUSSIAN ? rng.nextGaussian() * range : rng.random01() * range * 2 - range);
+			// feasible region: 0 <= traits[n] <= 1 and sum_n scale[n] * traits[n] <= bound
+			double[] min = cmodule.getTraitMin();
+			double[] max = cmodule.getTraitMax();
+			double bound = maxInvest;
+			double norm2 = 0.0;
+			for (int n = 0; n < nTraits; n++) {
+				double scale = max[n] - min[n];
+				bound -= min[n];
+				norm2 += scale * scale;
+			}
+			for (int r = 0; r < MAX_REDRAWS; r++) {
+				// find the first boundary along the (remaining) path; index nTraits
+				// refers to the hyperplane of the maximum combined trait value
+				double hit = 1.0;
+				int wall = -1;
+				double sum = 0.0;
+				double drift = 0.0;
+				for (int n = 0; n < nTraits; n++) {
+					double trait = traits[offset + n];
+					double dn = step[n];
+					double scale = max[n] - min[n];
+					sum += scale * trait;
+					drift += scale * dn;
+					double t = Double.POSITIVE_INFINITY;
+					if (dn < 0.0)
+						t = -trait / dn;
+					else if (dn > 0.0)
+						t = (1.0 - trait) / dn;
+					if (t < hit) {
+						hit = t;
+						wall = n;
+					}
+				}
+				if (drift > 0.0) {
+					double t = (bound - sum) / drift;
+					if (t < hit) {
+						hit = t;
+						wall = nTraits;
+					}
+				}
+				if (wall < 0) {
+					// no boundary hit on remaining path
+					for (int n = 0; n < nTraits; n++)
+						traits[offset + n] += step[n];
+					return;
+				}
+				// advance to boundary and reflect remaining path
+				hit = Math.max(hit, 0.0);
+				for (int n = 0; n < nTraits; n++) {
+					traits[offset + n] += hit * step[n];
+					step[n] *= 1.0 - hit;
+				}
+				if (wall < nTraits) {
+					traits[offset + wall] = (step[wall] < 0.0 ? 0.0 : 1.0);
+					step[wall] = -step[wall];
+					continue;
+				}
+				double proj = 0.0;
+				for (int n = 0; n < nTraits; n++)
+					proj += (max[n] - min[n]) * step[n];
+				proj *= 2.0 / norm2;
+				for (int n = 0; n < nTraits; n++)
+					step[n] -= proj * (max[n] - min[n]);
+			}
+			// numerical safety net (e.g. trapped in corner)
+			for (int n = 0; n < nTraits; n++)
+				traits[offset + n] = reflect(traits[offset + n]);
+			reflectMaxInvest(traits, offset);
+		}
+
+		/**
+		 * Get the amount by which the combined traits of a single individual exceed
+		 * the maximum combined trait value of the module. The {@code nTraits} traits
+		 * of the individual are stored in {@code traits} starting at index
+		 * {@code offset}, scaled to \([0,1]\) as usual. Traits are feasible if the
+		 * excess is not positive.
+		 *
+		 * @param traits the array of traits
+		 * @param offset the index of the first trait of the individual
+		 * @return the excess of the combined traits
+		 *
+		 * @see org.evoludo.simulator.modules.Continuous#getMaxInvest()
+		 */
+		public double getExcessInvest(double[] traits, int offset) {
+			double maxInvest = cmodule.getMaxInvest();
+			if (maxInvest == Double.POSITIVE_INFINITY)
+				return Double.NEGATIVE_INFINITY;
+			double[] min = cmodule.getTraitMin();
+			double[] max = cmodule.getTraitMax();
+			double sum = 0.0;
+			for (int n = 0; n < min.length; n++)
+				sum += min[n] + traits[offset + n] * (max[n] - min[n]);
+			return sum - maxInvest;
+		}
+
+		/**
+		 * Reflect traits of a single individual that exceed the maximum combined trait
+		 * value of the module at the boundary. The {@code nTraits} traits of the
+		 * individual are stored in {@code traits} starting at index {@code offset},
+		 * scaled to \([0,1]\) as usual. The traits are mirrored at the hyperplane
+		 * \(\sum_i t_i=T\), where \(t_i\) denote the traits in the units of their
+		 * respective trait ranges and \(T\) the maximum combined trait value, and
+		 * reflected back into the trait intervals if necessary. Used for traits that
+		 * are set explicitly, e.g. initial configurations. Mutants are reflected along
+		 * their path instead, see {@link #mutate(double[], int)}.
+		 * <p>
+		 * A single reflection suffices unless a single trait can exceed \(T\) on its
+		 * own. If the traits remain infeasible after {@link #MAX_REDRAWS} reflections,
+		 * they are shrunk towards the trait minima onto the boundary.
+		 *
+		 * @param traits the array of traits
+		 * @param offset the index of the first trait of the individual
+		 *
+		 * @see org.evoludo.simulator.modules.Continuous#getMaxInvest()
+		 */
+		public void reflectMaxInvest(double[] traits, int offset) {
+			double excess = getExcessInvest(traits, offset);
+			if (!(excess > 0.0))
+				return; // feasible (or vacant)
+			double[] min = cmodule.getTraitMin();
+			double[] max = cmodule.getTraitMax();
+			int nTraits = min.length;
+			double norm2 = 0.0;
+			for (int n = 0; n < nTraits; n++) {
+				double scale = max[n] - min[n];
+				norm2 += scale * scale;
+			}
+			for (int r = 0; r < MAX_REDRAWS && excess > 0.0; r++) {
+				double shift = 2.0 * excess / norm2;
+				for (int n = 0; n < nTraits; n++)
+					traits[offset + n] = reflect(traits[offset + n] - shift * (max[n] - min[n]));
+				excess = getExcessInvest(traits, offset);
+			}
+			if (excess > 0.0) {
+				// last resort: shrink traits towards minima onto boundary
+				double scaled = 0.0;
+				for (int n = 0; n < nTraits; n++)
+					scaled += traits[offset + n] * (max[n] - min[n]);
+				double shrink = (scaled - excess) / scaled;
+				for (int n = 0; n < nTraits; n++)
+					traits[offset + n] *= shrink;
 			}
 		}
 

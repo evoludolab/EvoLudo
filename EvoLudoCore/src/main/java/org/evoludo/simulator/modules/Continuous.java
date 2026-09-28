@@ -34,6 +34,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 
+import org.evoludo.math.ArrayMath;
 import org.evoludo.simulator.EvoLudo;
 import org.evoludo.simulator.models.CModel;
 import org.evoludo.simulator.models.IBSC;
@@ -298,6 +299,13 @@ public abstract class Continuous extends Module<Continuous> {
 				doReset = true;
 			}
 		}
+		// verify maximum combined trait value (requires valid trait ranges)
+		if (maxInvest < Double.POSITIVE_INFINITY && maxInvest <= ArrayMath.norm(traitMin)) {
+			engine.logWarning("maximum combined trait value " + Formatter.format(maxInvest, 4)
+					+ " does not exceed combined trait minima - no limit!");
+			setMaxInvest(Double.POSITIVE_INFINITY);
+			doReset = true;
+		}
 		return doReset;
 	}
 
@@ -391,6 +399,40 @@ public abstract class Continuous extends Module<Continuous> {
 			return;
 		traitMax[trait] = max;
 		traitMin[trait] = min;
+		extremalScoresSet = false; // update extremal scores
+	}
+
+	/**
+	 * The maximum combined trait value, i.e. the sum of all traits (in the units
+	 * of their respective trait ranges) must not exceed {@code maxInvest}.
+	 * {@link Double#POSITIVE_INFINITY} imposes no limit. Mutations and initial
+	 * configurations respect the limit, see
+	 * {@link Mutation.Continuous#getExcessInvest(double[], int)}.
+	 *
+	 * @see #cloMaxInvest
+	 */
+	protected double maxInvest = Double.POSITIVE_INFINITY;
+
+	/**
+	 * Get the maximum combined trait value.
+	 *
+	 * @return the maximum combined trait value
+	 *
+	 * @see #maxInvest
+	 */
+	public double getMaxInvest() {
+		return maxInvest;
+	}
+
+	/**
+	 * Set the maximum combined trait value.
+	 *
+	 * @param maxInvest the maximum combined trait value
+	 *
+	 * @see #maxInvest
+	 */
+	public void setMaxInvest(double maxInvest) {
+		this.maxInvest = maxInvest;
 		extremalScoresSet = false; // update extremal scores
 	}
 
@@ -1163,6 +1205,30 @@ public abstract class Continuous extends Module<Continuous> {
 			});
 
 	/**
+	 * Command line option to set the maximum combined trait value.
+	 *
+	 * @see #maxInvest
+	 */
+	public final CLOption cloMaxInvest = new CLOption("maxinvest", "none", CLOCategory.Module,
+			"--maxinvest <T>  maximum combined trait value, sum of traits ≤ T",
+			new CLODelegate() {
+				@Override
+				public boolean parse(String arg) {
+					String max = arg.trim();
+					if (max.equalsIgnoreCase("none")) {
+						setMaxInvest(Double.POSITIVE_INFINITY);
+						return true;
+					}
+					try {
+						setMaxInvest(CLOParser.parseDouble(max));
+					} catch (NumberFormatException nfe) {
+						return false;
+					}
+					return true;
+				}
+			});
+
+	/**
 	 * Command line option to set the cost function(s) for continuous traits.
 	 * 
 	 * @see Costs
@@ -1275,6 +1341,8 @@ public abstract class Continuous extends Module<Continuous> {
 			return;
 		super.collectCLO(parser);
 		parser.addCLO(cloTraitRange);
+		if (nTraits > 1)
+			parser.addCLO(cloMaxInvest);
 		if (this instanceof Payoffs) {
 			cloCosts.addKeys(Costs.values());
 			parser.addCLO(cloCosts);

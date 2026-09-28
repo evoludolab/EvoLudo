@@ -45,6 +45,7 @@ import org.evoludo.simulator.models.Model.HasIBS;
 import org.evoludo.simulator.modules.Continuous;
 import org.evoludo.simulator.modules.Features.Payoffs;
 import org.evoludo.simulator.modules.Module;
+import org.evoludo.simulator.modules.Mutation;
 import org.evoludo.util.Formatter;
 import org.evoludo.util.Plist;
 
@@ -450,12 +451,14 @@ public class IBSMCPopulation extends IBSPopulation<Continuous, IBSMCPopulation> 
 	 * @param focal    the index of the focal individual that gets updated
 	 * @param switched {@code true} if focal already switched trait
 	 * @return {@code true} if the trait has changed
+	 * 
+	 * @see Mutation.Continuous#mutate(double[], int)
 	 */
 	private boolean mutateAt(int focal, boolean switched) {
 		int dest = focal * nTraits;
-		double[] trait = switched ? traitsNext : traits;
-		for (int i = 0; i < nTraits; i++)
-			traitsNext[dest + i] = mutation.mutate(trait[dest + i]);
+		if (!switched)
+			System.arraycopy(traits, dest, traitsNext, dest, nTraits);
+		module.getMutation().mutate(traitsNext, dest);
 		return true;
 	}
 
@@ -1363,12 +1366,21 @@ public class IBSMCPopulation extends IBSPopulation<Continuous, IBSMCPopulation> 
 	}
 
 	/**
-	 * Initialize each trait uniformly at random in its allowed range.
+	 * Initialize each trait uniformly at random in its allowed range. Traits
+	 * exceeding the maximum combined trait value are redrawn, which results in a
+	 * uniform distribution on the feasible region of trait space.
+	 * 
+	 * @see Continuous#getMaxInvest()
 	 */
 	void initUniform() {
-		for (int s = 0; s < nTraits; s++) {
-			for (int n = s; n < nPopulation * nTraits; n += nTraits)
-				traits[n] = random01();
+		Mutation.Continuous mut = module.getMutation();
+		for (int n = 0; n < nPopulation * nTraits; n += nTraits) {
+			int attempts = Mutation.Continuous.MAX_REDRAWS;
+			do {
+				for (int s = 0; s < nTraits; s++)
+					traits[n + s] = random01();
+			} while (mut.getExcessInvest(traits, n) > 0.0 && --attempts > 0);
+			mut.reflectMaxInvest(traits, n);
 		}
 	}
 
@@ -1383,21 +1395,53 @@ public class IBSMCPopulation extends IBSPopulation<Continuous, IBSMCPopulation> 
 			for (int n = s; n < nPopulation * nTraits; n += nTraits)
 				traits[n] = scaledmono;
 		}
+		checkMaxInvest();
 	}
 
 	/**
 	 * Initialize traits by sampling from a (possibly truncated) Gaussian
-	 * distribution per trait.
+	 * distribution per trait. Traits exceeding the maximum combined trait value
+	 * are redrawn.
+	 * 
+	 * @see Continuous#getMaxInvest()
 	 */
 	void initGaussian() {
+		double[] scaledmean = new double[nTraits];
+		double[] scaledsdev = new double[nTraits];
 		for (int s = 0; s < nTraits; s++) {
 			double mean = Math.min(Math.max(init.args[s][0], traitRangeMin[s]), traitRangeMax[s]);
 			double sdev = Math.min(Math.max(init.args[s][1], traitRangeMin[s]), traitRangeMax[s]);
-			double scaledmean = (mean - traitRangeMin[s]) / (traitRangeMax[s] - traitRangeMin[s]);
-			double scaledsdev = sdev / (traitRangeMax[s] - traitRangeMin[s]);
-			for (int n = s; n < nPopulation * nTraits; n += nTraits)
-				traits[n] = Math.min(1.0, Math.max(0.0, randomGaussian(scaledmean, scaledsdev)));
+			scaledmean[s] = (mean - traitRangeMin[s]) / (traitRangeMax[s] - traitRangeMin[s]);
+			scaledsdev[s] = sdev / (traitRangeMax[s] - traitRangeMin[s]);
 		}
+		Mutation.Continuous mut = module.getMutation();
+		for (int n = 0; n < nPopulation * nTraits; n += nTraits) {
+			int attempts = Mutation.Continuous.MAX_REDRAWS;
+			do {
+				for (int s = 0; s < nTraits; s++)
+					traits[n + s] = Math.min(1.0, Math.max(0.0, randomGaussian(scaledmean[s], scaledsdev[s])));
+			} while (mut.getExcessInvest(traits, n) > 0.0 && --attempts > 0);
+			mut.reflectMaxInvest(traits, n);
+		}
+	}
+
+	/**
+	 * Check whether the initial traits exceed the maximum combined trait value.
+	 * Infeasible traits are reflected at the boundary and a warning is logged.
+	 * 
+	 * @see Mutation.Continuous#reflectMaxInvest(double[], int)
+	 */
+	private void checkMaxInvest() {
+		Mutation.Continuous mut = module.getMutation();
+		boolean reflected = false;
+		for (int n = 0; n < nPopulation * nTraits; n += nTraits) {
+			if (mut.getExcessInvest(traits, n) > 0.0) {
+				mut.reflectMaxInvest(traits, n);
+				reflected = true;
+			}
+		}
+		if (reflected)
+			engine.logWarning("initial traits exceed maximum combined trait value - reflected at boundary.");
 	}
 
 	/**
@@ -1415,6 +1459,7 @@ public class IBSMCPopulation extends IBSPopulation<Continuous, IBSMCPopulation> 
 			double mut = Math.min(Math.max(init.args[s][1], traitRangeMin[s]), traitRangeMax[s]);
 			traits[mutidx * nTraits + s] = (mut - traitRangeMin[s]) / (traitRangeMax[s] - traitRangeMin[s]);
 		}
+		checkMaxInvest();
 		return mutidx;
 	}
 
@@ -1449,6 +1494,7 @@ public class IBSMCPopulation extends IBSPopulation<Continuous, IBSMCPopulation> 
 		int offset = hit * nTraits;
 		for (int n = 0; n < nTraits; n++)
 			traitsNext[offset + n] = Math.min(Math.max(traits[offset + n] + (alt ? -0.1 : 0.1), 0.0), 1.0);
+		module.getMutation().reflectMaxInvest(traitsNext, offset);
 		// update scores and display
 		if (adjustScores) {
 			adjustGameScoresAt(hit); // this also commits trait
