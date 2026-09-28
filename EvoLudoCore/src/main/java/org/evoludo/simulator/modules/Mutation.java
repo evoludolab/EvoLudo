@@ -505,35 +505,44 @@ public abstract class Mutation {
 			return rng.random01() < probability;
 		}
 
+		/**
+		 * {@inheritDoc}
+		 * <p>
+		 * Mutants outside the trait interval \([0,1]\) are reflected at the
+		 * boundaries. For symmetric mutation kernels, reflecting boundaries neither
+		 * attract nor repel traits, i.e. under mutations alone, the stationary trait
+		 * distribution is uniform. In contrast, truncating mutants results in an
+		 * accumulation of traits at the boundaries and redrawing mutants in a
+		 * depletion near the boundaries.
+		 */
 		@Override
 		public double mutate(double trait) {
-			double mut;
 			switch ((Type) type) {
 				case UNIFORM:
 					return rng.random01();
 				case GAUSSIAN:
-					// draw mutants until we find viable one...
-					// not very elegant but avoids emphasis of interval boundaries.
-					do {
-						mut = trait + rng.nextGaussian() * range;
-					} while (mut < 0.0 || mut > 1.0);
-					// alternative approach - use reflective boundaries (John Fairfield)
-					// note: this is much more elegant than the above - is there a biological
-					// motivation for 'reflective mutations'? is such a justification necessary?
-					// double mut = randomGaussian(orig, mutRange[loc]);
-					// mut = Math.abs(mut);
-					// if( mut>1.0 ) mut = 2-mut;
-					return mut;
-
-				// just truncate to [0,1]
-				// mut = trait + rng.nextGaussian() * range;
-				// return Math.max(Math.min(mut, 1.0), 0.0);
+					return reflect(trait + rng.nextGaussian() * range);
 				case RANGE:
-					mut = trait + rng.random01() * range * 2 - range;
-					return Math.max(Math.min(mut, 1.0), 0.0);
+					return reflect(trait + rng.random01() * range * 2 - range);
 				default:
 					return trait;
 			}
+		}
+
+		/**
+		 * Reflect the trait {@code trait} at the boundaries of the interval
+		 * \([0,1]\). Multiple reflections are applied if needed.
+		 *
+		 * @param trait the trait
+		 * @return the reflected trait in \([0,1]\)
+		 */
+		static double reflect(double trait) {
+			if (trait >= 0.0 && trait <= 1.0)
+				return trait;
+			double fold = trait % 2.0;
+			if (fold < 0.0)
+				fold += 2.0;
+			return fold > 1.0 ? 2.0 - fold : fold;
 		}
 
 		/**
@@ -649,6 +658,8 @@ public abstract class Mutation {
 		 * <dd>Mutate trait uniformly distributed around parental trait {@code t} within
 		 * a range {@code t &pm; r}.
 		 * </dl>
+		 * Gaussian and range mutations are reflected at the boundaries of the trait
+		 * interval.
 		 */
 		public enum Type implements CLOption.Key {
 
