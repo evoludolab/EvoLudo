@@ -1013,6 +1013,13 @@ public abstract class Continuous extends Module<Continuous> {
 		Shape getShape();
 
 		/**
+		 * Get the number of parameters of the function.
+		 * 
+		 * @return the number of parameters
+		 */
+		int getNParams();
+
+		/**
 		 * Evaluate the function with parameters {@code a} for the traits {@code me}
 		 * and {@code you} of the focal individual and its opponent, respectively.
 		 * 
@@ -1026,6 +1033,51 @@ public abstract class Continuous extends Module<Continuous> {
 			if (shape == null)
 				return a[0] * me + a[1] * you + a[2] * me * you;
 			return shape.eval(getArgument().select(me, you), a);
+		}
+	}
+
+	/**
+	 * A function of a single argument given by its {@link Shape} and parameters.
+	 * Convenience class for modules that define their own payoffs, see
+	 * {@link #parseTraitFunction(CLOption, String)}.
+	 */
+	public static class TraitFunction {
+
+		/**
+		 * The shape of the function.
+		 */
+		final Shape shape;
+
+		/**
+		 * The parameters of the function.
+		 */
+		final double[] params;
+
+		/**
+		 * Create a new function with shape {@code shape} and parameters
+		 * {@code params}.
+		 * 
+		 * @param shape  the shape of the function
+		 * @param params the parameters of the function
+		 */
+		public TraitFunction(Shape shape, double[] params) {
+			this.shape = shape;
+			this.params = params;
+		}
+
+		/**
+		 * Evaluate the function at {@code z}.
+		 * 
+		 * @param z the argument
+		 * @return the function value
+		 */
+		public double eval(double z) {
+			return shape.eval(z, params);
+		}
+
+		@Override
+		public String toString() {
+			return shape.getKey() + " " + Formatter.format(params, 4);
 		}
 	}
 
@@ -1172,6 +1224,11 @@ public abstract class Continuous extends Module<Continuous> {
 		@Override
 		public Shape getShape() {
 			return shape;
+		}
+
+		@Override
+		public int getNParams() {
+			return nParams;
 		}
 
 		@Override
@@ -1355,6 +1412,11 @@ public abstract class Continuous extends Module<Continuous> {
 		}
 
 		@Override
+		public int getNParams() {
+			return nParams;
+		}
+
+		@Override
 		public String toString() {
 			return key + ": " + title;
 		}
@@ -1461,54 +1523,105 @@ public abstract class Continuous extends Module<Continuous> {
 			});
 
 	/**
+	 * Parse the parameters {@code params} of the function {@code type} with
+	 * {@code nParams} parameters for the command line option {@code clo}.
+	 * 
+	 * @param clo     the command line option
+	 * @param type    the function type
+	 * @param nParams the number of parameters of {@code type}
+	 * @param params  the parameters separated by
+	 *                {@value CLOParser#VECTOR_DELIMITER}
+	 * @return the parameters or {@code null} if there are too few
+	 */
+	protected double[] parseParams(CLOption clo, CLOption.Key type, int nParams, String params) {
+		double[] args = CLOParser.parseVector(params);
+		if (args.length != nParams) {
+			engine.logWarning(clo.getName() + ": function '" + type.getKey() + "' requires " + nParams
+					+ " parameters but found '" + params + "'.");
+			if (args.length < nParams)
+				return null;
+		}
+		return args;
+	}
+
+	/**
+	 * Parse the function specification {@code arg} for the command line option
+	 * {@code clo}, whose keys must be {@link Shape}s. The specification consists of
+	 * the key of the shape followed by its parameters, e.g.
+	 * {@code "quadratic 1,0.5"}.
+	 * 
+	 * @param clo the command line option
+	 * @param arg the function specification
+	 * @return the function or {@code null} if {@code arg} is invalid
+	 */
+	protected TraitFunction parseTraitFunction(CLOption clo, String arg) {
+		String[] args = arg.trim().split(CLOParser.SPLIT_ARG_REGEX);
+		Shape shape = (Shape) clo.match(args[0]);
+		if (shape == null || args.length < 2) {
+			engine.logWarning(clo.getName() + ": invalid function '" + arg + "'.");
+			return null;
+		}
+		double[] params = parseParams(clo, shape, shape.nParams, args[1]);
+		return (params == null ? null : new TraitFunction(shape, params));
+	}
+
+	/**
+	 * Parse the cost or benefit functions {@code arg} for each trait for the
+	 * command line option {@code clo}. The functions for different traits are
+	 * separated by {@value CLOParser#TRAIT_DELIMITER}. Each function consists of
+	 * its key followed by its parameters. If the key is omitted, the function of
+	 * the previous trait is used. The parser cycles through {@code arg} until the
+	 * functions for all traits are set.
+	 * 
+	 * @param clo   the command line option
+	 * @param arg   the (array of) function specifications
+	 * @param costs {@code true} to set cost functions and {@code false} for
+	 *              benefit functions
+	 * @return {@code true} if parsing succeeded
+	 */
+	private boolean parsePayoffFunctions(CLOption clo, String arg, boolean costs) {
+		String[] fcns = arg.split(CLOParser.TRAIT_DELIMITER);
+		PayoffFunction prevtype = null;
+		for (int n = 0; n < nTraits; n++) {
+			String fcn = fcns[n % fcns.length];
+			PayoffFunction type = (PayoffFunction) clo.match(fcn);
+			String[] fcnargs = fcn.split(CLOParser.SPLIT_ARG_REGEX);
+			String params;
+			if (type == null) {
+				if (prevtype == null)
+					return false;
+				type = prevtype;
+				params = fcnargs[0];
+			} else if (fcnargs.length < 2) {
+				engine.logWarning(clo.getName() + ": function '" + type.getKey() + "' requires "
+						+ type.getNParams() + " parameters!");
+				return false;
+			} else
+				params = fcnargs[1];
+			double[] args = parseParams(clo, type, type.getNParams(), params);
+			if (args == null)
+				return false;
+			prevtype = type;
+			if (costs)
+				traits2payoff.setCostFunction((Costs) type, args, n);
+			else
+				traits2payoff.setBenefitFunction((Benefits) type, args, n);
+		}
+		return true;
+	}
+
+	/**
 	 * Command line option to set the cost function(s) for continuous traits.
 	 * 
 	 * @see Costs
 	 */
 	public final CLOption cloCosts = new CLOption("costs", Costs.ME_LINEAR.getKey() + " 1", CLOCategory.Module,
-			"--costs <s0 b00[" + CLOParser.VECTOR_DELIMITER + "b01...[" + CLOParser.TRAIT_DELIMITER + //
-					"s1 b10[" + CLOParser.VECTOR_DELIMITER + "b11...]]]>  cost function <si>:",
+			"--costs <s0 c00[" + CLOParser.VECTOR_DELIMITER + "c01...[" + CLOParser.TRAIT_DELIMITER + //
+					"s1 c10[" + CLOParser.VECTOR_DELIMITER + "c11...]]]>  cost function <si>:",
 			new CLODelegate() {
-
-				/**
-				 * {@inheritDoc}
-				 * <p>
-				 * Parse cost functions for each trait. {@code arg} can be a single value or an
-				 * array of values with the separator {@value CLOParser#VECTOR_DELIMITER}. The
-				 * parser cycles through {@code arg} until all cost functions are set.
-				 * 
-				 * @param arg the (array of) cost function codes
-				 */
 				@Override
 				public boolean parse(String arg) {
-					String[] cstfs = arg.split(CLOParser.TRAIT_DELIMITER);
-					Costs prevtype = null;
-					for (int n = 0; n < nTraits; n++) {
-						String cstf = cstfs[n % cstfs.length];
-						Costs type = (Costs) cloCosts.match(cstf);
-						String[] cstfargs = cstf.split(CLOParser.SPLIT_ARG_REGEX);
-						double[] args;
-						if (type == null) {
-							if (prevtype == null)
-								return false;
-							type = prevtype;
-							args = CLOParser.parseVector(cstfargs[0]);
-						} else if (type.nParams > 0 && cstfargs.length < 2) {
-							engine.logWarning(
-									"costs function type '" + type + " requires " + type.nParams + " arguments!");
-							return false;
-						} else
-							args = CLOParser.parseVector(cstfargs[1]);
-						prevtype = type;
-						if (args.length != type.nParams) {
-							engine.logWarning("costs function type '" + type + " requires " + type.nParams
-									+ " costs but found '" + Formatter.format(args, 2) + "'!");
-							if (args.length < type.nParams)
-								return false;
-						}
-						traits2payoff.setCostFunction(type, args, n);
-					}
-					return true;
+					return parsePayoffFunctions(cloCosts, arg, true);
 				}
 			});
 
@@ -1517,53 +1630,14 @@ public abstract class Continuous extends Module<Continuous> {
 	 * 
 	 * @see Benefits
 	 */
-	public final CLOption cloBenefits = new CLOption("benefits",
-			Benefits.WE_LINEAR.getKey() + " 3",
+	public final CLOption cloBenefits = new CLOption("benefits", Benefits.WE_LINEAR.getKey() + " 3",
 			CLOCategory.Module,
 			"--benefits <s0 b00[" + CLOParser.VECTOR_DELIMITER + "b01...[" + CLOParser.TRAIT_DELIMITER + //
 					"s1 b10[" + CLOParser.VECTOR_DELIMITER + "b11...]]]>  benefit function <si>:",
 			new CLODelegate() {
-
-				/**
-				 * {@inheritDoc}
-				 * <p>
-				 * Parse benefit functions for each trait. {@code arg} can be a single value or
-				 * an array of values with the separator {@value CLOParser#VECTOR_DELIMITER}.
-				 * The parser cycles through {@code arg} until all cbenefitst functions are set.
-				 * 
-				 * @param arg the (array of) benefit function codes
-				 */
 				@Override
 				public boolean parse(String arg) {
-					String[] bftfs = arg.split(CLOParser.TRAIT_DELIMITER);
-					Benefits prevtype = null;
-					for (int n = 0; n < nTraits; n++) {
-						String bftf = bftfs[n % bftfs.length];
-						Benefits type = (Benefits) cloBenefits.match(bftf);
-						String[] bftfargs = bftf.split(CLOParser.SPLIT_ARG_REGEX);
-						double[] args;
-						if (type == null) {
-							if (prevtype == null)
-								return false;
-							type = prevtype;
-							args = CLOParser.parseVector(bftfargs[0]);
-						} else if (type.nParams > 0 && bftfargs.length < 2) {
-							engine.logWarning(
-									"benefits function type '" + type + " requires " + type.nParams
-											+ " arguments!");
-							return false;
-						} else
-							args = CLOParser.parseVector(bftfargs[1]);
-						prevtype = type;
-						if (args.length != type.nParams) {
-							engine.logWarning("benefits function type '" + type + " requires " + type.nParams
-									+ " arguments but found '" + Formatter.format(args, 2) + "'!");
-							if (args.length < type.nParams)
-								return false;
-						}
-						traits2payoff.setBenefitFunction(type, args, n);
-					}
-					return true;
+					return parsePayoffFunctions(cloBenefits, arg, false);
 				}
 			});
 
