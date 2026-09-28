@@ -704,38 +704,7 @@ public abstract class Continuous extends Module<Continuous> {
 		protected double costs(double me, double you, int trait) {
 			double shift = traitMin[trait];
 			double scale = traitMax[trait] - shift;
-			double myinv = me * scale + shift;
-			double yourinv = you * scale + shift;
-			double ourinv = myinv + yourinv;
-			double[] c = ci[trait];
-
-			switch (costs[trait]) {
-				case ME_LINEAR:
-					return c[0] * myinv;
-				case ME_QUAD: // default
-					return myinv * (c[1] * myinv + c[0]);
-				case ME_SQRT:
-					return c[0] * Math.sqrt(myinv);
-				case ME_LOG:
-					return c[0] * Math.log(c[1] * myinv + 1.0);
-				case ME_EXP:
-					return c[0] * (1.0 - Math.exp(-c[1] * myinv));
-
-				case WE_LINEAR:
-					return c[0] * ourinv;
-				case WE_QUAD:
-					return (c[1] * ourinv + c[0]) * ourinv;
-				case WE_QUBIC:
-					return ((c[2] * ourinv + c[1]) * ourinv + c[0]) * ourinv;
-				case WE_QUARTIC:
-					return (((c[3] * ourinv + c[2]) * ourinv + c[1]) * ourinv + c[0]) * ourinv;
-
-				case MEYOU_LINEAR:
-					return c[0] * myinv + c[1] * yourinv + c[2] * myinv * yourinv;
-
-				default: // this is bad
-					throw new UnsupportedOperationException("Unknown cost function type (" + costs[trait] + ")");
-			}
+			return costs[trait].eval(me * scale + shift, you * scale + shift, ci[trait]);
 		}
 
 		/**
@@ -766,180 +735,443 @@ public abstract class Continuous extends Module<Continuous> {
 		protected double benefits(double me, double you, int trait) {
 			double shift = traitMin[trait];
 			double scale = traitMax[trait] - shift;
-			double myinv = me * scale + shift;
-			double yourinv = you * scale + shift;
-			double ourinv = myinv + yourinv;
-			double[] b = bi[trait];
-
-			switch (benefits[trait]) {
-				// benefit depending solely on the 'me' investment
-				case ME_LINEAR:
-					return b[0] * myinv;
-				case ME_QUAD:
-					return (b[1] * myinv + b[0]) * myinv;
-				case ME_QUBIC:
-					return ((b[2] * myinv + b[1]) * myinv + b[0]) * myinv;
-
-				// benefit depending solely on the 'you' investment
-				case YOU_LINEAR:
-					return b[0] * yourinv;
-				case YOU_QUAD:
-					return (b[1] * yourinv + b[0]) * yourinv;
-				case YOU_SQRT:
-					return b[0] * Math.sqrt(yourinv);
-				case YOU_LOG:
-					return b[0] * Math.log(b[1] * yourinv + 1.0);
-				case YOU_EXP:
-					return b[0] * (1.0 - Math.exp(-b[1] * yourinv));
-
-				// benefit depending on the sum of 'me' and 'you' investments
-				case WE_LINEAR: // was 2
-					return b[0] * ourinv;
-				case WE_QUAD: // default
-					return (b[1] * ourinv + b[0]) * ourinv;
-				case WE_SQRT:
-					return b[0] * Math.sqrt(ourinv);
-				case WE_LOG:
-					return b[0] * Math.log(b[1] * ourinv + 1.0);
-				case WE_EXP:
-					return b[0] * (1.0 - Math.exp(-b[1] * ourinv));
-
-				// benefit depending on 'me' and 'you' investments individually
-				case MEYOU_LINEAR:
-					return b[0] * myinv + b[1] * yourinv + b[2] * myinv * yourinv;
-
-				default: // this is bad
-					throw new UnsupportedOperationException("Unknown benefit function type (" + benefits[trait] + ")");
-			}
+			return benefits[trait].eval(me * scale + shift, you * scale + shift, bi[trait]);
 		}
 	}
 
 	/**
-	 * Selected cost functions to translate continuous traits into payoffs. Enum on
-	 * steroids. Currently available cost functions are:
-	 * <dl>
-	 * <dt>0
-	 * <dd>Linear cost function (independent of opponent): \(C(x,y)=c_0\,x\).
-	 * <dt>1
-	 * <dd>Quadratic cost function (independent of opponent):
-	 * \(C(x,y)=c_0\,x+c_1\,x^2\).
-	 * <dt>2
-	 * <dd>Square root cost function (independent of opponent): \(C(x,y)=c_0
-	 * \sqrt{x}\).
-	 * <dt>3
-	 * <dd>Logarithmic cost function (independent of opponent): \(C(x,y)=c_0
-	 * \ln(c_1\,x+1)\).
-	 * <dt>4
-	 * <dd>Exponential cost function (independent of opponent): \(C(x,y)=c_0
-	 * (1-\exp(-c_1\,x))\).
-	 * <dt>10
-	 * <dd>Linear cost function (sum of focal, \(x\), and opponent, \(y\), traits):
-	 * \(C(x,y)=c_0 (x+y)\).
-	 * <dt>11
-	 * <dd>Quadratic cost function (sum of focal, \(x\), and opponent, \(y\),
-	 * traits): \(C(x,y)=c_0 (x+y)+c_1 (x+y)^2\).
-	 * <dt>12
-	 * <dd>Cubic cost function (sum of focal, \(x\), and opponent, \(y\), traits):
-	 * \(C(x,y)=c_0 (x+y)+c_1 (x+y)^2+c_2 (x+y)^3\).
-	 * <dt>13
-	 * <dd>Quartic cost function (sum of focal, \(x\), and opponent, \(y\), traits):
-	 * \(C(x,y)=c_0 (x+y)+c_1 (x+y)^2+c_2 (x+y)^3+c_3 (x+y)^4\).
-	 * <dt>20
-	 * <dd>Linear cost function (cross terms of focal, \(x\), and opponent, \(y\),
-	 * traits): \(C(x,y)=c_0\,x+c_1\,y+c_2\,x\,y\).
-	 * </dl>
+	 * Shapes of functions \(f(z)\) translating (combinations of) traits into
+	 * payoffs. All shapes satisfy \(f(0)=0\) and are parametrized by the
+	 * coefficients \(a_0, a_1, \ldots\). The shape determines the last digit of the
+	 * keys of cost and benefit functions, see {@link Costs} and {@link Benefits}.
 	 */
-	public enum Costs implements CLOption.Key {
+	public enum Shape implements CLOption.Key {
+
+		/**
+		 * Linear function: \(f(z)=a_0 z\).
+		 */
+		LINEAR("linear", "a0*z", 1, 0),
+
+		/**
+		 * Quadratic function: \(f(z)=a_0 z+a_1 z^2\).
+		 */
+		QUADRATIC("quadratic", "a0*z+a1*z^2", 2, 1),
+
+		/**
+		 * Square root function: \(f(z)=a_0 \sqrt{z}\).
+		 */
+		SQRT("sqrt", "a0*sqrt(z)", 1, 2),
+
+		/**
+		 * Logarithmic function: \(f(z)=a_0 \ln(a_1 z+1)\).
+		 */
+		LOG("log", "a0*ln(a1*z+1)", 2, 3),
+
+		/**
+		 * Saturating exponential function: \(f(z)=a_0 (1-\exp(-a_1 z))\).
+		 */
+		EXP("exp", "a0*(1-exp(-a1*z))", 2, 4),
+
+		/**
+		 * Cubic function: \(f(z)=a_0 z+a_1 z^2+a_2 z^3\).
+		 */
+		CUBIC("cubic", "a0*z+a1*z^2+a2*z^3", 3, 5),
+
+		/**
+		 * Quartic function: \(f(z)=a_0 z+a_1 z^2+a_2 z^3+a_3 z^4\).
+		 */
+		QUARTIC("quartic", "a0*z+a1*z^2+a2*z^3+a3*z^4", 4, 6),
+
+		/**
+		 * Power function: \(f(z)=a_0 z^{a_1}\).
+		 */
+		POWER("power", "a0*z^a1", 2, 7);
+
+		/**
+		 * The key of the shape. Used when parsing command line options.
+		 */
+		private final String key;
+
+		/**
+		 * The formula of the shape in terms of the argument {@code z} and the
+		 * parameters {@code a0, a1, ...}.
+		 */
+		private final String formula;
+
+		/**
+		 * The number of parameters of the shape.
+		 */
+		final int nParams;
+
+		/**
+		 * The code of the shape, i.e. the last digit of the keys of cost and benefit
+		 * functions.
+		 */
+		final int code;
+
+		/**
+		 * Create a new shape with key {@code key}, formula {@code formula},
+		 * {@code nParams} parameters and code {@code code}.
+		 * 
+		 * @param key     the identifier for parsing of command line options
+		 * @param formula the formula of the shape
+		 * @param nParams the number of parameters
+		 * @param code    the code of the shape
+		 */
+		Shape(String key, String formula, int nParams, int code) {
+			this.key = key;
+			this.formula = formula;
+			this.nParams = nParams;
+			this.code = code;
+		}
+
+		/**
+		 * Get the number of parameters of the shape.
+		 * 
+		 * @return the number of parameters
+		 */
+		public int getNParams() {
+			return nParams;
+		}
+
+		/**
+		 * Evaluate the function with shape {@code this} and parameters {@code a} at
+		 * {@code z}.
+		 * 
+		 * @param z the argument
+		 * @param a the parameters
+		 * @return the function value
+		 */
+		public double eval(double z, double[] a) {
+			switch (this) {
+				case QUADRATIC:
+					return (a[1] * z + a[0]) * z;
+				case SQRT:
+					return a[0] * Math.sqrt(z);
+				case LOG:
+					return a[0] * Math.log(a[1] * z + 1.0);
+				case EXP:
+					return a[0] * (1.0 - Math.exp(-a[1] * z));
+				case CUBIC:
+					return ((a[2] * z + a[1]) * z + a[0]) * z;
+				case QUARTIC:
+					return (((a[3] * z + a[2]) * z + a[1]) * z + a[0]) * z;
+				case POWER:
+					return a[0] * Math.pow(z, a[1]);
+				case LINEAR:
+				default:
+					return a[0] * z;
+			}
+		}
+
+		/**
+		 * Format the formula of the shape for the argument {@code arg} with parameters
+		 * named {@code param}.
+		 * 
+		 * @param arg   the name of the argument
+		 * @param param the name of the parameters
+		 * @return the formatted formula
+		 */
+		String format(String arg, char param) {
+			// avoid double parentheses, e.g. sqrt((x+y))
+			String bare = (arg.startsWith("(") && arg.endsWith(")") ? arg.substring(1, arg.length() - 1) : arg);
+			return formula.replace('a', param).replace("(z)", "(" + bare + ")").replace("z", arg);
+		}
+
+		@Override
+		public String getKey() {
+			return key;
+		}
+
+		@Override
+		public String getTitle() {
+			return "f(z)=" + formula;
+		}
+
+		@Override
+		public String toString() {
+			return key + ": " + getTitle();
+		}
+	}
+
+	/**
+	 * The arguments of cost and benefit functions in pairwise interactions between
+	 * a focal individual with trait \(x\) and its opponent with trait \(y\). The
+	 * argument determines the first digit of the keys of cost and benefit
+	 * functions, see {@link Costs} and {@link Benefits}.
+	 */
+	public enum Argument {
+
+		/**
+		 * The trait of the focal individual, \(x\).
+		 */
+		ME(0, "x"),
+
+		/**
+		 * The sum of the traits of the focal individual and its opponent, \(x+y\).
+		 */
+		WE(1, "(x+y)"),
+
+		/**
+		 * The traits of the focal individual and its opponent including their
+		 * interaction, \(c_0 x+c_1 y+c_2 x y\). Not associated with a shape.
+		 */
+		MEYOU(2, "x,y"),
+
+		/**
+		 * The trait of the opponent, \(y\).
+		 */
+		YOU(3, "y");
+
+		/**
+		 * The code of the argument, i.e. the first digit of the keys of cost and
+		 * benefit functions.
+		 */
+		final int code;
+
+		/**
+		 * The label of the argument for formatting formulas.
+		 */
+		final String label;
+
+		/**
+		 * Create a new argument with code {@code code} and label {@code label}.
+		 * 
+		 * @param code  the code of the argument
+		 * @param label the label of the argument
+		 */
+		Argument(int code, String label) {
+			this.code = code;
+			this.label = label;
+		}
+
+		/**
+		 * Select the argument for the traits {@code me} and {@code you} of the focal
+		 * individual and its opponent, respectively.
+		 * 
+		 * @param me  the trait of the focal individual
+		 * @param you the trait of the opponent
+		 * @return the argument
+		 */
+		double select(double me, double you) {
+			switch (this) {
+				case YOU:
+					return you;
+				case WE:
+					return me + you;
+				case ME:
+				default:
+					return me;
+			}
+		}
+
+		/**
+		 * Get the key of the function with this argument and shape {@code shape}.
+		 * 
+		 * @param shape the shape of the function ({@code null} for {@link #MEYOU})
+		 * @return the key
+		 */
+		String key(Shape shape) {
+			return String.valueOf(10 * code + (shape == null ? 0 : shape.code));
+		}
+
+		/**
+		 * Get the title of the function named {@code fcn} with parameters named
+		 * {@code param} for this argument and shape {@code shape}.
+		 * 
+		 * @param fcn   the name of the function
+		 * @param param the name of the parameters
+		 * @param shape the shape of the function ({@code null} for {@link #MEYOU})
+		 * @return the title
+		 */
+		String title(char fcn, char param, Shape shape) {
+			String head = fcn + "(x,y)=";
+			if (shape == null)
+				return head + param + "0*x+" + param + "1*y+" + param + "2*x*y";
+			return head + shape.format(label, param);
+		}
+	}
+
+	/**
+	 * Functions translating the traits of a focal individual and its opponent in
+	 * pairwise interactions into payoffs, see {@link Costs} and {@link Benefits}.
+	 */
+	interface PayoffFunction extends CLOption.Key {
+
+		/**
+		 * Get the argument of the function.
+		 * 
+		 * @return the argument
+		 */
+		Argument getArgument();
+
+		/**
+		 * Get the shape of the function.
+		 * 
+		 * @return the shape ({@code null} for {@link Argument#MEYOU})
+		 */
+		Shape getShape();
+
+		/**
+		 * Evaluate the function with parameters {@code a} for the traits {@code me}
+		 * and {@code you} of the focal individual and its opponent, respectively.
+		 * 
+		 * @param me  the trait of the focal individual
+		 * @param you the trait of the opponent
+		 * @param a   the parameters
+		 * @return the function value
+		 */
+		default double eval(double me, double you, double[] a) {
+			Shape shape = getShape();
+			if (shape == null)
+				return a[0] * me + a[1] * you + a[2] * me * you;
+			return shape.eval(getArgument().select(me, you), a);
+		}
+	}
+
+	/**
+	 * Cost functions to translate continuous traits into payoffs. Enum on
+	 * steroids. The cost \(C(x,y)\) to a focal individual with trait \(x\) when
+	 * interacting with an opponent with trait \(y\) is given by a function
+	 * {@link Shape} applied to an {@link Argument}. The keys of the cost functions
+	 * are two-digit codes, where the first digit specifies the argument and the
+	 * second the shape:
+	 * <dl>
+	 * <dt>first digit (argument)
+	 * <dd>{@code 0}: \(x\), {@code 1}: \(x+y\), {@code 2}: cross terms
+	 * \(c_0 x+c_1 y+c_2 x y\), {@code 3}: \(y\)
+	 * <dt>second digit (shape)
+	 * <dd>{@code 0}: linear, {@code 1}: quadratic, {@code 2}: square root,
+	 * {@code 3}: logarithmic, {@code 4}: exponential, {@code 5}: cubic,
+	 * {@code 6}: quartic, {@code 7}: power
+	 * </dl>
+	 * Leading zeros are omitted, e.g. {@code 1} denotes \(C(x,y)=c_0 x+c_1 x^2\)
+	 * and {@code 11} denotes \(C(x,y)=c_0 (x+y)+c_1 (x+y)^2\). The keys are the
+	 * same as for {@link Benefits}.
+	 */
+	public enum Costs implements PayoffFunction {
 
 		/**
 		 * Linear cost function (independent of opponent): \(C(x,y)=c_0\,x\).
 		 */
-		ME_LINEAR("0", "C(x,y)=c0*x", 1), //
+		ME_LINEAR(Argument.ME, Shape.LINEAR),
 
 		/**
 		 * Quadratic cost function (independent of opponent):
 		 * \(C(x,y)=c_0\,x+c_1\,x^2\).
 		 */
-		ME_QUAD("1", "C(x,y)=c0*x+c1*x^2", 2), //
+		ME_QUAD(Argument.ME, Shape.QUADRATIC),
 
 		/**
 		 * Square root cost function (independent of opponent): \(C(x,y)=c_0 \sqrt{x}\).
 		 */
-		ME_SQRT("2", "C(x,y)=c0*sqrt(x)", 1), //
+		ME_SQRT(Argument.ME, Shape.SQRT),
 
 		/**
 		 * Logarithmic cost function (independent of opponent): \(C(x,y)=c_0
 		 * \ln(c_1\,x+1)\).
 		 */
-		ME_LOG("3", "C(x,y)=c0*ln(c1*x+1)", 2), //
+		ME_LOG(Argument.ME, Shape.LOG),
 
 		/**
 		 * Exponential cost function (independent of opponent): \(C(x,y)=c_0
 		 * (1-\exp(-c_1\,x))\).
 		 */
-		ME_EXP("4", "C(x,y)=c0*(1-exp(-c1*x))", 2), //
+		ME_EXP(Argument.ME, Shape.EXP),
+
+		/**
+		 * Power cost function (independent of opponent): \(C(x,y)=c_0\,x^{c_1}\).
+		 */
+		ME_POWER(Argument.ME, Shape.POWER),
 
 		/**
 		 * Linear cost function (sum of focal, \(x\), and opponent, \(y\), traits):
 		 * \(C(x,y)=c_0 (x+y)\).
 		 */
-		WE_LINEAR("10", "C(x,y)=c0*(x+y)", 1), //
+		WE_LINEAR(Argument.WE, Shape.LINEAR),
 
 		/**
 		 * Quadratic cost function (sum of focal, \(x\), and opponent, \(y\), traits):
 		 * \(C(x,y)=c_0 (x+y)+c_1 (x+y)^2\).
 		 */
-		WE_QUAD("11", "C(x,y)=c0*(x+y)+c1*(x+y)^2", 2), //
+		WE_QUAD(Argument.WE, Shape.QUADRATIC),
 
 		/**
 		 * Cubic cost function (sum of focal, \(x\), and opponent, \(y\), traits):
 		 * \(C(x,y)=c_0 (x+y)+c_1 (x+y)^2+c_2 (x+y)^3\).
 		 */
-		WE_QUBIC("12", "C(x,y)=c0*(x+y)+c1*(x+y)^2+c2*(x+y)^3", 3), //
+		WE_CUBIC(Argument.WE, Shape.CUBIC),
 
 		/**
 		 * Quartic cost function (sum of focal, \(x\), and opponent, \(y\), traits):
 		 * \(C(x,y)=c_0 (x+y)+c_1 (x+y)^2+c_2 (x+y)^3+c_3 (x+y)^4\).
 		 */
-		WE_QUARTIC("13", "C(x,y)=c0*(x+y)+c1*(x+y)^2+c2*(x+y)^3+c3*(x+y)^4", 4), //
+		WE_QUARTIC(Argument.WE, Shape.QUARTIC),
+
+		/**
+		 * Power cost function (sum of focal, \(x\), and opponent, \(y\), traits):
+		 * \(C(x,y)=c_0 (x+y)^{c_1}\).
+		 */
+		WE_POWER(Argument.WE, Shape.POWER),
 
 		/**
 		 * Linear cost function (cross terms of focal, \(x\), and opponent, \(y\),
 		 * traits): \(C(x,y)=c_0\,x+c_1\,y+c_2\,x\,y\).
 		 */
-		MEYOU_LINEAR("20", "C(x,y)=c0*x+c1*y+c2*x*y", 3);
+		MEYOU_LINEAR(Argument.MEYOU, null);
+
+		/**
+		 * The argument of the cost function.
+		 */
+		final Argument argument;
+
+		/**
+		 * The shape of the cost function ({@code null} for {@link Argument#MEYOU}).
+		 */
+		final Shape shape;
 
 		/**
 		 * The key of the cost function. Used when parsing command line options.
 		 * 
 		 * @see Continuous#cloCosts
 		 */
-		String key;
+		final String key;
 
 		/**
 		 * The brief description of the cost function for the help display.
 		 * 
 		 * @see EvoLudo#getCLOHelp()
 		 */
-		String title;
+		final String title;
 
 		/**
 		 * The number of parameters of the cost function.
 		 */
-		int nParams;
+		final int nParams;
 
 		/**
-		 * Create a new type of cost function with key {@code key} and description
-		 * {@code title} as well as {@code nParams} parameters.
+		 * Create a new type of cost function with argument {@code argument} and shape
+		 * {@code shape}.
 		 * 
-		 * @param key     the identifier for parsing of command line option
-		 * @param title   the summary of the cost function
-		 * @param nParams the number of parameters
+		 * @param argument the argument of the cost function
+		 * @param shape    the shape of the cost function
 		 */
-		Costs(String key, String title, int nParams) {
-			this.key = key;
-			this.title = title;
-			this.nParams = nParams;
+		Costs(Argument argument, Shape shape) {
+			this.argument = argument;
+			this.shape = shape;
+			key = argument.key(shape);
+			title = argument.title('C', 'c', shape);
+			nParams = (shape == null ? 3 : shape.nParams);
+		}
+
+		@Override
+		public Argument getArgument() {
+			return argument;
+		}
+
+		@Override
+		public Shape getShape() {
+			return shape;
 		}
 
 		@Override
@@ -959,167 +1191,167 @@ public abstract class Continuous extends Module<Continuous> {
 	}
 
 	/**
-	 * Selected benefit functions to translate continuous traits into payoffs. Enum
-	 * on steroids. Currently available benefit functions are:
-	 * <dl>
-	 * <dt>0
-	 * <dd>Linear benefit function (independent of focal): \(B(x,y)=b_0\,y\).
-	 * <dt>1
-	 * <dd>Quadratic benefit function (independent of focal):
-	 * \(B(x,y)=b_0\,y+\b_1\,y^2\).
-	 * <dt>2
-	 * <dd>Saturating benefit function following a square root (independent of
-	 * focal): \(B(x,y)=b_0\sqrt{y}\).
-	 * <dt>3
-	 * <dd>Saturating benefit function following a logarithm (independent of focal):
-	 * \(B(x,y)=b_0\log{b_1\,y+1}\).
-	 * <dt>4
-	 * <dd>Saturating benefit function following an exponential (independent of
-	 * focal): \(B(x,y)=b_0 \left(1-e^{-b_1\,y}\right)\).
-	 * <dt>10
-	 * <dd>Linear benefit function (sum of focal, \(x\), and opponent, \(y\),
-	 * traits): \(B(x,y)=b_0\,(x+y)\).
-	 * <dt>11
-	 * <dd>Quadratic benefit function (sum of focal, \(x\), and opponent, \(y\),
-	 * traits): \(B(x,y)=b_0\,(x+y)+\b_1\,(x+y)^2\).
-	 * <dt>12
-	 * <dd>Saturating benefit function following a square root (sum of focal, \(x\),
-	 * and opponent, \(y\), traits): \(B(x,y)=b_0\sqrt{x+y}\).
-	 * <dt>13
-	 * <dd>Saturating benefit function following a logarithm (sum of focal, \(x\),
-	 * and opponent, \(y\), traits): \(B(x,y)=b_0\log{b_1\,(x+y)+1}\).
-	 * <dt>14
-	 * <dd>Saturating benefit function following an exponential (sum of focal,
-	 * \(x\), and opponent, \(y\), traits): \(B(x,y)=b_0
-	 * \left(1-e^{-b_1\,(x+y)}\right)\).
-	 * <dt>20
-	 * <dd>Linear benefit function (with interaction term):
-	 * \(B(x,y)=b_0\,x=b_1\,y+\b_2\,x\,y\).
-	 * <dt>30
-	 * <dd>Linear benefit function (independent of opponent): \(B(x,y)=b_0\,x\).
-	 * <dt>31
-	 * <dd>Quadratic benefit function (independent of opponent):
-	 * \(B(x,y)=b_0\,x+b_1\,x^2\).
-	 * <dt>32
-	 * <dd>Cubic benefit function (independent of opponent):
-	 * \(B(x,y)=b_0\,x+b_1\,x^2+b_2\,x^3\).
-	 * </dl>
+	 * Benefit functions to translate continuous traits into payoffs. Enum on
+	 * steroids. The benefit \(B(x,y)\) to a focal individual with trait \(x\) when
+	 * interacting with an opponent with trait \(y\) is given by a function
+	 * {@link Shape} applied to an {@link Argument}. The keys of the benefit
+	 * functions are the same as for {@link Costs}, e.g. {@code 31} denotes
+	 * \(B(x,y)=b_0 y+b_1 y^2\) and {@code 11} denotes
+	 * \(B(x,y)=b_0 (x+y)+b_1 (x+y)^2\).
 	 */
-	public enum Benefits implements CLOption.Key {
-
-		/**
-		 * Linear benefit function (independent of focal): \(B(x,y)=b_0\,y\).
-		 */
-		YOU_LINEAR("0", "B(x,y)=b0*y", 1), //
-
-		/**
-		 * Quadratic benefit function (independent of focal):
-		 * \(B(x,y)=b_0\,y+\b_1\,y^2\).
-		 */
-		YOU_QUAD("1", "B(x,y)=b0*y+b1*y^2", 2), //
-
-		/**
-		 * Saturating benefit function following a square root (independent of focal):
-		 * \(B(x,y)=b_0\sqrt{y}\).
-		 */
-		YOU_SQRT("2", "B(x,y)=b0*sqrt(y)", 1), //
-
-		/**
-		 * Saturating benefit function following a logarithm (independent of focal):
-		 * \(B(x,y)=b_0\log{b_1\,y+1}\).
-		 */
-		YOU_LOG("3", "B(x,y)=b0*ln(b1*y+1)", 2), //
-
-		/**
-		 * Saturating benefit function following an exponential (independent of focal):
-		 * \(B(x,y)=b_0 \left(1-e^{-b_1\,y}\right)\).
-		 */
-		YOU_EXP("4", "B(x,y)=b0*(1-exp(-b1*y))", 2), //
-
-		/**
-		 * Linear benefit function (sum of focal, \(x\), and opponent, \(y\), traits):
-		 * \(B(x,y)=b_0\,(x+y)\).
-		 */
-		WE_LINEAR("10", "B(x,y)=b0*(x+y)", 1), //
-
-		/**
-		 * Quadratic benefit function (sum of focal, \(x\), and opponent, \(y\),
-		 * traits): \(B(x,y)=b_0\,(x+y)+\b_1\,(x+y)^2\).
-		 */
-		WE_QUAD("11", "B(x,y)=b0*(x+y)+b1*(x+y)^2", 2), // default
-
-		/**
-		 * Saturating benefit function following a square root (sum of focal, \(x\), and
-		 * opponent, \(y\), traits): \(B(x,y)=b_0\sqrt{x+y}\).
-		 */
-		WE_SQRT("12", "B(x,y)=b0*sqrt(x+y)", 1), //
-
-		/**
-		 * Saturating benefit function following a logarithm (sum of focal, \(x\), and
-		 * opponent, \(y\), traits): \(B(x,y)=b_0\log{b_1\,(x+y)+1}\).
-		 */
-		WE_LOG("13", "B(x,y)=b0*ln(b1*(x+y)+1)", 2), //
-
-		/**
-		 * Saturating benefit function following an exponential (sum of focal, \(x\),
-		 * and opponent, \(y\), traits): \(B(x,y)=b_0 \left(1-e^{-b_1\,(x+y)}\right)\).
-		 */
-		WE_EXP("14", "B(x,y)=b0*(1-exp(-b1*(x+y)))", 2), //
-
-		/**
-		 * Linear benefit function (with interaction term):
-		 * \(B(x,y)=b_0\,x=b_1\,y+\b_2\,x\,y\).
-		 */
-		MEYOU_LINEAR("20", "B(x,y)=b0*x+b1*y+b2*x*y", 3), //
+	public enum Benefits implements PayoffFunction {
 
 		/**
 		 * Linear benefit function (independent of opponent): \(B(x,y)=b_0\,x\).
 		 */
-		ME_LINEAR("30", "B(x,y)=b0*x", 1), //
+		ME_LINEAR(Argument.ME, Shape.LINEAR),
 
 		/**
 		 * Quadratic benefit function (independent of opponent):
 		 * \(B(x,y)=b_0\,x+b_1\,x^2\).
 		 */
-		ME_QUAD("31", "B(x,y)=b0*x+b1*x^2", 2), //
+		ME_QUAD(Argument.ME, Shape.QUADRATIC),
 
 		/**
 		 * Cubic benefit function (independent of opponent):
 		 * \(B(x,y)=b_0\,x+b_1\,x^2+b_2\,x^3\).
 		 */
-		ME_QUBIC("32", "B(x,y)=b0*x+b1*x^2+b2*x^3", 3);
+		ME_CUBIC(Argument.ME, Shape.CUBIC),
+
+		/**
+		 * Power benefit function (independent of opponent): \(B(x,y)=b_0\,x^{b_1}\).
+		 */
+		ME_POWER(Argument.ME, Shape.POWER),
+
+		/**
+		 * Linear benefit function (sum of focal, \(x\), and opponent, \(y\), traits):
+		 * \(B(x,y)=b_0\,(x+y)\).
+		 */
+		WE_LINEAR(Argument.WE, Shape.LINEAR),
+
+		/**
+		 * Quadratic benefit function (sum of focal, \(x\), and opponent, \(y\),
+		 * traits): \(B(x,y)=b_0\,(x+y)+b_1\,(x+y)^2\).
+		 */
+		WE_QUAD(Argument.WE, Shape.QUADRATIC),
+
+		/**
+		 * Saturating benefit function following a square root (sum of focal, \(x\), and
+		 * opponent, \(y\), traits): \(B(x,y)=b_0\sqrt{x+y}\).
+		 */
+		WE_SQRT(Argument.WE, Shape.SQRT),
+
+		/**
+		 * Saturating benefit function following a logarithm (sum of focal, \(x\), and
+		 * opponent, \(y\), traits): \(B(x,y)=b_0\ln(b_1\,(x+y)+1)\).
+		 */
+		WE_LOG(Argument.WE, Shape.LOG),
+
+		/**
+		 * Saturating benefit function following an exponential (sum of focal, \(x\),
+		 * and opponent, \(y\), traits): \(B(x,y)=b_0 \left(1-e^{-b_1\,(x+y)}\right)\).
+		 */
+		WE_EXP(Argument.WE, Shape.EXP),
+
+		/**
+		 * Power benefit function (sum of focal, \(x\), and opponent, \(y\), traits):
+		 * \(B(x,y)=b_0\,(x+y)^{b_1}\).
+		 */
+		WE_POWER(Argument.WE, Shape.POWER),
+
+		/**
+		 * Linear benefit function (with interaction term):
+		 * \(B(x,y)=b_0\,x+b_1\,y+b_2\,x\,y\).
+		 */
+		MEYOU_LINEAR(Argument.MEYOU, null),
+
+		/**
+		 * Linear benefit function (independent of focal): \(B(x,y)=b_0\,y\).
+		 */
+		YOU_LINEAR(Argument.YOU, Shape.LINEAR),
+
+		/**
+		 * Quadratic benefit function (independent of focal):
+		 * \(B(x,y)=b_0\,y+b_1\,y^2\).
+		 */
+		YOU_QUAD(Argument.YOU, Shape.QUADRATIC),
+
+		/**
+		 * Saturating benefit function following a square root (independent of focal):
+		 * \(B(x,y)=b_0\sqrt{y}\).
+		 */
+		YOU_SQRT(Argument.YOU, Shape.SQRT),
+
+		/**
+		 * Saturating benefit function following a logarithm (independent of focal):
+		 * \(B(x,y)=b_0\ln(b_1\,y+1)\).
+		 */
+		YOU_LOG(Argument.YOU, Shape.LOG),
+
+		/**
+		 * Saturating benefit function following an exponential (independent of focal):
+		 * \(B(x,y)=b_0 \left(1-e^{-b_1\,y}\right)\).
+		 */
+		YOU_EXP(Argument.YOU, Shape.EXP),
+
+		/**
+		 * Power benefit function (independent of focal): \(B(x,y)=b_0\,y^{b_1}\).
+		 */
+		YOU_POWER(Argument.YOU, Shape.POWER);
+
+		/**
+		 * The argument of the benefit function.
+		 */
+		final Argument argument;
+
+		/**
+		 * The shape of the benefit function ({@code null} for
+		 * {@link Argument#MEYOU}).
+		 */
+		final Shape shape;
 
 		/**
 		 * The key of the benefit function. Used when parsing command line options.
 		 * 
 		 * @see Continuous#cloBenefits
 		 */
-		String key;
+		final String key;
 
 		/**
 		 * The brief description of the benefit function for the help display.
 		 * 
 		 * @see EvoLudo#getCLOHelp()
 		 */
-		String title;
+		final String title;
 
 		/**
 		 * The number of parameters of the benefit function.
 		 */
-		int nParams;
+		final int nParams;
 
 		/**
-		 * Create a new type of benefit function with key {@code key} and description
-		 * {@code title} as well as {@code nParams} parameters.
+		 * Create a new type of benefit function with argument {@code argument} and
+		 * shape {@code shape}.
 		 * 
-		 * @param key     the identifier for parsing of command line option
-		 * @param title   the summary of the benefit function
-		 * @param nParams the number of parameters
+		 * @param argument the argument of the benefit function
+		 * @param shape    the shape of the benefit function
 		 */
-		Benefits(String key, String title, int nParams) {
-			this.key = key;
-			this.title = title;
-			this.nParams = nParams;
+		Benefits(Argument argument, Shape shape) {
+			this.argument = argument;
+			this.shape = shape;
+			key = argument.key(shape);
+			title = argument.title('B', 'b', shape);
+			nParams = (shape == null ? 3 : shape.nParams);
+		}
+
+		@Override
+		public Argument getArgument() {
+			return argument;
+		}
+
+		@Override
+		public Shape getShape() {
+			return shape;
 		}
 
 		@Override
