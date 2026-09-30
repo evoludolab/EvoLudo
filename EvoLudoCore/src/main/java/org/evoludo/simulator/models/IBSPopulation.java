@@ -3778,8 +3778,9 @@ public abstract class IBSPopulation<M extends Module<?>, P extends IBSPopulation
 			// pairwise interactions with all neighbours
 			if (module.isPairwise())
 				return nNeigh * score;
-			// a single group interaction with all neighbours
-			return score;
+			// a single group interaction with all neighbours or, for groups smaller than
+			// the neighbourhood, one interaction per neighbour (regular structures only)
+			return (nNeigh > module.getNGroup() - 1 ? nNeigh : 1) * score;
 		}
 		// not ready for unbounded accumulated payoffs... check() should catch this
 		throw new IllegalStateException("cannot handle unbounded accumulated scores");
@@ -4447,6 +4448,34 @@ public abstract class IBSPopulation<M extends Module<?>, P extends IBSPopulation
 	protected abstract boolean doAdjustScores();
 
 	/**
+	 * Check whether interactions with all neighbours are compatible with the group
+	 * size. If the groups are smaller than the neighbourhood, the focal individual
+	 * interacts sequentially with consecutive neighbours, see e.g.
+	 * {@link IBSMCPopulation#playGroupSequentiallyAt(int, IBSGroup, int)}. This
+	 * relies on a regular arrangement of neighbours. On irregular structures,
+	 * including lattices with fixed boundaries, interactions revert to a single
+	 * random group of {@code nGroup-1} neighbours. Must be called after the
+	 * interaction structure is initialized because regularity is only known then.
+	 * Well-mixed and hierarchical structures as well as modules without group
+	 * interactions are exempt.
+	 */
+	private void checkGroupSampling() {
+		if (module.isStatic() || module.getNGroup() <= 2 || !interGroup.isSampling(IBSGroup.SAMPLING_ALL)
+				|| interaction.isType(GeometryType.WELLMIXED) || interaction.isType(GeometryType.HIERARCHY)
+				|| interaction.isRegular())
+			return;
+		GeometryFeatures feats = interaction.getFeatures();
+		if (module.getNGroup() - 1 >= Math.max(feats.maxIn, feats.maxOut))
+			// groups include all neighbours of every individual
+			return;
+		interGroup.setNSamples(1);
+		adjustScores = doAdjustScores();
+		engine.logWarning("interactions with all neighbours require groups of size > "
+				+ Math.max(feats.maxIn, feats.maxOut) + " on irregular geometry '"
+				+ interaction.getType().getTitle() + "' - using single random group!");
+	}
+
+	/**
 	 * Reset the model. All parameters must be consistent at this point. Allocate
 	 * memory and initialize the interaction and competition structures. If
 	 * structures include random elements, e.g. random regular graphs, a new
@@ -4459,6 +4488,7 @@ public abstract class IBSPopulation<M extends Module<?>, P extends IBSPopulation
 	public synchronized void reset() {
 		interaction.init();
 		interaction.rewire();
+		checkGroupSampling();
 
 		// for accumulated payoffs the min and max scores can only be determined
 		// after the structure of the population is known. note scores are potentially
