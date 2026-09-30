@@ -216,6 +216,9 @@ public class IBSC extends IBS implements CModel {
 		 * <dd>Monomorphic resident population with trait {@code r} and single mutant
 		 * with trait {@code m}.
 		 * </dl>
+		 * The arguments for different traits are separated by
+		 * {@value CLOParser#TRAIT_DELIMITER}. Traits without type inherit the type of
+		 * the previous trait, e.g. {@code gaussian 0.3,0.02;0.7,0.02}.
 		 * For modules with vacant sites, an optional additional argument
 		 * {@code v}, following those of the first trait, sets the frequency of
 		 * vacant sites. By default, the population is initialized at its
@@ -234,19 +237,19 @@ public class IBSC extends IBS implements CModel {
 			/**
 			 * Monomorphic population with trait(s) {@code xi}.
 			 */
-			MONO("mono", "monomorphic trait <x1,...,xd>", 1),
+			MONO("mono", "monomorphic trait <x1[;x2...]>", 1),
 
 			/**
 			 * Gaussian distribution of traits with mean {@code mi} and standard deviation
 			 * {@code si}.
 			 */
-			GAUSSIAN("gaussian", "Gaussian traits <m1,...,md;s1,...,sd>", 2),
+			GAUSSIAN("gaussian", "Gaussian traits <m1,s1[;m2,s2...]>", 2),
 
 			/**
 			 * Monomorphic resident population with trait {@code ri} and single mutant with
 			 * trait {@code mi}.
 			 */
-			MUTANT("mutant", "mutant in monomorphic resident <m1,...,md;r1,...,rd>", 2);
+			MUTANT("mutant", "mutant in monomorphic resident <r1,m1[;r2,m2...]>", 2);
 
 			/**
 			 * Key of initialization type. Used when parsing command line options.
