@@ -3,17 +3,17 @@
 <plist version="1.0">
 <dict>
 <key>Export date</key>
-<string>Sat Aug 15 16:49:07 PDT 2026</string>
+<string>Wed Sep 30 17:43:13 PDT 2026</string>
 <key>Title</key>
 <string>2x2 Games</string>
 <key>Version</key>
-<string>EvoLudo: v2.2.5-166-g6bf95b7X &#169; Christoph Hauert</string>
+<string>EvoLudo: v2.3.0-RC1-38-g9cf0e3dX &#169; Christoph Hauert</string>
 <key>JavaVersion</key>
 <string>25</string>
 <key>CLO</key>
 <string>--delay 0 --fitnessmap static 100.0 --geometry n --init frequency 2,8 --model IBS --module 2x2 --paymatrix 1,-0.2;1.2,0 --playerupdate thermal 0.1 --popsize 50x --popupdate async --references all --seed 0 --timestep 1 --timestop 1000</string>
 <key>Time</key>
-<real>4593014328584515225L</real>
+<real>4593014328584515169L</real>
 <key>Model</key>
 <string>IBS: individual based simulations</string>
 <key>Generation</key>

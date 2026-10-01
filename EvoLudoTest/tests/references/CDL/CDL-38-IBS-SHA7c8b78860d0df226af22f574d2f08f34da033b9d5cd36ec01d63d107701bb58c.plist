@@ -3,17 +3,17 @@
 <plist version="1.0">
 <dict>
 <key>Export date</key>
-<string>Wed Sep 30 14:41:50 PDT 2026</string>
+<string>Wed Sep 30 17:44:53 PDT 2026</string>
 <key>Title</key>
 <string>Volunteering in (non-linear) public goods games</string>
 <key>Version</key>
-<string>EvoLudo: v2.3.0-RC1-35-g33bdd07X &#169; Christoph Hauert</string>
+<string>EvoLudo: v2.3.0-RC1-38-g9cf0e3dX &#169; Christoph Hauert</string>
 <key>JavaVersion</key>
 <string>25</string>
 <key>CLO</key>
 <string>--cost 1 --delay 0 --fitnessmap static --geometry f 4 --groupsize 5 --init frequency 6,2,2 --interest 3 --lonecoop 1 --lonedefect 1 --loner 1 --model IBS --module CDL --popsize 500 --popupdate B --seed 0 --timestep 1 --timestop 100</string>
 <key>Time</key>
-<real>4632196852090936623L</real>
+<real>4632196852090936621L</real>
 <key>Model</key>
 <string>IBS: individual based simulations</string>
 <key>Generation</key>
