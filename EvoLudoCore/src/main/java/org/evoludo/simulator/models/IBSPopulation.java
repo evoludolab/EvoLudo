@@ -1914,8 +1914,11 @@ public abstract class IBSPopulation<M extends Module<?>, P extends IBSPopulation
 	 * current score. Keeps track of {@code sumFitness}.
 	 * <p>
 	 * <strong>Note:</strong> If {@code sumFitness} decreases dramatically rounding
-	 * errors become an issue. More specifically, if {@code sumFitness} is reduced
-	 * to half or less, recalculate from scratch.
+	 * errors become an issue. More specifically, if {@code sumFitness}, relative to
+	 * the minimum possible fitness {@code minFitness}, is reduced to half or less,
+	 * recalculate from scratch. Using the minimum as reference, instead of zero,
+	 * admits negative fitness, e.g. for negative payoffs without a
+	 * payoff-to-fitness map.
 	 * 
 	 * @param idx the index of the individual
 	 */
@@ -1931,8 +1934,10 @@ public abstract class IBSPopulation<M extends Module<?>, P extends IBSPopulation
 		fitness[idx] = after;
 		sumFitness += diff;
 		// whenever sumFitness decreases dramatically rounding errors become an issue
-		// if update reduces sumFitness by half or more, recalculate from scratch
-		if (-diff > sumFitness)
+		// if update reduces sumFitness, relative to the minimum fitness, by half or
+		// more, recalculate from scratch
+		double minFit = (minFitness <= maxFitness ? minFitness : 0.0);
+		if (-diff > sumFitness - getPopulationSize() * minFit)
 			sumFitness = ArrayMath.norm(fitness);
 	}
 
