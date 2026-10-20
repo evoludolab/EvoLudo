@@ -135,7 +135,7 @@ package org.evoludo.geom;
 
 public class AffineTransform {
 
-	/*
+	/**
 	 * This constant is only useful for the cached type field.
 	 * It indicates that the type has been decached and must be recalculated.
 	 */
@@ -401,7 +401,7 @@ public class AffineTransform {
 	 */
 	static final int APPLY_SHEAR = 4;
 
-	/*
+	/**
 	 * For methods which combine together the state of two separate
 	 * transforms and dispatch based upon the combination, these constants
 	 * specify how far to shift one of the states so that the two states
@@ -411,9 +411,25 @@ public class AffineTransform {
 	 * the state of the "other" or "argument" transform is shifted (HI).
 	 */
 	private static final int HI_SHIFT = 3;
+
+	/**
+	 * Shifted identity transform state used when combining states.
+	 */
 	private static final int HI_IDENTITY = APPLY_IDENTITY << HI_SHIFT;
+
+	/**
+	 * Shifted translation transform state used when combining states.
+	 */
 	private static final int HI_TRANSLATE = APPLY_TRANSLATE << HI_SHIFT;
+
+	/**
+	 * Shifted scale transform state used when combining states.
+	 */
 	private static final int HI_SCALE = APPLY_SCALE << HI_SHIFT;
+
+	/**
+	 * Shifted shear transform state used when combining states.
+	 */
 	private static final int HI_SHEAR = APPLY_SHEAR << HI_SHIFT;
 
 	/**
@@ -491,6 +507,17 @@ public class AffineTransform {
 	 */
 	private int type;
 
+	/**
+	 * Constructs a new affine transform from matrix entries and cached state.
+	 *
+	 * @param m00   the X scale matrix entry
+	 * @param m10   the Y shear matrix entry
+	 * @param m01   the X shear matrix entry
+	 * @param m11   the Y scale matrix entry
+	 * @param m02   the X translation matrix entry
+	 * @param m12   the Y translation matrix entry
+	 * @param state the cached transform state
+	 */
 	private AffineTransform(double m00, double m10,
 			double m01, double m11,
 			double m02, double m12,
@@ -1136,7 +1163,7 @@ public class AffineTransform {
 		}
 	}
 
-	/*
+	/**
 	 * Convenience method used internally to throw exceptions when
 	 * a case was forgotten in a switch statement.
 	 */
@@ -1367,9 +1394,9 @@ public class AffineTransform {
 		}
 	}
 
-	// Utility methods to optimize rotate methods.
-	// These tables translate the flags during predictable quadrant
-	// rotations where the shear and scale values are swapped and negated.
+	/**
+	 * State conversion table for predictable 90 degree quadrant rotations.
+	 */
 	private static final int rot90conversion[] = {
 			/* IDENTITY => */ APPLY_SHEAR,
 			/* TRANSLATE (TR) => */ APPLY_SHEAR | APPLY_TRANSLATE,
@@ -1381,6 +1408,9 @@ public class AffineTransform {
 			/* SH | SC | TR => */ APPLY_SHEAR | APPLY_SCALE | APPLY_TRANSLATE,
 	};
 
+	/**
+	 * Applies an optimized 90 degree rotation to this transform.
+	 */
 	@SuppressWarnings("hiding")
 	private void rotate90() {
 		double M0 = m00;
@@ -1398,6 +1428,9 @@ public class AffineTransform {
 		type = TYPE_UNKNOWN;
 	}
 
+	/**
+	 * Applies an optimized 180 degree rotation to this transform.
+	 */
 	@SuppressWarnings("hiding")
 	private void rotate180() {
 		m00 = -m00;
@@ -1420,6 +1453,9 @@ public class AffineTransform {
 		type = TYPE_UNKNOWN;
 	}
 
+	/**
+	 * Applies an optimized 270 degree rotation to this transform.
+	 */
 	@SuppressWarnings("hiding")
 	private void rotate270() {
 		double M0 = m00;
@@ -3654,8 +3690,14 @@ public class AffineTransform {
 		return new Path2D(pSrc, this);
 	}
 
-	// Round values to sane precision for printing
-	// Note that Math.sin(Math.PI) has an error of about 10^-16
+	/**
+	 * Round matrix values to sane precision for printing.
+	 * <p>
+	 * Note that {@code Math.sin(Math.PI)} has an error of about {@code 10^-16}.
+	 *
+	 * @param matval the matrix value to round
+	 * @return the rounded matrix value
+	 */
 	private static double _matround(double matval) {
 		return Math.rint(matval * 1E15) / 1E15;
 	}

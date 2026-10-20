@@ -45,6 +45,7 @@ import java.awt.geom.Rectangle2D;
 import java.util.LinkedList;
 
 import org.evoludo.math.Combinatorics;
+import org.evoludo.simulator.models.Model;
 import org.evoludo.simulator.modules.Module;
 
 class Data {
@@ -263,14 +264,14 @@ class LineQueue extends LinkedList<Data> {
 	private static Point2D.Double intersectLines(Line2D.Double line1, Line2D.Double line2) {
 		double a = (line1.y2 - line1.y1) / (line1.x2 - line1.x1);
 		double b = line1.y1 - a * line1.x1;
-		if (Math.abs(line2.x1 - line2.x2) < 1e-8)
+		if (Math.abs(line2.x1 - line2.x2) < Model.EPS)
 			// line2 is vertical
 			return new Point2D.Double(line2.x1, a * line2.x1 + b);
 
 		double c = (line2.y2 - line2.y1) / (line2.x2 - line2.x1);
 		double d = line2.y1 - c * line2.x1;
 
-		if (Math.abs(line1.x1 - line1.x2) < 1e-8)
+		if (Math.abs(line1.x1 - line1.x2) < Model.EPS)
 			// line1 is vertical
 			return new Point2D.Double(line1.x1, c * line1.x1 + d);
 

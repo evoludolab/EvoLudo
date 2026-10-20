@@ -52,29 +52,28 @@ public class MVFitness extends MVAbstract implements StateGraphListener {
 
 	@Override
 	public void reset(boolean clear) {
-		if (graphs.size() > 0) {
-			super.reset(clear);
-			return;
+		if (graphs.isEmpty()) {
+			LineGraph graph = new LineGraph(this, module, module.getId());
+			GraphAxis x = graph.getXAxis();
+			GraphAxis y = graph.getYAxis();
+			x.label = "time";
+			x.showLabel = true;
+			x.max = 0.0;
+			x.min = 1.0; // min>max forces recalculation
+			x.step = -engine.getModel().getTimeStep();
+			x.grid = 0;
+			x.majorTicks = 3;
+			x.minorTicks = 1;
+			y.label = "fitness";
+			y.showLabel = true;
+			y.grid = 3;
+			y.majorTicks = 3;
+			y.minorTicks = 1;
+			add(graph);
+			graphs.add(graph);
+			clear = true;
 		}
-		LineGraph graph = new LineGraph(this, module, module.getId());
-		GraphAxis x = graph.getXAxis();
-		GraphAxis y = graph.getYAxis();
-		x.label = "time";
-		x.showLabel = true;
-		x.max = 0.0;
-		x.min = 1.0; // min>max forces recalculation
-		x.step = -engine.getModel().getTimeStep();
-		x.grid = 0;
-		x.majorTicks = 3;
-		x.minorTicks = 1;
-		y.label = "fitness";
-		y.showLabel = true;
-		y.grid = 3;
-		y.majorTicks = 3;
-		y.minorTicks = 1;
-		add(graph);
-		graphs.add(graph);
-		super.reset(true);
+		super.reset(clear);
 	}
 
 	// implement GraphListener - mostly done in MVAbstract
@@ -121,32 +120,17 @@ public class MVFitness extends MVAbstract implements StateGraphListener {
 		return changed;
 	}
 
-	/*
-	 * really adjust x-axis upon changing report frequency?
-	 * public boolean verifyXAxis(GraphAxis x, int tag) {
-	 * boolean changed = false;
-	 * double step = -population.getReportFreq();
-	 * if( Math.abs(x.step-step)>1e-8 ) {
-	 * double steps = (x.max-x.min)/x.step;
-	 * x.min = x.max-steps*step;
-	 * x.step = step;
-	 * changed = true;
-	 * }
-	 * return changed;
-	 * }
-	 */
-
 	@Override
 	public boolean verifyYAxis(GraphAxis y, int tag) {
 		boolean changed = false;
 		Model model = engine.getModel();
 		double min = model.getMinScore(tag);
-		if (Math.abs(y.min - min) > 1e-8) {
+		if (Math.abs(y.min - min) > Model.EPS) {
 			y.min = min;
 			changed = true;
 		}
 		double max = model.getMaxScore(tag);
-		if (Math.abs(y.max - max) > 1e-8) {
+		if (Math.abs(y.max - max) > Model.EPS) {
 			y.max = max;
 			changed = true;
 		}

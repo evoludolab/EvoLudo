@@ -46,6 +46,8 @@ import org.evoludo.simulator.geometries.AbstractGeometry;
 import org.evoludo.simulator.geometries.GeometryType;
 import org.evoludo.simulator.models.Data;
 import org.evoludo.simulator.models.IBS;
+import org.evoludo.simulator.models.IBSPopulation;
+import org.evoludo.simulator.models.Model;
 import org.evoludo.simulator.models.PDE;
 import org.evoludo.simulator.modules.Features.Payoffs;
 import org.evoludo.simulator.modules.Map2Fitness;
@@ -180,8 +182,27 @@ public abstract class GenericPop<T, N extends Network<?>, G extends GenericPopGr
 	}
 
 	/**
+	 * Helper method to check whether a single graph suffices to display the
+	 * interaction and competition geometries of {@code module}.
+	 * <p>
+	 * <strong>Note:</strong> this is a display criterion, which is more permissive
+	 * than {@link AbstractGeometry#isSingle()}: distinct geometries can still share
+	 * a single graphical representation, e.g. a square lattice for interactions
+	 * combined with one for competition among second nearest neighbours.
+	 *
+	 * @param module the module to check the geometries of
+	 * @return {@code true} if a single graph suffices
+	 *
+	 * @see AbstractGeometry#displaySingle(AbstractGeometry, AbstractGeometry)
+	 */
+	static boolean displaySingle(Module<?> module) {
+		IBSPopulation<?, ?> pop = module.getIBSPopulation();
+		return AbstractGeometry.displaySingle(pop.getInteractionGeometry(), pop.getCompetitionGeometry());
+	}
+
+	/**
 	 * Helper method to assign a geometry to a graph.
-	 * 
+	 *
 	 * @param graph the graph to assign the geometry
 	 * @param inter {@code true} for interaction geometry, {@code false} for
 	 *              competition geometry
@@ -208,8 +229,7 @@ public abstract class GenericPop<T, N extends Network<?>, G extends GenericPopGr
 	}
 
 	@Override
-	public void modelDidInit() {
-		super.modelDidInit();
+	protected void onModelDidInit() {
 		for (G graph : graphs)
 			graph.init();
 		updateData(true);
@@ -223,15 +243,14 @@ public abstract class GenericPop<T, N extends Network<?>, G extends GenericPopGr
 			return;
 		// always read data for the selected graph set
 		double newtime = model.getUpdates();
-		boolean isNext = (Math.abs(timestamp - newtime) > 1e-8);
+		boolean isNext = (Math.abs(timestamp - newtime) > Model.EPS);
 		boolean updated = false;
 		for (G graph : graphs) {
 			boolean doUpdate = (isActive || graph.hasHistory());
 			if (!doUpdate)
 				continue;
-			// inactive history graphs still need data updates to keep their buffers in
-			// sync.
-			if (isActive && graph.hasMessage())
+			Object[] graphData = graph.getData();
+			if (graphData == null || graph.getColorMap() == null)
 				continue;
 			switch (type) {
 				case TRAIT:

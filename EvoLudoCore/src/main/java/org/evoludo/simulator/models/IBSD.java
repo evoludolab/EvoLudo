@@ -32,8 +32,6 @@ package org.evoludo.simulator.models;
 
 import org.evoludo.math.ArrayMath;
 import org.evoludo.simulator.EvoLudo;
-import org.evoludo.simulator.geometries.AbstractGeometry;
-import org.evoludo.simulator.geometries.GeometryType;
 import org.evoludo.simulator.modules.Module;
 import org.evoludo.util.CLOCategory;
 import org.evoludo.util.CLODelegate;
@@ -100,22 +98,37 @@ public class IBSD extends IBS implements DModel {
 		if (!super.permitsSampleStatistics())
 			return false;
 		// sampling statistics also require:
-		// - mutant or temperature initialization
-		// - no vacant sites or monostop (otherwise extinction is the only absorbing
-		// state)
-		// - for well-mixed populations any frequency is acceptable
+		// - mutant or temperature initialization, regardless of the geometry: the
+		// statistics are collected for the location of the initial mutant, see
+		// FixationData#mutantNode, which only those initializations provide
+		// - with vacant sites extinction is the only absorbing state, unless monostop
+		// is requested; this is permitted but warned about, see setMode(Mode)
+		// - in principle, in well-mixed populations any initial frequency of mutant
+		// nodes would qualify as unique initial configuration and suitable for statistics
+		// however, currently neither FixationData nor the consumers are equipped to deal
+		// with this case and so we only allow the single mutant case (for now).
 		for (Module<?> mod : species) {
-			IBSDPopulation dpop = (IBSDPopulation) mod.getIBSPopulation();
-			AbstractGeometry inter = dpop.interaction;
-			boolean isWM = inter.isType(GeometryType.WELLMIXED)
-					&& (inter.isSingle()
-							|| dpop.competition.isType(GeometryType.WELLMIXED));
-			Init.Type itype = dpop.getInit().type;
-			if (!isWM && !(itype.equals(Init.Type.MUTANT) ||
-					itype.equals(Init.Type.TEMPERATURE)))
+			Init.Type itype = ((IBSDPopulation) mod.getIBSPopulation()).getInit().type;
+			if (!(itype.equals(Init.Type.MUTANT) || itype.equals(Init.Type.TEMPERATURE)))
 				return false;
 		}
 		return true;
+	}
+
+	@Override
+	public boolean setMode(Mode mode) {
+		if (mode == Mode.STATISTICS_SAMPLE) {
+			for (Module<?> mod : species) {
+				if (!mod.hasVacant() || ((IBSDPopulation) mod.getIBSPopulation()).module.getMonoStop())
+					continue;
+				// samples end only once the population went extinct, which is recorded as
+				// fixation of the vacant trait rather than of a resident or mutant
+				engine.logWarning("extinction is the only absorbing state - "
+						+ "consider --monostop for fixation statistics.");
+				break;
+			}
+		}
+		return super.setMode(mode);
 	}
 
 	@Override
@@ -522,7 +535,7 @@ public class IBSD extends IBS implements DModel {
 							case HOMO:
 								// skip homogeneous populations (single species only)
 								if (isMultispecies) {
-									logger.warning("homogeneous optimizations require single species - disabled.");
+									engine.logWarning("homogeneous optimizations require single species - disabled.");
 									continue;
 								}
 								for (Module<?> mod : species) {

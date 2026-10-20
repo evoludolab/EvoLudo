@@ -33,13 +33,13 @@ package org.evoludo.graphics;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
-import java.util.logging.Logger;
 
 import org.evoludo.geom.Node2D;
 import org.evoludo.geom.Path2D;
 import org.evoludo.geom.PathIterator;
 import org.evoludo.geom.Point2D;
 import org.evoludo.geom.Rectangle2D;
+import org.evoludo.simulator.models.Model;
 import org.evoludo.simulator.modules.Module;
 import org.evoludo.simulator.views.AbstractView;
 import org.evoludo.simulator.views.BasicTooltipProvider;
@@ -59,6 +59,7 @@ import com.google.gwt.core.client.Scheduler.ScheduledCommand;
 import com.google.gwt.dom.client.Document;
 import com.google.gwt.dom.client.Element;
 import com.google.gwt.dom.client.NativeEvent;
+import com.google.gwt.dom.client.Style;
 import com.google.gwt.dom.client.Style.Unit;
 import com.google.gwt.dom.client.Touch;
 import com.google.gwt.event.dom.client.ContextMenuEvent;
@@ -84,6 +85,7 @@ import com.google.gwt.event.shared.HandlerRegistration;
 import com.google.gwt.user.client.Command;
 import com.google.gwt.user.client.Timer;
 import com.google.gwt.user.client.ui.FocusPanel;
+import com.google.gwt.user.client.ui.Label;
 import com.google.gwt.user.client.ui.LayoutPanel;
 import com.google.gwt.user.client.ui.RequiresResize;
 
@@ -254,10 +256,10 @@ import com.google.gwt.user.client.ui.RequiresResize;
  *
  * <h2>Messages</h2>
  * <p>
- * displayMessage(String) can be used to render a centered textual message on
- * the graph (e.g. "No Data" or "Paused"). When a message is displayed most
- * interaction handlers become inert and painting/updates are suppressed until
- * the message is cleared via clearMessage().
+ * displayMessage(String) can be used to show a centered textual message as an
+ * overlay on the graph (e.g. "No Data" or "Paused"). When a message is
+ * displayed most interaction handlers become inert and painting/updates are
+ * suppressed until the message is cleared via clearMessage().
  * </p>
  *
  * <h2>Utilities &amp; Helper classes</h2>
@@ -527,9 +529,9 @@ public abstract class AbstractGraph<B> extends FocusPanel
 	LayoutPanel wrapper;
 
 	/**
-	 * Logger for keeping track of and reporting events and issues.
+	 * Overlay label used to display graph messages.
 	 */
-	protected Logger logger;
+	protected Label msgLabel;
 
 	/**
 	 * Handle to the object's underlying DOM element.
@@ -576,6 +578,41 @@ public abstract class AbstractGraph<B> extends FocusPanel
 	 * The style of the graph. Includes labels, fonts, etc.
 	 */
 	protected GraphStyle style = new GraphStyle();
+
+	/**
+	 * Horizontal gap between y ticks and their labels.
+	 */
+	private static final double Y_TICK_LABEL_GAP = 4.0;
+
+	/**
+	 * Minimum horizontal gap between y tick labels and the y-axis label.
+	 */
+	private static final double Y_AXIS_LABEL_MIN_GAP = 6.0;
+
+	/**
+	 * Default horizontal gap reserved between y tick labels and the y-axis label.
+	 * This exceeds {@link #Y_AXIS_LABEL_MIN_GAP} so modest tick-label width changes
+	 * can be absorbed without moving the axis label.
+	 */
+	private static final double Y_AXIS_LABEL_RESERVED_GAP = 10.0;
+
+	/**
+	 * Approximate horizontal thickness reserved for the rotated y-axis label.
+	 */
+	private static final double Y_AXIS_LABEL_THICKNESS = 12.0;
+
+	/**
+	 * Optional override for the horizontal offset of the y-axis label. When this is
+	 * not set, the offset is derived from the cached y-axis tick-label width and
+	 * the configured label gap.
+	 */
+	protected double yAxisLabelTickSkip = Double.NaN;
+
+	/**
+	 * Cached width of the midpoint y tick label from the most recent bounds
+	 * calculation.
+	 */
+	private double cachedMidYTickLabelWidth = Double.NaN;
 
 	/**
 	 * The buffer to store historical data, if applicable.
@@ -633,7 +670,6 @@ public abstract class AbstractGraph<B> extends FocusPanel
 	protected AbstractGraph(AbstractView<?> view, Module<?> module) {
 		this.view = view;
 		this.module = module;
-		logger = view.getLogger();
 		if (this instanceof Zooming) {
 			viewCorner = new Point2D();
 			zoomInertiaTimer = new Timer() {
@@ -661,6 +697,12 @@ public abstract class AbstractGraph<B> extends FocusPanel
 		wrapper = new LayoutPanel();
 		add(wrapper);
 		element = getElement();
+		msgLabel = new Label();
+		msgLabel.setStyleName("evoludo-Message");
+		msgLabel.getElement().getStyle().setZIndex(2);
+		msgLabel.setVisible(false);
+		wrapper.add(msgLabel);
+		wrapper.setWidgetLeftRight(msgLabel, 0.0, Unit.PX, 0.0, Unit.PX);
 		// most graphs use canvas - allocate it here (this is unnecessary for e.g.
 		// PopGraph3D but since this is the only exception so far it will have to remove
 		// canvas again)
@@ -677,13 +719,13 @@ public abstract class AbstractGraph<B> extends FocusPanel
 		// no delays - at least for debugging...
 		// weird delay remains on ibooks (ios)
 		tooltip.setDelays(0, 0);
-		// note: testing/debugging touch events with ibooks on iOS is a bit of a pain.
-		// provide access to logger for minimal feedback through status line.
-		// tooltip.logger = logger;
 	}
 
 	@Override
 	protected void onUnload() {
+		if (msgLabel != null)
+			msgLabel.removeFromParent();
+		msgLabel = null;
 		if (canvas != null)
 			canvas.removeFromParent();
 		canvas = null;
@@ -819,6 +861,10 @@ public abstract class AbstractGraph<B> extends FocusPanel
 		clearHistory();
 		updateCanvas();
 		zoom();
+		// recalculate bounds so that any message reflecting a still-valid display
+		// constraint (e.g. population too big) is restored rather than left cleared
+		// with stale, unusable dimensions
+		calcBounds();
 	}
 
 	/**
@@ -950,7 +996,7 @@ public abstract class AbstractGraph<B> extends FocusPanel
 	 * @return {@code true} if sample should be kept
 	 */
 	protected boolean keepSample(RingBuffer<double[]> history, double[] current, double[] last) {
-		if (normalizedDistSq(current, last) > MIN_NORM_DIST_SQ)
+		if (normDeltaSq(current, last) > MIN_NORM_DIST_SQ)
 			return true;
 		if (history == null || history.getSize() < 2)
 			return false;
@@ -966,27 +1012,66 @@ public abstract class AbstractGraph<B> extends FocusPanel
 	}
 
 	/**
-	 * Compute mean squared distance in normalized state space, excluding time.
+	 * Compute the normalized difference between two values.
+	 *
+	 * @param current the current value
+	 * @param last    the reference value
+	 * @return the normalized difference
+	 */
+	protected final double normDelta(double current, double last) {
+		double norm = Math.max(1.0, Math.max(Math.abs(current), Math.abs(last)));
+		return (current - last) / norm;
+	}
+
+	/**
+	 * Compute the maximum absolute normalized difference between two samples,
+	 * excluding time.
 	 *
 	 * @param current current sample including prepended time
-	 * @param last    last sample including prepended time
-	 * @return mean squared normalized distance
+	 * @param last    reference sample including prepended time
+	 * @return the maximum absolute normalized difference, or
+	 *         {@link Double#POSITIVE_INFINITY} if the samples are invalid or
+	 *         contain
+	 *         non-finite entries
 	 */
-	protected final double normalizedDistSq(double[] current, double[] last) {
+	protected final double maxDelta(double[] current, double[] last) {
 		if (current == null || last == null || current.length != last.length || current.length < 2)
 			return Double.POSITIVE_INFINITY;
-		int dim = current.length - 1;
+		double max = 0.0;
+		for (int n = 1; n < current.length; n++) {
+			double a = current[n];
+			double b = last[n];
+			if (!Double.isFinite(a) || !Double.isFinite(b))
+				return Double.POSITIVE_INFINITY;
+			max = Math.max(max, Math.abs(normDelta(a, b)));
+		}
+		return max;
+	}
+
+	/**
+	 * Compute the mean squared normalized difference between two samples,
+	 * excluding time.
+	 *
+	 * @param current current sample including prepended time
+	 * @param last    reference sample including prepended time
+	 * @return the mean squared normalized difference, or
+	 *         {@link Double#POSITIVE_INFINITY} if the samples are invalid or
+	 *         contain
+	 *         non-finite entries
+	 */
+	protected final double normDeltaSq(double[] current, double[] last) {
+		if (current == null || last == null || current.length != last.length || current.length < 2)
+			return Double.POSITIVE_INFINITY;
 		double dist2 = 0.0;
 		for (int n = 1; n < current.length; n++) {
 			double a = current[n];
 			double b = last[n];
 			if (!Double.isFinite(a) || !Double.isFinite(b))
 				return Double.POSITIVE_INFINITY;
-			double norm = Math.max(1.0, Math.max(Math.abs(a), Math.abs(b)));
-			double d = (a - b) / norm;
+			double d = normDelta(a, b);
 			dist2 += d * d;
 		}
-		return dist2 / dim;
+		return dist2 / (current.length - 1);
 	}
 
 	/**
@@ -1214,6 +1299,7 @@ public abstract class AbstractGraph<B> extends FocusPanel
 	 * @param height the height of the drawing area
 	 */
 	public void calcBounds(int width, int height) {
+		cachedMidYTickLabelWidth = Double.NaN;
 		bounds.set(style.minPadding, style.minPadding, width - 2.0 * style.minPadding, height - 2.0 * style.minPadding);
 		if (style.showFrame) {
 			double f = style.frameWidth;
@@ -1235,9 +1321,9 @@ public abstract class AbstractGraph<B> extends FocusPanel
 	private void adjustBoundsForLabels() {
 		if (style.showXLabel && style.xLabel != null)
 			bounds.adjust(0, 0, 0, -20); // 14px for font size plus some padding
-		// something does not add up but at least this improves results
 		if (style.showYLabel && style.yLabel != null)
-			adjustBoundsForYSide(12);
+			adjustBoundsForYSide(Y_AXIS_LABEL_THICKNESS
+					+ (style.showYTickLabels ? Y_AXIS_LABEL_RESERVED_GAP : Y_AXIS_LABEL_MIN_GAP));
 	}
 
 	/**
@@ -1265,8 +1351,12 @@ public abstract class AbstractGraph<B> extends FocusPanel
 			} else {
 				digits = computeYTickDigits(4);
 			}
-			adjustBoundsForYSide(measureMidYTickLabelWidth(digits));
-			adjustBoundsForYSide(6);
+			cachedMidYTickLabelWidth = measureMidYTickLabelWidth(digits);
+			if (style.percentY)
+				cachedMidYTickLabelWidth = Math.max(cachedMidYTickLabelWidth,
+						measureYTickLabelWidth(new String[] { "100.0" }, true));
+			adjustBoundsForYSide(cachedMidYTickLabelWidth);
+			adjustBoundsForYSide(Y_TICK_LABEL_GAP + 2.0);
 		}
 		g.setFont(font);
 	}
@@ -1513,10 +1603,10 @@ public abstract class AbstractGraph<B> extends FocusPanel
 		String[] numexp = tick.split("\\^");
 		double xpos;
 		if (style.showYAxisRight) {
-			xpos = w + 0.5 + (style.tickLength + 4);
+			xpos = w + 0.5 + (style.tickLength + Y_TICK_LABEL_GAP);
 		} else {
 			double labelWidth = measureYTickLabelWidth(numexp, style.percentY);
-			xpos = 0.5 - (style.tickLength + 4) - labelWidth;
+			xpos = 0.5 - (style.tickLength + Y_TICK_LABEL_GAP) - labelWidth;
 		}
 		double ypos = level + (n == 0 ? 9 : 4.5);
 		g.fillText(numexp[0], xpos, ypos);
@@ -1686,12 +1776,40 @@ public abstract class AbstractGraph<B> extends FocusPanel
 		// y-axis label
 		if (!style.showYLabel || style.yLabel == null)
 			return;
-		int digits = computeYTickDigits(4);
-		double tickskip = measureMidYTickLabelWidth(digits) + 18.0;
+		double tickskip = getYAxisLabelTickSkip();
 		setFont(style.axesLabelFont);
 		String ylabel = style.yLabel + (style.logScaleY ? " (log)" : "");
-		double xpos = style.showYAxisRight ? w + tickskip + style.tickLength : -tickskip - style.tickLength + 8.0;
+		double xpos = style.showYAxisRight ? w + tickskip + style.tickLength + Y_TICK_LABEL_GAP
+				: -(tickskip + style.tickLength + Y_TICK_LABEL_GAP);
 		fillTextVertical(ylabel, xpos, (h + g.measureText(ylabel).getWidth()) / 2);
+	}
+
+	/**
+	 * Get the horizontal offset to use for the y-axis label.
+	 *
+	 * @return the y-axis label offset, including reserved whitespace beyond the y
+	 *         tick labels
+	 */
+	protected double getYAxisLabelTickSkip() {
+		if (!Double.isNaN(yAxisLabelTickSkip))
+			return yAxisLabelTickSkip;
+		if (style.showYTickLabels) {
+			double labelWidth = cachedMidYTickLabelWidth;
+			if (Double.isNaN(labelWidth)) {
+				int digits;
+				if (style.percentY) {
+					if (style.yMax <= 1.0)
+						digits = 1;
+					else
+						digits = 0;
+				} else {
+					digits = computeYTickDigits(4);
+				}
+				labelWidth = measureMidYTickLabelWidth(digits);
+			}
+			return labelWidth + Y_AXIS_LABEL_RESERVED_GAP;
+		}
+		return Y_AXIS_LABEL_MIN_GAP;
 	}
 
 	/**
@@ -2034,11 +2152,17 @@ public abstract class AbstractGraph<B> extends FocusPanel
 	protected String message = null;
 
 	/**
+	 * Cached font size of the last displayed message.
+	 */
+	protected double msgFontSize = 12.0;
+
+	/**
+	 * Cached line height of the last displayed message.
+	 */
+	protected double msgLineHeight = 16.8;
+
+	/**
 	 * Display message {@code msg} on the graph (no HTML formatting).
-	 * 
-	 * <h3>Implementation note:</h3>
-	 * The message is centered and scaled such that it fills approximately two
-	 * thirds of the width of the graph.
 	 * 
 	 * @param msg the message to display
 	 * @return {@code true} if message displayed
@@ -2061,22 +2185,29 @@ public abstract class AbstractGraph<B> extends FocusPanel
 			return false;
 		}
 		message = msg;
-		g.save();
-		g.scale(scale, scale);
-		clearCanvas();
-		g.setFillStyle("#000");
-		g.setFont("12px sans-serif");
-		// center text in bounds
-		double w = bounds.getWidth();
-		// size font to fill approx 80% of linewidth (max. 20px)
-		int fontSize = 12;
-		if (autoscale)
-			fontSize = Math.min((int) (12.0 * 0.8 * w / g.measureText(msg).getWidth()), 20);
-		g.setFont(fontSize + "px sans-serif");
-		g.fillText(msg, (bounds.getX() + w - g.measureText(msg).getWidth()) * 0.5,
-				bounds.getY() + bounds.getHeight() * 0.5 - fontSize * 0.333);
-		g.restore();
 		hasMessage = true;
+		clearGraph();
+		if (g != null) {
+			g.save();
+			g.setFont("12px sans-serif");
+			if (autoscale) {
+				double textWidth = g.measureText(msg).getWidth();
+				double width = Math.max(1.0, getOffsetWidth());
+				int fontSize = Math.min((int) (12.0 * 0.666 * width / Math.max(1.0, textWidth)), 24);
+				msgFontSize = Math.max(fontSize, 12);
+				msgLineHeight = msgFontSize * 1.4;
+			}
+			g.restore();
+		}
+		msgLabel.setText(msg);
+		Style msgStyle = msgLabel.getElement().getStyle();
+		double height = Math.max(1.0, getOffsetHeight());
+		msgStyle.setFontSize(msgFontSize, Unit.PX);
+		msgStyle.setLineHeight(msgLineHeight, Unit.PX);
+		wrapper.setWidgetTopHeight(msgLabel, Math.max(0.0, (height - msgLineHeight) * 0.5), Unit.PX,
+				msgLineHeight, Unit.PX);
+		msgLabel.setVisible(true);
+		onMessageDisplayed();
 		return true;
 	}
 
@@ -2084,8 +2215,25 @@ public abstract class AbstractGraph<B> extends FocusPanel
 	 * Clear the message.
 	 */
 	public void clearMessage() {
+		if (!hasMessage)
+			return;
 		message = null;
 		hasMessage = false;
+		if (msgLabel != null)
+			msgLabel.setVisible(false);
+		onMessageCleared();
+	}
+
+	/**
+	 * Hook invoked after a message has been displayed.
+	 */
+	protected void onMessageDisplayed() {
+	}
+
+	/**
+	 * Hook invoked after a message has been cleared.
+	 */
+	protected void onMessageCleared() {
 	}
 
 	/**
@@ -2162,7 +2310,7 @@ public abstract class AbstractGraph<B> extends FocusPanel
 			return;
 		double newZoomFactor = Math.min(Zooming.ZOOM_MAX, Math.max(1.0, zoomFactor * zoom));
 		double dz = newZoomFactor - zoomFactor;
-		if (Math.abs(dz) < 1e-8)
+		if (Math.abs(dz) < Model.EPS)
 			return;
 		double w = bounds.getWidth();
 		double h = bounds.getHeight();
@@ -2240,6 +2388,33 @@ public abstract class AbstractGraph<B> extends FocusPanel
 	 */
 	protected boolean inside(int x, int y) {
 		return true;
+	}
+
+	/**
+	 * The horizontal offset between this widget's own (border-box) edge and the
+	 * canvas's, e.g. from CSS padding reserved for visual spacing between
+	 * adjacent graphs. Mouse coordinates delivered to {@code onMouse*} handlers
+	 * and {@code getTooltipAt(int, int)} are relative to this widget's edge,
+	 * whereas {@link #bounds} is relative to the canvas - subtract this (and
+	 * {@link #canvasPadY()}) from incoming {@code x}/{@code y} before using
+	 * {@link #bounds}, so that hit-testing lines up with what is actually
+	 * drawn rather than with this widget's outer edge.
+	 *
+	 * @return the horizontal canvas inset, or {@code 0} if there is no canvas
+	 *         (e.g. {@link PopGraph3D})
+	 */
+	protected double canvasPadX() {
+		return canvas == null ? 0.0 : (double) canvas.getAbsoluteLeft() - getAbsoluteLeft();
+	}
+
+	/**
+	 * The vertical counterpart of {@link #canvasPadX()}.
+	 *
+	 * @return the vertical canvas inset, or {@code 0} if there is no canvas
+	 *         (e.g. {@link PopGraph3D})
+	 */
+	protected double canvasPadY() {
+		return canvas == null ? 0.0 : (double) canvas.getAbsoluteTop() - getAbsoluteTop();
 	}
 
 	/**
@@ -2388,9 +2563,8 @@ public abstract class AbstractGraph<B> extends FocusPanel
 		if (hasMessage || dz == 0.0)
 			return;
 		double zoom = Math.pow(Zooming.ZOOM_INCR, -dz);
+		zoomInertiaTimer.schedule(100);
 		zoomer.zoom(zoom, x, y);
-		if (!zoomInertiaTimer.isRunning())
-			zoomInertiaTimer.schedule(100);
 	}
 
 	/**

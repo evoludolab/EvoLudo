@@ -40,6 +40,7 @@ import org.evoludo.simulator.ColorMapCSS;
 import org.evoludo.simulator.EvoLudoGWT;
 import org.evoludo.simulator.models.DModel;
 import org.evoludo.simulator.models.Data;
+import org.evoludo.simulator.models.Model;
 import org.evoludo.simulator.modules.Discrete;
 import org.evoludo.simulator.modules.Module;
 import org.evoludo.simulator.views.HasPhase2D.Data2Phase;
@@ -249,8 +250,7 @@ public class Phase2D extends AbstractView<ParaGraph> {
 	}
 
 	@Override
-	public void modelDidInit() {
-		super.modelDidInit();
+	protected void onModelDidInit() {
 		model.getMeanTraits(state);
 		graph.addData(Double.NaN, state, true);
 		graph.paint(true);
@@ -259,7 +259,7 @@ public class Phase2D extends AbstractView<ParaGraph> {
 	@Override
 	protected void updateData(boolean force) {
 		double newtime = model.getUpdates();
-		if (Math.abs(timestamp - newtime) > 1e-8) {
+		if (Math.abs(timestamp - newtime) > Model.EPS) {
 			model.getMeanTraits(state);
 			graph.addData(newtime, state, force);
 			timestamp = newtime;

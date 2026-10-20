@@ -33,7 +33,7 @@ package org.evoludo.graphics;
 import org.evoludo.simulator.EvoLudo;
 import org.evoludo.simulator.Network2D;
 import org.evoludo.simulator.geometries.AbstractGeometry;
-import org.evoludo.simulator.models.Model;
+import org.evoludo.simulator.geometries.GeometryType;
 
 import com.google.gwt.core.client.Duration;
 import com.google.gwt.core.client.Scheduler;
@@ -93,6 +93,10 @@ public class Network2DGWT extends Network2D {
 			return;
 		this.listener = ll;
 		doLayoutPrep();
+		if (stat == Status.NEEDS_LAYOUT && geometry.isType(GeometryType.WELLMIXED)) {
+			completeLayout();
+			return;
+		}
 		layout = new Duration();
 		prevLayout = Integer.MIN_VALUE;
 		Scheduler.get().scheduleIncremental(this::doLayoutStep);
@@ -157,17 +161,10 @@ public class Network2DGWT extends Network2D {
 		potential = 0.0;
 		prevAdjust = Math.min(prevAdjust, adjust);
 		updateLayoutProgress(adjust);
+		double threshold = getConvergenceAccuracy();
 		int elapsed = layout.elapsedMillis();
-		if (adjust < accuracy || elapsed > layoutTimeout) { // layoutTimeout provides emergency exit
-			finishLayout();
-			setStatus(Status.HAS_LAYOUT);
-			isRunning = false;
-			// in the unlikely event that unloaded during layouting the model may be null
-			Model model = engine.getModel();
-			if (model == null)
-				return false;
-			timestamp = model.getUpdates();
-			listener.layoutComplete();
+		if (adjust < threshold || elapsed > layoutTimeout) { // layoutTimeout provides emergency exit
+			completeLayout();
 			return false;
 		}
 		if (elapsed - prevLayout > MIN_DELAY_ANIMATE_MSEC) {

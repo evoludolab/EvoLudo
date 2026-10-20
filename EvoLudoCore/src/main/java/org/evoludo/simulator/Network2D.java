@@ -47,6 +47,15 @@ import org.evoludo.simulator.geometries.GeometryType;
 public abstract class Network2D extends Network<Node2D> {
 
 	/**
+	 * Radial growth exponent of the deterministic well-mixed phyllotactic seed.
+	 * The value {@code 0.5} reproduces Vogel's area-uniform law, while larger
+	 * values move the layout towards an Archimedean-looking spiral with a denser
+	 * center. Convenient values to compare are {@code 0.5}, {@code 0.7},
+	 * {@code 0.8}, and {@code 1.0}.
+	 */
+	private static final double FIBONACCI_RADIAL_EXPONENT = 0.6;
+
+	/**
 	 * The links in this network.
 	 */
 	protected Path2D links = new Path2D();
@@ -80,23 +89,38 @@ public abstract class Network2D extends Network<Node2D> {
 				nodes[k] = new Node2D();
 		}
 		GeometryFeatures gFeats = geometry.getFeatures();
-		int kin = geometry.kin[0];
-		int kout = geometry.kout[0];
-		double diff = kout + kin - gFeats.avgTot;
-		double myr = unitradius * (1.0 + diff * (diff > 0.0 ? pnorm : nnorm));
-		nodes[0].set(0.0, 0.0, myr);
-		double scaledquake = 0.05 * radius;
-		double angle = 0.0;
-		double dangle = 2.0 * Math.PI / nNodes;
+		if (geometry.isType(GeometryType.WELLMIXED)) {
+			double layoutRadius = R - unitradius;
+			double targetSpacing = layoutRadius * Math.sqrt(2.0 * Math.PI / (Math.sqrt(3.0) * nNodes));
+			nodes[0].set(0.0, 0.0, unitradius);
+			if (nNodes == 1) {
+				return;
+			}
+			double spiralBaseRadius = Math.min(layoutRadius, Math.max(targetSpacing, 2.0 * unitradius));
+			int outerCount = nNodes - 1;
+			double radialPower = 1.0 / FIBONACCI_RADIAL_EXPONENT;
+			double baseRadiusPower = Math.pow(spiralBaseRadius, radialPower);
+			double layoutRadiusPower = Math.pow(layoutRadius, radialPower);
+			for (int k = 1; k < nNodes; k++) {
+				Node2D node = nodes[k];
+				double fraction = (k - 0.5) / outerCount;
+				double spiralRadius = Math.pow(baseRadiusPower
+						+ (layoutRadiusPower - baseRadiusPower) * fraction, FIBONACCI_RADIAL_EXPONENT);
+				double angle = k * GOLDEN_ANGLE;
+				node.set(spiralRadius * Math.sin(angle), spiralRadius * Math.cos(angle), unitradius);
+			}
+			return;
+		}
+		nodes[0].set(0.0, 0.0, scaledNodeRadius(0, gFeats.avgTot, pnorm, nnorm, unitradius));
+		final double maxSeedRadius = 0.95;
 		for (int k = 1; k < nNodes; k++) {
-			kin = geometry.kin[k];
-			kout = geometry.kout[k];
 			Node2D node = nodes[k];
-			diff = kout + kin - gFeats.avgTot;
-			myr = unitradius * (1.0 + diff * (diff > 0.0 ? pnorm : nnorm));
-			double perturb = scaledquake * (rng.random01() - 0.5);
-			node.set(Math.sin(angle) + perturb, Math.cos(angle) + perturb, myr);
-			angle += dangle;
+			// Use a deterministic Vogel spiral to seed nodes close to a uniform disk
+			// while keeping low indices near the center.
+			double spiralRadius = maxSeedRadius * Math.sqrt((k - 0.5) / (nNodes - 0.5));
+			double angle = k * GOLDEN_ANGLE;
+			node.set(spiralRadius * Math.sin(angle), spiralRadius * Math.cos(angle),
+					scaledNodeRadius(k, gFeats.avgTot, pnorm, nnorm, unitradius));
 		}
 	}
 
@@ -133,6 +157,13 @@ public abstract class Network2D extends Network<Node2D> {
 	 */
 	protected static final double IR2 = IR * IR;
 
+	/**
+	 * Scale factor applied to the nominal 2D accuracy. The contact-based spring
+	 * energy is smaller than the former center-distance energy, so 2D layouts use
+	 * a tighter effective threshold to avoid terminating too early.
+	 */
+	private static final double CONVERGENCE_ACCURACY_SCALE = 0.1;
+
 	@Override
 	public double relax(int nodeidx) {
 		return relax(nodeidx, 0.25);
@@ -161,6 +192,11 @@ public abstract class Network2D extends Network<Node2D> {
 	}
 
 	@Override
+	protected double getConvergenceAccuracy() {
+		return accuracy * CONVERGENCE_ACCURACY_SCALE;
+	}
+
+	@Override
 	protected double repulsion(int nodeidx) {
 		repulsion.set(0.0, 0.0);
 		double npot = 0.0;
@@ -169,29 +205,26 @@ public abstract class Network2D extends Network<Node2D> {
 			if (i == nodeidx)
 				continue;
 			Node2D nodei = nodes[i];
-			vec.set(nodei, node);
+			double dist = pairDistance(nodei, node, i, nodeidx);
+			double overlapDepth = node.getR() + nodei.getR() - dist;
 			// ensure positive distance to avoid divisions by zero
-			// note: any merit in special treatment of overlapping spheres?
-			// for reasonably sized circles the layout process gets worse if distance is
-			// adjusted.
-			// add charges to reduce chances of overlap? (see below - challenge to find
-			// proper scale)
-			// double dist = Math.max(0.0001, (vec.length()-0.5*(radius+node.radius))*IR);
-			double dist = Math.max(0.0001, vec.length() * IR);
-			// double dist = Math.max(0.0001,
-			// vec.length()*radius*radius*node.radius*node.radius*R*R);
-			// alt double dist = (vec.length()-node.radius-radius)*IR;
-			// dist = Math.signum(dist)*Math.max(0.0001, Math.abs(dist));
+			double scaledDist = Math.max(MIN_SCALED_DISTANCE, dist * IR);
 			// force becomes attractive if (scaled) distance exceeds 1 to prevent
 			// disconnected graphs from flying apart.
 			// zero is set at distance 1. assumes equal charges of 1.
 			// XXX what is -dist term? potential should depend on charge, i.e. on size of
 			// node
-			npot -= 2.0 - 1.0 / dist - dist;
+			npot -= 2.0 - 1.0 / scaledDist - scaledDist;
+			double force = 1.0 / (scaledDist * scaledDist) - 1.0;
+			if (overlapDepth > 0.0) {
+				double normalizedOverlap = overlapDepth * IR;
+				npot += 0.5 * HARD_CORE_STIFFNESS * normalizedOverlap * normalizedOverlap;
+				force += HARD_CORE_STIFFNESS * overlapDepth * IR2 / dist;
+			}
 			// ok potential -= 2.0-1.0/dist;
 			// potential -= 2.0-node.radius*radius*R*R/dist;
 			// alt potential -= 2.0-1.0/(dist*node.radius*radius);
-			vec.scale(1.0 / (dist * dist) - 1.0);
+			vec.scale(force);
 			// double charge = radius*node.radius;
 			// vec.scale(charge/(dist*dist)-charge);
 			// large nodes have larger charge - does not work properly
@@ -212,16 +245,10 @@ public abstract class Network2D extends Network<Node2D> {
 		int[] neighs = geometry.out[nodeidx];
 		for (int i = 0; i < nOut; i++) {
 			Node2D nodei = nodes[neighs[i]];
-			vec.set(node, nodei);
-			// force increases linearly with distance - correct for size of spheres (if
-			// spheres overlap attraction is negative).
-			// note: for reasonably sized circles the layout process gets worse if distance
-			// is adjusted.
-			// double dist = vec.length();
-			// double distadj = dist-0.5*(radius+node.radius);
-			// vec.scale(distadj/dist);
-			// potential += distadj>0?distadj*distadj*IR2:-distadj*distadj*IR2;
-			npot += vec.length2() * IR2;
+			double dist = pairDistance(node, nodei, nodeidx, neighs[i]);
+			double gap = dist - node.getR() - nodei.getR();
+			npot += gap * gap * IR2;
+			vec.scale(gap / dist);
 			attraction.add(vec);
 		}
 		if (geometry.isUndirected()) {
@@ -235,16 +262,10 @@ public abstract class Network2D extends Network<Node2D> {
 		neighs = geometry.in[nodeidx];
 		for (int i = 0; i < nIn; i++) {
 			Node2D nodei = nodes[neighs[i]];
-			vec.set(node, nodei);
-			// force increases linearly with distance - correct for size of spheres (if
-			// spheres overlap attraction is negative).
-			// note: (same as above) for reasonably sized circles the layout process gets
-			// worse if distance is adjusted.
-			// double dist = vec.length();
-			// double distadj = dist-0.5*(radius+node.radius);
-			// vec.scale(distadj/dist);
-			// potential += distadj>0?distadj*distadj*IR2:-distadj*distadj*IR2;
-			npot += vec.length2() * IR2;
+			double dist = pairDistance(node, nodei, nodeidx, neighs[i]);
+			double gap = dist - node.getR() - nodei.getR();
+			npot += gap * gap * IR2;
+			vec.scale(gap / dist);
 			attraction.add(vec);
 		}
 		int nTot = nOut + nIn;
@@ -254,14 +275,39 @@ public abstract class Network2D extends Network<Node2D> {
 		return npot;
 	}
 
+	/**
+	 * Set {@link #vec} to the directional vector from {@code from} to {@code to}
+	 * and return the corresponding center-to-center distance. Coincident nodes are
+	 * separated by a deterministic fallback direction to keep layouting stable and
+	 * reproducible.
+	 * 
+	 * @param from    the source node
+	 * @param to      the target node
+	 * @param fromidx the index of the source node
+	 * @param toidx   the index of the target node
+	 * @return the center-to-center distance
+	 */
+	private double pairDistance(Node2D from, Node2D to, int fromidx, int toidx) {
+		vec.set(from, to);
+		double dist2 = vec.length2();
+		if (dist2 >= MIN_DISTANCE * MIN_DISTANCE)
+			return Math.sqrt(dist2);
+		int low = Math.min(fromidx, toidx);
+		int high = Math.max(fromidx, toidx);
+		double angle = ((low + 1.0) * 0.7548776662466927 + (high + 1.0) * 0.5698402909980532) * 2.0 * Math.PI;
+		vec.set(Math.cos(angle), Math.sin(angle));
+		if (fromidx > toidx)
+			vec.negate();
+		vec.scale(MIN_DISTANCE);
+		return MIN_DISTANCE;
+	}
+
 	@Override
 	public void finishLayout() {
 		if (geometry.isType(GeometryType.DYNAMIC)) {
 			// on dynamic networks radius needs to be set as well
 			// the radius of the nodes is scaled by their degree
-			int kin;
-			int kout;
-			double unitradius = Math.pow(0.8 / nNodes, 0.25);
+			double unitradius = getUnitRadius();
 			double pnorm = 0.0;
 			double nnorm = 0.0;
 			GeometryFeatures gFeats = geometry.getFeatures();
@@ -272,11 +318,7 @@ public abstract class Network2D extends Network<Node2D> {
 			}
 			for (int k = 0; k < nNodes; k++) {
 				Node2D node = nodes[k];
-				kin = geometry.kin[k];
-				kout = geometry.kout[k];
-				double diff = kout + kin - avgTot;
-				double myr = unitradius * (1.0 + diff * (diff > 0.0 ? pnorm : nnorm));
-				node.setR(myr);
+				node.setR(scaledNodeRadius(k, avgTot, pnorm, nnorm, unitradius));
 			}
 		}
 		// prepare graph for display:
@@ -307,135 +349,78 @@ public abstract class Network2D extends Network<Node2D> {
 		if (nLinks <= 0 || fLinks <= 0.0)
 			return; // nothing to do
 		if (nLinks > MAX_LINK_COUNT) {
-			engine.getLogger().warning("Too many links to draw - skipping!");
+			engine.logWarning("Too many links to draw - skipping!");
 			return;
 		}
-		if (geometry.isUndirected()) {
-			if (fLinks >= 1.0) {
-				// draw all links
-				for (int n = 0; n < nNodes; n++) {
-					Node2D nodeA = nodes[n];
-					int[] neigh = geometry.out[n];
-					int len = geometry.kout[n];
-					for (int i = 0; i < len; i++) {
-						// check if link was already drawn
-						int b = neigh[i];
-						if (b < n)
-							continue;
-						Node2D nodeB = nodes[b];
-						links.moveTo(nodeA);
-						links.lineTo(nodeB);
-					}
-				}
-				return;
-			}
-			// TODO: the procedure below looks dangerous. randomly pick nodes and neighbours
-			// probably not worth worrying about double picking of links because this
-			// should apply only if there are many to begin with...
-			// add context menu to adjust fraction of visible links
-			// draw only fraction of undirected links
-			// this is pretty memory intensive - hopefully it works...
-			int[] idxs = new int[nLinks];
-			for (int n = 0; n < nLinks; n++)
-				idxs[n] = n;
-			int toDraw = (int) (fLinks * nLinks);
-			for (int l = 0; l < toDraw; l++) {
-				int idxsidx = rng.random0n(nLinks - l);
-				int idx = idxs[idxsidx];
-				idxs[idxsidx] = idxs[nLinks - l - 1];
-				// find node
-				int a = -1;
-				for (int n = 0; n < nNodes; n++) {
-					int k = geometry.kout[n];
-					if (idx < k) {
-						a = n;
-						break;
-					}
-					idx -= k;
-				}
-				Node2D nodeA = nodes[a];
-				int[] neigh = geometry.out[a];
-				Node2D nodeB = nodes[neigh[idx]];
-				links.moveTo(nodeA);
-				links.lineTo(nodeB);
+		boolean isDirected = !geometry.isUndirected();
+		int[] edgeSources = new int[nLinks];
+		int[] edgeTargets = new int[nLinks];
+		if (!isDirected) {
+			int edgeCount = collectEdges(edgeSources, edgeTargets);
+			int toDraw = fLinks >= 1.0 ? edgeCount : (int) (fLinks * edgeCount);
+			int[] sampled = toDraw < edgeCount ? sampleIndices(edgeCount, toDraw) : null;
+			for (int i = 0; i < toDraw; i++) {
+				int edgeidx = sampled == null ? i : sampled[i];
+				int a = edgeSources[edgeidx];
+				int b = edgeTargets[edgeidx];
+				addEdge(a, b);
 			}
 			return;
 		}
-		// directed network
+		boolean[] edgeIsUndirected = new boolean[nLinks];
+		int edgeCount = collectLinks(edgeSources, edgeTargets, edgeIsUndirected);
+		int toDraw = fLinks >= 1.0 ? edgeCount : (int) (fLinks * edgeCount);
+		int[] sampled = toDraw < edgeCount ? sampleIndices(edgeCount, toDraw) : null;
 		Vector2D link = new Vector2D();
 		Vector2D tip = new Vector2D();
-		double arrowsize = Math.pow(0.8 / nNodes, 0.25);
-		if (fLinks >= 1.0) {
-			// draw all links
-			for (int n = 0; n < nNodes; n++) {
-				Node2D nodeA = nodes[n];
-				int[] neigh = geometry.out[n];
-				int len = geometry.kout[n];
-				for (int i = 0; i < len; i++) {
-					int b = neigh[i];
-					if (geometry.isNeighborOf(b, n)) {
-						// undirected link - check if already drawn
-						if (b < n)
-							continue;
-						Node2D nodeB = nodes[b];
-						links.moveTo(nodeA);
-						links.lineTo(nodeB);
-						continue;
-					}
-					// directed link - add arrow
-					Node2D nodeB = nodes[b];
-					links.moveTo(nodeA);
-					links.lineTo(nodeB);
-					link.set(nodeB, nodeA);
-					link.normalize(0.5 * nodeB.getR());
-					tip.add(nodeB, link);
-					// note: arrows that scale with size of tail node are a bit confusing
-					link.normalize(arrowsize);
-					links.moveTo(tip.getX() + link.getX() - 0.3 * link.getY(),
-							tip.getY() + link.getY() + 0.3 * link.getX());
-					links.lineTo(tip);
-					links.lineTo(tip.getX() + link.getX() + 0.3 * link.getY(),
-							tip.getY() + link.getY() - 0.3 * link.getX());
-				}
-			}
-			return;
+		double arrowsize = getUnitRadius();
+		for (int i = 0; i < toDraw; i++) {
+			int edgeidx = sampled == null ? i : sampled[i];
+			int a = edgeSources[edgeidx];
+			int b = edgeTargets[edgeidx];
+			if (edgeIsUndirected[edgeidx])
+				addEdge(a, b);
+			else
+				addArc(a, b, link, tip, arrowsize);
 		}
-		// draw only fraction of directed links (undirected links are treated as a pair
-		// of directed ones)
-		// this is pretty memory intensive - hopefully it works...
-		int[] idxs = new int[nLinks];
-		for (int n = 0; n < nLinks; n++)
-			idxs[n] = n;
-		int toDraw = (int) (fLinks * nLinks);
-		for (int l = 0; l < toDraw; l++) {
-			int idxsidx = rng.random0n(nLinks - l);
-			int idx = idxs[idxsidx];
-			idxs[idxsidx] = idxs[nLinks - l - 1];
-			// find node
-			int a = -1;
-			for (int n = 0; n < nNodes; n++) {
-				int k = geometry.kout[n];
-				if (idx < k) {
-					a = n;
-					break;
-				}
-				idx -= k;
-			}
-			Node2D nodeA = nodes[a];
-			int[] neigh = geometry.out[a];
-			int b = neigh[idx];
-			Node2D nodeB = nodes[b];
-			links.moveTo(nodeA);
-			links.lineTo(nodeB);
-			link.set(nodeB, nodeA);
-			link.normalize(0.5 * nodeB.getR());
-			tip.add(nodeB, link);
-			// note: arrows that scale with size of tail node are a bit confusing
-			link.normalize(arrowsize);
-			links.moveTo(tip.getX() + link.getX() - 0.3 * link.getY(), tip.getY() + link.getY() + 0.3 * link.getX());
-			links.lineTo(tip);
-			links.lineTo(tip.getX() + link.getX() + 0.3 * link.getY(), tip.getY() + link.getY() - 0.3 * link.getX());
-		}
+	}
+
+	/**
+	 * Add an undirected edge to the link path.
+	 * 
+	 * @param source the source node index
+	 * @param target the target node index
+	 */
+	private void addEdge(int source, int target) {
+		Node2D sourceNode = nodes[source];
+		Node2D targetNode = nodes[target];
+		links.moveTo(sourceNode);
+		links.lineTo(targetNode);
+	}
+
+	/**
+	 * Add a directed arc, including its arrowhead, to the link path.
+	 * 
+	 * @param source    the source node index
+	 * @param target    the target node index
+	 * @param link      helper vector aligned with the arc
+	 * @param tip       helper vector storing the arrow tip position
+	 * @param arrowsize the normalized arrow size
+	 */
+	private void addArc(int source, int target, Vector2D link, Vector2D tip, double arrowsize) {
+		Node2D sourceNode = nodes[source];
+		Node2D targetNode = nodes[target];
+		links.moveTo(sourceNode);
+		links.lineTo(targetNode);
+		link.set(targetNode, sourceNode);
+		// Place the arrow tip on the surface of the target disk.
+		link.normalize(targetNode.getR());
+		tip.add(targetNode, link);
+		// note: arrows that scale with size of tail node are a bit confusing
+		link.normalize(arrowsize);
+		links.moveTo(tip.getX() + link.getX() - 0.3 * link.getY(), tip.getY() + link.getY() + 0.3 * link.getX());
+		links.lineTo(tip);
+		links.lineTo(tip.getX() + link.getX() + 0.3 * link.getY(), tip.getY() + link.getY() - 0.3 * link.getX());
 	}
 
 	@Override

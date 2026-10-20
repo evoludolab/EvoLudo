@@ -32,15 +32,15 @@ package org.evoludo.simulator.models;
 
 import java.util.Arrays;
 import java.util.List;
-import java.util.logging.Level;
 
 import org.evoludo.math.ArrayMath;
 import org.evoludo.math.Combinatorics;
+import org.evoludo.math.RNGDistribution;
 import org.evoludo.simulator.ColorMap;
 import org.evoludo.simulator.EvoLudo;
-import org.evoludo.simulator.geometries.AbstractGeometry;
 import org.evoludo.simulator.geometries.GeometryType;
 import org.evoludo.simulator.geometries.HierarchicalGeometry;
+import org.evoludo.simulator.models.IBS.MigrationType;
 import org.evoludo.simulator.models.IBS.ScoringType;
 import org.evoludo.simulator.models.IBSD.Init;
 import org.evoludo.simulator.models.Model.HasIBS;
@@ -130,12 +130,6 @@ public class IBSDPopulation extends IBSPopulation<Discrete, IBSDPopulation> {
 	 * The array for temporarily storing traits during updates.
 	 */
 	protected int[] traitsNext;
-
-	/**
-	 * The array indicating which traits are active. Convenience field to reduce
-	 * calls to module.
-	 */
-	protected boolean[] active;
 
 	/**
 	 * The array with the total scores for each trait.
@@ -455,19 +449,100 @@ public class IBSDPopulation extends IBSPopulation<Discrete, IBSDPopulation> {
 	}
 
 	/**
+	 * The microscopic rate at which two adjacent sites exchange occupants,
+	 * indexed by the trait of the individual at the site whose turn it is to
+	 * update (see {@link #updatePlayerEcologyAt(int)}), derived from the
+	 * diffusion coefficient(s) set through {@code --migration D<i>&lt;D&gt;</i>}
+	 * - cached alongside {@link #maxRate} since both depend only on quantities
+	 * that are fixed for the duration of a run (rates, population size and
+	 * geometry). Protected rather than private so that subclasses overriding
+	 * {@link #updateMaxRate()} with their own (non-generic) rate structure -
+	 * e.g. because they support a full competition matrix among more than two
+	 * types, which {@link Discrete#getCompetitionRates()} cannot represent -
+	 * can still fold diffusion into their own bound via
+	 * {@link #updateExchangeRates()}, instead of duplicating the
+	 * diffusion-coefficient machinery themselves.
+	 *
+	 * @see #updateExchangeRates()
+	 */
+	protected double[] exchangeRates;
+
+	/**
+	 * Derive the microscopic exchange rate(s) \(\epsilon\) at which two adjacent
+	 * sites swap occupants from the migration probability(ies)
+	 * {@link IBSPopulation#pMigration}, one per trait, interpreted here as
+	 * diffusion coefficient(s) \(D\) (only {@link IBS.MigrationType#DIFFUSION}
+	 * is supported for ecological population updates, see
+	 * {@link IBSPopulation#checkMigration()}). On lattice geometries with a
+	 * well defined spatial dimension \(\delta\) - disregarding boundary
+	 * conditions, i.e. {@link GeometryType#LINEAR} (\(\delta=1\)),
+	 * {@link GeometryType#SQUARE}, {@link GeometryType#SQUARE_MOORE},
+	 * {@link GeometryType#SQUARE_NEUMANN}, {@link GeometryType#SQUARE_NEUMANN_2ND},
+	 * {@link GeometryType#HEXAGONAL} and {@link GeometryType#TRIANGULAR}
+	 * (\(\delta=2\)), as well as {@link GeometryType#CUBE} (\(\delta=3\)) - each
+	 * migration probability is interpreted as the macroscopic diffusion
+	 * coefficient \(D\) and converted according to
+	 * \(\epsilon = D\,\delta\,N^{2/\delta}\), where \(N\) is the total number
+	 * of sites. For all other geometries, where the spatial dimension is not
+	 * defined, the migration probability is used directly as \(\epsilon\).
+	 * Populates {@link #exchangeRates}, one entry per trait (see
+	 * {@link IBSPopulation#getMigrationProb(int)} for how fewer rates than
+	 * traits are cycled to allow different traits to migrate at different
+	 * rates).
+	 */
+	protected void updateExchangeRates() {
+		if (exchangeRates == null || exchangeRates.length != nTraits)
+			exchangeRates = new double[nTraits];
+		if (getMigrationType() != MigrationType.DIFFUSION) {
+			Arrays.fill(exchangeRates, 0.0);
+			return;
+		}
+		int delta;
+		switch (competition.getType()) {
+			case LINEAR:
+				delta = 1;
+				break;
+			case SQUARE:
+			case SQUARE_MOORE:
+			case SQUARE_NEUMANN:
+			case SQUARE_NEUMANN_2ND:
+			case HEXAGONAL:
+			case TRIANGULAR:
+				delta = 2;
+				break;
+			case CUBE:
+				delta = 3;
+				break;
+			default:
+				// spatial dimension not defined - use each migration probability directly
+				delta = 0;
+		}
+		for (int t = 0; t < nTraits; t++) {
+			double diffusion = getMigrationProb(t);
+			if (diffusion <= 0.0) {
+				exchangeRates[t] = 0.0;
+				continue;
+			}
+			exchangeRates[t] = ((delta == 0) ? diffusion : diffusion * delta * Math.pow(nPopulation, 2.0 / delta));
+		}
+	}
+
+	/**
 	 * Computes the maximum ecological event rate for this species given the current
 	 * set of rates. Needed both for rejection sampling of events and to weight
 	 * species selection in multi-species simulations.
 	 */
 	protected void updateMaxRate() {
 		// updates always involve focal, peer, opponent; cover all combinations
-		double rBirth = module.getBirthRate();
-		double rDeath = module.getDeathRate();
-		double[] compRates = module.getCompetitionRates();
-		if (compRates == null || compRates.length == 0) {
-			maxRate = rBirth + rDeath + maxFitness;
-			return;
+		updateExchangeRates();
+		double maxExchangeRate = 0.0;
+		for (double rate : exchangeRates) {
+			if (rate > maxExchangeRate)
+				maxExchangeRate = rate;
 		}
+		double rBirth = module.getMaxBirthRate();
+		double rDeath = module.getMaxDeathRate();
+		double[] compRates = module.getCompetitionRates();
 		// determine maximum rates for birth and death events
 		// note, updates always involve one focal and one peer as well as one model
 		// in multi-species scenarios. hence we need to determine the maximum rates
@@ -479,6 +554,7 @@ public class IBSDPopulation extends IBSPopulation<Discrete, IBSDPopulation> {
 		// death (competition with Y)
 		// X, X, Y: death (competition with X and Y)
 		// X, -, -: death happens in all cases with death rate
+		//
 		int idx = module.getId();
 		double peerRate = (idx >= 0 && idx < compRates.length) ? compRates[idx] : 0.0;
 		double peerComp = (peerRate > 0.0) ? peerRate : 0.0;
@@ -494,12 +570,27 @@ public class IBSDPopulation extends IBSPopulation<Discrete, IBSDPopulation> {
 			if (comp < 0.0 && -comp > maxOppNeg)
 				maxOppNeg = -comp;
 		}
-		// peer vacant: birth is possible (plus peer/opponent synergies and fitness)
-		// peer occupied: birth impossible, competition adds to death rate
-		double birthWithPeer = rBirth + maxFitness + peerSynergy;
-		double maxVacant = rDeath + birthWithPeer + Math.max(maxOppPos, maxOppNeg);
-		double maxOccupied = rDeath + peerComp + maxOppPos;
-		maxRate = Math.max(maxVacant, maxOccupied);
+		if (competition.isUndirected()) {
+			// peer and the site available for placing offspring are the same site,
+			// so birth (peer vacant) and same-species competition (peer occupied)
+			// remain mutually exclusive; use the tighter, scenario-specific bound.
+			// diffusion can apply regardless of whether the peer is vacant or
+			// occupied, so it adds to both
+			double maxVacant = rDeath + rBirth + maxFitness + peerSynergy + Math.max(maxOppPos, maxOppNeg);
+			double maxOccupied = rDeath + peerComp + maxOppPos;
+			maxRate = Math.max(maxVacant, maxOccupied) + maxExchangeRate;
+		} else {
+			// peer (upstream) and the site available for placing offspring
+			// (downstream) are drawn independently, so birth and same-/cross-species
+			// competition are no longer mutually exclusive and must be summed;
+			// peerComp/peerSynergy are mutually exclusive by the sign of peerRate,
+			// and the opponent term already takes the tighter of its two directions,
+			// so this sum is exact, not an overestimate. maxExchangeRate is always 0.0
+			// here since diffusion requires an undirected geometry, see
+			// IBSPopulation#checkMigration()
+			maxRate = rDeath + rBirth + maxFitness + peerSynergy + peerComp + Math.max(maxOppPos, maxOppNeg)
+					+ maxExchangeRate;
+		}
 	}
 
 	/**
@@ -514,88 +605,129 @@ public class IBSDPopulation extends IBSPopulation<Discrete, IBSDPopulation> {
 	protected int updatePlayerEcologyAt(int me) {
 		debugFocal = me;
 		debugModel = -1;
+		// pickUpstreamSiteAt/pickDownstreamSiteAt below set debugModels/debugNModels
+		// as a side effect, but only on some branches (e.g. never on focalDies());
+		// reset here so a stale group from an earlier, unrelated event doesn't leak
+		// into debugMarkChange()
+		debugNModels = 0;
 		if (maxRate < 0.0)
 			updateMaxRate();
-		double[] compRates = module.getCompetitionRates();
-		int idx = module.getId();
-		double rate = compRates[idx];
-		double rBirth = module.getBirthRate();
-		double rDeath = module.getDeathRate();
+		int myType = getTraitAt(me);
+		double rDeath = module.getDeathRate(myType);
 		int nPop = getPopulationSize();
-		double randomTestVal = random01() * maxRate;
-		if (randomTestVal < rDeath) {
-			// vacate focal site
-			traitsNext[me] = vacantIdx + nTraits; // more efficient than setNextTraitAt(me, VACANT)
-			if (module instanceof Payoffs)
-				updateScoreAt(me, true);
-			else
-				commitTraitAt(me);
-			if (nPop == 1)
-				return -1;
-			updateMaxRate();
-			return 1;
-		}
-		randomTestVal -= rDeath;
+		double randomEvent = random01() * maxRate;
+		if (randomEvent < rDeath)
+			return focalDies(me, nPop);
+
+		randomEvent -= rDeath;
 		rDeath = 0.0;
+		double[] compRates = module.getCompetitionRates();
+		double rBirth = module.getBirthRate(myType);
 		int nSpecies = compRates.length;
 		if (nSpecies > 1) {
-			// multi-species scenario: pick opponent species
+			// multi-species scenario: pick opponent species; oppIdx < 0 means no
+			// upstream neighbour in the opponent population (source node on a
+			// directed geometry) and hence no cross-species effect
 			int specIdx = (module.getId() + 1
 					+ (nSpecies == 2 ? 0 : random0n(nSpecies - 1))) % nSpecies;
 			IBSPopulation<?, ?> oppPop = module.getSpecies(specIdx).getIBSPopulation();
-			int oppIdx = oppPop.pickNeighborSiteAt(me);
-			if (!oppPop.isVacantAt(oppIdx)) {
-				// cross-species competition/synergy
+			int oppIdx = oppPop.pickUpstreamSiteAt(me);
+			if (oppIdx >= 0 && !oppPop.isVacantAt(oppIdx)) {
 				double comp = compRates[specIdx];
 				if (comp > 0.0)
-					rDeath += comp;
+					rDeath += comp; // cross-species competition
 				else
-					rBirth += -comp;
+					rBirth -= comp; // cross-species synergy
 			}
 		}
-		// peer interactions
-		int peer = pickNeighborSiteAt(me);
-		boolean peerVacant = isVacantAt(peer);
-		if (peerVacant) {
-			// peer site is vacant either birth (with synergies) or death through
-			// cross-species competition (no peer competition)
-			if (rate < 0.0)
-				// peer synergy/mutualism
-				rBirth -= rate;
-			// add fitness contribution if module implements Payoffs
-			if (module instanceof Payoffs)
-				rBirth += getFitnessAt(me);
-
-		} else {
-			rBirth = 0.0; // birth not possible if peer occupied
-			if (rate > 0.0)
-				// peer competition
-				rDeath += rate;
+		// peer interactions: an upstream neighbour threatens to invade this site
+		// (analogous to death-Birth updating, where a vacant site is filled by one
+		// of its incoming neighbours) and so drives competition/synergy affecting
+		// this individual's own rates; no upstream neighbour (peer < 0) means
+		// nothing threatens to invade and neither applies
+		int peer = pickUpstreamSiteAt(me);
+		boolean peerVacant = false;
+		if (peer >= 0) {
+			peerVacant = isVacantAt(peer);
+			double rate = compRates[module.getId()];
+			if (peerVacant) {
+				if (rate < 0.0)
+					rBirth -= rate; // peer synergy/mutualism
+			} else if (rate > 0.0)
+				rDeath += rate; // peer competition
 		}
+		// diffusion: focal and peer trade places if they differ, including peer
+		// being vacant (focal hops into the empty neighbouring site); the rate is
+		// that of the focal's own trait (each individual carries its own mobility
+		// when it is its turn to update); requires an undirected geometry, already
+		// enforced by IBSPopulation#checkMigration()
+		double focalExchangeRate = exchangeRates[getTraitAt(me)];
+		double rDiff = (peer >= 0 && focalExchangeRate > 0.0 && getTraitAt(peer) != getTraitAt(me)) ? focalExchangeRate
+				: 0.0;
+		// offspring, in turn, is placed on a downstream neighbour (analogous to
+		// Birth-death updating); on undirected geometries upstream and downstream
+		// neighbours coincide, so reuse peer instead of drawing (and checking) again;
+		// no downstream neighbour (dest < 0) means nowhere to place offspring
+		boolean undirected = competition.isUndirected();
+		int dest = undirected ? peer : pickDownstreamSiteAt(me);
+		// pickUpstreamSiteAt/pickDownstreamSiteAt above set debugModels/debugNModels
+		// as a side effect (for the benefit of other update rules); ecology only ever
+		// highlights debugFocal/debugModel, so discard that side effect again
+		debugNModels = 0;
+		if (dest >= 0 && (undirected ? peerVacant : isVacantAt(dest))) {
+			// destination vacant: add fitness contribution if module implements Payoffs
+			if (module instanceof Payoffs) {
+				// ephemeral scores are never persisted; compute freshly right before use
+				if (playerScoring.equals(ScoringType.EPHEMERAL))
+					playGameAt(me);
+				rBirth += getFitnessAt(me);
+			}
+		} else
+			rBirth = 0.0; // birth not possible if destination occupied or none exists
 		// determine event
-		if (randomTestVal > rBirth + rDeath) {
+		if (randomEvent > rBirth + rDeath + rDiff) {
 			// nothing happened, no time elapsed
 			return 0;
 		}
-		if (randomTestVal < rBirth) {
+		if (randomEvent < rBirth) {
 			// birth event
 			// fill neighbor site if vacant
 			if (nTraits > 2) {
 				// two (or more) trait consider mutation
-				maybeMutateMoran(me, peer);
+				maybeMutateMoran(me, dest);
 			} else {
 				// single trait (plus vacant): no mutation
-				updateFromModelAt(peer, me);
+				updateFromModelAt(dest, me);
 				if (module instanceof Payoffs)
-					updateScoreAt(peer, true);
+					updateScoreAt(dest, true);
 				else
-					commitTraitAt(peer);
+					commitTraitAt(dest);
 			}
-			debugModel = peer;
+			debugModel = dest;
 			updateMaxRate();
 			return 1;
 		}
-		// death event
+		randomEvent -= rBirth;
+		if (randomEvent < rDeath)
+			return focalDies(me, nPop);
+		// diffusion: focal and peer trade places; use the generic swap path so
+		// scores, fitnesses and interaction counts remain consistent with the move.
+		swapSitesAt(me, peer);
+		debugModel = peer;
+		updateMaxRate();
+		return 1;
+	}
+
+	/**
+	 * Helper method to perform the death of the focal individual. Returns
+	 * {@code -1} if the population goes extinct and {@code 1} otherwise.
+	 *
+	 * @param me   the index of the focal individual
+	 * @param nPop the current population size
+	 * @return {@code -1} if the population goes extinct and {@code 1} otherwise
+	 */
+	private int focalDies(int me, int nPop) {
+		// vacate focal site
 		traitsNext[me] = vacantIdx + nTraits; // more efficient than setNextTraitAt(me, VACANT)
 		if (module instanceof Payoffs)
 			updateScoreAt(me, true);
@@ -669,7 +801,7 @@ public class IBSDPopulation extends IBSPopulation<Discrete, IBSDPopulation> {
 	}
 
 	@Override
-	public void swapTraits(int a, int b) {
+	protected void swapTraits(int a, int b) {
 		traitsNext[a] = traits[b];
 		traitsNext[b] = traits[a];
 	}
@@ -722,11 +854,16 @@ public class IBSDPopulation extends IBSPopulation<Discrete, IBSDPopulation> {
 	 *
 	 * @param idx the index of the individual
 	 * @return the trait of the individual
-	 * 
+	 *
 	 * @see org.evoludo.simulator.modules.Module#nTraits Module.nTraits
 	 */
 	public int getTraitAt(int idx) {
 		return traits[idx] % nTraits;
+	}
+
+	@Override
+	protected double getMigrationAt(int idx) {
+		return getMigrationProb(getTraitAt(idx));
 	}
 
 	/**
@@ -754,7 +891,7 @@ public class IBSDPopulation extends IBSPopulation<Discrete, IBSDPopulation> {
 	 */
 	public boolean setNextTraitAt(int idx, int trait) {
 		int next = trait % nTraits;
-		if (!active[next])
+		if (!module.getActiveTraits()[next])
 			return false;
 		traitsNext[idx] = nTraits + next;
 		return getTraitAt(idx) != next;
@@ -842,6 +979,7 @@ public class IBSDPopulation extends IBSPopulation<Discrete, IBSDPopulation> {
 
 		double max = tmpTraitScore[mytype];
 		int newtype = mytype;
+		boolean[] active = module.getActiveTraits();
 		for (int n = 0; n < nTraits; n++) {
 			if (!active[n])
 				continue;
@@ -869,6 +1007,7 @@ public class IBSDPopulation extends IBSPopulation<Discrete, IBSDPopulation> {
 		int mytype = getTraitAt(me);
 		double max = typeScores[mytype];
 		int newtype = mytype;
+		boolean[] active = module.getActiveTraits();
 		for (int n = 0; n < nTraits; n++) {
 			if (!active[n] || n == vacantIdx)
 				continue;
@@ -898,6 +1037,7 @@ public class IBSDPopulation extends IBSPopulation<Discrete, IBSDPopulation> {
 			int mytype = getTraitAt(me);
 			tmpCount[mytype]--;
 		}
+		boolean[] active = module.getActiveTraits();
 		for (int n = 0; n < nTraits; n++) {
 			if (!active[n] || n == vacantIdx) {
 				tmpTraitScore[n] = -Double.MAX_VALUE;
@@ -916,13 +1056,14 @@ public class IBSDPopulation extends IBSPopulation<Discrete, IBSDPopulation> {
 
 	/**
 	 * Best response update for structured populations.
-	 * 
+	 *
 	 * @param group the group of individuals involved in the interaction
 	 * @param size  the size of the group
 	 */
 	private void structuredBR(int[] group, int size) {
 		size = stripVacancies(group, size, tmpTraits, tmpGroup);
 		countTraits(tmpCount, tmpTraits, 0, size);
+		boolean[] active = module.getActiveTraits();
 		for (int n = 0; n < nTraits; n++) {
 			if (!active[n] || n == vacantIdx) {
 				tmpTraitScore[n] = -Double.MAX_VALUE;
@@ -1124,39 +1265,41 @@ public class IBSDPopulation extends IBSPopulation<Discrete, IBSDPopulation> {
 		int oldType = getTraitAt(me);
 		int newType = traitsNext[me] % nTraits;
 		commitTraitAt(me);
-		// count out-neighbors
-		int nIn = 0;
-		int nOut = interaction.kout[me];
-		int[] out = interaction.out[me];
-		int[] in = null;
-		Arrays.fill(tmpCount, 0);
-		// count traits of (outgoing) opponents
-		for (int n = 0; n < nOut; n++)
-			tmpCount[opponent.getTraitAt(out[n])]++;
-		int u2 = 2;
-		if (!interaction.isUndirected()) {
-			// directed graph, count in-neighbors
+		int[] neigh;
+		int nNeigh;
+		int u2;
+		if (interaction.isUndirected()) {
+			neigh = interaction.out[me];
+			nNeigh = interaction.kout[me];
+			u2 = 2;
+		} else {
+			// directed graph: interact only with upstream (in-)neighbours by default,
+			// for consistency with competition, where only upstream neighbours
+			// compete
+			// TODO: add CLO option to control whether interactions on directed
+			// graphs are restricted to upstream neighbours, downstream neighbours,
+			// or both
+			neigh = interaction.in[me];
+			nNeigh = interaction.kin[me];
 			u2 = 1;
-			nIn = interaction.kin[me];
-			in = interaction.in[me];
-			// add traits of incoming opponents
-			for (int n = 0; n < nIn; n++)
-				tmpCount[opponent.getTraitAt(in[n])]++;
 		}
-		int nInter = nIn + nOut - (vacantIdx < 0 ? 0 : tmpCount[vacantIdx]);
+		Arrays.fill(tmpCount, 0);
+		for (int n = 0; n < nNeigh; n++)
+			tmpCount[opponent.getTraitAt(neigh[n])]++;
+		int nInter = nNeigh - (vacantIdx < 0 ? 0 : tmpCount[vacantIdx]);
 		// my type has changed otherwise we wouldn't get here
 		// old/newScore are the total accumulated scores
 		double oldScore = u2 * pairmodule.pairScores(oldType, tmpCount, tmpScore);
 		double newScore = u2 * pairmodule.pairScores(newType, tmpCount, tmpTraitScore);
 		if (newType == vacantIdx) {
 			// focal individual became vacant
-			adjustVacantScoreAt(me, oldType, out, nOut, in, nIn, u2);
+			adjustVacantScoreAt(me, oldType, neigh, nNeigh, u2);
 			return;
 		}
 		if (oldType == vacantIdx) {
 			// focal individual became occupied
 			updateScoreAt(me, newScore, u2 * nInter);
-			adjustOccupiedScoreAt(out, nOut, in, nIn, u2);
+			adjustOccupiedScoreAt(neigh, nNeigh, u2);
 			return;
 		}
 		// interaction count remains the same but old/newScore are accumulated
@@ -1169,28 +1312,20 @@ public class IBSDPopulation extends IBSPopulation<Discrete, IBSDPopulation> {
 		adjustScoreAt(me, oldScore, newScore);
 		accuTypeScores[oldType] -= oldScore;
 		accuTypeScores[newType] += oldScore;
-		// adjust (outgoing) opponent's score
-		adjustNeighborScores(out, nOut, u2);
-		// same as !interaction.isUndirected() because in != null implies directed graph
-		// (see above)
-		if (in != null) {
-			// adjust (incoming) opponent's score
-			adjustNeighborScores(in, nIn, 1);
-		}
+		// adjust opponents' scores
+		adjustNeighborScores(neigh, nNeigh, u2);
 	}
 
 	/**
 	 * Adjust the score of a focal individual that became vacant.
-	 * 
+	 *
 	 * @param me      the index of the focal individual
 	 * @param oldType the trait type of the focal individual before becoming vacant
-	 * @param out     the indices of outgoing neighbors
-	 * @param nOut    the number of outgoing neighbors
-	 * @param in      the indices of incoming neighbors
-	 * @param nIn     the number of incoming neighbors
+	 * @param neigh   the indices of the interaction partners
+	 * @param nNeigh  the number of interaction partners
 	 * @param u2      a scaling factor (2 for undirected, 1 for directed graphs)
 	 */
-	void adjustVacantScoreAt(int me, int oldType, int[] out, int nOut, int[] in, int nIn, int u2) {
+	void adjustVacantScoreAt(int me, int oldType, int[] neigh, int nNeigh, int u2) {
 		double myScore = scores[me];
 		accuTypeScores[oldType] -= myScore;
 		scores[me] = 0.0;
@@ -1198,50 +1333,28 @@ public class IBSDPopulation extends IBSPopulation<Discrete, IBSDPopulation> {
 		updateEffScoreRange(me, myScore, 0.0);
 		sumFitness -= fitness[me];
 		fitness[me] = 0.0;
-		// neighbors lost one interaction partner - adjust (outgoing) opponent's score
-		for (int n = 0; n < nOut; n++) {
-			int you = out[n];
+		// neighbors lost one interaction partner - adjust opponent's score
+		for (int n = 0; n < nNeigh; n++) {
+			int you = neigh[n];
 			int type = opponent.getTraitAt(you);
 			opponent.removeScoreAt(you, u2 * (tmpScore[type] - tmpTraitScore[type]), u2);
-		}
-		// same as !interaction.isUndirected() because in != null implies directed graph
-		// (see above)
-		if (in != null) {
-			for (int n = 0; n < nIn; n++) {
-				int you = in[n];
-				int type = opponent.getTraitAt(you);
-				// adjust (incoming) opponent's score
-				opponent.removeScoreAt(you, tmpScore[type] - tmpTraitScore[type], 1);
-			}
 		}
 	}
 
 	/**
 	 * Adjust the score of the neighbours of a focal individual that became
 	 * occupied.
-	 * 
-	 * @param out  the indices of outgoing neighbors
-	 * @param nOut the number of outgoing neighbors
-	 * @param in   the indices of incoming neighbors
-	 * @param nIn  the number of incoming neighbors
-	 * @param u2   a scaling factor (2 for undirected, 1 for directed graphs)
+	 *
+	 * @param neigh  the indices of the interaction partners
+	 * @param nNeigh the number of interaction partners
+	 * @param u2     a scaling factor (2 for undirected, 1 for directed graphs)
 	 */
-	void adjustOccupiedScoreAt(int[] out, int nOut, int[] in, int nIn, int u2) {
-		// neighbors gained one interaction partner - adjust (outgoing) opponent's score
-		for (int n = 0; n < nOut; n++) {
-			int you = out[n];
+	void adjustOccupiedScoreAt(int[] neigh, int nNeigh, int u2) {
+		// neighbors gained one interaction partner - adjust opponent's score
+		for (int n = 0; n < nNeigh; n++) {
+			int you = neigh[n];
 			int type = opponent.getTraitAt(you);
 			opponent.updateScoreAt(you, u2 * (tmpTraitScore[type] - tmpScore[type]), u2);
-		}
-		// same as !interaction.isUndirected() because in != null implies directed graph
-		// (see above)
-		if (in != null) {
-			for (int n = 0; n < nIn; n++) {
-				int you = in[n];
-				int type = opponent.getTraitAt(you);
-				// adjust (incoming) opponent's score
-				opponent.updateScoreAt(you, tmpTraitScore[type] - tmpScore[type], 1);
-			}
 		}
 	}
 
@@ -1284,24 +1397,17 @@ public class IBSDPopulation extends IBSPopulation<Discrete, IBSDPopulation> {
 			return;
 		}
 
-		switch (group.samplingType) {
-			case ALL:
-				// interact with all neighbors
-				int nGroup = module.getNGroup();
-				if (nGroup < group.nSampled + 1) {
-					playGroupSequentiallyAt(me, myType, group, nGroup);
-					return;
-				}
-				// interact with full group (random graphs or all neighbors)
-				// $FALL-THROUGH$
-			case RANDOM:
-				// interact with sampled neighbors
-				playGroupOnceAt(me, myType, group);
+		if (group.isSampling(IBSGroup.SAMPLING_ALL)) {
+			// interact with all neighbors - interact repeatedly if nGroup<nSampled+1
+			int nGroup = module.getNGroup();
+			if (nGroup < group.nSampled + 1) {
+				playGroupSequentiallyAt(me, myType, group, nGroup);
 				return;
-
-			default:
-				throw new UnsupportedOperationException("Unknown interaction type (" + interGroup.getSampling() + ")");
+			}
+			// interact with full group (random graphs or all neighbors)
 		}
+		// interact with sampled neighbors
+		playGroupOnceAt(me, myType, group);
 	}
 
 	/**
@@ -1386,8 +1492,14 @@ public class IBSDPopulation extends IBSPopulation<Discrete, IBSDPopulation> {
 	@Override
 	public void yalpGroupGameAt(IBSGroup group) {
 		int me = group.focal;
-		int newtype = traitsNext[me] % nTraits;
-		if (newtype == vacantIdx || group.nSampled <= 0) {
+		// use the current (committed) trait, not traitsNext[me]: this removes
+		// the group's *existing* contribution, and for sites other than the
+		// one whose trait is about to change (i.e. every 'you' in
+		// adjustGameScoresAt's neighbour loop) traitsNext[me] is not
+		// guaranteed to mirror traits[me] - e.g. sites that have been vacant
+		// since initialization and never individually committed since
+		int oldtype = getTraitAt(me);
+		if (oldtype == vacantIdx || group.nSampled <= 0) {
 			// isolated individual or vacant site - reset score
 			resetScoreAt(me);
 			return;
@@ -1399,7 +1511,6 @@ public class IBSDPopulation extends IBSPopulation<Discrete, IBSDPopulation> {
 			return;
 		}
 
-		int oldtype = getTraitAt(me);
 		int nGroup = module.getNGroup();
 		if (nGroup < group.nSampled + 1) { // interact with part of group sequentially
 			double myScore = 0.0;
@@ -1568,6 +1679,9 @@ public class IBSDPopulation extends IBSPopulation<Discrete, IBSDPopulation> {
 		HierarchicalGeometry hgeom = (HierarchicalGeometry) interaction;
 		int[] hierarchy = hgeom.getHierarchyLevels();
 		int unitSize = hierarchy[hierarchy.length - 1];
+		// setScoreAt() below assumes resetScores() had been called before. Not
+		// necessary because we set all scores but sumFitness needs to be reset.
+		sumFitness = 0.0;
 		for (int unitStart = 0; unitStart < nPopulation; unitStart += unitSize) {
 			// count traits in unit
 			countTraits(tmpCount, traits, unitStart, unitSize);
@@ -1609,10 +1723,10 @@ public class IBSDPopulation extends IBSPopulation<Discrete, IBSDPopulation> {
 	/**
 	 * {@inheritDoc}
 	 * <p>
-	 * Reset the colors of recently changed trait.
+	 * Clear the colors of recently changed trait.
 	 */
 	@Override
-	public void resetTraits() {
+	public void clearTraits() {
 		for (int n = 0; n < nPopulation; n++)
 			traits[n] %= nTraits;
 	}
@@ -1634,6 +1748,12 @@ public class IBSDPopulation extends IBSPopulation<Discrete, IBSDPopulation> {
 		traits = traitsNext;
 		traitsNext = swap;
 		updateTraitCount();
+		// bulk change to the whole population bypasses the single-site
+		// bookkeeping in commitTraitAt(int); invalidate the compact occupancy
+		// index (see IBSPopulation#occupiedSites) rather than trying to patch it
+		// up here - it is cheap to rebuild lazily, on demand, since this bulk
+		// path is already O(nPopulation)
+		invalidateOccupancyIndex();
 	}
 
 	/**
@@ -1649,17 +1769,61 @@ public class IBSDPopulation extends IBSPopulation<Discrete, IBSDPopulation> {
 
 	/**
 	 * Gets the count of each trait.
-	 * 
+	 *
 	 * @return the array with the numbers of each trait
 	 */
 	public int[] getTraitsCount() {
 		return traitsCount;
 	}
 
+	/**
+	 * Count the individuals with trait {@code type} among the contacts of the
+	 * focal individual {@code me}. Contacts are upstream (in-)neighbours, i.e.
+	 * those that can transmit their trait to {@code me}. The number of contacts
+	 * is set through {@link IBS#cloContacts} and stored in the reference group
+	 * {@link #compGroup}, which is otherwise unused in contact processes.
+	 *
+	 * <h3>Notes:</h3>
+	 * <ol>
+	 * <li>In well-mixed populations no sampling is needed: for all contacts the
+	 * count derives directly from the trait counts (mass action) and for
+	 * {@code k} contacts the count is a hypergeometric random number based on
+	 * the trait counts.
+	 * <li>In structured populations the contacts are sampled through
+	 * {@link IBSGroup#pickAt(int, boolean)} just as for references, i.e. all
+	 * upstream neighbours or {@code k} random upstream neighbours (without
+	 * replacement).
+	 * </ol>
+	 *
+	 * @param me   the index of the focal individual
+	 * @param type the trait to count among the contacts
+	 * @return the number of contacts with trait {@code type}
+	 */
+	public int countContactsAt(int me, int type) {
+		if (competition.isType(GeometryType.WELLMIXED)) {
+			int nOthers = nPopulation - 1;
+			int nType = traitsCount[type];
+			if (getTraitAt(me) == type)
+				nType--;
+			int nContacts = compGroup.getNSamples();
+			if (nContacts == IBSGroup.SAMPLING_ALL || nContacts >= nOthers)
+				// mass action: in contact with everyone
+				return nType;
+			return RNGDistribution.Hypergeometric.next(rng.getRNG(), nOthers, nType, nContacts);
+		}
+		// structured populations: sample contacts among upstream neighbours
+		int[] contacts = compGroup.pickAt(me, false);
+		int nContacts = compGroup.getNSampled();
+		int nType = 0;
+		for (int i = 0; i < nContacts; i++)
+			if (getTraitAt(contacts[i]) == type)
+				nType++;
+		return nType;
+	}
+
 	@Override
-	public void isConsistent() {
-		if (nIssues != 0)
-			return;
+	public void checkState() {
+		super.checkState();
 		if (vacantIdx < 0)
 			return;
 		int nPop = 0;
@@ -1670,12 +1834,11 @@ public class IBSDPopulation extends IBSPopulation<Discrete, IBSDPopulation> {
 		}
 		if (getPopulationSize() != nPop)
 			logAccountingIssue("sum of trait types is ", nPop, getPopulationSize(), "");
-		super.isConsistent();
 	}
 
 	@Override
-	protected void checkConsistentFitness() {
-		super.checkConsistentFitness();
+	protected void checkFitness() {
+		super.checkFitness();
 		double checkScores = 0.0;
 		double[] checkAccuTypeScores = new double[nTraits];
 		int[] checkTraitCount = new int[nTraits];
@@ -1692,14 +1855,14 @@ public class IBSDPopulation extends IBSPopulation<Discrete, IBSDPopulation> {
 			if (checkTraitCount[n] != traitsCount[n])
 				logAccountingIssue("trait count of " + module.getTraitName(n) + " is ", checkTraitCount[n],
 						traitsCount[n], "");
-			if (Math.abs(checkAccuTypeScores[n] - accuTypeScores[n]) > 1e-8)
+			if (Math.abs(checkAccuTypeScores[n] - accuTypeScores[n]) > Model.EPS_SMALL)
 				logAccountingIssue("accumulated scores of trait " + module.getTraitName(n) + " are ",
 						checkAccuTypeScores[n], accuTypeScores[n], "");
 			if (n == vacantIdx)
 				continue;
 			accScores += accuTypeScores[n];
 		}
-		if (Math.abs(checkScores - accScores) > 1e-8)
+		if (Math.abs(checkScores - accScores) > Model.EPS_SMALL)
 			logAccountingIssue("sum of trait scores is ", checkScores, accScores,
 					" (" + Formatter.format(accuTypeScores, 8) + ")");
 	}
@@ -1725,31 +1888,65 @@ public class IBSDPopulation extends IBSPopulation<Discrete, IBSDPopulation> {
 		if (getPopulationSize() == 0)
 			// extinction trumps everything
 			return true;
-		// death rate zero and no vacant sites
-		if (!super.checkConvergence())
+		// mutations aren't confined to birth events (see IBS#pickEvent), so a
+		// jammed population can still change if mutations or optimizeHomo are active.
+		if (mutation.getProbability() > 0.0 || optimizeHomo)
 			return false;
-		// monomorphic, no mutations and no optimizations for homogeneous states
-		// monomporhic stop requested or no ecological events possible
-		if (module.getMonoStop() || vacantIdx < 0)
-			return true;
-		if (traitsCount[vacantIdx] == 0 && module.getDeathRate() <= 0.0) {
-			// no vacant sites and no deaths: check competition
-			double[] compRates = module.getCompetitionRates();
-			if (compRates == null)
-				return true;
-			for (int n = 0; n < compRates.length; n++) {
-				IBSPopulation<?, ?> pop = module.getSpecies(n).getIBSPopulation();
-				if (compRates[n] > 0.0 && pop.getPopulationSize() > 0)
-					return false;
-			}
-			if (logger.isLoggable(Level.WARNING)) {
-				String name = module.getName();
-				logger.warning(
-						"Population" + (name != null ? " of " + name : "") + " explodes (no death, no competition).");
-			}
+		if (isJammed()) {
+			String name = module.getName();
+			engine.logWarning(
+					"Population" + (name != null && !name.isEmpty() ? " of " + name : "")
+							+ " at maximum (no death, no competition).");
 			return true;
 		}
-		return false;
+		// death rate > 0 and/or vacant sites
+		if (!super.checkConvergence())
+			return false;
+		// monomorphic stop requested or no ecological events possible
+		return module.getMonoStop() || vacantIdx < 0;
+	}
+
+	/**
+	 * {@inheritDoc}
+	 * <p>
+	 * Genuinely absorbing only without mutations, and only if jammed or
+	 * monomorphic without vacant sites; a monomorphic population with vacant
+	 * sites keeps evolving, so a {@code --monostop} halt there is resumable.
+	 */
+	@Override
+	public boolean isAbsorbed() {
+		if (getPopulationSize() == 0)
+			return true;
+		if (mutation.getProbability() > 0.0 || optimizeHomo)
+			return false;
+		if (isJammed())
+			return true;
+		if (!super.checkConvergence())
+			return false;
+		return vacantIdx < 0;
+	}
+
+	/**
+	 * Check if the population occupies a fully occupied lattice with no death
+	 * or competition among present types - a dead end regardless of composition.
+	 * <p>
+	 * <strong>Note:</strong> relies on the framework's (kin) competition rate,
+	 * which some modules only synchronize to a conservative proxy; such modules
+	 * should override with a precise, per-type version, e.g.
+	 * {@code EcoRSP.IBSPop#isJammed()}, {@code EcoTraits.IBSPop#isJammed()}.
+	 *
+	 * @return {@code true} if no further ecological events are possible
+	 */
+	protected boolean isJammed() {
+		if (!(vacantIdx >= 0 && traitsCount[vacantIdx] == 0 && module.getMaxDeathRate() <= 0.0))
+			return false;
+		double[] compRates = module.getCompetitionRates();
+		for (int n = 0; n < compRates.length; n++) {
+			IBSPopulation<?, ?> pop = module.getSpecies(n).getIBSPopulation();
+			if (compRates[n] > 0.0 && pop.getPopulationSize() > 0)
+				return false;
+		}
+		return true;
 	}
 
 	@Override
@@ -1777,6 +1974,14 @@ public class IBSDPopulation extends IBSPopulation<Discrete, IBSDPopulation> {
 			return;
 		traitsCount[oldtype]--;
 		traitsCount[newtype]++;
+		// keep the compact occupancy index (see IBSPopulation#occupiedSites) in
+		// sync with this single-site change, in O(1)
+		if (vacantIdx >= 0) {
+			if (oldtype == vacantIdx)
+				trackSiteOccupied(me);
+			else if (newtype == vacantIdx)
+				trackSiteVacated(me);
+		}
 	}
 
 	/**
@@ -1921,8 +2126,9 @@ public class IBSDPopulation extends IBSPopulation<Discrete, IBSDPopulation> {
 		StringBuilder status = new StringBuilder();
 		double norm = 1.0 / nPopulation;
 		String[] names = module.getTraitNames();
+		boolean[] active = module.getActiveTraits();
 		for (int i = 0; i < nTraits; i++) {
-			if (active != null && !active[i])
+			if (!active[i])
 				continue;
 			if (status.length() > 0)
 				status.append(", ");
@@ -1935,8 +2141,6 @@ public class IBSDPopulation extends IBSPopulation<Discrete, IBSDPopulation> {
 	@Override
 	public boolean check() {
 		boolean doReset = super.check();
-
-		active = module.getActiveTraits();
 
 		// start allocating memory
 		if (traits == null || traits.length != nPopulation) {
@@ -1951,8 +2155,21 @@ public class IBSDPopulation extends IBSPopulation<Discrete, IBSDPopulation> {
 			tmpTraitScore = new double[nTraits];
 			// best-response may require temporary memory - this is peanuts
 			tmpScore = new double[nTraits];
+			// traitsCount is now allocated but all-zero; it does not reflect an
+			// actual configuration until init() runs
+			initialized = false;
 		}
 		maxRate = -1.0;
+
+		// check that current state doesn't contain inactive traits
+		boolean[] active = module.getActiveTraits();
+		for (int n = 0; n < nTraits; n++) {
+			if (!active[n] && traitsCount[n] > 0) {
+				doReset = true;
+				break;
+			}
+		}
+
 		return doReset;
 	}
 
@@ -1965,7 +2182,7 @@ public class IBSDPopulation extends IBSPopulation<Discrete, IBSDPopulation> {
 				int nPop = opponent.getModule().getNPopulation();
 				Combinatorics.combinations(nPop - 1, nGroup - 1);
 			} catch (ArithmeticException ae) {
-				logger.warning(
+				engine.logWarning(
 						"accumulated payoffs in mean-field geometry with group interactions exceed max interaction count.\n"
 								+
 								"    switching to averaged payoffs.");
@@ -1983,11 +2200,11 @@ public class IBSDPopulation extends IBSPopulation<Discrete, IBSDPopulation> {
 		// optimized Moran type processes are incompatible with mutations!
 		if (!populationUpdate.isMoran()) {
 			optimizeMoran = false;
-			logger.warning("optimizations require Moran-type updates - disabled.");
+			engine.logWarning("optimizations require Moran-type updates - disabled.");
 			doReset = true;
 		} else if (mutation.getProbability() > 0.0) {
 			optimizeMoran = false;
-			logger.warning("optimized Moran-type updates are incompatible with mutations - disabled.");
+			engine.logWarning("optimized Moran-type updates are incompatible with mutations - disabled.");
 			doReset = true;
 		} else // no need to report both warnings
 				// optimized Moran type processes are incompatible with well mixed populations!
@@ -1995,7 +2212,7 @@ public class IBSDPopulation extends IBSPopulation<Discrete, IBSDPopulation> {
 				(interaction.isType(GeometryType.HIERARCHY) &&
 						((HierarchicalGeometry) interaction).isSubtype(GeometryType.WELLMIXED))) {
 			optimizeMoran = false;
-			logger.warning("optimized Moran-type updates are incompatible with mean-field geometry - disabled.");
+			engine.logWarning("optimized Moran-type updates are incompatible with mean-field geometry - disabled.");
 			doReset = true;
 		}
 		return doReset;
@@ -2014,13 +2231,20 @@ public class IBSDPopulation extends IBSPopulation<Discrete, IBSDPopulation> {
 			default:
 				// if resetting scores after every update, scores can be adjusted
 				// when interacting all neighbours
-				return interGroup.isSampling(IBSGroup.SamplingType.ALL);
+				return interGroup.isSampling(IBSGroup.SAMPLING_ALL);
 		}
 	}
 
 	@Override
 	public void init() {
 		super.init();
+		// the initXxx() methods below (as well as any subclass override that runs
+		// further direct trait changes after this super.init()) all set traits
+		// directly, bypassing the single-site bookkeeping in commitTraitAt(int);
+		// invalidate the compact occupancy index (see IBSPopulation#occupiedSites)
+		// rather than trying to patch it up here - it is rebuilt lazily, on
+		// demand, and this whole method is already O(nPopulation)
+		invalidateOccupancyIndex();
 		switch (init.type) {
 			case STRIPES:
 				initStripes();
@@ -2039,26 +2263,26 @@ public class IBSDPopulation extends IBSPopulation<Discrete, IBSDPopulation> {
 				initMono();
 				break;
 
-			case MUTANT:
-				int mutant = initMutant();
-				FixationData fix = engine.getModel().getFixationData();
-				if (fix != null) {
-					fix.popSize = getPopulationSize();
-					fix.mutantNode = mutant;
-					fix.mutantTrait = (mutant < 0 ? mutant : getTraitAt(mutant));
-					fix.residentTrait = (int) init.args[1];
-				}
-				break;
-
 			case TEMPERATURE:
-				mutant = initTemperature();
-				fix = engine.getModel().getFixationData();
-				if (fix != null) {
-					fix.mutantNode = mutant;
-					fix.mutantTrait = getTraitAt(fix.mutantNode);
-					fix.residentTrait = (int) init.args[1];
-					fix.mutantTrait = (mutant < 0 ? mutant : getTraitAt(mutant));
+			case MUTANT:
+				// temperature and uniform initializations differ only on non-regular graphs
+				int mutantType = (int) init.args[0] % nTraits;
+				int len = init.args.length;
+				int residentType;
+				if (len > 1)
+					residentType = (int) init.args[1] % nTraits;
+				else
+					residentType = (mutantType + 1) % nTraits;
+				boolean[] active = module.getActiveTraits();
+				if (!active[mutantType] || !active[residentType]) {
+					engine.logWarning("resident/mutant traits disabled - using uniform.");
+					initUniform();
+					break;
 				}
+				if (init.type == Init.Type.TEMPERATURE && !interaction.isRegular())
+					initTemperature(mutantType, residentType);
+				else
+					initMutant(mutantType, residentType);
 				break;
 
 			case KALEIDOSCOPE:
@@ -2074,6 +2298,7 @@ public class IBSDPopulation extends IBSPopulation<Discrete, IBSDPopulation> {
 					+ ").");
 		System.arraycopy(traitsCount, 0, initCount, 0, nTraits);
 		maxRate = -1.0;
+		initialized = true;
 	}
 
 	/**
@@ -2087,6 +2312,7 @@ public class IBSDPopulation extends IBSPopulation<Discrete, IBSDPopulation> {
 		int nActive = module.getNActive();
 		int[] nact = new int[nActive];
 		int idx = 0;
+		boolean[] active = module.getActiveTraits();
 		for (int n = 0; n < nTraits; n++) {
 			if (!active[n])
 				continue;
@@ -2130,12 +2356,19 @@ public class IBSDPopulation extends IBSPopulation<Discrete, IBSDPopulation> {
 	protected void initFrequency() {
 		Arrays.fill(traitsCount, 0);
 		// different traits active
+		boolean[] active = module.getActiveTraits();
 		double[] cumFreqs = new double[nTraits];
-		cumFreqs[0] = init.args[0];
+		cumFreqs[0] = (active[0] ? init.args[0] : 0.0);
 		int nInit = init.args.length;
 		for (int i = 1; i < nTraits; i++)
-			cumFreqs[i] = cumFreqs[i - 1] + (i < nInit ? init.args[i] : 0.0);
-		double inorm = 1.0 / cumFreqs[nTraits - 1];
+			cumFreqs[i] = cumFreqs[i - 1] + (i < nInit && active[i] ? init.args[i] : 0.0);
+		double norm = cumFreqs[nTraits - 1];
+		if (norm < Model.EPS) {
+			engine.logWarning("zero total frequency - using uniform.");
+			initUniform();
+			return;
+		}
+		double inorm = 1.0 / norm;
 		ArrayMath.multiply(cumFreqs, inorm);
 
 		for (int n = 0; n < nPopulation; n++) {
@@ -2166,37 +2399,36 @@ public class IBSDPopulation extends IBSPopulation<Discrete, IBSDPopulation> {
 			// if present the second argument indicates the frequency of vacant sites
 			// if not use estimate for carrying capacity
 			monoFreq = (init.args.length > 1 ? Math.max(0.0, 1.0 - init.args[1])
-					: 1.0 - estimateVacantFrequency(monoType));
+					: 1.0 - getVacantEstimate(monoType));
 		}
 		initMono(monoType, monoFreq);
 	}
 
 	/**
-	 * Helper method to determine the frequency of vacant sites based on an estimate
-	 * of the carrying capacity. In well-mixed populations this is \(1-d/r\), where
-	 * \(d\) is the death rate and \(r\) the fitness of the resident type.
-	 * Similarly, on regular graphs the carrying capacity is
-	 * \(1-(k-1)d/(r(k-1)-d)\), where \(k\) is the degree of the graph. Finally, on
-	 * generic structures, the estimate of the carrying capacity is based on the
-	 * average out-degree of all nodes.
+	 * Estimates the frequency of vacant sites for a monomorphic resident
+	 * population from the mean-field equilibrium of the corresponding ODE
+	 * system, see {@link ODE#getVacantAtEQ(Discrete, int)}.
 	 * <p>
-	 * <strong>Note:</strong> residents in structured populations additionally have
-	 * a characteristic distribution, which is not accounted for in this estimate.
-	 * 
+	 * <strong>Note:</strong> this mean-field estimate ignores both the
+	 * structure of the population and the characteristic distribution of
+	 * residents therein. This method is {@code protected} precisely so that
+	 * subclasses can refine the estimate for specific dynamics or structures -
+	 * see e.g. {@code EcoMoran.IBSPop#getVacantEstimate(int)} for a
+	 * correction tailored to regular graphs.
+	 *
 	 * @param type the resident type
 	 * @return the estimated frequency of vacant sites
 	 */
-	private double estimateVacantFrequency(int type) {
-		double d = module.getDeathRate();
-		double fit = map2fit.map(module.getMonoPayoff(type % nTraits));
-		AbstractGeometry geometry = module.getGeometry();
-		if (geometry.isType(GeometryType.WELLMIXED))
-			// carrying capacity is 1.0 - d / fit
-			return d / fit;
-		double k1 = geometry.getFeatures().avgOut - 1.0;
-		// carrying capacity on a k-regular graph is 1.0 - (k - 1) * d / (fit * (k - 1)
-		// - d)
-		return Math.min(Math.max(k1 * d / (fit * k1 - d), 0.0), 1.0);
+	protected double getVacantEstimate(int type) {
+		double z = ODE.getVacantAtEQ(module, type % nTraits);
+		if (Double.isNaN(z)) {
+			// no net growth - carrying capacity estimate undefined; default to fully
+			// occupied and let the user specify an explicit vacant frequency (see
+			// IBSD.Init.Type#MONO/MUTANT/TEMPERATURE)
+			engine.logWarning("no net growth - assume fully occupied.");
+			return 0.0;
+		}
+		return z;
 	}
 
 	/**
@@ -2222,8 +2454,14 @@ public class IBSDPopulation extends IBSPopulation<Discrete, IBSDPopulation> {
 			monoFreq = 1.0;
 		}
 		monoType = monoType % nTraits;
+		if (!module.getActiveTraits()[monoType] || (monoType == vacantIdx && monoFreq < 1.0 - Model.EPS)) {
+			engine.logWarning("mono trait " + module.getTraitName(monoType)
+					+ (monoType == vacantIdx ? " cannot be vacant" : " is disabled") + " - using uniform.");
+			initUniform();
+			return;
+		}
 		Arrays.fill(traitsCount, 0);
-		if (monoFreq > 1.0 - 1e-8) {
+		if (monoFreq > 1.0 - Model.EPS) {
 			Arrays.fill(traits, monoType);
 			traitsCount[monoType] = nPopulation;
 			return;
@@ -2260,117 +2498,102 @@ public class IBSDPopulation extends IBSPopulation<Discrete, IBSDPopulation> {
 	 * Monomorphic initial configuration with a single mutant placed in a location
 	 * chosen uniformly at random (uniform initialization, cosmic rays).
 	 * 
-	 * @return the location of the mutant
+	 * @param mutantType   the mutant trait
+	 * @param residentType the resident trait
 	 * 
 	 * @see IBSD.Init.Type#MUTANT
 	 */
-	protected int initMutant() {
-		// initArgs contains the index of the resident and mutant traits
-		int mutantType = (int) init.args[0] % nTraits;
-		int len = init.args.length;
-		int residentType;
-		if (len > 1)
-			residentType = (int) init.args[1] % nTraits;
-		else
-			residentType = (mutantType + 1) % nTraits;
-		int loc;
+	protected void initMutant(int mutantType, int residentType) {
+		int loc = -1;
 		if (vacantIdx >= 0) {
-			loc = initWithVacant(residentType);
-			if (loc < 0)
-				return -1;
+			double monoFreq = (init.args.length > 2 ? Math.max(0.0, 1.0 - init.args[2])
+					: 1.0 - getVacantEstimate(residentType));
+			initMono(residentType, monoFreq);
+			// check if resident population went extinct or only a single survivor
+			if (traitsCount[vacantIdx] < nPopulation - 1) {
+				// change trait of random resident to a mutant
+				int idx = random0n(getPopulationSize());
+				while (idx >= 0) {
+					if (isVacantAt(++loc))
+						continue;
+					idx--;
+				}
+			}
 		} else {
-			initMono(residentType, 1.0);
+			initMono(residentType);
 			// change trait of random resident to a mutant
 			loc = random0n(nPopulation);
 		}
+		FixationData fix = engine.getModel().getFixationData();
+		if (fix != null) {
+			fix.mutantNode = loc;
+			fix.mutantTrait = mutantType;
+			fix.residentTrait = residentType;
+		}
+		if (loc < 0)
+			return;
 		setTraitAt(loc, mutantType);
 		traitsCount[residentType]--;
 		traitsCount[mutantType]++;
-		return loc;
-	}
-
-	/**
-	 * Initialize monomorphic resident population with vacant sites and return
-	 * location of a random resident to be changed to a mutant.
-	 * 
-	 * @param residentType the resident trait
-	 * @return the location of the mutant
-	 */
-	int initWithVacant(int residentType) {
-		// if present the third argument indicates the frequency of vacant sites
-		// if not use estimate for carrying capacity
-		double monoFreq = (init.args.length > 2 ? Math.max(0.0, 1.0 - init.args[2])
-				: 1.0 - estimateVacantFrequency(residentType));
-		if (residentType == vacantIdx && monoFreq < 1.0 - 1e-8) {
-			// problem encountered
-			init.type = Init.Type.UNIFORM;
-			logger.warning("review " + init.clo.getName() + //
-					" settings! - using '" + init.type.getKey() + "'.");
-			initUniform();
-			return -1;
-		}
-		// initialize monomorphic resident population at carrying capacity
-		// relax resident population to equilibrium configuration if requested
-		initMono(residentType, monoFreq);
-		// check if resident population went extinct or a single survivor
-		// check if resident population went extinct or only a single survivor
-		if (traitsCount[vacantIdx] >= nPopulation - 1)
-			return -1;
-		// change trait of random resident to a mutant
-		int idx = random0n(getPopulationSize());
-		int loc = -1;
-		while (idx >= 0) {
-			if (isVacantAt(++loc))
-				continue;
-			idx--;
-		}
-		return loc;
 	}
 
 	/**
 	 * Monomorphic initial configuration with a single mutant placed in a random
-	 * location chosen with probability proprtional to the number of incoming links
-	 * (temperature initialization, errors in reproduction).
+	 * location chosen with probability proportional to the number of incoming links
+	 * (temperature initialization, errors in reproduction). Same as
+	 * {@link #initMutant(int, int)} for regular geometries.
 	 * 
-	 * @return the location of the mutant
+	 * @param mutantType   the mutant trait
+	 * @param residentType the resident trait
 	 * 
 	 * @see IBSD.Init.Type#TEMPERATURE
 	 */
-	protected int initTemperature() {
-		int mutant = initMutant();
-		if (interaction.isRegular() || mutant < 0)
-			return mutant;
-		int mutantType = getTraitAt(mutant);
-		int residentType = (int) init.args[1];
-		// revert mutant back to resident
-		setTraitAt(mutant, residentType);
-		// pick parent uniformly at random (everyone has the same fitness)
-		int parent;
-		if (vacantIdx < 0)
-			parent = random0n(nPopulation);
-		else {
-			int idx = random0n(getPopulationSize());
-			parent = -1;
-			while (idx >= 0) {
-				if (isVacantAt(++parent))
-					continue;
-				idx--;
+	protected void initTemperature(int mutantType, int residentType) {
+		int loc = -1;
+		if (vacantIdx >= 0) {
+			double monoFreq = (init.args.length > 2 ? Math.max(0.0, 1.0 - init.args[2])
+					: 1.0 - getVacantEstimate(residentType));
+			initMono(residentType, monoFreq);
+			int size = nPopulation - traitsCount[vacantIdx];
+			if (size > 1) {
+				// pick parent uniformly at random (everyone has the same fitness)
+				int idx = random0n(size);
+				while (idx >= 0) {
+					if (isVacantAt(++loc))
+						continue;
+					idx--;
+				}
 			}
+		} else {
+			initMono(residentType);
+			// pick parent uniformly at random (everyone has the same fitness)
+			loc = random0n(nPopulation);
 		}
-		// now pick neighbouring node uniformly at random to place mutant
-		// note: regular structures (including well-mixed) do not get here
-		int nneighs = competition.kout[parent];
-		if (nneighs == 0)
-			// nowhere to place offspring...
-			return -1;
-		int idx = competition.out[parent][random0n(nneighs)];
-		if (isVacantAt(idx)) {
+		// check if parent valid
+		if (loc >= 0) {
+			// now pick neighbouring node uniformly at random to place mutant
+			// note: regular structures (including well-mixed) do not get here
+			int nneighs = competition.kout[loc];
+			if (nneighs == 0)
+				// nowhere to place offspring...
+				loc = -1;
+			else
+				loc = competition.out[loc][random0n(nneighs)];
+		}
+		FixationData fix = engine.getModel().getFixationData();
+		if (fix != null) {
+			fix.mutantNode = loc;
+			fix.mutantTrait = mutantType;
+			fix.residentTrait = residentType;
+		}
+		if (loc < 0)
+			return;
+		if (isVacantAt(loc))
 			traitsCount[vacantIdx]--;
-			// number of residents unchanged, initMono decreased it
-			traitsCount[residentType % nTraits]++;
-		}
-		setTraitAt(idx, mutantType);
-		return idx;
+		else
+			traitsCount[residentType]--;
+		traitsCount[mutantType]++;
+		setTraitAt(loc, mutantType);
 	}
 
 	/**
@@ -2395,7 +2618,7 @@ public class IBSDPopulation extends IBSPopulation<Discrete, IBSDPopulation> {
 	 * @see IBSD.Init.Type#KALEIDOSCOPE
 	 */
 	protected void initKaleidoscope() {
-		logger.warning("init 'kaleidoscope': not implemented - using 'uniform'.");
+		engine.logWarning("init 'kaleidoscope': not implemented - using 'uniform'.");
 		initUniform();
 	}
 
@@ -2415,7 +2638,7 @@ public class IBSDPopulation extends IBSPopulation<Discrete, IBSDPopulation> {
 						|| type == GeometryType.SQUARE_NEUMANN
 						|| type == GeometryType.SQUARE_MOORE
 						|| type == GeometryType.LINEAR)) {
-			logger.warning("init 'stripes': 2D lattice structures required - using 'uniform'.");
+			engine.logWarning("init 'stripes': 2D lattice structures required - using 'uniform'.");
 			initUniform();
 			return;
 		}
@@ -2423,6 +2646,7 @@ public class IBSDPopulation extends IBSPopulation<Discrete, IBSDPopulation> {
 		int nActive = module.getNActive();
 		int[] nact = new int[nActive];
 		int idx = 0;
+		boolean[] active = module.getActiveTraits();
 		for (int n = 0; n < nTraits; n++) {
 			if (!active[n])
 				continue;
@@ -2437,10 +2661,9 @@ public class IBSDPopulation extends IBSPopulation<Discrete, IBSDPopulation> {
 		int width = size / nStripes;
 		// make first strip wider
 		int width2 = (size - (nStripes - 1) * width) / 2;
-		fillStripe(0, width2, 0);
+		fillStripe(0, width2, nact[0]);
 		int offset = (nStripes - 1) * width + width2;
-		fillStripe(offset, size - offset, 0);
-		traitsCount[0] += width * size;
+		fillStripe(offset, size - offset, nact[0]);
 		offset = width2;
 		// first all individual traits
 		for (int n = 1; n < nActive; n++) {
@@ -2534,20 +2757,14 @@ public class IBSDPopulation extends IBSPopulation<Discrete, IBSDPopulation> {
 	public boolean mouseHitNode(int hit, boolean alt) {
 		if (hit < 0 || hit >= nPopulation)
 			return false; // invalid argument
-		int newtype = getTraitAt(hit) + nTraits + (alt ? -1 : 1);
-		return mouseSetHit(hit, newtype % nTraits);
-	}
-
-	/**
-	 * Process event from GUI: individual with index {@code hit} was hit by mouse
-	 * (or tap) in order to set its trait to {@code trait}.
-	 * 
-	 * @param hit   the index of the individual that was hit by mouse or tap
-	 * @param trait the new trait of the individual
-	 * @return {@code false} if no actions taken (should not happen)
-	 */
-	private boolean mouseSetHit(int hit, int trait) {
-		traitsNext[hit] = trait;
+		int next = getTraitAt(hit);
+		boolean[] active = module.getActiveTraits();
+		for (int steps = 0; steps < nTraits; steps++) {
+			next = Math.floorMod(next + (alt ? -1 : 1), nTraits);
+			if (active[next])
+				break;
+		}
+		traitsNext[hit] = next;
 
 		/* this is a trait change - need to adjust scores */
 		if (adjustScores) {

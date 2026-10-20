@@ -128,7 +128,7 @@ public class EvoLudoLab extends JFrame
 	public EvoLudoLab(EvoLudoJRE engine) {
 		// instantiate engine
 		this.engine = engine;
-		logger = engine.getLogger();
+		Logger logger = engine.getLogger();
 		logger.setLevel(Level.WARNING);
 		// allocate console early to catch all log messages
 		console = new MVConsole(this);
@@ -238,8 +238,7 @@ public class EvoLudoLab extends JFrame
 
 		public void addKeyListenerRecursively(Component c) {
 			c.addKeyListener(keyHandler);
-			if (c instanceof Container) {
-				Container cont = (Container) c;
+			if (c instanceof Container cont) {
 				cont.addContainerListener(this);
 				Component[] children = cont.getComponents();
 				for (Component child : children) {
@@ -250,8 +249,7 @@ public class EvoLudoLab extends JFrame
 
 		public void removeKeyListenerRecursively(Component c) {
 			c.removeKeyListener(keyHandler);
-			if (c instanceof Container) {
-				Container cont = (Container) c;
+			if (c instanceof Container cont) {
 				cont.addContainerListener(this);
 				Component[] children = cont.getComponents();
 				for (Component child : children) {
@@ -282,6 +280,7 @@ public class EvoLudoLab extends JFrame
 
 		@Override
 		public void keyTyped(KeyEvent e) {
+			// only Alt press/release processed
 		}
 	}
 
@@ -476,10 +475,6 @@ public class EvoLudoLab extends JFrame
 		evoludoSlider.addChangeListener(e -> engine.setDelay(lin2log(evoludoSlider.getValue())));
 	}
 
-	/**
-	 * Logger for keeping track of and reporting events and issues.
-	 */
-	protected Logger logger;
 	MVConsole console;
 
 	/**
@@ -489,12 +484,9 @@ public class EvoLudoLab extends JFrame
 	 */
 	public void applyCLO() {
 		if (engine.isRunning()) {
-			logger.warning("Cannot apply parameters while engine is running.");
+			engine.logWarning("Cannot apply parameters while engine is running.");
 			return;
 		}
-		int idx = activeViews.getActiveIndex();
-		if (idx < 0 || cloView.isSet())
-			idx = Integer.parseInt(appView);
 		// parse command line options
 		boolean resume = engine.isSuspended();
 		engine.setSuspended(false);
@@ -521,7 +513,12 @@ public class EvoLudoLab extends JFrame
 				updateViews();
 			}
 		}
-		activeViews.setView(idx);
+		if (cloView.isSet())
+			activeViews.setView(appView);
+		else {
+			int idx = activeViews.getActiveIndex();
+			activeViews.setView(Math.max(idx, 0));
+		}
 		if (parsingIssues > 0)
 			displayStatus("Multiple parsing problems (" + parsingIssues + ") - check log for details.",
 					Level.WARNING.intValue() + 1);
@@ -542,11 +539,12 @@ public class EvoLudoLab extends JFrame
 		// strategies related views
 		Module<?> module = engine.getModule();
 		Model model = engine.getModel();
-		if (module instanceof HasPop2D.Traits)
+		if (module instanceof HasPop2D.Traits) {
 			if (model.isContinuous())
 				addMultiView(new MVPop2D(this, MVPop2D.Data.CSTRAT));
 			else
 				addMultiView(new MVPop2D(this, MVPop2D.Data.DSTRAT));
+		}
 		if (module instanceof HasMean.Traits) {
 			if (model.isContinuous())
 				addMultiView(new MVCMean(this));
@@ -695,6 +693,11 @@ public class EvoLudoLab extends JFrame
 	}
 
 	@Override
+	public synchronized void modelRelaxed() {
+		modelStopped();
+	}
+
+	@Override
 	public synchronized void modelStopped() {
 		for (MultiView mvp : activeViews.getViews())
 			mvp.end();
@@ -724,7 +727,7 @@ public class EvoLudoLab extends JFrame
 	 */
 	protected int appWidth = 420;
 	protected int appHeight = 570;
-	protected String appView = "0"; // index or title
+	protected String appView = "1"; // index (1-based) or title
 	protected boolean doAnimateLayout = false;
 
 	/*
@@ -744,8 +747,8 @@ public class EvoLudoLab extends JFrame
 				}
 			});
 
-	public final CLOption cloView = new CLOption("view", "0", CLOCategory.GUI,
-			"--view <v>      active view upon launch (v: index or title)",
+	public final CLOption cloView = new CLOption("view", "1", CLOCategory.GUI,
+			"--view <v>      active view upon launch (v: 1-based index or title)",
 			new CLODelegate() {
 				@Override
 				public boolean parse(String arg) {
@@ -936,7 +939,7 @@ public class EvoLudoLab extends JFrame
 		int posX = 50;
 		int posY = 10;
 
-		setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+		setDefaultCloseOperation(javax.swing.WindowConstants.EXIT_ON_CLOSE);
 
 		/*
 		 * the java focus system is buggy but i guess this is apple's call...

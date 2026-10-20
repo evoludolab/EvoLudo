@@ -30,9 +30,8 @@
 
 package org.evoludo.simulator.models;
 
-import java.util.logging.Level;
-
 import org.evoludo.math.ArrayMath;
+import org.evoludo.math.Functions;
 import org.evoludo.simulator.EvoLudo;
 import org.evoludo.simulator.modules.Module;
 
@@ -131,7 +130,7 @@ public class RungeKutta extends ODE {
 	public boolean check() {
 		boolean doReset = super.check();
 		if (!autoDt) {
-			logger.warning(getClass().getSimpleName()
+			engine.logWarning(getClass().getSimpleName()
 					+ " - Runge-Kutta with fixed time increments requested - revert to Euler method.");
 			doEuler = true;
 		}
@@ -145,24 +144,11 @@ public class RungeKutta extends ODE {
 	private static final double SAFETY = 0.9;
 
 	/**
-	 * The exponent for increasing the time step if error outside margin. Magic
-	 * number from Numerical Recipes in C.
-	 * 
-	 * @see #ERRCON
-	 */
-	private static final double PGROW = -0.2;
-
-	/**
-	 * The exponent for decreasing the time step if error outside margin. Magic
-	 * number from Numerical Recipes in C.
-	 * 
-	 * @see #ACCURACY
-	 */
-	private static final double PSHRNK = -0.25;
-
-	/**
 	 * The maximum error in a single step. The value {@code ERRCON} equals
-	 * {@code (5/SAFETY)^(1/PGROW)}. Magic number from Numerical Recipes in C.
+	 * {@code (5/SAFETY)^(-5)}, i.e. {@code (5/SAFETY)^(1/PGROW)} for the
+	 * time-step growth exponent {@code PGROW = -0.2} (see
+	 * {@link Functions#fifthRoot(double)}). Magic number from Numerical Recipes
+	 * in C.
 	 */
 	private static final double ERRCON = 1.89e-4;
 
@@ -177,7 +163,15 @@ public class RungeKutta extends ODE {
 	 * calculating derivatives for different steps.
 	 */
 	private double[] yerr;
+
+	/**
+	 * Temporary state vector.
+	 */
 	private double[] ytmp;
+
+	/**
+	 * Temporary derivative vector.
+	 */
 	private double[] ftmp;
 
 	/**
@@ -225,14 +219,18 @@ public class RungeKutta extends ODE {
 			errmax /= ACCURACY; // scale relative to required tolerance.
 			if (errmax <= 1.0)
 				break; // step succeeded - compute size of next step.
-			double htemp = SAFETY * h * Math.pow(errmax, PSHRNK);
+			// shrink exponent from Numerical Recipes in C is -1/4; computed as
+			// 1/sqrt(sqrt(errmax)) rather than Math.pow(errmax, -0.25) - mathematically
+			// identical, but Math.sqrt is IEEE-754 correctly-rounded on every platform
+			// (unlike Math.pow with a non-trivial exponent), keeping JRE and GWT
+			// step-size selection bit-identical instead of drifting apart over time
+			double htemp = SAFETY * h / Math.sqrt(Math.sqrt(errmax));
 			// truncation error too large, reduce step size.
 			h = (h >= 0.0 ? Math.max(htemp, 0.1 * h) : Math.min(htemp, 0.1 * h));
 			// no more than a factor of 10.
 			double tnew = time + h;
 			if (tnew == time) {
-				if (logger.isLoggable(Level.WARNING))
-					logger.warning("stepsize underflow in ODE method RungeKutta.deStep() at time " + time + ".");
+				engine.logWarning("stepsize underflow in ODE method RungeKutta.deStep() at time " + time + ".");
 				dtTaken = 0.0;
 				return -1.0;
 			}
@@ -241,7 +239,10 @@ public class RungeKutta extends ODE {
 		// ensure that dtTry and dtTaken remain positive
 		h = Math.abs(h);
 		if (errmax > ERRCON)
-			dtTry = SAFETY * h * Math.pow(errmax, PGROW);
+			// growth exponent from Numerical Recipes in C is -0.2 (= -1/5); computed
+			// via Functions.fifthRoot rather than Math.pow(errmax, -0.2) to keep JRE
+			// and GWT step-size selection bit-identical (see Functions#fifthRoot)
+			dtTry = SAFETY * h / Functions.fifthRoot(errmax);
 		else
 			dtTry = 2.0 * h; // no more than doubling.
 		dtTaken = h;
@@ -259,37 +260,63 @@ public class RungeKutta extends ODE {
 		return ArrayMath.distSq(yout, yt);
 	}
 
-	/**
-	 * More magic numbers from Numerical Recipes in C.
-	 */
+	/** Cash-Karp coefficient for the second stage time. */
 	private static final double A2 = 0.2;
+	/** Cash-Karp coefficient for the third stage time. */
 	private static final double A3 = 0.3;
+	/** Cash-Karp coefficient for the fourth stage time. */
 	private static final double A4 = 0.6;
+	/** Cash-Karp coefficient for the fifth stage time. */
 	private static final double A5 = 1;
+	/** Cash-Karp coefficient for the sixth stage time. */
 	private static final double A6 = 0.875;
+	/** Cash-Karp coefficient for the second stage derivative. */
 	private static final double B21 = 0.2;
+	/** Cash-Karp coefficient for the third stage derivative. */
 	private static final double B31 = 3.0 / 40.0;
+	/** Cash-Karp coefficient for the third stage derivative. */
 	private static final double B32 = 9.0 / 40.0;
+	/** Cash-Karp coefficient for the fourth stage derivative. */
 	private static final double B41 = 0.3;
+	/** Cash-Karp coefficient for the fourth stage derivative. */
 	private static final double B42 = -0.9;
+	/** Cash-Karp coefficient for the fourth stage derivative. */
 	private static final double B43 = 1.2;
+	/** Cash-Karp coefficient for the fifth stage derivative. */
 	private static final double B51 = -11.0 / 54.0;
+	/** Cash-Karp coefficient for the fifth stage derivative. */
 	private static final double B52 = 2.5;
+	/** Cash-Karp coefficient for the fifth stage derivative. */
 	private static final double B53 = -70.0 / 27.0;
+	/** Cash-Karp coefficient for the fifth stage derivative. */
 	private static final double B54 = 35.0 / 27.0;
+	/** Cash-Karp coefficient for the sixth stage derivative. */
 	private static final double B61 = 1631.0 / 55296.0;
+	/** Cash-Karp coefficient for the sixth stage derivative. */
 	private static final double B62 = 175.0 / 512.0;
+	/** Cash-Karp coefficient for the sixth stage derivative. */
 	private static final double B63 = 575.0 / 13824.0;
+	/** Cash-Karp coefficient for the sixth stage derivative. */
 	private static final double B64 = 44275.0 / 110592.0;
+	/** Cash-Karp coefficient for the sixth stage derivative. */
 	private static final double B65 = 253.0 / 4096.0;
+	/** Cash-Karp fifth-order output coefficient. */
 	private static final double C1 = 37.0 / 378.0;
+	/** Cash-Karp fifth-order output coefficient. */
 	private static final double C3 = 250.0 / 621.0;
+	/** Cash-Karp fifth-order output coefficient. */
 	private static final double C4 = 125.0 / 594.0;
+	/** Cash-Karp fifth-order output coefficient. */
 	private static final double C6 = 512.0 / 1771.0;
+	/** Cash-Karp error estimate coefficient. */
 	private static final double DC5 = -277.0 / 14336.0;
+	/** Cash-Karp error estimate coefficient. */
 	private static final double DC1 = C1 - 2825.0 / 27648.0;
+	/** Cash-Karp error estimate coefficient. */
 	private static final double DC3 = C3 - 18575.0 / 48384.0;
+	/** Cash-Karp error estimate coefficient. */
 	private static final double DC4 = C4 - 13525.0 / 55296.0;
+	/** Cash-Karp error estimate coefficient. */
 	private static final double DC6 = C6 - 0.25;
 
 	/**
@@ -297,9 +324,25 @@ public class RungeKutta extends ODE {
 	 * fifth-order Cash-Karp Runge-Kutta method.
 	 */
 	private double[] ak2;
+
+	/**
+	 * Third stage derivative vector.
+	 */
 	private double[] ak3;
+
+	/**
+	 * Fourth stage derivative vector.
+	 */
 	private double[] ak4;
+
+	/**
+	 * Fifth stage derivative vector.
+	 */
 	private double[] ak5;
+
+	/**
+	 * Sixth stage derivative vector.
+	 */
 	private double[] ak6;
 
 	/**

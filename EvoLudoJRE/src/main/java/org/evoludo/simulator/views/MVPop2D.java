@@ -39,6 +39,7 @@ import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.IOException;
 import java.text.DecimalFormat;
+import java.util.Arrays;
 import java.util.Iterator;
 import java.util.Properties;
 
@@ -76,7 +77,7 @@ public class MVPop2D extends MVAbstract implements PopListener {
 
 	private static final long serialVersionUID = 20110423L;
 
-	public static enum Data {
+	public enum Data {
 		VOID,
 		DSTRAT,
 		CSTRAT,
@@ -100,19 +101,17 @@ public class MVPop2D extends MVAbstract implements PopListener {
 		setOpaque(false);
 	}
 
-	protected String DIM = "";
-
 	@Override
 	public String getName() {
 		switch (type) {
 			case DSTRAT:
-				return "Strategy " + DIM + "- Structure";
+				return "Strategy - 2D Structure";
 			case CSTRAT:
-				return "Trait " + DIM + "- Structure";
+				return "Trait - 2D Structure";
 			case FITNESS:
-				return "Fitness " + DIM + "- Structure";
+				return "Fitness - 2D Structure";
 			case TAG:
-				return "Tags " + DIM + "- Structure";
+				return "Tags - 2D Structure";
 			default:
 				return "Unknown...";
 		}
@@ -191,7 +190,11 @@ public class MVPop2D extends MVAbstract implements PopListener {
 							}
 							//$FALL-THROUGH$
 						default:
-							colorMap = new ColorMapJRE.GradientND(tColors, dep);
+							// unlike Gradient1D/Gradient2D above, GradientND iterates over the
+							// entire colors array, so it must be trimmed first - getTraitColors()
+							// may return 2*nTraits entries (regular colors followed by
+							// "new"/highlight variants, see Module#setTraitColors)
+							colorMap = new ColorMapJRE.GradientND(Arrays.copyOf(tColors, module.getNTraits()), dep);
 							break;
 					}
 				} else
@@ -209,8 +212,8 @@ public class MVPop2D extends MVAbstract implements PopListener {
 						break;
 					case 3: // three traits red, green, blue - calculate on the fly? fewer colors?
 					default:
-						colorMap = new ColorMapJRE.GradientND(tColors);
-						logger.warning("MVPop: display of >2 continuous traits is experimental...");
+						colorMap = new ColorMapJRE.GradientND(Arrays.copyOf(tColors, module.getNTraits()));
+						engine.logWarning("MVPop: display of >2 continuous traits is experimental...");
 						break;
 				}
 				break;
@@ -510,11 +513,10 @@ public class MVPop2D extends MVAbstract implements PopListener {
 		try {
 			ImageIO.write(snapimage, "PNG", snapfile);
 		} catch (IOException x) {
-			engine.getLogger().warning("writing PNG image to " + snapfile.getAbsolutePath() + " failed!");
+			engine.logWarning("writing PNG image to " + snapfile.getAbsolutePath() + " failed!");
 			return;
 		}
-		engine.getLogger().info("PNG image written to " + snapfile.getAbsolutePath());
-		return;
+		engine.logMessage("PNG image written to " + snapfile.getAbsolutePath());
 	}
 
 	/**
@@ -549,10 +551,9 @@ public class MVPop2D extends MVAbstract implements PopListener {
 			vg2.endExport();
 			vg2.dispose();
 		} catch (IOException x) {
-			engine.getLogger().warning("writing SVG graphics to " + snapfile.getAbsolutePath() + " failed!");
+			engine.logWarning("writing SVG graphics to " + snapfile.getAbsolutePath() + " failed!");
 			return;
 		}
-		engine.getLogger().info("SVG graphics written to " + snapfile.getAbsolutePath());
-		return;
+		engine.logMessage("SVG graphics written to " + snapfile.getAbsolutePath());
 	}
 }

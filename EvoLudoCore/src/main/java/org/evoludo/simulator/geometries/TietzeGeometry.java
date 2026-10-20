@@ -62,6 +62,7 @@ public class TietzeGeometry extends AbstractGeometry {
 		isRewired = false;
 		isUndirected = true;
 		isRegular = true;
+		clear();
 
 		for (int i = 1; i < size; i++)
 			addEdgeAt(i, i - 1);

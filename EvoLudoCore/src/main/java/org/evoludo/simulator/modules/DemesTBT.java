@@ -213,7 +213,7 @@ public class DemesTBT extends TBT {
 					&& ((HierarchicalGeometry) interaction).getHierarchyLevels().length == 2))) {
 				// the only acceptable geometries are well-mixed and hierarchical structures
 				// with two levels of well-mixed demes
-				logger.severe("invalid geometry - forcing well-mixed population (single deme)!");
+				engine.logError("invalid geometry - forcing well-mixed population (single deme)!");
 				interaction = AbstractGeometry.create(engine, GeometryType.WELLMIXED);
 				doReset = true;
 			}
@@ -228,13 +228,22 @@ public class DemesTBT extends TBT {
 			}
 			if (demeTypeCount == null || demeTypeCount.length != nDemes)
 				demeTypeCount = new int[nDemes][nTraits];
-			if (nDemes == 1 || pMigration <= 0.0) {
+			if (pMigration.length > 1) {
+				// deme-structured populations don't (yet) support per-trait migration
+				// rates - the analytical machinery below (distrMigration,
+				// distrMutationMigration) assumes a single, homogeneous rate; a
+				// tangent not currently worth pursuing, see IBS#cloMigration
+				engine.logWarning("per-trait migration rates not supported for deme-structured populations "
+						+ "- using first rate only");
+				setMigrationProb(getMigrationProb(0));
+			}
+			if (nDemes == 1 || getMaxMigrationProb() <= 0.0) {
 				migrationType = MigrationType.NONE;
-				pMigration = 0.0;
+				setMigrationProb(0.0);
 				optimizeMigration = false;
 			}
 			if (nDemes > 1 && !adjustScores) {
-				logger.severe("invalid sampling - forcing well-mixed population (single deme)!");
+				engine.logError("invalid sampling - forcing well-mixed population (single deme)!");
 				interaction = AbstractGeometry.create(engine, GeometryType.WELLMIXED);
 				doReset = true;
 			}
@@ -242,9 +251,9 @@ public class DemesTBT extends TBT {
 				// need to get new instances to make sure potential changes in pMigration,
 				// mutation probabilities are reflected. must be based on same RNG as the
 				// rest of simulations to ensure reproducibility of results
-				distrMigration = new RNGDistribution.Geometric(rng.getRNG(), pMigration);
+				distrMigration = new RNGDistribution.Geometric(rng.getRNG(), getMigrationProb(0));
 				distrMutationMigration = new RNGDistribution.Geometric(rng.getRNG(),
-						pMigration + mutation.probability);
+						getMigrationProb(0) + mutation.probability);
 			}
 			return doReset;
 		}
@@ -267,7 +276,7 @@ public class DemesTBT extends TBT {
 		public String getStatus() {
 			double gen = engine.getModel().getUpdates();
 			return super.getStatus() + ", pure: "
-					+ (gen > 0.0 ? Formatter.formatPercent((pure[TBT.COOPERATE] + pure[TBT.DEFECT]) / gen, 1)
+					+ (gen > 0.0 ? Formatter.formatPercent((pure[COOPERATE] + pure[DEFECT]) / gen, 1)
 							: "0.0%");
 		}
 
@@ -282,12 +291,13 @@ public class DemesTBT extends TBT {
 				if (mutation.probability <= 0.0 && !optimizeMigration)
 					// pMigration=0: absorbed (heterogeneous population but homogeneous demes)
 					// pMigration>0: waiting for migration to happen
-					return (pMigration <= 0.0);
+					return (getMigrationProb(0) <= 0.0);
 
 				// determine WHEN next event happens
 				double timehomo = distrMutationMigration.next() / (double) nPopulation;
 				updateStatistics(timehomo);
 				// determine WHAT event happens (sequence of this is of crucial importance!)
+				double pMigration = getMigrationProb(0);
 				if (random01() * (mutation.probability + pMigration) < pMigration)
 					// do migration
 					doMigration();
@@ -308,14 +318,14 @@ public class DemesTBT extends TBT {
 		 *         heterogeneous
 		 */
 		protected int homoDemes() {
-			if (traitsCount[org.evoludo.simulator.modules.TBT.COOPERATE] % sizeDemes != 0)
+			if (traitsCount[COOPERATE] % sizeDemes != 0)
 				// if number of cooperators is not a multiple of deme size
 				// at least one deme must be heterogeneous
 				return -1;
 
 			int nA = 0;
 			for (int d = 0; d < nDemes; d++) {
-				int ccount = demeTypeCount[d][org.evoludo.simulator.modules.TBT.COOPERATE];
+				int ccount = demeTypeCount[d][COOPERATE];
 				if (ccount == 0)
 					continue;
 				if (ccount != sizeDemes)
@@ -338,7 +348,7 @@ public class DemesTBT extends TBT {
 			int vacant = random0n(nPopulation - sizeDemes);
 			if (vacant >= migrantDeme * sizeDemes)
 				vacant += sizeDemes;
-			updatePlayerSwap(migrant, vacant);
+			swapSitesAt(migrant, vacant);
 		}
 
 		/**
@@ -358,10 +368,10 @@ public class DemesTBT extends TBT {
 			// check if population is homogeneous or only the deme with a vacancy is
 			// heterogeneous. if so, all other individual are of the same type, i.e. a
 			// random individual can be drawn - no need to check fitness.
-			int ccount = traitsCount[TBT.COOPERATE];
+			int ccount = traitsCount[COOPERATE];
 			if (ccount == 0 || ccount == nPopulation
-					|| ccount == demeTypeCount[vacantDeme][TBT.COOPERATE]
-					|| nPopulation - ccount == demeTypeCount[vacantDeme][TBT.DEFECT]) {
+					|| ccount == demeTypeCount[vacantDeme][COOPERATE]
+					|| nPopulation - ccount == demeTypeCount[vacantDeme][DEFECT]) {
 				int migrant = random0n(nPopulation - sizeDemes);
 				if (migrant >= start)
 					migrant += sizeDemes;
@@ -373,20 +383,21 @@ public class DemesTBT extends TBT {
 			for (int n = start; n < start + sizeDemes; n++)
 				vacantFitness += getFitnessAt(n);
 
-			// decrease interval slightly to prevent roundoff errors
-			double hit = random01() * (sumFitness - vacantFitness - 1e-6);
+			double hit = random01() * (sumFitness - vacantFitness);
+			int last = -1;
 			for (int n = 0; n < nPopulation; n++) {
 				// skip destination deme by adjusting loop counter
 				if (n == start)
 					n += sizeDemes; // NOSONAR
+				last = n;
 				hit -= getFitnessAt(n);
 				if (hit < 0.0) {
 					migrateMoran(n, vacant);
 					return;
 				}
 			}
-			// last resort
-			throw new IllegalStateException("Dispersal failed... (" + hit + ")");
+			// last resort: rescue the last individual actually visited above
+			migrateMoran(pickLastResort(hit, last), vacant);
 		}
 
 		@Override
@@ -440,10 +451,10 @@ public class DemesTBT extends TBT {
 			if (prevsample >= time)
 				return;
 			double incr = time - prevsample;
-			if (traitsCount[org.evoludo.simulator.modules.TBT.COOPERATE] == nPopulation)
-				pure[org.evoludo.simulator.modules.TBT.COOPERATE] += incr;
-			if (traitsCount[org.evoludo.simulator.modules.TBT.DEFECT] == nPopulation)
-				pure[org.evoludo.simulator.modules.TBT.DEFECT] += incr;
+			if (traitsCount[COOPERATE] == nPopulation)
+				pure[COOPERATE] += incr;
+			if (traitsCount[DEFECT] == nPopulation)
+				pure[DEFECT] += incr;
 			prevsample = time;
 		}
 

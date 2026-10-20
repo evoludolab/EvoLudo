@@ -37,6 +37,7 @@ import org.evoludo.simulator.EvoLudo;
 import org.evoludo.simulator.models.IBSD;
 import org.evoludo.simulator.models.IBSD.Init;
 import org.evoludo.simulator.models.IBSDPopulation;
+import org.evoludo.simulator.models.Model;
 import org.evoludo.simulator.models.Model.HasDE;
 import org.evoludo.simulator.models.Model.HasIBS;
 import org.evoludo.simulator.modules.Features.Payoffs;
@@ -64,7 +65,7 @@ public class CDL extends Discrete implements Payoffs,
 	/**
 	 * The trait (and index) value of cooperators.
 	 */
-	public static final int COOPERATE = 2;
+	public static final int COOPERATE = 0;
 
 	/**
 	 * The trait (and index) value of defectors.
@@ -74,7 +75,7 @@ public class CDL extends Discrete implements Payoffs,
 	/**
 	 * The trait (and index) value of loners.
 	 */
-	public static final int LONER = 0;
+	public static final int LONER = 2;
 
 	/**
 	 * The multiplication factor of the (non-linear) public good with a single
@@ -140,16 +141,16 @@ public class CDL extends Discrete implements Payoffs,
 	 */
 	public CDL(EvoLudo engine) {
 		super(engine);
-		nTraits = 3; // loners, defectors, cooperators
+		nTraits = 3; // cooperators, defectors, loners
 	}
 
 	@Override
 	public void load() {
 		super.load();
 		// trait names (optional)
-		setTraitNames(new String[] { "Loner", "Defector", "Cooperator" });
+		setTraitNames(new String[] { "Cooperator", "Defector", "Loner" });
 		// trait colors (optional)
-		setTraitColors(new Color[] { new Color(238, 204, 17), Color.RED, Color.BLUE });
+		setTraitColors(new Color[] { Color.BLUE, Color.RED, new Color(255, 220, 50) });
 	}
 
 	@Override
@@ -170,7 +171,12 @@ public class CDL extends Discrete implements Payoffs,
 
 	@Override
 	public int getDependent() {
-		return LONER;
+		return DEFECT;
+	}
+
+	@Override
+	public int[] getS3Order() {
+		return new int[] { LONER, DEFECT, COOPERATE };
 	}
 
 	@Override
@@ -460,7 +466,7 @@ public class CDL extends Discrete implements Payoffs,
 		double z = density[LONER];
 
 		avgscores[LONER] = payLoner;
-		if (z > 1.0 - 1e-7) {
+		if (z > 1.0 - Model.EPS) {
 			avgscores[COOPERATE] = payLoneCoop;
 			avgscores[DEFECT] = payLoneDefect;
 			return;
@@ -498,13 +504,13 @@ public class CDL extends Discrete implements Payoffs,
 
 	@Override
 	public boolean check() {
-		super.check();
+		boolean doReset = super.check();
 		if (!cloLoneCooperator.isSet())
 			setPayLoneCoop(getPayLoner());
 		if (!cloLoneDefector.isSet())
 			setPayLoneDefect(getPayLoner());
 		initInterest();
-		return false;
+		return doReset;
 	}
 
 	/**
@@ -912,7 +918,7 @@ public class CDL extends Discrete implements Payoffs,
 		protected void initKaleidoscope() {
 			// kaleidoscopes only available for lattice geometries
 			if (!interaction.isLattice()) {
-				logger.warning("kaleidoscopes require lattices - using default initialization.");
+				engine.logWarning("kaleidoscopes require lattices - using default initialization.");
 				initUniform();
 				return;
 			}

@@ -30,6 +30,7 @@
 
 package org.evoludo.simulator.geometries;
 
+import org.evoludo.math.RNGDistribution;
 import org.evoludo.simulator.EvoLudo;
 import org.evoludo.util.CLOParser;
 
@@ -59,7 +60,7 @@ public class LinearGeometry extends AbstractLattice {
 		String numeric = stripBoundary(arg);
 		int[] conn = CLOParser.parseIntVector(numeric);
 		if (conn.length > 2)
-			logger.warning("too many arguments for linear geometry.");
+			engine.logWarning("too many arguments for linear geometry.");
 		if (conn.length >= 2) {
 			connectivity = Math.max(2, conn[0] + conn[1]);
 			setLinearAsymmetry(conn[0] - conn[1]);
@@ -98,6 +99,7 @@ public class LinearGeometry extends AbstractLattice {
 		int left = (neighbors + linearAsymmetry) / 2;
 		int right = (neighbors - linearAsymmetry) / 2;
 		isUndirected = (left == right);
+		clear();
 
 		for (int i = 0; i < size; i++) {
 			for (int j = -left; j <= right; j++) {
@@ -131,7 +133,7 @@ public class LinearGeometry extends AbstractLattice {
 	protected boolean checkSettings() {
 		boolean doReset = false;
 		connectivity = Math.max(1, Math.rint(connectivity));
-		boolean invalidConn = (Math.abs(1.0 - connectivity) < 1e-8 && (!isInterspecies() && linearAsymmetry == 0))
+		boolean invalidConn = (Math.abs(1.0 - connectivity) < RNGDistribution.EPS && (!isInterspecies() && linearAsymmetry == 0))
 				|| ((int) (connectivity + 0.5) % 2 == 1 && linearAsymmetry == 0) || connectivity >= size;
 		if (invalidConn) {
 			double size1 = size - 1.0;

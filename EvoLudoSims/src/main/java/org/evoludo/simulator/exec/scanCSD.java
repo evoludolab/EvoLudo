@@ -498,7 +498,7 @@ public class scanCSD extends CSD {
 								incr = Math.abs(CLOParser.parseDouble(argv[2].substring(0, argv[2].length() - 1)));
 								if ((Math.abs(end) < Math.abs(start) && incr > 1.0)
 										|| (Math.abs(end) > Math.abs(start) && incr < 1.0)) {
-									logger.warning("invalid logarithmic increment for c1-range ["
+									engine.logWarning("invalid logarithmic increment for c1-range ["
 											+ Formatter.format(start, 3) + ", " +
 											Formatter.format(end, 3) + "] (" + incr + (incr < 1.0 ? ">" : "<")
 											+ "1 should hold) - ignored.");
@@ -516,7 +516,7 @@ public class scanCSD extends CSD {
 							c1Log = log;
 							return true;
 						default:
-							logger.warning("too many arguments for c1 (" + arg + ") - ignored.");
+							engine.logWarning("too many arguments for c1 (" + arg + ") - ignored.");
 							return false;
 					}
 				}
@@ -783,7 +783,7 @@ public class scanCSD extends CSD {
 				return;
 
 			default:
-				logger.warning("unknown file format (" + format + ")");
+				engine.logWarning("unknown file format (" + format + ")");
 		}
 	}
 

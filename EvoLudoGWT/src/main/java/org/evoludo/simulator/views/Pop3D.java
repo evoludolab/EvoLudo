@@ -31,11 +31,13 @@
 package org.evoludo.simulator.views;
 
 import java.awt.Color;
+import java.util.Arrays;
 import java.util.List;
 
 import org.evoludo.graphics.GenericPopGraph.HasDebugMenu;
 import org.evoludo.graphics.Network3DGWT;
 import org.evoludo.graphics.PopGraph3D;
+import org.evoludo.graphics.PopGraph3D.Mode;
 import org.evoludo.simulator.ColorMap;
 import org.evoludo.simulator.ColorMap3D;
 import org.evoludo.simulator.geometries.AbstractGeometry;
@@ -51,6 +53,7 @@ import org.evoludo.simulator.modules.Map2Fitness;
 import org.evoludo.simulator.modules.Module;
 import org.evoludo.ui.ContextMenu;
 import org.evoludo.ui.ContextMenuCheckBoxItem;
+import org.evoludo.util.CLOption;
 
 import thothbot.parallax.core.shared.materials.MeshLambertMaterial;
 
@@ -188,23 +191,24 @@ public class Pop3D extends GenericPop<MeshLambertMaterial, Network3DGWT, PopGrap
 		int nGraphs = 0;
 		List<? extends Module<?>> species = engine.getModule().getSpecies();
 		for (Module<?> mod : species)
-			nGraphs += mod.getIBSPopulation().getInteractionGeometry().isSingle() ? 1 : 2;
+			nGraphs += displaySingle(mod) ? 1 : 2;
 
 		if (graphs.size() == nGraphs)
 			return false;
 
 		destroyGraphs();
+		gCols = 1;
 		for (Module<?> mod : species) {
 			PopGraph3D graph = new PopGraph3D(this, mod);
 			wrapper.add(graph);
 			graphs.add(graph);
-			if (!mod.getIBSPopulation().getInteractionGeometry().isSingle()) {
-				graph = new PopGraph3D(this, mod);
-				wrapper.add(graph);
-				graphs.add(graph);
-				// arrange graphs horizontally
-				gCols = 2;
-			}
+			if (displaySingle(mod))
+				continue;
+			graph = new PopGraph3D(this, mod);
+			wrapper.add(graph);
+			graphs.add(graph);
+			// arrange graphs horizontally
+			gCols = 2;
 		}
 		gRows = species.size();
 		if (gRows * gCols == 2) {
@@ -214,11 +218,16 @@ public class Pop3D extends GenericPop<MeshLambertMaterial, Network3DGWT, PopGrap
 		}
 		int width = 100 / gCols;
 		int height = 100 / gRows;
-		boolean inter = true;
-		for (PopGraph3D graph : graphs) {
+		int idx = 0;
+		for (Module<?> mod : species) {
+			PopGraph3D graph = graphs.get(idx++);
 			graph.setSize(width + "%", height + "%");
-			setGraphGeometry(graph, inter);
-			inter = !inter;
+			setGraphGeometry(graph, true);
+			if (displaySingle(mod))
+				continue;
+			graph = graphs.get(idx++);
+			graph.setSize(width + "%", height + "%");
+			setGraphGeometry(graph, false);
 		}
 		return true;
 	}
@@ -302,10 +311,10 @@ public class Pop3D extends GenericPop<MeshLambertMaterial, Network3DGWT, PopGrap
 		ColorModelType cmt = ColorModelType.DEFAULT;
 		if (module instanceof Continuous)
 			cmt = ((Continuous) module).getColorModelType();
-		int nTraits = module.getNTraits();
 		if (cmt == ColorModelType.DISTANCE) {
 			return new ColorMap3D.Gradient1D(new Color[] { Color.BLACK, Color.GRAY, Color.YELLOW, Color.RED }, 500);
 		}
+		int nTraits = module.getNTraits();
 		switch (nTraits) {
 			case 1:
 				// set hue range: min = red, max = blue
@@ -315,15 +324,6 @@ public class Pop3D extends GenericPop<MeshLambertMaterial, Network3DGWT, PopGrap
 			default:
 				Color[] primaries = new Color[nTraits];
 				System.arraycopy(module.getTraitColors(), 0, primaries, 0, nTraits);
-				// prefer ND gradient but force distance coloring if not supported
-				if (cmt == ColorModelType.DISTANCE)
-					return new ColorMap3D.Gradient1D(
-							new Color[] { Color.BLACK, Color.GRAY, Color.YELLOW, Color.RED }, 500);
-				// warn and switch to distance coloring (only once is ideal, handled by
-				// engine/logger upstream)
-				logger.warning("display of >2 continuous traits not (yet) implemented - coloring trait distance");
-				if (module instanceof Continuous)
-					((Continuous) module).setColorModelType(ColorModelType.DISTANCE);
 				return new ColorMap3D.GradientND(primaries);
 		}
 	}
@@ -341,10 +341,21 @@ public class Pop3D extends GenericPop<MeshLambertMaterial, Network3DGWT, PopGrap
 			int dep = ((HasDE) module).getDependent();
 			if (nTraits == 2 && dep >= 0)
 				return new ColorMap3D.Gradient1D(colors[dep], colors[(dep + 1) % nTraits], 100);
-			// vacant space does not count as dependent trait for coloring
-			if (module.getVacantIdx() == dep)
-				dep = -1;
-			return new ColorMap3D.Gradient2D(colors, dep, 100);
+			int nIndep = (dep >= 0) ? nTraits - 1 : nTraits;
+			if (nIndep <= 2) {
+				// vacant space does not count as dependent trait for coloring
+				int colorDep = (module.getVacantIdx() == dep) ? -1 : dep;
+				return new ColorMap3D.Gradient2D(colors, colorDep, 100);
+			}
+			// 3 or more independent traits: Gradient2D only supports two, so blend
+			// them additively instead, fading to black as the dependent trait's
+			// (e.g. vacant sites') density grows. unlike Gradient1D/Gradient2D above,
+			// which only ever touch a few fixed indices, GradientND iterates over the
+			// entire colors array, so it must be trimmed first - getTraitColors() may
+			// return 2*nTraits entries (regular colors followed by "new"/highlight
+			// variants, see Module#setTraitColors)
+			Color[] baseColors = Arrays.copyOf(colors, nTraits);
+			return (dep >= 0) ? new ColorMap3D.GradientND(baseColors, dep) : new ColorMap3D.GradientND(baseColors);
 		} else {
 			return new ColorMap3D.Index(module.getTraitColors(), (int) (0.75 * 255));
 		}
@@ -396,50 +407,51 @@ public class Pop3D extends GenericPop<MeshLambertMaterial, Network3DGWT, PopGrap
 	}
 
 	@Override
-	public void modelDidInit() {
-		super.modelDidInit();
+	protected void onModelDidInit() {
 		update();
+	}
+
+	@Override
+	public String getOptionsDescription() {
+		return CLOption.getDescriptionKey(Mode.values());
 	}
 
 	@Override
 	public void populateContextMenu(ContextMenu menu) {
 		menu.addSeparator();
-		boolean multiGraph = graphs.size() > 1;
-		PopGraph3D graph = graphs.get(0);
-		boolean isOrthographic = graph.isOrthographic();
-		boolean isAnaglyph = graph.isAnaglyph();
-		boolean isVR = graph.isVR();
+		Mode mode = graphs.get(0).getMode();
 		// projections synchronized across graphs
-		ContextMenuCheckBoxItem projectionMenu = new ContextMenuCheckBoxItem("Parallel projection", () -> {
-			boolean orthographic = !graphs.get(0).isOrthographic();
-			for (PopGraph3D popGraph : graphs)
-				popGraph.setOrthographic(orthographic);
-		});
-		projectionMenu.setChecked(isOrthographic);
-		projectionMenu.setEnabled(!(isAnaglyph || isVR));
+		ContextMenuCheckBoxItem projectionMenu = new ContextMenuCheckBoxItem("Parallel projection",
+				() -> setMode(mode == Mode.PARALLEL ? Mode.PERSPECTIVE : Mode.PARALLEL));
+		projectionMenu.setChecked(mode == Mode.PARALLEL);
+		projectionMenu.setEnabled(!mode.isEffect());
 		menu.add(projectionMenu);
 		// anaglyph and VR modes are mutually exclusive
 		// only available for a single graph
-		if (!multiGraph) {
-			ContextMenuCheckBoxItem anaglyphMenu = new ContextMenuCheckBoxItem("Anaglyph 3D", () -> {
-				boolean anaglyph = !graphs.get(0).isAnaglyph();
-				for (PopGraph3D popGraph : graphs)
-					popGraph.setAnaglyph(anaglyph);
-			});
-			anaglyphMenu.setChecked(isAnaglyph);
-			anaglyphMenu.setEnabled(!isOrthographic);
+		if (graphs.size() == 1) {
+			ContextMenuCheckBoxItem anaglyphMenu = new ContextMenuCheckBoxItem("Anaglyph 3D",
+					() -> setMode(mode == Mode.ANAGLYPH ? Mode.PERSPECTIVE : Mode.ANAGLYPH));
+			anaglyphMenu.setChecked(mode == Mode.ANAGLYPH);
+			anaglyphMenu.setEnabled(mode != Mode.PARALLEL);
 			menu.add(anaglyphMenu);
 
-			ContextMenuCheckBoxItem vrMenu = new ContextMenuCheckBoxItem("Virtual reality (β)", () -> {
-				boolean vr = !graphs.get(0).isVR();
-				for (PopGraph3D popGraph : graphs)
-					popGraph.setVR(vr);
-			});
-			vrMenu.setChecked(isVR);
-			vrMenu.setEnabled(!isOrthographic);
+			ContextMenuCheckBoxItem vrMenu = new ContextMenuCheckBoxItem("Virtual reality (β)",
+					() -> setMode(mode == Mode.VR ? Mode.PERSPECTIVE : Mode.VR));
+			vrMenu.setChecked(mode == Mode.VR);
+			vrMenu.setEnabled(mode != Mode.PARALLEL);
 			menu.add(vrMenu);
 		}
 		super.populateContextMenu(menu);
+	}
+
+	/**
+	 * Set the rendering mode of all graphs.
+	 *
+	 * @param mode the rendering mode
+	 */
+	private void setMode(Mode mode) {
+		for (PopGraph3D graph : graphs)
+			graph.setMode(mode);
 	}
 
 	@Override

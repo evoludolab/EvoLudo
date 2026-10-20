@@ -37,6 +37,7 @@ import org.evoludo.simulator.ColorMap3D;
 import org.evoludo.simulator.EvoLudo;
 import org.evoludo.simulator.Network3D;
 import org.evoludo.simulator.geometries.AbstractGeometry;
+import org.evoludo.simulator.geometries.GeometryType;
 
 import com.google.gwt.core.client.Duration;
 import com.google.gwt.core.client.Scheduler;
@@ -123,132 +124,98 @@ public class Network3DGWT extends Network3D {
 	@Override
 	public void linkNodes() {
 		if (nLinks <= 0 || fLinks <= 0.0) {
+			links = null;
 			return;
 		}
 		if (nLinks > MAX_LINK_COUNT) {
-			engine.getLogger().warning("Too many links to draw - skipping!");
+			engine.logWarning("Too many links to draw - skipping!");
+			links = null;
 			return;
 		}
-		ArrayList<Vector3> lines;
-		ArrayList<Color> colors = null;
-		if (geometry.isUndirected()) {
-			// draw undirected links
-			if (fLinks >= 1.0) {
-				// draw all links
-				lines = new ArrayList<>(nLinks + nLinks);
-				for (int i = 0; i < nNodes; i++) {
-					int[] neighs = geometry.out[i];
-					int nn = geometry.kout[i];
-					Node3D fp = nodes[i];
-					Vector3 focal = new Vector3(fp.getX(), fp.getY(), fp.getZ());
-					for (int j = 0; j < nn; j++) {
-						int k = neighs[j];
-						// check if link was already drawn
-						if (k < i)
-							continue;
-						lines.add(focal);
-						Node3D np = nodes[k];
-						lines.add(new Vector3(np.getX(), np.getY(), np.getZ()));
-					}
-				}
-			} else {
-				// draw only fraction of undirected links
-				// this is pretty memory intensive - hopefully it works...
-				int[] idxs = new int[nLinks];
-				for (int n = 0; n < nLinks; n++)
-					idxs[n] = n;
-				int toDraw = (int) (fLinks * nLinks);
-				lines = new ArrayList<>(toDraw + toDraw);
-				for (int l = 0; l < toDraw; l++) {
-					int idxsidx = rng.random0n(nLinks - l);
-					int nodeidx = idxs[idxsidx];
-					idxs[idxsidx] = idxs[nLinks - l - 1];
-					// find node
-					int a = -1;
-					for (int n = 0; n < nNodes; n++) {
-						int k = geometry.kout[n];
-						if (nodeidx < k) {
-							a = n;
-							break;
-						}
-						nodeidx -= k;
-					}
-					Node3D ap = nodes[a];
-					lines.add(new Vector3(ap.getX(), ap.getY(), ap.getZ()));
-					Node3D bp = nodes[geometry.out[a][nodeidx]];
-					lines.add(new Vector3(bp.getX(), bp.getY(), bp.getZ()));
-				}
+		Vector3[] positions = new Vector3[nNodes];
+		for (int i = 0; i < nNodes; i++) {
+			Node3D node = nodes[i];
+			positions[i] = new Vector3(node.getX(), node.getY(), node.getZ());
+		}
+		boolean isDirected = !geometry.isUndirected();
+		int[] edgeSources = new int[nLinks];
+		int[] edgeTargets = new int[nLinks];
+		if (!isDirected) {
+			int edgeCount = collectEdges(edgeSources, edgeTargets);
+			int toDraw = fLinks >= 1.0 ? edgeCount : (int) (fLinks * edgeCount);
+			int[] sampled = toDraw < edgeCount ? sampleIndices(edgeCount, toDraw) : null;
+			ArrayList<Vector3> lines = new ArrayList<>(toDraw + toDraw);
+			for (int i = 0; i < toDraw; i++) {
+				int edgeidx = sampled == null ? i : sampled[i];
+				int a = edgeSources[edgeidx];
+				int b = edgeTargets[edgeidx];
+				addEdge(lines, positions, a, b);
 			}
-		} else {
-			// draw directed links
-			if (fLinks >= 1.0) {
-				// draw all links
-				lines = new ArrayList<>(nLinks + nLinks);
-				colors = new ArrayList<>(nLinks + nLinks);
-				for (int i = 0; i < nNodes; i++) {
-					int[] neighs = geometry.out[i];
-					int nn = geometry.kout[i];
-					Node3D fp = nodes[i];
-					Vector3 focal = new Vector3(fp.getX(), fp.getY(), fp.getZ());
-					for (int j = 0; j < nn; j++) {
-						int k = neighs[j];
-						if (geometry.isNeighborOf(k, i)) {
-							// undirected link - check if already drawn
-							if (k < i)
-								continue;
-							// draw link in black
-							lines.add(focal);
-							Node3D np = nodes[k];
-							lines.add(new Vector3(np.getX(), np.getY(), np.getZ()));
-							colors.add(ColorMap3D.UNDIRECTED);
-							colors.add(ColorMap3D.UNDIRECTED);
-							continue;
-						}
-						// directed link - draw link with bright tip
-						lines.add(focal);
-						Node3D np = nodes[k];
-						lines.add(new Vector3(np.getX(), np.getY(), np.getZ()));
-						colors.add(ColorMap3D.DIRECTED_SRC);
-						colors.add(ColorMap3D.DIRECTED_DST);
-					}
-				}
-			} else {
-				// draw only fraction of undirected links
-				// this is pretty memory intensive - hopefully it works...
-				int[] idxs = new int[nLinks];
-				for (int n = 0; n < nLinks; n++)
-					idxs[n] = n;
-				int toDraw = (int) (fLinks * nLinks);
-				lines = new ArrayList<>(toDraw + toDraw);
-				colors = new ArrayList<>(toDraw + toDraw);
-				for (int l = 0; l < toDraw; l++) {
-					int idxsidx = rng.random0n(nLinks - l);
-					int nodeidx = idxs[idxsidx];
-					idxs[idxsidx] = idxs[nLinks - l - 1];
-					// find node
-					int a = -1;
-					for (int n = 0; n < nNodes; n++) {
-						int k = geometry.kout[n];
-						if (nodeidx < k) {
-							a = n;
-							break;
-						}
-						nodeidx -= k;
-					}
-					// draw all links as directed ones
-					Node3D ap = nodes[a];
-					lines.add(new Vector3(ap.getX(), ap.getY(), ap.getZ()));
-					Node3D bp = nodes[geometry.out[a][nodeidx]];
-					lines.add(new Vector3(bp.getX(), bp.getY(), bp.getZ()));
-					colors.add(ColorMap3D.DIRECTED_SRC);
-					colors.add(ColorMap3D.DIRECTED_DST);
-				}
-			}
+			links = new thothbot.parallax.core.shared.core.Geometry();
+			links.setVertices(lines);
+			return;
+		}
+		boolean[] edgeIsUndirected = new boolean[nLinks];
+		int edgeCount = collectLinks(edgeSources, edgeTargets, edgeIsUndirected);
+		int toDraw = fLinks >= 1.0 ? edgeCount : (int) (fLinks * edgeCount);
+		int[] sampled = toDraw < edgeCount ? sampleIndices(edgeCount, toDraw) : null;
+		ArrayList<Vector3> lines = new ArrayList<>(toDraw + toDraw);
+		ArrayList<Color> colors = new ArrayList<>(toDraw + toDraw);
+		for (int i = 0; i < toDraw; i++) {
+			int edgeidx = sampled == null ? i : sampled[i];
+			int a = edgeSources[edgeidx];
+			int b = edgeTargets[edgeidx];
+			if (edgeIsUndirected[edgeidx])
+				addEdge(lines, colors, positions, a, b);
+			else
+				addArc(lines, colors, positions, a, b);
 		}
 		links = new thothbot.parallax.core.shared.core.Geometry();
 		links.setVertices(lines);
-		if (colors != null)
-			links.setColors(colors);
+		links.setColors(colors);
+	}
+
+	/**
+	 * Add an undirected edge to the line geometry.
+	 * 
+	 * @param lines     the list receiving the edge endpoints
+	 * @param positions the cached node positions
+	 * @param source    the source node index
+	 * @param target    the target node index
+	 */
+	private void addEdge(ArrayList<Vector3> lines, Vector3[] positions, int source, int target) {
+		lines.add(positions[source]);
+		lines.add(positions[target]);
+	}
+
+	/**
+	 * Add an undirected edge with matching endpoint colors to the line geometry.
+	 * 
+	 * @param lines     the list receiving the edge endpoints
+	 * @param colors    the list receiving the edge colors
+	 * @param positions the cached node positions
+	 * @param source    the source node index
+	 * @param target    the target node index
+	 */
+	private void addEdge(ArrayList<Vector3> lines, ArrayList<Color> colors, Vector3[] positions, int source, int target) {
+		addEdge(lines, positions, source, target);
+		colors.add(ColorMap3D.UNDIRECTED);
+		colors.add(ColorMap3D.UNDIRECTED);
+	}
+
+	/**
+	 * Add a directed arc with gradient endpoint colors to the line geometry.
+	 * 
+	 * @param lines     the list receiving the arc endpoints
+	 * @param colors    the list receiving the arc colors
+	 * @param positions the cached node positions
+	 * @param source    the source node index
+	 * @param target    the target node index
+	 */
+	private void addArc(ArrayList<Vector3> lines, ArrayList<Color> colors, Vector3[] positions, int source, int target) {
+		addEdge(lines, positions, source, target);
+		colors.add(ColorMap3D.DIRECTED_SRC);
+		colors.add(ColorMap3D.DIRECTED_DST);
 	}
 
 	/**
@@ -278,6 +245,10 @@ public class Network3DGWT extends Network3D {
 			return;
 		this.listener = ll;
 		doLayoutPrep();
+		if (stat == Status.NEEDS_LAYOUT && geometry.isType(GeometryType.WELLMIXED)) {
+			completeLayout();
+			return;
+		}
 		layout = new Duration();
 		prevLayout = Integer.MIN_VALUE;
 		Scheduler.get().scheduleFixedDelay(this::doLayoutStep, 5);
@@ -345,11 +316,7 @@ public class Network3DGWT extends Network3D {
 
 		int elapsed = layout.elapsedMillis();
 		if (adjust < accuracy || elapsed > layoutTimeout) { // layoutTimeout provides emergency exit
-			finishLayout();
-			setStatus(Status.HAS_LAYOUT);
-			isRunning = false;
-			timestamp = engine.getModel().getUpdates();
-			listener.layoutComplete();
+			completeLayout();
 			return false;
 		}
 		if (elapsed - prevLayout > MIN_DELAY_ANIMATE_MSEC) {

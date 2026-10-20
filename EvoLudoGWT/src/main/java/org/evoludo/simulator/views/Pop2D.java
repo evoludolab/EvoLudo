@@ -31,6 +31,7 @@
 package org.evoludo.simulator.views;
 
 import java.awt.Color;
+import java.util.Arrays;
 import java.util.List;
 
 import org.evoludo.graphics.GenericPopGraph.HasDebugMenu;
@@ -47,6 +48,7 @@ import org.evoludo.simulator.geometries.GeometryType;
 import org.evoludo.simulator.models.CModel;
 import org.evoludo.simulator.models.DModel;
 import org.evoludo.simulator.models.Data;
+import org.evoludo.simulator.models.Model;
 import org.evoludo.simulator.models.Model.HasDE;
 import org.evoludo.simulator.models.PDE;
 import org.evoludo.simulator.modules.Continuous;
@@ -199,28 +201,23 @@ public class Pop2D extends GenericPop<String, Network2D, PopGraph2D> implements 
 		int nGraphs = 0;
 		List<? extends Module<?>> species = engine.getModule().getSpecies();
 		for (Module<?> mod : species)
-			nGraphs += mod.getIBSPopulation().getInteractionGeometry().isSingle() ? 1 : 2;
+			nGraphs += displaySingle(mod) ? 1 : 2;
 
 		boolean compatible = graphs.size() == nGraphs;
 		if (compatible) {
 			int idx = 0;
-			boolean inter = true;
 			for (Module<?> mod : species) {
-				AbstractGeometry geometry = resolveIBSGeometry(mod, inter);
-				if (isLinearGeometry(geometry) != (graphs.get(idx) instanceof PopGraph1D)) {
+				AbstractGeometry geometry = resolveIBSGeometry(mod, true);
+				if (isLinearGeometry(geometry) != (graphs.get(idx++) instanceof PopGraph1D)) {
 					compatible = false;
 					break;
 				}
-				idx++;
-				inter = !inter;
-				if (!mod.getIBSPopulation().getInteractionGeometry().isSingle()) {
-					geometry = resolveIBSGeometry(mod, inter);
-					if (isLinearGeometry(geometry) != (graphs.get(idx) instanceof PopGraph1D)) {
-						compatible = false;
-						break;
-					}
-					idx++;
-					inter = !inter;
+				if (displaySingle(mod))
+					continue;
+				geometry = resolveIBSGeometry(mod, false);
+				if (isLinearGeometry(geometry) != (graphs.get(idx++) instanceof PopGraph1D)) {
+					compatible = false;
+					break;
 				}
 			}
 		}
@@ -229,22 +226,19 @@ public class Pop2D extends GenericPop<String, Network2D, PopGraph2D> implements 
 
 		destroyGraphs();
 		gCols = 1;
-		boolean inter = true;
 		for (Module<?> mod : species) {
-			AbstractGeometry geometry = resolveIBSGeometry(mod, inter);
+			AbstractGeometry geometry = resolveIBSGeometry(mod, true);
 			PopGraph2D graph = createGraph(mod, geometry);
 			wrapper.add(graph);
 			graphs.add(graph);
-			inter = !inter;
-			if (!mod.getIBSPopulation().getInteractionGeometry().isSingle()) {
-				geometry = resolveIBSGeometry(mod, inter);
-				graph = createGraph(mod, geometry);
-				wrapper.add(graph);
-				graphs.add(graph);
-				inter = !inter;
-				// arrange graphs horizontally
-				gCols = 2;
-			}
+			if (displaySingle(mod))
+				continue;
+			geometry = resolveIBSGeometry(mod, false);
+			graph = createGraph(mod, geometry);
+			wrapper.add(graph);
+			graphs.add(graph);
+			// arrange graphs horizontally
+			gCols = 2;
 		}
 		gRows = species.size();
 		if (gRows * gCols == 2) {
@@ -254,11 +248,16 @@ public class Pop2D extends GenericPop<String, Network2D, PopGraph2D> implements 
 		}
 		int width = 100 / gCols;
 		int height = 100 / gRows;
-		boolean interLayout = true;
-		for (PopGraph2D graph : graphs) {
+		int idx = 0;
+		for (Module<?> mod : species) {
+			PopGraph2D graph = graphs.get(idx++);
 			graph.setSize(width + "%", height + "%");
-			setGraphGeometry(graph, interLayout);
-			interLayout = !interLayout;
+			setGraphGeometry(graph, true);
+			if (displaySingle(mod))
+				continue;
+			graph = graphs.get(idx++);
+			graph.setSize(width + "%", height + "%");
+			setGraphGeometry(graph, false);
 		}
 		return true;
 	}
@@ -414,7 +413,7 @@ public class Pop2D extends GenericPop<String, Network2D, PopGraph2D> implements 
 				double marker = map2fit.map(mono);
 				boolean duplicate = false;
 				for (int i = 0; i < count; i++) {
-					if (Math.abs(values[i] - marker) <= 1e-8 * Math.max(1.0, Math.abs(marker))) {
+					if (Math.abs(values[i] - marker) <= Model.EPS * Math.max(1.0, Math.abs(marker))) {
 						duplicate = true;
 						break;
 					}
@@ -429,7 +428,7 @@ public class Pop2D extends GenericPop<String, Network2D, PopGraph2D> implements 
 			if (Double.isFinite(minMarker))
 				values[count++] = minMarker;
 			if (Double.isFinite(maxMarker)
-					&& (count == 0 || Math.abs(values[0] - maxMarker) > 1e-8 * Math.max(1.0, Math.abs(maxMarker))))
+					&& (count == 0 || Math.abs(values[0] - maxMarker) > Model.EPS * Math.max(1.0, Math.abs(maxMarker))))
 				values[count++] = maxMarker;
 		}
 		if (count == values.length)
@@ -477,7 +476,7 @@ public class Pop2D extends GenericPop<String, Network2D, PopGraph2D> implements 
 			style.yLabel = "time";
 			double rFreq = model.getTimeStep();
 			// if report frequency did not change, we're done
-			if (Math.abs(-style.yIncr - rFreq) > 1e-8) {
+			if (Math.abs(-style.yIncr - rFreq) > Model.EPS) {
 				style.yIncr = -rFreq;
 				// require hard reset when report frequency changed
 				style.yMax = 0.0;
@@ -576,12 +575,22 @@ public class Pop2D extends GenericPop<String, Network2D, PopGraph2D> implements 
 			if (nTraits == 2 && dep >= 0) {
 				int trait = (dep + 1) % nTraits;
 				return new ColorMapCSS.Gradient1D(colors[dep], colors[trait], trait, 100);
-			} else {
-				// vacant space does not count as dependent trait for coloring
-				if (module.getVacantIdx() == dep)
-					dep = -1;
-				return new ColorMapCSS.Gradient2D(colors, dep, 100);
 			}
+			int nIndep = (dep >= 0) ? nTraits - 1 : nTraits;
+			if (nIndep <= 2) {
+				// vacant space does not count as dependent trait for coloring
+				int colorDep = (module.getVacantIdx() == dep) ? -1 : dep;
+				return new ColorMapCSS.Gradient2D(colors, colorDep, 100);
+			}
+			// 3 or more independent traits: Gradient2D only supports two, so blend
+			// them additively instead, fading to black as the dependent trait's
+			// (e.g. vacant sites') density grows. unlike Gradient1D/Gradient2D above,
+			// which only ever touch a few fixed indices, GradientND iterates over the
+			// entire colors array, so it must be trimmed first - getTraitColors() may
+			// return 2*nTraits entries (regular colors followed by "new"/highlight
+			// variants, see Module#setTraitColors)
+			Color[] baseColors = Arrays.copyOf(colors, nTraits);
+			return (dep >= 0) ? new ColorMapCSS.GradientND(baseColors, dep) : new ColorMapCSS.GradientND(baseColors);
 		} else {
 			return new ColorMapCSS.Index(module.getTraitColors(), 220);
 		}

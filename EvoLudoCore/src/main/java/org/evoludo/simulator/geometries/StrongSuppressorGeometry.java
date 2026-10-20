@@ -65,6 +65,7 @@ public class StrongSuppressorGeometry extends AbstractGeometry {
 		isRewired = false;
 		isUndirected = true;
 		isRegular = false;
+		clear();
 
 		int unit = (int) Math.floor(Math.pow(size, 0.25));
 		int v0 = 0;

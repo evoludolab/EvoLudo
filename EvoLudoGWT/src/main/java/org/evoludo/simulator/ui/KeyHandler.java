@@ -37,6 +37,7 @@ import org.evoludo.EvoLudoWeb;
 import org.evoludo.simulator.EvoLudoGWT;
 import org.evoludo.simulator.EvoLudoTrigger;
 import org.evoludo.simulator.views.AbstractView;
+import org.evoludo.ui.ContextMenu;
 import org.evoludo.util.CLOParser;
 import org.evoludo.util.NativeJS;
 
@@ -63,6 +64,17 @@ public class KeyHandler {
 	private boolean isShiftDown = false;
 
 	/**
+	 * Tracks whether the Ctrl modifier is currently pressed.
+	 */
+	private boolean isCtrlDown = false;
+
+	/**
+	 * Tracks whether the Meta (Cmd on macOS, Windows key elsewhere) modifier is
+	 * currently pressed.
+	 */
+	private boolean isMetaDown = false;
+
+	/**
 	 * String value emitted when the Alt key is pressed.
 	 */
 	public static final String KEY_ALT = "Alt";
@@ -73,14 +85,29 @@ public class KeyHandler {
 	public static final String KEY_SHIFT = "Shift";
 
 	/**
+	 * String value emitted when the Ctrl key is pressed.
+	 */
+	public static final String KEY_CTRL = "Control";
+
+	/**
+	 * String value emitted when the Meta key is pressed.
+	 */
+	public static final String KEY_META = "Meta";
+
+	/**
 	 * String value emitted when the Enter key is pressed.
 	 */
 	public static final String KEY_ENTER = "Enter";
 
 	/**
-	 * String value emitted when the Space key is pressed.
+	 * String value emitted when the Arrow-Up key is pressed.
 	 */
-	public static final String KEY_SPACE = " ";
+	public static final String KEY_ARROW_UP = "ArrowUp";
+
+	/**
+	 * String value emitted when the Arrow-Down key is pressed.
+	 */
+	public static final String KEY_ARROW_DOWN = "ArrowDown";
 
 	/**
 	 * String value emitted when the Escape key is pressed.
@@ -156,8 +183,6 @@ public class KeyHandler {
 			return;
 		unregisterGlobal(this);
 		registered = false;
-		if (active == this)
-			active = null;
 	}
 
 	/**
@@ -167,6 +192,16 @@ public class KeyHandler {
 	 */
 	private static void setActive(KeyHandler handler) {
 		active = handler;
+	}
+
+	/**
+	 * Clears the active handler when it is the specified handler.
+	 *
+	 * @param handler the handler that may be active
+	 */
+	private static void clearActive(KeyHandler handler) {
+		if (active == handler)
+			active = null;
 	}
 
 	/**
@@ -190,6 +225,7 @@ public class KeyHandler {
 	 */
 	private static synchronized void unregisterGlobal(KeyHandler handler) {
 		keyHandlers.remove(handler);
+		clearActive(handler);
 		if (registrationCount > 0)
 			registrationCount--;
 		if (registrationCount == 0 && listenersInstalled) {
@@ -214,7 +250,26 @@ public class KeyHandler {
 	}
 
 	/**
+	 * Determines whether {@code key} is a modifier key (Alt, Shift, Ctrl or
+	 * Meta).
+	 *
+	 * @param key the key value reported by the browser event
+	 * @return {@code true} if {@code key} is a modifier key
+	 */
+	private static boolean isModifierKey(String key) {
+		return key.equals(KEY_ALT) || key.equals(KEY_SHIFT) || key.equals(KEY_CTRL) || key.equals(KEY_META);
+	}
+
+	/**
 	 * Dispatches keydown events first to the active controller, then to others.
+	 * <p>
+	 * <strong>Note:</strong> a modifier key alone never counts as "consumed" by
+	 * {@link #onKeyDown(String)} (it only updates tracked state and button
+	 * labels), so unlike other keys it is restricted to a single controller -
+	 * the active one, or the first registered controller if none is active -
+	 * and is not passed on to the others regardless of that controller's return
+	 * value; otherwise every lab on the page would toggle its button labels
+	 * whenever any one of them has focus.
 	 *
 	 * @param key the key value reported by the browser event
 	 * @return {@code true} if any controller consumed the event
@@ -222,8 +277,13 @@ public class KeyHandler {
 	@SuppressWarnings("java:S1144") // Used by JSNI
 	private static boolean dispatchKeyDown(String key) {
 		KeyHandler current = active;
-		if (current != null && current.onKeyDown(key))
-			return true;
+		if (current == null && !keyHandlers.isEmpty())
+			current = keyHandlers.get(0);
+		if (current == null)
+			return false;
+		boolean handled = current.onKeyDown(key);
+		if (handled || isModifierKey(key))
+			return handled;
 		for (KeyHandler controller : new ArrayList<>(keyHandlers)) {
 			if (controller == current)
 				continue;
@@ -235,6 +295,8 @@ public class KeyHandler {
 
 	/**
 	 * Dispatches keyup events first to the active controller, then to others.
+	 * See {@link #dispatchKeyDown(String)} for why modifier keys are restricted
+	 * to a single controller.
 	 *
 	 * @param key the key value reported by the browser event
 	 * @return {@code true} if any controller consumed the event
@@ -242,8 +304,13 @@ public class KeyHandler {
 	@SuppressWarnings("java:S1144") // Used by JSNI
 	private static boolean dispatchKeyUp(String key) {
 		KeyHandler current = active;
-		if (current != null && current.onKeyUp(key))
-			return true;
+		if (current == null && !keyHandlers.isEmpty())
+			current = keyHandlers.get(0);
+		if (current == null)
+			return false;
+		boolean handled = current.onKeyUp(key);
+		if (handled || isModifierKey(key))
+			return handled;
 		for (KeyHandler controller : new ArrayList<>(keyHandlers)) {
 			if (controller == current)
 				continue;
@@ -254,18 +321,40 @@ public class KeyHandler {
 	}
 
 	/**
-	 * Determines whether any controller's CLO field currently has focus.
+	 * Determines whether the CLO/settings field of the currently active
+	 * controller has focus.
 	 *
-	 * @return {@code true} if one of the registered controllers has its CLO field
-	 *         focused
+	 * @return {@code true} if the active controller's CLO field is focused
 	 */
-	@SuppressWarnings("java:S1144") // Used by JSNI
 	private static boolean isCLOFieldFocused() {
 		if (active == null)
 			return false;
 		Element focused = NativeJS.getActiveElement();
 		Element cloElement = active.gui.getCLOElement();
 		return focused != null && cloElement != null && focused.equals(cloElement);
+	}
+
+	/**
+	 * Determines whether a key event should be dropped before it even reaches
+	 * {@link #dispatchKeyDown(String)}/{@link #dispatchKeyUp(String)}.
+	 * <p>
+	 * While a CLO/settings field has focus, plain typing (and shortcuts such as
+	 * {@code Cmd-C}, already handled separately) must not leak through to
+	 * <em>other</em>, unfocused EvoLudo instances on the same page - the dispatch
+	 * loop falls through to every registered controller, not just the focused
+	 * one, so per-instance focus checks alone are not enough. Modifier keys
+	 * (Alt, Shift, Ctrl, Meta) are the exception: they carry no shortcut action
+	 * by themselves, only update tracked state and button labels, so they are
+	 * let through even while a CLO field has focus.
+	 *
+	 * @param key the key value reported by the browser event
+	 * @return {@code true} if the event should be dropped without dispatching
+	 */
+	@SuppressWarnings("java:S1144") // Used by JSNI
+	private static boolean blocksDispatch(String key) {
+		if (!isCLOFieldFocused())
+			return false;
+		return !isModifierKey(key);
 	}
 
 	/**
@@ -283,6 +372,9 @@ public class KeyHandler {
 	 * <ol>
 	 * <li>this EvoLudo model is not visible.
 	 * <li>in an ePub, except when on a standalone page.
+	 * <li>the Ctrl or Meta (Cmd) modifier is held, since none of the shortcuts
+	 * below explicitly require it and browser/OS shortcuts (e.g. {@code Cmd-C})
+	 * must keep working.
 	 * </ol>
 	 * <li>{@code keydown} events do not propagate further
 	 * ({@code stopPropagation()} is always called).
@@ -298,6 +390,9 @@ public class KeyHandler {
 	 * <dt>{@code Shift}</dt>
 	 * <dd>Toggles the mode for some keys, see {@code Enter} below for an
 	 * example.</dd>
+	 * <dt>{@code ArrowUp, ArrowDown}</dt>
+	 * <dd>Reserved so the browser does not scroll the page while EvoLudo handles
+	 * view switching on key release.</dd>
 	 * <dt>{@code ArrowRight, n}</dt>
 	 * <dd>Advance the model by a single step. Same as pressing the
 	 * {@code Step}-button.</dd>
@@ -329,13 +424,22 @@ public class KeyHandler {
 		}
 		if (key.equals(KEY_SHIFT))
 			isShiftDown = true;
+		if (key.equals(KEY_CTRL))
+			isCtrlDown = true;
+		if (key.equals(KEY_META))
+			isMetaDown = true;
 		if (NativeJS.isElementActive(gui.getCLOElement()))
+			return false;
+		if (isCtrlOrMetaDown(key))
 			return false;
 		AbstractView<?> activeView = gui.getActiveView();
 		if (activeView != null && activeView.onKeyDown(key))
 			return true;
 		EvoLudoGWT engine = gui.getEngine();
 		switch (key) {
+			case KEY_ARROW_UP:
+			case KEY_ARROW_DOWN:
+				break;
 			case "ArrowRight":
 			case "n":
 				engine.next();
@@ -357,7 +461,6 @@ public class KeyHandler {
 				gui.syncDelaySlider();
 				break;
 			case KEY_ENTER:
-			case KEY_SPACE:
 				return true;
 			default:
 				return false;
@@ -378,8 +481,13 @@ public class KeyHandler {
 	 * <li>{@code keyup} events are ignored if:
 	 * <ol>
 	 * <li>this EvoLudo model is not visible.
+	 * <li>the Ctrl or Meta (Cmd) modifier is held, since none of the shortcuts
+	 * below explicitly require it and browser/OS shortcuts (e.g. {@code Cmd-C})
+	 * must keep working.
 	 * <li>the command line options field has the focus. With
 	 * the exception of {@code Shift-Enter} to apply the new settings to the model.
+	 * <li>when a context menu is open, visible menu items get priority before view
+	 * and global shortcuts.
 	 * <li>in an ePub, except when on a standalone page.
 	 * </ol>
 	 * <li>{@code keyup} events do not propagate further ({@code stopPropagation()}
@@ -413,7 +521,10 @@ public class KeyHandler {
 	 * <dt>{@code 1-9}</dt>
 	 * <dd>Quick view selector. Switches to data view with the selected index if it
 	 * exists. {@code 1} is the first view etc.</dd>
-	 * <dt>{@code Enter, Space}</dt>
+	 * <dt>{@code ArrowUp, ArrowDown}</dt>
+	 * <dd>Cycles through the active views. {@code ArrowUp} selects the previous
+	 * view, {@code ArrowDown} the next.</dd>
+	 * <dt>{@code Enter}</dt>
 	 * <dd>Starts (or stops) the current model. Note, {@code Shift-Enter} applies
 	 * the new parameter settings if the field is visible and has the keyboard
 	 * focus. Same as pressing the {@code Apply}-button.</dd>
@@ -434,6 +545,8 @@ public class KeyHandler {
 	 * <dt>{@code E}</dt>
 	 * <dd>Export the current state of the model (as a modified {@code plist}).
 	 * Ignored if model is running and in ePubs.</dd>
+	 * <dt>{@code c}</dt>
+	 * <dd>Toggle the console view.</dd>
 	 * <dt>{@code H}</dt>
 	 * <dd>Show the help screen with brief descriptions of all parameters in the
 	 * console view.</dd>
@@ -456,7 +569,11 @@ public class KeyHandler {
 		updateModifierStates(key);
 		if (gui.isEPub() && !gui.isEPubStandalone())
 			return false;
+		if (isCtrlOrMetaDown(key))
+			return false;
 		if (handleCLOActiveKeys(key))
+			return true;
+		if (ContextMenu.handleKey(key, isShiftDown, isAltDown))
 			return true;
 		AbstractView<?> activeView = gui.getActiveView();
 		if (activeView != null && activeView.onKeyUp(key))
@@ -476,6 +593,27 @@ public class KeyHandler {
 		}
 		if (key.equals(KEY_SHIFT))
 			isShiftDown = false;
+		if (key.equals(KEY_CTRL))
+			isCtrlDown = false;
+		if (key.equals(KEY_META))
+			isMetaDown = false;
+	}
+
+	/**
+	 * Checks whether the Ctrl or Meta (Cmd) modifier is currently pressed while a
+	 * key other than a modifier key itself is being processed. None of the
+	 * shortcuts handled by this class or the views it delegates to explicitly
+	 * require Ctrl or Meta, so any such combination (e.g. {@code Cmd-C} to copy)
+	 * must be left to the browser/OS instead of triggering a shortcut.
+	 *
+	 * @param key the key currently being processed
+	 * @return {@code true} if Ctrl or Meta is down and {@code key} is not itself
+	 *         a modifier key
+	 */
+	private boolean isCtrlOrMetaDown(String key) {
+		if (!isCtrlDown && !isMetaDown)
+			return false;
+		return !key.equals(KEY_ALT) && !key.equals(KEY_SHIFT) && !key.equals(KEY_CTRL) && !key.equals(KEY_META);
 	}
 
 	/**
@@ -506,6 +644,10 @@ public class KeyHandler {
 			case "0":
 				gui.toggleSettings();
 				return true;
+			case KEY_ARROW_UP:
+				return handleViewCycle(false);
+			case KEY_ARROW_DOWN:
+				return handleViewCycle(true);
 			case "1":
 			case "2":
 			case "3":
@@ -519,7 +661,6 @@ public class KeyHandler {
 			case "c":
 				return handleConsoleToggle();
 			case KEY_ENTER:
-			case KEY_SPACE:
 				gui.getEngine().startStop();
 				return true;
 			case KEY_ESCAPE:
@@ -554,6 +695,23 @@ public class KeyHandler {
 	}
 
 	/**
+	 * Handles cycling through active views.
+	 *
+	 * @param forward {@code true} to select the next view, {@code false} to
+	 *                select the previous view
+	 * @return {@code true} if key has been handled
+	 */
+	private boolean handleViewCycle(boolean forward) {
+		List<AbstractView<?>> views = gui.getActiveViews();
+		if (views.isEmpty())
+			return false;
+		int idx = views.indexOf(gui.getActiveView());
+		int next = Math.floorMod(idx + (forward ? 1 : -1), views.size());
+		gui.changeView(views.get(next));
+		return true;
+	}
+
+	/**
 	 * Handles toggling the console view.
 	 * 
 	 * @return {@code true} if key has been handled
@@ -563,12 +721,12 @@ public class KeyHandler {
 		if (views.isEmpty())
 			return false;
 		AbstractView<?> consoleView = views.get(views.size() - 1);
-		AbstractView<?> active = gui.getActiveView();
-		if (active == consoleView) {
+		AbstractView<?> av = gui.getActiveView();
+		if (av == consoleView) {
 			if (toggleView != null && views.contains(toggleView))
 				gui.changeView(toggleView);
 		} else {
-			toggleView = active;
+			toggleView = av;
 			gui.changeView(consoleView);
 		}
 		return true;
@@ -639,25 +797,25 @@ public class KeyHandler {
 	 * Installs JS listeners that route keyboard events to all controllers.
 	 */
 	private static native void addGlobalKeyListeners() /*-{
-		if (!$wnd.EvoLudoUtils) {
+		if (!$wnd.EvoLudoUtils)
 			$wnd.EvoLudoUtils = {};
+		if (!$wnd.EvoLudoUtils.keyListeners)
 			$wnd.EvoLudoUtils.keyListeners = new Map();
-		}
 		if (!$wnd.EvoLudoUtils.keyListeners.get('keydown')) {
-		$wnd.EvoLudoUtils.keyListeners.set(
+			$wnd.EvoLudoUtils.keyListeners.set(
 				'keydown',
 				$entry(function(event) {
-					if (@org.evoludo.simulator.ui.KeyHandler::isCLOFieldFocused()())
+					if (@org.evoludo.simulator.ui.KeyHandler::blocksDispatch(Ljava/lang/String;)(event.key))
 						return;
 					if (@org.evoludo.simulator.ui.KeyHandler::dispatchKeyDown(Ljava/lang/String;)(event.key)) {
 						event.preventDefault();
 					}
 					event.stopPropagation();
 				}));
-		$wnd.EvoLudoUtils.keyListeners.set(
+			$wnd.EvoLudoUtils.keyListeners.set(
 				'keyup',
 				$entry(function(event) {
-					if (@org.evoludo.simulator.ui.KeyHandler::isCLOFieldFocused()())
+					if (@org.evoludo.simulator.ui.KeyHandler::blocksDispatch(Ljava/lang/String;)(event.key))
 						return;
 					if (@org.evoludo.simulator.ui.KeyHandler::dispatchKeyUp(Ljava/lang/String;)(event.key)) {
 						event.preventDefault();
@@ -705,8 +863,8 @@ public class KeyHandler {
 	 * Releases priority when this handler's CLO field loses focus.
 	 */
 	public void onCLOFocusLost() {
-		if (!gui.hasPopup() && active == this)
-			active = null;
+		if (!gui.hasPopup())
+			clearActive(this);
 	}
 
 	/**

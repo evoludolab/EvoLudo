@@ -89,18 +89,23 @@ removed. -->
 		flex-direction: column;
 	}
 	.parameter_options {
+		box-sizing: border-box;
 		border: 1px solid #ccc;
 		border-radius: 3px;
-		display: flex;
+		display: block;
 		flex: 3;
 		font-size: small;
+		height: 6.5em;
 		margin: 2px;
+		max-height: 6.5em;
+		overflow: auto;
+		overflow-wrap: anywhere;
 		padding: 4px;
+		white-space: pre-wrap;
+		width: 100%;
 	}
 	.deck {
 		clear: both;
-		margin-top: 4pt;
-		margin-bottom: 4pt;
 	}
 	.slider {
 		clear: both;
@@ -155,7 +160,9 @@ removed. -->
 				<g:FlowPanel styleName="{style.header}">
 					<g:Label ui:field='evoludoTime' styleName='{style.header_half}'
 						title="Number of generations elapsed">time: -</g:Label>
-					<g:ListBox ui:field='evoludoViews' visibleItemCount='1'  styleName='{style.header_half}'/>
+					<g:ListBox ui:field='evoludoViews' visibleItemCount='1'
+						title="Select view [↑/↓ prev/next, 1-9 direct selection, C console]"
+						styleName='{style.header_half}'/>
 				</g:FlowPanel>
 
 				<!-- main: deck with canvases -->
@@ -171,15 +178,15 @@ removed. -->
 					<!-- control buttons -->
 					<g:FlowPanel styleName='{style.controls}'>
 						<g:Button ui:field='evoludoSettings'
-							title="Change simulation parameters"
+							title="Change simulation parameters [0]"
 							addStyleNames='{style.control_button}'>Settings</g:Button>
 						<g:Button ui:field='evoludoInitReset'
-							title="Initialize population (press Alt to re-initialize structure)"
+							title="Initialize population [Esc; ⎇ Esc to re-initialize structure]"
 							addStyleNames='{style.control_button}'>Init</g:Button>
 						<g:Button ui:field='evoludoStartStop'
-							title="Start/stop simulations" addStyleNames='{style.control_button}'>Start</g:Button>
+							title="Start/stop simulations [↵]" addStyleNames='{style.control_button}'>Start</g:Button>
 						<g:Button ui:field='evoludoStep'
-							title="Advance single simulation step"
+							title="Advance single simulation step [→ or N]"
 							addStyleNames='{style.control_button}'>Step</g:Button>
 					</g:FlowPanel>
 
@@ -192,17 +199,17 @@ removed. -->
 				 			visibleLines='5'
 				 			styleName='evoludo-CLO {style.threequarter} {style.clotext}'></g:TextArea> -->
 						<g:Label ui:field='evoludoCLO'
-							title="Specify simulation parameters"
+							title="Specify simulation parameters [⇧↵ to apply]"
 							styleName='{style.parameter_options}'></g:Label>
 						<g:FlowPanel styleName='{style.parameter_controls}'>
 							<g:Button ui:field='evoludoApply'
-								title="Apply parameters"
+								title="Apply parameters [⇧↵]"
 								addStyleNames='{style.parameter_button}'>Apply</g:Button>
 							<g:Button ui:field='evoludoDefault'
 								title="Restore default parameters"
 								addStyleNames='{style.parameter_button}'>Default</g:Button>
 							<g:Button ui:field='evoludoHelp'
-								title="Help on parameter settings"
+								title="Help on parameter settings [⇧H]"
 								addStyleNames='{style.parameter_button}'>Help</g:Button>
 						</g:FlowPanel>
 					</g:FlowPanel>

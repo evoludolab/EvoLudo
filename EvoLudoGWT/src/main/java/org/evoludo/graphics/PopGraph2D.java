@@ -47,8 +47,6 @@ import org.evoludo.ui.ContextMenuRadioItem;
 
 import com.google.gwt.core.client.JsArray;
 import com.google.gwt.dom.client.NativeEvent;
-import com.google.gwt.dom.client.Style;
-import com.google.gwt.dom.client.Style.Unit;
 import com.google.gwt.dom.client.Touch;
 import com.google.gwt.event.dom.client.MouseDownEvent;
 import com.google.gwt.event.dom.client.MouseMoveEvent;
@@ -188,16 +186,6 @@ public class PopGraph2D extends GenericPopGraph<String, Network2D> implements Sh
 	private static final String INFO_POPSIZE_TOO_BIG = "Population size too big!";
 
 	/**
-	 * Cached font size of the last displayed message.
-	 */
-	private double msgFontSize = 12.0;
-
-	/**
-	 * Cached line height of the last displayed message.
-	 */
-	private double msgLineHeight = 16.8;
-
-	/**
 	 * Create a graph for graphically visualizing the structure of a network (or
 	 * population). Allocates the canvas and the label and retrieves the shared
 	 * tooltip and context menu.
@@ -222,8 +210,7 @@ public class PopGraph2D extends GenericPopGraph<String, Network2D> implements Sh
 		super.onLoad();
 		setStylePrimaryName("evoludo-PopGraph2D");
 		label.setStyleName("evoludo-Label2D");
-		msgLabel.setStyleName("evoludo-Message2D");
-		wrapper.setWidgetLeftRight(msgLabel, 0.0, Unit.PX, 0.0, Unit.PX);
+		msgLabel.addStyleName("evoludo-Message2D");
 		legend = new Legend2D(this);
 	}
 
@@ -231,50 +218,6 @@ public class PopGraph2D extends GenericPopGraph<String, Network2D> implements Sh
 	protected void onUnload() {
 		super.onUnload();
 		legend = null;
-	}
-
-	@Override
-	public boolean displayMessage(String msg) {
-		return displayMessage(msg, true);
-	}
-
-	@Override
-	public boolean displayMessage(String msg, boolean autoscale) {
-		if (msg == null || msg.isEmpty()) {
-			clearMessage();
-			return false;
-		}
-		message = msg;
-		hasMessage = true;
-		g.save();
-		g.setFont("12px sans-serif");
-		msgLabel.setText(msg);
-		Style msgStyle = msgLabel.getElement().getStyle();
-		double height = Math.max(1.0, getOffsetHeight());
-		if (autoscale) {
-			double textWidth = g.measureText(msg).getWidth();
-			double width = Math.max(1.0, getOffsetWidth());
-			int fontSize = Math.min((int) (12.0 * 0.666 * width / textWidth), 24);
-			msgFontSize = Math.max(fontSize, 12);
-			msgLineHeight = msgFontSize * 1.4;
-		}
-		msgStyle.setFontSize(msgFontSize, Unit.PX);
-		msgStyle.setLineHeight(msgLineHeight, Unit.PX);
-		wrapper.setWidgetTopHeight(msgLabel, Math.max(0.0, (height - msgLineHeight) * 0.5), Unit.PX,
-				msgLineHeight, Unit.PX);
-		g.restore();
-		msgLabel.setVisible(true);
-		return true;
-	}
-
-	@Override
-	public void clearMessage() {
-		if (!hasMessage)
-			return;
-		message = null;
-		hasMessage = false;
-		if (msgLabel != null)
-			msgLabel.setVisible(false);
 	}
 
 	/**
@@ -346,16 +289,25 @@ public class PopGraph2D extends GenericPopGraph<String, Network2D> implements Sh
 
 	@Override
 	public void onResize() {
+		boolean wasBlocked = hasMessage();
 		super.onResize();
 		ensureData();
+		if (!wasBlocked || hasMessage || geometry == null)
+			return;
+		if (invalidated && !hasStaticLayout()) {
+			update(true);
+			return;
+		}
+		paint(true);
 	}
 
 	/**
 	 * Ensure that the data array is properly initialized based on the current
-	 * geometry.
+	 * geometry. Temporary display constraints do not discard the backing colour
+	 * data so the graph can immediately redraw when more space becomes available.
 	 */
 	protected void ensureData() {
-		if (noGraph || geometry == null) {
+		if (geometry == null) {
 			data = null;
 		} else {
 			int size = geometry.getSize();
@@ -393,6 +345,10 @@ public class PopGraph2D extends GenericPopGraph<String, Network2D> implements Sh
 	 */
 	@Override
 	public boolean paint(boolean force) {
+		if (!hasStaticLayout())
+			// networks are drawn without a frame; the layout of rewired lattices may
+			// only be settled after calcBounds ran, see #handleNetwork(int, int)
+			style.showFrame = false;
 		if (super.paint(force))
 			return true;
 		if (hasStaticLayout())
@@ -427,7 +383,7 @@ public class PopGraph2D extends GenericPopGraph<String, Network2D> implements Sh
 				drawSquareNeumann2nd();
 				break;
 			default:
-				logger.warning("Unsupported geometry: " + type.getTitle());
+				view.logWarning("Unsupported geometry: " + type.getTitle());
 		}
 		g.restore();
 		legend.draw();
@@ -588,17 +544,21 @@ public class PopGraph2D extends GenericPopGraph<String, Network2D> implements Sh
 		g.scale(su, su);
 		g.save();
 		g.translate(r, r);
-		g.setFillStyle(style.linkColor);
+		g.setStrokeStyle(style.linkColor);
 		Path2D links = network.getLinks();
 		if (!links.isEmpty()) {
 			g.setLineWidth(style.linkWidth);
 			stroke(links);
 		}
 		String current = data[0];
+		if (current == null)
+			current = style.frameColor;
 		g.setFillStyle(current);
 		Node2D[] nodes = network.toArray();
 		for (int k = 0; k < nNodes; k++) {
 			String next = data[k];
+			if (next == null)
+				next = current;
 			// potential optimization of drawing
 			if (!next.equals(current)) {
 				g.setFillStyle(next);
@@ -629,7 +589,7 @@ public class PopGraph2D extends GenericPopGraph<String, Network2D> implements Sh
 
 	@Override
 	public String getTooltipAt(int x, int y) {
-		return bounds.contains(x, y) ? super.getTooltipAt(x, y) : legend.getTooltipAt(x, y);
+		return inside(x, y) ? super.getTooltipAt(x, y) : legend.getTooltipAt(x, y);
 	}
 
 	/**
@@ -692,16 +652,47 @@ public class PopGraph2D extends GenericPopGraph<String, Network2D> implements Sh
 
 	/**
 	 * The minimum width of a node in pixels.
+	 * <ul>
+	 * <li>Square lattices: {@code dw} is checked directly; {@code dh} is set
+	 * equal to {@code dw} afterwards, so no separate height check is
+	 * needed.</li>
+	 * <li>Triangular lattices: checked against {@code dw2} (half the node
+	 * width) rather than {@code dw} itself, which guarantees
+	 * {@code dw = 2 * dw2 >= 2 * MIN_DW} and, because {@code dh} is always
+	 * divided by a smaller denominator than {@code dw2}
+	 * ({@code side + 1 < side + 3}), also {@code dh >= dw2 >= MIN_DW} —
+	 * without a separate height check.</li>
+	 * <li>Honeycomb lattices: checked against {@code dw} (itself
+	 * {@code 2 * dw2}); as {@code dw} is always even this only ever excludes
+	 * the degenerate {@code dw2 == 0} case. See {@link #MIN_DH} for the
+	 * actual height constraint ({@code dh3}).</li>
+	 * </ul>
+	 * Also combined with {@link #MIN_DH} and {@link #MIN_DR} in the final
+	 * catch-all check after layout, which disables the graph only if width,
+	 * height and diameter are all below their respective minimums.
 	 */
-	static final int MIN_DW = 2;
+	static final int MIN_DW = 1;
 
 	/**
 	 * The minimum height of a node in pixels.
+	 * <ul>
+	 * <li>Square lattices: not checked directly (see {@link #MIN_DW}); by
+	 * construction {@code dh} always equals {@code dw}.</li>
+	 * <li>Triangular lattices: not checked directly; the constraint is
+	 * satisfied transitively through the {@link #MIN_DW} check on
+	 * {@code dw2}.</li>
+	 * <li>Honeycomb lattices: checked against {@code dh3} (one third of the
+	 * full hexagon height, {@code dh = 3 * dh3}), so the effective minimum
+	 * full height is {@code dh >= 3 * MIN_DH}.</li>
+	 * </ul>
+	 * Also combined with {@link #MIN_DW} and {@link #MIN_DR} in the final
+	 * catch-all check after layout, which disables the graph only if width,
+	 * height and diameter are all below their respective minimums.
 	 */
-	static final int MIN_DH = 2;
+	static final int MIN_DH = 1;
 
 	/**
-	 * The minimum diameter of a node in pixels.
+	 * The minimum diameter of a node in pixels for networks.
 	 */
 	static final double MIN_DR = 3.0;
 
@@ -745,29 +736,35 @@ public class PopGraph2D extends GenericPopGraph<String, Network2D> implements Sh
 			hPeriods = null;
 
 		// dispatch to concise handlers for each geometry
-		switch (type) {
-			case LINEAR:
-				if (this instanceof PopGraph1D)
+		// note: rewiring or adding links destroys the regular structure of lattices,
+		// which then require layouting like any other network, see Network#reset()
+		if (!isHierarchy && type.isLattice() && !geometry.isLattice()) {
+			handleNetwork(width, height);
+		} else {
+			switch (type) {
+				case LINEAR:
+					if (this instanceof PopGraph1D)
+						return;
+					//$FALL-THROUGH$
+				case CUBE:
+					handleNoRepresentation(type);
 					return;
-				//$FALL-THROUGH$
-			case CUBE:
-				handleNoRepresentation(type);
-				return;
-			case TRIANGULAR:
-				handleTriangular(width, height);
-				break;
-			case HEXAGONAL:
-				handleHoneycomb(width, height);
-				break;
-			case SQUARE_NEUMANN:
-			case SQUARE_NEUMANN_2ND:
-			case SQUARE_MOORE:
-			case SQUARE:
-				handleSquare(width, height);
-				break;
-			default:
-				handleNetwork(width, height);
-				break;
+				case TRIANGULAR:
+					handleTriangular(width, height);
+					break;
+				case HEXAGONAL:
+					handleHoneycomb(width, height);
+					break;
+				case SQUARE_NEUMANN:
+				case SQUARE_NEUMANN_2ND:
+				case SQUARE_MOORE:
+				case SQUARE:
+					handleSquare(width, height);
+					break;
+				default:
+					handleNetwork(width, height);
+					break;
+			}
 		}
 
 		// final sanity checks
@@ -814,7 +811,7 @@ public class PopGraph2D extends GenericPopGraph<String, Network2D> implements Sh
 		int bWidth = dw2 * (side + 1);
 		dw = 2 * dw2;
 		dh = diameter / (side + 1);
-		if (dw < MIN_DW || dh < MIN_DH) {
+		if (dw2 < MIN_DW) {
 			bounds.setSize(width, height);
 			return;
 		}
@@ -841,7 +838,7 @@ public class PopGraph2D extends GenericPopGraph<String, Network2D> implements Sh
 		dw = 2 * dw2;
 		dh3 = diameter / (3 * side + 1);
 		dh = 3 * dh3;
-		if (dw < MIN_DW || dh3 < Math.max(MIN_DH / 3, 1)) {
+		if (dw < MIN_DW || dh3 < MIN_DH) {
 			bounds.setSize(width, height);
 			return;
 		}
@@ -941,11 +938,11 @@ public class PopGraph2D extends GenericPopGraph<String, Network2D> implements Sh
 		if (hasMessage || network == null || invalidated || network.isStatus(Status.LAYOUT_IN_PROGRESS))
 			return FINDNODEAT_OUT_OF_BOUNDS;
 
-		// some heuristic adjustments... cause remains mysterious
-		x = x - (int) (style.frameWidth * zoomFactor + 0.5);
-		y = y - (int) (style.frameWidth * zoomFactor - 0.5);
-		double sx = (viewCorner.getX() + x - bounds.getX()) / zoomFactor;
-		double sy = (viewCorner.getY() + y - bounds.getY()) / zoomFactor;
+		// the frame border is a centered stroke drawn inside the zoomed content
+		// transform, so only half its width extends past the content origin that
+		// bounds refers to; both axes need the identical correction
+		double sx = (viewCorner.getX() + x - canvasPadX() - bounds.getX()) / zoomFactor - style.frameWidth * 0.5;
+		double sy = (viewCorner.getY() + y - canvasPadY() - bounds.getY()) / zoomFactor - style.frameWidth * 0.5;
 		if (sx < 0.0 || sx > bounds.getWidth() || sy < 0.0 || sy > bounds.getHeight())
 			return FINDNODEAT_OUT_OF_BOUNDS;
 		int isx = (int) (sx + 0.5);
@@ -1092,6 +1089,19 @@ public class PopGraph2D extends GenericPopGraph<String, Network2D> implements Sh
 	protected boolean hitDragged = false;
 
 	/**
+	 * Check whether the current graph state supports dragging individual nodes.
+	 *
+	 * Only non-lattice network layouts with established node positions are
+	 * draggable. Static lattice layouts should fall back to the inherited shifter
+	 * instead.
+	 *
+	 * @return {@code true} if node dragging is available
+	 */
+	protected boolean supportsNodeDragging() {
+		return network != null && !hasStaticLayout() && network.isStatus(Status.HAS_LAYOUT);
+	}
+
+	/**
 	 * {@inheritDoc}
 	 * <p>
 	 * If a node has been hit by a left-click, remember the node's index and the
@@ -1110,7 +1120,7 @@ public class PopGraph2D extends GenericPopGraph<String, Network2D> implements Sh
 	public void onMouseDown(MouseDownEvent event) {
 		// super sets mouse coordinates and leftMouseButton when inside
 		super.onMouseDown(event);
-		if (!leftMouseButton) {
+		if (!leftMouseButton || !supportsNodeDragging()) {
 			hitNode = -1;
 			element.removeClassName(CURSOR_GRAB_NODE_CLASS);
 			return;
@@ -1166,7 +1176,7 @@ public class PopGraph2D extends GenericPopGraph<String, Network2D> implements Sh
 	 */
 	@Override
 	public void onMouseMove(MouseMoveEvent event) {
-		if (hitNode >= 0) {
+		if (supportsNodeDragging() && hitNode >= 0) {
 			event.preventDefault();
 			int x = event.getX();
 			int y = event.getY();
@@ -1226,7 +1236,7 @@ public class PopGraph2D extends GenericPopGraph<String, Network2D> implements Sh
 	@Override
 	public void onTouchMove(TouchMoveEvent event) {
 		JsArray<Touch> touches = event.getTouches();
-		if (touches.length() == 1 && hitNode >= 0) {
+		if (touches.length() == 1 && supportsNodeDragging() && hitNode >= 0) {
 			// shift node
 			Touch touch = touches.get(0);
 			int x = touch.getRelativeX(element);
@@ -1253,11 +1263,9 @@ public class PopGraph2D extends GenericPopGraph<String, Network2D> implements Sh
 
 	@Override
 	protected boolean inside(int x, int y) {
-		// heuristic offset aligns with findNodeAt bounds checks
-		int adjX = x - (int) (style.frameWidth * zoomFactor + 0.5);
-		int adjY = y - (int) (style.frameWidth * zoomFactor - 0.5);
-		double sx = (viewCorner.getX() + adjX - bounds.getX()) / zoomFactor;
-		double sy = (viewCorner.getY() + adjY - bounds.getY()) / zoomFactor;
+		// keep aligned with findNodeAt() for consistency
+		double sx = (viewCorner.getX() + x - canvasPadX() - bounds.getX()) / zoomFactor - style.frameWidth * 0.5;
+		double sy = (viewCorner.getY() + y - canvasPadY() - bounds.getY()) / zoomFactor - style.frameWidth * 0.5;
 		return sx >= 0.0 && sx <= bounds.getWidth() && sy >= 0.0 && sy <= bounds.getHeight();
 	}
 

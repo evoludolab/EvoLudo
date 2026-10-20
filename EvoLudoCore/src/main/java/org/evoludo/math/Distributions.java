@@ -449,7 +449,9 @@ public class Distributions {
 	public static double distrMean(double[] w) {
 		double mean = 0.0;
 		int n = w.length;
-		double norm = w[0];
+		if (n == 0)
+			return 0.0;
+		double norm = 0.0;
 		for (int i = 0; i < n; i++) {
 			double wi = w[i];
 			if (wi <= 0.0)
@@ -457,9 +459,9 @@ public class Distributions {
 			mean += (i + 0.5) * wi;
 			norm += wi;
 		}
-		if (norm < 1e-8)
+		if (norm < RNGDistribution.EPS)
 			return 0.0;
-		return mean / (n * norm);
+		return mean / (n * norm); // NOSONAR norm check above
 	}
 
 	/**
@@ -548,14 +550,16 @@ public class Distributions {
 	 * @return <code>m</code>-th moment of <code>w</code>
 	 */
 	public static double distrMoment(double[] w, int m) {
-		int n = w.length;
 		if (m == 0)
-			return n;
+			return 1.0;
 		if (m == 1)
 			return distrMean(w);
+		int n = w.length;
+		if (n == 0)
+			return 0.0;
 		double ibins = 1.0 / n;
 		double moment = 0.0;
-		double norm = w[0];
+		double norm = 0.0;
 		for (int i = 0; i < n; i++) {
 			double wi = w[i];
 			if (wi <= 0.0)
@@ -564,9 +568,9 @@ public class Distributions {
 			moment += wi * Combinatorics.pow(xi, m);
 			norm += wi;
 		}
-		if (norm < 1e-8)
+		if (norm < RNGDistribution.EPS)
 			return 0.0;
-		return moment / ((n - 1) * norm);
+		return moment / norm; // NOSONAR norm check above
 	}
 
 	/**
@@ -612,9 +616,11 @@ public class Distributions {
 		if (m == 1)
 			return 0.0;
 		int n = w.length;
+		if (n == 0)
+			return 0.0;
 		double ibins = 1.0 / n;
 		double moment = 0.0;
-		double norm = w[0];
+		double norm = 0.0;
 		for (int i = 0; i < n; i++) {
 			double wi = w[i];
 			if (wi <= 0.0)
@@ -623,9 +629,9 @@ public class Distributions {
 			moment += wi * Combinatorics.pow(xi - m1, m);
 			norm += wi;
 		}
-		if (norm < 1e-8)
+		if (norm < RNGDistribution.EPS)
 			return 0.0;
-		return moment / ((n - 1) * norm);
+		return moment / norm; // NOSONAR norm check above
 	}
 
 	/**

@@ -73,11 +73,6 @@ public class S3Map implements BasicTooltipProvider {
 	int role = -1;
 
 	/**
-	 * Temporary storage for the simplex coordinates of the tooltip.
-	 */
-	double[] tip = new double[3];
-
-	/**
 	 * Create a new mapping of data to simplex projections.
 	 */
 	public S3Map() {
@@ -233,11 +228,12 @@ public class S3Map implements BasicTooltipProvider {
 	 * @return the point {@code p}
 	 */
 	public Point2D data2S3(double s1, double s2, double s3, Point2D p) {
-		// top (c): s3, right (d): s2, left (l): s1
-		// x in [-1, 1]; y in [-1/3, 2/3]
-		p.set(s2 - s1, (s3 - s2 - s1 + 1.0) * 0.5 - 1.0 / 3.0);
-		p.scale(s1 + s2 + s3);
-		p.set((p.getX() + 1.0) * 0.5, 2.0 / 3.0 - p.getY());
+		// barycentric combination of the three corners (lower left: s1, lower
+		// right: s2, top: s3); any missing mass, i.e. s1 + s2 + s3 < 1.0 (e.g.
+		// due to vacant sites or unlisted traits), is attributed to the centroid
+		// of the simplex, (0.5, 2/3). for s1 + s2 + s3 == 1.0 this reduces to the
+		// standard barycentric map onto the triangle's corners.
+		p.set(0.5 + 0.5 * (s2 - s1), 2.0 / 3.0 - s3 + (s1 + s2 + s3) / 3.0);
 		return p;
 	}
 
@@ -250,10 +246,13 @@ public class S3Map implements BasicTooltipProvider {
 	 * 
 	 * @param x the x-coordinate of the point
 	 * @param y the y-coordinate of the point
-	 * @param s the point on the simplex
 	 * @return the array {@code s}
 	 */
-	public double[] s32Data(double x, double y, double[] s) {
+	public double[] s32Data(double x, double y) {
+		String[] sn = getNames();
+		if (sn == null || sn.length < 3)
+			throw new IllegalStateException("Trait names not set for S3Map");
+		double[] s = new double[sn.length];
 		// point is in scaled user coordinates
 		s[order[2]] = Math.max(0.0, y);
 		double s1 = Math.max(0.0, x - y * 0.5);
@@ -265,13 +264,13 @@ public class S3Map implements BasicTooltipProvider {
 
 	@Override
 	public String getTooltipAt(double sx, double sy) {
-		s32Data(sx, sy, tip);
+		double[] tip = s32Data(sx, sy);
 		StringBuilder msg = new StringBuilder(TABLE_STYLE);
 		for (int i = 0; i < 3; i++)
 			msg.append(TABLE_ROW_START_RIGHT)
-					.append(names[i])
+					.append(getName(i))
 					.append(TABLE_CELL_NEXT)
-					.append(Formatter.formatPercent(tip[i], 2))
+					.append(Formatter.formatPercent(tip[order[i]], 2))
 					.append(TABLE_ROW_END);
 		return msg.append(TABLE_END).toString();
 	}

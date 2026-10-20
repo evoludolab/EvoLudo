@@ -65,6 +65,7 @@ import org.evoludo.simulator.modules.EcoPGG;
 import org.evoludo.simulator.modules.LV;
 import org.evoludo.simulator.modules.Module;
 import org.evoludo.simulator.modules.Moran;
+import org.evoludo.simulator.modules.Mutualism;
 import org.evoludo.simulator.modules.NetGames;
 import org.evoludo.simulator.modules.RSP;
 import org.evoludo.simulator.modules.SIR;
@@ -134,8 +135,14 @@ public abstract class EvoLudo
 
 	/**
 	 * The logger for keeping track of and reporting events and issues.
+	 * <p>
+	 * Package-private: within {@code org.evoludo.simulator} a few classes (e.g.
+	 * {@link CLOController}, {@link RunController}) still need direct access to
+	 * the {@link Logger} instance for configuration (level, handlers); everyone
+	 * else should use {@link #logMessage(String)}, {@link #logWarning(String)},
+	 * {@link #logError(String)}, or {@link #getLogger()}.
 	 */
-	protected Logger logger;
+	Logger logger;
 
 	/**
 	 * Utility method to log progress of simulations. For implementation details see
@@ -152,7 +159,8 @@ public abstract class EvoLudo
 	 * @param msg information message
 	 */
 	public void logMessage(String msg) {
-		logger.info(msg);
+		if (logger.isLoggable(Level.INFO))
+			logger.info(msg);
 	}
 
 	/**
@@ -161,7 +169,8 @@ public abstract class EvoLudo
 	 * @param msg warning message
 	 */
 	public void logWarning(String msg) {
-		logger.warning(msg);
+		if (logger.isLoggable(Level.WARNING))
+			logger.warning(msg);
 	}
 
 	/**
@@ -170,7 +179,8 @@ public abstract class EvoLudo
 	 * @param msg error message
 	 */
 	public void logError(String msg) {
-		logger.severe(msg);
+		if (logger.isLoggable(Level.SEVERE))
+			logger.severe(msg);
 	}
 
 	/**
@@ -479,7 +489,7 @@ public abstract class EvoLudo
 	public final boolean modelCheck() {
 		// special case: if --generation 0 model should not run regardless of
 		// whether --run option was provided.
-		if (Math.abs(activeModel.getTimeStop()) < 1e-8)
+		if (Math.abs(activeModel.getTimeStop()) < Model.EPS)
 			setSuspended(false);
 		// check module first; model may contact module
 		boolean doReset = false;
@@ -509,7 +519,7 @@ public abstract class EvoLudo
 	 * Reset all populations and notify all listeners.
 	 */
 	public final void modelReset() {
-		runController.modelReset();
+		runController.modelReset(false);
 	}
 
 	/**
@@ -527,7 +537,7 @@ public abstract class EvoLudo
 	 * Initialize all populations and notify all listeners.
 	 */
 	public final void modelInit() {
-		runController.modelInit();
+		runController.modelInit(false);
 	}
 
 	/**
@@ -549,12 +559,14 @@ public abstract class EvoLudo
 	 * 
 	 * @see Model#relax()
 	 */
-	public final boolean modelRelax() {
-		return runController.modelRelax();
+	public boolean modelRelax() {
+		return modelRelax(false);
 	}
 
 	/**
 	 * Relax model by {@code timeRelax} steps and notify all listeners if requested.
+	 * Runtime-specific subclasses may override this method to perform relaxation
+	 * asynchronously.
 	 *
 	 * @param quiet set to {@code true} to skip notifying listeners
 	 * 
@@ -562,7 +574,7 @@ public abstract class EvoLudo
 	 * 
 	 * @see Model#relax()
 	 */
-	public final boolean modelRelax(boolean quiet) {
+	public boolean modelRelax(boolean quiet) {
 		return runController.modelRelax(quiet);
 	}
 
@@ -766,6 +778,7 @@ public abstract class EvoLudo
 	 * 
 	 * @return the active module
 	 */
+	@SuppressWarnings("java:S1452") // impossible to specify generic type here
 	public Module<?> getModule() {
 		return activeModule;
 	}
@@ -1295,7 +1308,7 @@ public abstract class EvoLudo
 			fireModelStopped();
 			pendingAction = PendingAction.NONE;
 		}
-		logger.severe(msg);
+		logError(msg);
 		throw new IllegalStateException(msg);
 	}
 
@@ -1323,5 +1336,6 @@ public abstract class EvoLudo
 		addModule(new NetGames(this));
 		addModule(new SIR(this));
 		addModule(new LV(this));
+		addModule(new Mutualism(this));
 	}
 }

@@ -447,6 +447,27 @@ public class ContextMenu extends FlowPanel
 	}
 
 	/**
+	 * Gives the visible context-menu hierarchy priority for handling a key event.
+	 * If no visible menu item handles the key, the caller may continue with global
+	 * keyboard handling.
+	 *
+	 * @param key       the key value reported by the browser
+	 * @param shiftDown {@code true} if Shift is currently pressed
+	 * @param altDown   {@code true} if Alt is currently pressed
+	 * @return {@code true} if a visible menu item handled the key
+	 */
+	public static boolean handleKey(String key, boolean shiftDown, boolean altDown) {
+		if (!isShowing())
+			return false;
+		String normalizedKey = ContextMenuItem.normalizeKey(key, shiftDown, altDown);
+		if (contextMenu.handleKey(normalizedKey))
+			return true;
+		if ("Escape".equals(key))
+			contextMenu.closeAll();
+		return false;
+	}
+
+	/**
 	 * Create new context menu. Use shared instance to create top level context
 	 * menu, {@link #sharedContextMenu()}.
 	 */
@@ -683,6 +704,29 @@ public class ContextMenu extends FlowPanel
 		}
 		// this is the top level
 		setVisible(false);
+	}
+
+	/**
+	 * Walks the visible menu hierarchy and executes the first enabled item that
+	 * handles the supplied normalized key.
+	 *
+	 * @param normalizedKey the normalized key representation
+	 * @return {@code true} if a visible item handled the key
+	 */
+	private boolean handleKey(String normalizedKey) {
+		if (childMenu != null && childMenu.handleKey(normalizedKey))
+			return true;
+		for (int n = 0; n < getWidgetCount(); n++) {
+			Widget item = getWidget(n);
+			if (!(item instanceof ContextMenuItem))
+				continue;
+			ContextMenuItem menuItem = (ContextMenuItem) item;
+			if (!menuItem.handlesKey(normalizedKey))
+				continue;
+			menuItem.action();
+			return true;
+		}
+		return false;
 	}
 
 	/**

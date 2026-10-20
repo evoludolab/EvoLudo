@@ -86,7 +86,7 @@ public class CDLPQ extends CDLP {
 		// trait names (optional)
 		setTraitNames(new String[] { "Loner", "Defector", "Cooperator", "Peer-punisher", "Sanctioner" });
 		// trait colors (optional)
-		setTraitColors(new Color[] { new Color(238, 204, 17), Color.RED, Color.BLUE, Color.GREEN, Color.MAGENTA });
+		setTraitColors(new Color[] { new Color(255, 220, 50), Color.RED, Color.BLUE, Color.GREEN, Color.MAGENTA });
 	}
 
 	@Override

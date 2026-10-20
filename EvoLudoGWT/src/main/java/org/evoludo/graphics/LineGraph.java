@@ -31,16 +31,17 @@
 package org.evoludo.graphics;
 
 import java.awt.Color;
+import java.util.Arrays;
 import java.util.Iterator;
 
 import org.evoludo.geom.Point2D;
 import org.evoludo.graphics.AbstractGraph.HasLogScaleY;
 import org.evoludo.graphics.AbstractGraph.Shifting;
 import org.evoludo.graphics.AbstractGraph.Zooming;
-import org.evoludo.math.ArrayMath;
 import org.evoludo.math.Functions;
 import org.evoludo.simulator.ColorMapCSS;
 import org.evoludo.simulator.models.Data;
+import org.evoludo.simulator.models.Model;
 import org.evoludo.simulator.modules.Continuous;
 import org.evoludo.simulator.modules.Module;
 import org.evoludo.simulator.views.BasicTooltipProvider;
@@ -49,6 +50,7 @@ import org.evoludo.ui.ContextMenu;
 import org.evoludo.ui.ContextMenuCheckBoxItem;
 import org.evoludo.ui.ContextMenuItem;
 import org.evoludo.util.CLOParser;
+import org.evoludo.util.CLOption;
 import org.evoludo.util.Formatter;
 import org.evoludo.util.RingBuffer;
 
@@ -200,6 +202,45 @@ public class LineGraph extends AbstractGraph<double[]>
 	private static final double ZOOM_FIT_MARGIN = 0.05;
 
 	/**
+	 * Fraction of {@code yMax} below which a linear {@code y}-axis minimum is
+	 * considered insignificant and snapped to zero rather than given its own
+	 * (arbitrarily fine-grained) axis floor.
+	 */
+	private static final double MIN_YMAX_FRACTION = 0.01;
+
+	/**
+	 * Whether the model tracks real time for the current run (as opposed to only
+	 * generation/update counts), see {@code EvoLudo.Model#getTime()}. Determines
+	 * whether the "use real time" toggle is shown at all.
+	 */
+	private boolean realTimeAvailable = false;
+
+	/**
+	 * Whether the x-axis currently plots real time (the value appended at the end
+	 * of each buffered sample) rather than updates (the value prepended at the
+	 * start). Defaults to real time as soon as it becomes available, unless the
+	 * user has explicitly picked an axis through the context menu.
+	 */
+	private boolean useRealTime = false;
+
+	/**
+	 * Whether {@link #useRealTime} was set explicitly by the user through the
+	 * context menu, in which case it is no longer overridden automatically when
+	 * {@link #setRealTimeAvailable(boolean)} is called.
+	 */
+	private boolean userSetAxis = false;
+
+	/**
+	 * The x-axis label to show when plotting updates.
+	 */
+	private String updatesLabel = "generation";
+
+	/**
+	 * The x-axis label to show when plotting real time.
+	 */
+	private String realTimeLabel = "time";
+
+	/**
 	 * Create new line graph for {@code view}. The {@code id} is used to
 	 * distinguish different graphs of the same module to visualize different
 	 * components of the data and represents the index of the data column.
@@ -228,46 +269,138 @@ public class LineGraph extends AbstractGraph<double[]>
 		}
 	}
 
+	/**
+	 * The options of line graphs. The options are selected on the command line,
+	 * see {@link LineGraph#parse(String)}. All options except {@link #LOG} take a
+	 * numerical parameter, separated from the key by a space.
+	 */
+	public enum GraphOption implements CLOption.Key {
+
+		/**
+		 * Logarithmic scaling of the y-axis.
+		 */
+		LOG("log", "logarithmic scaling of y-axis"),
+
+		/**
+		 * Set the minimum of the x-axis.
+		 */
+		XMIN("xmin", "minimum of x-axis <x>"),
+
+		/**
+		 * Set the maximum of the x-axis.
+		 */
+		XMAX("xmax", "maximum of x-axis <x>"),
+
+		/**
+		 * Set the minimum of the y-axis. Disables autoscaling.
+		 */
+		YMIN("ymin", "minimum of y-axis <y> (disables autoscaling)"),
+
+		/**
+		 * Set the maximum of the y-axis. Disables autoscaling.
+		 */
+		YMAX("ymax", "maximum of y-axis <y> (disables autoscaling)");
+
+		/**
+		 * The key identifying the option on the command line.
+		 */
+		private final String key;
+
+		/**
+		 * The brief description of the option for the help screen.
+		 */
+		private final String title;
+
+		/**
+		 * Create a graph option with the given command line key and description.
+		 *
+		 * @param key   the name of the option
+		 * @param title the description of the option
+		 */
+		GraphOption(String key, String title) {
+			this.key = key;
+			this.title = title;
+		}
+
+		@Override
+		public String getKey() {
+			return key;
+		}
+
+		@Override
+		public String getTitle() {
+			return title;
+		}
+	}
+
 	@Override
 	public boolean parse(String args) {
 		// set defaults
 		style.autoscaleY = true;
 		setLogY(false);
-		if (args != null)
-			parseArgs(args);
-		return true;
+		if (args == null)
+			return true;
+		return parseArgs(args);
 	}
 
 	/**
-	 * Parse command line options for the graph. The following options are
-	 * recognized:
-	 * <ul>
-	 * <li>{@code log}: enable logarithmic scaling on the y-axis
-	 * <li>{@code xmin <value>}: set the minimum x-axis value
-	 * <li>{@code xmax <value>}: set the maximum x-axis value
-	 * <li>{@code ymin <value>}: set the minimum y-axis value
-	 * <li>{@code ymax <value>}: set the maximum y-axis value
-	 * </ul>
-	 * 
-	 * @param args the command line arguments (comma separated, no spaces)
+	 * Parse command line options for the graph, see {@link GraphOption} for the
+	 * recognized options. Matching is as lenient as for command line keys, i.e.
+	 * keys can be abbreviated as well as extended, and the best match wins.
+	 * Unknown options or missing parameters are reported and ignored.
+	 *
+	 * @param args the command line arguments (comma separated)
+	 * @return {@code true} if all arguments were successfully parsed
+	 *
+	 * @see CLOption#match(String, CLOption.Key[])
 	 */
-	private void parseArgs(String args) {
+	private boolean parseArgs(String args) {
+		boolean ok = true;
 		for (String arg : args.split(CLOParser.VECTOR_DELIMITER)) {
 			arg = arg.trim();
-			if (arg.startsWith("log")) {
+			if (arg.isEmpty())
+				continue;
+			int split = arg.indexOf(' ');
+			String keyname = split < 0 ? arg : arg.substring(0, split);
+			GraphOption option = CLOption.match(keyname, GraphOption.values());
+			if (option == null) {
+				view.logWarning("view '" + view.getName() + "': unknown option '" + arg + "' - ignored.");
+				ok = false;
+				continue;
+			}
+			if (option == GraphOption.LOG) {
 				setLogY(true);
-			} else if (arg.startsWith("xmin")) {
-				style.xMin = Double.parseDouble(arg.substring(arg.indexOf(" ") + 1).trim());
-			} else if (arg.startsWith("xmax")) {
-				style.xMax = Double.parseDouble(arg.substring(arg.indexOf(" ") + 1).trim());
-			} else if (arg.startsWith("ymin")) {
-				style.yMin = Double.parseDouble(arg.substring(arg.indexOf(" ") + 1).trim());
-				style.autoscaleY = false;
-			} else if (arg.startsWith("ymax")) {
-				style.yMax = Double.parseDouble(arg.substring(arg.indexOf(" ") + 1).trim());
-				style.autoscaleY = false;
+				continue;
+			}
+			double param;
+			try {
+				param = Double.parseDouble(split < 0 ? "" : arg.substring(split + 1).trim());
+			} catch (NumberFormatException e) {
+				view.logWarning("view '" + view.getName() + "': option '" + option.getKey()
+						+ "' requires a numerical parameter - ignored.");
+				ok = false;
+				continue;
+			}
+			switch (option) {
+				case XMIN:
+					style.xMin = param;
+					break;
+				case XMAX:
+					style.xMax = param;
+					break;
+				case YMIN:
+					style.yMin = param;
+					style.autoscaleY = false;
+					break;
+				case YMAX:
+					style.yMax = param;
+					style.autoscaleY = false;
+					break;
+				default:
+					break;
 			}
 		}
+		return ok;
 	}
 
 	@Override
@@ -285,8 +418,27 @@ public class LineGraph extends AbstractGraph<double[]>
 		return nLines;
 	}
 
+	/**
+	 * Flag indicating that the next sample starts a new time series because the
+	 * model was re-initialized.
+	 */
+	private boolean newTimeseries = false;
+
+	/**
+	 * The time value used to separate distinct time series in the history buffer.
+	 */
+	private static final double TIME_SERIES_BREAK = Double.NaN;
+
+	/**
+	 * Flag indicating that the next sample must be appended to anchor a new run
+	 * after a restart or a change in time direction.
+	 */
+	private boolean appendNextSample = false;
+
 	@Override
 	public void reset() {
+		appendNextSample = false;
+		newTimeseries = false;
 		if (style.autoscaleY) {
 			style.yMin = Double.MAX_VALUE;
 			style.yMax = -Double.MAX_VALUE;
@@ -299,76 +451,174 @@ public class LineGraph extends AbstractGraph<double[]>
 		setSteps(steps * (style.xMax - style.xMin) / (style.xMax - oldXMin));
 	}
 
-	/**
-	 * Add data to the graph. The time {@code t} is prepended to the data as the
-	 * first element.
-	 * 
-	 * @evoludo.impl The data array is cloned and the time prepended before adding
-	 *               it to the buffer.
-	 * 
-	 * @param t    the time of the data
-	 * @param data the data to add
-	 */
-	public void addData(double t, double[] data) {
-		addData(prependTime2Data(t, data));
+	@Override
+	public void init() {
+		newTimeseries = true;
 	}
 
 	/**
-	 * Add data to the graph.
-	 * 
-	 * @evoludo.impl If the change relative to the latest buffered sample is
-	 *               negligible, only the latest sample's time entry is updated.
-	 *               Otherwise the data array is directly added to the buffer. It is
-	 *               the caller's responsibility to ensure that the first entry
-	 *               represents time and the data remains unmodified.
-	 * 
-	 * @param data the data to add
+	 * Add data to the graph. The time {@code t} is prepended to the data as the
+	 * first element.
+	 *
+	 * @evoludo.impl The data array is cloned and the time prepended before adding
+	 *               it to the buffer.
+	 *
+	 * @param t        the time (updates) of the data
+	 * @param data     the data to add
+	 * @param realTime the real time of the data, or {@code Double.NaN} if not
+	 *                 available for this run
 	 */
-	public void addData(double[] data) {
+	public void addData(double t, double[] data, double realTime) {
+		addData(prependTime2Data(t, data), realTime);
+	}
+
+	/**
+	 * Add data to the graph. Real time is appended as the last element of the
+	 * stored sample, alongside updates prepended as the first element, so that
+	 * either can be selected as the x-axis without maintaining a second, separately
+	 * synchronized buffer.
+	 *
+	 * @evoludo.impl If the change relative to the latest buffered sample is
+	 *               negligible, only the latest sample's time entries are updated
+	 *               unless the new sample is needed to anchor the beginning of a
+	 *               flat segment. Model initialization inserts a separator and
+	 *               starts a new buffered time series. Changes in the direction of
+	 *               time are always appended, and the following sample is retained
+	 *               once to anchor the new direction. Otherwise the data array is
+	 *               directly added to the buffer. It is the caller's
+	 *               responsibility to ensure that the first entry represents
+	 *               updates and the data remains unmodified.
+	 *
+	 * @param data     the data to add (updates prepended)
+	 * @param realTime the real time of the data, or {@code Double.NaN} if not
+	 *                 available for this run
+	 */
+	public void addData(double[] data, double realTime) {
+		double[] extended = Arrays.copyOf(data, data.length + 1);
+		extended[data.length] = realTime;
+		data = extended;
+		if (newTimeseries) {
+			newTimeseries = false;
+			if (!buffer.isEmpty()) {
+				appendSeparator(data.length);
+				appendData(data);
+				appendNextSample = true;
+				return;
+			}
+		}
 		if (!buffer.isEmpty()) {
 			double[] last = buffer.last();
-			if (Math.abs(data[0] - last[0]) < 1e-8) {
+			double dt = data[0] - last[0];
+			if (Math.abs(dt) < Model.EPS) {
 				System.arraycopy(data, 0, last, 0, last.length);
 				return;
 			}
+			if (appendNextSample) {
+				appendData(data);
+				appendNextSample = false;
+				return;
+			}
+			int direction = dt > 0.0 ? 1 : -1;
+			int recentDirection = 0;
+			Iterator<double[]> iter = buffer.iterator();
+			if (iter.hasNext()) {
+				iter.next();
+				while (iter.hasNext()) {
+					double[] previous = iter.next();
+					if (!Double.isFinite(previous[0]))
+						break;
+					recentDirection = timeStepDirection(last[0], previous[0]);
+					if (recentDirection != 0)
+						break;
+				}
+			}
+			if (recentDirection != 0 && direction != recentDirection) {
+				appendData(data);
+				appendNextSample = true;
+				return;
+			}
 			if (updateTimeOnly(data, last)) {
+				// extend the flat segment along both axes
 				last[0] = data[0];
+				last[last.length - 1] = data[data.length - 1];
 				return;
 			}
 		}
 		// add new sample
+		appendData(data);
+	}
+
+	/**
+	 * Append a sample to the history and update autoscaling metadata.
+	 *
+	 * @param data the sample to append (updates prepended, real time appended)
+	 */
+	private void appendData(double[] data) {
 		buffer.append(data);
 		updateAutoscale(data);
 	}
 
 	/**
+	 * Append an in-buffer separator that marks the beginning of a new time series.
+	 *
+	 * @param length the length of the separator sample (including the trailing
+	 *               real-time column)
+	 */
+	private void appendSeparator(int length) {
+		double[] separator = new double[length];
+		Arrays.fill(separator, Double.NaN);
+		separator[0] = TIME_SERIES_BREAK;
+		buffer.append(separator);
+	}
+
+	/**
 	 * Update autoscaled {@code y}-range from a newly appended sample.
-	 * 
-	 * @param data the latest buffered sample (time prepended)
+	 *
+	 * @param data the latest buffered sample (updates prepended, real time
+	 *             appended)
 	 */
 	private void updateAutoscale(double[] data) {
-		// time does not count for min/max
-		double t = data[0];
-		data[0] = style.yMin;
-		double min = ArrayMath.min(data);
-		if (style.logScaleY && min <= 0.0) {
-			// keep log scale: ignore non-positive point for autoscale updates
-			data[0] = t;
-			return;
+		// only the plotted value columns (1..nLines) count for min/max - the
+		// leading updates and trailing real-time columns are excluded
+		double min = Double.POSITIVE_INFINITY;
+		double max = Double.NEGATIVE_INFINITY;
+		for (int n = 1; n <= nLines; n++) {
+			double v = data[n];
+			if (!Double.isFinite(v))
+				continue;
+			min = Math.min(min, v);
+			max = Math.max(max, v);
 		}
+		if (style.logScaleY && min <= 0.0)
+			// keep log scale: ignore non-positive point for autoscale updates
+			return;
 		if (min <= 0.0)
 			style.logScaleY = false;
 		if (style.autoscaleY) {
 			// dynamically extend range if needed - never reduce (would need to
 			// consult RingBuffer for this)
-			if (!Double.isNaN(min))
-				style.yMin = Math.min(style.yMin, Functions.roundDown(min));
-			data[0] = style.yMax;
-			double max = ArrayMath.max(data);
-			if (!Double.isNaN(max))
+			if (max != Double.NEGATIVE_INFINITY)
 				style.yMax = Math.max(style.yMax, Functions.roundUp(max));
+			if (min != Double.POSITIVE_INFINITY) {
+				double newMin = (!style.logScaleY && min > 0.0) ? roundLinearYMin(min, style.yMax)
+						: Functions.roundDown(min);
+				style.yMin = Math.min(style.yMin, newMin);
+			}
 		}
-		data[0] = t;
+	}
+
+	/**
+	 * Round a candidate linear {@code y}-axis minimum down, snapping it to zero
+	 * if it is an insignificant fraction of the overall range.
+	 *
+	 * @param min  the candidate minimum (must be {@code > 0})
+	 * @param yMax the current {@code y}-axis maximum
+	 * @return the rounded minimum, or {@code 0.0} if snapped
+	 */
+	private double roundLinearYMin(double min, double yMax) {
+		if (yMax <= 0.0 || min < MIN_YMAX_FRACTION * yMax)
+			return 0.0;
+		return Functions.roundDown(min);
 	}
 
 	/**
@@ -385,27 +635,104 @@ public class LineGraph extends AbstractGraph<double[]>
 			return false;
 		double t = current[0];
 		double lastt = last[0];
-		// Preserve segment markers and non-monotonic inputs.
-		if (!Double.isFinite(t) || !Double.isFinite(lastt) || t < lastt)
+		// non-finite times serve as timeseries separators.
+		if (!Double.isFinite(t) || !Double.isFinite(lastt))
 			return false;
 		return !keepSample(buffer, current, last);
 	}
 
+	/**
+	 * Get the direction of a time step.
+	 *
+	 * @param newerTime the newer time value
+	 * @param olderTime the older time value
+	 * @return {@code +1} for forward time, {@code -1} for backward time, or
+	 *         {@code 0} if no finite direction can be inferred
+	 */
+	private int timeStepDirection(double newerTime, double olderTime) {
+		double dt = newerTime - olderTime;
+		if (!Double.isFinite(dt) || Math.abs(dt) < Model.EPS)
+			return 0;
+		return dt > 0.0 ? 1 : -1;
+	}
+
+	/**
+	 * Return whether a step between buffered samples should contribute to the
+	 * displayed history.
+	 *
+	 * @param current the current newer sample
+	 * @param prev    the adjacent older sample
+	 * @return the displayed width of this history step, or {@code 0.0} if the step
+	 *         should be hidden
+	 */
+	private double historyStepWidth(double[] current, double[] prev) {
+		double dt = Math.abs(xValue(current) - xValue(prev));
+		if (!Double.isFinite(dt) || dt == 0.0)
+			return 0.0;
+		return dt;
+	}
+
+	/**
+	 * Return the x-coordinate of a buffered (or interpolated) sample for the
+	 * currently selected axis: the leading updates column, or the trailing real
+	 * time column when {@link #useRealTime} is set. Both columns are {@code NaN}
+	 * on a time-series separator, so axis selection does not affect separator
+	 * detection.
+	 *
+	 * @param sample the sample, updates prepended and real time appended
+	 * @return the x-coordinate to use for display
+	 */
+	private double xValue(double[] sample) {
+		return useRealTime ? sample[sample.length - 1] : sample[0];
+	}
+
 	@Override
 	protected boolean keepSample(RingBuffer<double[]> buffer, double[] current, double[] last) {
-		if (current == null || last == null || current.length != last.length || current.length < 2)
+		double max = maxValueDelta(current, last);
+		if (!Double.isFinite(max))
 			return true;
+		if (max > MIN_NORM_DELTA)
+			return true;
+		if (buffer == null)
+			return false;
+		if (buffer.getSize() == 1)
+			return true;
+		if (buffer.getSize() < 2)
+			return false;
+		Iterator<double[]> iter = buffer.iterator();
+		if (!iter.hasNext())
+			return false;
+		iter.next();
+		if (!iter.hasNext())
+			return false;
+		double[] prev = iter.next();
+		return maxValueDelta(last, prev) > MIN_NORM_DELTA;
+	}
+
+	/**
+	 * Like {@code maxDelta(double[], double[])} but scoped to the plotted value
+	 * columns ({@code 1..nLines}), excluding the leading updates and trailing
+	 * real-time columns so that neither ever-increasing axis can interfere with
+	 * decimation of near-identical samples.
+	 *
+	 * @param current the current sample
+	 * @param last    the reference sample
+	 * @return the maximum absolute normalized difference among plotted values, or
+	 *         {@link Double#POSITIVE_INFINITY} if the samples are invalid or
+	 *         contain non-finite entries
+	 */
+	private double maxValueDelta(double[] current, double[] last) {
+		if (current == null || last == null || current.length != last.length || current.length < 2)
+			return Double.POSITIVE_INFINITY;
 		double max = 0.0;
-		for (int n = 1; n < current.length; n++) {
+		for (int n = 1; n <= nLines; n++) {
 			double a = current[n];
 			double b = last[n];
 			if (!Double.isFinite(a) || !Double.isFinite(b))
-				return true;
-			double norm = Math.max(1.0, Math.max(Math.abs(a), Math.abs(b)));
-			double d = Math.abs(a - b) / norm;
-			max = Math.max(max, d);
+				return Double.POSITIVE_INFINITY;
+			max = Math.max(max, Math.abs(normDelta(a, b)));
 		}
-		return max > MIN_NORM_DELTA;
+		return max;
 	}
 
 	@Override
@@ -422,16 +749,14 @@ public class LineGraph extends AbstractGraph<double[]>
 		if (!style.autoscaleY)
 			return;
 		double[] min = buffer.min(this::compareData);
-		double bufmin = ArrayMath.min(min);
+		double bufmin = minValue(min);
 		if (bufmin < 0.0) {
 			noLogY();
 			return;
 		}
 		if (logY && bufmin == 0.0)
-			bufmin = 0.01 * style.yMax;
-		if (!logY && bufmin > 0.0 && bufmin < 0.01 * style.yMax)
-			bufmin = 0.0;
-		style.yMin = Functions.roundDown(bufmin);
+			bufmin = MIN_YMAX_FRACTION * style.yMax;
+		style.yMin = logY ? Functions.roundDown(bufmin) : roundLinearYMin(bufmin, style.yMax);
 	}
 
 	/**
@@ -439,31 +764,40 @@ public class LineGraph extends AbstractGraph<double[]>
 	 */
 	private void noLogY() {
 		if (style.logScaleY)
-			logger.warning("Log scale requires positive values");
+			view.logWarning("Log scale requires positive values");
 		style.logScaleY = false;
 	}
 
 	/**
-	 * Compare two data arrays based on their minimum value (ignoring first entry,
-	 * time). Returns a negative integer, zero, or a positive integer if the minimum
-	 * of the first argument is less than, equal to, or greater than the second,
-	 * respectively.
-	 * 
+	 * Compare two data arrays based on their minimum plotted value (ignoring the
+	 * leading updates and trailing real-time columns). Returns a negative
+	 * integer, zero, or a positive integer if the minimum of the first argument
+	 * is less than, equal to, or greater than the second, respectively.
+	 *
 	 * @param o1 the first data array
 	 * @param o2 the second data array
 	 * @return a negative integer, zero, or a positive integer
 	 */
 	private int compareData(double[] o1, double[] o2) {
-		// ignore time
-		double t = o1[0];
-		o1[0] = Double.MAX_VALUE;
-		double m1 = ArrayMath.min(o1);
-		o1[0] = t;
-		t = o2[0];
-		o2[0] = Double.MAX_VALUE;
-		double m2 = ArrayMath.min(o2);
-		o2[0] = t;
-		return Double.compare(m1, m2);
+		return Double.compare(minValue(o1), minValue(o2));
+	}
+
+	/**
+	 * Get the minimum plotted value ({@code 1..nLines}) of a buffered sample,
+	 * excluding the leading updates and trailing real-time columns.
+	 *
+	 * @param data the sample
+	 * @return the minimum plotted value, or {@link Double#MAX_VALUE} if none is
+	 *         finite
+	 */
+	private double minValue(double[] data) {
+		double min = Double.MAX_VALUE;
+		for (int n = 1; n <= nLines; n++) {
+			double v = data[n];
+			if (Double.isFinite(v))
+				min = Math.min(min, v);
+		}
+		return min;
 	}
 
 	@Override
@@ -476,44 +810,27 @@ public class LineGraph extends AbstractGraph<double[]>
 		g.scale(scale, scale);
 		clearCanvas();
 		g.translate(bounds.getX(), bounds.getY());
-		g.save();
 
 		double w = bounds.getWidth();
 		double h = bounds.getHeight();
 
-		g.translate(w, h);
-		g.scale(1.0, -1.0);
-
-		// compute y transform and draw content
-		double[] yinfo = computeYScale(h);
-
-		g.save();
-		g.beginPath();
-		// with -w a small strip on left is not drawn... proper fix needed!
-		g.rect(style.markerSize, 0.0, -(w + 3.0), h);
-		g.clip();
-		drawLines(w, yinfo, nLines);
-		drawMarkers(w, yinfo, nLines);
-		g.restore();
-
-		drawLatestMarkers(w, yinfo, nLines);
-		g.restore();
+		// draw the frame (border, gridlines, ticks, labels) first so that data
+		// drawn afterwards is never hidden underneath the frame stroke
 		if (style.offsetXTickLabels)
 			updateXTickOffset();
 		else
 			style.xTickOffset = 0.0;
 		drawFrame(4, 4);
-		g.restore();
-		return false;
-	}
 
-	/**
-	 * Compute y-axis scale info: [ymin, yrange, yScale]
-	 * 
-	 * @param h the height of the plotting area
-	 * @return an array containing [ymin, yScale]
-	 */
-	private double[] computeYScale(double h) {
+		g.save();
+		g.translate(w, h);
+		g.scale(1.0, -1.0);
+
+		// map [yMin, yMax] (or their logs) onto [0, h] - the same mapping used by
+		// the tick labels (AbstractGraph#computeYRange) and tooltips
+		// (getTooltipAt(double, double)), so a data point at yMin or yMax is
+		// drawn exactly on the frame border, with no gap and no discrepancy
+		// between what is plotted, labelled, and reported in tooltips
 		double ymin;
 		double yrange;
 		if (style.logScaleY) {
@@ -524,51 +841,75 @@ public class LineGraph extends AbstractGraph<double[]>
 			yrange = style.yMax - ymin;
 		}
 		double yScale = (yrange == 0.0) ? 1.0 : h / yrange;
-		return new double[] { ymin, yScale };
+
+		g.save();
+		g.beginPath();
+		// with -w a small strip on left is not drawn... proper fix needed!
+		g.rect(style.markerSize, 0.0, -(w + 3.0), h);
+		g.clip();
+		drawLines(w, ymin, yScale);
+		drawMarkers(w, ymin, yScale);
+		g.restore();
+
+		drawLatestMarkers(w, ymin, yScale);
+		g.restore();
+		g.restore();
+		return false;
 	}
 
 	/**
 	 * Draw the line plots.
-	 * 
+	 *
 	 * @param width  the width of the plotting area
-	 * @param yinfo  the y-axis transform info
-	 * @param nLines the number of lines to draw
+	 * @param ymin   the {@code y}-value (or its log) mapped to the bottom of the
+	 *               plotting area
+	 * @param yScale the scale factor mapping a {@code y}-value relative to
+	 *               {@code ymin} to a pixel offset
 	 */
-	private void drawLines(double width, double[] yinfo, int nLines) {
+	private void drawLines(double width, double ymin, double yScale) {
 		Iterator<double[]> it = buffer.iterator();
 		if (!it.hasNext() || nLines <= 0)
 			return;
 
 		double[] current = it.next();
+		if (!it.hasNext())
+			return;
+		double[] prev = it.next();
+		double[] older = it.hasNext() ? it.next() : null;
 		g.setLineWidth(style.lineWidth);
 		double xScale = width / (style.xMax - style.xMin);
 		double start = -style.xMax * xScale;
 
 		double end = start;
-		while (it.hasNext()) {
-			double[] prev = it.next();
-			if (current[0] > prev[0]) {
-				double delta = (prev[0] - current[0]) * xScale;
-				start += delta;
+		while (true) {
+			double span = historyStepWidth(current, prev);
+			if (span > 0.0) {
+				start -= span * xScale;
 				if (start < 0.0) {
-					drawSegmentClipped(start, end, prev, current, nLines, yinfo, width);
+					drawSegmentClipped(start, end, prev, current, ymin, yScale, width);
 					if (start <= -width)
 						break;
 				}
 				end = start;
 			}
+			if (older == null)
+				break;
 			current = prev;
+			prev = older;
+			older = it.hasNext() ? it.next() : null;
 		}
 	}
 
 	/**
 	 * Draw markers for the newest sample (extracted helper).
-	 * 
+	 *
 	 * @param width  the width of the plotting area
-	 * @param yinfo  the y-axis transform info
-	 * @param nLines the number of lines to draw
+	 * @param ymin   the {@code y}-value (or its log) mapped to the bottom of the
+	 *               plotting area
+	 * @param yScale the scale factor mapping a {@code y}-value relative to
+	 *               {@code ymin} to a pixel offset
 	 */
-	private void drawLatestMarkers(double width, double[] yinfo, int nLines) {
+	private void drawLatestMarkers(double width, double ymin, double yScale) {
 		if (buffer == null || buffer.isEmpty() || nLines <= 0)
 			return;
 		double[] current = buffer.last();
@@ -582,30 +923,32 @@ public class LineGraph extends AbstractGraph<double[]>
 			if (style.logScaleY && current[n + 1] <= 0.0)
 				continue;
 			g.setFillStyle(colors[n]);
-			double y = (style.logScaleY ? Math.log10(current[n + 1]) : current[n + 1]) - yinfo[0];
-			fillCircle(start, y * yinfo[1], style.markerSize);
+			double y = (style.logScaleY ? Math.log10(current[n + 1]) : current[n + 1]) - ymin;
+			fillCircle(start, y * yScale, style.markerSize);
 		}
 	}
 
 	/**
 	 * Draw a historical segment between 'start' and 'end', handling clipping
 	 * against the visible window (-w .. 0) and log/linear y transforms.
-	 * 
+	 *
 	 * @param start   starting x-coordinate of the segment
 	 * @param end     ending x-coordinate of the segment
 	 * @param prev    the previous data array
 	 * @param current the current data array
-	 * @param nLines  the number of lines to draw
-	 * @param yinfo   the y-axis transform info
+	 * @param ymin    the {@code y}-value (or its log) mapped to the bottom of
+	 *                the plotting area
+	 * @param yScale  the scale factor mapping a {@code y}-value relative to
+	 *                {@code ymin} to a pixel offset
 	 * @param width   the width of the plotting area
 	 */
 	private void drawSegmentClipped(double start, double end,
-			double[] prev, double[] current, int nLines,
-			double[] yinfo, double width) {
-		double ymin = yinfo[0];
-		double yScale = yinfo[1];
+			double[] prev, double[] current,
+			double ymin, double yScale, double width) {
+		boolean reverse = current[0] < prev[0];
 		for (int n = 0; n < nLines; n++) {
 			setStrokeStyleAt(n);
+			g.setLineDash(reverse ? style.dottedLine : style.solidLine);
 			double pi;
 			double ci;
 			if (style.logScaleY) {
@@ -634,20 +977,21 @@ public class LineGraph extends AbstractGraph<double[]>
 				strokeLine(s, (pi + m * (s - start)) * yScale, e, (ci - m * (end - e)) * yScale);
 			}
 		}
+		g.setLineDash(style.solidLine);
 	}
 
 	/**
 	 * Draw horizontal marker lines (if any) using the same y transform.
-	 * 
+	 *
 	 * @param width  the width of the plotting area
-	 * @param yinfo  the y-axis transform info
-	 * @param nLines the number of lines to draw
+	 * @param ymin   the {@code y}-value (or its log) mapped to the bottom of the
+	 *               plotting area
+	 * @param yScale the scale factor mapping a {@code y}-value relative to
+	 *               {@code ymin} to a pixel offset
 	 */
-	private void drawMarkers(double width, double[] yinfo, int nLines) {
+	private void drawMarkers(double width, double ymin, double yScale) {
 		if (nLines <= 0 || markers.isEmpty())
 			return;
-		double ymin = yinfo[0];
-		double yScale = yinfo[1];
 		for (double[] mark : markers) {
 			g.setLineDash(mark[0] > 0.0 ? style.dashedLine : style.dottedLine);
 			for (int n = 0; n < nLines; n++) {
@@ -771,8 +1115,10 @@ public class LineGraph extends AbstractGraph<double[]>
 
 	@Override
 	public void zoom(double zoom, double x, double y) {
-		if (zoom <= 0.0 || Math.abs(zoom - 1.0) < 1e-6)
+		if (zoom <= 0.0 || Math.abs(zoom - 1.0) < Model.EPS)
 			return;
+		double oldXMin = style.xMin;
+		double oldXMax = style.xMax;
 		double xMax = style.xMax;
 		double xMin = xMax - (style.xMax - style.xMin) / zoom;
 		int nSteps = (int) ((xMax - xMin) / style.xIncr);
@@ -790,6 +1136,10 @@ public class LineGraph extends AbstractGraph<double[]>
 				return;
 			style.xMin = style.xMax - style.xIncr;
 		}
+		if (Math.abs(style.xMin - oldXMin) < Model.EPS && Math.abs(style.xMax - oldXMax) < Model.EPS)
+			return;
+		if (zoomInertiaTimer != null && zoomInertiaTimer.isRunning())
+			element.addClassName(zoom > 1.0 ? CURSOR_ZOOM_IN_CLASS : CURSOR_ZOOM_OUT_CLASS);
 		schedulePaint();
 	}
 
@@ -815,15 +1165,18 @@ public class LineGraph extends AbstractGraph<double[]>
 	public String getTooltipAt(int x, int y) {
 		if (leftMouseButton)
 			return null;
-		if (!inside(x, y))
-			return null;
-		double sx = (x - bounds.getX() - 0.5) / bounds.getWidth();
-		if (sx < 0.0 || sx > 1.0)
-			return null;
+		// include the frame border itself, not just its interior, so hovering
+		// over the (possibly several pixels wide) frame stroke still resolves to
+		// a tooltip instead of going blank right at the edges
+		double frame = style.showFrame ? style.frameWidth : 0.0;
+		double relX = x - canvasPadX() - bounds.getX();
+		double relY = y - canvasPadY() - bounds.getY();
+		double width = bounds.getWidth();
 		double height = bounds.getHeight();
-		double sy = (height - (y - bounds.getY() + 0.5)) / height;
-		if (sy < 0.0 || sy > 1.0)
+		if (relX < -frame || relX > width + frame || relY < -frame || relY > height + frame)
 			return null;
+		double sx = Math.max(0.0, Math.min(1.0, (relX - 0.5) / width));
+		double sy = Math.max(0.0, Math.min(1.0, (height - (relY + 0.5)) / height));
 		return tooltipProvider.getTooltipAt(sx, sy);
 	}
 
@@ -894,21 +1247,31 @@ public class LineGraph extends AbstractGraph<double[]>
 		if (!it.hasNext())
 			return new double[0];
 		double[] current = it.next();
-		while (it.hasNext()) {
-			double[] prev = it.next();
+		if (!it.hasNext())
+			return new double[0];
+		double[] prev = it.next();
+		double[] older = it.hasNext() ? it.next() : null;
+		while (true) {
 			double dt = current[0] - prev[0];
-			accum -= Math.max(0.0, dt);
-			if (accum <= mouset) {
-				double fx = 1.0 - (mouset - accum) / dt;
-				double[] inter = new double[current.length];
-				inter[0] = current[0] - fx * dt;
-				for (int n = 1; n < inter.length; n++) {
-					inter[n] = interpolate(current[n], prev[n], fx);
+			double span = historyStepWidth(current, prev);
+			if (span > 0.0) {
+				accum -= span;
+				if (accum <= mouset) {
+					double fx = 1.0 - (mouset - accum) / span;
+					double[] inter = new double[current.length];
+					inter[0] = current[0] - fx * dt;
+					for (int n = 1; n < inter.length; n++) {
+						inter[n] = interpolate(current[n], prev[n], fx);
+					}
+					return inter;
+					// return new InterpResult(current, prev, fx, time);
 				}
-				return inter;
-				// return new InterpResult(current, prev, fx, time);
 			}
+			if (older == null)
+				break;
 			current = prev;
+			prev = older;
+			older = it.hasNext() ? it.next() : null;
 		}
 		return new double[0];
 	}
@@ -929,8 +1292,7 @@ public class LineGraph extends AbstractGraph<double[]>
 				.append(TABLE_ROW_START_RIGHT)
 				.append(style.xLabel)
 				.append(TABLE_CELL_NEXT)
-				// .append(Formatter.format(r.time, 2))
-				.append(Formatter.format(inter[0], 2))
+				.append(Formatter.format(xValue(inter), 2))
 				.append(TABLE_ROW_END);
 
 		Color[] colors = module.getMeanColors();
@@ -967,17 +1329,20 @@ public class LineGraph extends AbstractGraph<double[]>
 	 * @param colors the colors for each trait
 	 */
 	private void appendTipTraits(StringBuilder tip, double[] inter, Color[] colors) {
-		// N.B. length includes time at index 0
-		int len = inter.length;
+		// N.B. inter has updates prepended and real time appended around the
+		// nLines plotted values - bound the loop by nLines, not inter.length
 		Data type = view.getType();
-		for (int n = 0; n < len - 1; n++) {
+		boolean[] active = module.getActiveTraits();
+		for (int n = 0; n < nLines; n++) {
 			int n1 = n + 1;
 			String name;
 			Color color;
-			if (n1 == len - 1 && type == Data.FITNESS) {
+			if (n1 == nLines && type == Data.FITNESS) {
 				name = "average";
 				color = Color.BLACK;
 			} else {
+				if (active != null && n < active.length && !active[n])
+					continue;
 				name = module.getTraitName(n);
 				color = colors[n];
 			}
@@ -1051,20 +1416,82 @@ public class LineGraph extends AbstractGraph<double[]>
 				style.xTickOffset = 0.0;
 			paint(true);
 		});
+		ContextMenuCheckBoxItem realTimeMenu = new ContextMenuCheckBoxItem("Use " + realTimeLabel, () -> {
+			userSetAxis = true;
+			switchAxis(!useRealTime);
+		});
 		String axisLabel = style.xLabel == null ? "time" : style.xLabel;
 		autoscaleYMenu.setChecked(style.autoscaleY);
 		logYAxesMenu.setChecked(style.logScaleY);
 		logYAxesMenu.setEnabled(style.yMin >= 0.0);
 		absoluteTimeMenu.setText("Absolute " + axisLabel);
 		absoluteTimeMenu.setChecked(style.offsetXTickLabels);
+		realTimeMenu.setChecked(useRealTime);
+		realTimeMenu.setEnabled(realTimeAvailable);
 		axesMenu.addHeader("X-axis");
 		axesMenu.add(fullXRangeMenu);
 		axesMenu.add(absoluteTimeMenu);
+		if (realTimeAvailable)
+			axesMenu.add(realTimeMenu);
 		axesMenu.addHeader("Y-axis");
 		axesMenu.add(autoscaleYMenu);
 		fullYRangeMenu.setEnabled(style.percentY);
 		axesMenu.add(fullYRangeMenu);
 		axesMenu.add(logYAxesMenu);
+	}
+
+	/**
+	 * Switch the x-axis between updates and real time, relabelling the axis and
+	 * recomputing the visible window and tick spacing for the newly selected
+	 * axis. The two axes are not linearly related (real time can advance
+	 * arbitrarily faster or slower than updates depending on the model's
+	 * dynamics), so the previous zoom/pan state cannot be carried over
+	 * meaningfully - the full buffered history on the new axis is shown instead.
+	 *
+	 * @param realTime {@code true} to plot real time, {@code false} for updates
+	 */
+	private void switchAxis(boolean realTime) {
+		if (realTime == useRealTime)
+			return;
+		useRealTime = realTime;
+		style.xLabel = useRealTime ? realTimeLabel : updatesLabel;
+		if (updateXRangeFromBuffer())
+			style.xIncr = (style.xMax - style.xMin) / Math.max(1.0, steps);
+		if (style.offsetXTickLabels)
+			updateXTickOffset();
+		paint(true);
+	}
+
+	/**
+	 * Set whether real time is available for the current run, see
+	 * {@code EvoLudo.Model#getTime()}. Enables the "Use {@link #realTimeLabel}"
+	 * context menu entry; if not available, forces the axis back to updates. The
+	 * first time real time becomes available it is selected by default, unless
+	 * the user has already picked an axis explicitly through the context menu.
+	 *
+	 * @param available {@code true} if real time is tracked for this run
+	 */
+	public void setRealTimeAvailable(boolean available) {
+		realTimeAvailable = available;
+		if (!available) {
+			switchAxis(false);
+			return;
+		}
+		if (!userSetAxis)
+			switchAxis(true);
+	}
+
+	/**
+	 * Set the x-axis labels for the updates and real-time axes, respectively.
+	 * Applies immediately to the currently selected axis.
+	 *
+	 * @param updatesLabel  the label to show when plotting updates
+	 * @param realTimeLabel the label to show when plotting real time
+	 */
+	public void setAxisLabels(String updatesLabel, String realTimeLabel) {
+		this.updatesLabel = updatesLabel;
+		this.realTimeLabel = realTimeLabel;
+		style.xLabel = useRealTime ? realTimeLabel : updatesLabel;
 	}
 
 	@Override
@@ -1109,16 +1536,17 @@ public class LineGraph extends AbstractGraph<double[]>
 			double[] latest = buffer.last();
 			if (latest == null)
 				return false;
-			tMax = latest[0] + style.xMax;
-			tMin = latest[0] + style.xMin;
+			double latestT = xValue(latest);
+			tMax = latestT + style.xMax;
+			tMin = latestT + style.xMin;
 		}
 		Iterator<double[]> it = buffer.ordered();
 		while (it.hasNext()) {
 			double[] data = it.next();
-			double t = data[0];
+			double t = xValue(data);
 			if (visibleOnly && (t < tMin || t > tMax))
 				continue;
-			for (int i = 1; i < data.length; i++) {
+			for (int i = 1; i <= nLines; i++) {
 				double v = data[i];
 				if (!Double.isFinite(v))
 					continue;
@@ -1147,10 +1575,17 @@ public class LineGraph extends AbstractGraph<double[]>
 			if (min <= 0.0)
 				min = max * 0.01;
 		}
-		double newMin = Functions.roundDown(min);
 		double newMax = Functions.roundUp(max);
-		if (style.logScaleY && newMin <= 0.0)
-			newMin = min;
+		double newMin;
+		if (style.logScaleY) {
+			newMin = Functions.roundDown(min);
+			if (newMin <= 0.0)
+				newMin = min;
+		} else if (min > 0.0) {
+			newMin = roundLinearYMin(min, newMax);
+		} else {
+			newMin = Functions.roundDown(min);
+		}
 		style.yMin = newMin;
 		style.yMax = newMax;
 		return true;
@@ -1164,25 +1599,27 @@ public class LineGraph extends AbstractGraph<double[]>
 	private boolean updateXRangeFromBuffer() {
 		if (buffer == null || buffer.isEmpty())
 			return false;
-		double tMin = Double.NaN;
-		double tMax = Double.NaN;
-		Iterator<double[]> it = buffer.ordered();
-		while (it.hasNext()) {
-			double t = it.next()[0];
-			if (Double.isNaN(t)) {
-				tMin = Double.NaN;
-				continue;
-			}
-			if (!Double.isFinite(t))
-				continue;
-			if (Double.isNaN(tMin))
-				tMin = t;
-			tMax = t;
+		double span = 0.0;
+		Iterator<double[]> it = buffer.iterator();
+		if (!it.hasNext())
+			return false;
+		double[] current = it.next();
+		if (!it.hasNext())
+			return false;
+		double[] prev = it.next();
+		double[] older = it.hasNext() ? it.next() : null;
+		while (true) {
+			span += historyStepWidth(current, prev);
+			if (older == null)
+				break;
+			current = prev;
+			prev = older;
+			older = it.hasNext() ? it.next() : null;
 		}
-		if (!Double.isFinite(tMin) || !Double.isFinite(tMax) || tMin >= tMax)
+		if (!Double.isFinite(span) || span <= 0.0)
 			return false;
 		style.xMax = 0.0;
-		style.xMin = tMin - tMax;
+		style.xMin = -span;
 		return true;
 	}
 
@@ -1196,7 +1633,7 @@ public class LineGraph extends AbstractGraph<double[]>
 		}
 		Iterator<double[]> it = buffer.iterator();
 		while (it.hasNext()) {
-			double t = it.next()[0];
+			double t = xValue(it.next());
 			if (Double.isNaN(t))
 				break;
 			if (Double.isFinite(t)) {

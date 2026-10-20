@@ -227,10 +227,10 @@ public class Segment2D extends Line2D {
 
 		// return true if any of the intersection conditions are met
 		return (o1 != o2 && o3 != o4)
-				|| (o1 == 0 && contains(p1, s.p1, p2))
-				|| (o2 == 0 && contains(p1, s.p2, p2))
-				|| (o3 == 0 && contains(s.p1, p1, s.p2))
-				|| (o4 == 0 && contains(s.p1, p2, s.p2));
+				|| (o1 == 0 && contains(p1, p2, s.p1))
+				|| (o2 == 0 && contains(p1, p2, s.p2))
+				|| (o3 == 0 && contains(s.p1, s.p2, p1))
+				|| (o4 == 0 && contains(s.p1, s.p2, p2));
 	}
 
 	/**
@@ -262,10 +262,10 @@ public class Segment2D extends Line2D {
 	 * For the three collinear points <code>p,q,x</code>, check if the point
 	 * <code>x</code> lies on the line segment <code>p-q</code>.
 	 * 
-	 * @param p the first point
-	 * @param x the second point
-	 * @param q the third point
-	 * @return <code>true</code> if <code>q</code> lies on segment
+	 * @param p the start point of the segment
+	 * @param q the end point of the segment
+	 * @param x the point to check
+	 * @return <code>true</code> if <code>x</code> lies on segment
 	 */
 	private static boolean contains(Point2D p, Point2D q, Point2D x) {
 		return (x.x <= Math.max(p.x, q.x) && x.x >= Math.min(p.x, q.x) && x.y <= Math.max(p.y, q.y)

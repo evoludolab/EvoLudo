@@ -31,6 +31,7 @@
 package org.evoludo.simulator;
 
 import java.awt.Color;
+import java.util.Iterator;
 import java.util.Locale;
 import java.util.logging.Level;
 
@@ -101,6 +102,9 @@ public class CLOController {
 	/**
 	 * Command line option to request that the EvoLudo model immediately starts
 	 * running after loading.
+	 * <p>
+	 * <strong>Note:</strong> for snapshots running is not requested but derived
+	 * from the requested end state, see {@code --snap}.
 	 */
 	public final CLOption cloRun = new CLOption("run", CLOCategory.GUI,
 			"--run           simulations run after launch", new CLODelegate() {
@@ -196,7 +200,14 @@ public class CLOController {
 			});
 
 	/**
-	 * Command line option to print help message for available command line options.
+	 * Command line option to print help message for available command line
+	 * options.
+	 * <p>
+	 * <strong>Note:</strong> priority set to parse last so that the help screen
+	 * reflects all other options set on the command line - some options report
+	 * live state rather than the raw command line argument (e.g.
+	 * {@code --traitnames}) and would otherwise appear unset/default if help
+	 * happened to sort before them alphabetically.
 	 */
 	public final CLOption cloHelp = new CLOption("help", CLOCategory.Global,
 			"--help          print this help screen", new CLODelegate() {
@@ -206,7 +217,7 @@ public class CLOController {
 						engine.showHelp();
 					return true;
 				}
-			});
+			}).setPriority(Integer.MAX_VALUE);
 
 	/**
 	 * Replacement command line option for serious parsing failures to display help
@@ -302,6 +313,7 @@ public class CLOController {
 	 * 
 	 * @return cached command-line string split on option boundaries
 	 */
+	@SuppressWarnings("java:S8786") // \s and '-' are disjoint, no backtracking hazard
 	public String[] getSplitCLO() {
 		// strip all whitespace at start and end
 		String[] args = clo.trim().split("\\s+--");
@@ -406,7 +418,7 @@ public class CLOController {
 			String[] moduleArgs = param.split("[\\s+,=]");
 			if (moduleArgs == null || moduleArgs.length < 2) {
 				if (!helpRequested)
-					engine.logger.severe("module key missing");
+					engine.logError("module key missing");
 				if (engine.getModule() != null)
 					engine.unloadModule();
 				return helpCLO;
@@ -423,9 +435,9 @@ public class CLOController {
 		if (moduleKey == null || !engine.loadModule(moduleKey.getKey())) {
 			if (!helpRequested) {
 				if (!moduleName.isEmpty())
-					engine.logger.severe("module '" + moduleName + "' not found.");
+					engine.logError("module '" + moduleName + "' not found.");
 				else
-					engine.logger.severe("Use --module to load a module or --help for more information.");
+					engine.logError("Use --module to load a module or --help for more information.");
 			}
 			if (engine.getModule() != null)
 				engine.unloadModule();
@@ -448,7 +460,7 @@ public class CLOController {
 				continue;
 			String verbosity = CLOption.stripKey(verboseName, param).trim();
 			if (verbosity.isEmpty()) {
-				engine.logger.warning("verbose level missing - ignored.");
+				engine.logWarning("verbose level missing - ignored.");
 				// remove verbose option
 				return ArrayMath.drop(cloarray, i);
 			}
@@ -481,9 +493,10 @@ public class CLOController {
 				globalMsg += " (select model for more options)";
 			globalMsg += "\n\nGlobal options:";
 
-			int idx = 0;
 			StringBuilder sb = new StringBuilder();
-			for (Module<?> mod : module.getSpecies()) {
+			int idx = 0;
+			for (Iterator<? extends Module<?>> it = module.getSpecies().iterator(); it.hasNext();) {
+				Module<?> mod = it.next();
 				String name = mod.getName();
 				int namelen = name.length();
 				if (namelen > 0)
@@ -524,6 +537,7 @@ public class CLOController {
 		prsr.addCLO(cloModule);
 		prsr.addCLO(cloSeed);
 		prsr.addCLO(cloRun);
+		cloDelay.setDefault(Integer.toString(engine.getDelay()));
 		prsr.addCLO(cloDelay);
 		Module<?> module = engine.getModule();
 

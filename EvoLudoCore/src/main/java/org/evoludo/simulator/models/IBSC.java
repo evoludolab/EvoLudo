@@ -285,9 +285,9 @@ public class IBSC extends IBS implements CModel {
 		parser.addCLO(clo);
 		// interacting with all members of the population is not feasible for continuous
 		// traits; use single interaction with random neighbour as default
-		cloInteractions.setDefault("random 1");
+		cloInteractions.setDefault("1");
 		// comparing scores with all members of the population is not feasible for
 		// continuous traits; use single, random neighbour as default
-		cloReferences.setDefault("random 1");
+		cloReferences.setDefault("1");
 	}
 }

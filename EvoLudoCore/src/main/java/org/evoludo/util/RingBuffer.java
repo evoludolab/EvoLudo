@@ -84,6 +84,8 @@ public class RingBuffer<T> implements Iterable<T> {
 	 * @throws IllegalArgumentException if <code>capacity&le;0</code>
 	 */
 	public RingBuffer(int capacity) throws IllegalArgumentException {
+		if (capacity <= 0)
+			throw new IllegalArgumentException("RingBuffer capacity must be >0!");
 		buffer = new ArrayList<>(capacity);
 		bufferPtr = -1;
 		bufferCapacity = capacity;
@@ -300,13 +302,13 @@ public class RingBuffer<T> implements Iterable<T> {
 	public T first() {
 		if (isEmpty())
 			return null;
-		return get((bufferPtr - 1 + buffer.size()) % buffer.size());
+		return get(buffer.size() - 1);
 	}
 
 	/**
 	 * Return last/most recent buffer entry.
 	 * 
-	 * @return first buffer entry or <code>null</code> if buffer is empty
+	 * @return last buffer entry or <code>null</code> if buffer is empty
 	 */
 	public T last() {
 		if (isEmpty())

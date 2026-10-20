@@ -315,8 +315,9 @@ public class PlistParser {
 	 * @return the parsed double value
 	 */
 	private static double parseReal(String real) {
+		real = real.trim();
 		if (real.endsWith("L"))
-			return Double.longBitsToDouble(Long.valueOf(real.substring(0, real.length() - 1)));
+			return Double.longBitsToDouble(Long.parseLong(real.substring(0, real.length() - 1)));
 		return Double.parseDouble(real);
 	}
 

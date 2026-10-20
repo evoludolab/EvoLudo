@@ -103,24 +103,78 @@ public class Path2D {
 	 */
 	public static final int WIND_NON_ZERO = PathIterator.WIND_NON_ZERO;
 
-	// For code simplicity, copy these constants to our namespace
-	// and cast them to byte constants for easy storage.
+	/**
+	 * Stored segment type for move-to path commands.
+	 */
 	private static final byte SEG_MOVETO = (byte) PathIterator.SEG_MOVETO;
+
+	/**
+	 * Stored segment type for line-to path commands.
+	 */
 	private static final byte SEG_LINETO = (byte) PathIterator.SEG_LINETO;
+
+	/**
+	 * Stored segment type for quadratic curve path commands.
+	 */
 	private static final byte SEG_QUADTO = (byte) PathIterator.SEG_QUADTO;
+
+	/**
+	 * Stored segment type for cubic curve path commands.
+	 */
 	private static final byte SEG_CUBICTO = (byte) PathIterator.SEG_CUBICTO;
+
+	/**
+	 * Stored segment type for close-path commands.
+	 */
 	private static final byte SEG_CLOSE = (byte) PathIterator.SEG_CLOSE;
 
+	/**
+	 * Segment type storage for this path.
+	 */
 	byte[] pointTypes;
+
+	/**
+	 * Number of active segment type entries.
+	 */
 	int numTypes;
+
+	/**
+	 * Number of active coordinate entries.
+	 */
 	int numCoords;
+
+	/**
+	 * Winding rule used to determine the path interior.
+	 */
 	int windingRule;
 
+	/**
+	 * Initial number of segment entries.
+	 */
 	static final int INIT_SIZE = 20;
+
+	/**
+	 * Maximum growth increment for internal arrays.
+	 */
 	static final int EXPAND_MAX = 500;
+
+	/**
+	 * Maximum growth increment for coordinate arrays.
+	 */
 	static final int EXPAND_MAX_COORDS = EXPAND_MAX * 2;
+
+	/**
+	 * Minimum growth increment for internal arrays.
+	 */
 	static final int EXPAND_MIN = 10; // ensure > 6 (cubics)
 
+	/**
+	 * Expand the segment type array.
+	 *
+	 * @param oldPointTypes the existing segment type array
+	 * @param needed        the number of additional entries required
+	 * @return the expanded segment type array
+	 */
 	static byte[] expandPointTypes(byte[] oldPointTypes, int needed) {
 		final int oldSize = oldPointTypes.length;
 		final int newSizeMin = oldSize + needed;
@@ -148,6 +202,9 @@ public class Path2D {
 		return Arrays.copyOf(oldPointTypes, newSize);
 	}
 
+	/**
+	 * Coordinate storage for this path.
+	 */
 	double[] doubleCoords;
 
 	/**
@@ -229,6 +286,12 @@ public class Path2D {
 		}
 	}
 
+	/**
+	 * Clone this path's coordinates and optionally transform them.
+	 *
+	 * @param at the transform to apply, or {@code null} to copy unchanged
+	 * @return the cloned coordinate array
+	 */
 	double[] cloneCoordsDouble(AffineTransform at) {
 		// trim arrays:
 		double[] ret;
@@ -263,6 +326,12 @@ public class Path2D {
 				doubleCoords[coordindex + 1]);
 	}
 
+	/**
+	 * Ensure enough room exists for an additional path segment.
+	 *
+	 * @param needMove  {@code true} if an initial move-to segment is required
+	 * @param newCoords the number of additional coordinate entries required
+	 */
 	void needRoom(boolean needMove, int newCoords) {
 		if ((numTypes == 0) && needMove) {
 			throw new IllegalPathStateException("missing initial moveto " +
@@ -276,6 +345,13 @@ public class Path2D {
 		}
 	}
 
+	/**
+	 * Expand the coordinate array.
+	 *
+	 * @param oldCoords the existing coordinate array
+	 * @param needed    the number of additional coordinate entries required
+	 * @return the expanded coordinate array
+	 */
 	static double[] expandCoords(double[] oldCoords, int needed) {
 		final int oldSize = oldCoords.length;
 		final int newSizeMin = oldSize + needed;
@@ -602,10 +678,24 @@ public class Path2D {
 	 * CopyIterator. Constants moved to Path2D and made more GWT friendly.
 	 */
 	public static class Iterator implements PathIterator {
+		/**
+		 * Index of the current segment type.
+		 */
 		int typeIdx;
+
+		/**
+		 * Index of the current coordinate pair.
+		 */
 		int pointIdx;
+
+		/**
+		 * Path being iterated.
+		 */
 		Path2D path;
 
+		/**
+		 * Number of coordinates used by each segment type.
+		 */
 		static final int[] curvecoords = { 2, 2, 4, 6, 0 };
 
 		/**
@@ -619,6 +709,9 @@ public class Path2D {
 			this.doubleCoords = path.doubleCoords;
 		}
 
+		/**
+		 * Coordinate storage used by the iterator.
+		 */
 		double[] doubleCoords;
 
 		/**

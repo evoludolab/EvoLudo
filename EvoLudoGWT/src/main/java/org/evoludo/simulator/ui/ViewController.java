@@ -35,7 +35,6 @@ import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.logging.Logger;
 
 import org.evoludo.simulator.EvoLudoGWT;
 import org.evoludo.simulator.models.Data;
@@ -135,7 +134,8 @@ public class ViewController {
 
 		@Override
 		public String getDescription() {
-			StringBuilder descr = new StringBuilder("--view <v>      select view (v: index or title)");
+			StringBuilder descr = new StringBuilder("--view <v[ <o>]>  select view (v: index or title,\n"
+					+ "                   o: view specific options)");
 			int idx = 1;
 			if (engine.getModel() == null)
 				refreshViews();
@@ -143,6 +143,11 @@ public class ViewController {
 				String keycode = "              " + (idx++) + ": ";
 				int len = keycode.length();
 				descr.append("\n").append(keycode.substring(len - 16, len)).append(view.getName());
+				String opts = view.getOptionsDescription();
+				if (opts != null)
+					// sub-option colons align 6 chars right of the view-index colon
+					// ('o:' is already explained above and not repeated here)
+					descr.append("\n      ").append(opts.replace("\n", "\n      "));
 			}
 			return descr.toString();
 		}
@@ -302,6 +307,9 @@ public class ViewController {
 		}
 
 		addView(console, oldViews);
+		rebuildSelectorItems();
+		if (activeView != null && !activeViews.containsValue(activeView))
+			activeView = getFirstView();
 
 		if (!oldViews.isEmpty())
 			unloadViews(oldViews);
@@ -389,43 +397,103 @@ public class ViewController {
 	}
 
 	/**
+	 * Formats the selector label with a simple prefixed shortcut.
+	 *
+	 * @param viewName      the visible view name
+	 * @param shortcut      the shortcut text, or {@code null} if none is shown
+	 * @param hasExtraViews {@code true} if there are more than nine active
+	 *                      views
+	 * @return formatted selector label
+	 */
+	private String formatSelectorLabel(String viewName, String shortcut, boolean hasExtraViews) {
+		String prefix = hasExtraViews ? "\u00A0\u00A0\u00A0\u00A0" : "";
+		if (shortcut != null && !shortcut.isEmpty())
+			prefix = shortcut + (hasExtraViews ? "\u00A0\u00A0" : "\u00A0");
+		return prefix + viewName;
+	}
+
+	/**
+	 * Determines the direct-selection shortcut shown for the selector entry.
+	 *
+	 * @param view  the view represented by the selector entry
+	 * @param index zero-based selector index
+	 * @return shortcut text, or {@code null} when no direct shortcut is available
+	 */
+	private String getSelectorShortcut(AbstractView<?> view, int index) {
+		if (view == console)
+			return "C";
+		int shortcut = index + 1;
+		if (shortcut <= 9)
+			return Integer.toString(shortcut);
+		return null;
+	}
+
+	/**
+	 * Rebuilds the selector labels after the active view list has been refreshed.
+	 */
+	private void rebuildSelectorItems() {
+		selector.clear();
+		boolean hasExtraViews = activeViews.size() > 9;
+		int index = 0;
+		for (AbstractView<?> view : activeViews.values()) {
+			String label = formatSelectorLabel(view.getName(), getSelectorShortcut(view, index), hasExtraViews);
+			selector.addItem(label, view.getName());
+			index++;
+		}
+	}
+
+	/**
 	 * Parse the initial view specification (if provided) and resolve the matching
 	 * view.
+	 * <p>
+	 * View names may contain spaces (e.g. {@code "Traits - Mean"}), so the name
+	 * cannot simply be separated from any trailing view-specific options by the
+	 * first space. Instead, {@code initialView} is matched against the longest
+	 * view name that is a prefix of it (followed by a space or nothing); anything
+	 * beyond that name is passed on as options.
 	 *
-	 * @param logger logger for diagnostics (optional)
 	 * @return the initial view or {@code null} if the {@code --view} option was not
 	 *         provided
-	 * 
+	 *
 	 * @see #cloView
 	 */
-	public AbstractView<?> resolveInitialView(Logger logger) {
+	public AbstractView<?> resolveInitialView() {
 		if (!cloView.isSet())
 			return null;
 
 		List<AbstractView<?>> availableViews = new ArrayList<>(activeViews.values());
 		if (availableViews.isEmpty())
 			return null;
-		String[] iv = initialView.split(" ", 2);
-		String name = iv[0].replace('_', ' ').trim();
 		AbstractView<?> newView = null;
+		String options = null;
+		int bestLen = -1;
 		for (AbstractView<?> view : availableViews) {
-			if (view.getName().equals(name)) {
+			String vname = view.getName();
+			if (vname == null || vname.length() <= bestLen)
+				continue;
+			if (initialView.equals(vname)) {
 				newView = view;
-				break;
+				options = null;
+				bestLen = vname.length();
+			} else if (initialView.startsWith(vname + " ")) {
+				newView = view;
+				options = initialView.substring(vname.length()).trim();
+				bestLen = vname.length();
 			}
 		}
 		if (newView == null) {
+			String[] iv = initialView.split(" ", 2);
 			int idx = 0;
 			try {
 				idx = CLOParser.parseInteger(iv[0]);
 			} catch (NumberFormatException e) {
-				if (logger != null)
-					logger.warning("failed to set view '" + iv[0] + "' - using default.");
+				engine.logWarning("failed to set view '" + iv[0] + "' - using default.");
 			}
 			idx = Math.min(Math.max(idx, 1), availableViews.size());
 			newView = availableViews.get(idx - 1);
+			options = iv.length > 1 ? iv[1].trim() : null;
 		}
-		newView.setOptions(iv.length > 1 ? iv[1].trim() : null);
+		newView.setOptions(options);
 		return newView;
 	}
 
@@ -445,7 +513,7 @@ public class ViewController {
 			addView(new Phase2D(engine), oldViews);
 		if (module instanceof HasMean.Traits)
 			addView(new Mean(engine, Data.TRAIT), oldViews);
-		if (module instanceof HasS3)
+		if (module instanceof HasS3 && module.getNActive() >= 3)
 			addView(new S3(engine), oldViews);
 		if (module instanceof HasHistogram.Strategy)
 			addView(new Histogram(engine, Data.TRAIT), oldViews);
@@ -515,7 +583,6 @@ public class ViewController {
 		if (oldViews.containsKey(name))
 			view = oldViews.remove(name);
 		activeViews.put(view.getName(), view);
-		selector.addItem(view.getName());
 		if (view == console) {
 			if (deck.getWidgetIndex(view) < 0)
 				deck.add(view);

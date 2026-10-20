@@ -32,10 +32,11 @@ package org.evoludo.util;
 
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 import org.evoludo.math.Combinatorics;
 
@@ -48,14 +49,32 @@ import org.evoludo.math.Combinatorics;
  * 
  * @author Christoph Hauert
  */
-@SuppressWarnings("serial")
 public class Plist extends HashMap<String, Object> {
+
+	/**
+	 * Explicit serialization UID. Without this, the JVM derives a default UID
+	 * from the class's structural fingerprint (fields, constructors, non-private
+	 * methods), which {@link org.evoludo.simulator.exec.TestEvoLudo#hashSHA256
+	 * TestEvoLudo#hashSHA256} embeds in every SHA-256 test hash via
+	 * {@code ObjectOutputStream}. That silently invalidates every stored
+	 * reference SHA whenever this class merely gains or loses a method.
+	 * Pinning the UID decouples the two.
+	 */
+	private static final long serialVersionUID = 1L;
 
 	/**
 	 * The flag to indicate if the comparison should fail fast, i.e. after first
 	 * issue encountered.
+	 * <p>
+	 * <strong>Note:</strong> {@code transient} - this and the other bookkeeping
+	 * fields below track the state of a {@link #diff(Plist, Collection)} call
+	 * against some other, unrelated plist; they are not part of this plist's own
+	 * data and must be excluded from (Java object) serialization. Otherwise a
+	 * content hash computed from the serialized plist depends on whatever
+	 * comparison happened to be run on it previously, rather than purely on its
+	 * own content.
 	 */
-	boolean failFast = false;
+	transient boolean failFast = false;
 
 	/**
 	 * The number of repeated messages to report before skipping further messages.
@@ -116,6 +135,11 @@ public class Plist extends HashMap<String, Object> {
 	 * String constant for reporting differences in keys.
 	 */
 	static final String DIFF_KEY = "key '";
+
+	/**
+	 * The logger for this class.
+	 */
+	private static final Logger LOGGER = Logger.getLogger(Plist.class.getName());
 
 	/**
 	 * Construct a new plist.
@@ -197,15 +221,34 @@ public class Plist extends HashMap<String, Object> {
 
 	/**
 	 * Compare this plist to {@code plist} but ignore keys in {@code clo}.
-	 * 
+	 *
 	 * @param plist the reference {@code Plist} to compare against
 	 * @param skip  the collection of keys to skip
 	 * @return the number of differences
 	 */
 	public int diff(Plist plist, Collection<String> skip) {
+		return diff(plist, skip, PRECISION_DIGITS);
+	}
+
+	/**
+	 * Compare this plist to {@code plist} but ignore keys in {@code skip}, using
+	 * {@code digits} significant digits to distinguish minor numerical issues
+	 * from major differences. Useful for model types whose numerics are
+	 * inherently noisier across platforms, e.g. SDE models accumulate
+	 * platform-dependent ULP differences from {@code Math.log} in their Gaussian
+	 * random number generator over many integration steps.
+	 *
+	 * @param plist  the reference {@code Plist} to compare against
+	 * @param skip   the collection of keys to skip
+	 * @param digits the number of significant digits
+	 * @return the number of differences
+	 *
+	 * @see #PRECISION_DIGITS
+	 */
+	public int diff(Plist plist, Collection<String> skip, int digits) {
 		nNumerical = 0;
 		nIssues = 0;
-		diffDict(plist, this, skip);
+		diffDict(plist, this, skip, digits);
 		if (nNumerical > 0)
 			reportDiff(nNumerical + " out of " + nIssues + " differences likely numerical rounding issues.");
 		return nIssues;
@@ -234,12 +277,14 @@ public class Plist extends HashMap<String, Object> {
 
 	/**
 	 * Helper method to compare two plist-dictionaries.
-	 * 
+	 *
 	 * @param reference the reference {@code Plist}
 	 * @param plist     the {@code Plist} to check
 	 * @param skip      the collection of keys to skip
+	 * @param digits    the number of significant digits, see
+	 *                  {@link #checkRounding(Double, Double, int)}
 	 */
-	private void diffDict(Plist reference, Plist plist, Collection<String> skip) {
+	private void diffDict(Plist reference, Plist plist, Collection<String> skip, int digits) {
 		// step 1: check if dict reference contains all keys of plist
 		for (String key : plist.keySet()) {
 			if (skip.contains(key) || reference.containsKey(key))
@@ -274,7 +319,7 @@ public class Plist extends HashMap<String, Object> {
 			if (val instanceof Plist) {
 				int before = nIssues;
 				// entry is dict
-				diffDict((Plist) val, (Plist) pval, skip);
+				diffDict((Plist) val, (Plist) pval, skip, digits);
 				if (before == nIssues)
 					continue;
 				reportDiff(DIFF_KEY + key + "' dicts differ.");
@@ -289,7 +334,7 @@ public class Plist extends HashMap<String, Object> {
 				List<Object> lval = (List<Object>) val;
 				@SuppressWarnings("unchecked")
 				List<Object> lpval = (List<Object>) pval;
-				diffArray(lval, lpval, skip);
+				diffArray(lval, lpval, skip, digits);
 				if (before == nIssues)
 					continue;
 				reportDiff(DIFF_KEY + key + "' arrays differ.");
@@ -316,7 +361,7 @@ public class Plist extends HashMap<String, Object> {
 			if (val instanceof Double) {
 				if (((Double) val).equals(pval))
 					continue;
-				checkRounding((Double) val, (Double) pval);
+				checkRounding((Double) val, (Double) pval, digits);
 				processDiff(DIFF_KEY + key + "' reals differ\n" + diffMeRefDelta((Double) pval, (Double) val));
 				if (failFast)
 					return;
@@ -338,12 +383,14 @@ public class Plist extends HashMap<String, Object> {
 
 	/**
 	 * Helper method to compare two plist-arrays.
-	 * 
+	 *
 	 * @param reference the reference array
 	 * @param array     the array to check
 	 * @param skip      the collection of keys to skip
+	 * @param digits    the number of significant digits, see
+	 *                  {@link #checkRounding(Double, Double, int)}
 	 */
-	private void diffArray(List<Object> reference, List<Object> array, Collection<String> skip) {
+	private void diffArray(List<Object> reference, List<Object> array, Collection<String> skip, int digits) {
 		if (reference.size() != array.size()) {
 			processDiff(
 					"arrays differ in size\n" + diffMeRef(array.size(), reference.size()));
@@ -361,7 +408,7 @@ public class Plist extends HashMap<String, Object> {
 			}
 			if (ele instanceof Plist) {
 				// entry is dict
-				diffDict((Plist) ele, (Plist) pele, skip);
+				diffDict((Plist) ele, (Plist) pele, skip, digits);
 				continue;
 			}
 			if (ele instanceof List) {
@@ -370,7 +417,7 @@ public class Plist extends HashMap<String, Object> {
 				List<Object> lele = (List<Object>) ele;
 				@SuppressWarnings("unchecked")
 				List<Object> lpele = (List<Object>) pele;
-				diffArray(lele, lpele, skip);
+				diffArray(lele, lpele, skip, digits);
 				continue;
 			}
 			if (ele instanceof String) {
@@ -392,7 +439,7 @@ public class Plist extends HashMap<String, Object> {
 			if (ele instanceof Double) {
 				if (((Double) ele).equals(pele))
 					continue;
-				checkRounding((Double) ele, (Double) pele);
+				checkRounding((Double) ele, (Double) pele, digits);
 				processDiff(diffArray("real", i) + diffMeRefDelta((Double) pele, (Double) ele));
 				if (failFast)
 					return;
@@ -415,63 +462,66 @@ public class Plist extends HashMap<String, Object> {
 	/**
 	 * The number of significant digits. This is used to distinguish between minor
 	 * numerical issues and major differences.
+	 * <p>
+	 * <strong>Note:</strong> calibrated against observed JRE-vs-GWT differences,
+	 * presumably from platform differences in the ULPs of {@code Math.exp} and
+	 * similar functions, accumulated over many integration steps.
 	 */
-	private static final int PRECISION_DIGITS = 12;
+	private static final int PRECISION_DIGITS = 10;
 
 	/**
 	 * Check if the difference between <code>ref</code> and <code>check</code> is
-	 * due to rounding errors.
-	 * 
-	 * @param ref   the reference value
-	 * @param check the value to check
-	 * 
-	 * @see #PRECISION_DIGITS
-	 */
-	private void checkRounding(Double ref, Double check) {
-		// tolerate if only last 3 digits differ
-		checkRounding(ref, check, PRECISION_DIGITS);
-	}
-
-	/**
-	 * Check if the difference between <code>ref</code> and <code>check</code> is
-	 * due to rounding errors.
-	 * 
+	 * due to rounding errors. The comparison is scale aware, i.e. it tolerates an
+	 * absolute difference of up to {@code 10^-digits} relative to the magnitude of
+	 * <code>ref</code>/<code>check</code>, rather than a fixed absolute tolerance.
+	 * This matters because state variables in EvoLudo can legitimately span many
+	 * orders of magnitude, e.g. from vanishingly small frequencies to densities
+	 * that have diverged to huge but finite values in an unstable/blown-up model.
+	 * <p>
+	 * <strong>Note:</strong> a magnitude of at least <code>1.0</code> is assumed
+	 * to avoid an ever-shrinking, and eventually meaningless, tolerance for values
+	 * close to zero.
+	 *
 	 * @param ref    the reference value
 	 * @param check  the value to check
 	 * @param digits the number of significant digits
 	 */
-	private void checkRounding(Double ref, Double check, Integer digits) {
-		int order = (int) Math.floor(Math.log10(1.0 + ref));
-		double scale = Combinatorics.pow(10.0, digits - order);
-		if ((int) Math.abs(Math.floor(ref * scale) - Math.floor(check * scale)) <= 1)
+	private void checkRounding(Double ref, Double check, int digits) {
+		double diff = Math.abs(ref - check);
+		double magnitude = Math.max(Math.max(Math.abs(ref), Math.abs(check)), 1.0);
+		if (diff <= magnitude * Combinatorics.pow(10.0, -digits))
 			nNumerical++;
 	}
 
 	/**
-	 * The number of issues found.
+	 * The number of issues found. See {@link #failFast} for why this is
+	 * {@code transient}.
 	 */
-	private int nIssues;
+	private transient int nIssues;
 
 	/**
-	 * The number of numerical issues found.
+	 * The number of numerical issues found. See {@link #failFast} for why this
+	 * is {@code transient}.
 	 */
-	private int nNumerical;
+	private transient int nNumerical;
 
 	/**
 	 * The number of times a particular type of issue is reported before skipping
-	 * any further ones.
+	 * any further ones. See {@link #failFast} for why this is {@code transient}.
 	 */
-	private int nRepeat;
+	private transient int nRepeat;
 
 	/**
-	 * The previous message.
+	 * The previous message. See {@link #failFast} for why this is
+	 * {@code transient}.
 	 */
-	private String prevmsg;
+	private transient String prevmsg;
 
 	/**
-	 * The number of times the previous message was repeated.
+	 * The number of times the previous message was repeated. See
+	 * {@link #failFast} for why this is {@code transient}.
 	 */
-	private int repeat;
+	private transient int repeat;
 
 	/**
 	 * Process a difference.
@@ -495,15 +545,15 @@ public class Plist extends HashMap<String, Object> {
 			// arrays are most likely candidates for excessive repeated messages
 			// 'array real[' is the shortest header - use first 11 characters
 			prevmsg = msg.substring(0, 11);
-			if (repeat > nRepeat)
-				reportDiff("\nThe previous message was reported a total of " + repeat + " times.");
+			if (repeat > nRepeat && LOGGER.isLoggable(Level.WARNING))
+				LOGGER.warning("\nThe previous message was reported a total of " + repeat + " times.");
 			repeat = 1;
 		} else {
 			if (repeat++ > nRepeat)
 				return;
 		}
-		if (nRepeat > 0)
-			System.err.println((new Date().toString()) + " - Plist.diff: " + msg);
+		if (nRepeat > 0 && LOGGER.isLoggable(Level.WARNING))
+			LOGGER.warning("Plist.diff: " + msg);
 	}
 
 	/**

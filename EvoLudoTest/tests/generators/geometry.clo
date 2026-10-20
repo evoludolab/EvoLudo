@@ -4,7 +4,7 @@
 
 # test geometries (does not depend on game, Moran is simplest)
 # well-mixed
---module Moran --model IBS --geometry M --popsize 1024 --timestop 0 --references random 1 --export wellmixed.plist
+--module Moran --model IBS --geometry M --popsize 1024 --timestop 0 --references 1 --export wellmixed.plist
 
 # complete graph
 --module Moran --model IBS --geometry c --popsize 1024 --timestop 0 --export complete.plist

@@ -42,13 +42,13 @@ import org.evoludo.simulator.EvoLudo;
 import org.evoludo.simulator.EvoLudoGWT;
 import org.evoludo.simulator.EvoLudoTrigger;
 import org.evoludo.simulator.Resources;
+import org.evoludo.simulator.models.ChangeListener.PendingAction;
 import org.evoludo.simulator.models.Mode;
 import org.evoludo.simulator.models.Model;
-import org.evoludo.simulator.models.ChangeListener.PendingAction;
 import org.evoludo.simulator.modules.Module;
-import org.evoludo.simulator.ui.SettingsController;
 import org.evoludo.simulator.ui.FSController;
 import org.evoludo.simulator.ui.KeyHandler;
+import org.evoludo.simulator.ui.SettingsController;
 import org.evoludo.simulator.ui.ViewController;
 import org.evoludo.simulator.ui.WebListener;
 import org.evoludo.simulator.views.AbstractView;
@@ -69,6 +69,7 @@ import com.google.gwt.canvas.client.Canvas;
 import com.google.gwt.core.client.Duration;
 import com.google.gwt.core.client.EntryPoint;
 import com.google.gwt.core.client.GWT;
+import com.google.gwt.core.client.JavaScriptException;
 import com.google.gwt.core.client.Scheduler;
 import com.google.gwt.core.client.ScriptInjector;
 import com.google.gwt.dom.client.DataTransfer;
@@ -84,16 +85,15 @@ import com.google.gwt.event.dom.client.DragLeaveEvent;
 import com.google.gwt.event.dom.client.DragLeaveHandler;
 import com.google.gwt.event.dom.client.DragOverEvent;
 import com.google.gwt.event.dom.client.DropEvent;
+import com.google.gwt.event.dom.client.FocusEvent;
 import com.google.gwt.event.dom.client.TouchEndEvent;
 import com.google.gwt.event.dom.client.TouchStartEvent;
 import com.google.gwt.event.shared.HandlerRegistration;
-import com.google.gwt.logging.client.ConsoleLogHandler;
 import com.google.gwt.uibinder.client.UiBinder;
 import com.google.gwt.uibinder.client.UiField;
 import com.google.gwt.uibinder.client.UiHandler;
 import com.google.gwt.user.client.Timer;
 import com.google.gwt.user.client.Window;
-import com.google.gwt.event.dom.client.FocusEvent;
 import com.google.gwt.user.client.ui.Button;
 import com.google.gwt.user.client.ui.Composite;
 import com.google.gwt.user.client.ui.DeckLayoutPanel;
@@ -357,12 +357,6 @@ public class EvoLudoWeb extends Composite
 	private static final List<EvoLudoWeb> guardedLabs = new ArrayList<>();
 
 	/**
-	 * Most recently active guarded lab. Used as a sticky fallback for deferred UI
-	 * callbacks that fail after the guarded block has already returned.
-	 */
-	private static EvoLudoWeb recentGuardedLab = null;
-
-	/**
 	 * Delay before the busy spinner becomes visible.
 	 */
 	private static final int BUSY_SPINNER_DELAY_MS = 1000;
@@ -398,9 +392,11 @@ public class EvoLudoWeb extends Composite
 	private final KeyHandler keyController = new KeyHandler(this);
 
 	/**
-	 * Logger for keeping track of and reporting events and issues.
+	 * {@code true} once the engine's logger has had its initial level configured.
+	 * Ensures the one-time setup in {@link #setupEngine()} only runs once, even if
+	 * the widget is reattached.
 	 */
-	protected Logger logger;
+	private boolean loggerLevelInitialized = false;
 
 	/**
 	 * Handler for the log framework to report notifications etc. in EvoLudo's
@@ -448,6 +444,11 @@ public class EvoLudoWeb extends Composite
 	 * Controller handling fullscreen and --size option.
 	 */
 	private FSController fsController;
+
+	/**
+	 * Browser console log handler installed on the engine logger.
+	 */
+	private Handler logHandler;
 
 	/**
 	 * Early initializations.
@@ -519,6 +520,7 @@ public class EvoLudoWeb extends Composite
 		}
 		// set command line options
 		evoludoCLO.getElement().setAttribute("contenteditable", "true");
+		NativeJS.installPlainTextPasteHandler(evoludoCLO.getElement());
 		evoludoCLO.setText(clo != null ? clo : "");
 		evoludoCLO.addDomHandler(event -> keyController.onCLOFocusGained(), FocusEvent.getType());
 		evoludoCLO.addDomHandler(event -> keyController.onCLOFocusLost(), BlurEvent.getType());
@@ -545,8 +547,7 @@ public class EvoLudoWeb extends Composite
 	public void onModuleLoad() {
 		GWT.UncaughtExceptionHandler previous = GWT.getUncaughtExceptionHandler();
 		GWT.setUncaughtExceptionHandler(error -> {
-			GWT.log("Fatal uncaught EvoLudo error", error);
-			EvoLudoWeb lab = currentGuardedLab();
+			EvoLudoWeb lab = activeGuardedLab();
 			if (lab != null) {
 				try {
 					lab.handleFatalError("processing an event", error);
@@ -559,12 +560,14 @@ public class EvoLudoWeb extends Composite
 		});
 		// make sure css styling stuff is loaded
 		Resources.INSTANCE.css().ensureInjected();
-		// process DOM and replace all div's with class evoludo-simulation by an
-		// interactive lab
-		processEvoLudoLabs();
-		// process DOM and replace all div's with class evoludo-trigger-html by a
-		// trigger button
-		processEvoLudoTriggers();
+		NativeJS.runOnDocumentReady(() -> {
+			// process DOM and replace all div's with class evoludo-simulation by an
+			// interactive lab
+			processEvoLudoLabs();
+			// process DOM and replace all div's with class evoludo-trigger-html by a
+			// trigger button
+			processEvoLudoTriggers();
+		});
 	}
 
 	/**
@@ -601,13 +604,14 @@ public class EvoLudoWeb extends Composite
 	 * @param clo        the command line options for the lab
 	 */
 	private void addEvoLudoToDOM(Element labElement, String clo) {
-		HTMLPanel panel = HTMLPanel.wrap(labElement);
 		String id = labElement.getId();
 		if (id == null || id.isEmpty())
 			id = HTMLPanel.createUniqueId();
 		labElement.setId(id);
 		if (clo != null && !clo.isEmpty())
 			labElement.setAttribute(DOM_DATA_CLO, clo);
+		labElement.removeAllChildren();
+		HTMLPanel panel = HTMLPanel.wrap(labElement);
 		try {
 			EvoLudoWeb lab = new EvoLudoWeb(id, clo);
 			panel.add(lab);
@@ -654,12 +658,13 @@ public class EvoLudoWeb extends Composite
 		int nTriggers = triggers.getLength();
 		for (int n = 0; n < nTriggers; n++) {
 			Element triggerElement = triggers.getItem(n);
-			HTMLPanel trigger = HTMLPanel.wrap(triggerElement);
 			String id = triggerElement.getId();
 			if (id == null || id.isEmpty()) {
 				id = HTMLPanel.createUniqueId();
 				triggerElement.setId(id);
 			}
+			triggerElement.removeAllChildren();
+			HTMLPanel trigger = HTMLPanel.wrap(triggerElement);
 			trigger.add(new EvoLudoTrigger(id));
 		}
 	}
@@ -679,7 +684,7 @@ public class EvoLudoWeb extends Composite
 			settingsController = new SettingsController(evoludoCLO, evoludoApply, evoludoDefault,
 					evoludoHelp, evoludoSettings);
 			setupEngine();
-			setupConsole(logger);
+			setupConsole(engine.getLogger());
 			logFeatures();
 			viewController = new ViewController(engine, evoludoDeck, evoludoViews, viewConsole, this::updateGUI);
 			webListener = new WebListener(this, engine, keyController);
@@ -706,13 +711,32 @@ public class EvoLudoWeb extends Composite
 	private void setupEngine() {
 		if (engine == null)
 			engine = new EvoLudoGWT(this);
-		if (logger == null) {
-			logger = engine.getLogger();
+		Logger logger = engine.getLogger();
+		if (!loggerLevelInitialized) {
 			logger.setLevel(Level.INFO);
+			loggerLevelInitialized = true;
+		}
+		if (logHandler == null) {
 			// note: log handler needs to know whether this is an ePub (regardless of any
 			// feature declarations with --gui) to make sure log is properly XML encoded (if
 			// needed).
-			ConsoleLogHandler logHandler = new ConsoleLogHandler();
+			logHandler = new Handler() {
+				@Override
+				public void publish(LogRecord rec) {
+					if (isLoggable(rec))
+						NativeJS.log(rec.getLevel().intValue(), getFormatter().format(rec));
+				}
+
+				@Override
+				public void flush() {
+					// Logging is forwarded immediately to NativeJS.log; nothing is buffered.
+				}
+
+				@Override
+				public void close() {
+					// The browser console has no handler-owned resource that requires closing.
+				}
+			};
 			logHandler.setFormatter(new XMLLogFormatter(true,
 					(NativeJS.getEPubReader() != null) || NativeJS.isHTML()));
 			logger.addHandler(logHandler);
@@ -721,7 +745,7 @@ public class EvoLudoWeb extends Composite
 			return;
 		engine.loadModules();
 		engine.addCLOProvider(this);
-		engine.setCLO(evoludoCLO.getText().trim());
+		engine.setCLO(NativeJS.getRenderedText(evoludoCLO.getElement()).trim());
 	}
 
 	/**
@@ -763,13 +787,14 @@ public class EvoLudoWeb extends Composite
 	 * @param logger the logger instance
 	 */
 	private void setupConsole(Logger logger) {
-		if (viewConsole != null)
-			return;
-		viewConsole = new Console(engine);
-		logEvoHandler = new EvoLogHandler(viewConsole);
-		logger.addHandler(logEvoHandler);
-		logger.setLevel(Level.INFO);
-		logger.info(engine.getVersion());
+		if (viewConsole == null)
+			viewConsole = new Console(engine);
+		if (logEvoHandler == null) {
+			logEvoHandler = new EvoLogHandler(viewConsole);
+			logger.addHandler(logEvoHandler);
+			logger.setLevel(Level.INFO);
+			logger.info(engine.getVersion());
+		}
 	}
 
 	/**
@@ -787,9 +812,26 @@ public class EvoLudoWeb extends Composite
 	 */
 	@Override
 	public void onUnload() {
-		if (recentGuardedLab == this)
-			recentGuardedLab = null;
 		try {
+			// remove UI-owned global listeners and logger handlers before engine shutdown.
+			keyController.unregister();
+			if (fsController != null) {
+				fsController.unload();
+				fsController = null;
+			}
+			if (engine != null) {
+				Logger logger = engine.getLogger();
+				if (logEvoHandler != null) {
+					logger.removeHandler(logEvoHandler);
+					logEvoHandler.close();
+					logEvoHandler = null;
+				}
+				if (logHandler != null) {
+					logger.removeHandler(logHandler);
+					logHandler.close();
+					logHandler = null;
+				}
+			}
 			// clear command line options to ensure they are reset to the original
 			// values should the same model get loaded again.
 			// note: this clears command line options set via URL but it does not seem
@@ -849,12 +891,18 @@ public class EvoLudoWeb extends Composite
 			evoludoCLO.getElement().setAttribute("contenteditable", "false");
 			evoludoPanel.getElement().getStyle().setOpacity(0.6);
 			evoludoDeck.getElement().getStyle().setProperty("pointerEvents", "none");
+			if (viewConsole != null)
+				// keep the console scrollable so the reported stack trace remains accessible
+				viewConsole.getElement().getStyle().setProperty("pointerEvents", "auto");
 			keyController.unregister();
-		} catch (RuntimeException suppressed) {
-			GWT.log("Failed to update EvoLudo fatal error UI", suppressed);
+		} catch (RuntimeException ignored) {
+			// Fatal error handling must continue even if the UI update fails.
 		}
-		logger.log(Level.SEVERE, msg, error);
+		engine.getLogger().log(Level.SEVERE, msg, error);
 		displayStatusThresholdLevel = Integer.MAX_VALUE;
+		if (engine.cloSnap.isSet())
+			// unblock whoever is waiting for the snapshot
+			snapshotFailed(msg);
 	}
 
 	/**
@@ -869,7 +917,36 @@ public class EvoLudoWeb extends Composite
 		StringBuilder details = new StringBuilder(context);
 		String scope = describeFailureScope();
 		String source = triageFailureSource(error);
-		if (scope == null && source == null)
+		String cause = null;
+		if (error != null) {
+			if (error instanceof JavaScriptException) {
+				JavaScriptException jsError = (JavaScriptException) error;
+				String name = jsError.getName();
+				String description = jsError.getDescription();
+				if (name != null && !name.isEmpty() && description != null && !description.isEmpty())
+					cause = name + ": " + description;
+				else if (description != null && !description.isEmpty())
+					cause = description;
+				else
+					cause = name;
+			} else {
+				cause = error.getMessage();
+			}
+			String nativeDetails = NativeJS.describe(error);
+			if (nativeDetails != null && (cause == null || cause.isEmpty()
+					|| error.getClass().getName().endsWith("JsException"))) {
+				int newline = nativeDetails.indexOf('\n');
+				cause = newline < 0 ? nativeDetails : nativeDetails.substring(0, newline);
+			}
+			if (cause != null) {
+				cause = cause.trim().replaceAll("\\s+", " ");
+				if (cause.isEmpty() || "null".equals(cause) || "null: null".equals(cause))
+					cause = null;
+				else if (cause.length() > 240)
+					cause = cause.substring(0, 237) + "...";
+			}
+		}
+		if (scope == null && source == null && cause == null)
 			return details.toString();
 		details.append(" (");
 		if (scope != null)
@@ -878,6 +955,11 @@ public class EvoLudoWeb extends Composite
 			if (scope != null)
 				details.append("; ");
 			details.append("source: ").append(source);
+		}
+		if (cause != null) {
+			if (scope != null || source != null)
+				details.append("; ");
+			details.append("cause: ").append(cause);
 		}
 		details.append(")");
 		return details.toString();
@@ -889,8 +971,15 @@ public class EvoLudoWeb extends Composite
 	 * @return description of the current lab state
 	 */
 	private String describeFailureScope() {
-		StringBuilder scope = new StringBuilder("lab ").append(elementID)
-				.append(popup != null ? (popup.isAttached() ? ", popup" : ", popup-detached") : ", inline");
+		String popupState;
+		if (popup == null) {
+			popupState = ", inline";
+		} else if (popup.isAttached()) {
+			popupState = ", popup";
+		} else {
+			popupState = ", popup-detached";
+		}
+		StringBuilder scope = new StringBuilder("lab ").append(elementID).append(popupState);
 		Module<?> module = (engine != null ? engine.getModule() : null);
 		if (module != null && !module.getName().isEmpty())
 			scope.append(", module ").append(module.getName());
@@ -950,7 +1039,6 @@ public class EvoLudoWeb extends Composite
 	 */
 	public final void enterGuardedExecution() {
 		guardedLabs.add(this);
-		recentGuardedLab = this;
 	}
 
 	/**
@@ -983,9 +1071,9 @@ public class EvoLudoWeb extends Composite
 	 *
 	 * @return the current guarded lab, or {@code null} if none
 	 */
-	private static EvoLudoWeb currentGuardedLab() {
+	private static EvoLudoWeb activeGuardedLab() {
 		int size = guardedLabs.size();
-		return size > 0 ? guardedLabs.get(size - 1) : recentGuardedLab;
+		return size > 0 ? guardedLabs.get(size - 1) : null;
 	}
 
 	/**
@@ -1013,7 +1101,9 @@ public class EvoLudoWeb extends Composite
 			setInteractiveControlsEnabled(false);
 			return;
 		}
-		boolean stopped = !engine.isRunning();
+		Model model = engine.getModel();
+		boolean relaxing = engine.isRelaxationScheduled() && model != null && model.isRelaxing();
+		boolean stopped = !engine.isRunning() && !relaxing;
 		evoludoStartStop.setText(stopped ? BUTTON_START : BUTTON_STOP);
 		evoludoStep.setEnabled(stopped);
 		evoludoInitReset.setEnabled(stopped);
@@ -1021,12 +1111,11 @@ public class EvoLudoWeb extends Composite
 		evoludoDefault.setEnabled(stopped);
 		updateKeys();
 		evoludoSlider.setValue(engine.getDelay());
-		Model model = engine.getModel();
 		if (model == null) {
 			evoludoSlider.setEnabled(true);
 			return;
 		}
-		evoludoSlider.setEnabled(model.getMode() != Mode.STATISTICS_SAMPLE);
+		evoludoSlider.setEnabled(!relaxing && model.getMode() != Mode.STATISTICS_SAMPLE);
 		if (stopped)
 			updateStatus();
 		updateCounter();
@@ -1104,7 +1193,9 @@ public class EvoLudoWeb extends Composite
 	 */
 	@UiHandler("evoludoViews")
 	public void onViewChange(ChangeEvent event) {
-		changeViewTo(viewController.getViewByName(evoludoViews.getSelectedItemText()));
+		int selectedIndex = evoludoViews.getSelectedIndex();
+		if (selectedIndex >= 0)
+			changeViewTo(viewController.getViewByName(evoludoViews.getValue(selectedIndex)));
 		evoludoViews.setFocus(false);
 	}
 
@@ -1334,7 +1425,7 @@ public class EvoLudoWeb extends Composite
 	 * Applies the text currently in the CLO field to the engine.
 	 */
 	public void applyCLOFromField() {
-		engine.setCLO(evoludoCLO.getText().replace((char) 160, ' '));
+		engine.setCLO(NativeJS.getRenderedText(evoludoCLO.getElement()).replace((char) 160, ' '));
 		applyCLO();
 	}
 
@@ -1496,10 +1587,12 @@ public class EvoLudoWeb extends Composite
 	 */
 	@UiHandler("evoludoStartStop")
 	public void onStartStopClick(ClickEvent event) {
+		if (requestRelaxationStop())
+			return;
 		if (engine.isRunning() || SettingsController.isReady())
 			engine.startStop();
 		else
-			logger.warning("another EvoLudo instance is already running!");
+			engine.logWarning("another EvoLudo instance is already running!");
 	}
 
 	/**
@@ -1522,7 +1615,23 @@ public class EvoLudoWeb extends Composite
 	 */
 	@UiHandler("evoludoStartStop")
 	public void onStartStopTouchEnd(TouchEndEvent event) {
+		if (requestRelaxationStop())
+			return;
 		engine.startStop();
+	}
+
+	/**
+	 * Request interruption of a scheduled relaxation if one is active.
+	 *
+	 * @return <code>true</code> if a relaxation stop was requested
+	 */
+	private boolean requestRelaxationStop() {
+		if (!engine.isRelaxationScheduled())
+			return false;
+		displayStatus(BUTTON_STOP + " pending...");
+		displayStatusThresholdLevel = Level.ALL.intValue();
+		engine.requestAction(PendingAction.STOP, false);
+		return true;
 	}
 
 	/**
@@ -1626,20 +1735,19 @@ public class EvoLudoWeb extends Composite
 	@UiHandler("evoludoApply")
 	public void onApplyClick(ClickEvent event) {
 		if (evoludoApply.getText().equals(SettingsController.BUTTON_APPLY)) {
-			engine.setCLO(evoludoCLO.getText().replace((char) 160, ' '));
+			engine.setCLO(NativeJS.getRenderedText(evoludoCLO.getElement()).replace((char) 160, ' '));
 			applyCLO();
 			return;
 		}
 		// open standalone lab (ePubs only)
 		RootPanel root = RootPanel.get(elementID);
 		if (root == null) {
-			if (logger.isLoggable(Level.SEVERE))
-				logger.severe("Failed to open standalone lab (element '" + elementID + "' not found in DOM).");
+			engine.logError("Failed to open standalone lab (element '" + elementID + "' not found in DOM).");
 			return;
 		}
 		String href = root.getElement().getAttribute("data-href").trim();
 		if (href.isEmpty()) {
-			logger.severe("Failed to open standalone lab (invalid reference).");
+			engine.logError("Failed to open standalone lab (invalid reference).");
 			return;
 		}
 		Window.Location.assign(href);
@@ -1707,7 +1815,7 @@ public class EvoLudoWeb extends Composite
 	 */
 	private void doApplyCLO() {
 		if (engine.isRunning()) {
-			logger.warning("Cannot apply parameters while engine is running.");
+			engine.logWarning("Cannot apply parameters while engine is running.");
 			return;
 		}
 		displayStatusThresholdLevel = Level.ALL.intValue();
@@ -1746,11 +1854,9 @@ public class EvoLudoWeb extends Composite
 			activeView.deactivate();
 		if (moduleChanged) {
 			deferStatusThresholdReset = true;
-			engine.modelReset(true);
-			loadViews(false);
-			// notify of reset (reset above was quiet because views may not have
-			// been ready for notification)
-			engine.fireModelReset();
+			engine.modelCheck();
+			loadViews();
+			engine.modelReset(false);
 		} else {
 			boolean didReset = engine.paramsDidChange();
 			loadViews(didReset);
@@ -1762,7 +1868,7 @@ public class EvoLudoWeb extends Composite
 			engine.setSuspended(guiState.resume || engine.isSuspended());
 		}
 		if (viewController.isInitialViewSet())
-			guiState.view = viewController.resolveInitialView(logger);
+			guiState.view = viewController.resolveInitialView();
 		else if ((moduleChanged && guiState.view == viewController.getConsoleView())
 				|| !viewController.containsView(guiState.view))
 			guiState.view = null;
@@ -1790,58 +1896,48 @@ public class EvoLudoWeb extends Composite
 	}
 
 	/**
-	 * Process the command line options for snap execution,
-	 * {@link EvoLudoGWT#cloSnap}, and start the model accordingly.
+	 * Process the command line option for snapshots, {@link EvoLudoGWT#cloSnap}.
+	 * For snapshots running the model is derived from the requested end state:
+	 * the model runs only if {@link Model#cloTimeStop} or {@link Model#cloSamples}
+	 * applies to the mode of the active view and does not run otherwise. Without
+	 * a stopping point the model would run indefinitely and the snapshot would
+	 * never be taken. The exception is {@code --run}, which requests the run
+	 * regardless and leaves it to the model to stop by itself, e.g. after
+	 * converging to a fixed point.
+	 * <p>
+	 * <strong>Note:</strong> the mode is only known once the view is activated,
+	 * i.e. after {@link EvoLudoGWT#cloSnap} derived whether to run.
+	 *
+	 * @see org.evoludo.simulator.EvoLudoGWT#cloSnap
 	 */
 	private void processCLOSnap() {
 		if (!engine.cloSnap.isSet())
 			return;
 		// --snap set
 		Model activeModel = engine.getModel();
+		boolean hasStop = false;
 		switch (activeModel.getMode()) {
 			case DYNAMICS:
+				hasStop = Double.isFinite(activeModel.getTimeStop());
+				if (activeModel.getNSamples() > 0.0)
+					engine.logWarning("--samples found: wrong mode for statistics, use --view option.");
+				break;
 			case STATISTICS_UPDATE:
-				snapDynamics(activeModel);
+				// stationary distributions accept --timestop and --samples alike
+				hasStop = Double.isFinite(activeModel.getTimeStop()) || activeModel.getNSamples() > 0.0;
 				break;
 			case STATISTICS_SAMPLE:
-				snapSamples(activeModel);
+				hasStop = activeModel.getNSamples() > 0.0;
+				if (Double.isFinite(activeModel.getTimeStop()))
+					engine.logWarning("--timestop found: wrong mode for dynamics, use --view option.");
 				break;
 			default:
 		}
-	}
-
-	/**
-	 * Helper method to process snap for dynamics mode.
-	 * 
-	 * @param activeModel the active model
-	 */
-	private void snapDynamics(Model activeModel) {
-		double tStop = activeModel.getTimeStop();
-		double nSamples = activeModel.getNSamples();
-		double deltat = (tStop - activeModel.getTime()) * (activeModel.isTimeReversed() ? -1.0 : 1.0);
-		if (Double.isFinite(tStop) && deltat > 0.0) {
-			// start running - even without --run
-			engine.setSuspended(true);
-		}
-		if (nSamples > 0.0)
-			logger.warning("--samples found: wrong mode for statistics, use --view option.");
-	}
-
-	/**
-	 * Helper method to process snap for statistics sample mode.
-	 * 
-	 * @param activeModel the active model
-	 */
-	private void snapSamples(Model activeModel) {
-		double tStop = activeModel.getTimeStop();
-		double nSamples = activeModel.getNSamples();
-		// run to specified sample count
-		if (nSamples > activeModel.getNStatisticsSamples()) {
-			// start running - even without --run
-			engine.setSuspended(true);
-		}
-		if (Double.isFinite(tStop))
-			logger.warning("--timestop found: wrong mode for dynamics, use --view option.");
+		if (hasStop || engine.cloRun.isSet() || !engine.isSuspended())
+			return;
+		// no end state for this mode: do not run but take the snapshot right away
+		engine.setSuspended(false);
+		snapshotReady();
 	}
 
 	/**
@@ -1857,27 +1953,39 @@ public class EvoLudoWeb extends Composite
 	 * @param resetViews whether to reset view state after loading
 	 */
 	private void loadViews(boolean resetViews) {
+		for (AbstractView<?> view : loadViews()) {
+			if (resetViews)
+				view.modelDidReset();
+			else
+				view.reset(false);
+		}
+	}
+
+	/**
+	 * Helper method to update the views after the command line options have been
+	 * applied. Ensures that all views are loaded and the correct sizes applied.
+	 *
+	 * @return newly loaded views
+	 */
+	private List<AbstractView<?>> loadViews() {
 		viewController.refreshViews();
 		AbstractView<?> anchorView = viewController.getActiveView();
 		if (anchorView == null)
 			anchorView = viewController.getFirstView();
 		if (anchorView == null)
-			return;
+			return new ArrayList<>();
+		List<AbstractView<?>> loadedViews = new ArrayList<>();
 		int width = anchorView.getOffsetWidth();
 		int height = anchorView.getOffsetHeight();
 		for (AbstractView<?> view : viewController.getActiveViews()) {
-			boolean loaded = view.load();
+			if (view.load())
+				loadedViews.add(view);
 			if (view != anchorView)
 				view.setBounds(width, height);
-			if (loaded) {
-				if (resetViews)
-					view.modelDidReset();
-				else
-					view.reset(false);
-			}
 		}
 		evoludoLayout.onResize();
 		updateDropHandlers();
+		return loadedViews;
 	}
 
 	/**
@@ -1952,7 +2060,8 @@ public class EvoLudoWeb extends Composite
 	 */
 	public void showHelp() {
 		guiState.view = viewConsole;
-		logger.info(TAG_PRE_OPEN + "EvoLudo (GWT):\n" + engine.getCLOHelp() + TAG_PRE_CLOSE);
+		engine.logMessage(TAG_PRE_OPEN + "EvoLudo (GWT): " + engine.getGit() + " (GWT " + GWT.getVersion() + ")\n"
+				+ engine.getCLOHelp() + TAG_PRE_CLOSE);
 		// no view may be available if things went wrong from the start,
 		// or neither a module or a model may be available...
 		if (evoludoDeck.getWidgetCount() == 0
@@ -2100,8 +2209,7 @@ public class EvoLudoWeb extends Composite
 	public void restoreFromString(String filename, String content) {
 		Plist parsed = PlistParser.parse(content);
 		if (parsed == null || !parsed.containsKey("CLO")) {
-			if (logger.isLoggable(Level.SEVERE))
-				logger.severe("failed to parse contents of file '" + filename + "'.");
+			engine.logError("failed to parse contents of file '" + filename + "'.");
 			return;
 		}
 		engine.unloadModule();
@@ -2132,32 +2240,33 @@ public class EvoLudoWeb extends Composite
 	 */
 	public void updateKeys() {
 		Model model = engine.getModel();
-		boolean statistics = (model != null && model.getMode() == Mode.STATISTICS_SAMPLE);
-		// only 'reset' in statistics mode
-		if (statistics) {
+		if (model != null && model.getMode() == Mode.STATISTICS_SAMPLE) {
+			// statistics mode
 			evoludoInitReset.setText(BUTTON_RESET);
-			evoludoInitReset.setTitle("Reset statistics");
+			evoludoInitReset.setTitle("Reset statistics [Esc]");
 			evoludoStep.setText(BUTTON_SAMPLE);
-			evoludoStep.setTitle("Calculate single sample");
+			evoludoStep.setTitle("Calculate single sample [→ or N]");
 			return;
 		}
 		if (keyController.isAltDown()) {
 			evoludoInitReset.setText(BUTTON_RESET);
-			evoludoInitReset.setTitle("Initialize population and regenerate structure");
+			evoludoInitReset.setTitle("Initialize population [Esc] and regenerate structure [⎇ Esc]");
+			if (model == null)
+				return;
 			if (model.permitsTimeReversal()) {
 				evoludoStep.setText(BUTTON_PREV);
-				evoludoStep.setTitle("Backtrack single simulation step");
+				evoludoStep.setTitle("Backtrack single simulation step [← or P]");
 			}
 			if (model.permitsDebugStep()) {
 				evoludoStep.setText(BUTTON_DEBUG);
-				evoludoStep.setTitle("Single update event");
+				evoludoStep.setTitle("Single update event [⇧D]");
 			}
 			return;
 		}
 		evoludoInitReset.setText(BUTTON_INIT);
-		evoludoInitReset.setTitle("Initialize population (preserve structure)");
+		evoludoInitReset.setTitle("Initialize population [Esc]");
 		evoludoStep.setText(BUTTON_STEP);
-		evoludoStep.setTitle("Advance single simulation step");
+		evoludoStep.setTitle("Advance single simulation step [→ or N]");
 	}
 
 	/**
@@ -2170,11 +2279,11 @@ public class EvoLudoWeb extends Composite
 	/**
 	 * Prepare GUI to create a snapshot. Stops running model, updates GUI (buttons
 	 * and view) and adds a marker element with ID <code>snapshot-ready</code> to
-	 * DOM. This is used to control automated snapshots using
-	 * <code>capture-website</code>.
-	 * 
-	 * @see <a href="https://github.com/sindresorhus/capture-website-cli"> Github:
-	 *      capture-website-cli</a>
+	 * DOM. This is used to control automated snapshots, e.g. with
+	 * <code>playwright</code>.
+	 *
+	 * @see org.evoludo.simulator.EvoLudoGWT#cloSnap
+	 * @see <a href="https://playwright.dev"> playwright.dev</a>
 	 */
 	public void snapshotReady() {
 		if (snapmarker != null)
@@ -2185,7 +2294,7 @@ public class EvoLudoWeb extends Composite
 		view.update(true);
 		// make sure GUI is in stopped state before taking the snapshot
 		updateGUI();
-		// add div to DOM to signal completion of layout for capture-website
+		// add div to DOM to signal that the snapshot can be taken
 		snapmarker = Document.get().createDivElement();
 		snapmarker.setId("snapshot-ready");
 		Document.get().getBody().appendChild(snapmarker);
@@ -2199,6 +2308,27 @@ public class EvoLudoWeb extends Composite
 			return;
 		Document.get().getBody().removeChild(snapmarker);
 		snapmarker = null;
+	}
+
+	/**
+	 * Report that no snapshot can be taken because a fatal error froze the lab,
+	 * see {@link #handleFatalError(String, Throwable)}. Adds a marker element with
+	 * ID <code>snapshot-failed</code>, which holds {@code msg}, to the DOM.
+	 * Without it automated snapshots would wait for a snapshot that never
+	 * materializes.
+	 *
+	 * @param msg the description of the error
+	 *
+	 * @see org.evoludo.simulator.EvoLudoGWT#cloSnap
+	 * @see <a href="https://playwright.dev"> playwright.dev</a>
+	 */
+	public void snapshotFailed(String msg) {
+		if (snapmarker != null)
+			return;
+		snapmarker = Document.get().createDivElement();
+		snapmarker.setId("snapshot-failed");
+		snapmarker.setInnerText(msg);
+		Document.get().getBody().appendChild(snapmarker);
 	}
 
 	@Override
@@ -2363,7 +2493,7 @@ public class EvoLudoWeb extends Composite
 		// platforms TextFields are disabled through shadow DOM.
 		boolean editCLO = settingsController.applyUiToggles(this::updateDropHandlers);
 		if (logEvoHandler != null)
-			logEvoHandler.setLevel(editCLO ? logger.getLevel() : Level.OFF);
+			logEvoHandler.setLevel(editCLO ? engine.getLogger().getLevel() : Level.OFF);
 	}
 
 	/**
@@ -2390,7 +2520,7 @@ public class EvoLudoWeb extends Composite
 	 * Log GWT features and GUI specifics.
 	 */
 	void logFeatures() {
-		if (!logger.isLoggable(Level.INFO))
+		if (!engine.getLogger().isLoggable(Level.INFO))
 			return;
 		StringBuilder sb = new StringBuilder("GUI Version: ");
 		sb.append(GWT.getVersion());
@@ -2407,7 +2537,7 @@ public class EvoLudoWeb extends Composite
 			sb.append(settingsController.hasTouch() ? "touch " : "");
 			sb.append(")");
 		}
-		logger.info(sb.toString());
+		engine.logMessage(sb.toString());
 	}
 
 	/**
@@ -2453,6 +2583,9 @@ public class EvoLudoWeb extends Composite
 				return;
 
 			String lograw = rec.getMessage();
+			Throwable thrown = rec.getThrown();
+			if (thrown != null)
+				lograw = lograw + "\n" + TAG_PRE_OPEN + formatStackTrace(thrown) + TAG_PRE_CLOSE;
 			int preBegin = lograw.indexOf(TAG_PRE_OPEN);
 			if (preBegin < 0) {
 				// no <pre> tag found - simple encoding
@@ -2480,6 +2613,29 @@ public class EvoLudoWeb extends Composite
 				start = preEnd + TAG_PRE_CLOSE.length();
 			} while ((preBegin = lograw.indexOf(TAG_PRE_OPEN, start)) >= 0);
 			console.log(rl, log.toString());
+		}
+
+		/**
+		 * Format a throwable's stack trace, including any chained causes, for
+		 * display in the console.
+		 *
+		 * @param error the throwable to format
+		 * @return the formatted stack trace
+		 */
+		private String formatStackTrace(Throwable error) {
+			StringBuilder sb = new StringBuilder();
+			Throwable t = error;
+			int depth = 0;
+			while (t != null && depth++ < 10) {
+				if (depth > 1)
+					sb.append("Caused by: ");
+				sb.append(t).append('\n');
+				for (StackTraceElement frame : t.getStackTrace())
+					sb.append("\tat ").append(frame).append('\n');
+				Throwable cause = t.getCause();
+				t = (cause == t) ? null : cause;
+			}
+			return sb.toString();
 		}
 
 		/**

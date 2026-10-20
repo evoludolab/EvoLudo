@@ -233,12 +233,12 @@ public class MVCDistr extends MVAbstract implements PopListener {
 	public boolean verifyXAxis(GraphAxis x, int tag) {
 		boolean changed = false;
 		double min = module.getTraitMin()[tag];
-		if (Math.abs(x.min - min) > 1e-8) {
+		if (Math.abs(x.min - min) > Model.EPS) {
 			x.min = min;
 			changed = true;
 		}
 		double max = module.getTraitMax()[tag];
-		if (Math.abs(x.max - max) > 1e-8) {
+		if (Math.abs(x.max - max) > Model.EPS) {
 			x.max = max;
 			changed = true;
 		}
@@ -249,7 +249,7 @@ public class MVCDistr extends MVAbstract implements PopListener {
 	public boolean verifyYAxis(GraphAxis y, int tag) {
 		boolean changed = false;
 		double step = -engine.getModel().getTimeStep();
-		if (Math.abs(y.step - step) > 1e-8) {
+		if (Math.abs(y.step - step) > Model.EPS) {
 			y.step = step;
 			changed = true;
 		}
@@ -268,7 +268,7 @@ public class MVCDistr extends MVAbstract implements PopListener {
 		Model model = engine.getModel();
 		// check if we need to process data first
 		double now = model.getUpdates();
-		if (now - timestamp > 1e-8) {
+		if (now - timestamp > Model.EPS) {
 			// process data first
 			((CModel) model).getTraitHistogramData(0, bins);
 			timestamp = now;

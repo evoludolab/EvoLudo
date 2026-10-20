@@ -36,6 +36,7 @@ import java.util.Arrays;
 import org.evoludo.math.ArrayMath;
 import org.evoludo.math.Functions;
 import org.evoludo.simulator.models.Data;
+import org.evoludo.simulator.models.Model;
 import org.evoludo.simulator.modules.Module;
 import org.evoludo.simulator.views.BasicTooltipProvider;
 import org.evoludo.simulator.views.Histogram;
@@ -285,11 +286,6 @@ public class HistoGraph extends AbstractGraph<double[]> implements BasicTooltipP
 	int row;
 
 	/**
-	 * The message to display if no histogram is available.
-	 */
-	String message;
-
-	/**
 	 * The flag to indicate whether the data is normalized.
 	 */
 	private boolean isNormalized = true;
@@ -324,6 +320,11 @@ public class HistoGraph extends AbstractGraph<double[]> implements BasicTooltipP
 	 * The minimum width of a bin.
 	 */
 	public static final int MIN_BIN_WIDTH = 1;
+
+	/**
+	 * Smallest y-axis range for percent-scaled histograms.
+	 */
+	private static final double MIN_PERCENT_Y_RANGE = 0.01;
 
 	/**
 	 * Create new histogram graph for <code>module</code> running in
@@ -593,11 +594,6 @@ public class HistoGraph extends AbstractGraph<double[]> implements BasicTooltipP
 		double range = style.xMax - style.xMin;
 		// center of bin
 		x = style.xMin + range * (x + norm * 0.5);
-		// would it be nice to round to nearest rational?
-		// Math.round involves longs, which are evil in GWT...
-		// double rounded = Math.round(x);
-		// if (Math.abs(x - rounded) < 1e-12)
-		// return rounded;
 		return x;
 	}
 
@@ -621,14 +617,8 @@ public class HistoGraph extends AbstractGraph<double[]> implements BasicTooltipP
 	}
 
 	@Override
-	public void clearMessage() {
-		super.clearMessage();
-		message = null;
-	}
-
-	@Override
 	public boolean paint(boolean force) {
-		if (super.paint(force))
+		if (super.paint(force) || data == null)
 			return true;
 
 		g.save();
@@ -637,7 +627,7 @@ public class HistoGraph extends AbstractGraph<double[]> implements BasicTooltipP
 		g.translate(bounds.getX(), bounds.getY());
 		g.setFillStyle(style.graphColor);
 
-		double[] norm = (normIdx >= 0 && data != null && normIdx < data.length) ? data[normIdx] : null;
+		double[] norm = (normIdx >= 0 && normIdx < data.length) ? data[normIdx] : null;
 		double[] myData = data[row];
 		if (style.autoscaleY) {
 			double yMin;
@@ -656,6 +646,7 @@ public class HistoGraph extends AbstractGraph<double[]> implements BasicTooltipP
 			}
 			updateAutoscaledYMax(yMax);
 			updateAutoscaledYMin(yMin);
+			enforceMinimumPercentYRange();
 		}
 
 		double barwidth = bounds.getWidth() / nBins;
@@ -684,7 +675,7 @@ public class HistoGraph extends AbstractGraph<double[]> implements BasicTooltipP
 			return;
 		double roundedMax = roundAutoscale(yMax, true);
 		if (roundedMax <= style.yMin) {
-			double delta = Math.max(Math.abs(style.yMin) * 0.1, 1e-12);
+			double delta = Math.max(Math.abs(style.yMin) * 0.1, Model.EPS_SMALL);
 			roundedMax = roundAutoscale(style.yMin + delta, true);
 			if (roundedMax <= style.yMin)
 				roundedMax = style.yMin + delta;
@@ -703,12 +694,27 @@ public class HistoGraph extends AbstractGraph<double[]> implements BasicTooltipP
 			return;
 		double roundedMin = roundAutoscale(yMin, false);
 		if (roundedMin >= style.yMax) {
-			double delta = Math.max(Math.abs(style.yMax) * 0.1, 1e-12);
+			double delta = Math.max(Math.abs(style.yMax) * 0.1, Model.EPS_SMALL);
 			roundedMin = roundAutoscale(style.yMax - delta, false);
 			if (roundedMin >= style.yMax)
 				roundedMin = style.yMax - delta;
 		}
 		style.yMin = roundedMin;
+	}
+
+	/**
+	 * Ensure percent-scaled histograms do not zoom into ranges below one
+	 * percentage point.
+	 */
+	private void enforceMinimumPercentYRange() {
+		if (!style.percentY || style.yMax - style.yMin >= MIN_PERCENT_Y_RANGE)
+			return;
+		if (style.yMin <= 0.0) {
+			style.yMin = 0.0;
+			style.yMax = MIN_PERCENT_Y_RANGE;
+			return;
+		}
+		style.yMin = Math.max(0.0, style.yMax - MIN_PERCENT_Y_RANGE);
 	}
 
 	/**
@@ -745,7 +751,7 @@ public class HistoGraph extends AbstractGraph<double[]> implements BasicTooltipP
 		boolean nodata = true;
 		for (int n = 0; n < nBins; n++) {
 			double nnorm = norm[n];
-			if (nnorm < 1e-8)
+			if (nnorm < Model.EPS)
 				continue;
 			double val = myData[n] / nnorm;
 			yMin = Math.min(yMin, val);
@@ -773,7 +779,7 @@ public class HistoGraph extends AbstractGraph<double[]> implements BasicTooltipP
 		if (norm != null) {
 			for (int n = 0; n < nBins; n++) {
 				double nnorm = norm[n];
-				double barheight = nnorm < 1e-8 ? 0.0
+				double barheight = nnorm < Model.EPS ? 0.0
 						: Math.min(Math.max(1.0, map * (myData[n] / nnorm - style.yMin)), h - 1);
 				fillRect(xshift, h - barheight, barwidth - 1.0, barheight);
 				xshift += barwidth;
@@ -806,8 +812,10 @@ public class HistoGraph extends AbstractGraph<double[]> implements BasicTooltipP
 			g.setStrokeStyle(mark.color == null ? markerColors[n++ % nMarkers] : mark.color);
 			if (mark.linestyle != null)
 				g.setLineDash(mark.linestyle);
-			strokeLine(x, 0.0, x, h);
-			strokeLine(x + barwidth, 0.0, x + barwidth, h);
+			if (bin > 0)
+				strokeLine(x, 0.0, x, h);
+			if (bin < nBins - 1)
+				strokeLine(x + barwidth, 0.0, x + barwidth, h);
 			g.setLineDash(style.solidLine);
 		}
 	}
@@ -825,7 +833,7 @@ public class HistoGraph extends AbstractGraph<double[]> implements BasicTooltipP
 			return -1;
 		if (!inside(x, y))
 			return -1;
-		int adjX = x - (int) (3 * style.frameWidth);
+		double adjX = x - canvasPadX();
 		double ibarwidth = nBins / bounds.getWidth();
 		return (int) ((adjX - bounds.getX()) * ibarwidth);
 	}
@@ -841,8 +849,7 @@ public class HistoGraph extends AbstractGraph<double[]> implements BasicTooltipP
 
 	@Override
 	protected boolean inside(int x, int y) {
-		int adjX = x - (int) (3 * style.frameWidth);
-		return bounds.contains(adjX, y);
+		return bounds.contains(x - canvasPadX(), y - canvasPadY());
 	}
 
 	@Override
@@ -853,11 +860,8 @@ public class HistoGraph extends AbstractGraph<double[]> implements BasicTooltipP
 				style.showLabel && style.label != null ? "<b>" + style.label + "</b><br/>" : "");
 		switch (view.getType()) {
 			case DEGREE:
-				if (Math.abs(style.xMax - (nBins - 1)) < 1e-6) {
-					appendTipDegree(tip, bar);
-					break;
-				}
-				//$FALL-THROUGH$
+				appendTipDegree(tip, bar);
+				break;
 			case TRAIT:
 			case FITNESS:
 				appendBinTooltip(tip, bar);
@@ -879,14 +883,19 @@ public class HistoGraph extends AbstractGraph<double[]> implements BasicTooltipP
 	}
 
 	/**
-	 * Append degree tooltip.
-	 * 
+	 * Append degree tooltip. Bins may span several degrees for graphs with a wide
+	 * range of degrees.
+	 *
 	 * @param tip the tooltip string builder
 	 * @param bar the bar index
 	 */
 	private void appendTipDegree(StringBuilder tip, int bar) {
+		double perBin = (style.xMax - style.xMin) / nBins;
+		int first = (int) Math.round(style.xMin + bar * perBin);
+		int last = (int) Math.round(style.xMin + (bar + 1) * perBin) - 1;
+		String degree = (last > first ? "[" + first + ", " + last + "]" : Integer.toString(first));
 		tip.append(TABLE_STYLE);
-		tip.append(TABLE_ROW_START + style.xLabel + TABLE_CELL_NEXT + bar + TABLE_ROW_END);
+		tip.append(TABLE_ROW_START + style.xLabel + TABLE_CELL_NEXT + degree + TABLE_ROW_END);
 		tip.append(TABLE_ROW_START + style.yLabel + TABLE_CELL_NEXT
 				+ Formatter.formatPercent(data[row][bar], 2) + TABLE_ROW_END + TABLE_END);
 	}
@@ -1072,7 +1081,7 @@ public class HistoGraph extends AbstractGraph<double[]> implements BasicTooltipP
 			style.yMax = 1.0;
 			return;
 		}
-		style.yMax = Math.max(Functions.roundUp(yMax), 1e-12);
+		style.yMax = Math.max(Functions.roundUp(yMax), Model.EPS_SMALL);
 	}
 
 	/**

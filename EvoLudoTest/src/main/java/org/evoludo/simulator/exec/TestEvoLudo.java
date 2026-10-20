@@ -37,13 +37,12 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.ObjectOutputStream;
 import java.io.PrintStream;
-import java.text.DecimalFormat;
-import java.nio.file.FileAlreadyExistsException;
 import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
+import java.text.DecimalFormat;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
@@ -53,6 +52,7 @@ import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
 
 import org.evoludo.simulator.EvoLudoJRE;
+import org.evoludo.simulator.models.ModelType;
 import org.evoludo.simulator.models.RunListener;
 import org.evoludo.util.Plist;
 import org.evoludo.util.PlistParser;
@@ -72,6 +72,8 @@ import org.evoludo.util.PlistParser;
  * cases
  * <li>{@code --reports <directory>}: directory for storing failed test reports
  * <li>{@code --compress}: compress generated test files
+ * <li>{@code --gui}: the test files hold states exported by a GUI, compare
+ * them to the references without running the engine
  * <li>{@code --minor}: dump differences for minor failures
  * <li>{@code --verb}: verbose mode
  * <li>{@code --help}, {@code -h} or no arguments: this help screen
@@ -90,6 +92,28 @@ public class TestEvoLudo implements RunListener {
 	 * The prefix to mark the beginning of the SHA hash in the filename.
 	 */
 	static final String SHA_PREFIX = "-SHA";
+
+	/**
+	 * Relaxed precision (one digit looser than {@code Plist}'s default) used when
+	 * comparing SDE test results. SDE models draw many Gaussian random numbers
+	 * per run via {@code Math.log} in the Box-Muller transform, which is not
+	 * guaranteed to yield identical results across hardware and software
+	 * implementations.
+	 */
+	static final int SDE_PRECISION_DIGITS = 9;
+
+	/**
+	 * Check whether the test described by {@code reference} is an SDE model.
+	 * Note, {@code engine.getModel()} may not be available e.g. when
+	 * comparing an already exported GUI/GWT state against its reference,
+	 * without running the module locally.
+	 *
+	 * @param reference the reference {@code Plist} to inspect
+	 * @return {@code true} if {@code reference} is an SDE model
+	 */
+	private static boolean isSDE(Plist reference) {
+		return ModelType.SDE.toString().equals(reference.get("Model"));
+	}
 
 	/**
 	 * Pointer to engine. Engine has EvoLudoJRE class but do not rely on JRE
@@ -153,6 +177,21 @@ public class TestEvoLudo implements RunListener {
 	boolean useCompression = false;
 
 	/**
+	 * The flag to indicate whether the test files hold states that were exported
+	 * by another front-end, in particular the GUI running in a browser, see
+	 * {@code scripts/runtests.sh --gui}. In this mode the states are compared to
+	 * the references as they are, i.e. without running the engine.
+	 */
+	boolean guiMode = false;
+
+	/**
+	 * The state of the replicate if it was generated elsewhere, see
+	 * {@link #guiMode}, or {@code null} if the engine holds the state of the
+	 * replicate. Used to dump reports of failed tests.
+	 */
+	String replicateState;
+
+	/**
 	 * The flag to indicate whether to dump differences for minor failures.
 	 */
 	boolean dumpMinor = false;
@@ -183,9 +222,33 @@ public class TestEvoLudo implements RunListener {
 	int nTestMinor;
 
 	/**
-	 * The number of tests with warnings.
+	 * The number of tests with warnings. Excludes genuine failures - those are
+	 * tracked separately in {@link #nTestFailures} and must not be double
+	 * counted here, since the more severe classification takes precedence.
 	 */
 	int nTestWarnings;
+
+	/**
+	 * The number of tests where the SHA of the reference did not match the SHA
+	 * of the result but the subsequent full comparison of the plists passed
+	 * anyway, e.g. because the reference predates a change to what is included
+	 * in the SHA. Excludes genuine failures - those are tracked separately in
+	 * {@link #nTestFailures} and must not inflate this count.
+	 */
+	int nSHAMismatches;
+
+	/**
+	 * The number of stale or missing references successfully regenerated and
+	 * re-verified during {@link #generate()} - whether stale because their
+	 * content had changed or merely because the SHA embedded in their filename
+	 * had. Purely informational: unlike {@link #nSHAMismatches}, it is not a
+	 * subset of {@link #nTestFailures}, since regeneration replaces the
+	 * reference with the freshly computed, known-good result before the one and
+	 * only counted verification of that test runs - so a successful
+	 * regeneration never leaves a trace in {@link #nTestFailures} to subtract
+	 * from.
+	 */
+	int nRegenerated;
 
 	/**
 	 * Constructor for TestEvoLudo.
@@ -226,8 +289,7 @@ public class TestEvoLudo implements RunListener {
 			return;
 		}
 		int nTest = 0;
-		try {
-			Scanner scanner = new Scanner(clo);
+		try (Scanner scanner = new Scanner(clo)) {
 			while (scanner.hasNextLine()) {
 				String cloLine = scanner.nextLine().trim();
 				// skip comments and empty lines
@@ -242,71 +304,122 @@ public class TestEvoLudo implements RunListener {
 				String result = engine.encodeState();
 				Plist plist = PlistParser.parse(result);
 				String dest = generateBasename(cloLine, ++nTest);
-				File ref = checkReference(referencesDir, plist, dest);
-				if (ref != null && ref != referencesDir)
-					// check passed
+				String sha = sha256(plist, SHA_EXCLUDE);
+				// locate an existing reference without touching any counters: the one
+				// and only counted check for this test happens below, either as the
+				// fast SHA-match pass or via test(ref) after regenerating. Using
+				// checkReference() for this probe, as before, double-counted every
+				// stale/missing test - once for the probe's own compareRuns() call and
+				// once more for the re-verify - inflating nTests and printing every
+				// pass/fail message twice.
+				File existing = search(referencesDir, dest);
+				if (existing != null) {
+					String name = existing.getName();
+					int idx = name.indexOf(SHA_PREFIX);
+					String existingSha = name.substring(idx + SHA_PREFIX.length()).replace(".zip", "")
+							.replace(".plist", "");
+					if (existingSha.equals(sha)) {
+						// reference already up to date, both content and filename
+						nTests++;
+						reportTestSuccess(name.substring(0, idx) + " SHA match!");
+						continue;
+					}
+				}
+				// stale (SHA mismatch) or missing reference - regenerate below. Whether
+				// the content actually changed or only the SHA went stale (e.g. after a
+				// change to what the hash covers) only matters for the diagnostic
+				// message and nSHAMismatches/nTestMinor bookkeeping here; either way the
+				// reference gets refreshed, so this uncounted check must not touch
+				// nTests or nTestFailures, see above.
+				boolean wasStale = inspectReference(existing, plist, dest);
+				if (existing != null && !wasStale)
 					continue;
-				if (ref == null) {
-					// copy failed test to reports directory
-					try {
-						File src = search(referencesDir, dest);
-						Path dst = new File(reportsDir.getPath() + File.separator +
-								dest + "-old.plist" +
-								(src.getName().endsWith(".zip") ? ".zip" : "")).toPath();
-						Files.move(src.toPath(), dst);
-					} catch (FileAlreadyExistsException e) {
-						logError("file '" + reportsDir + File.separator + dest + "' already exists.");
-						continue;
-					} catch (IOException e) {
-						logError("failed to move '" + referencesDir + File.separator + dest
-								+ "' to '" + reportsDir + File.separator + dest + "'.");
-						continue;
-					}
-				}
-				dest += SHA_PREFIX + sha256(plist, SHA_EXCLUDE) + ".plist";
-				// save new reference
-				if (useCompression) {
-					// with compression
-					ref = exportDir.toPath().resolve(dest + ".zip").toFile();
-					try {
-						ZipOutputStream zos = new ZipOutputStream(
-								new FileOutputStream(ref));
-						zos.putNextEntry(new ZipEntry(dest));
-						zos.write(result.getBytes());
-						zos.finish();
-						zos.close();
-					} catch (FileNotFoundException e) {
-						logError("failed to open '" + dest + "' for writing.");
-						nTestFailures++;
-					} catch (IOException e) {
-						logError("failed to write to '" + dest + "'.");
-						nTestFailures++;
-					}
-				} else {
-					// no compression
-					ref = exportDir.toPath().resolve(dest).toFile();
-					try {
-						FileOutputStream fos = new FileOutputStream(ref);
-						fos.write(result.getBytes());
-						fos.close();
-					} catch (FileNotFoundException e) {
-						logError("failed to open '" + dest + "' for writing.");
-						nTestFailures++;
-					} catch (IOException e) {
-						logError("failed to write to '" + dest + "'.");
-						nTestFailures++;
-					}
-				}
+				dest += SHA_PREFIX + sha + ".plist";
+				File ref = writeReference(exportDir, dest, result);
 				String name = ref.getName();
 				int idx = name.indexOf(SHA_PREFIX);
 				logOk(name.substring(0, idx) + ": test generated/updated.");
-				// check test
+				// check test - the one and only counted verification for this test
+				int nTestFailuresBeforeVerify = nTestFailures;
 				test(ref);
+				if (wasStale && nTestFailures == nTestFailuresBeforeVerify)
+					nRegenerated++;
 			}
-			scanner.close();
 		} catch (FileNotFoundException fnfe) {
 			logWarning("file '" + clo + "' not found!");
 		}
+	}
+
+	/**
+	 * Inspects a reference before replacing it. Missing references require no
+	 * action. Stale references are compared for diagnostics and moved to the
+	 * reports directory before replacement.
+	 *
+	 * @param referenceFile the reference file, or {@code null} if none exists
+	 * @param result        the generated state
+	 * @param name          the reference base name
+	 * @return {@code true} if a stale reference was inspected and quarantined;
+	 *         {@code false} if no reference exists or it could not be moved
+	 */
+	private boolean inspectReference(File referenceFile, Plist result, String name) {
+		if (referenceFile == null)
+			return false;
+		try {
+			Plist reference = engine.readPlist(referenceFile.getAbsolutePath());
+			int nIssues = (isSDE(reference) ? result.diff(reference, SHA_EXCLUDE, SDE_PRECISION_DIGITS)
+					: result.diff(reference, SHA_EXCLUDE));
+			if (nIssues == 0) {
+				nSHAMismatches++;
+				logWarning(name + " SHA mismatch! - content unchanged, refreshing reference...");
+			} else if (nIssues == result.getNMinor()) {
+				nTestMinor++;
+				logWarning(name + " SHA mismatch! - minor (likely numerical) differences, refreshing reference...");
+			} else {
+				logWarning(name + " SHA mismatch! - content changed, refreshing reference...");
+			}
+		} catch (Exception e) {
+			logWarning(name + " SHA mismatch! - refreshing reference...");
+		}
+		String ext = ".plist" + (referenceFile.getName().endsWith(".zip") ? ".zip" : "");
+		try {
+			Files.move(referenceFile.toPath(), uniqueReportPath(name + "-old", ext));
+			return true;
+		} catch (IOException e) {
+			logError("failed to move '" + referencesDir + File.separator + name
+					+ "' to '" + reportsDir + File.separator + name + "'.");
+			return false;
+		}
+	}
+
+	/**
+	 * Writes a generated reference, optionally with ZIP compression.
+	 *
+	 * @param exportDir the directory for the new reference
+	 * @param name      the reference file name
+	 * @param state     the encoded state to write
+	 * @return the reference file, even if writing failed
+	 */
+	private File writeReference(File exportDir, String name, String state) {
+		File reference = exportDir.toPath().resolve(name + (useCompression ? ".zip" : "")).toFile();
+		try {
+			if (useCompression) {
+				try (ZipOutputStream zos = new ZipOutputStream(new FileOutputStream(reference))) {
+					zos.putNextEntry(new ZipEntry(name));
+					zos.write(state.getBytes());
+				}
+			} else {
+				try (FileOutputStream fos = new FileOutputStream(reference)) {
+					fos.write(state.getBytes());
+				}
+			}
+		} catch (FileNotFoundException e) {
+			logError("failed to open '" + name + "' for writing.");
+			nTestFailures++;
+		} catch (IOException e) {
+			logError("failed to write to '" + name + "'.");
+			nTestFailures++;
+		}
+		return reference;
 	}
 
 	/**
@@ -330,6 +443,10 @@ public class TestEvoLudo implements RunListener {
 		String filename = dir.getName();
 		String ext = filename.substring(filename.lastIndexOf('.'));
 		if (ext.equals(".plist") || ext.equals(".zip")) {
+			if (guiMode) {
+				testGUI(dir, parent);
+				return;
+			}
 			String name = dir.getName();
 			int idx = name.indexOf(SHA_PREFIX);
 			startTest(parent + name.substring(0, idx));
@@ -374,20 +491,58 @@ public class TestEvoLudo implements RunListener {
 	}
 
 	/**
+	 * Compare the state in the file {@code plist} to its reference. In contrast to
+	 * {@link #test(File)} the state is not generated by running the engine but was
+	 * exported by another front-end, in particular the GUI running in a browser,
+	 * see {@code scripts/runtests.sh --gui}. The name of {@code plist}, without the
+	 * extension, must match the name of the reference file, without the SHA and
+	 * the extension.
+	 *
+	 * @param plist  the file with the exported state
+	 * @param parent the name of the directory holding {@code plist}
+	 */
+	private void testGUI(File plist, String parent) {
+		String name = plist.getName();
+		String base = name.substring(0, name.indexOf(".plist"));
+		startTest(parent + base);
+		Plist result = engine.readPlist(plist.getAbsolutePath());
+		if (result.isEmpty()) {
+			nTests++;
+			nTestFailures++;
+			reportTestFailure(base + ": failed to read exported state - review!");
+			return;
+		}
+		try {
+			// keep the exported state around to dump reports of failed tests
+			replicateState = new String(Files.readAllBytes(plist.toPath()));
+		} catch (IOException e) {
+			replicateState = null;
+		}
+		if (checkReference(referencesDir, result, base) == referencesDir) {
+			nTests++;
+			nTestFailures++;
+			reportTestFailure("reference file '" + base + "' not found - generate references first!");
+		}
+		replicateState = null;
+	}
+
+	/**
 	 * Compute the SHA-256 hash of the {@code plist}, excluding the keys in
 	 * {@code exclude}.
-	 * 
+	 * <p>
+	 * <strong>Note:</strong> excluded keys are removed. Some keys are legitimately
+	 * absent on one platform (e.g. {@code JavaVersion} is never written by the GWT
+	 * front-end).
+	 *
 	 * @param plist   the property list to hash
 	 * @param exclude the keys to exclude from the hash
 	 * @return the SHA-256 hash as a hexadecimal string
 	 */
 	public static String sha256(Plist plist, Collection<String> exclude) {
-		HashMap<String, Object> original = new HashMap<>(plist);
+		HashMap<String, Object> original = new HashMap<>();
 		for (String key : exclude) {
-			if (plist.containsKey(key)) {
-				original.put(key, plist.get(key));
-				plist.replace(key, null);
-			}
+			if (plist.containsKey(key))
+				original.put(key, plist.remove(key));
 		}
 		String sha = "";
 		try {
@@ -403,7 +558,7 @@ public class TestEvoLudo implements RunListener {
 
 	/**
 	 * Compute SHA-256 hash of serializable object {@code obj}.
-	 * 
+	 *
 	 * @param obj the object to hash
 	 * @return the SHA-256 hash as a hexadecimal string
 	 * @throws IOException              if an I/O error occurs
@@ -492,7 +647,8 @@ public class TestEvoLudo implements RunListener {
 		engine.setCLO("--seed 0 " + stripExport(clo) + " --delay 0");
 		int issues = engine.parseCLO();
 		if (issues > 0) {
-			reportTestFailure(currentTestLabel(task) + ": " + issues + " parsing issues with command line arguments - review!");
+			reportTestFailure(
+					currentTestLabel(task) + ": " + issues + " parsing issues with command line arguments - review!");
 			nTestFailures++;
 			nTests++;
 			return false;
@@ -534,15 +690,16 @@ public class TestEvoLudo implements RunListener {
 		nTests++;
 		// create 'plist' of current state and compare to 'reference'
 		// ignore some plist entries
-		int nIssues = replicate.diff(reference, SHA_EXCLUDE);
-		// check option strings only if some tests failed
+		int nIssues = (isSDE(reference) ? replicate.diff(reference, SHA_EXCLUDE, SDE_PRECISION_DIGITS)
+				: replicate.diff(reference, SHA_EXCLUDE));
+		// check option strings only if some tests failed; report as a diagnostic
+		// but don't tally separately - the test is already counted as a failure
+		// below, and the more severe classification takes precedence
 		if (replicate.getNMajor() > 0) {
 			String rclo = (String) reference.get("CLO");
 			String mclo = (String) replicate.get("CLO");
-			if (!rclo.equals(mclo)) {
-				logWarning("CLO strings differ!\n me: " + mclo + "\nref: " + rclo + ")");
-				nTestWarnings++;
-			}
+			if (!rclo.equals(mclo))
+				logWarning("CLO strings differ!\n me: " + mclo + "\nref: " + rclo);
 		}
 		int nMinor = replicate.getNMinor();
 		String msg;
@@ -591,20 +748,35 @@ public class TestEvoLudo implements RunListener {
 			return false;
 		String javaref = (String) reference.get("JavaVersion");
 		String javarep = (String) replicate.get("JavaVersion");
-		if (javaref != null && !javaref.equals(javarep))
-			logWarning("JRE versions differ (me: " + javarep + ", ref: " + javaref + ")");
+		// note: replicate has no JavaVersion in guiMode (states exported by the
+		// browser, not a JRE) - nothing to compare, and hence nothing to warn about
+		if (javaref != null && javarep != null && !javaref.equals(javarep))
+			logWarning("JRE versions differ - me: " + javarep + ", ref: " + javaref);
 		String ext;
 		String report = reportsDir.getAbsolutePath() + File.separator + refname.getName();
 		if (nIssues == nMinor) {
 			nTestMinor++;
 			if (!dumpMinor)
 				return false;
-			ext = "-minor.plist";
+			ext = "-minor";
 		} else {
 			nTestFailures++;
-			ext = "-failed.plist";
+			ext = "-failed";
 		}
-		engine.exportState(report.substring(0, report.lastIndexOf(".plist")) + ext);
+		if (replicateState == null) {
+			engine.exportState(report.substring(0, report.lastIndexOf(".plist")) + ext + ".plist");
+			return false;
+		}
+		// the state was generated elsewhere, see testGUI(File, String), and the
+		// engine has nothing to export
+		String dump = refname.getName();
+		dump = dump.substring(0, dump.indexOf(".plist")) + ext;
+		Path path = uniqueReportPath(dump, ".plist");
+		try {
+			Files.write(path, replicateState.getBytes());
+		} catch (IOException e) {
+			logError("failed to write report '" + path + "'.");
+		}
 		return false;
 	}
 
@@ -628,6 +800,7 @@ public class TestEvoLudo implements RunListener {
 		}
 		String name = ref.getName();
 		int idx = name.indexOf(SHA_PREFIX);
+		boolean shaMismatch = false;
 		if (!skipSHA || idx < 0) {
 			// skip SHA check or no SHA in name
 			String shaReference = name.substring(idx + SHA_PREFIX.length()).replace(".zip", "").replace(".plist", "");
@@ -637,6 +810,7 @@ public class TestEvoLudo implements RunListener {
 				reportTestSuccess(name.substring(0, idx) + " SHA match!");
 				return ref;
 			}
+			shaMismatch = true;
 			logWarning("Testing: " + name.substring(0, idx) + " SHA mismatch! - comparing plists...");
 		}
 		// compare plists
@@ -650,8 +824,14 @@ public class TestEvoLudo implements RunListener {
 			reportTestFailure("failed to read reference file '" + ref.getAbsolutePath() + "'.");
 			return null;
 		}
-		if (compareRuns(ref, reference, result))
+		if (compareRuns(ref, reference, result)) {
+			// the plists agree despite the SHA mismatch - benign, e.g. a reference
+			// predating a change to what is included in the SHA; a genuine failure
+			// is tracked separately, in nTestFailures, and must not inflate this count
+			if (shaMismatch)
+				nSHAMismatches++;
 			return ref;
+		}
 		return null;
 	}
 
@@ -680,6 +860,27 @@ public class TestEvoLudo implements RunListener {
 		return null;
 	}
 
+	/**
+	 * Find a path in {@link #reportsDir} named {@code base + ext} for
+	 * quarantining a stale reference file. If that name is already taken - e.g.
+	 * by a leftover from an earlier failed generation attempt - append
+	 * "-1", "-2", ... before {@code ext} until a free name is found, matching
+	 * the numbering convention used elsewhere for report dumps (e.g.
+	 * "-failed-1.plist").
+	 *
+	 * @param base the base name of the file, without extension
+	 * @param ext  the extension to append, including the leading dot (e.g.
+	 *             ".plist" or ".plist.zip")
+	 * @return a path in {@link #reportsDir} that does not yet exist
+	 */
+	private Path uniqueReportPath(String base, String ext) {
+		File dst = new File(reportsDir.getPath() + File.separator + base + ext);
+		int counter = 0;
+		while (dst.exists())
+			dst = new File(reportsDir.getPath() + File.separator + base + "-" + (++counter) + ext);
+		return dst.toPath();
+	}
+
 	@Override
 	public synchronized void modelStopped() {
 		isRunning = false;
@@ -699,6 +900,8 @@ public class TestEvoLudo implements RunListener {
 		nTestFailures = 0;
 		nTestMinor = 0;
 		nTestWarnings = 0;
+		nSHAMismatches = 0;
+		nRegenerated = 0;
 		if (performTest) {
 			test(testsDir);
 			logTitle("Tests completed.");
@@ -706,6 +909,9 @@ public class TestEvoLudo implements RunListener {
 			generate();
 			logTitle("Generating completed.");
 		}
+		if (nSHAMismatches > 0)
+			logWarning(nSHAMismatches + " out of " + nTests
+					+ " tests had a SHA mismatch only.");
 		if (nTestWarnings > 0)
 			logWarning(nTestWarnings + " out of " + nTests + " tests had warnings.");
 		if (nTestMinor > 0)
@@ -713,13 +919,14 @@ public class TestEvoLudo implements RunListener {
 					+ " tests had minor (likely numerical) issues.");
 		if (nTestFailures > 0)
 			logError(nTestFailures + " out of " + nTests + " tests had errors.");
+		if (nRegenerated > 0)
+			logOk("REGENERATED: " + nRegenerated + " out of " + nTests
+					+ " tests successfully regenerated.");
 		if (nTests != nTestFailures)
 			logOk((nTests - nTestFailures) + " out of " + nTests
 					+ " tests successfully passed.");
 		if (nTestFailures > 0 || nTestMinor > 0 || nTestWarnings > 0)
 			logTitle("Review issues carefully!");
-		// remove reports directory if empty
-		reportsDir.delete();
 		return (nTestFailures == 0);
 	}
 
@@ -734,6 +941,7 @@ public class TestEvoLudo implements RunListener {
 		// --tests <directory>: directory for storing/retrieving test cases
 		// --reports <directory>: directory for storing failed test reports
 		// --compress: compress generated test files
+		// --gui: tests hold states exported by a GUI, compare them as they are
 		// --verb: verbose mode
 		// --minor: dump differences for minor failures as well
 		// --help, -h or no arguments: help screen
@@ -749,6 +957,11 @@ public class TestEvoLudo implements RunListener {
 			// compress generated test files
 			if (arg.startsWith("--comp")) {
 				useCompression = true;
+				continue;
+			}
+			// test files hold states exported by a GUI
+			if (arg.startsWith("--gui")) {
+				guiMode = true;
 				continue;
 			}
 			// generate test cases from file or directory
@@ -840,16 +1053,8 @@ public class TestEvoLudo implements RunListener {
 			testsDir = referencesDir;
 		if (referencesDir == null)
 			referencesDir = testsDir;
-		if (reportsDir == null) {
-			if (testsDir.isDirectory()) {
-				reportsDir = new File(testsDir.getPath());
-				if (!reportsDir.exists() && !reportsDir.mkdir()) {
-					logError("failed to create directory '" + reportsDir.getPath() + "' for reports.");
-					engine.exit(1);
-				}
-			} else
-				reportsDir = new File(".");
-		}
+		if (reportsDir == null)
+			reportsDir = testsDir.isDirectory() ? new File(testsDir.getPath()) : new File(".");
 		if (generator != null) {
 			// for generating reference tests, generator file/directory must be readable and
 			// the reference directory must exist and must be writable
@@ -885,12 +1090,12 @@ public class TestEvoLudo implements RunListener {
 			}
 		}
 		// for generating and testing, the directory for reports must exist and be
-		// writeable
+		// writeable; the caller is responsible for creating it (e.g. so that
+		// concurrent test runs sharing one reports directory don't race on its
+		// creation)
 		if (reportsDir != null && !reportsDir.exists()) {
-			if (!reportsDir.mkdirs()) {
-				logError("failed to create directory '" + reportsDir.getPath() + "' for reports.");
-				engine.exit(1);
-			}
+			logError("report directory '" + reportsDir.getPath() + "' does not exist.");
+			engine.exit(1);
 		}
 		if (reportsDir != null && !reportsDir.canWrite()) {
 			logError("report directory '" + reportsDir.getPath() + "' not writable.");
@@ -903,7 +1108,7 @@ public class TestEvoLudo implements RunListener {
 	 * Print help screen.
 	 */
 	public void help() {
-		System.out.println(
+		logMessage(
 				"EvoLudo tests: " + engine.getVersion() + //
 						"\nUsage: java -jar TestEvoLudo.jar with options\n" + //
 						"       --generate <directory|file>: generate test files from option sets\n" + //
@@ -911,6 +1116,7 @@ public class TestEvoLudo implements RunListener {
 						"       --references <directory>: directory for storing/retrieving test cases\n" + //
 						"       --reports  <directory>: directory to store reports of failed tests\n" + //
 						"       --compress: compress generated test files\n" + //
+						"       --gui: tests hold states exported by a GUI, compare as they are\n" + //
 						"       --minor: dump differences for minor failures\n" + //
 						"       --verb: verbose mode\n" + //
 						"       --nosha: disable SHA checks\n" + //

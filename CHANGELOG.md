@@ -2,6 +2,54 @@
 
 All notable project revisions are listed here in reverse chronological order.
 
+## [`v2.2.5`](https://github.com/evoludolab/EvoLudo/releases/tag/v2.2.5) (2026-06-09) Public release: [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.14591549.svg)](https://zenodo.org/doi/10.5281/zenodo.14591549)
+
+### Bugfixes:
+- Fixed fatal internal EvoLudo errors caused by reloading cached JavaScript code and improve JavaScript error reporting (`f225bb378`).
+
+## [`v2.2.4`](https://github.com/evoludolab/EvoLudo/releases/tag/v2.2.4) (2026-05-29) Public release: [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.14591549.svg)](https://zenodo.org/doi/10.5281/zenodo.14591549)
+
+### Bugfixes:
+- Fixed consistency checks, random interaction score handling, prevent duplicate geometry warnings, fix trait-colors for new traits, preserve delay settings (`9ed244b90`, `fd87abca5`, `283ebe618`, `f7de496a0`, `d17fd03fa`).
+- Corrected TBT trait names on second-neighbour geometries and tightened constant references in TBT subclasses (`d4a85b367`, `b539e0eb4`).
+- Hardened utility and math edge cases in `RingBuffer`, `Functions.roundUp/roundDown`, `Segment2D`, `XMLCoder`, `PlistParser.parseReal`, `CLOParser`, and `MersenneTwister.stateEquals` (`93b673793`, `60316941d`, `1f23079dd`, `44b9ef812`, `9377503de`, `975814d0e`, `a8ad0ae5e`).
+
+### GUI changes:
+- Fixed multiple-histogram rendering and histogram graph coordination (`993b72900`).
+- Improved EPUB tooltip behavior and custom tooltip coloring (`a7e1f8401`, `7861a8744`).
+
+### Tooling changes:
+- Updated script handling for build, fetch, publish, push, and test generation workflows (`112884eb9`).
+- Select newest JAR/GWT artifacts, require confirmation for dirty or post-tag HEAD states (`5534f6f2e`).
+
+## [`v2.2.3`](https://github.com/evoludolab/EvoLudo/releases/tag/v2.2.3) (2026-05-04) Public release: [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.14591549.svg)](https://zenodo.org/doi/10.5281/zenodo.14591549)
+
+### Bugfixes:
+- Hardened geometry and model initialization, clearing fixed geometries on init, improving hierarchical-geometry parsing, skipping unnecessary well-mixed relaxation, and tightening IBS update/time/payoff consistency (`7808b1eda`, `8d020e2f3`, `aff897150`, `8d55ab8f9`, `672f38f06`).
+- Honor disabled traits (`fd69f9de9`).
+
+### Backend changes:
+- Streamlined model and competition internals, consistency checks, and competition logic (`c31a73995`, `122746cae`, `31550c653`).
+- Improved chunked relaxation and headless simulation behavior (`3c7e9f178`, `1f4e116be`).
+
+### GUI changes:
+- Fixed network visualization issues including directed link arrows, link width/zooming, dynamic 3D links, and partial undirected links (`7d6acf9b7`, `d30b86943`, `01501a1cf`, `e53269504`).
+- Reworked 2D/3D network layout and link generation, including Fibonacci initialization, more efficient link meshes, reciprocal-link handling, and the new `Link3D` implementation (`32bd07c0f`, `49c507e4e`, `03e3f13c3`, `1c687554d`, `858e72da8`, `4781c0b46`, `7741065ab`, `a75bcf791`).
+- Improved graph rendering and interaction robustness with fixes for `PopGraph2D` resizing/drawing (`cd2ae1b19`), line-graph time reversal and data filtering (`88381328a`, `8ead54424`, `cf1b23738`, `bbebf01eb`), histogram end-bin marking (`ba152146b`), legend rendering (`b56699b31`), and `ParaGraph` y-axis label jitter (`0bf023362`).
+- Expanded keyboard and context-menu support, including active-view cycling, shortcut advertising, menu key handling, and context-menu item refinements (`79c84ffeb`, `8f6aa1934`, `1efb87aae`, `1e6544e0a`).
+- Improved paste handling for settings, graph message handling, y-axis label positioning, and 3D continuous-trait color alignment (`a54fd3af9`, `3c9937d7e`, `c9af23cfd`, `b7887079a`).
+- Updated trait colors with a warmer yellow palette (`08614b83f`).
+
+### Tests and release tooling:
+- Updated CDL reference tests (`685338599`).
+- Improved git-export tag handling and recorded publish-log updates (`40310e9ba`, `c20475a41`).
+- Continued Javadoc and JSON maintenance (`4222f0d18`, `9508dfa8b`).
+
+## [`v2.2.2`](https://github.com/evoludolab/EvoLudo/releases/tag/v2.2.2) (2026-03-15) Public release: [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.14591549.svg)](https://zenodo.org/doi/10.5281/zenodo.14591549)
+
+- Added the `Mutual` module to the public module registry (`e3d4783cb`).
+- Recorded the `v2.2.1` publish log update (`7dc4f63d1`).
+
 ## [`v2.2.1`](https://github.com/evoludolab/EvoLudo/releases/tag/v2.2.1) (2026-03-14) Public release: [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.14591549.svg)](https://zenodo.org/doi/10.5281/zenodo.14591549)
 
 ### Bugfixes:

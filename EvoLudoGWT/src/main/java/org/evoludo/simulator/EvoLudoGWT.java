@@ -72,11 +72,6 @@ public class EvoLudoGWT extends EvoLudo {
 	private static final int OSDE_CHUNK_TARGET = 100;
 
 	/**
-	 * Tolerance for floating point comparisons of update milestones.
-	 */
-	private static final double IBS_EPS = 1e-8;
-
-	/**
 	 * Create timer to measure execution times since instantiation.
 	 */
 	private final Duration elapsedTime = new Duration();
@@ -91,6 +86,12 @@ public class EvoLudoGWT extends EvoLudo {
 	 * should drive the busy spinner even though the model is not in running mode.
 	 */
 	private boolean scheduledBusy = false;
+
+	/**
+	 * Hidden chunk size in model time used for the currently scheduled relaxation.
+	 * Positive values mark a relaxation as scheduled or in progress.
+	 */
+	private double relaxationChunkStep = 0.0;
 
 	/**
 	 * <code>true</code> after a fatal execution error has disabled the lab.
@@ -158,8 +159,10 @@ public class EvoLudoGWT extends EvoLudo {
 
 	@Override
 	public void layoutComplete() {
-		if (cloSnap.isSet() && !isSuspended()) {
-			// no stopping time requested: take snapshot now
+		if (cloSnap.isSet() && !isSuspended() && !isRunning) {
+			// no stopping time requested and not running: take snapshot now. note
+			// layouts also complete while the model is running, e.g. after the view
+			// updated the network, and must not cut the run short, see cloSnap.
 			gui.snapshotReady();
 		}
 		if (isSuspended()) {
@@ -181,6 +184,132 @@ public class EvoLudoGWT extends EvoLudo {
 			return;
 		scheduledBusy = busy;
 		gui.setBusy(isRunning || busy);
+		gui.updateGUI();
+	}
+
+	/**
+	 * Check whether the current scheduled busy phase is a chunked initial
+	 * relaxation.
+	 *
+	 * @return {@code true} if a chunked relaxation is pending or in progress
+	 */
+	public boolean isRelaxationScheduled() {
+		return relaxationChunkStep > 0.0;
+	}
+
+	@Override
+	public boolean modelRelax(boolean quiet) {
+		if (fatalExecutionError || activeModel == null)
+			return false;
+		scheduleModelRelaxation(quiet);
+		return activeModel.hasConverged();
+	}
+
+	/**
+	 * Schedule chunked relaxation of the initial model state.
+	 *
+	 * @param quiet set to {@code true} to suppress relaxed/stopped notifications
+	 */
+	private void scheduleModelRelaxation(boolean quiet) {
+		if (fatalExecutionError)
+			return;
+		if (activeModel == null)
+			return;
+		if (activeModel.hasConverged()) {
+			if (!quiet)
+				fireModelStopped();
+			return;
+		}
+		double remaining = activeModel.getTimeRelax() - activeModel.getUpdates();
+		if (activeModel.getTimeRelax() < 1.0) {
+			return;
+		}
+		if (remaining <= Model.EPS) {
+			if (!quiet)
+				fireModelRelaxed();
+			return;
+		}
+		relaxationChunkStep = getChunkStep(activeModel);
+		if (relaxationChunkStep <= 0.0)
+			// Relaxation has no visible report boundary; use the model time step when
+			// regular chunking has no stricter heuristic.
+			relaxationChunkStep = activeModel.getTimeStep();
+		if (relaxationChunkStep <= 0.0)
+			relaxationChunkStep = remaining;
+		gui.displayStatus("Relaxing initial state...");
+		activeModel.startRelaxation();
+		setScheduledBusy(true);
+		Scheduler.get().scheduleIncremental(() -> runGuarded("relaxing the initial model state", () -> {
+			if (!isRelaxationScheduled())
+				return false;
+			if (activeModel == null) {
+				finishScheduledRelaxation(true, quiet);
+				return false;
+			}
+			if (pendingAction != PendingAction.NONE) {
+				finishScheduledRelaxation(true, quiet);
+				processPendingAction();
+				return false;
+			}
+			double relaxRemaining = activeModel.getTimeRelax() - activeModel.getUpdates();
+			if (relaxRemaining <= Model.EPS) {
+				finishScheduledRelaxation(false, quiet);
+				return false;
+			}
+			double chunk = Math.min(relaxationChunkStep, relaxRemaining);
+			boolean cont = activeModel.next(chunk);
+			if (!cont || activeModel.getTimeRelax() - activeModel.getUpdates() <= Model.EPS) {
+				finishScheduledRelaxation(false, quiet);
+				return false;
+			}
+			return true;
+		}));
+	}
+
+	/**
+	 * Complete or abort a scheduled relaxation.
+	 *
+	 * @param interrupted {@code true} if the relaxation ended because another
+	 *                    action interrupted it
+	 * @param quiet       set to {@code true} to suppress relaxed/stopped
+	 *                    notifications
+	 */
+	private void finishScheduledRelaxation(boolean interrupted, boolean quiet) {
+		boolean converged = (activeModel != null && activeModel.finishRelaxation());
+		resetScheduledRelaxation();
+		if (interrupted) {
+			if (!isRunning)
+				setScheduledBusy(false);
+			return;
+		}
+		if (!quiet) {
+			if (converged)
+				fireModelStopped();
+			else
+				fireModelRelaxed();
+		}
+		if (!isRunning)
+			setScheduledBusy(false);
+	}
+
+	/**
+	 * Reset temporary state used for scheduled initial relaxation.
+	 */
+	private void resetScheduledRelaxation() {
+		relaxationChunkStep = 0.0;
+	}
+
+	/**
+	 * Reset all state tracking scheduled-but-not-yet-completed work: initial
+	 * relaxation, chunked/unchunked step scheduling, and the busy spinner. Common
+	 * cleanup for a fatal error, an unloaded module/model, or a stopped model, see
+	 * {@link #abortFatalExecution()}, {@link #fireModuleUnloaded()},
+	 * {@link #fireModelUnloaded()} and {@link #fireModelStopped()}.
+	 */
+	private void resetScheduling() {
+		resetScheduledRelaxation();
+		resetStepScheduling();
+		setScheduledBusy(false);
 	}
 
 	/**
@@ -245,8 +374,7 @@ public class EvoLudoGWT extends EvoLudo {
 		if (fatalExecutionError)
 			return;
 		fatalExecutionError = true;
-		setScheduledBusy(false);
-		resetChunking();
+		resetScheduling();
 		timer.cancel();
 		isRunning = false;
 		isSuspended = false;
@@ -273,38 +401,49 @@ public class EvoLudoGWT extends EvoLudo {
 				double chunkStep = getChunkStep(activeModel);
 				if (chunkStep > 0.0) {
 					scheduleChunkedStep(chunkStep);
-					timer.scheduleRepeating(getDelay());
+					timer.scheduleRepeating();
 					break;
 				}
 				if (modelNext())
-					timer.scheduleRepeating(getDelay());
+					timer.scheduleRepeating();
 				break;
+		}
+	}
+
+	/**
+	 * Timer for running models. Adds a convenience method to schedule updates at
+	 * the appropriate delay.
+	 *
+	 * @see #scheduleRepeating()
+	 */
+	class RunTimer extends Timer {
+		@Override
+		public void run() {
+			runGuarded("running the model", EvoLudoGWT.this::next);
+		}
+
+		/**
+		 * Schedule repeated updates at the requested delay. Snapshots run at the
+		 * minimum delay to reach the requested end state as quickly as possible. The
+		 * requested delay is left untouched because it is part of the GUI state that
+		 * gets captured, see the delay slider.
+		 *
+		 * @see EvoLudoGWT#cloSnap
+		 */
+		public void scheduleRepeating() {
+			scheduleRepeating(cloSnap.isSet() ? (int) DELAY_MIN : getDelay());
 		}
 	}
 
 	/**
 	 * Timer for running models.
 	 */
-	Timer timer = new Timer() {
-		@Override
-		public void run() {
-			runGuarded("running the model", EvoLudoGWT.this::next);
-		}
-	};
+	RunTimer timer = new RunTimer();
 
 	/**
-	 * <code>true</code> while hidden chunk updates are scheduled or in progress.
-	 */
-	private boolean chunkedStepScheduled = false;
-
-	/**
-	 * The original report interval while scheduled, chunked updates are in
-	 * progress.
-	 */
-	private double chunkTimeStepOrig = 0.0;
-
-	/**
-	 * The update milestone at which the current visible step is complete.
+	 * The update milestone at which the current visible step is complete, or
+	 * <code>0.0</code> if not yet computed for the chunked step currently in
+	 * progress, see {@link #scheduleChunkedStep(double)}.
 	 */
 	private double chunkTargetUpdates = 0.0;
 
@@ -321,6 +460,11 @@ public class EvoLudoGWT extends EvoLudo {
 				break;
 			case STATISTICS_UPDATE:
 			case DYNAMICS:
+				if (pendingAction != PendingAction.NONE) {
+					setScheduledBusy(false);
+					processPendingAction();
+					break;
+				}
 				double chunkStep = getChunkStep(activeModel);
 				if (chunkStep > 0.0) {
 					scheduleChunkedStep(chunkStep);
@@ -370,10 +514,34 @@ public class EvoLudoGWT extends EvoLudo {
 	}
 
 	/**
-	 * Schedule the next step.
+	 * <code>true</code> while a step - chunked, see
+	 * {@link #scheduleChunkedStep(double)}, or unchunked, see
+	 * {@link #scheduleStep()} - is scheduled or in progress. Both paths share this
+	 * one guard because they are mutually exclusive: {@link #next()} picks one or
+	 * the other for any given step.
+	 * <p>
+	 * <strong>Note:</strong> guards against {@link #timer}'s fixed-rate ticks
+	 * outrunning the deferred/incremental command that carries out the previous
+	 * tick's step: without the guard, a tick can queue a redundant step before the
+	 * pending one has had a chance to run, discover the model already reached its
+	 * requested end state, and cancel the timer. Model#next treats such a
+	 * redundant call as a fresh request rather than a no-op, so it would integrate
+	 * one more, otherwise unclipped, step - visibly overshooting the requested end
+	 * state.
+	 */
+	private boolean stepScheduled = false;
+
+	/**
+	 * Schedule the next, unchunked step.
+	 *
+	 * @see #stepScheduled
 	 */
 	private void scheduleStep() {
+		if (stepScheduled)
+			return;
+		stepScheduled = true;
 		Scheduler.get().scheduleDeferred(() -> runGuarded("advancing the model", () -> {
+			resetStepScheduling();
 			if (pendingAction != PendingAction.NONE) {
 				setScheduledBusy(false);
 				processPendingAction();
@@ -410,7 +578,7 @@ public class EvoLudoGWT extends EvoLudo {
 			double dt = ((ODE) model).getDt();
 			if (dt > 0.0) {
 				double chunkStep = OSDE_CHUNK_TARGET * dt;
-				if (model.getTimeStep() > chunkStep + IBS_EPS)
+				if (model.getTimeStep() > chunkStep + Model.EPS)
 					return chunkStep;
 			}
 		}
@@ -423,57 +591,73 @@ public class EvoLudoGWT extends EvoLudo {
 	 * @param chunkStep the maximum model-time increment per hidden substep
 	 */
 	private void scheduleChunkedStep(double chunkStep) {
-		if (chunkedStepScheduled || activeModel == null)
+		if (stepScheduled || activeModel == null)
 			return;
-		chunkedStepScheduled = true;
-		chunkTimeStepOrig = activeModel.getTimeStep();
-		chunkTargetUpdates = getNextChunkedReport();
+		stepScheduled = true;
 		runController.startCPUSample();
 		Scheduler.get().scheduleIncremental(() -> runGuarded("running a chunked model step", () -> {
-			if (!chunkedStepScheduled)
+			if (!stepScheduled)
 				return false;
 			if (activeModel == null) {
-				resetChunking();
+				resetStepScheduling();
 				setScheduledBusy(false);
 				return false;
 			}
 			if (pendingAction != PendingAction.NONE) {
-				resetChunking();
+				resetStepScheduling();
 				setScheduledBusy(false);
 				processPendingAction();
 				return false;
 			}
-			double remaining = chunkTargetUpdates - activeModel.getUpdates();
-			if (remaining <= IBS_EPS) {
-				finishChunkedStep(activeModel.getUpdates() + IBS_EPS < activeModel.getNextHalt());
+			// ibsStepAsync's last hidden substep rounds up to a whole elementary IBS
+			// event, overshooting a boundary by up to chunkStep/IBS_CHUNK_TARGET -
+			// far more than Model.EPS for populations above IBS_CHUNK_TARGET.
+			double nextHalt = activeModel.getNextHalt();
+			double boundaryTol = (activeModel instanceof IBS)
+					? Math.max(Model.EPS, chunkStep / IBS_CHUNK_TARGET)
+					: Model.EPS;
+			double updates = activeModel.getUpdates();
+			if (chunkTargetUpdates == 0.0 && activeModel instanceof IBS && !activeModel.hasConverged()
+					&& Math.abs(nextHalt - updates) < Model.EPS) {
+				// a fresh Start right at an already-reached but not yet snapped
+				// milestone: settle the snap (see IBS#next) without treating it as a
+				// real substep - no clearTraits, no chunkTargetUpdates - then retry
+				// with the now-current nextHalt so this same click can make progress.
+				activeModel.next(0.0);
+				return true;
+			}
+			boolean freshBoundary = false;
+			if (chunkTargetUpdates == 0.0) {
+				// first substep of this visible timestep: compute its target, but defer
+				// clearing 'new' markers until remaining (below) confirms a step is
+				// actually taken, so a step that never happens doesn't blank them.
+				double timeStep = activeModel.getTimeStep();
+				double lastBoundary = Math.floor((updates + Model.EPS) / timeStep) * timeStep;
+				chunkTargetUpdates = Math.min(lastBoundary + timeStep, nextHalt);
+				freshBoundary = (updates - lastBoundary) < boundaryTol;
+			}
+			// any nonzero remaining goes to activeModel.next(), which snaps its own
+			// updates onto nextHalt when within Model.EPS (see IBS#next) - guessing
+			// "close enough" here instead would skip that snap.
+			double remaining = chunkTargetUpdates - updates;
+			if (remaining <= 0.0) {
+				finishChunkedStep(updates + boundaryTol < nextHalt);
 				return false;
 			}
+			if (activeModel instanceof IBS && freshBoundary)
+				((IBS) activeModel).clearTraits();
 			double chunk = Math.min(chunkStep, remaining);
-			boolean cont = activeModel.next(chunk);
-			double updates = activeModel.getUpdates();
-			boolean reachedTarget = (updates + IBS_EPS >= chunkTargetUpdates);
-			if (!cont) {
+			if (!activeModel.next(chunk)) {
 				finishChunkedStep(false);
 				return false;
 			}
-			if (reachedTarget) {
-				finishChunkedStep(activeModel.getUpdates() + IBS_EPS < activeModel.getNextHalt());
+			updates = activeModel.getUpdates();
+			if (updates >= chunkTargetUpdates) {
+				finishChunkedStep(updates + boundaryTol < nextHalt);
 				return false;
 			}
 			return true;
 		}));
-	}
-
-	/**
-	 * Calculate the next regular report boundary for the active chunked model.
-	 * 
-	 * @return the update milestone for the next visible step
-	 */
-	private double getNextChunkedReport() {
-		double updates = activeModel.getUpdates();
-		double nextHalt = activeModel.getNextHalt();
-		double nextReport = (Math.floor((updates + IBS_EPS) / chunkTimeStepOrig) + 1.0) * chunkTimeStepOrig;
-		return Math.min(nextReport, nextHalt);
 	}
 
 	/**
@@ -483,18 +667,18 @@ public class EvoLudoGWT extends EvoLudo {
 	 * @param cont <code>true</code> if the model should continue after this step
 	 */
 	private void finishChunkedStep(boolean cont) {
-		resetChunking();
+		resetStepScheduling();
 		modelNextDone(cont);
 		if (!isRunning)
 			setScheduledBusy(false);
 	}
 
 	/**
-	 * Reset temporary state used for hidden chunking.
+	 * Reset temporary state used for step scheduling, chunked or unchunked, see
+	 * {@link #stepScheduled}.
 	 */
-	private void resetChunking() {
-		chunkedStepScheduled = false;
-		chunkTimeStepOrig = 0.0;
+	private void resetStepScheduling() {
+		stepScheduled = false;
 		chunkTargetUpdates = 0.0;
 	}
 
@@ -506,7 +690,7 @@ public class EvoLudoGWT extends EvoLudo {
 
 	@Override
 	public synchronized void fireModelUnloaded() {
-		setScheduledBusy(false);
+		resetScheduling();
 		isRunning = false;
 		gui.setBusy(false);
 		super.fireModelUnloaded();
@@ -514,8 +698,7 @@ public class EvoLudoGWT extends EvoLudo {
 
 	@Override
 	public synchronized void fireModuleUnloaded() {
-		setScheduledBusy(false);
-		resetChunking();
+		resetScheduling();
 		isRunning = false;
 		timer.cancel();
 		gui.setBusy(false);
@@ -524,8 +707,7 @@ public class EvoLudoGWT extends EvoLudo {
 
 	@Override
 	public synchronized void fireModelStopped() {
-		setScheduledBusy(false);
-		resetChunking();
+		resetScheduling();
 		// model may already have been unloaded
 		if (activeModel == null) {
 			isRunning = false;
@@ -611,7 +793,7 @@ public class EvoLudoGWT extends EvoLudo {
 	public void setDelay(int delay) {
 		super.setDelay(delay);
 		if (isRunning)
-			timer.scheduleRepeating(delay);
+			timer.scheduleRepeating();
 	}
 
 	/**
@@ -668,7 +850,7 @@ public class EvoLudoGWT extends EvoLudo {
 		if (state == null)
 			return;
 		NativeJS.export("data:text/x-plist;base64," + NativeJS.b64encode(state), "evoludo.plist");
-		logger.info("state saved in 'evoludo.plist'.");
+		logMessage("state saved in 'evoludo.plist'.");
 	}
 
 	@Override
@@ -691,25 +873,55 @@ public class EvoLudoGWT extends EvoLudo {
 	// }
 
 	/**
-	 * Command line option to request that the EvoLudo model signals the completion
-	 * of of the layouting procedure for taking snapshots, e.g. with
-	 * <code>capture-website</code>.
-	 * 
-	 * @see <a href="https://github.com/sindresorhus/capture-website-cli"> Github:
-	 *      capture-website-cli</a>
+	 * Command line option to request that the EvoLudo model signals when a snapshot
+	 * can be taken, e.g. with <code>playwright</code>.
+	 * <p>
+	 * <strong>Note:</strong> the argument only limits the time spent on laying out
+	 * networks. When to take the snapshot follows from the requested end state, see
+	 * {@link Model#cloTimeStop} and {@link Model#cloSamples}.
+	 * <p>
+	 * Running the model is derived from the requested end state and overrides
+	 * {@link CLOController#cloRun} in both directions, unless running was
+	 * explicitly requested: without an end state the model would otherwise run
+	 * indefinitely and the snapshot would never be taken. With {@code --run} the
+	 * snapshot is taken once the model stops by itself, e.g. after converging to
+	 * a fixed point, see {@link #fireModelStopped()}. This is how the GUI test
+	 * suite reproduces the runs of its JRE counterpart, see
+	 * {@code scripts/runtests.sh --gui}. Deriving the end state requires that all
+	 * other options are parsed first, hence the lower parse priority. Whether the
+	 * end state applies to the mode of the active view is only known once the
+	 * view is activated, see {@code EvoLudoWeb#processCLOSnap()}.
+	 * <p>
+	 * <strong>Note:</strong> snapshots run at the minimum delay, see
+	 * {@link #run()}. The requested delay is left untouched because it is part of
+	 * the GUI state that gets captured, see the delay slider.
+	 *
+	 * @see EvoLudoWeb#snapshotReady()
+	 * @see <a href="https://playwright.dev"> playwright.dev</a>
 	 */
 	public final CLOption cloSnap = new CLOption("snap", "20", CLOption.Argument.OPTIONAL, CLOCategory.GUI,
-			"--snap [<s>]    snapshot utility, timeout <s> secs;\n"
-					+ "                (add '<div id=\"snapshot-ready\"></div>' to <body>\n"
-					+ "                when ready for snapshot, see capture-website docs)",
+			"--snap [<s>]    snapshot utility, layout timeout <s> secs\n"
+					+ "                add '<div id=\"snapshot-ready\"></div>' to <body>\n"
+					+ "                when ready, see --timestop and --samples",
 			new CLODelegate() {
 				@Override
 				public boolean parse(String arg, boolean isSet) {
-					if (isSet)
+					if (isSet) {
 						snapLayoutTimeout = Math.max(1, CLOParser.parseInteger(arg)) * 1000;
+						// check whether an end state is requested, i.e. a stopping time or a
+						// number of samples
+						boolean hasEnd = false;
+						if (activeModel != null) {
+							double tStop = activeModel.getTimeStop();
+							// special case: --timestop 0 does not run, see EvoLudo#modelCheck()
+							hasEnd = (Double.isFinite(tStop) && Math.abs(tStop) > Model.EPS)
+									|| activeModel.getNSamples() > 0.0;
+						}
+						setSuspended(hasEnd || cloRun.isSet());
+					}
 					return true;
 				}
-			});
+			}).setPriority(1);
 
 	@Override
 	public void collectCLO(CLOParser prsr) {

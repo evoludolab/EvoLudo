@@ -46,7 +46,9 @@ public class FixationData {
 	}
 
 	/**
-	 * The index of the node (location) where the initial mutant arose.
+	 * The index of the node (location) where the initial mutant arose. Negative
+	 * values indicate an invalid (failed) sample, see
+	 * {@link Model#initStatisticsFailed()}.
 	 */
 	public int mutantNode = -1;
 

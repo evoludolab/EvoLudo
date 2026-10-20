@@ -31,7 +31,6 @@
 package org.evoludo.simulator.models;
 
 import java.util.Arrays;
-import java.util.logging.Level;
 
 import org.evoludo.math.ArrayMath;
 import org.evoludo.simulator.EvoLudo;
@@ -224,10 +223,10 @@ public class Advection extends PDE {
 	 * Adds the advection contribution of a single neighbor (si) to the accumulator
 	 * adv for the focal site with state sn using precomputed delta = 1 + si - sn.
 	 * 
-	 * @param sn    the state of the focal site
-	 * @param si    the state of the neighboring site
-	 * @param delta the precomputed delta = 1 + si - sn
-	 * @param adv   the advection accumulator for the focal site
+	 * @param sn      the state of the focal site
+	 * @param si      the state of the neighboring site
+	 * @param delta   the precomputed delta = 1 + si - sn
+	 * @param adv     the advection accumulator for the focal site
 	 * @param scaledA the advection coefficients scaled for the current time step
 	 */
 	private void addAdvectionContribution(double[] sn, double[] si, double[] delta, double[] adv,
@@ -275,6 +274,16 @@ public class Advection extends PDE {
 
 	@Override
 	protected void checkDt() {
+		if (doAdvection) {
+			// the dependent trait is only authoritative now, after all options have been
+			// parsed (see cloPdeAdvection) - validate advcoeff's dimensions accordingly
+			int dim = dependent < 0 ? nDim : nDim - 1;
+			if (advcoeff.length != dim || advcoeff[0].length != dim) {
+				engine.logWarning("advection matrix dimensions do not match number of independent traits - disabling advection.");
+				doAdvection = false;
+				advcoeff = null;
+			}
+		}
 		super.checkDt();
 		// some careful checking for suitable time steps is required!
 		// if Ai/(dx^2)>1/dt for any Ai then adjust dt
@@ -294,9 +303,8 @@ public class Advection extends PDE {
 			// migrates! this can introduce artifacts!
 			if (dt < 1e-5 || nDim * maxA * maxK * dt > 0.5) {
 				double deltat = Math.max(0.5 / (nDim * maxA * maxK), Double.MIN_VALUE);
-				if (logger.isLoggable(Level.INFO))
-					logger.info("PDE time scale adjusted (advection): dt=" + Formatter.formatSci(deltat, 4)
-							+ " (was dt=" + Formatter.formatSci(dt, 4) + ").");
+				engine.logMessage("PDE time scale adjusted (advection): dt=" + Formatter.formatSci(deltat, 4)
+						+ " (was dt=" + Formatter.formatSci(dt, 4) + ").");
 				dt = deltat;
 			}
 		}
@@ -314,12 +322,12 @@ public class Advection extends PDE {
 					advcoeff = null;
 					if (arg == null)
 						return true;
-					// dim not yet set - retrieve directly from module
-					int dim = module.getNTraits();
-					if (module instanceof HasDE && ((HasDE) module).getDependent() >= 0)
-						dim--;
+					// the dependent trait is not necessarily known yet at this point (e.g. it
+					// may depend on other, not yet parsed, options) - validating advcoeff's
+					// dimensions against it is deferred to check(), once the dependent trait
+					// is authoritatively known
 					advcoeff = CLOParser.parseMatrix(arg);
-					if (advcoeff.length != dim || advcoeff[0].length != dim) {
+					if (advcoeff.length == 0 || advcoeff[0].length != advcoeff.length) {
 						advcoeff = null;
 						return false;
 					}
@@ -374,7 +382,7 @@ public class Advection extends PDE {
 								.append(names[n])
 								.append("\n");
 					}
-					descr.append("      advection: ai=Ai/(2*dx^2)");
+					descr.append("      advection: ai=Ai*dt/dx^2 (internally, per step)");
 					return descr.toString();
 				}
 			});

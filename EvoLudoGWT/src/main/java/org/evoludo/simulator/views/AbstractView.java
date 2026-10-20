@@ -34,7 +34,6 @@ import java.util.ArrayList;
 import java.util.Date;
 import java.util.Iterator;
 import java.util.List;
-import java.util.logging.Logger;
 
 import org.evoludo.graphics.AbstractGraph;
 import org.evoludo.graphics.AbstractGraph.HasTrajectory;
@@ -115,11 +114,6 @@ public abstract class AbstractView<G extends AbstractGraph<?>> extends Composite
 	Data type;
 
 	/**
-	 * Logger for keeping track of and reporting events and issues.
-	 */
-	protected Logger logger;
-
-	/**
 	 * The list of graphs that are displayed in this view.
 	 */
 	protected final List<G> graphs;
@@ -143,6 +137,22 @@ public abstract class AbstractView<G extends AbstractGraph<?>> extends Composite
 	 * The flag to indicate whether this view has been loaded.
 	 */
 	boolean isLoaded = false;
+
+	/**
+	 * The flag to indicate whether {@link #reset(boolean)} has completed at least
+	 * once. {@link #load()} already populates {@link #graphs} - so it is not a
+	 * reliable indicator - while view-specific setup (e.g. sizing of per-view
+	 * data buffers) happens only in {@link #reset(boolean)}, triggered later by
+	 * {@link #modelDidReset()}. Without this flag, an update request arriving in
+	 * between (e.g. the model going extinct during the initial relaxation) can
+	 * reach an {@link #updateData()} or {@link #update(boolean)} implementation
+	 * before its buffers are allocated. Package-private (like {@link #isLoaded})
+	 * so that subclasses overriding {@link #modelDidInit()} - which, unlike
+	 * {@link #modelStopped()}, {@link #modelChanged(PendingAction)} and
+	 * {@link #activate()}, has no common base implementation to guard in one
+	 * place - can check it before touching their own view-specific buffers.
+	 */
+	boolean isReset = false;
 
 	/**
 	 * The timestamp of model at the last update of this view.
@@ -177,7 +187,6 @@ public abstract class AbstractView<G extends AbstractGraph<?>> extends Composite
 	protected AbstractView(EvoLudoGWT engine, Data type) {
 		this.engine = engine;
 		this.type = type;
-		logger = engine.getLogger();
 		this.graphs = new ArrayList<>();
 		wrapper = new FlowPanel();
 		wrapper.getElement().getStyle().setPosition(Position.RELATIVE);
@@ -243,6 +252,7 @@ public abstract class AbstractView<G extends AbstractGraph<?>> extends Composite
 		engine.removeChangeListener(this);
 		destroyGraphs();
 		isActive = false;
+		isReset = false;
 		model = null;
 		isLoaded = false;
 	}
@@ -269,9 +279,31 @@ public abstract class AbstractView<G extends AbstractGraph<?>> extends Composite
 	}
 
 	/**
+	 * Get the number of graphs displayed by this view.
+	 *
+	 * @return the number of graphs
+	 */
+	public int getNGraphs() {
+		return graphs.size();
+	}
+
+	/**
+	 * Get a description of the arguments accepted by this view for the help screen
+	 * of {@link org.evoludo.simulator.ui.ViewController#getCloView()}. The default
+	 * implementation returns {@code null} for views that take no arguments.
+	 *
+	 * @return the description of the arguments or {@code null} if none are accepted
+	 *
+	 * @see #setOptions(String)
+	 */
+	public String getOptionsDescription() {
+		return null;
+	}
+
+	/**
 	 * Parse the arguments provided to this view. The default implementation simply
 	 * passes the currently configured option string to all graphs.
-	 * 
+	 *
 	 * @return {@code true} if the arguments were successfully parsed
 	 */
 	public boolean parse() {
@@ -327,12 +359,30 @@ public abstract class AbstractView<G extends AbstractGraph<?>> extends Composite
 	}
 
 	/**
-	 * Get the logger for returning progress, problems and messages to user.
+	 * Convenience method to log messages, e.g. of graphs belonging to this view.
 	 *
-	 * @return the logger for messages
+	 * @param msg information message
 	 */
-	public Logger getLogger() {
-		return logger;
+	public void logMessage(String msg) {
+		engine.logMessage(msg);
+	}
+
+	/**
+	 * Convenience method to log warnings, e.g. of graphs belonging to this view.
+	 *
+	 * @param msg warning message
+	 */
+	public void logWarning(String msg) {
+		engine.logWarning(msg);
+	}
+
+	/**
+	 * Convenience method to log errors, e.g. of graphs belonging to this view.
+	 *
+	 * @param msg error message
+	 */
+	public void logError(String msg) {
+		engine.logError(msg);
 	}
 
 	/**
@@ -345,6 +395,12 @@ public abstract class AbstractView<G extends AbstractGraph<?>> extends Composite
 		isActive = true;
 		for (G graph : graphs)
 			graph.activate();
+		if (!isReset) {
+			// reset(boolean) has not completed yet (see the note on isReset) - nothing
+			// to display until it does, at which point reset()'s own update(hard) call
+			// paints this view if it is active by then
+			return;
+		}
 		if (model.requestMode(getMode())) {
 			updateData(true);
 		} else {
@@ -433,6 +489,7 @@ public abstract class AbstractView<G extends AbstractGraph<?>> extends Composite
 	@Override
 	public void modelDidReset() {
 		reset(true);
+		isReset = true;
 		parse();
 	}
 
@@ -452,9 +509,29 @@ public abstract class AbstractView<G extends AbstractGraph<?>> extends Composite
 		}
 	}
 
+	/**
+	 * {@inheritDoc}
+	 * <p>
+	 * <strong>Note:</strong> final - subclasses needing to react to this event
+	 * must override {@link #onModelDidInit()} instead. This guarantees the
+	 * {@link #isReset} guard (see its documentation) is applied uniformly,
+	 * rather than requiring every subclass to repeat it before touching its own
+	 * view-specific buffers.
+	 */
 	@Override
-	public void modelDidInit() {
+	public final void modelDidInit() {
 		resetTimestamps();
+		if (!isReset)
+			return;
+		onModelDidInit();
+	}
+
+	/**
+	 * Called after {@link #modelDidInit()} has verified that {@link #reset}
+	 * has completed at least once. Override to react to the model's state
+	 * having been (re-)initialized.
+	 */
+	protected void onModelDidInit() {
 	}
 
 	/**
@@ -467,7 +544,14 @@ public abstract class AbstractView<G extends AbstractGraph<?>> extends Composite
 	}
 
 	@Override
+	public void modelRelaxed() {
+		modelStopped();
+	}
+
+	@Override
 	public void modelStopped() {
+		if (!isReset)
+			return;
 		updateData(true);
 		update(true);
 	}
@@ -514,7 +598,7 @@ public abstract class AbstractView<G extends AbstractGraph<?>> extends Composite
 
 	@Override
 	public void modelChanged(PendingAction action) {
-		if (action != PendingAction.NONE)
+		if (action != PendingAction.NONE || !isReset)
 			return;
 		updateData(false);
 		if (!doUpdateView(false))
@@ -969,7 +1053,7 @@ public abstract class AbstractView<G extends AbstractGraph<?>> extends Composite
 				if (!graphs.isEmpty())
 					update(force);
 			} catch (Exception e) {
-				logger.severe("Error updating view: " + e.getMessage());
+				engine.logError("Error updating view: " + e.getMessage());
 			}
 			updateScheduled = false;
 		});
@@ -1023,7 +1107,7 @@ public abstract class AbstractView<G extends AbstractGraph<?>> extends Composite
 		// process fullscreen context menu
 		if (NativeJS.isFullscreenSupported()) {
 			ContextMenuCheckBoxItem fullscreenMenu = new ContextMenuCheckBoxItem("Full screen",
-					() -> engine.setFullscreen(!NativeJS.isFullscreen()));
+					() -> engine.setFullscreen(!NativeJS.isFullscreen()), "⇧F");
 			menu.addSeparator();
 			menu.add(fullscreenMenu);
 			fullscreenMenu.setChecked(NativeJS.isFullscreen());
@@ -1035,11 +1119,11 @@ public abstract class AbstractView<G extends AbstractGraph<?>> extends Composite
 		// standalone lab or not)
 		if (!NativeJS.isEPub()) {
 			ContextMenu exportSubmenu = new ContextMenu(menu);
-			exportSubmenu.add(new ContextMenuItem(ExportType.STATE.toString(), new ExportCommand(ExportType.STATE)));
+			exportSubmenu.add(createExportMenuItem(ExportType.STATE));
 			for (ExportType e : exportTypes()) {
 				if (e == ExportType.STATE)
 					continue; // always included
-				exportSubmenu.add(new ContextMenuItem(e.toString(), new ExportCommand(e)));
+				exportSubmenu.add(createExportMenuItem(e));
 			}
 			menu.addSeparator();
 			exportSubmenuTrigger = menu.add("Export", exportSubmenu);
@@ -1148,6 +1232,27 @@ public abstract class AbstractView<G extends AbstractGraph<?>> extends Composite
 	}
 
 	/**
+	 * Creates the export menu item including keyboard accelerators when available.
+	 *
+	 * @param type the export type shown in the menu
+	 * @return menu item for the export type
+	 */
+	private ContextMenuItem createExportMenuItem(ExportType type) {
+		switch (type) {
+			case SVG:
+				return new ContextMenuItem(type.toString(), new ExportCommand(type), "⇧S");
+			case PNG:
+				return new ContextMenuItem(type.toString(), new ExportCommand(type), "⇧P");
+			case CSV_STAT:
+				return new ContextMenuItem(type.toString(), new ExportCommand(type), "⇧C");
+			case STATE:
+				return new ContextMenuItem(type.toString(), new ExportCommand(type), "⇧E");
+			default:
+				return new ContextMenuItem(type.toString(), new ExportCommand(type));
+		}
+	}
+
+	/**
 	 * Export the data of the view.
 	 * 
 	 * @param type the type of data to export
@@ -1182,6 +1287,17 @@ public abstract class AbstractView<G extends AbstractGraph<?>> extends Composite
 	private static boolean hasSVGjs = false;
 
 	/**
+	 * Injects the canvas-to-SVG script once for the application.
+	 */
+	private static void ensureSVGjs() {
+		if (hasSVGjs)
+			return;
+
+		ScriptInjector.fromString(Resources.INSTANCE.canvas2SVG().getText()).inject();
+		hasSVGjs = true;
+	}
+
+	/**
 	 * Export the view as a PNG image.
 	 */
 	protected void exportPNG() {
@@ -1201,11 +1317,7 @@ public abstract class AbstractView<G extends AbstractGraph<?>> extends Composite
 	 * Export the view as a SVG image.
 	 */
 	protected void exportSVG() {
-		if (!hasSVGjs) {
-			// script (hopefully) needs to be injected only once
-			ScriptInjector.fromString(Resources.INSTANCE.canvas2SVG().getText()).inject();
-			hasSVGjs = true;
-		}
+		ensureSVGjs();
 		double scale = NativeJS.getDevicePixelRatio();
 		MyContext2d ctx = NativeJS.createSVGContext((int) Math.round(getOffsetWidth() * scale),
 				(int) Math.round(getOffsetHeight() * scale));
@@ -1241,6 +1353,7 @@ public abstract class AbstractView<G extends AbstractGraph<?>> extends Composite
 	 * 
 	 * @return the header as a string builder
 	 */
+	@SuppressWarnings("java:S2143") // no java.time emulation in GWT
 	protected StringBuilder exportDataHeader() {
 		StringBuilder export = new StringBuilder("# data exported at " +
 				DateTimeFormat.getFormat("yyyy-MM-dd HH:mm:ss").format(new Date()) + "\n");

@@ -54,6 +54,8 @@ import com.google.gwt.user.client.ui.FocusWidget;
 import com.google.gwt.user.client.ui.HTML;
 import com.google.gwt.user.client.ui.RootPanel;
 
+import org.evoludo.simulator.models.Model;
+
 /**
  * A standard slider widget. The slider handles both linear and logarithmic
  * scales.
@@ -445,7 +447,7 @@ public class Slider extends FocusWidget implements HasChangeHandlers, ChangeHand
 
 		double newLogBase = Math.log(base);
 		// logBase == -1 for linear sliders
-		if (Math.abs(logBase - newLogBase) < 1e-8)
+		if (Math.abs(logBase - newLogBase) < Model.EPS)
 			return;
 		// process change of base
 		double value = getValue();

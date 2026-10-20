@@ -85,6 +85,15 @@ public abstract class ColorMap<T extends Object> {
 	protected static final double INV255 = 0.003921568627451;
 
 	/**
+	 * Placeholder color to flag data points that cannot be mapped onto a valid
+	 * gradient color, e.g. because the value is <code>NaN</code> or lies outside
+	 * the calibrated range. Deliberately garish so that such entries are
+	 * impossible to miss when rendered, rather than silently reusing an
+	 * arbitrary previous color or throwing an exception.
+	 */
+	public static final Color FAILED_COLOR = Color.MAGENTA;
+
+	/**
 	 * Translate the <code>data</code> array of <code>int</code> values to colors
 	 * and store the results in the <code>color</code> array. The type of the
 	 * <code>color</code> array depends on the implementation.
@@ -292,8 +301,15 @@ public abstract class ColorMap<T extends Object> {
 		protected final int nColors;
 
 		/**
+		 * Flag to indicate whether individuals that changed trait since the
+		 * previous report are marked with a distinct color (the upper half of
+		 * {@link #colors}, see {@link #translate(int[], Object[])}).
+		 */
+		protected boolean markChanged = true;
+
+		/**
 		 * Constructs a new index color map.
-		 * 
+		 *
 		 * @param size the number of colors
 		 */
 		protected Index(int size) {
@@ -317,11 +333,31 @@ public abstract class ColorMap<T extends Object> {
 
 		/**
 		 * Get the array of colors tha backs this color map.
-		 * 
+		 *
 		 * @return the array of colors
 		 */
 		public T[] getColors() {
 			return colors;
+		}
+
+		/**
+		 * Set whether individuals that changed trait since the previous report are
+		 * marked with a distinct color.
+		 *
+		 * @param markChanged {@code true} to mark recently changed traits
+		 */
+		public void setMarkChanged(boolean markChanged) {
+			this.markChanged = markChanged;
+		}
+
+		/**
+		 * Check whether individuals that changed trait since the previous report are
+		 * marked with a distinct color.
+		 *
+		 * @return {@code true} if recently changed traits are marked
+		 */
+		public boolean getMarkChanged() {
+			return markChanged;
 		}
 
 		/**
@@ -357,8 +393,16 @@ public abstract class ColorMap<T extends Object> {
 		@Override
 		public boolean translate(int[] data, T[] color) {
 			int len = data.length;
-			for (int n = 0; n < len; n++)
-				color[n] = colors[data[n]];
+			// if not marking changes, ignore the "recently changed" flag encoded in
+			// the upper half of data
+			if (markChanged) {
+				for (int n = 0; n < len; n++)
+					color[n] = colors[data[n]];
+			} else {
+				int nt = nColors / 2;
+				for (int n = 0; n < len; n++)
+					color[n] = colors[data[n] % nt];
+			}
 			return true;
 		}
 
@@ -389,6 +433,26 @@ public abstract class ColorMap<T extends Object> {
 		 * Protected constructor to restrict instantiation to subclasses.
 		 */
 		protected Gradient() {
+		}
+
+		/**
+		 * Cached, lazily converted {@link #FAILED_COLOR}, see
+		 * {@link #getFailedColor()}.
+		 */
+		private T failedColor;
+
+		/**
+		 * Get the color of type {@code T} that flags a data point that failed to map
+		 * onto a valid gradient color, see {@link #FAILED_COLOR}. The result is cached
+		 * because this can be requested very frequently, e.g. once for every rendered
+		 * cell in every single frame.
+		 *
+		 * @return the placeholder color signalling a failed data-to-color translation
+		 */
+		protected T getFailedColor() {
+			if (failedColor == null)
+				failedColor = color2Color(FAILED_COLOR);
+			return failedColor;
 		}
 
 		/**
@@ -755,24 +819,45 @@ public abstract class ColorMap<T extends Object> {
 			map = max <= min ? 0.0 : nGradient / (max - min);
 		}
 
+		/**
+		 * Get the current minimum value covered by this gradient.
+		 *
+		 * @return the minimum value of the current gradient range
+		 */
+		public double getMin() {
+			return min;
+		}
+
+		/**
+		 * Get the current maximum value covered by this gradient.
+		 *
+		 * @return the maximum value of the current gradient range
+		 */
+		public double getMax() {
+			return map <= 0.0 ? min : min + nGradient / map;
+		}
+
 		@Override
 		public T translate(double data) {
-			return gradient[binOf(data)];
+			int bin = binOf(data);
+			return bin < 0 ? getFailedColor() : gradient[bin];
 		}
 
 		/**
 		 * {@inheritDoc}
 		 * <p>
-		 * <strong>Implementation:</strong> For performance reasons no validity checks
-		 * on
-		 * <code>data</code>. In particular, all data entries must lie inside the range
-		 * for mapping data values.
+		 * <strong>Implementation:</strong> entries whose value is invalid or lies
+		 * outside the range of the gradient are rendered in {@link #getFailedColor()}
+		 * instead of throwing an exception or silently reusing whatever color
+		 * happened to be in <code>color[n]</code> before; see {@link #binOf}.
 		 */
 		@Override
 		public boolean translate(double[] data, T[] color) {
 			int len = data.length;
-			for (int n = 0; n < len; n++)
-				color[n] = gradient[binOf(data[n])];
+			for (int n = 0; n < len; n++) {
+				int bin = binOf(data[n]);
+				color[n] = bin < 0 ? getFailedColor() : gradient[bin];
+			}
 			return true;
 		}
 
@@ -784,18 +869,21 @@ public abstract class ColorMap<T extends Object> {
 		 * <li>Each entry in <code>data</code> is assumed to be one dimensional (only
 		 * first entry used) and converted to the corresponding gradient color and
 		 * returned in the <code>color</code> array.
-		 * <li>For performance reasons no validity checks on <code>data</code>. In
-		 * particular, all data entries must lie inside the range for mapping data
-		 * values.
+		 * <li>Entries whose value is invalid or lies outside the range of the
+		 * gradient are rendered in {@link #getFailedColor()} instead of throwing an
+		 * exception or silently reusing whatever color happened to be in
+		 * <code>color[n]</code> before; see {@link #binOf}.
 		 * </ol>
-		 * 
+		 *
 		 * @see PDE
 		 */
 		@Override
 		public boolean translate(double[][] data, T[] color) {
 			int len = data.length;
-			for (int n = 0; n < len; n++)
-				color[n] = gradient[binOf(data[n][trait])];
+			for (int n = 0; n < len; n++) {
+				int bin = binOf(data[n][trait]);
+				color[n] = bin < 0 ? getFailedColor() : gradient[bin];
+			}
 			return true;
 		}
 
@@ -913,6 +1001,14 @@ public abstract class ColorMap<T extends Object> {
 				return;
 			}
 			// create color gradient on simplex
+			// pre-fill the entire (square) array with the failed color first: only the
+			// triangular region with bin0+bin1<=nGradient is populated below, e.g.
+			// because rounding in binOf (or bin0,bin1 that end up on inconsistent
+			// scales, see #setRange(double[], double[], int)) can land outside the
+			// triangle; the array is allocated in full regardless, so this costs no
+			// additional memory, just replaces its default null entries
+			for (T[] row : gradient)
+				Arrays.fill(row, getFailedColor());
 			Color colordep = colors[dep];
 			for (int i = 0; i <= nGradient; i++) {
 				Color start = blendColors(color1, colordep, w1);
@@ -1030,26 +1126,23 @@ public abstract class ColorMap<T extends Object> {
 
 		/**
 		 * Set the range of data values for <em>three</em> dimensional data with
-		 * dependent trait. The index of the dependent trait is <code>idx</code>. The
-		 * data range for the first trait is <code>[min[0], max[0]]</code> and for the
-		 * second trait <code>[min[1], max[1]</code>, assuming that <code>idx=2</code>
-		 * for the above illustration.
-		 * 
+		 * dependent trait. The index of the dependent trait is <code>idx</code> and is
+		 * skipped. For every other trait <code>n</code> (<code>n&ne;idx</code>) the
+		 * data range is <code>[min[n], max[n]]</code>, matching the indices used by
+		 * {@link #trait1} and {@link #trait2} in {@link #binOf(double[], int)}.
+		 *
 		 * @param min the array with the minimum values
 		 * @param max the array with the maximum values
 		 * @param idx the index of the dependent trait
 		 */
 		public void setRange(double[] min, double[] max, int idx) {
-			int trait = 0;
 			for (int n = 0; n < nTraits; n++) {
 				if (n == idx)
 					continue;
 				double minn = min[n];
 				double maxn = max[n];
-				this.min[trait] = minn;
-				double mapt = maxn <= minn ? 0.0 : nGradient / (maxn - minn);
-				map[trait] = mapt;
-				trait++;
+				this.min[n] = minn;
+				this.map[n] = maxn <= minn ? 0.0 : nGradient / (maxn - minn);
 			}
 		}
 
@@ -1068,7 +1161,9 @@ public abstract class ColorMap<T extends Object> {
 
 		@Override
 		public T translate(double[] data) {
-			return gradient[binOf(data, trait1)][binOf(data, trait2)];
+			int bin0 = binOf(data, trait1);
+			int bin1 = binOf(data, trait2);
+			return (bin0 < 0 || bin1 < 0) ? getFailedColor() : gradient[bin0][bin1];
 		}
 
 		/**
@@ -1080,11 +1175,12 @@ public abstract class ColorMap<T extends Object> {
 		 * <code>data[n+1]</code> are converted to the corresponding gradient colors.
 		 * This applies, for example, to data from continuous games with multiple
 		 * traits. The gradient colors are returned in the <code>color</code> array.
-		 * <li>For performance reasons no validity checks on
-		 * <code>data</code>. In particular, all data entries must lie inside the range
-		 * for mapping data values.
+		 * <li>Entries whose value is invalid or lies outside the range of the
+		 * gradient are rendered in {@link #getFailedColor()} instead of throwing an
+		 * exception or silently reusing whatever color happened to be in
+		 * <code>color[n]</code> before; see {@link #binOf}.
 		 * </ol>
-		 * 
+		 *
 		 * @see IBSMCPopulation
 		 */
 		@Override
@@ -1092,7 +1188,9 @@ public abstract class ColorMap<T extends Object> {
 			int len = color.length;
 			int idx = 0;
 			for (int n = 0; n < len; n++) {
-				color[n] = gradient[binOf(data[idx], trait1)][binOf(data[idx + 1], trait2)];
+				int bin0 = binOf(data[idx], trait1);
+				int bin1 = binOf(data[idx + 1], trait2);
+				color[n] = (bin0 < 0 || bin1 < 0) ? getFailedColor() : gradient[bin0][bin1];
 				idx += nTraits;
 			}
 			return true;
@@ -1106,27 +1204,27 @@ public abstract class ColorMap<T extends Object> {
 		 * <li>Each entry in <code>data</code> represents a multi-dimensional trait
 		 * value, which is converted to the corresponding gradient color and returned in
 		 * the <code>color</code> array. An example are trait densities in PDE models.
-		 * <li>For performance reasons no validity checks on <code>data</code>. In
-		 * particular, all data entries must lie inside the range for mapping data
-		 * values.
+		 * <li>Entries whose value is invalid or lies outside the range of the
+		 * gradient are rendered in {@link #getFailedColor()} instead of throwing an
+		 * exception or silently reusing whatever color happened to be in
+		 * <code>color[n]</code> before; see {@link #binOf}. This matters in
+		 * particular for ecological models - e.g. with a dependent trait and a
+		 * non-constant total density via <code>--deathrate</code> - where density
+		 * values are not guaranteed to stay within the calibrated
+		 * <code>[min,max]</code> range of the gradient, unlike frequencies in a
+		 * replicator-type model.
 		 * </ol>
-		 * 
+		 *
 		 * @see PDE
 		 */
 		@Override
 		public boolean translate(double[][] data, T[] color) {
 			int len = color.length;
-			if (nTraits == 2) {
-				// no dependent trait - use auto scaling
-				for (int n = 0; n < len; n++) {
-					double[] datan = data[n];
-					color[n] = gradient[binOf(datan, trait1)][binOf(datan, trait2)];
-				}
-			} else {
-				for (int n = 0; n < len; n++) {
-					double[] datan = data[n];
-					color[n] = gradient[(int) (datan[trait1] * nGradient)][(int) (datan[trait2] * nGradient)];
-				}
+			for (int n = 0; n < len; n++) {
+				double[] datan = data[n];
+				int bin0 = binOf(datan, trait1);
+				int bin1 = binOf(datan, trait2);
+				color[n] = (bin0 < 0 || bin1 < 0) ? getFailedColor() : gradient[bin0][bin1];
 			}
 			return true;
 		}
@@ -1236,6 +1334,10 @@ public abstract class ColorMap<T extends Object> {
 			}
 			if (idx >= 0 && idx < colors.length)
 				bg = colors[idx];
+			// on the simplex, each data value already is the weight of its trait's
+			// color (they add up to at most one, with the dependent trait making up
+			// the remainder) - no further 1/nTraits averaging as in GradientND(int)
+			Arrays.fill(map, 1.0);
 		}
 
 		/**
@@ -1255,6 +1357,30 @@ public abstract class ColorMap<T extends Object> {
 		}
 
 		/**
+		 * Compute the blend weights in {@link #weights} for the {@code nTraits}
+		 * dimensional trait value {@code data}. Returns {@code false} if any trait
+		 * value is invalid (<code>NaN</code>) or maps onto a weight outside
+		 * <code>[0,1]</code> - e.g. because the value lies outside the calibrated
+		 * range - in which case {@link #weights} may be left in an inconsistent,
+		 * partially updated state and must not be used.
+		 *
+		 * @param data the <code>nTraits</code> dimensional trait value
+		 * @return <code>true</code> if all weights are valid
+		 */
+		protected boolean weightsOf(double[] data) {
+			for (int n = 0; n < nTraits; n++) {
+				double value = data[n];
+				if (!Double.isFinite(value))
+					return false;
+				double w = (value - min[n]) * map[n];
+				if (w < 0.0 || w > 1.0)
+					return false;
+				weights[n] = w;
+			}
+			return true;
+		}
+
+		/**
 		 * {@inheritDoc}
 		 * <p>
 		 * <strong>Implementation:</strong>
@@ -1263,21 +1389,21 @@ public abstract class ColorMap<T extends Object> {
 		 * <code>data[n+N]</code>, are converted to gradient colors on the fly. This
 		 * applies, for example, to data from continuous games with <code>N</code>
 		 * traits. The gradient colors are returned in the <code>color</code> array.
-		 * <li>For performance reasons no validity checks on <code>data</code>. In
-		 * particular, all data entries must lie inside the range for mapping data
-		 * values.
+		 * <li>Invalid or out-of-range entries are rendered in
+		 * {@link #getFailedColor()}; see {@link #weightsOf(double[])}.
 		 * </ol>
-		 * 
+		 *
 		 * @see IBSMCPopulation
 		 */
 		@Override
+		@SuppressWarnings("java:S2388") // must dispatch to the overriding subclass, not Gradient2D's lookup table
 		public boolean translate(double[] data, T[] color) {
 			double[] datan = new double[nTraits];
 			int len = color.length;
 			int idx = 0;
 			for (int n = 0; n < len; n++) {
 				System.arraycopy(data, idx, datan, 0, nTraits);
-				color[n] = super.translate(datan);
+				color[n] = translate(datan);
 				idx += nTraits;
 			}
 			return true;
@@ -1291,18 +1417,18 @@ public abstract class ColorMap<T extends Object> {
 		 * <li>Each entry in <code>data</code> represents a <code>N</code>-dimensional
 		 * trait value, which is converted to gradient colors on the fly and returned in
 		 * the <code>color</code> array. An example are trait densities in PDE models.
-		 * <li>For performance reasons no validity checks on <code>data</code>. In
-		 * particular, all data entries must lie inside the range for mapping data
-		 * values.
+		 * <li>Invalid or out-of-range entries are rendered in
+		 * {@link #getFailedColor()}; see {@link #weightsOf(double[])}.
 		 * </ol>
-		 * 
+		 *
 		 * @see PDE
 		 */
 		@Override
+		@SuppressWarnings("java:S2388") // must dispatch to the overriding subclass, not Gradient2D's lookup table
 		public boolean translate(double[][] data, T[] color) {
 			int len = color.length;
 			for (int n = 0; n < len; n++)
-				color[n] = super.translate(data[n]);
+				color[n] = translate(data[n]);
 			return true;
 		}
 

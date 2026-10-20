@@ -440,7 +440,7 @@ public class MersenneTwister {
 			return false;
 		if (mti != other.mti)
 			return false;
-		if (nextGaussian != other.nextGaussian)
+		if (Double.compare(nextGaussian, other.nextGaussian) != 0)
 			return false;
 		for (int x = 0; x < mt.length; x++)
 			if (mt[x] != other.mt[x])

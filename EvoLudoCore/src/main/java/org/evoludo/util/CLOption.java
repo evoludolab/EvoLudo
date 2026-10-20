@@ -158,7 +158,7 @@ public class CLOption implements Comparable<CLOption> {
 	/**
 	 * The name of the command line option (required).
 	 */
-	final String name;
+	String name;
 
 	/**
 	 * The type of the command line option with no, optional, or required argument.
@@ -189,6 +189,16 @@ public class CLOption implements Comparable<CLOption> {
 	 * The default argument for option (if applicable).
 	 */
 	String defaultArg = null;
+
+	/**
+	 * The parse priority of this option. Options with a lower priority are
+	 * parsed before options with a higher one; ties fall back to alphabetical
+	 * order by {@link #name} (the previous, sole ordering criterion). Defaults
+	 * to {@code 0} for all options.
+	 *
+	 * @see #setPriority(int)
+	 */
+	private int priority = 0;
 
 	/**
 	 * The list of valid keys (if applicable).
@@ -470,11 +480,27 @@ public class CLOption implements Comparable<CLOption> {
 
 	/**
 	 * Return the default argument for command line option.
-	 * 
+	 *
 	 * @return default argument
 	 */
 	public String getDefault() {
 		return defaultArg;
+	}
+
+	/**
+	 * Set the delegate handling the parsing and description of this option,
+	 * replacing the one supplied at construction. This lets a subclass
+	 * customize the behaviour of an option inherited from a superclass - e.g.
+	 * to accept a richer argument format - without removing and re-adding it
+	 * under a different identity, which would change its position in the
+	 * option listing.
+	 *
+	 * @param delegate the new delegate for command line option
+	 */
+	public void setCLODelegate(CLODelegate delegate) {
+		if (delegate == null)
+			throw new IllegalArgumentException("CLOption: delegate must not be null");
+		this.delegate = delegate;
 	}
 
 	/**
@@ -511,27 +537,46 @@ public class CLOption implements Comparable<CLOption> {
 
 	/**
 	 * Delegate parsing helper that handles optional vs required arguments.
-	 * 
+	 * <p>
+	 * <strong>Note:</strong> if the primary (command line) argument fails to
+	 * parse and recovery falls back to the default, {@link #optionArg} is
+	 * cleared so the option's state reflects what is actually in effect. Callers
+	 * can detect that a fallback occurred by comparing {@link #isSet()} before
+	 * and after calling {@link #parse()}. Recovery is attempted regardless of
+	 * whether the delegate rejected the argument by returning {@code false} or
+	 * by throwing an exception. Without the fallback the delegate would be left
+	 * with whatever settings were in effect before, which may well be
+	 * inconsistent with the remaining options.
+	 *
 	 * @param isOptional {@code true} if the option argument is optional
 	 * @return {@code true} if parsing succeeds
+	 *
+	 * @see CLOParser#parseCLO(String[])
 	 */
 	private boolean parse(boolean isOptional) {
 		boolean isSet = isSet();
+		String arg = getArg();
 		try {
-			if (isOptional)
-				return delegate.parse(getArg(), isSet);
-			if (isSet && delegate.parse(getArg()))
+			if (isOptional ? delegate.parse(arg, isSet) : delegate.parse(arg))
 				return true;
-			return !isSet && delegate.parse(getDefault());
 		} catch (Exception e) {
-			try {
-				if (isOptional)
-					return delegate.parse(getDefault(), isSet);
-				return delegate.parse(getDefault());
-			} catch (Exception ex) {
-				return false;
-			}
+			// argument rejected by throwing - fall back on default, see below
 		}
+		String dflt = getDefault();
+		if (dflt == null || dflt.equals(arg))
+			// no default to fall back on or the default was rejected just now
+			// (getArg() returns the default if the option provides no argument)
+			return false;
+		try {
+			if (!(isOptional ? delegate.parse(dflt, isSet) : delegate.parse(dflt)))
+				return false;
+		} catch (Exception e) {
+			return false;
+		}
+		// the default is in effect now - the argument no longer reflects the state
+		// of the option
+		optionArg = null;
+		return true;
 	}
 
 	/**
@@ -647,9 +692,45 @@ public class CLOption implements Comparable<CLOption> {
 	public Key match(String keyname, int min) {
 		if (keys == null)
 			return null;
+		return match(keyname, keys.values(), min);
+	}
+
+	/**
+	 * Returns the key in the array {@code keys} that best matches
+	 * <code>keyname</code>. Matching is as lenient as for command line options,
+	 * i.e. keys can be abbreviated as well as extended, and the best match wins.
+	 * If several keys are equally good matches the first match is returned.
+	 * Useful for enums that implement {@link Key} but are not (or not yet)
+	 * associated with a {@link CLOption}, see {@link #addKeys(Key[])}.
+	 *
+	 * @param <K>     the type of the keys
+	 * @param keyname the name of the key to match
+	 * @param keys    the array of keys to match against
+	 * @return matching key or <code>null</code> if no match was found
+	 */
+	public static <K extends Key> K match(String keyname, K[] keys) {
+		return match(keyname, Arrays.asList(keys), 1);
+	}
+
+	/**
+	 * Returns the key in the collection {@code keys} that best matches
+	 * <code>keyname</code> with at least {@code min} characters matching. If
+	 * several keys are equally good matches the first match is returned. If
+	 * <code>keyname</code> perfectly matches one key, i.e.
+	 * <code>keyname.startsWith(key.getKey())</code> is {@code true}, then a
+	 * better match must match at least one more character of
+	 * <code>keyname</code>.
+	 *
+	 * @param <K>     the type of the keys
+	 * @param keyname the name of the key to match
+	 * @param keys    the collection of keys to match against
+	 * @param min     minimum number of characters that must match
+	 * @return matching key or <code>null</code> if no match was found
+	 */
+	public static <K extends Key> K match(String keyname, Iterable<K> keys, int min) {
 		double best = 0.0;
-		Key match = null;
-		for (Key key : keys.values()) {
+		K match = null;
+		for (K key : keys) {
 			int diff = differAt(keyname, key.getKey());
 			if (diff < min) {
 				// not enough matching characters; skip this key
@@ -665,9 +746,51 @@ public class CLOption implements Comparable<CLOption> {
 	}
 
 	/**
+	 * Returns the key that matches <code>keyname</code>, as {@link #match(String)}.
+	 * If no key matches, the key prefix is treated as optional in two cases:
+	 * <ol>
+	 * <li>exactly one key is currently registered - specifying it is redundant
+	 * and hence optional;
+	 * <li>exactly two keys are currently registered and one of them is the
+	 * option's current default (see {@link #getDefault()}), e.g. a 'none'-like
+	 * key - the other, non-default key is the only genuine alternative and so
+	 * its prefix is optional.
+	 * </ol>
+	 * In all other cases, e.g. more than two keys registered, or neither/both of
+	 * two registered keys match the default, no fallback applies and
+	 * <code>null</code> is returned to flag <code>keyname</code> as invalid.
+	 *
+	 * @param keyname the name of the key to match
+	 * @return the matching, sole, or unambiguous non-default key, or
+	 *         <code>null</code> if none of these apply
+	 */
+	public Key matchOptionalKey(String keyname) {
+		Key key = match(keyname);
+		if (key != null || keys == null)
+			return key;
+		Collection<Key> all = keys.values();
+		if (all.size() == 1)
+			return all.iterator().next();
+		if (all.size() == 2) {
+			String def = getDefault();
+			Key nonDefault = null;
+			for (Key k : all) {
+				if (def != null && k.getKey().equals(def))
+					continue;
+				if (nonDefault != null)
+					// neither key matches the default - ambiguous, don't guess
+					return null;
+				nonDefault = k;
+			}
+			return nonDefault;
+		}
+		return null;
+	}
+
+	/**
 	 * Remove key from the option's key collection. Returns {@code null} if the
 	 * option has no keys or the {@code key} is not part of the collection.
-	 * 
+	 *
 	 * @param key the key to remove
 	 * @return the key that was removed or <code>null</code> if no such key exists
 	 */
@@ -815,8 +938,33 @@ public class CLOption implements Comparable<CLOption> {
 	public String getDescriptionKey() {
 		if (keys == null || inheritedKeys)
 			return "";
+		return getDescriptionKey(keys.values());
+	}
+
+	/**
+	 * Get the description of the array {@code keys}, formatted as
+	 * {@link #getDescriptionKey()}. Useful for enums that implement {@link Key}
+	 * but are not (or not yet) associated with a {@link CLOption}, see
+	 * {@link #addKeys(Key[])}.
+	 *
+	 * @param keys the array of keys to describe
+	 * @return the description of all keys
+	 */
+	public static String getDescriptionKey(Key[] keys) {
+		return getDescriptionKey(Arrays.asList(keys));
+	}
+
+	/**
+	 * Get the description of the collection {@code keys}. Minimal formatting is
+	 * applied with the name of the key and a brief description of the key
+	 * separated by '\n'. No HTML or other formatting can be applied.
+	 *
+	 * @param keys the collection of keys to describe
+	 * @return the description of all keys
+	 */
+	public static String getDescriptionKey(Iterable<? extends Key> keys) {
 		StringBuilder keydescr = new StringBuilder();
-		for (Key key : keys.values()) {
+		for (Key key : keys) {
 			String descr = key.getDescription();
 			// align ':' for better readability
 			String aKey = "             " + key.getKey() + ": ";
@@ -854,6 +1002,17 @@ public class CLOption implements Comparable<CLOption> {
 	 */
 	public String getName() {
 		return name;
+	}
+
+	/**
+	 * Rename the option. Only safe before the option is registered with a
+	 * {@link CLOParser} (see {@link CLOParser#addCLO(CLOption)}) - renaming
+	 * afterwards leaves stale bookkeeping keyed by the old name.
+	 *
+	 * @param name the new name of the option
+	 */
+	public void setName(String name) {
+		this.name = name;
 	}
 
 	/**
@@ -899,17 +1058,19 @@ public class CLOption implements Comparable<CLOption> {
 	 * @return description of option and arguments.
 	 */
 	public String getDescription() {
-		if (description == null && delegate != null) {
-			// description is delegate's responsibility - including keys (if applicable)
-			return delegate.getDescription();
-		}
-		StringBuilder myDescr = buildBaseDescription();
+		// if description is null, the delegate is responsible for the base text -
+		// including any key descriptions (if applicable) - but the current/default
+		// argument annotation is always appended here for consistency, unless the
+		// delegate opts out because it already reports settings itself.
+		StringBuilder myDescr = description == null ? new StringBuilder(delegate.getDescription())
+				: buildBaseDescription();
+		if (!delegate.showsCurrent())
+			return myDescr.toString();
 		String currentArg = optionArg;
 		if (keys != null)
 			currentArg = buildArgKeys();
 		buildCurrent(myDescr, currentArg);
 		return myDescr.toString();
-
 	}
 
 	/**
@@ -920,20 +1081,42 @@ public class CLOption implements Comparable<CLOption> {
 	 * @return the supplied builder for chaining
 	 */
 	private StringBuilder buildCurrent(StringBuilder sb, String currentArg) {
-		sb.append("\n      (");
+		// square brackets - parentheses are used within some settings themselves
+		// (e.g. colors as '(r,g,b)') and would otherwise clash
+		sb.append("\n      [");
 		if (type == Argument.NONE) {
-			sb.append("current: ").append(isSet() ? "" : "not ").append("set)");
+			sb.append(isSet() ? "set" : "not set").append("]");
 			return sb;
 		}
-		if (currentArg != null) {
-			sb.append("current: ").append(currentArg);
-			if (defaultArg != null)
-				sb.append(" ");
+		if (type == Argument.OPTIONAL) {
+			// what matters most is whether the option is engaged at all; if so, report
+			// the effective value (explicit or, if none was given, the default)
+			boolean set = isSet();
+			sb.append(set ? "set" : "not set");
+			if (defaultArg != null) {
+				String effective = set ? getArg() : null;
+				sb.append("; ");
+				if (effective != null && !effective.equals(defaultArg))
+					sb.append(effective).append(" | ");
+				sb.append(defaultArg).append(" (default)");
+			}
+			sb.append("]");
+			return sb;
 		}
-		if (defaultArg != null) {
-			sb.append("default: ").append(defaultArg);
+		if (currentArg == null && defaultArg == null) {
+			sb.append("not set; no default]");
+			return sb;
 		}
-		sb.append(")");
+		if (currentArg == null || currentArg.equals(defaultArg)) {
+			// nothing set (falls back to default) or current matches default -
+			// labelling it as 'current' is redundant, just tag it as the default
+			sb.append(currentArg == null ? defaultArg : currentArg).append(" (default)]");
+			return sb;
+		}
+		sb.append(currentArg);
+		if (defaultArg != null)
+			sb.append(" | ").append(defaultArg).append(" (default)");
+		sb.append("]");
 		return sb;
 	}
 
@@ -963,7 +1146,8 @@ public class CLOption implements Comparable<CLOption> {
 		Key prev = null;
 		String arg = getArg();
 		if (arg == null || arg.isEmpty())
-			return "INVALID";
+			// nothing set and no default - let buildCurrent() report accordingly
+			return null;
 		String[] args = arg.split(CLOParser.SPECIES_DELIMITER);
 		StringBuilder sb = new StringBuilder();
 		for (int n = 0; n < args.length; n++) {
@@ -973,26 +1157,29 @@ public class CLOption implements Comparable<CLOption> {
 			if (keypos < 0 || keypos >= argsn.length) {
 				// no valid key position available, append as-is and continue.
 				sb.append(String.join(",", argsn));
-				if (n != args.length - 1)
-					sb.append(CLOParser.SPECIES_DELIMITER);
 			} else {
-				Key key = match(argsn[keypos]);
-				if (key == null) {
+				Key key = matchOptionalKey(argsn[keypos]);
+				if (key == null)
 					key = prev;
-				}
 				if (key == null) {
-					sb.append("INVALID '").append(args[n].trim()).append("'");
-					break;
+					// no preset key matched (and none from an earlier species to
+					// inherit); getArg() only ever returns arguments already accepted
+					// by the delegate's parse(), so this is a legitimate keyless
+					// format (e.g. an explicit matrix/vector), not an invalid entry
+					sb.append(args[n].trim());
+				} else {
+					prev = buildKey(sb, key, argsn, keypos);
 				}
-				prev = buildKey(sb, key, argsn, keypos);
 			}
+			if (n != args.length - 1)
+				sb.append(CLOParser.SPECIES_DELIMITER);
 		}
 		return sb.toString();
 	}
 
 	/**
 	 * Append the resolved key value and remaining arguments to the builder.
-	 * 
+	 *
 	 * @param sb   builder to append to
 	 * @param key  resolved key
 	 * @param args tokenized argument list
@@ -1007,12 +1194,14 @@ public class CLOption implements Comparable<CLOption> {
 			sb.append(String.join(",", lead)).append(" ");
 		}
 		sb.append(key.getKey());
+		// Preserve any remainder of the matched token beyond the key itself, e.g.
+		// 'N4' matched against key 'N' - the '4' must not be silently dropped.
+		String remainder = stripKey(key, args[pos]);
+		if (!remainder.isEmpty())
+			sb.append(" ").append(remainder);
 		if (tail.length > 0) {
 			sb.append(" ").append(String.join(",", tail));
 		}
-
-		if (pos != args.length - 1)
-			sb.append(CLOParser.SPECIES_DELIMITER);
 		return key;
 	}
 
@@ -1025,9 +1214,27 @@ public class CLOption implements Comparable<CLOption> {
 		description = descr;
 	}
 
+	/**
+	 * Set the parse priority of this option, see {@link #priority}. Use this
+	 * when this option's valid argument range depends on another option that
+	 * would otherwise sort later, alphabetically, e.g. an explicit matrix sized
+	 * by a count set through a separate option - assign the count option a lower
+	 * priority so it is always parsed first, instead of relying on the automatic
+	 * reparse (see {@link org.evoludo.simulator.CLOController#requestParseCLO()})
+	 * to fix up a transient failure after the fact.
+	 *
+	 * @param priority the parse priority (lower parses first)
+	 * @return this option, for chaining
+	 */
+	public CLOption setPriority(int priority) {
+		this.priority = priority;
+		return this;
+	}
+
 	@Override
 	public int compareTo(CLOption opt) {
-		return name.compareTo(opt.getName());
+		int cmp = Integer.compare(priority, opt.priority);
+		return cmp != 0 ? cmp : name.compareTo(opt.getName());
 	}
 
 	@Override

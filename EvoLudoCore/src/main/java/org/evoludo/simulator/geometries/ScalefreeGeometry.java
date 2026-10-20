@@ -95,11 +95,12 @@ public class ScalefreeGeometry extends AbstractNetwork {
 		isRewired = false;
 		isUndirected = true;
 		isRegular = false;
+		clear();
 
 		double[] distr = new double[size];
 		RNGDistribution rng = engine.getRNG();
 
-		if (Math.abs(sfExponent) > 1e-8) {
+		if (Math.abs(sfExponent) > RNGDistribution.EPS) {
 			for (int n = 0; n < size; n++)
 				distr[n] = Math.pow((double) n / (double) size, sfExponent);
 		} else {
@@ -185,8 +186,8 @@ public class ScalefreeGeometry extends AbstractNetwork {
 				if ((links + adj) % 2 == 1)
 					adj++;
 			}
-			if (adj != 0 && logger.isLoggable(java.util.logging.Level.WARNING))
-				logger.warning("adjusting link count: " + links + " by " + adj + " to achieve "
+			if (adj != 0)
+				engine.logWarning("adjusting link count: " + links + " by " + adj + " to achieve "
 						+ (int) Math.floor(connectivity * size + 0.5));
 
 			while (adj != 0) {
@@ -207,11 +208,9 @@ public class ScalefreeGeometry extends AbstractNetwork {
 				}
 				links += delta;
 				adj -= delta;
-				if (logger.isLoggable(java.util.logging.Level.WARNING)) {
-					logger.warning("links: " + links + ", goal: "
-							+ (int) Math.floor(Math.max(2.0, connectivity) * size + 0.5) + ", change: " + delta
-							+ ", remaining: " + adj);
-				}
+				engine.logWarning("links: " + links + ", goal: "
+						+ (int) Math.floor(Math.max(2.0, connectivity) * size + 0.5) + ", change: " + delta
+						+ ", remaining: " + adj);
 			}
 
 			while ((nonleaflinks < 2 * (size - 1) - leaflinks) || (links % 2 == 1)) {

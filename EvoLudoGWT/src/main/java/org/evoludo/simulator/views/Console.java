@@ -36,6 +36,7 @@ import java.util.logging.Level;
 import org.evoludo.graphics.AbstractGraph;
 import org.evoludo.simulator.EvoLudoGWT;
 import org.evoludo.simulator.models.Data;
+import org.evoludo.simulator.models.Mode;
 import org.evoludo.ui.ContextMenu;
 import org.evoludo.ui.ContextMenuItem;
 import org.evoludo.util.RingBuffer;
@@ -185,11 +186,15 @@ public class Console extends AbstractView<AbstractGraph<?>> implements ContextMe
 		super.onUnload();
 	}
 
+	/**
+	 * {@inheritDoc}
+	 * <p>
+	 * The console imposes no requirements on the mode of the model. Prevent
+	 * a mode switch by returning the active mode. Keeps running models running.
+	 */
 	@Override
-	public void activate() {
-		if (isActive)
-			return;
-		isActive = true;
+	Mode getMode() {
+		return (model == null ? Mode.DYNAMICS : model.getMode());
 	}
 
 	@Override
@@ -260,8 +265,8 @@ public class Console extends AbstractView<AbstractGraph<?>> implements ContextMe
 		else
 			sb.append(msg);
 		Element ele = log.getElement();
-		int scroll = ele.getScrollHeight();
-		int top = ele.getScrollTop();
+		// was the log already scrolled (near) to the bottom before adding msg?
+		boolean nearBottom = ele.getScrollHeight() - ele.getScrollTop() - ele.getClientHeight() < 1;
 		if (log.getCapacity() == 0) {
 			// unlimited log messages
 			if (level != Level.CONFIG)
@@ -273,10 +278,13 @@ public class Console extends AbstractView<AbstractGraph<?>> implements ContextMe
 				log.add(sb.toString());
 			else
 				log.replace(sb.toString());
-			if (scroll - top - ele.getClientHeight() < 1)
-				ele.setScrollTop(scroll);
 			log.show();
 		}
+		// fatal/severe errors (e.g. stack traces) must remain visible and hence force
+		// scrolling to the end; otherwise only scroll along if already at the bottom
+		// to keep the log scrollable, e.g. to review earlier entries while running.
+		if (level == Level.SEVERE || nearBottom)
+			ele.setScrollTop(ele.getScrollHeight());
 	}
 
 	@Override

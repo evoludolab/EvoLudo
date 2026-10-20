@@ -183,8 +183,8 @@ public class MVDPhase2D extends MVAbstract implements StateGraphListener {
 
 	@Override
 	public String getToolTipText(Point2D loc, int tag) {
-		if (map instanceof BasicTooltipProvider)
-			return "<html>" + ((BasicTooltipProvider) map).getTooltipAt(loc.getX(), loc.getY());
+		if (map instanceof BasicTooltipProvider btp)
+			return "<html>" + btp.getTooltipAt(loc.getX(), loc.getY());
 		return null;
 	}
 

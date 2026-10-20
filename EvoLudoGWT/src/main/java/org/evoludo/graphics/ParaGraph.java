@@ -38,6 +38,7 @@ import org.evoludo.graphics.AbstractGraph.HasTrajectory;
 import org.evoludo.graphics.AbstractGraph.Shifting;
 import org.evoludo.graphics.AbstractGraph.Zooming;
 import org.evoludo.math.Functions;
+import org.evoludo.simulator.models.Model;
 import org.evoludo.simulator.modules.Module;
 import org.evoludo.simulator.views.BasicTooltipProvider;
 import org.evoludo.simulator.views.Phase2D;
@@ -230,7 +231,7 @@ public class ParaGraph extends AbstractGraph<double[]> implements Zooming, Shift
 		double[] last = buffer.last();
 		double lastt = last[0];
 		int len = last.length;
-		if (Math.abs(t - lastt) < 1e-8) {
+		if (Math.abs(t - lastt) < Model.EPS) {
 			buffer.replace(prependTime2Data(t, data));
 			System.arraycopy(data, 0, init, 1, len - 1);
 			updateAutoscale();
@@ -374,6 +375,7 @@ public class ParaGraph extends AbstractGraph<double[]> implements Zooming, Shift
 		double plotX = 0.5 * (state.w - plotW);
 		double plotY = 0.5 * (state.h - plotH);
 		Rectangle2D boundsBase = new Rectangle2D(bounds);
+		double yAxisLabelTickSkipBase = getYAxisLabelTickSkip();
 		applyVisibleRanges(state);
 		if (clampX) {
 			style.xMin = domain.getX();
@@ -384,10 +386,12 @@ public class ParaGraph extends AbstractGraph<double[]> implements Zooming, Shift
 			style.yMax = domain.getY() + domain.getHeight();
 		}
 		bounds.set(0.0, 0.0, plotW, plotH);
+		yAxisLabelTickSkip = yAxisLabelTickSkipBase;
 		g.save();
 		g.translate(plotX, plotY);
 		drawFrame(xLevels, yLevels);
 		g.restore();
+		yAxisLabelTickSkip = Double.NaN;
 		bounds.set(boundsBase.getX(), boundsBase.getY(), boundsBase.getWidth(), boundsBase.getHeight());
 		style.xMin = baseXMin;
 		style.xMax = baseXMax;
@@ -579,7 +583,7 @@ public class ParaGraph extends AbstractGraph<double[]> implements Zooming, Shift
 		}
 		double oldZoom = zoomFactor;
 		double newZoom = Math.min(Zooming.ZOOM_MAX, Math.max(minZoom, zoomFactor * zoom));
-		if (Math.abs(newZoom - zoomFactor) < 1e-8)
+		if (Math.abs(newZoom - zoomFactor) < Model.EPS)
 			return;
 		double relX = (ux - state.baseXMin) / state.baseRangeX;
 		double baseYMax = state.baseYMin + state.baseRangeY;
@@ -1084,7 +1088,7 @@ public class ParaGraph extends AbstractGraph<double[]> implements Zooming, Shift
 		boolean clampY = Double.isFinite(domain.getHeight());
 		double scaleX = rangeX / w;
 		double scaleY = rangeY / h;
-		if (Math.abs(scaleX - scaleY) < 1e-12)
+		if (Math.abs(scaleX - scaleY) < Model.EPS_SMALL)
 			return;
 		if (scaleX > scaleY) {
 			double targetRangeY = scaleX * h;
@@ -1339,8 +1343,8 @@ public class ParaGraph extends AbstractGraph<double[]> implements Zooming, Shift
 	public String getTooltipAt(int x, int y) {
 		if (!inside(x, y))
 			return null;
-		double localX = x - bounds.getX();
-		double localY = y - bounds.getY();
+		double localX = x - canvasPadX() - bounds.getX();
+		double localY = y - canvasPadY() - bounds.getY();
 		ViewState state = currentViewState();
 		if (!state.valid)
 			return null;
@@ -1367,7 +1371,7 @@ public class ParaGraph extends AbstractGraph<double[]> implements Zooming, Shift
 
 	@Override
 	protected boolean inside(int x, int y) {
-		return inside(x - bounds.getX(), y - bounds.getY());
+		return inside(x - canvasPadX() - bounds.getX(), y - canvasPadY() - bounds.getY());
 	}
 
 	@Override

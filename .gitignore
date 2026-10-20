@@ -16,6 +16,9 @@ docs/api/
 # ignore test reports
 EvoLudoTest/tests/reports
 
+# ignore states exported by the GUI tests
+EvoLudoTest/tests/exports
+
 # ignore scratch
 scratch/
 

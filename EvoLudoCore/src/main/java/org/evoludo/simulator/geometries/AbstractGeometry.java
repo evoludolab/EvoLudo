@@ -35,8 +35,6 @@ import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Objects;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 
 import org.evoludo.math.ArrayMath;
 import org.evoludo.math.RNGDistribution;
@@ -85,8 +83,8 @@ public abstract class AbstractGeometry {
 			throw new IllegalArgumentException("engine must not be null");
 		if (cli == null)
 			throw new IllegalArgumentException("geometry specification must not be empty");
-		String normalized = cli.trim();
-		if (normalized.isEmpty())
+		String canonical = cli.trim().replaceAll("\\s+", "");
+		if (canonical.isEmpty())
 			throw new IllegalArgumentException("geometry specification must not be empty");
 		if (current != null) {
 			String currentCLI = current.cli;
@@ -94,15 +92,15 @@ public abstract class AbstractGeometry {
 				String currentSpecs = current.getSpecs();
 				currentCLI = current.getType().getKey() + (currentSpecs == null ? "" : currentSpecs);
 			}
-			if (normalized.equals(currentCLI))
+			if (canonical.equals(currentCLI))
 				return current;
 		}
 		CLOption clo = engine.getModule().cloGeometry;
-		GeometryType type = (GeometryType) clo.match(normalized);
+		GeometryType type = (GeometryType) clo.match(canonical);
 		AbstractGeometry geometry = AbstractGeometry.create(engine, type);
-		String spec = normalized.substring(Math.min(type.key.length(), normalized.length()));
+		String spec = canonical.substring(Math.min(type.key.length(), canonical.length()));
 		geometry.specs = spec;
-		geometry.cli = normalized;
+		geometry.cli = canonical;
 		return geometry;
 	}
 
@@ -215,11 +213,6 @@ public abstract class AbstractGeometry {
 	final EvoLudo engine;
 
 	/**
-	 * Logger for keeping track of and reporting events and issues.
-	 */
-	final Logger logger;
-
-	/**
 	 * Local storage for the 2D representation of this graph.
 	 */
 	Network2D network2D = null;
@@ -235,7 +228,8 @@ public abstract class AbstractGeometry {
 	String specs;
 
 	/**
-	 * Optional trimmed CLI string used to create this geometry.
+	 * Optional canonical CLI string used to create this geometry, with whitespace
+	 * removed.
 	 */
 	String cli;
 
@@ -351,7 +345,6 @@ public abstract class AbstractGeometry {
 	 */
 	protected AbstractGeometry(EvoLudo engine) {
 		this.engine = engine;
-		this.logger = engine.getLogger();
 		this.isInterspecies = engine.getModule().getNSpecies() > 1;
 		this.geometryId = nextGeometryId++;
 	}
@@ -522,12 +515,30 @@ public abstract class AbstractGeometry {
 	}
 
 	/**
-	 * Get the trimmed CLI string that created this geometry (if available).
+	 * Get the canonical CLI string that created this geometry (if available).
 	 *
-	 * @return the original CLI specification string, or {@code null}
+	 * @return the canonical CLI specification string, or {@code null}
 	 */
 	public String getCLI() {
 		return cli;
+	}
+
+	/**
+	 * Get the canonical, re-parseable command line argument for this geometry,
+	 * with the key separated from its specification by a single space, e.g.
+	 * {@code "N 4f"}, rather than either the fully fused {@link #getCLI()} form
+	 * ({@code "N4f"}) or the original, possibly whitespace-scattered, input
+	 * ({@code "N 4 f"}). Keeping the key on its own isolates it as a single
+	 * token for the generic {@link CLOption} argument report, so a
+	 * comma-separated specification (e.g. hierarchical geometry level sizes)
+	 * round-trips as a single, correctly comma-joined item instead of being
+	 * torn apart by a key fused to its first element.
+	 *
+	 * @return the key and specification, separated by a single space if a
+	 *         specification is present
+	 */
+	public String getCLOArg() {
+		return specs == null || specs.isEmpty() ? type.getKey() : type.getKey() + " " + specs;
 	}
 
 	/**
@@ -761,8 +772,7 @@ public abstract class AbstractGeometry {
 	 * @param message the message to log
 	 */
 	protected void warn(String message) {
-		if (logger.isLoggable(Level.WARNING))
-			logger.warning(getLabel() + message);
+		engine.logWarning(getLabel() + message);
 	}
 
 	/**
@@ -772,7 +782,7 @@ public abstract class AbstractGeometry {
 	 */
 	protected String getLabel() {
 		String label = getName();
-		if (label == null)
+		if (label == null || label.isEmpty())
 			return type.name() + ": ";
 		return label + " - " + type.name() + ": ";
 	}
@@ -1157,7 +1167,9 @@ public abstract class AbstractGeometry {
 	 * N_\text{links} \log(1-p_\text{dir})}\), i.e. at most the number directed
 	 * links in the graph. Thus, at most an expected fraction of \(1-1/e\) (or
 	 * \(~63%\)) of original links get rewired.
-	 * <li>ToDo: Rewrite similar to rewireUndirected().
+	 * <li>The implementation follows the same idea as
+	 * {@link #rewireUndirected(double)}
+	 * but keeps the directionality constraints intact.
 	 * </ol>
 	 * 
 	 * @return {@code true} if rewiring succeeded
@@ -1182,10 +1194,8 @@ public abstract class AbstractGeometry {
 		do {
 			// draw first node - avoid sources (nodes without inlinks) and fully connected
 			// nodes
-			do {
-				last = rng.random0n(size);
-				len = kin[last];
-			} while (len == 0 || len == size - 1);
+			last = drawRewiringStart(rng);
+			len = kin[last];
 			neigh = len == 1 ? 0 : rng.random0n(len);
 			from = in[last][neigh]; // link used to come from here
 			// note that 'from' must have at least one outlink to 'last'.
@@ -1194,11 +1204,7 @@ public abstract class AbstractGeometry {
 			// draw random node 'to' that is not a neighbor of 'from' (avoid double
 			// connections)
 			// in addition, 'to' must not be a source
-			do {
-				to = rng.random0n(size - 1);
-				if (to >= from)
-					to++;
-			} while (isNeighborOf(from, to) || kin[to] == 0);
+			to = drawRewiringTarget(rng, from);
 			// 'from' -> 'last' rewired to 'from' -> 'to'
 			rewireLinkAt(from, to, last);
 			done++;
@@ -1212,28 +1218,12 @@ public abstract class AbstractGeometry {
 				// draw random neighbor of 'to' but exclude newly drawn link
 				neigh = (len - 1) == 1 ? 0 : rng.random0n(len - 1);
 				from = in[to][neigh]; // link used to come from here
-				// is 'from' already linked to everyone else?
-				if (kout[from] == size - 1) {
-					// are there other feasible neighbors?
-					for (int n = 0; n < len - 1; n++)
-						if (kout[in[to][n]] < size - 1)
-							continue; // there is hope...
-					// this looks bad - try node we just came from
-					if (kout[in[to][len - 1]] == size - 1) {
-						throw new IllegalStateException("Rewiring troubles - giving up...");
-					}
-					// let's go back - can this fail?
-					from = in[to][len - 1];
-				}
+				from = selectRewiringSource(to, len, from);
 				prev = to;
 				// draw random node 'to' that is not a neighbor of 'from' (avoid double
 				// connections)
 				// in addition, 'to' must not be a source
-				do {
-					to = rng.random0n(size - 1);
-					if (to >= from)
-						to++;
-				} while (isNeighborOf(from, to) || kin[to] == 0);
+				to = drawRewiringTarget(rng, from);
 				// 'from' -> 'prev' rewired to 'from' -> 'to'
 				rewireLinkAt(from, to, prev);
 				done++;
@@ -1254,17 +1244,12 @@ public abstract class AbstractGeometry {
 			// draw random neighbor of 'to' but exclude newly drawn link
 			neigh = (len - 1) == 1 ? 0 : rng.random0n(len - 1);
 			from = in[to][neigh]; // link used to come from here
-			if (kout[from] == size - 1)
-				continue; // already linked to everybody else
+			from = selectRewiringSource(to, len, from);
 			prev = to;
 			// draw random node 'to' that is not a neighbor of 'from' (avoid double
 			// connections)
 			// in addition, 'to' must not be a source
-			do {
-				to = rng.random0n(size - 1);
-				if (to >= from)
-					to++;
-			} while (isNeighborOf(from, to) || kin[to] == 0);
+			to = drawRewiringTarget(rng, from);
 			rewireLinkAt(from, to, prev);
 		}
 		// 'to' just got a new inlink -> len>1
@@ -1273,6 +1258,95 @@ public abstract class AbstractGeometry {
 		neigh = (len - 1) == 1 ? 0 : rng.random0n(len - 1);
 		rewireLinkAt(to, last, in[to][neigh]);
 		return true;
+	}
+
+	/**
+	 * Draw a starting node for directed rewiring.
+	 *
+	 * @param rng the shared random number generator
+	 * @return a node with at least one inlink and at least one missing outgoing
+	 *         link
+	 */
+	private int drawRewiringStart(RNGDistribution rng) {
+		// try cheap random draws first; most nodes are usually eligible, so this
+		// almost always succeeds in O(1) and avoids the O(size) scan below.
+		// draws are with replacement, so 'size' attempts alone can still miss a
+		// rare eligible node too often for small networks (e.g. 25% miss chance
+		// for size=2 with a single eligible node); 8 is a cheap floor that keeps
+		// that miss chance well under 1%.
+		int attempts = Math.max(8, size);
+		for (int i = 0; i < attempts; i++) {
+			int candidate = rng.random0n(size);
+			if (kin[candidate] > 0 && kin[candidate] < size - 1)
+				return candidate;
+		}
+		int selected = -1;
+		int seen = 0;
+		for (int candidate = 0; candidate < size; candidate++) {
+			if (kin[candidate] == 0 || kin[candidate] == size - 1)
+				continue;
+			seen++;
+			if (rng.random0n(seen) == 0)
+				selected = candidate;
+		}
+		if (selected >= 0)
+			return selected;
+		throw new IllegalStateException("No feasible start node for directed rewiring.");
+	}
+
+	/**
+	 * Draw a target node for directed rewiring.
+	 *
+	 * @param rng  the shared random number generator
+	 * @param from the source node that must not already connect to the target
+	 * @return a node that is neither a source nor already a neighbour of
+	 *         {@code from}
+	 */
+	private int drawRewiringTarget(RNGDistribution rng, int from) {
+		// see drawRewiringStart() for why random draws are tried first and why 8
+		// is a floor on the number of attempts.
+		int attempts = Math.max(8, size);
+		for (int i = 0; i < attempts; i++) {
+			int candidate = rng.random0n(size - 1);
+			if (candidate >= from)
+				candidate++;
+			if (kin[candidate] == 0 || isNeighborOf(from, candidate))
+				continue;
+			return candidate;
+		}
+		int selected = -1;
+		int seen = 0;
+		for (int candidate = 0; candidate < size; candidate++) {
+			if (candidate == from || kin[candidate] == 0 || isNeighborOf(from, candidate))
+				continue;
+			seen++;
+			if (rng.random0n(seen) == 0)
+				selected = candidate;
+		}
+		if (selected >= 0)
+			return selected;
+		throw new IllegalStateException("No feasible target node for directed rewiring.");
+	}
+
+	/**
+	 * Resolve the predecessor used for the next rewiring step.
+	 *
+	 * @param to   the current node being rewired through
+	 * @param len  the number of valid in-neighbours of {@code to}
+	 * @param from the initially selected predecessor of {@code to}
+	 * @return a predecessor that still has room for one more outgoing link
+	 */
+	private int selectRewiringSource(int to, int len, int from) {
+		if (kout[from] < size - 1)
+			return from;
+		for (int n = 0; n < len - 1; n++) {
+			int candidate = in[to][n];
+			if (kout[candidate] < size - 1)
+				return candidate;
+		}
+		if (kout[in[to][len - 1]] == size - 1)
+			throw new IllegalStateException("Rewiring troubles - giving up...");
+		return in[to][len - 1];
 	}
 
 	/**
@@ -1537,9 +1611,9 @@ public abstract class AbstractGeometry {
 	 * incoming link.
 	 * </ol>
 	 * 
-	 * @return {@code true} if check succeeded
+	 * @return {@code true} if no inconsistencies found
 	 */
-	public boolean isConsistent() {
+	public boolean checkConsistency() {
 		boolean ok = true;
 		ok &= checkMultiple(kin, in, "in");
 		ok &= checkMultiple(kout, out, "out");
@@ -1565,7 +1639,7 @@ public abstract class AbstractGeometry {
 	 * @return {@code true} if no multiple connections found
 	 */
 	private boolean checkMultiple(int[] degree, int[][] links, String type) {
-		logger.fine("Checking multiple " + type + "-connections... ");
+		engine.logMessage("Checking multiple " + type + "-connections... ");
 		boolean ok = true;
 		for (int i = 0; i < size; i++) {
 			// double connections 'in'
@@ -1590,7 +1664,7 @@ public abstract class AbstractGeometry {
 	 * @return {@code true} if all connections are consistent
 	 */
 	private boolean checkInOut() {
-		logger.fine("Checking consistency of in-, out-connections... ");
+		engine.logMessage("Checking consistency of in-, out-connections... ");
 		boolean ok = true;
 		for (int i = 0; i < size; i++) {
 			// each 'out' connection must be balanced by an 'in' connection
@@ -1611,7 +1685,7 @@ public abstract class AbstractGeometry {
 	 */
 	private boolean checkSelfing() {
 		// self-connections are only acceptable for inter-species interactions
-		logger.fine("Checking self-connections... ");
+		engine.logMessage("Checking self-connections... ");
 		boolean ok = true;
 		for (int i = 0; i < size; i++) {
 			// report loops
@@ -1643,7 +1717,7 @@ public abstract class AbstractGeometry {
 	 */
 	private boolean checkRegular() {
 		boolean ok = true;
-		logger.fine("Checking regularity... ");
+		engine.logMessage("Checking regularity... ");
 		GeometryFeatures f = getFeatures();
 		int nout = f.minOut;
 		int nin = f.minIn;
@@ -1668,7 +1742,7 @@ public abstract class AbstractGeometry {
 	 * @return {@code true} if the graph is undirected
 	 */
 	private boolean checkUndirected() {
-		logger.fine("Checking undirected structure... ");
+		engine.logMessage("Checking undirected structure... ");
 		boolean ok = true;
 		for (int i = 0; i < size; i++) {
 			// each connection must go both ways
@@ -1693,7 +1767,10 @@ public abstract class AbstractGeometry {
 	 * @param ok    {@code true} if the check passed
 	 */
 	private void logCheckResult(String label, boolean ok) {
-		logger.fine(label + (ok ? " pass" : " failed!"));
+		if (ok)
+			engine.logMessage(label + " pass");
+		else
+			engine.logWarning(label + " failed!");
 	}
 
 	/**
@@ -1703,7 +1780,7 @@ public abstract class AbstractGeometry {
 	 * @param message message suffix describing the issue
 	 */
 	private void logNodeIssue(int node, String message) {
-		logger.fine("Node " + node + " " + message);
+		engine.logWarning("Node " + node + " " + message);
 	}
 
 	/**
@@ -1838,7 +1915,8 @@ public abstract class AbstractGeometry {
 	}
 
 	/**
-	 * Hash subclass-specific geometry parameters used by {@link #similar(AbstractGeometry)}.
+	 * Hash subclass-specific geometry parameters used by
+	 * {@link #similar(AbstractGeometry)}.
 	 *
 	 * @return the hash contribution of subclass-specific settings
 	 */

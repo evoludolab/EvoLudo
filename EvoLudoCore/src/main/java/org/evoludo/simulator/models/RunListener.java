@@ -45,7 +45,9 @@ public interface RunListener {
 	}
 
 	/**
-	 * Called after the EvoLudo model has relaxed.
+	 * Called after the EvoLudo model has relaxed without having converged. If the
+	 * model converges during relaxation, {@link #modelStopped()} is called
+	 * instead.
 	 */
 	public default void modelRelaxed() {
 	}

@@ -130,7 +130,7 @@ public class simTBT extends TBT implements ChangeListener {
 		mean = new double[nTraits];
 		var = new double[nTraits];
 		state = new double[nTraits];
-		progress |= (logger.getLevel().intValue() <= Level.FINE.intValue());
+		progress |= (engine.getLogger().getLevel().intValue() <= Level.FINE.intValue());
 		boolean converged = false;
 
 		if (scanDG != null) {
@@ -343,7 +343,7 @@ public class simTBT extends TBT implements ChangeListener {
 	@Override
 	public synchronized void modelStopped() {
 		double generation = ibs.getUpdates();
-		if (model.isRelaxing() || prevsample >= generation) {
+		if (prevsample >= generation) {
 			return;
 		}
 		// absorbing state reached
@@ -367,8 +367,8 @@ public class simTBT extends TBT implements ChangeListener {
 	public final CLOption cloProgress = new CLOption("progress", CLOCategory.Simulation,
 			"--progress      make noise about progress", new CLODelegate() {
 				@Override
-				public boolean parse(String arg) {
-					progress = cloProgress.isSet();
+				public boolean parse(boolean isSet) {
+					progress = isSet;
 					return true;
 				}
 			});
@@ -470,14 +470,14 @@ public class simTBT extends TBT implements ChangeListener {
 				try {
 					ImageIO.write(snapimage, "PNG", snapfile);
 				} catch (IOException x) {
-					logger.warning("writing image to " + snapfile.getAbsolutePath() + " failed!");
+					engine.logWarning("writing image to " + snapfile.getAbsolutePath() + " failed!");
 					return;
 				}
-				logger.info("PNG image written to " + snapfile.getAbsolutePath());
+				engine.logMessage("PNG image written to " + snapfile.getAbsolutePath());
 				return;
 
 			default:
-				logger.warning("unknown file format (" + format + ")");
+				engine.logWarning("unknown file format (" + format + ")");
 		}
 	}
 

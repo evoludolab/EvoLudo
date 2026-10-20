@@ -33,7 +33,6 @@ package org.evoludo.simulator.modules;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
-import java.util.logging.Level;
 
 import org.evoludo.simulator.EvoLudo;
 import org.evoludo.simulator.models.CModel;
@@ -293,9 +292,8 @@ public abstract class Continuous extends Module<Continuous> {
 		for (int s = 0; s < nTraits; s++) {
 			if (traitMax[s] <= traitMin[s]) {
 				// set to default
-				if (logger.isLoggable(Level.WARNING))
-					logger.warning("invalid trait range [" + Formatter.format(traitMin[s], 4) + ", "
-							+ Formatter.format(traitMax[s], 4) + "] for trait " + s + " - reset to [0, 1]!");
+				engine.logWarning("invalid trait range [" + Formatter.format(traitMin[s], 4) + ", "
+						+ Formatter.format(traitMax[s], 4) + "] for trait " + s + " - reset to [0, 1]!");
 				setTraitRange(0.0, 1.0, s);
 				doReset = true;
 			}
@@ -1198,17 +1196,15 @@ public abstract class Continuous extends Module<Continuous> {
 							type = prevtype;
 							args = CLOParser.parseVector(cstfargs[0]);
 						} else if (type.nParams > 0 && cstfargs.length < 2) {
-							if (logger.isLoggable(Level.WARNING))
-								logger.warning(
-										"costs function type '" + type + " requires " + type.nParams + " arguments!");
+							engine.logWarning(
+									"costs function type '" + type + " requires " + type.nParams + " arguments!");
 							return false;
 						} else
 							args = CLOParser.parseVector(cstfargs[1]);
 						prevtype = type;
 						if (args.length != type.nParams) {
-							if (logger.isLoggable(Level.WARNING))
-								logger.warning("costs function type '" + type + " requires " + type.nParams
-										+ " costs but found '" + Formatter.format(args, 2) + "'!");
+							engine.logWarning("costs function type '" + type + " requires " + type.nParams
+									+ " costs but found '" + Formatter.format(args, 2) + "'!");
 							if (args.length < type.nParams)
 								return false;
 						}
@@ -1254,18 +1250,16 @@ public abstract class Continuous extends Module<Continuous> {
 							type = prevtype;
 							args = CLOParser.parseVector(bftfargs[0]);
 						} else if (type.nParams > 0 && bftfargs.length < 2) {
-							if (logger.isLoggable(Level.WARNING))
-								logger.warning(
-										"benefits function type '" + type + " requires " + type.nParams
-												+ " arguments!");
+							engine.logWarning(
+									"benefits function type '" + type + " requires " + type.nParams
+											+ " arguments!");
 							return false;
 						} else
 							args = CLOParser.parseVector(bftfargs[1]);
 						prevtype = type;
 						if (args.length != type.nParams) {
-							if (logger.isLoggable(Level.WARNING))
-								logger.warning("benefits function type '" + type + " requires " + type.nParams
-										+ " arguments but found '" + Formatter.format(args, 2) + "'!");
+							engine.logWarning("benefits function type '" + type + " requires " + type.nParams
+									+ " arguments but found '" + Formatter.format(args, 2) + "'!");
 							if (args.length < type.nParams)
 								return false;
 						}

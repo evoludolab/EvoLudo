@@ -35,6 +35,7 @@ import java.util.List;
 
 import org.evoludo.simulator.models.ChangeListener;
 import org.evoludo.simulator.models.ChangeListener.PendingAction;
+import org.evoludo.simulator.models.IBS;
 import org.evoludo.simulator.models.Mode;
 import org.evoludo.simulator.models.RunListener;
 import org.evoludo.simulator.modules.Module;
@@ -168,7 +169,7 @@ class RunController {
 		engine.isSuspended = false;
 		for (RunListener i : runListeners)
 			i.modelRunning();
-		engine.logger.info("Model running");
+		engine.logMessage("Model running");
 	}
 
 	/**
@@ -194,7 +195,7 @@ class RunController {
 			engine.isRunning = false;
 			for (RunListener i : runListeners)
 				i.modelDidInit();
-			engine.logger.info("Model init");
+			engine.logMessage("Model init");
 		}
 	}
 
@@ -210,7 +211,7 @@ class RunController {
 			return;
 		for (RunListener i : runListeners)
 			i.modelDidReset();
-		engine.logger.info("Model reset");
+		engine.logMessage("Model reset");
 	}
 
 	/**
@@ -222,7 +223,7 @@ class RunController {
 	public void fireModelRelaxed() {
 		for (RunListener i : runListeners)
 			i.modelRelaxed();
-		engine.logger.info("Model relaxed");
+		engine.logMessage("Model relaxed");
 	}
 
 	/**
@@ -237,7 +238,7 @@ class RunController {
 		engine.isRunning = false;
 		for (RunListener i : runListeners)
 			i.modelStopped();
-		engine.logger.info("Model stopped");
+		engine.logMessage("Model stopped");
 	}
 
 	/**
@@ -294,6 +295,7 @@ class RunController {
 			return;
 		java.util.logging.Level logLevel = engine.logger.getLevel();
 		engine.logger.setLevel(java.util.logging.Level.ALL);
+		clearTraits();
 		engine.activeModel.debugStep();
 		engine.logger.setLevel(logLevel);
 	}
@@ -412,7 +414,12 @@ class RunController {
 			mod.reset();
 		engine.activeModel.reset();
 		engine.resetRequested = false;
-		modelInit(true);
+		for (Module<?> mod : engine.activeModule.getSpecies())
+			mod.init();
+		engine.activeModel.init();
+		engine.activeModel.update();
+		resetCPUSample();
+		engine.modelRelax(quiet);
 		if (!quiet) {
 			engine.activeModel.resetStatisticsSample();
 			engine.fireModelReset();
@@ -441,10 +448,9 @@ class RunController {
 		engine.activeModel.init();
 		engine.activeModel.update();
 		resetCPUSample();
-		modelRelax(quiet);
-		if (!quiet) {
+		if (!quiet)
 			engine.fireModelInit();
-		}
+		engine.modelRelax(quiet);
 	}
 
 	/**
@@ -490,6 +496,7 @@ class RunController {
 		startCPUSample();
 		if (engine.activeModel == null)
 			return false;
+		clearTraits();
 		return modelNextDone(engine.activeModel.next(engine.activeModel.getTimeStep()));
 	}
 
@@ -513,6 +520,15 @@ class RunController {
 		}
 		engine.fireModelChanged();
 		return true;
+	}
+
+	/**
+	 * Clear trait display markers before the next model update starts accumulating
+	 * newly changed traits.
+	 */
+	private void clearTraits() {
+		if (engine.activeModel instanceof IBS)
+			((IBS) engine.activeModel).clearTraits();
 	}
 
 	/**

@@ -32,24 +32,23 @@ package org.evoludo.simulator.models;
 
 import java.util.Arrays;
 import java.util.List;
-import java.util.logging.Level;
 
 import org.evoludo.math.ArrayMath;
 import org.evoludo.math.Functions;
 import org.evoludo.simulator.ColorMap;
 import org.evoludo.simulator.EvoLudo;
-import org.evoludo.simulator.models.Model.HasDE;
 import org.evoludo.simulator.models.ODEInitialize.InitType;
+import org.evoludo.simulator.modules.Discrete;
 import org.evoludo.simulator.modules.Features;
 import org.evoludo.simulator.modules.Features.Payoffs;
 import org.evoludo.simulator.modules.Map2Fitness;
 import org.evoludo.simulator.modules.Module;
 import org.evoludo.simulator.modules.Mutation;
 import org.evoludo.simulator.modules.PlayerUpdate;
+import org.evoludo.util.CLOCategory;
 import org.evoludo.util.CLODelegate;
 import org.evoludo.util.CLOParser;
 import org.evoludo.util.CLOption;
-import org.evoludo.util.CLOCategory;
 import org.evoludo.util.Formatter;
 import org.evoludo.util.Plist;
 
@@ -251,12 +250,6 @@ public class ODE extends Model implements DModel {
 	int[] dependents;
 
 	/**
-	 * Convenience variable to indicate whether the model is based on densities.
-	 * This is {@code true} if none of the species has a dependent trait.
-	 */
-	protected boolean isDensity = false;
-
-	/**
 	 * Array containing the inverse of the fitness range:
 	 * <code>1.0/(maxFitness - minFitness)</code> for each species. This is used to
 	 * normalize imitation rules of players.
@@ -266,11 +259,76 @@ public class ODE extends Model implements DModel {
 	double[] invFitRange;
 
 	/**
-	 * Reusable scratch space for effective rates used by single-threaded ODE and
-	 * SDE models. PDEs use per-call buffers to remain thread safe.
-	 * Index 0: effective birth rate, index 1: effective death rate.
+	 * Relative tolerance, as a fraction of each species' (static) fitness range
+	 * <code>maxFitness - minFitness</code>, for treating two fitness values as
+	 * tied.
+	 *
+	 * @see #tieTolerance
 	 */
-	protected double[] effRate;
+	private static final double TIE_TOLERANCE_RELATIVE = 1e-6;
+
+	/**
+	 * Array containing the absolute payoff-tie tolerance for each species,
+	 * <code>{@link #TIE_TOLERANCE_RELATIVE} * (maxFitness - minFitness)</code>,
+	 * precomputed once whenever the species configuration changes (see
+	 * {@link #evaluateSpecies()}) rather than recomputed on every call. Used by
+	 * {@link #updateBest} and {@link #processBR} to avoid discrete rule flips
+	 * being driven by platform-dependent floating-point noise (e.g. last-ULP
+	 * differences between the JRE and GWT/JavaScript builds) rather than a
+	 * genuine fitness difference. Allocated only if at least one species uses
+	 * {@link PlayerUpdate.Type#BEST}, {@link PlayerUpdate.Type#BEST_RANDOM} or
+	 * {@link PlayerUpdate.Type#BEST_RESPONSE}; entries are left at the default
+	 * {@link #TIE_TOLERANCE_RELATIVE} for species that don't need them.
+	 */
+	double[] tieTolerance;
+
+	/**
+	 * Relative tolerance, as a fraction of each species' (static) fitness range
+	 * <code>maxFitness - minFitness</code>, for declaring the best-response
+	 * dynamics converged (payoff spread negligible) and freezing further
+	 * updates. Deliberately much looser than {@link #TIE_TOLERANCE_RELATIVE}:
+	 * this only ever triggers once the state is essentially settled, whereas a
+	 * game such as rock-paper-scissors passes through momentary near-ties in
+	 * the payoff spread whenever the best response switches from one trait to
+	 * another (a kink in the trajectory) without actually having converged - a
+	 * tolerance as tight as {@link #TIE_TOLERANCE_RELATIVE} would risk freezing
+	 * the dynamics right at such a kink instead of letting the state move
+	 * through it.
+	 *
+	 * @see #convToleranceBR
+	 */
+	private static final double CONV_TOLERANCE_RELATIVE_BR = 1e-4;
+
+	/**
+	 * Array containing the absolute convergence tolerance for each species,
+	 * <code>{@link #CONV_TOLERANCE_RELATIVE_BR} * (maxFitness -
+	 * minFitness)</code>, precomputed once whenever the species configuration
+	 * changes (see {@link #evaluateSpecies()}). Used by
+	 * {@link #updateBestResponse} to detect when the payoff spread has become
+	 * negligible and the dynamics can be frozen. Allocated only if at least one
+	 * species uses {@link PlayerUpdate.Type#BEST_RESPONSE}.
+	 */
+	double[] convToleranceBR;
+
+	/**
+	 * Reusable scratch space for the effective birth rate of every trait of
+	 * every species, indexed globally exactly like {@link #yt}/{@link #dyt}
+	 * (see {@link #idxSpecies}). Used by single-threaded ODE and SDE models;
+	 * PDEs use per-call buffers to remain thread safe.
+	 *
+	 * @see #computeEffRates(double[], double[], double[])
+	 */
+	protected double[] effBirth;
+
+	/**
+	 * Reusable scratch space for the effective death rate of every trait of
+	 * every species, indexed globally exactly like {@link #yt}/{@link #dyt}
+	 * (see {@link #idxSpecies}). Used by single-threaded ODE and SDE models;
+	 * PDEs use per-call buffers to remain thread safe.
+	 *
+	 * @see #computeEffRates(double[], double[], double[])
+	 */
+	protected double[] effDeath;
 
 	/**
 	 * The names of the traits (dynamical variables) in the ODE. In multi-species
@@ -295,6 +353,16 @@ public class ODE extends Model implements DModel {
 	 * @see #setAccuracy(double)
 	 */
 	protected boolean monoStop = false;
+
+	/**
+	 * <code>true</code> if {@link #next(double)} halted merely because the
+	 * population turned monomorphic under {@link #monoStop}, not true numerical
+	 * convergence (see {@link #converged}). Unlike {@link #converged}, it
+	 * doesn't block future calls - it remains resumable, like {@code --timestop}.
+	 *
+	 * @see #checkConvergence(double)
+	 */
+	protected boolean monoStopped = false;
 
 	/**
 	 * <code>true</code> if the adjusted replicator dynamics should be applied.
@@ -349,7 +417,6 @@ public class ODE extends Model implements DModel {
 		initType = new InitType[nSpecies];
 		mutation = new Mutation.Discrete[nSpecies];
 		dependents = new int[nSpecies];
-		effRate = new double[2];
 		int idx = 0;
 		for (Module<?> mod : species) {
 			mutation[idx] = (Mutation.Discrete) mod.getMutation();
@@ -362,11 +429,13 @@ public class ODE extends Model implements DModel {
 		initType = null;
 		mutation = null;
 		dependents = null;
-		effRate = null;
+		effBirth = effDeath = null;
 		yt = ft = dyt = yout = null;
 		staticfit = null;
 		names = null;
 		invFitRange = null;
+		tieTolerance = null;
+		convToleranceBR = null;
 		idxSpecies = null;
 		cloInit.clearKeys();
 		super.unload();
@@ -374,14 +443,25 @@ public class ODE extends Model implements DModel {
 
 	@Override
 	public boolean check() {
+		boolean wasDensity = isDensity;
+		// super.check() refreshes isDensity from species.get(0) before it's used below
 		boolean doReset = super.check();
 		dstate = null;
 		doReset |= evaluateSpecies();
 		names = getMeanNames();
 
-		// check if dynamics mode changed (cannot mix and match density and frequency
-		// based dynamics)
-		doReset |= updateDynamicsMode();
+		// refresh dependent indices for the (possibly new) dynamics mode; cannot mix
+		// and match density and frequency based dynamics
+		if (isDensity) {
+			Arrays.fill(dependents, -1);
+		} else {
+			int idx = 0;
+			for (Module<?> mod : species) {
+				dependents[idx] = ((HasDE) mod).getDependent();
+				idx++;
+			}
+		}
+		doReset |= (wasDensity != isDensity);
 		return doReset;
 	}
 
@@ -393,6 +473,8 @@ public class ODE extends Model implements DModel {
 	 */
 	private boolean evaluateSpecies() {
 		invFitRange = null;
+		tieTolerance = null;
+		convToleranceBR = null;
 		idxSpecies = new int[nSpecies + 1];
 		nDim = 0;
 		boolean doReset = false;
@@ -410,13 +492,35 @@ public class ODE extends Model implements DModel {
 					Arrays.fill(invFitRange, 1.0);
 				}
 				hasPayoffs = true;
+				// tieTolerance/convTolerance are only ever read by updateBest/processBR
+				// (BEST, BEST_RANDOM, BEST_RESPONSE) and updateBestResponse (BEST_RESPONSE),
+				// respectively - allocate and populate them only for species that use those
+				// player updates.
+				PlayerUpdate.Type put = mod.getPlayerUpdate().getType();
+				boolean needsTie = put == PlayerUpdate.Type.BEST || put == PlayerUpdate.Type.BEST_RANDOM
+						|| put == PlayerUpdate.Type.BEST_RESPONSE;
+				boolean needsConv = put == PlayerUpdate.Type.BEST_RESPONSE;
+				if (needsTie && tieTolerance == null) {
+					tieTolerance = new double[nSpecies];
+					Arrays.fill(tieTolerance, TIE_TOLERANCE_RELATIVE);
+				}
+				if (needsConv && convToleranceBR == null) {
+					convToleranceBR = new double[nSpecies];
+					Arrays.fill(convToleranceBR, CONV_TOLERANCE_RELATIVE_BR);
+				}
 				Map2Fitness map2fit = mod.getMap2Fitness();
 				Payoffs pmod = (Payoffs) mod;
 				double mappedMin = map2fit.map(pmod.getMinPayoff());
 				double mappedMax = map2fit.map(pmod.getMaxPayoff());
 				minFit = Math.min(minFit, mappedMin);
-				if (mappedMax > mappedMin)
-					invFitRange[idx] = 1.0 / (mappedMax - mappedMin);
+				double range = mappedMax - mappedMin;
+				if (range > 0.0) {
+					invFitRange[idx] = 1.0 / range;
+					if (needsTie)
+						tieTolerance[idx] = TIE_TOLERANCE_RELATIVE * range;
+					if (needsConv)
+						convToleranceBR[idx] = CONV_TOLERANCE_RELATIVE_BR * range;
+				}
 			}
 			idx++;
 			nDim += nTraits;
@@ -424,7 +528,7 @@ public class ODE extends Model implements DModel {
 		idxSpecies[nSpecies] = nDim;
 		if (hasPayoffs && isAdjustedDynamics && minFit <= 0.0) {
 			// fitness is not guaranteed to be positive
-			logger.warning(getClass().getSimpleName()
+			engine.logWarning(getClass().getSimpleName()
 					+ " - fitness >0 must hold for adjusted dynamics (revert to standard dynamics).");
 			isAdjustedDynamics = false;
 		}
@@ -445,29 +549,10 @@ public class ODE extends Model implements DModel {
 		}
 		if (hasPayoffs && (ft == null || ft.length != nDim))
 			ft = new double[nDim];
-	}
-
-	/**
-	 * Determine whether the current setup should use density- or frequency-based
-	 * dynamics and refresh dependent indices accordingly.
-	 * 
-	 * @return {@code true} if the mode changed and a reset is required
-	 */
-	private boolean updateDynamicsMode() {
-		InitType init = initType[0];
-		boolean isDensityNow = (init == InitType.DENSITY || init == InitType.UNITY);
-		boolean modeChanged = (isDensity != isDensityNow);
-		isDensity = isDensityNow;
-		if (isDensity) {
-			Arrays.fill(dependents, -1);
-		} else {
-			int idx = 0;
-			for (Module<?> mod : species) {
-				dependents[idx] = ((HasDE) mod).getDependent();
-				idx++;
-			}
+		if (effBirth == null || effBirth.length != nDim) {
+			effBirth = new double[nDim];
+			effDeath = new double[nDim];
 		}
-		return modeChanged;
 	}
 
 	@Override
@@ -504,11 +589,6 @@ public class ODE extends Model implements DModel {
 		init(true);
 	}
 
-	@Override
-	public boolean isDensity() {
-		return isDensity;
-	}
-
 	/**
 	 * Sets the discretization of time increments in continuous time models.
 	 * <p>
@@ -522,9 +602,8 @@ public class ODE extends Model implements DModel {
 	public void setDt(double deltat) {
 		deltat = Math.max(0.0, deltat);
 		if (deltat == 0.0) {
-			if (logger.isLoggable(Level.WARNING))
-				logger.warning(getClass().getSimpleName() + " - time step must be >0 (dt=" + Formatter.formatSci(dt, 5)
-						+ " kept; requested dt=" + Formatter.formatSci(deltat, 5) + " ignored).");
+			engine.logWarning(getClass().getSimpleName() + " - time step must be >0 (dt=" + Formatter.formatSci(dt, 5)
+					+ " kept; requested dt=" + Formatter.formatSci(deltat, 5) + " ignored).");
 			return;
 		}
 		dt = deltat;
@@ -566,7 +645,7 @@ public class ODE extends Model implements DModel {
 		int start = idxSpecies[id];
 		if (init.length != idxSpecies[id + 1] - start)
 			return false;
-		applyDependentTraits(init, 0, init.length, dependents[id]);
+		processDependentTrait(init, 0, init.length, dependents[id]);
 		System.arraycopy(init, start, y0, 0, idxSpecies[id + 1] - start);
 		init(false);
 		return true;
@@ -586,20 +665,39 @@ public class ODE extends Model implements DModel {
 			int start = idxSpecies[idx];
 			if (start + nTraits > state.length)
 				return;
-			applyDependentTraits(state, start, nTraits, dependents[idx]);
+			processDependentTrait(state, start, nTraits, dependents[idx]);
 		}
 	}
 
 	/**
 	 * Adjust the dependent trait for a single species slice in frequency-based
-	 * dynamics.
+	 * dynamics: {@code state[dependent] = max(0, 1 - sum(others))}.
 	 *
 	 * @param state     the state vector containing the slice to adjust
 	 * @param start     the start offset of the species slice
 	 * @param nTraits   the number of traits for the species
 	 * @param dependent the dependent trait index (relative to the slice)
 	 */
-	private void applyDependentTraits(double[] state, int start, int nTraits, int dependent) {
+	private void processDependentTrait(double[] state, int start, int nTraits, int dependent) {
+		processDependentTrait(state, start, nTraits, dependent, 1.0, true);
+	}
+
+	/**
+	 * Adjust the dependent trait of a single species slice so its traits
+	 * (including the dependent one) sum to {@code target}: {@code 1.0} for a
+	 * state (frequencies), {@code 0.0} for its derivative (frequencies summing
+	 * to 1 implies their combined drift sums to 0). A derivative may legitimately
+	 * be negative, so {@code clamp} should be {@code false} for it.
+	 *
+	 * @param state     the state vector or derivative containing the slice
+	 * @param start     the start offset of the species slice
+	 * @param nTraits   the number of traits for the species
+	 * @param dependent the dependent trait index (relative to the slice)
+	 * @param target    the value the slice's traits must sum to
+	 * @param clamp     whether to floor the result at 0
+	 */
+	protected void processDependentTrait(double[] state, int start, int nTraits, int dependent, double target,
+			boolean clamp) {
 		if (isDensity || nTraits <= 0 || dependent < 0 || dependent >= nTraits)
 			return;
 		if (start < 0 || start + nTraits > state.length)
@@ -610,7 +708,8 @@ public class ODE extends Model implements DModel {
 				continue;
 			sum += state[start + n];
 		}
-		state[start + dependent] = Math.max(0.0, 1.0 - sum);
+		double value = target - sum;
+		state[start + dependent] = clamp ? Math.max(0.0, value) : value;
 	}
 
 	@Override
@@ -720,7 +819,7 @@ public class ODE extends Model implements DModel {
 		double minFit = map2fit.map(pmod.getMinPayoff());
 		double maxFit = map2fit.map(pmod.getMaxPayoff());
 		double map;
-		if (maxFit - minFit < 1e-8) {
+		if (maxFit - minFit < EPS) {
 			// close enough to neutral
 			map = nBins * 0.5;
 			minFit -= 1.0;
@@ -767,38 +866,81 @@ public class ODE extends Model implements DModel {
 	public boolean next(double step) {
 		if (converged)
 			return false;
-		connect = true;
+		atHalt = false;
+		monoStopped = false;
 		double nextHalt = getNextHalt();
-		// continue if milestone reached in previous step, i.e. deltat < 1e-8
+		// continue if milestone reached in previous call, i.e. deltat < EPS, see
+		// IBS#next(double).
 		double deltat = Math.abs(nextHalt - time);
-		if (deltat >= 1e-8)
-			step = Math.min(step, deltat);
+		if (deltat < EPS)
+			return false;
+		connect = true;
+		step = Math.min(step, deltat);
 		// NOTE: dt is always >0
 		double elapsed = 0.0;
 		double timeBefore = time;
-		while (Math.abs(step - elapsed) > 1e-8) {
+		while (Math.abs(step - elapsed) > EPS) {
 			double nextstep = Math.min(dtTry, step - elapsed);
 			double d2 = deStep(forward ? nextstep : -nextstep);
+			if (!Double.isFinite(d2))
+				return stopDiverged();
 			// elapsed may not change if dtTaken is too small
 			double prev = elapsed;
 			elapsed += dtTaken;
 			if (Math.abs(elapsed - prev) <= 1e-16) {
 				// emergency brake - step size too small
-				if (logger.isLoggable(Level.WARNING))
-					logger.warning(getClass().getSimpleName()
-							+ ": aborted, step size too small, dt=" + Formatter.formatSci(dtTaken, 5));
+				engine.logWarning(getClass().getSimpleName()
+						+ ": aborted, step size too small, dt=" + Formatter.formatSci(dtTaken, 5));
 				converged = true;
 			} else {
-				converged = checkConvergence(d2);
+				checkConvergence(d2);
 			}
-			if (converged)
+			if (converged || monoStopped)
 				break;
 		}
 		// try to minimize rounding errors
 		time = timeBefore + (forward ? elapsed : -elapsed);
-		if (Math.abs(nextHalt - time) < 1e-8)
+		if (Math.abs(nextHalt - time) < EPS) {
+			// snap to the milestone exactly rather than leaving a floating-point
+			// residual - lets getNextHalt() recognize the milestone as reached with
+			// a plain equality-based comparison, same as e.g. IBS's exact update
+			// counter, instead of requiring an epsilon-tolerant comparison there.
+			time = nextHalt;
+			atHalt = true;
 			return false;
-		return !converged;
+		}
+		// re-evaluated fresh on the next call, so a --monostop halt stays resumable
+		return !(converged || monoStopped);
+	}
+
+	/**
+	 * Indicates whether {@link #next(double)} halted in its most recent call
+	 * because the model's time reached the next requested milestone (see
+	 * {@link #getNextHalt()}), as opposed to converging or diverging.
+	 */
+	protected boolean atHalt = false;
+
+	/**
+	 * Report that the numerical integration has diverged - i.e. accumulated a
+	 * non-finite ({@code NaN} or infinite) change in state, typically the result
+	 * of a numerical overflow, e.g. an excessively steep
+	 * {@link org.evoludo.simulator.modules.Map2Fitness Map2Fitness} - and request
+	 * a stop.
+	 * <p>
+	 * <strong>Important:</strong> a non-finite squared distance must not be
+	 * treated as converged, and must not be silently ignored either. Comparisons
+	 * against a {@code NaN} value are always {@code false}, so a naive comparison
+	 * such as {@code dist2 < acc*acc} could easily and silently return the wrong
+	 * verdict depending on how the comparison happens to be written; e.g. treating
+	 * divergence as convergence, or never detecting it at all and looping
+	 * indefinitely while {@link #time} itself becomes {@code NaN}.
+	 *
+	 * @return {@code false} to request a stop
+	 */
+	protected boolean stopDiverged() {
+		engine.logError(getClass().getSimpleName() + ": integration diverged (non-finite change in state) at time="
+				+ Formatter.formatFix(time, 4) + " - stopping.");
+		return false;
 	}
 
 	/**
@@ -827,9 +969,10 @@ public class ODE extends Model implements DModel {
 			return true;
 		double acc = accuracy * dtTaken;
 		converged = (dist2 < acc * acc);
+		// monoStop alone isn't true convergence - keep it resumable, see #monoStopped
 		if (!converged && monoStop)
-			converged = isMonomorphic();
-		return converged;
+			monoStopped = isMonomorphic();
+		return converged || monoStopped;
 	}
 
 	/**
@@ -966,7 +1109,8 @@ public class ODE extends Model implements DModel {
 	 * 
 	 * @see #updateBest(Module, double[], double[], int, int, double[])
 	 * @see #updateBestResponse(Module, double[], double[], int, int, double[])
-	 * @see #updateEcology(Module, double[], double[], int, int, double[])
+	 * @see #updateEcology(Module, double[], double[], int, double[], double[],
+	 *      double[])
 	 * @see #updateImitate(Module, double[], double[], int, int, double[])
 	 * @see #updateThermal(Module, double[], double[], int, int, double[])
 	 */
@@ -1021,18 +1165,22 @@ public class ODE extends Model implements DModel {
 	 *                population
 	 */
 	private void applyUpdates(double[] state, double[] fitness, double[] change) {
+		// PDEs evaluate many grid nodes concurrently and share this ODE instance,
+		// so they must use fresh, per-call buffers instead of the reusable fields
+		double[] eBirth = isPDE() ? new double[nDim] : effBirth;
+		double[] eDeath = isPDE() ? new double[nDim] : effDeath;
+		computeEffRates(state, eBirth, eDeath);
 		int index = 0;
 		for (Module<?> mod : species) {
-			int nGroup = mod.getNGroup();
-			int nTraits = mod.getNTraits();
-			int skip = idxSpecies[index];
-
 			if (mod.getVacantIdx() >= 0) {
-				updateEcology(mod, state, fitness, nGroup, index, change);
+				updateEcology(mod, state, fitness, index, change, eBirth, eDeath);
 				index++;
 				continue;
 			}
 
+			int nGroup = mod.getNGroup();
+			int nTraits = mod.getNTraits();
+			int skip = idxSpecies[index];
 			double totDelta;
 			PlayerUpdate.Type put = mod.getPlayerUpdate().getType();
 			switch (put) {
@@ -1059,6 +1207,7 @@ public class ODE extends Model implements DModel {
 					throw new IllegalArgumentException("Unknown update method for players (" + put + ")");
 			}
 
+			// XXX could apply logic similar to processDependentTrait here as well
 			// with frequencies totDelta is zero (in theory); correct numerical drift
 			if (!isDensity && Math.abs(totDelta) > accuracy) {
 				boolean[] active = mod.getActiveTraits();
@@ -1113,15 +1262,19 @@ public class ODE extends Model implements DModel {
 	 * @param mod     the module representing the current species
 	 * @param state   array of frequencies/densities denoting the state population
 	 * @param fitness array of fitness values of types in population
-	 * @param nGroup  the interaction group size
 	 * @param index   the index of the module <code>mod</code> in multi-species
 	 *                modules
 	 * @param change  array to return the rate of change of each type in the
 	 *                population
+	 * @param eBirth  the effective birth rate of every trait, globally indexed,
+	 *                see {@link #computeEffRates(double[], double[], double[])}
+	 * @param eDeath  the effective death rate of every trait, globally indexed,
+	 *                see {@link #computeEffRates(double[], double[], double[])}
+	 * 
 	 * @return the total change (should be zero in theory)
 	 */
-	protected double updateEcology(Module<?> mod, double[] state, double[] fitness, int nGroup, int index,
-			double[] change) {
+	protected double updateEcology(Module<?> mod, double[] state, double[] fitness, int index, double[] change,
+			double[] eBirth, double[] eDeath) {
 		// XXX what happens if one trait is deactivated!?
 		int vacant = mod.getVacantIdx();
 		int skip = idxSpecies[index];
@@ -1133,16 +1286,12 @@ public class ODE extends Model implements DModel {
 			z = state[skip + vacant];
 		if (fitness != null && vacant >= 0)
 			fitness[skip + vacant] = 0.0;
-		double[] effRates = isPDE() ? new double[2] : effRate;
-		computeEffRates(mod, index, state, effRates);
-		double effBirth = effRates[0];
-		double effDeath = effRates[1];
 		double birthFactor = isDensity ? 1.0 : z;
 		for (int n = skip; n < end; n++) {
 			if (n == skip + vacant)
 				continue;
 			double fit = (fitness == null) ? 0.0 : fitness[n];
-			double dyn = state[n] * (birthFactor * (effBirth + fit) - effDeath);
+			double dyn = state[n] * (birthFactor * (eBirth[n] + fit) - eDeath[n]);
 			change[n] = dyn;
 			if (!isDensity && vacant >= 0)
 				dz -= dyn;
@@ -1183,51 +1332,113 @@ public class ODE extends Model implements DModel {
 	}
 
 	/**
-	 * Compute effective birth and death rates, including competition adjustments.
+	 * Compute the effective birth and death rate of every trait of every
+	 * ecological (vacancy-supporting) species in one pass, including
+	 * competition adjustments. Results are written to {@code eBirth}/
+	 * {@code eDeath}, globally indexed exactly like {@link #yt}/{@link #dyt}
+	 * (see {@link #idxSpecies}); entries belonging to non-ecological species,
+	 * or to the vacant trait itself, are left untouched since they are never
+	 * read by {@link #updateEcology}. The competition adjustment is computed
+	 * once per species (competition rates are per-species, not per-trait, see
+	 * {@link Module#getCompetitionRates()}) and then applied identically to
+	 * every trait of that species; only the underlying birth/death rate,
+	 * {@link Discrete#getBirthRate(int)}/{@link Discrete#getDeathRate(int)},
+	 * varies by trait.
 	 *
-	 * @param mod   the module to compute effective rates for
-	 * @param index the species index used as a fallback identifier
-	 * @param state the state vector to sample for occupied densities
-	 * @param out   output array: effective birth rate at index 0, death at index 1
+	 * @param state  the state vector to sample for occupied densities
+	 * @param eBirth the array to receive the effective birth rate of every trait
+	 * @param eDeath the array to receive the effective death rate of every trait
 	 */
-	protected void computeEffRates(Module<?> mod, int index, double[] state, double[] out) {
-		out[0] = mod.getBirthRate();
-		out[1] = mod.getDeathRate();
-		double[] compRates = mod.getCompetitionRates();
-		if (compRates == null || compRates.length == 0)
-			return;
-
-		double occupied = getOccupiedDensity(index, state);
-		int nSpecies = Math.min(compRates.length, species.size());
-		int self = mod.getId();
-		if (self < 0 || self >= nSpecies)
-			self = index;
-		if (self >= 0 && self < nSpecies) {
-			double selfRate = compRates[self];
-			if (selfRate > 0.0)
-				out[1] += selfRate * occupied;
-			else if (selfRate < 0.0)
-				out[0] -= selfRate;
-		}
-		if (nSpecies > 1) {
-			double crossBirth = 0.0;
-			double crossDeath = 0.0;
-			double oppScale = 1.0 / (nSpecies - 1);
-			for (int s = 0; s < nSpecies; s++) {
-				if (s == self)
-					continue;
-				double occ = getOccupiedDensity(s, state);
-				if (occ <= 0.0)
-					continue;
-				double rate = compRates[s];
-				if (rate > 0.0)
-					crossDeath += rate * occ;
-				else if (rate < 0.0)
-					crossBirth -= rate * occ;
+	protected void computeEffRates(double[] state, double[] eBirth, double[] eDeath) {
+		int index = 0;
+		for (Module<?> mod : species) {
+			int vacant = mod.getVacantIdx();
+			if (vacant < 0) {
+				index++;
+				continue;
 			}
-			out[0] += crossBirth * oppScale;
-			out[1] += crossDeath * oppScale;
+			int skip = idxSpecies[index];
+			int nTraits = mod.getNTraits();
+			boolean discrete = mod instanceof Discrete;
+			Discrete dmod = discrete ? (Discrete) mod : null;
+			double birthAdj = 0.0;
+			double deathAdj = 0.0;
+			double[] compRates = mod.getCompetitionRates();
+			double occupied = getOccupiedDensity(index, state);
+			int nSpecies = Math.min(compRates.length, species.size());
+			int self = mod.getId();
+			if (self < 0 || self >= nSpecies)
+				self = index;
+			if (self >= 0 && self < nSpecies) {
+				double selfRate = compRates[self];
+				if (selfRate > 0.0)
+					deathAdj += selfRate * occupied;
+				else if (selfRate < 0.0)
+					birthAdj -= selfRate;
+			}
+			if (nSpecies > 1) {
+				double crossBirth = 0.0;
+				double crossDeath = 0.0;
+				double oppScale = 1.0 / (nSpecies - 1);
+				for (int s = 0; s < nSpecies; s++) {
+					if (s == self)
+						continue;
+					double occ = getOccupiedDensity(s, state);
+					if (occ <= 0.0)
+						continue;
+					double rate = compRates[s];
+					if (rate > 0.0)
+						crossDeath += rate * occ;
+					else if (rate < 0.0)
+						crossBirth -= rate * occ;
+				}
+				birthAdj += crossBirth * oppScale;
+				deathAdj += crossDeath * oppScale;
+			}
+			for (int n = skip, t = 0; t < nTraits; n++, t++) {
+				if (t == vacant)
+					continue;
+				eBirth[n] = (discrete ? dmod.getBirthRate(t) : mod.getBirthRate()) + birthAdj;
+				eDeath[n] = (discrete ? dmod.getDeathRate(t) : mod.getDeathRate()) + deathAdj;
+			}
+			index++;
 		}
+	}
+
+	/**
+	 * Computes the equilibrium frequency of vacant sites, \(z^*\), for a
+	 * monomorphic resident population of trait {@code idx} of {@code module} in
+	 * the mean-field limit, i.e. the non-trivial fixed point \(x^*=1-z^*>0\) of
+	 * \[\dot x = x\big((1-x)(b+f+\beta) - d - x\gamma\big),\]
+	 * where \(b\), \(f\) (only for modules implementing {@link Payoffs}; \(0\)
+	 * otherwise) and \(d\) are the resident's birth rate, fitness and death
+	 * rate, and \(\beta=\max(0,-c)\), \(\gamma=\max(0,c)\) are the birth/death
+	 * adjustments for interactions with kin: a positive \(c\) is
+	 * competition/predation and raises the death rate with density, a negative
+	 * \(c\) is synergy/mutualism and boosts the birth rate at a constant rate.
+	 * Solving for \(z^*\) gives
+	 * \[z^*=\frac{d+\gamma}{b+f+\beta+\gamma}.\]
+	 * Useful e.g. to mark monomorphic equilibria on time series or phase
+	 * planes, or to seed individual based simulations at their estimated
+	 * carrying capacity, see {@link IBSDPopulation#getVacantEstimate(int)}.
+	 *
+	 * @param module the module of the resident type
+	 * @param idx    the index of the resident trait
+	 * @return the equilibrium frequency of vacant sites, or {@link Double#NaN}
+	 *         if there is no net growth
+	 */
+	public static double getVacantAtEQ(Discrete module, int idx) {
+		double birth = module.getBirthRate(idx);
+		double death = module.getDeathRate(idx);
+		Map2Fitness map2fit = module.getMap2Fitness();
+		double fitness = (map2fit == null) ? 0.0 : map2fit.map(module.getMonoPayoff(idx));
+		double competition = module.getCompetitionRate();
+		double gamma = Math.max(0.0, competition);
+		double effBirth = birth + fitness + Math.max(0.0, -competition);
+		double denom = effBirth + gamma;
+		if (denom <= 0.0)
+			return Double.NaN;
+		return Math.min(Math.max((death + gamma) / denom, 0.0), 1.0);
 	}
 
 	/**
@@ -1333,10 +1544,11 @@ public class ODE extends Model implements DModel {
 			double[] change) {
 		int skip = idxSpecies[index];
 		int end = skip + mod.getNTraits();
+		double tol = tieTolerance[index];
 		double err = 0.0;
 		for (int n = skip; n < end; n++) {
 			double dyn = 0.0;
-			double ftn = fitness[n] - 1e-8;
+			double ftn = fitness[n] - tol;
 			for (int i = skip; i < end; i++) {
 				if (i == n)
 					continue;
@@ -1566,19 +1778,18 @@ public class ODE extends Model implements DModel {
 
 		double diff = max - min;
 		// note:
-		// - the threshold to signal convergence in terms of payoff range is
-		// completely heuristic... convergence no longer triggered for CDL with
-		// threshold of 1e-4. this should be done in a more systematic manner.
+		// - the payoff-range-threshold to signal convergence is delicate. e.g.
+		// convergence no longer triggered for CDL with threshold of 1e-4.
 		// - the second condition already triggers early on whenever approaching
 		// points where another trait becomes the best response.
-		if (diff < 1e-3 && diff * dtTry < accuracy) {
+		if (diff < convToleranceBR[index] && diff * dtTry < accuracy) {
 			for (int n = skip; n < end; n++)
 				change[n] = 0.0;
 			return 0.0;
 		}
 
 		// second pass: mark all best responses
-		processBR(max, active, fitness, skip, end, change);
+		processBR(max, active, fitness, skip, end, tieTolerance[index], change);
 
 		// apply dynamics: move towards best response profile
 		double err = 0.0;
@@ -1599,12 +1810,15 @@ public class ODE extends Model implements DModel {
 	 * @param fitness the fitness values
 	 * @param start   the start index
 	 * @param end     the end index
+	 * @param tol     the absolute tolerance for treating a fitness value as tied
+	 *                with {@code max} (see {@link #tieTolerance})
 	 * @param change  the change array
 	 */
-	private void processBR(double max, boolean[] active, double[] fitness, int start, int end, double[] change) {
+	private void processBR(double max, boolean[] active, double[] fitness, int start, int end, double tol,
+			double[] change) {
 		int nMax = 0;
 		for (int i = start; i < end; i++) {
-			if ((active == null || active[i - start]) && Math.abs(fitness[i] - max) < 1e-6) {
+			if ((active == null || active[i - start]) && Math.abs(fitness[i] - max) < tol) {
 				change[i] = 1.0;
 				nMax++;
 			}
@@ -1877,16 +2091,28 @@ public class ODE extends Model implements DModel {
 		parser.addCLO(cloInit);
 		cloInit.clearKeys();
 		cloInit.addKeys(InitType.values());
-		if (!(mod instanceof HasDE.DualDynamics)) {
+		if (mod instanceof DualDynamics) {
+			// deliberately not pruned, unlike the fixed-regime branch below:
+			// (1) --init <key> alone (no --dynamics) must still be able to pick the
+			// regime, which needs all the other keys to still be registered, and
+			// (2) ODEInitialize.parse() needs a mismatched key to still match so it
+			// can reject it by content ("conflicts with --dynamics ..."). just point the
+			// default at the active one - isDensity already mirrors it, see Model#check()
+			cloInit.setDefault(isDensity ? InitType.UNITY.getKey() : InitType.UNIFORM.getKey());
+		} else {
+			// fixed regime: prune the keys of the other one from --init
 			if (isDensity) {
-				// remove frequency specific initialization options
+				// remove frequency specific initialization options; 'uniform' is no longer
+				// a valid default, fall back to unit densities instead
 				cloInit.removeKey(InitType.RANDOM);
 				cloInit.removeKey(InitType.FREQUENCY);
 				cloInit.removeKey(InitType.UNIFORM);
+				cloInit.setDefault(InitType.UNITY.getKey());
 			} else {
 				// remove density specific initialization options
 				cloInit.removeKey(InitType.DENSITY);
 				cloInit.removeKey(InitType.UNITY);
+				cloInit.setDefault(InitType.UNIFORM.getKey());
 			}
 			cloInit.removeKey(InitType.MUTANT);
 		}
@@ -1915,13 +2141,11 @@ public class ODE extends Model implements DModel {
 		accuracy = (Double) plist.get("Accuracy");
 		connect = false;
 		if (!restoreTraits(plist)) {
-			if (logger.isLoggable(Level.WARNING))
-				logger.warning("restore traits in " + type + "-model failed.");
+			engine.logWarning("restore traits in " + type + "-model failed.");
 			success = false;
 		}
 		if (!restoreFitness(plist)) {
-			if (logger.isLoggable(Level.WARNING))
-				logger.warning("restore fitness in " + type + "-model failed.");
+			engine.logWarning("restore fitness in " + type + "-model failed.");
 			success = false;
 		}
 		return success;

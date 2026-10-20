@@ -51,14 +51,16 @@ import org.evoludo.simulator.EvoLudoLab;
 import org.evoludo.simulator.geometries.AbstractGeometry;
 import org.evoludo.simulator.geometries.GeometryFeatures;
 import org.evoludo.simulator.geometries.GeometryType;
+import org.evoludo.simulator.models.Model;
 
 public class MVDegree extends MVAbstract implements HistoGraphListener {
 
 	private static final long serialVersionUID = 20110423L;
 
-	static final String xLabelText = "degree";
+	static final String X_LABEL = "degree";
 	private final JLabel xLabel;
-	private boolean isStatic = false, isDirected = false;
+	private boolean isStatic = false;
+	private boolean isDirected = false;
 
 	protected static final int K_OUT = 0;
 	protected static final int K_IN = 1;
@@ -67,7 +69,7 @@ public class MVDegree extends MVAbstract implements HistoGraphListener {
 
 	public MVDegree(EvoLudoLab lab) {
 		super(lab);
-		xLabel = new JLabel(xLabelText, SwingConstants.RIGHT);
+		xLabel = new JLabel(X_LABEL, SwingConstants.RIGHT);
 		xLabel.setAlignmentX(0.5f);
 		add(xLabel);
 	}
@@ -75,7 +77,7 @@ public class MVDegree extends MVAbstract implements HistoGraphListener {
 	private void addGraph(int row) {
 		HistoGraph graph = new HistoGraph(this, module, row);
 		GraphAxis x = graph.getXAxis();
-		x.label = xLabelText;
+		x.label = X_LABEL;
 		x.showLabel = false;
 		x.grid = 0;
 		x.majorTicks = 3;
@@ -148,32 +150,21 @@ public class MVDegree extends MVAbstract implements HistoGraphListener {
 		super.initStyle(style, owner);
 		xLabel.setFont(style.labelFont);
 		xLabel.setBorder(
-				BorderFactory.createEmptyBorder(0, 0, 0, getFontMetrics(style.labelFont).stringWidth(xLabelText)));
+				BorderFactory.createEmptyBorder(0, 0, 0, getFontMetrics(style.labelFont).stringWidth(X_LABEL)));
 	}
 
-	/*
-	 * // implement HistoGraphListener - mostly done in MVAbstract
-	 * 
-	 * @Override
-	 * public boolean verifyXAxis(GraphAxis x, int tag) {
-	 * boolean changed = false;
-	 * double min = population.getMinScore();
-	 * if( Math.abs(x.min-min)>1e-8 ) {
-	 * x.min = min;
-	 * changed = true;
-	 * }
-	 * double max = population.getMaxScore();
-	 * if( Math.abs(x.max-max)>1e-8 ) {
-	 * x.max = max;
-	 * changed = true;
-	 * }
-	 * return changed;
-	 * }
+	/**
+	 * Calculate the maximum degree for displaying the degree distribution. This
+	 * rounds {@code max} up to {@code 10, 20, 50, 100, 200, 500, 1000} etc. The
+	 * result is always strictly larger than {@code max}, i.e. the degrees
+	 * {@code 0, 1, ..., max} all fall inside the range {@code [0, kmax)}.
+	 *
+	 * @param max the maximum degree of the graph
+	 * @return the maximum degree to display
 	 */
-
 	private static int kmax(int max) {
 		// determine range and number of bins required
-		// range starts at 1 up to 10, 20, 50, 100, 200, 500, 1000 etc.
+		// range starts at 0 up to 10, 20, 50, 100, 200, 500, 1000 etc.
 		// the number of bins is at most 100
 		int order = Math.max(10, (int) Combinatorics.pow(10, (int) Math.floor(Math.log10(max + 1))));
 		switch (max / order) {
@@ -195,12 +186,20 @@ public class MVDegree extends MVAbstract implements HistoGraphListener {
 		}
 	}
 
+	/**
+	 * Process the degrees {@code in} and store the resulting distribution in
+	 * {@code data}. The x-axis covers the degrees {@code [0, kmax)} such that the
+	 * first bin holds the isolated nodes with degree zero.
+	 *
+	 * @param data the histogram data
+	 * @param in   the degrees of all nodes (or {@code null} if unavailable)
+	 * @param max  the maximum degree of the graph
+	 * @return {@code true} if the layout of the histogram changed
+	 */
 	private static boolean process(HistoData data, int[] in, int max) {
 		// boolean changed = false;
 		int kmax = kmax(max);
 		int b = Math.min(kmax, MAX_BINS);
-		if (kmax <= 100)
-			b++;
 		if (b > data.state.length)
 			data.state = new double[b];
 		/*
@@ -217,10 +216,13 @@ public class MVDegree extends MVAbstract implements HistoGraphListener {
 			return true;
 		int n = in.length;
 		for (int i = 0; i < n; i++)
-			out[in[i] / binwidth]++;
+			// guard against stale degree ranges of dynamic geometries
+			out[Math.min(in[i] / binwidth, b - 1)]++;
 		// return ( changed || changed(out) );
 
-		double minBin = Double.MAX_VALUE, maxBin = -Double.MAX_VALUE, accuBin = 0.0;
+		double minBin = Double.MAX_VALUE;
+		double maxBin = -Double.MAX_VALUE;
+		double accuBin = 0.0;
 		for (int i = 0; i < b; i++) {
 			double aBin = out[i];
 			if (aBin > 0) {
@@ -239,21 +241,21 @@ public class MVDegree extends MVAbstract implements HistoGraphListener {
 			data.binwidth = binwidth;
 			changed = true;
 		}
-		if (Math.abs(data.xmin - 0) > 1e-8) {
+		if (Math.abs(data.xmin - 0) > Model.EPS) {
 			data.xmin = 0;
 			changed = true;
 		}
-		if (Math.abs(data.xmax - kmax) > 1e-8) {
+		if (Math.abs(data.xmax - kmax) > Model.EPS) {
 			data.xmax = kmax;
 			changed = true;
 		}
-		if (Math.abs(data.ymin - minBin * norm) > 1e-8) {
+		if (Math.abs(data.ymin - minBin * norm) > Model.EPS) {
 			data.ymin = minBin * norm;
 			if (data.logy && data.ymin <= 0.0)
 				data.ymin = 1.0 / accuBin;
 			changed = true;
 		}
-		if (Math.abs(data.ymax - maxBin * norm) > 1e-8) {
+		if (Math.abs(data.ymax - maxBin * norm) > Model.EPS) {
 			data.ymax = maxBin * norm;
 			changed = true;
 		}
@@ -265,55 +267,24 @@ public class MVDegree extends MVAbstract implements HistoGraphListener {
 		return changed;
 	}
 
-	/*
-	 * needs more thought...
-	 * private static boolean changed(int[] out) {
-	 * double minBin = Double.MAX_VALUE, maxBin = -Double.MAX_VALUE, accuBin = 0.0;
-	 * int len = out.length;
-	 * for( int i=0; i<len; i++ ) {
-	 * double aBin = out[i];
-	 * if( aBin>0 ) {
-	 * minBin = Math.min(minBin, aBin);
-	 * maxBin = Math.max(maxBin, aBin);
-	 * accuBin += aBin;
-	 * }
-	 * }
-	 * double norm = 100.0/accuBin;
-	 * boolean changed = false;
-	 * if( data.bins!=b ) {
-	 * data.bins = b;
-	 * changed = true;
-	 * }
-	 * if( data.binwidth!=binwidth ) {
-	 * data.binwidth = binwidth;
-	 * changed = true;
-	 * }
-	 * if( Math.abs(data.xmin-0)>1e-8 ) {
-	 * data.xmin = 0;
-	 * changed = true;
-	 * }
-	 * if( Math.abs(data.xmax-kmax)>1e-8 ) {
-	 * data.xmax = kmax;
-	 * changed = true;
-	 * }
-	 * if( Math.abs(data.ymin-minBin*norm)>1e-8 ) {
-	 * data.ymin = minBin*norm;
-	 * if( data.logy && data.ymin<=0.0 ) data.ymin = 1.0/accuBin;
-	 * changed = true;
-	 * }
-	 * if( Math.abs(data.ymax-maxBin*norm)>1e-8 ) {
-	 * data.ymax = maxBin*norm;
-	 * changed = true;
-	 * }
-	 * if( data.logy ) {
-	 * ChHMath.log10(out);
-	 * ChHMath.add(out, Math.log10(norm));
-	 * }
-	 * else
-	 * ChHMath.multiply(out, norm);
-	 * return changed;
-	 * }
+	/**
+	 * Calculate the total degrees, i.e. the sum of the in- and out-degrees, of all
+	 * nodes in {@code geometry}.
+	 *
+	 * @param geometry the graph
+	 * @return the total degrees of all nodes (or {@code null} if unavailable)
 	 */
+	private static int[] totalDegrees(AbstractGeometry geometry) {
+		int[] kin = geometry.kin;
+		int[] kout = geometry.kout;
+		if (kin == null || kout == null)
+			return null;
+		int nNodes = kout.length; // has to be the same as kin.length
+		int[] ktot = new int[nNodes];
+		for (int i = 0; i < nNodes; i++)
+			ktot[i] = kin[i] + kout[i];
+		return ktot;
+	}
 
 	@Override
 	public synchronized boolean getData(HistoData data, int tag) {
@@ -321,7 +292,7 @@ public class MVDegree extends MVAbstract implements HistoGraphListener {
 		double now = engine.getModel().getUpdates();
 		boolean changed = false;
 		// System.out.println("MVDegree - getData: tag="+tag);
-		if (data.timestamp < 0.0 || (now - data.timestamp > 1e-10 && !isStatic)) {
+		if (data.timestamp < 0.0 || (now - data.timestamp > Model.EPS && !isStatic)) {
 			AbstractGeometry geometry;
 			if (engine.getModel().isIBS())
 				geometry = module.getIBSPopulation().getInteractionGeometry();
@@ -330,79 +301,19 @@ public class MVDegree extends MVAbstract implements HistoGraphListener {
 			GeometryFeatures features = geometry.getFeatures();
 
 			switch (tag) {
-				// case K_OUT:
-				default:
-					changed = process(data, geometry.kout, features.maxOut);
-					break;
-
 				case K_IN:
 					changed = process(data, geometry.kin, features.maxIn);
 					break;
 
 				case K_TOT:
-					int kmax = kmax(features.maxTot);
-					int b = Math.min(kmax, MAX_BINS);
-					if (kmax <= 100)
-						b++;
-					if (b > data.state.length)
-						data.state = new double[b];
-					// note kmax = 10, 20, 50, 100, 200, 500, 1000, ...
-					int binwidth = (kmax < MAX_BINS ? 1 : kmax / MAX_BINS);
-					// int n = Math.min(geometry.kout.length, geometry.kin.length);
-					int n = geometry.kout.length; // has to be the same as geometry.kin.length
-					double[] tot = data.state;
-					for (int i = 0; i < n; i++)
-						tot[(geometry.kin[i] + geometry.kout[i]) / binwidth]++;
-					/*
-					 * if( geometry.kout.length>n )
-					 * for( int i=n; i<geometry.kout.length; i++ ) tot[geometry.kout[i]/binwidth]++;
-					 * else if( geometry.kin.length>n )
-					 * for( int i=n; i<geometry.kin.length; i++ ) tot[geometry.kin[i]/binwidth]++;
-					 */
-					double minBin = Double.MAX_VALUE, maxBin = -Double.MAX_VALUE, accuBin = 0.0;
-					for (int i = 0; i < b; i++) {
-						double aBin = tot[i];
-						if (aBin > 0) {
-							minBin = Math.min(minBin, aBin);
-							maxBin = Math.max(maxBin, aBin);
-							accuBin += aBin;
-						}
-					}
-					double norm = 100.0 / accuBin;
-					if (data.bins != b) {
-						data.bins = b;
-						changed = true;
-					}
-					if (data.binwidth != binwidth) {
-						data.binwidth = binwidth;
-						changed = true;
-					}
-					if (Math.abs(data.xmin - 0) > 1e-8) {
-						data.xmin = 0;
-						changed = true;
-					}
-					if (Math.abs(data.xmax - kmax) > 1e-8) {
-						data.xmax = kmax;
-						changed = true;
-					}
-					if (Math.abs(data.ymin - minBin * norm) > 1e-8) {
-						data.ymin = minBin * norm;
-						if (data.logy && data.ymin <= 0.0)
-							data.ymin = 1.0 / accuBin;
-						changed = true;
-					}
-					if (Math.abs(data.ymax - maxBin * norm) > 1e-8) {
-						data.ymax = maxBin * norm;
-						changed = true;
-					}
-					if (data.logy) {
-						ArrayMath.log10(tot);
-						ArrayMath.add(tot, Math.log10(norm));
-					} else
-						ArrayMath.multiply(tot, norm);
-					// System.out.println("getData K_TOT: kmax="+kmax+", accuBin="+accuBin+",
-					// norm="+norm);
+					changed = process(data, totalDegrees(geometry), features.maxTot);
 					break;
+
+				// case K_OUT:
+				default:
+					changed = process(data, geometry.kout, features.maxOut);
+					break;
+
 			}
 		}
 		data.timestamp = now;

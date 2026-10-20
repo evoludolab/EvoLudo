@@ -30,9 +30,7 @@
 
 package org.evoludo.simulator.geometries;
 
-import java.util.logging.Level;
-import java.util.logging.Logger;
-
+import org.evoludo.math.RNGDistribution;
 import org.evoludo.simulator.EvoLudo;
 import org.evoludo.util.CLOParser;
 
@@ -54,11 +52,14 @@ public class HexagonalGeometry extends AbstractLattice {
 	@Override
 	public boolean parse(String arg) {
 		String numeric = stripBoundary(arg);
+		if (numeric.isEmpty()) {
+			// degree not specified - silently default to k=6, see #init()
+			connectivity = 6;
+			return true;
+		}
 		connectivity = CLOParser.parseInteger(numeric);
 		if (connectivity != 1 && connectivity != 6) {
-			Logger logger = engine.getLogger();
-			if (logger.isLoggable(Level.WARNING))
-				logger.warning("invalid connectivity " + connectivity + " - using default k=6.");
+			engine.logWarning("invalid connectivity " + connectivity + " - using default k=6.");
 			connectivity = 6;
 		}
 		return true;
@@ -77,6 +78,7 @@ public class HexagonalGeometry extends AbstractLattice {
 		isUndirected = true;
 		isRegular = true;
 		boolean interspecies = isInterspecies();
+		clear();
 
 		int side = (int) Math.floor(Math.sqrt(size) + 0.5);
 		if ((int) Math.rint(connectivity) == 1) {
@@ -184,8 +186,8 @@ public class HexagonalGeometry extends AbstractLattice {
 	@Override
 	protected boolean checkSettings() {
 		boolean doReset = ensureSquareSize(true);
-		if ((Math.abs(connectivity - 6) > 1e-8 && Math.abs(1.0 - connectivity) > 1e-8)
-				|| (Math.abs(1.0 - connectivity) < 1e-8 && !isInterspecies())) {
+		if ((Math.abs(connectivity - 6) > RNGDistribution.EPS && Math.abs(1.0 - connectivity) > RNGDistribution.EPS)
+				|| (Math.abs(1.0 - connectivity) < RNGDistribution.EPS && !isInterspecies())) {
 			connectivity = 6;
 			warn("requires connectivity 6!");
 		}

@@ -30,6 +30,7 @@
 
 package org.evoludo.simulator.geometries;
 
+import org.evoludo.math.RNGDistribution;
 import org.evoludo.simulator.EvoLudo;
 
 /**
@@ -55,7 +56,8 @@ public class TriangularGeometry extends AbstractLattice {
 	@Override
 	public boolean parse(String arg) {
 		String numeric = stripBoundary(arg);
-		if (numeric == null || numeric.isEmpty()) {
+		if (numeric.isEmpty()) {
+			// degree not specified - silently default to k=3, see #init()
 			connectivity = 3;
 		} else {
 			connectivity = Integer.parseInt(numeric);
@@ -76,6 +78,7 @@ public class TriangularGeometry extends AbstractLattice {
 		isUndirected = true;
 		isRegular = true;
 		boolean interspecies = isInterspecies();
+		clear();
 
 		int side = (int) Math.floor(Math.sqrt(size) + 0.5);
 		if ((int) Math.rint(connectivity) == 1) {
@@ -146,8 +149,8 @@ public class TriangularGeometry extends AbstractLattice {
 	@Override
 	protected boolean checkSettings() {
 		boolean doReset = ensureSquareSize(true);
-		if ((Math.abs(connectivity - 3) > 1e-8 && Math.abs(1.0 - connectivity) > 1e-8)
-				|| (Math.abs(1.0 - connectivity) < 1e-8 && !isInterspecies())) {
+		if ((Math.abs(connectivity - 3) > RNGDistribution.EPS && Math.abs(1.0 - connectivity) > RNGDistribution.EPS)
+				|| (Math.abs(1.0 - connectivity) < RNGDistribution.EPS && !isInterspecies())) {
 			connectivity = 3;
 			warn("requires connectivity 3!");
 		}

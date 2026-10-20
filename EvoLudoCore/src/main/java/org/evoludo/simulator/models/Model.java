@@ -32,8 +32,6 @@ package org.evoludo.simulator.models;
 
 import java.awt.Color;
 import java.util.List;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 
 import org.evoludo.math.RNGDistribution;
 import org.evoludo.simulator.ColorMap;
@@ -42,11 +40,11 @@ import org.evoludo.simulator.models.ChangeListener.PendingAction;
 import org.evoludo.simulator.modules.Features;
 import org.evoludo.simulator.modules.Module;
 import org.evoludo.simulator.views.HasHistogram;
+import org.evoludo.util.CLOCategory;
 import org.evoludo.util.CLODelegate;
 import org.evoludo.util.CLOParser;
 import org.evoludo.util.CLOProvider;
 import org.evoludo.util.CLOption;
-import org.evoludo.util.CLOCategory;
 import org.evoludo.util.Formatter;
 import org.evoludo.util.Plist;
 
@@ -59,6 +57,22 @@ import org.evoludo.util.Plist;
  * @author Christoph Hauert
  */
 public abstract class Model implements CLOProvider {
+
+	/**
+	 * Slack for floating point comparisons: e.g. has {@link #time} reached a
+	 * milestone, do two scores tie, has a value reached 0, and threshold below
+	 * which values is rounded down to exactly zero.
+	 */
+	public static final double EPS = 1e-8;
+
+	/**
+	 * Tighter slack for floating point comparisons where {@link #EPS} would mask
+	 * genuine differences: internal consistency checks (e.g. comparing scores or
+	 * fitness recomputed from scratch against cached values) and numerically
+	 * sensitive branch selection (e.g. deciding whether a matrix coefficient is
+	 * negligible before normalizing by it).
+	 */
+	public static final double EPS_SMALL = 1e-12;
 
 	/**
 	 * Methods that every {@link Module} must implement, which advertises numerical
@@ -86,13 +100,6 @@ public abstract class Model implements CLOProvider {
 		 * @return the index of the dependent trait (or {@code -1} if there is none)
 		 */
 		public int getDependent();
-
-		/**
-		 * Interface for modules that support differential equation models with both
-		 * frequency and density based dynamics.
-		 */
-		public interface DualDynamics {
-		}
 
 		/**
 		 * Interface for differential equation models with pairwise interactions.
@@ -182,26 +189,90 @@ public abstract class Model implements CLOProvider {
 	}
 
 	/**
+	 * Interface for modules that support both frequency and density based
+	 * dynamics. Not tied to {@link HasDE}: a module can offer both regimes purely
+	 * for individual based simulations, without any differential equation model
+	 * at all (see e.g. {@code EcoMeta} in the private package).
+	 */
+	public interface DualDynamics {
+
+		/**
+		 * The two dynamics regimes.
+		 */
+		public enum Dynamics implements CLOption.Key {
+
+			/**
+			 * Frequency based dynamics.
+			 */
+			FREQUENCY("frequency", "frequency-based dynamics"),
+
+			/**
+			 * Density based dynamics.
+			 */
+			DENSITY("density", "density-based dynamics");
+
+			/**
+			 * The key for parsing command line options.
+			 */
+			final String key;
+
+			/**
+			 * The title for the help screen.
+			 */
+			final String title;
+
+			Dynamics(String key, String title) {
+				this.key = key;
+				this.title = title;
+			}
+
+			@Override
+			public String getKey() {
+				return key;
+			}
+
+			@Override
+			public String getTitle() {
+				return title;
+			}
+
+			@Override
+			public String toString() {
+				return key + ": " + title;
+			}
+		}
+
+		/**
+		 * Check whether the active dynamics regime is density based. Species within
+		 * one model never mix regimes, so a single boolean - rather than the
+		 * {@link Dynamics} key itself - is all any consumer ever needs; the enum
+		 * exists only for the {@code --dynamics} command line syntax.
+		 *
+		 * @return {@code true} if the dynamics regime is density based
+		 */
+		public boolean isDensity();
+
+		/**
+		 * Set the active dynamics regime.
+		 *
+		 * @param isDensity {@code true} for density based, {@code false} for
+		 *                  frequency based dynamics
+		 */
+		public void setDensity(boolean isDensity);
+
+		/**
+		 * Get the command line option for selecting the dynamics regime.
+		 *
+		 * @return the command line option for {@code --dynamics}
+		 */
+		public CLOption getCLODynamics();
+	}
+
+	/**
 	 * Modules that offer individual based simulation models must implement this
 	 * interface.
 	 */
 	public interface HasIBS {
-
-		/**
-		 * Provides opportunity for module to supply custom implementation of individual
-		 * based simulations, IBS.
-		 * <p>
-		 * <strong>Important:</strong> if the custom IBS implementation involves random
-		 * numbers, the shared random number generator must be used for reproducibility.
-		 * 
-		 * @return the custom implementation of the IBS or <code>null</code> to use the
-		 *         default
-		 * 
-		 * @see EvoLudo#getRNG()
-		 */
-		public default Model createIBS() {
-			return null;
-		}
 
 		/**
 		 * Modules that offer individual based simulation models with discrete traits
@@ -467,11 +538,6 @@ public abstract class Model implements CLOProvider {
 	protected EvoLudo engine;
 
 	/**
-	 * Logger for keeping track of and reporting events and issues.
-	 */
-	protected Logger logger;
-
-	/**
 	 * The shared random number generator to ensure reproducibility of results.
 	 * 
 	 * @see EvoLudo#getRNG()
@@ -518,6 +584,13 @@ public abstract class Model implements CLOProvider {
 	protected List<? extends Module<?>> species;
 
 	/**
+	 * Cached answer to {@link #isDensity()}, refreshed once per {@link #check()}
+	 * cycle rather than recomputed on every call - subclasses with hot paths that
+	 * consult it repeatedly (e.g. {@code ODE}) benefit from the field directly.
+	 */
+	protected boolean isDensity = false;
+
+	/**
 	 * Markers for annotating graphical representations of the state of the model.
 	 */
 	protected Markers markers;
@@ -554,7 +627,6 @@ public abstract class Model implements CLOProvider {
 	 */
 	protected Model(EvoLudo engine) {
 		this.engine = engine;
-		logger = engine.getLogger();
 	}
 
 	/**
@@ -586,21 +658,27 @@ public abstract class Model implements CLOProvider {
 
 	/**
 	 * Check consistency of parameters and adjust if necessary (and possible). All
-	 * issues and modifications should be reported through <code>logger</code>. Some
-	 * parameters can be adjusted while the model remains active or even while
-	 * running, whereas others require a reset. An example of the former category is
-	 * in general simple adjustments of payoffs, while an example of the latter
-	 * category is a change of the population structure.
+	 * issues and modifications should be reported through through the
+	 * <code>engine</code>'s logger. Some parameters can be adjusted while the model
+	 * remains active or even while running, whereas others require a reset. An
+	 * example of the former category is in general simple adjustments of payoffs,
+	 * while an example of the latter category is a change of the population
+	 * structure.
 	 *
 	 * @return <code>true</code> if reset required
+	 * 
+	 * @see EvoLudo#logError(String)
+	 * @see EvoLudo#logWarning(String)
+	 * @see EvoLudo#logMessage(String)
 	 */
 	public boolean check() {
+		isDensity = species != null && !species.isEmpty() && species.get(0).isDensity();
 		return false;
 	}
 
 	/**
 	 * Milestone: Reset this model
-	 * 
+	 *
 	 * @see RunListener#modelDidReset()
 	 */
 	public void reset() {
@@ -679,21 +757,46 @@ public abstract class Model implements CLOProvider {
 		// DE models may not have an update count but have time
 		double updt = getUpdates();
 		if (timeRelax > 0.0 && updt < timeRelax) {
-			isRelaxing = true;
+			startRelaxation();
 			next(timeRelax - updt);
-			isRelaxing = false;
-				if (type == ModelType.IBS) {
-					// reset traits after relaxation in IBS models
-					for (Module<?> mod : species) {
-						IBSPopulation<?, ?> pop = mod.getIBSPopulation();
-						pop.resetTraits();
-					}
-				}
+			return finishRelaxation();
+		}
+		return false;
+	}
+
+	/**
+	 * Mark the beginning of a relaxation phase.
+	 * <p>
+	 * Runtime-specific controllers may call this method when they perform
+	 * relaxation in multiple chunks rather than through a single invocation of
+	 * {@link #relax()}.
+	 */
+	public void startRelaxation() {
+		isRelaxing = true;
+	}
+
+	/**
+	 * Finalize a relaxation phase, including any model-specific post-processing.
+	 * <p>
+	 * Runtime-specific controllers may call this method when they perform
+	 * relaxation in multiple chunks rather than through a single invocation of
+	 * {@link #relax()}.
+	 *
+	 * @return {@code true} if the model converged during relaxation
+	 */
+	public boolean finishRelaxation() {
+		isRelaxing = false;
+		if (type == ModelType.IBS) {
+			// clear trait display markers after relaxation in IBS models
+			for (Module<?> mod : species) {
+				IBSPopulation<?, ?> pop = mod.getIBSPopulation();
+				pop.clearTraits();
+			}
 		}
 		if (hasConverged()) {
 			// no point in reporting failed initializations for statistics
 			if (mode != Mode.STATISTICS_SAMPLE)
-				logger.warning("extinction during relaxation.");
+				engine.logWarning("extinction during relaxation.");
 			return true;
 		}
 		return false;
@@ -812,6 +915,9 @@ public abstract class Model implements CLOProvider {
 	public boolean setMode(Mode mode) {
 		if (!permitsMode(mode))
 			return false;
+		if (mode == Mode.STATISTICS_UPDATE && cloTimeStop.isSet() && cloSamples.isSet())
+			engine.logWarning("--timestop and --samples are equivalent for stationary distributions: "
+					+ "halting at whichever comes first.");
 		boolean changed = (this.mode != mode);
 		this.mode = mode;
 		return changed;
@@ -830,13 +936,18 @@ public abstract class Model implements CLOProvider {
 	 * Check if the current model performs density based dynamics. The default is
 	 * frequency based dynamics.
 	 * <p>
-	 * <strong>Note:</strong> Currently this only applies to differential equation
-	 * models.
+	 * Returns the {@link #isDensity} field refreshed in {@link #check()} from the
+	 * first species' own {@link Module#isDensity()}: it already defaults to
+	 * {@code false} and only ever reports {@code true} for a module that
+	 * implements {@link DualDynamics} and was actually switched to density, so no
+	 * subclass need override either method. Fixed-regime density-only modules
+	 * aren't a use case yet; they would need their own marker interface rather
+	 * than piggybacking on this one.
 	 *
 	 * @return {@code true} if the model is density based
 	 */
 	public boolean isDensity() {
-		return false;
+		return isDensity;
 	}
 
 	/**
@@ -865,6 +976,7 @@ public abstract class Model implements CLOProvider {
 	public void resetStatisticsSample() {
 		nStatisticsSamples = 0;
 		nStatisticsFailed = 0;
+		nStatisticsFailedInRow = 0;
 		statisticsSampleNew = true;
 	}
 
@@ -876,20 +988,33 @@ public abstract class Model implements CLOProvider {
 	}
 
 	/**
-	 * Clear statistics sample and get ready to collect next sample.
+	 * Discard failed statistics sample and get ready to collect next sample. Gives
+	 * up if no valid sample was obtained in the last {@link #nSamples} attempts
+	 * (but at least {@link #MIN_STATISTICS_FAILED}), which indicates settings that
+	 * are unable to produce any samples rather than a run of bad luck.
 	 */
 	public void initStatisticsFailed() {
 		nStatisticsFailed++;
+		if (++nStatisticsFailedInRow >= Math.max(nSamples, MIN_STATISTICS_FAILED))
+			// does not return control
+			engine.fatal("failed to generate a valid statistics sample in "
+					+ nStatisticsFailedInRow + " attempts - check initialization.");
 	}
 
 	/**
-	 * Signal that statistics sample is ready to process.
+	 * Signal that statistics sample is ready to process. Samples that never got
+	 * started, e.g. because no mutant was placed, are counted as failed.
+	 *
+	 * @see #initStatisticsFailed()
 	 */
 	public void readStatisticsSample() {
-		if (!statisticsSampleNew) {
-			nStatisticsSamples++;
-			statisticsSampleNew = true;
+		if (statisticsSampleNew) {
+			initStatisticsFailed();
+			return;
 		}
+		nStatisticsSamples++;
+		nStatisticsFailedInRow = 0;
+		statisticsSampleNew = true;
 	}
 
 	/**
@@ -924,6 +1049,24 @@ public abstract class Model implements CLOProvider {
 	 * Number of failed statistics samples.
 	 */
 	protected int nStatisticsFailed = 0;
+
+	/**
+	 * Number of failed statistics samples since the last successful one.
+	 *
+	 * @see #initStatisticsFailed()
+	 */
+	protected int nStatisticsFailedInRow = 0;
+
+	/**
+	 * The minimum number of consecutive failed statistics samples before giving up.
+	 * This applies in particular if the number of samples, {@link #nSamples}, is
+	 * not
+	 * set or small. Chance runs of failures are perfectly possible, for example if
+	 * mutants are placed on nodes without outgoing links.
+	 *
+	 * @see #initStatisticsFailed()
+	 */
+	private static final int MIN_STATISTICS_FAILED = 100;
 
 	/**
 	 * The container for collecting statistics samples.
@@ -1008,15 +1151,6 @@ public abstract class Model implements CLOProvider {
 	}
 
 	/**
-	 * Return the logger for reporting information.
-	 *
-	 * @return the logger
-	 */
-	public Logger getLogger() {
-		return logger;
-	}
-
-	/**
 	 * Returns the minimum score that individuals of species with ID <code>id</code>
 	 * can achieve in this model. Takes into account potential adjustments due to
 	 * population structure and payoff accounting.
@@ -1084,11 +1218,14 @@ public abstract class Model implements CLOProvider {
 	 * the GUI.
 	 * <p>
 	 * <strong>Note:</strong> if the model runs into difficulties, problems should
-	 * be reported through the logging mechanism. Messages with severity
-	 * {@link Level#WARNING} or higher are displayed in the status of the GUI and
-	 * override status messages returned here.
+	 * be reported through the logging mechanism provided by {@code engine}. Errors
+	 * and warnings are displayed in the status of the GUI and override status
+	 * messages returned here.
 	 *
 	 * @return status of active model
+	 * 
+	 * @see EvoLudo#logError(String)
+	 * @see EvoLudo#logWarning(String)
 	 */
 	public abstract String getStatus();
 
@@ -1162,33 +1299,36 @@ public abstract class Model implements CLOProvider {
 	 * @return the names of the mean traits
 	 */
 	public String[] getMeanNames() {
-		int nMean = getNMean();
-		String[] names = new String[nMean];
+		String[] names = new String[getNMean()];
 		int skip = 0;
 		for (Module<?> mod : species) {
-			int nt = mod.getNTraits();
-			System.arraycopy(mod.getTraitNames(), 0, names, skip, nt);
-			skip += nt;
+			int nMean = getNMean(mod.getId());
+			String[] mnames = mod.getMeanNames();
+			// modules that report fewer names than mean values leave them unnamed
+			System.arraycopy(mnames, 0, names, skip, Math.min(nMean, mnames.length));
+			skip += nMean;
 		}
 		return names;
 	}
 
 	/**
 	 * Return the name of the mean trait with index {@code index} or {@code null} if
-	 * index is invalid.
+	 * index is invalid or refers to an inactive trait.
 	 *
 	 * @param index the index of the mean trait
 	 * @return the name of mean trait with index {@code index}
 	 */
 	public String getMeanName(int index) {
 		for (Module<?> mod : species) {
-			int nt = mod.getNTraits();
-			if (index < nt) {
-				if (mod.getActiveTraits()[index])
-					return mod.getTraitName(index);
-				return null;
+			int nMean = getNMean(mod.getId());
+			if (index < nMean) {
+				// mean values beyond the traits of the module cannot be deactivated
+				if (index < mod.getNTraits() && !mod.getActiveTraits()[index])
+					return null;
+				String[] names = mod.getMeanNames();
+				return index < names.length ? names[index] : null;
 			}
-			index -= nt;
+			index -= nMean;
 		}
 		return null;
 	}
@@ -1455,16 +1595,21 @@ public abstract class Model implements CLOProvider {
 		// note: use getUpdates to ensure relaxation works for all models.
 		// DE models may not have an update count but have time
 		double updt = getUpdates();
+		// for stationary distributions one sample is taken in every reporting interval,
+		// which makes --samples and --timestop equivalent ways to request the end state
+		double stop = timeStop;
+		if (mode == Mode.STATISTICS_UPDATE && nSamples > 0.0 && timeStep > 0.0)
+			stop = Math.min(stop, nSamples * timeStep);
 		if (isTimeReversed()) {
 			// time is 'decreasing' find next smaller milestone
-			double halt = timeStop < updt ? timeStop : Double.NEGATIVE_INFINITY;
-			double relax = (Math.abs(timeRelax) > 1e-8 && timeRelax < updt) ? timeRelax
+			double halt = stop < updt ? stop : Double.NEGATIVE_INFINITY;
+			double relax = (Math.abs(timeRelax) > EPS && timeRelax < updt) ? timeRelax
 					: Double.NEGATIVE_INFINITY;
 			return Math.max(halt, relax);
 		}
 		// time is 'increasing'
-		double halt = timeStop > updt ? timeStop : Double.POSITIVE_INFINITY;
-		double relax = (Math.abs(timeRelax) > 1e-8 && timeRelax > updt) ? timeRelax : Double.POSITIVE_INFINITY;
+		double halt = stop > updt ? stop : Double.POSITIVE_INFINITY;
+		double relax = (Math.abs(timeRelax) > EPS && timeRelax > updt) ? timeRelax : Double.POSITIVE_INFINITY;
 		return Math.min(halt, relax);
 	}
 
@@ -1652,12 +1797,23 @@ public abstract class Model implements CLOProvider {
 	/**
 	 * Command line option to set the number of samples to take for statistical
 	 * measurements.
+	 * <p>
+	 * <strong>Note:</strong> for stationary distributions,
+	 * {@link Mode#STATISTICS_UPDATE},
+	 * one sample is taken in every reporting interval, see {@link #cloTimeStep}.
+	 * Hence
+	 * {@code --samples} and {@link #cloTimeStop} are equivalent ways to request the
+	 * end
+	 * state and the model halts at whichever comes first.
 	 */
-	public final CLOption cloSamples = new CLOption("samples", "-1", CLOCategory.Simulation,
+	public final CLOption cloSamples = new CLOption("samples", "none", CLOCategory.Simulation,
 			"--samples <s>   number of samples for statistics", new CLODelegate() {
 				@Override
 				public boolean parse(String arg) {
-					setNSamples(CLOParser.parseDouble(arg));
+					if (cloSamples.getDefault().equals(arg))
+						setNSamples(-1);
+					else
+						setNSamples(CLOParser.parseDouble(arg));
 					return true;
 				}
 			});
@@ -1673,7 +1829,8 @@ public abstract class Model implements CLOProvider {
 		// cannot use permitsSampleStatistics and permitsUpdateStatistics because
 		// they also check parameters that have not yet been set
 		if (module instanceof HasHistogram.StatisticsProbability
-				|| module instanceof HasHistogram.StatisticsTime)
+				|| module instanceof HasHistogram.StatisticsTime
+				|| module instanceof HasHistogram.StatisticsStationary)
 			parser.addCLO(cloSamples);
 	}
 

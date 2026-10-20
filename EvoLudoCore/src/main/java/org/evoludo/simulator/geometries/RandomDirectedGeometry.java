@@ -130,7 +130,7 @@ public class RandomDirectedGeometry extends AbstractGeometry {
 			double maxConn = Math.max(0, size - 1);
 			double minConn = size > 2 ? 2.0 : maxConn;
 			double adjusted = Math.max(minConn, Math.min(connectivity, maxConn));
-			if (Math.abs(adjusted - connectivity) > 1e-8) {
+			if (Math.abs(adjusted - connectivity) > RNGDistribution.EPS) {
 				connectivity = adjusted;
 				warn("requires connectivity between " + minConn + " and " + maxConn + " - using " + adjusted + "!");
 			}

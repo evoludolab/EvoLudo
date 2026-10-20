@@ -286,7 +286,7 @@ public class IBSMCPopulation extends IBSPopulation<Continuous, IBSMCPopulation> 
 		int idxa = a * nTraits;
 		int idxb = b * nTraits;
 		for (int i = 0; i < nTraits; i++)
-			if (Math.abs(traits[idxa + i] - traits[idxb + i]) > 1e-8)
+			if (Math.abs(traits[idxa + i] - traits[idxb + i]) > Model.EPS)
 				return false;
 		return true;
 	}
@@ -295,13 +295,13 @@ public class IBSMCPopulation extends IBSPopulation<Continuous, IBSMCPopulation> 
 	public boolean isSameTrait(int a) {
 		int idxa = a * nTraits;
 		for (int i = 0; i < nTraits; i++)
-			if (Math.abs(traits[idxa + i] - traitsNext[idxa + i]) > 1e-8)
+			if (Math.abs(traits[idxa + i] - traitsNext[idxa + i]) > Model.EPS)
 				return false;
 		return true;
 	}
 
 	@Override
-	public void swapTraits(int a, int b) {
+	protected void swapTraits(int a, int b) {
 		int idxa = a * nTraits;
 		int idxb = b * nTraits;
 		System.arraycopy(traits, idxb, traitsNext, idxa, nTraits);
@@ -354,7 +354,7 @@ public class IBSMCPopulation extends IBSPopulation<Continuous, IBSMCPopulation> 
 	@Override
 	public boolean preferredPlayerBest(int me, int best, int sample) {
 		double distmesample = deltaTraits(me, sample);
-		if (distmesample < 1e-8)
+		if (distmesample < Model.EPS)
 			return true;
 		double distmebest = deltaTraits(me, best);
 		return (distmesample < distmebest);
@@ -411,7 +411,7 @@ public class IBSMCPopulation extends IBSPopulation<Continuous, IBSMCPopulation> 
 						(interaction.isType(GeometryType.HIERARCHY) && //
 								((HierarchicalGeometry) interaction).isSubtype(GeometryType.WELLMIXED)))
 					return false;
-				return interGroup.isSampling(IBSGroup.SamplingType.ALL);
+				return interGroup.isSampling(IBSGroup.SAMPLING_ALL);
 		}
 	}
 
@@ -544,24 +544,17 @@ public class IBSMCPopulation extends IBSPopulation<Continuous, IBSMCPopulation> 
 		}
 		gatherPlayers(group);
 
-		switch (group.samplingType) {
-			case ALL:
-				// interact with all neighbors
-				int nGroup = module.getNGroup();
-				if (nGroup < group.nSampled + 1) {
-					playGroupSequentiallyAt(me, group, nGroup);
-					return;
-				}
-				// interact with full group (random graphs, all neighbors)
-				// $FALL-THROUGH$
-			case RANDOM:
-				// interact with sampled neighbors
-				playGroupOnceAt(me, group);
+		if (group.isSampling(IBSGroup.SAMPLING_ALL)) {
+			// interact with all neighbors - interact repeatedly if nGroup<nSampled+1
+			int nGroup = module.getNGroup();
+			if (nGroup < group.nSampled + 1) {
+				playGroupSequentiallyAt(me, group, nGroup);
 				return;
-
-			default:
-				throw new UnsupportedOperationException("Unknown interaction type (" + interGroup.getSampling() + ")");
+			}
+			// interact with full group (random graphs, all neighbors)
 		}
+		// interact with sampled neighbors
+		playGroupOnceAt(me, group);
 	}
 
 	/**
@@ -964,21 +957,21 @@ public class IBSMCPopulation extends IBSPopulation<Continuous, IBSMCPopulation> 
 		traitRangeMax = module.getTraitMax();
 
 		// check interaction geometry
-		if (interaction.isType(GeometryType.WELLMIXED) && interGroup.isSampling(IBSGroup.SamplingType.ALL)) {
+		if (interaction.isType(GeometryType.WELLMIXED) && interGroup.isSampling(IBSGroup.SAMPLING_ALL)) {
 			// interacting with everyone in mean-field simulations is not feasible - except
 			// for discrete traits
-			logger.warning(
-					"interaction type (" + interGroup.getSampling() + ") unfeasible in well-mixed populations!");
-			interGroup.setSampling(IBSGroup.SamplingType.RANDOM);
+			engine.logWarning(
+					"interaction type 'all' unfeasible in well-mixed populations - using single interaction!");
+			interGroup.setNSamples(1);
 			// change of sampling may affect whether scores can be adjusted
 			adjustScores = doAdjustScores();
 		}
 
 		if (interaction.isInterspecies())
-			logger.warning("multi-species interactions with continuous traits have NOT been tested...");
+			engine.logWarning("multi-species interactions with continuous traits have NOT been tested...");
 
 		if (module.getNGroup() > 2)
-			logger.warning("group interactions with continuous traits have NOT been tested...");
+			engine.logWarning("group interactions with continuous traits have NOT been tested...");
 
 		if (traits == null || traits.length != nPopulation * nTraits)
 			traits = new double[nPopulation * nTraits];

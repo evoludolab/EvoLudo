@@ -69,7 +69,7 @@ import org.evoludo.util.CLOCategory;
  * 
  * @author Christoph Hauert
  */
-public class SIR extends Discrete implements HasIBS, HasDE.ODE, HasDE.SDE, HasDE.PDE,
+public class SIR extends Discrete implements HasIBS, HasDE.RK5, HasDE.SDE, HasDE.PDERD,
 		HasPop2D.Traits, HasPop3D.Traits, HasMean.Traits, HasS3, HasHistogram.Degree,
 		HasHistogram.StatisticsProbability, HasHistogram.StatisticsTime, HasHistogram.StatisticsStationary {
 
@@ -333,11 +333,13 @@ public class SIR extends Discrete implements HasIBS, HasDE.ODE, HasDE.SDE, HasDE
 		if (model != null && model.getType() == type)
 			return model;
 		switch (type) {
-			case ODE:
+			case ODE: // defaults to RK5
+			case RK5:
 				return new SIR.ODE();
 			case SDE:
 				return new SIR.SDE();
-			case PDE:
+			case PDE: // defaults to PDERD
+			case PDERD:
 				return new SIR.PDE();
 			case IBS:
 				return super.createModel(type);
@@ -428,15 +430,14 @@ public class SIR extends Discrete implements HasIBS, HasDE.ODE, HasDE.SDE, HasDE
 		}
 
 		@Override
-		public boolean updatePlayerAt(int me, int[] refGroup, int rGroupSize) {
+		public boolean updatePlayerAt(int me) {
+			debugFocal = me;
+			debugNModels = 0;
+			debugModel = -1;
 			int type = getTraitAt(me);
 			switch (type) {
 				case S: // S -> I transition
-					int nI = 0;
-					for (int n = 0; n < rGroupSize; n++) {
-						if ((getTraitAt(refGroup[n])) == I)
-							nI++;
-					}
+					int nI = countContactsAt(me, I);
 					double psi1 = pSI[1];
 					double psi = pSI[0];
 					if (psi1 > 0.0)
@@ -448,9 +449,10 @@ public class SIR extends Discrete implements HasIBS, HasDE.ODE, HasDE.SDE, HasDE
 				case I: // I -> R, I -> S transition
 					double r = random01();
 					// probability that neither transition happens
-					if (r > (1.0 - pIR) * (1.0 - pIS))
+					double pNone = (1.0 - pIR) * (1.0 - pIS);
+					if (r < pNone)
 						break;
-					if (r < pIR / (pIR + pIS))
+					if (r < pNone + (1.0 - pNone) * pIR / (pIR + pIS))
 						return setNextTraitAt(me, R);
 					return setNextTraitAt(me, S);
 				case R: // R -> S transition

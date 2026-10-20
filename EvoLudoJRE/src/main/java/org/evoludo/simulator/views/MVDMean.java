@@ -47,30 +47,28 @@ public class MVDMean extends MVAbstract implements StateGraphListener {
 
 	@Override
 	public void reset(boolean clear) {
-		if (graphs.size() > 0) {
-			super.reset(clear);
-			return;
+		if (graphs.isEmpty()) {
+			LineGraph graph = new LineGraph(this, module, 0);
+			GraphAxis x = graph.getXAxis();
+			GraphAxis y = graph.getYAxis();
+			x.label = "time";
+			x.showLabel = true;
+			x.max = 0.0;
+			x.min = 1.0; // min>max forces recalculation
+			x.step = -engine.getModel().getTimeStep();
+			x.grid = 0;
+			x.majorTicks = 3;
+			x.minorTicks = 1;
+			y.label = "frequency";
+			y.showLabel = true;
+			y.min = 0.0;
+			y.max = 1.0;
+			y.grid = 3;
+			y.majorTicks = 3;
+			y.minorTicks = 1;
+			add(graph);
+			graphs.add(graph);
 		}
-		LineGraph graph = new LineGraph(this, module, 0);
-		GraphAxis x = graph.getXAxis();
-		GraphAxis y = graph.getYAxis();
-		x.label = "time";
-		x.showLabel = true;
-		x.max = 0.0;
-		x.min = 1.0; // min>max forces recalculation
-		x.step = -engine.getModel().getTimeStep();
-		x.grid = 0;
-		x.majorTicks = 3;
-		x.minorTicks = 1;
-		y.label = "frequency";
-		y.showLabel = true;
-		y.min = 0.0;
-		y.max = 1.0;
-		y.grid = 3;
-		y.majorTicks = 3;
-		y.minorTicks = 1;
-		add(graph);
-		graphs.add(graph);
 		super.reset(clear);
 	}
 

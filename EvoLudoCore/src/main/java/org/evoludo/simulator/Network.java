@@ -41,6 +41,7 @@ import org.evoludo.simulator.geometries.AbstractGeometry;
 import org.evoludo.simulator.geometries.GeometryFeatures;
 import org.evoludo.simulator.geometries.GeometryType;
 import org.evoludo.simulator.geometries.HierarchicalGeometry;
+import org.evoludo.simulator.models.Model;
 
 /**
  * Abstract graphical representation for generic population geometries. A
@@ -164,6 +165,50 @@ public abstract class Network<N extends Node> extends AbstractList<N> implements
 	 * network.
 	 */
 	protected static final int MAX_LINK_COUNT = 10000;
+
+	/**
+	 * Smallest admissible center-to-center distance during layout calculations.
+	 * This avoids divisions by zero for coincident nodes.
+	 */
+	protected static final double MIN_DISTANCE = 1.0e-4;
+
+	/**
+	 * Smallest admissible normalized distance used by the long-range repulsion.
+	 */
+	protected static final double MIN_SCALED_DISTANCE = 1.0e-4;
+
+	/**
+	 * Stiffness of the hard-core penalty that separates overlapping nodes. The
+	 * penalty is quadratic in the overlap depth measured in units of the baseline
+	 * universe size. The value remains moderate because dense graphs may require a
+	 * small amount of residual overlap.
+	 */
+	protected static final double HARD_CORE_STIFFNESS = 400.0;
+
+	/**
+	 * Golden-angle increment used by deterministic phyllotactic seed layouts.
+	 */
+	protected static final double GOLDEN_ANGLE = Math.PI * (3.0 - Math.sqrt(5.0));
+
+	/**
+	 * Reference population size for the baseline node radius law.
+	 */
+	private static final double UNIT_RADIUS_REFERENCE_SIZE = 1000.0;
+
+	/**
+	 * Baseline radius at {@link #UNIT_RADIUS_REFERENCE_SIZE}. This preserves the
+	 * former visual scale around medium-sized populations while allowing the size
+	 * law to become slightly steeper overall.
+	 */
+	private static final double UNIT_RADIUS_AT_REFERENCE = Math.pow(0.8 / UNIT_RADIUS_REFERENCE_SIZE, 0.25);
+
+	/**
+	 * Exponent of the baseline node radius law. The value is moderately steeper
+	 * than the former inverse-fourth-root scaling so small populations get
+	 * noticeably larger nodes and very large populations get a bit smaller still
+	 * while the reference size remains unchanged.
+	 */
+	private static final double UNIT_RADIUS_EXPONENT = 0.45;
 
 	/**
 	 * The array with all nodes of this network.
@@ -297,31 +342,26 @@ public abstract class Network<N extends Node> extends AbstractList<N> implements
 
 		nNodes = geometry.getSize();
 		GeometryType type = geometry.getType();
-		if (type == GeometryType.HIERARCHY)
+		boolean isHierarchy = (type == GeometryType.HIERARCHY);
+		if (isHierarchy)
 			type = ((HierarchicalGeometry) geometry).getSubType();
-		// geometries that have special/fixed layout
-		switch (type) {
-			case CUBE:
-			case SQUARE_NEUMANN:
-			case SQUARE_NEUMANN_2ND:
-			case SQUARE_MOORE:
-			case SQUARE:
-			case LINEAR:
-			case HEXAGONAL:
-			case TRIANGULAR:
-				setStatus(Status.NO_LAYOUT);
-				nLinks = 0;
-				break;
-			case WELLMIXED:
-				nLinks = 0;
-				setStatus(Status.NEEDS_LAYOUT);
-				break;
-			default:
-				nLinks = ArrayMath.norm(geometry.kout);
-				if (geometry.isUndirected())
-					nLinks /= 2;
-				setStatus(Status.NEEDS_LAYOUT);
+		// geometries that have special/fixed layout; note rewiring or adding links
+		// destroys the regular structure of lattices and requires layouting, just
+		// like any other network
+		if (type.isLattice() && (isHierarchy || geometry.isLattice())) {
+			setStatus(Status.NO_LAYOUT);
+			nLinks = 0;
+			return;
 		}
+		if (type == GeometryType.WELLMIXED) {
+			nLinks = 0;
+			setStatus(Status.NEEDS_LAYOUT);
+			return;
+		}
+		nLinks = ArrayMath.norm(geometry.kout);
+		if (geometry.isUndirected())
+			nLinks /= 2;
+		setStatus(Status.NEEDS_LAYOUT);
 	}
 
 	/**
@@ -337,6 +377,113 @@ public abstract class Network<N extends Node> extends AbstractList<N> implements
 	public abstract void doLayout(LayoutListener nll);
 
 	/**
+	 * Compute the radius of a node from its total degree relative to the average
+	 * degree of the geometry. Positive deviations use {@code pnorm}, negative
+	 * deviations use {@code nnorm}.
+	 * 
+	 * @param nodeidx     the index of the node
+	 * @param avgTot      the average total degree of the geometry
+	 * @param pnorm       the scaling for nodes above the average degree
+	 * @param nnorm       the scaling for nodes below the average degree
+	 * @param unitradius  the baseline node radius
+	 * @return the radius assigned to the node
+	 */
+	protected double scaledNodeRadius(int nodeidx, double avgTot, double pnorm, double nnorm, double unitradius) {
+		int kin = geometry.kin[nodeidx];
+		int kout = geometry.kout[nodeidx];
+		double diff = kout + kin - avgTot;
+		return unitradius * (1.0 + diff * (diff > 0.0 ? pnorm : nnorm));
+	}
+
+	/**
+	 * Compute the baseline node radius used when initializing layouts. The default
+	 * is anchored at a medium population size and then scales slightly more
+	 * strongly than inverse-square-root with population size.
+	 * 
+	 * @return the baseline node radius
+	 */
+	protected double getUnitRadius() {
+		if (nNodes <= 0)
+			return 0.0;
+		return UNIT_RADIUS_AT_REFERENCE * Math.pow(UNIT_RADIUS_REFERENCE_SIZE / nNodes, UNIT_RADIUS_EXPONENT);
+	}
+
+	/**
+	 * Collect all unique undirected edges that can be rendered for the current
+	 * geometry.
+	 * 
+	 * @param sources the array receiving the source node index of each edge
+	 * @param targets the array receiving the target node index of each edge
+	 * @return the number of collected edges
+	 */
+	protected int collectEdges(int[] sources, int[] targets) {
+		int edgeCount = 0;
+		for (int i = 0; i < nNodes; i++) {
+			int[] neighs = geometry.out[i];
+			int nn = geometry.kout[i];
+			for (int j = 0; j < nn; j++) {
+				int k = neighs[j];
+				if (k < i)
+					continue;
+				sources[edgeCount] = i;
+				targets[edgeCount] = k;
+				edgeCount++;
+			}
+		}
+		return edgeCount;
+	}
+
+	/**
+	 * Collect all renderable links of a directed geometry, collapsing reciprocal
+	 * pairs into a single undirected edge.
+	 * 
+	 * @param sources      the array receiving the source node index of each link
+	 * @param targets      the array receiving the target node index of each link
+	 * @param isUndirected the array receiving whether the collected link is
+	 *                     undirected
+	 * @return the number of collected renderable links
+	 */
+	protected int collectLinks(int[] sources, int[] targets, boolean[] isUndirected) {
+		int linkCount = 0;
+		for (int i = 0; i < nNodes; i++) {
+			int[] neighs = geometry.out[i];
+			int nn = geometry.kout[i];
+			for (int j = 0; j < nn; j++) {
+				int k = neighs[j];
+				boolean reciprocal = geometry.isNeighborOf(k, i);
+				if (reciprocal && k < i)
+					continue;
+				sources[linkCount] = i;
+				targets[linkCount] = k;
+				isUndirected[linkCount] = reciprocal;
+				linkCount++;
+			}
+		}
+		return linkCount;
+	}
+
+	/**
+	 * Draw a random sample without replacement from the integer range
+	 * {@code [0, itemCount)}.
+	 * 
+	 * @param itemCount   the number of available items
+	 * @param sampleCount the number of requested samples
+	 * @return the sampled indices in randomized order
+	 */
+	protected int[] sampleIndices(int itemCount, int sampleCount) {
+		int[] idxs = new int[itemCount];
+		for (int i = 0; i < itemCount; i++)
+			idxs[i] = i;
+		for (int i = 0; i < sampleCount; i++) {
+			int swap = i + rng.random0n(itemCount - i);
+			int tmp = idxs[i];
+			idxs[i] = idxs[swap];
+			idxs[swap] = tmp;
+		}
+		return Arrays.copyOf(idxs, sampleCount);
+	}
+
+	/**
 	 * Prepare for the layouting process.
 	 */
 	public void doLayoutPrep() {
@@ -350,7 +497,7 @@ public abstract class Network<N extends Node> extends AbstractList<N> implements
 		listener.layoutUpdate(0.0);
 		boolean needsLayout = status.equals(Status.NEEDS_LAYOUT);
 		setStatus(Status.LAYOUT_IN_PROGRESS);
-		double unitradius = Math.pow(0.8 / nNodes, 0.25);
+		double unitradius = getUnitRadius();
 		double pnorm = 0.0;
 		double nnorm = 0.0;
 		GeometryFeatures gFeats = geometry.getFeatures();
@@ -384,6 +531,22 @@ public abstract class Network<N extends Node> extends AbstractList<N> implements
 	}
 
 	/**
+	 * Finalize the current layout synchronously. This helper is used when a layout
+	 * is already in its final configuration and therefore does not need any
+	 * relaxation sweeps before being presented.
+	 */
+	protected void completeLayout() {
+		finishLayout();
+		layoutProgress = 1.0;
+		setStatus(Status.HAS_LAYOUT);
+		isRunning = false;
+		Model model = engine.getModel();
+		if (model != null)
+			timestamp = model.getUpdates();
+		listener.layoutComplete();
+	}
+
+	/**
 	 * Update the estimate of how close the current layout is to a fully relaxed
 	 * state. The estimate is based on the logarithmic distance between the best
 	 * adjustment reached so far and the target accuracy relative to the first
@@ -395,18 +558,30 @@ public abstract class Network<N extends Node> extends AbstractList<N> implements
 	 * @return the updated progress estimate in {@code [0, 1]}
 	 */
 	protected double updateLayoutProgress(double adjust) {
-		if (adjust <= accuracy)
+		double threshold = getConvergenceAccuracy();
+		if (adjust <= threshold)
 			return layoutProgress = 1.0;
 		if (initialAdjust < 0.0)
 			initialAdjust = adjust;
-		double span = Math.log(initialAdjust / accuracy);
+		double span = Math.log(initialAdjust / threshold);
 		if (!Double.isFinite(span) || span <= 0.0)
 			return layoutProgress = 0.0;
-		double bestAdjust = Math.max(prevAdjust, accuracy);
+		double bestAdjust = Math.max(prevAdjust, threshold);
 		double raw = Math.log(initialAdjust / bestAdjust) / span;
 		raw = Math.max(0.0, Math.min(1.0, raw));
 		layoutProgress = Math.max(layoutProgress, Math.sqrt(raw));
 		return layoutProgress;
+	}
+
+	/**
+	 * Get the effective convergence threshold for the layouting process. The base
+	 * implementation returns {@link #accuracy}, but subclasses may tighten or
+	 * relax the criterion when their layout energies use a different natural scale.
+	 * 
+	 * @return the effective convergence threshold
+	 */
+	protected double getConvergenceAccuracy() {
+		return accuracy;
 	}
 
 	/**
@@ -447,7 +622,9 @@ public abstract class Network<N extends Node> extends AbstractList<N> implements
 	/**
 	 * Calculate the potential energy based on repulsion for the node with index
 	 * {@code nodeidx}. Return the net repulsion (overall direction and magnitude)
-	 * acting on it in {@link #repulsion}.
+	 * acting on it in {@link #repulsion}. Implementations may include additional
+	 * short-range penalties here, for example to discourage overlap between nodes
+	 * with finite size.
 	 * 
 	 * <h3>Note:</h3>
 	 * To prevent disjoint parts of a network (and unstructured populations, in
@@ -464,8 +641,6 @@ public abstract class Network<N extends Node> extends AbstractList<N> implements
 	 * Calculate the potential energy based on attraction to its neighbours for the
 	 * node with index {@code nodeidx}. Return the net attraction (overall direction
 	 * and magnitude) acting on it in {@link #attraction}.
-	 * <p>
-	 * TODO: Prevent nodes from overlapping.
 	 * 
 	 * @param nodeidx the index of the node to relax
 	 * @return the potential energy of the node
@@ -595,7 +770,7 @@ public abstract class Network<N extends Node> extends AbstractList<N> implements
 	 */
 	public Status getStatus() {
 		if (geometry.isType(GeometryType.DYNAMIC) && status == Status.HAS_LAYOUT
-				&& Math.abs(engine.getModel().getUpdates() - timestamp) > 1e-8)
+				&& Math.abs(engine.getModel().getUpdates() - timestamp) > Model.EPS)
 			status = Status.ADJUST_LAYOUT;
 		return status;
 	}

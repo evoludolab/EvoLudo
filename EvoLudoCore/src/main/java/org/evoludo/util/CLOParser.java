@@ -210,9 +210,13 @@ public class CLOParser {
 			}
 		}
 		for (CLOption option : options) {
-			if (!option.parse()) {
+			// snapshot before parsing: parse() clears the raw argument once it
+			// falls back to the default, so this is the only chance to capture it
+			String rejected = option.isSet() ? option.getArg() : null;
+			boolean ok = option.parse();
+			if (!ok || (rejected != null && !option.isSet())) {
 				issues++;
-				logParseFailure(option);
+				logParseFailure(option, rejected);
 			}
 		}
 		return issues;
@@ -249,11 +253,11 @@ public class CLOParser {
 	 */
 	private int processMatchedOption(CLOption opt, String[] args, String clo) {
 		@SuppressWarnings("cast") // the 'unnecessary' cast is necessary for GWT to compile
-		String arg = Formatter.format((String[]) ArrayMath.drop(args, 0), " ");
+		String arg = stripQuotes(Formatter.format((String[]) ArrayMath.drop(args, 0), " "));
 
 		switch (opt.getType()) {
 			case REQUIRED:
-				if (args.length < 1) {
+				if (arg.isEmpty()) {
 					logWarning(OPTION_PREFIX + clo + " is missing a required argument - ignored.");
 					return 1;
 				}
@@ -272,18 +276,41 @@ public class CLOParser {
 	}
 
 	/**
-	 * Logs a parse failure for an option.
-	 * 
-	 * @param opt the option that failed to parse
+	 * Discards a single matching pair of leading/trailing quotes ({@code '} or
+	 * {@code "}) from {@code arg}, if present. This makes it easier to protect
+	 * special characters (such as {@code ;}) from the shell by quoting the
+	 * argument of an option.
+	 *
+	 * @param arg the argument to strip quotes from
+	 * @return the argument without enclosing quotes
 	 */
-	private void logParseFailure(CLOption opt) {
-		if (opt.isSet()) {
-			String da = opt.getDefault();
-			logWarning(OPTION_PREFIX + opt.getName() + " failed to parse argument '" + opt.getArg() +
-					(da == null ? "'." : "' - using default '" + da + "'."));
-		} else {
+	private static String stripQuotes(String arg) {
+		int len = arg.length();
+		if (len < 2)
+			return arg;
+		char first = arg.charAt(0);
+		if ((first == '\'' || first == '"') && arg.charAt(len - 1) == first)
+			return arg.substring(1, len - 1);
+		return arg;
+	}
+
+	/**
+	 * Logs a parse failure for an option. If {@code rejected} is {@code null} the
+	 * option was never set and only the default was attempted (and failed);
+	 * otherwise {@code rejected} is the raw argument that failed to parse.
+	 *
+	 * @param opt      the option that failed to parse
+	 * @param rejected the raw argument that failed to parse, or {@code null} if
+	 *                 the option was never set
+	 */
+	private void logParseFailure(CLOption opt, String rejected) {
+		if (rejected == null) {
 			logError(OPTION_PREFIX + opt.getName() + " failed to parse default argument '" + opt.getDefault() + "'.");
+			return;
 		}
+		String da = opt.getDefault();
+		logWarning(OPTION_PREFIX + opt.getName() + " failed to parse argument '" + rejected +
+				(da == null ? "'." : "' - using default '" + da + "'."));
 	}
 
 	/**

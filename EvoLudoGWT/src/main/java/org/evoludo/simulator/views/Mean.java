@@ -39,6 +39,7 @@ import org.evoludo.graphics.AbstractGraph.Shifter;
 import org.evoludo.graphics.AbstractGraph.Zoomer;
 import org.evoludo.graphics.GraphStyle;
 import org.evoludo.graphics.LineGraph;
+import org.evoludo.graphics.LineGraph.GraphOption;
 import org.evoludo.math.ArrayMath;
 import org.evoludo.simulator.ColorMap;
 import org.evoludo.simulator.ColorMapCSS;
@@ -46,7 +47,9 @@ import org.evoludo.simulator.EvoLudoGWT;
 import org.evoludo.simulator.models.DModel;
 import org.evoludo.simulator.models.Data;
 import org.evoludo.simulator.models.IBSC;
+import org.evoludo.simulator.models.Model;
 import org.evoludo.simulator.modules.Module;
+import org.evoludo.util.CLOption;
 
 /**
  * A view that displays time-series plots of mean trait values or mean fitness
@@ -108,6 +111,11 @@ public class Mean extends AbstractView<LineGraph> implements Shifter, Zoomer {
 			default:
 				return null;
 		}
+	}
+
+	@Override
+	public String getOptionsDescription() {
+		return CLOption.getDescriptionKey(GraphOption.values());
 	}
 
 	@Override
@@ -252,12 +260,12 @@ public class Mean extends AbstractView<LineGraph> implements Shifter, Zoomer {
 		int id = module.getId();
 		double min = model.getMinScore(id);
 		double max = model.getMaxScore(id);
-		if (max - min < 1e-8) {
+		if (max - min < Model.EPS) {
 			min -= 1.0;
 			max += 1.0;
 		}
 		GraphStyle style = graph.getStyle();
-		boolean rangeChanged = Math.abs(min - style.yMin) > 1e-8 || Math.abs(max - style.yMax) > 1e-8;
+		boolean rangeChanged = Math.abs(min - style.yMin) > Model.EPS || Math.abs(max - style.yMax) > Model.EPS;
 		if (rangeChanged) {
 			style.yMin = min;
 			style.yMax = max;
@@ -342,10 +350,11 @@ public class Mean extends AbstractView<LineGraph> implements Shifter, Zoomer {
 			Module<?> module = graph.getModule();
 			style.label = module.getName();
 		}
-		style.xLabel = "time";
+		graph.setAxisLabels("generation", "time");
+		graph.setRealTimeAvailable(model.getTime() != Double.POSITIVE_INFINITY);
 		style.showXLevels = false;
 		double rFreq = model.getTimeStep();
-		if (Math.abs(style.xIncr - rFreq) > 1e-8) {
+		if (Math.abs(style.xIncr - rFreq) > Model.EPS) {
 			style.xIncr = rFreq;
 			style.xMin = -graph.getSteps() * style.xIncr;
 			hard = true;
@@ -362,15 +371,19 @@ public class Mean extends AbstractView<LineGraph> implements Shifter, Zoomer {
 	}
 
 	@Override
-	public void modelDidInit() {
-		super.modelDidInit();
+	protected void onModelDidInit() {
+		for (LineGraph graph : graphs)
+			graph.init();
 		update(true);
 	}
 
 	@Override
 	protected void updateData() {
 		double newtime = model.getUpdates();
-		if (Math.abs(timestamp - newtime) > 1e-8) {
+		if (Math.abs(timestamp - newtime) > Model.EPS) {
+			double realTime = model.getTime();
+			if (realTime == Double.POSITIVE_INFINITY)
+				realTime = Double.NaN;
 			Module<?> module = null;
 			int idx = 0;
 			for (LineGraph graph : graphs) {
@@ -403,7 +416,7 @@ public class Mean extends AbstractView<LineGraph> implements Shifter, Zoomer {
 						throw new IllegalArgumentException("Unknown data type: " + type);
 				}
 				data[0] = newtime;
-				graph.addData(data);
+				graph.addData(data, realTime);
 			}
 			timestamp = newtime;
 		}

@@ -139,7 +139,7 @@ public interface Features {
 		 * @return {@code true} if all payoffs identical
 		 */
 		public default boolean isNeutral() {
-			return (Math.abs(getMaxPayoff() - getMinPayoff()) < 1e-8);
+			return (Math.abs(getMaxPayoff() - getMinPayoff()) < Model.EPS);
 		}
 
 		/**

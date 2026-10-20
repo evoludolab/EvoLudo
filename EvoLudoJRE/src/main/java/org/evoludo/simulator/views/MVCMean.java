@@ -168,7 +168,7 @@ public class MVCMean extends MVAbstract implements StateGraphListener {
 	public boolean verifyXAxis(GraphAxis x, int tag) {
 		boolean changed = false;
 		double step = -engine.getModel().getTimeStep();
-		if (Math.abs(x.step - step) > 1e-8) {
+		if (Math.abs(x.step - step) > Model.EPS) {
 			double steps = (x.max - x.min) / x.step;
 			x.min = x.max - steps * step;
 			x.step = step;
@@ -181,12 +181,12 @@ public class MVCMean extends MVAbstract implements StateGraphListener {
 	public boolean verifyYAxis(GraphAxis y, int tag) {
 		boolean changed = false;
 		double min = module.getTraitMin()[tag];
-		if (Math.abs(y.min - min) > 1e-8) {
+		if (Math.abs(y.min - min) > Model.EPS) {
 			y.min = min;
 			changed = true;
 		}
 		double max = module.getTraitMax()[tag];
-		if (Math.abs(y.max - max) > 1e-8) {
+		if (Math.abs(y.max - max) > Model.EPS) {
 			y.max = max;
 			changed = true;
 		}

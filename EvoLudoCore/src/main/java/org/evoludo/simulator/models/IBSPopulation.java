@@ -48,7 +48,6 @@ import org.evoludo.simulator.geometries.GeometryType;
 import org.evoludo.simulator.geometries.HierarchicalGeometry;
 import org.evoludo.simulator.models.IBS.MigrationType;
 import org.evoludo.simulator.models.IBS.ScoringType;
-import org.evoludo.simulator.models.IBSGroup.SamplingType;
 import org.evoludo.simulator.modules.Features;
 import org.evoludo.simulator.modules.Features.Payoffs;
 import org.evoludo.simulator.modules.Map2Fitness;
@@ -109,11 +108,6 @@ public abstract class IBSPopulation<M extends Module<?>, P extends IBSPopulation
 	protected P opponent;
 
 	/**
-	 * Logger for keeping track of and reporting events and issues.
-	 */
-	protected Logger logger;
-
-	/**
 	 * The shared random number generator to ensure reproducibility of results.
 	 * 
 	 * @see EvoLudo#getRNG()
@@ -140,7 +134,6 @@ public abstract class IBSPopulation<M extends Module<?>, P extends IBSPopulation
 	@SuppressWarnings("unchecked")
 	protected IBSPopulation(EvoLudo engine, M module) {
 		this.engine = engine;
-		logger = engine.getLogger();
 		opponent = (P) this;
 		this.module = module;
 		// initialize helper variables
@@ -233,7 +226,7 @@ public abstract class IBSPopulation<M extends Module<?>, P extends IBSPopulation
 	 * 
 	 * @see #commitTraitAt(int)
 	 */
-	public abstract void swapTraits(int a, int b);
+	protected abstract void swapTraits(int a, int b);
 
 	/**
 	 * Play a pairwise interaction with the individuals in {@code group}.
@@ -387,6 +380,50 @@ public abstract class IBSPopulation<M extends Module<?>, P extends IBSPopulation
 	}
 
 	/**
+	 * Check if the population has reached a genuinely absorbing state that no
+	 * parameter change can escape without a full reset. Unlike
+	 * {@link #checkConvergence()}, this excludes halts merely requested through
+	 * {@code --monostop} - those remain resumable, exactly like
+	 * {@code --timestop}, see {@link IBSDPopulation#isAbsorbed()}.
+	 *
+	 * @return {@code true} if no further dynamics are possible
+	 */
+	public boolean isAbsorbed() {
+		return checkConvergence();
+	}
+
+	/**
+	 * Backing field for {@link #isInitialized()}. Defaults to {@code true};
+	 * subclasses with vacancy-like content must manage it themselves, see there.
+	 */
+	protected boolean initialized = true;
+
+	/**
+	 * Check if the population's trait/state data reflects an actual, fully
+	 * initialized configuration, i.e. whether {@link #init()} has completed at
+	 * least once since the population's structure was last (re)allocated in
+	 * {@link #check()}.
+	 * <p>
+	 * <strong>Note:</strong> {@link #check()} can run more than once (e.g. once
+	 * explicitly and once more as part of {@link org.evoludo.simulator.EvoLudo
+	 * EvoLudo}'s reset sequence) before {@link #init()} gets a chance to run in
+	 * between; a freshly (re)allocated population then looks structurally
+	 * consistent even though its content (e.g. trait counts) is not yet
+	 * meaningful, and {@link #checkConvergence()} must not be trusted on it.
+	 * Declared here, rather than in an individual subclass, because any
+	 * population admitting vacant sites - currently {@link IBSDPopulation}, in
+	 * principle also {@link IBSCPopulation}/{@link IBSMCPopulation} - is
+	 * equally at risk. Subclasses that maintain such content are responsible
+	 * for clearing {@link #initialized} where they (re)allocate it in
+	 * {@link #check()}, and setting it again at the end of their {@link #init()}.
+	 *
+	 * @return {@code true} if the population has been initialized
+	 */
+	public boolean isInitialized() {
+		return initialized;
+	}
+
+	/**
 	 * The update type of players. Convenience field.
 	 * 
 	 * @see Module#getPlayerUpdate()
@@ -402,8 +439,120 @@ public abstract class IBSPopulation<M extends Module<?>, P extends IBSPopulation
 	protected int vacantIdx = -1;
 
 	/**
+	 * Compact index of the sites that are currently occupied, i.e. not vacant.
+	 * Enables drawing a uniformly random occupied individual in O(1) in
+	 * {@link #pickFocalSkipVacant()}/{@link #pickFocalSkipVacant(int)} instead of
+	 * scanning the population. Only the first {@link #getPopulationSize()}
+	 * entries are valid; the remainder is stale. Left {@code null} while
+	 * {@link #vacantIdx} is negative, since it is never consulted in that case.
+	 */
+	private int[] occupiedSites;
+
+	/**
+	 * Inverse of {@link #occupiedSites}: for an occupied site {@code n},
+	 * {@code siteToOccupied[n]} is its position in {@link #occupiedSites}. Stale
+	 * for vacant sites. Needed to locate an arbitrary, previously occupied site
+	 * within {@link #occupiedSites} in O(1) - both to remove it in
+	 * {@link #trackSiteVacated(int)} and to exclude it in
+	 * {@link #pickFocalSkipVacant(int)} - since neither operation can afford to
+	 * search for it.
+	 */
+	private int[] siteToOccupied;
+
+	/**
+	 * {@code true} if {@link #occupiedSites}/{@link #siteToOccupied} correctly
+	 * reflect the current occupancy of the population. Individual (asynchronous)
+	 * changes to a single site keep the index in sync incrementally, in O(1), via
+	 * {@link #trackSiteOccupied(int)}/{@link #trackSiteVacated(int)} and leave it
+	 * valid. Bulk changes that bypass those two methods - initialisation and
+	 * synchronous population updates - instead invalidate the index via
+	 * {@link #invalidateOccupancyIndex()}; it is then rebuilt from scratch,
+	 * lazily, the next time it is consulted.
+	 */
+	private boolean occupancyIndexValid = false;
+
+	/**
+	 * Mark the compact occupancy index ({@link #occupiedSites}) as stale. Must be
+	 * called by subclasses whenever sites may have changed occupancy in bulk,
+	 * bypassing {@link #trackSiteOccupied(int)}/{@link #trackSiteVacated(int)}
+	 * (e.g. initialisation or synchronous updates). Cheap and harmless to call
+	 * unconditionally, including while {@link #vacantIdx} is negative.
+	 */
+	protected final void invalidateOccupancyIndex() {
+		occupancyIndexValid = false;
+	}
+
+	/**
+	 * Rebuild {@link #occupiedSites}/{@link #siteToOccupied} from scratch by
+	 * scanning the entire population once, using {@link #isVacantAt(int)}.
+	 * Called lazily, at most once per bulk change, the next time an occupied
+	 * individual is drawn while the index is stale.
+	 */
+	private void rebuildOccupancyIndex() {
+		if (occupiedSites == null || occupiedSites.length != nPopulation) {
+			occupiedSites = new int[nPopulation];
+			siteToOccupied = new int[nPopulation];
+		}
+		int nOccupied = 0;
+		for (int n = 0; n < nPopulation; n++) {
+			if (isVacantAt(n))
+				continue;
+			siteToOccupied[n] = nOccupied;
+			occupiedSites[nOccupied] = n;
+			nOccupied++;
+		}
+		occupancyIndexValid = true;
+	}
+
+	/**
+	 * Record that site <code>index</code>, previously vacant, just became
+	 * occupied, keeping {@link #occupiedSites} in O(1) sync. Harmless no-op while
+	 * the index is currently stale, since it will be rebuilt from scratch before
+	 * it is next consulted.
+	 * <p>
+	 * Must be called after the population count already reflects this site's new
+	 * (occupied) status, e.g. after {@code traitsCount} has been updated, since
+	 * {@link #getPopulationSize()} is used to locate the new entry's slot.
+	 *
+	 * @param index the site that became occupied
+	 */
+	protected final void trackSiteOccupied(int index) {
+		if (!occupancyIndexValid)
+			return;
+		// getPopulationSize() already includes index, so its last valid slot,
+		// 0-based, is exactly getPopulationSize()-1
+		int pos = getPopulationSize() - 1;
+		siteToOccupied[index] = pos;
+		occupiedSites[pos] = index;
+	}
+
+	/**
+	 * Record that site <code>index</code>, previously occupied, just became
+	 * vacant, keeping {@link #occupiedSites} in O(1) sync by moving the last
+	 * occupied entry into the freed slot. Harmless no-op while the index is
+	 * currently stale, since it will be rebuilt from scratch before it is next
+	 * consulted.
+	 * <p>
+	 * Must be called after the population count already reflects this site's new
+	 * (vacant) status, e.g. after {@code traitsCount} has been updated, since
+	 * {@link #getPopulationSize()} is used to locate the vacated slot.
+	 *
+	 * @param index the site that became vacant
+	 */
+	protected final void trackSiteVacated(int index) {
+		if (!occupancyIndexValid)
+			return;
+		int pos = siteToOccupied[index];
+		// getPopulationSize() already excludes index, so the slot of the last
+		// remaining occupied entry, 0-based, is exactly getPopulationSize()
+		int last = occupiedSites[getPopulationSize()];
+		occupiedSites[pos] = last;
+		siteToOccupied[last] = pos;
+	}
+
+	/**
 	 * The number of traits in module. Convenience field.
-	 * 
+	 *
 	 * @see Module#getNTraits()
 	 */
 	protected int nTraits = -1;
@@ -511,14 +660,13 @@ public abstract class IBSPopulation<M extends Module<?>, P extends IBSPopulation
 	protected MigrationType migrationType = MigrationType.NONE;
 
 	/**
-	 * The probability of migration.
+	 * The probability of migration, indexed by trait. A single entry applies to
+	 * all traits (cycled with modulo indexing, see {@link #getMigrationProb(int)}
+	 * - only relevant for {@link IBS.MigrationType#DIFFUSION} on ecological
+	 * (vacancy) population updates, where different traits can migrate at
+	 * different rates, see {@code IBSDPopulation}.
 	 */
-	protected double pMigration = 0.0;
-
-	/**
-	 * The distribution to determine the number of migrants.
-	 */
-	protected RNGDistribution.Geometric distrMigrants;
+	protected double[] pMigration = { 0.0 };
 
 	/**
 	 * Conveninece variable to store cumulative probability distributions for
@@ -605,8 +753,28 @@ public abstract class IBSPopulation<M extends Module<?>, P extends IBSPopulation
 
 	/**
 	 * The array of individual tags counts. This can be used to trace ancestry.
+	 * <p>
+	 * <strong>Note:</strong> {@code null} unless requested with the command line
+	 * option {@code --tags}, see {@link IBS#cloTags}, to save memory as well as
+	 * the memory accesses on the hot path in {@link #updateFromModelAt(int, int)}.
 	 */
 	protected double[] tags;
+
+	/**
+	 * Flag to indicate whether tags are tracked, see {@link IBS#cloTags}.
+	 */
+	protected boolean useTags = false;
+
+	/**
+	 * Request tracking of individual tags to trace ancestry.
+	 *
+	 * @param use {@code true} to request tracking of tags
+	 *
+	 * @see IBS#cloTags
+	 */
+	public void setUseTags(boolean use) {
+		useTags = use;
+	}
 
 	/**
 	 * Optimization: Number of interactions in well-mixed populations for update
@@ -644,7 +812,7 @@ public abstract class IBSPopulation<M extends Module<?>, P extends IBSPopulation
 	 * <ol>
 	 * <li>Adjusting scores is only feasible if all individuals have a fixed number
 	 * of interactions. For example, if all individuals always interact with all
-	 * their neighbours, see {@link IBSGroup.SamplingType#ALL}. The only exception
+	 * their neighbours, see {@link IBSGroup#SAMPLING_ALL}. The only exception
 	 * are well-mixed populations, {@link GeometryType#WELLMIXED}. With continuous
 	 * traits all possible encounters would need to be considered, which is
 	 * computationally not feasible. In contrast, for discrete traits separate
@@ -653,7 +821,7 @@ public abstract class IBSPopulation<M extends Module<?>, P extends IBSPopulation
 	 * sets of interaction partners and their numbers of interactions may vary.
 	 * </ol>
 	 * 
-	 * @see IBSGroup.SamplingType
+	 * @see IBSGroup#SAMPLING_ALL
 	 */
 	protected boolean adjustScores;
 
@@ -690,17 +858,17 @@ public abstract class IBSPopulation<M extends Module<?>, P extends IBSPopulation
 			case NONE:
 				break;
 			case BIRTH_DEATH:
-				nMigrants = nextBinomial(1.0 - pMigration, nPopulation);
+				nMigrants = nextBinomial(getMaxMigrationProb(), nPopulation);
 				for (int n = 0; n < nMigrants; n++)
 					doBirthDeathMigration();
 				break;
 			case DEATH_BIRTH:
-				nMigrants = nextBinomial(1.0 - pMigration, nPopulation);
+				nMigrants = nextBinomial(getMaxMigrationProb(), nPopulation);
 				for (int n = 0; n < nMigrants; n++)
 					doDeathBirthMigration();
 				break;
 			case DIFFUSION:
-				nMigrants = nextBinomial(1.0 - pMigration, nPopulation);
+				nMigrants = nextBinomial(getMaxMigrationProb(), nPopulation);
 				for (int n = 0; n < nMigrants; n++)
 					doDiffusionMigration();
 				break;
@@ -712,8 +880,10 @@ public abstract class IBSPopulation<M extends Module<?>, P extends IBSPopulation
 
 	/**
 	 * Perform asynchronous migration.
+	 *
+	 * @return the number of elapsed realtime units
 	 */
-	public void doMigration() {
+	public int doMigration() {
 		switch (migrationType) {
 			case NONE:
 				break;
@@ -729,6 +899,7 @@ public abstract class IBSPopulation<M extends Module<?>, P extends IBSPopulation
 			default: // should never get here
 				throw new UnsupportedOperationException("Unknown migration type (" + migrationType + ")");
 		}
+		return 1;
 	}
 
 	/**
@@ -737,19 +908,59 @@ public abstract class IBSPopulation<M extends Module<?>, P extends IBSPopulation
 	 */
 	public void doDiffusionMigration() {
 		int migrant = random0n(nPopulation);
+		if (rejectMigrant(migrant))
+			return;
 		// migrant swaps places with random neighbor
 		int[] myNeighs = interaction.out[migrant];
 		int aNeigh = myNeighs[random0n(interaction.kout[migrant])];
-		updatePlayerSwap(migrant, aNeigh);
+		swapSitesAt(migrant, aNeigh);
 	}
 
 	/**
-	 * Swap players in locations {@code a} and {@code b}.
+	 * Gets the migration rate of the individual at {@code idx}. Only populations
+	 * with discrete traits distinguish rates by individual (see
+	 * {@link IBSDPopulation#getMigrationAt(int)}); the default implementation
+	 * returns {@link #getMigrationProb(int) getMigrationProb(0)}, i.e. the same,
+	 * single rate for everyone - correct since {@link #pMigration} is only ever
+	 * set to more than one entry for discrete-trait modules (see
+	 * {@code IBS#cloMigration}).
+	 *
+	 * @param idx the index of the individual
+	 * @return the migration rate of the individual
+	 */
+	protected double getMigrationAt(int idx) {
+		return getMigrationProb(0);
+	}
+
+	/**
+	 * Thin a proposed migration event by the migration rate of {@code migrant}
+	 * (see {@link #getMigrationAt(int)}), relative to the largest rate across
+	 * all traits ({@link #getMaxMigrationProb()}) used to decide whether/how
+	 * often a migration event is attempted at all in the first place - so that
+	 * traits with a smaller rate than the maximum migrate correspondingly less
+	 * often. Skipped whenever only a single, trait-independent rate is set (the
+	 * common case), to avoid perturbing the random number sequence and hence
+	 * the reproducibility of seeded runs that do not use this feature.
+	 *
+	 * @param migrant the index of the proposed migrant
+	 * @return {@code true} if the proposed migration event should be rejected
+	 */
+	protected boolean rejectMigrant(int migrant) {
+		return pMigration.length > 1
+				&& random01() * getMaxMigrationProb() > getMigrationAt(migrant);
+	}
+
+	/**
+	 * Swap the individuals in locations {@code a} and {@code b} - the only path
+	 * for doing so; both the generic framework (diffusive migration, see
+	 * {@link #doDiffusionMigration()}) and modules with custom ecological
+	 * updates that swap sites (e.g. {@code EcoRSP}, {@code EcoTraits}) route
+	 * through here.
 	 *
 	 * @param a the index of the first individual
 	 * @param b the index of the second individual
 	 */
-	public void updatePlayerSwap(int a, int b) {
+	protected void swapSitesAt(int a, int b) {
 		swapTraits(a, b); // trait changed; still needs to be committed
 		// fitness accounting:
 		// synchronous: no need to worry about fitness - this is determined afterwards
@@ -758,9 +969,9 @@ public abstract class IBSPopulation<M extends Module<?>, P extends IBSPopulation
 		// scores along
 		// - if interactions are with all neighbors (payoffs are adjusted) we need to
 		// recalculate the payoffs
-		if (populationUpdate.isSynchronous()) {
-			// NOTE: this is not efficient because it deals unnecessarily with types and
-			// scores; enough to only copy from scratch to traits.
+		if (scores == null || populationUpdate.isSynchronous()) {
+			// module has no payoffs - nothing further to keep in sync, see check()
+			// or synchronous update - no need to worry about scores, determined afterwards
 			commitTraitAt(a);
 			commitTraitAt(b);
 			return;
@@ -791,6 +1002,8 @@ public abstract class IBSPopulation<M extends Module<?>, P extends IBSPopulation
 	 */
 	public void doBirthDeathMigration() {
 		int migrant = pickFitFocalIndividual();
+		if (rejectMigrant(migrant))
+			return;
 		int vacant = random0n(nPopulation - 1);
 		if (vacant >= migrant)
 			vacant++;
@@ -809,6 +1022,8 @@ public abstract class IBSPopulation<M extends Module<?>, P extends IBSPopulation
 	public void doDeathBirthMigration() {
 		int vacant = random0n(nPopulation);
 		int migrant = pickFitFocalIndividual(vacant);
+		if (rejectMigrant(migrant))
+			return;
 		migrateMoran(migrant, vacant);
 	}
 
@@ -856,116 +1071,47 @@ public abstract class IBSPopulation<M extends Module<?>, P extends IBSPopulation
 
 	/**
 	 * Pick a focal individual uniformly at random but skipping vacant sites.
-	 * 
+	 * Draws from the compact index of occupied sites in O(1); see
+	 * {@link #occupiedSites}. Draws exactly one random number, from the same
+	 * <code>[0, n)</code> range as the population-scanning implementation this
+	 * replaced, so the sequence of outcomes over repeated calls has the same
+	 * distribution - only the (arbitrary) mapping from a drawn integer to a site
+	 * index differs, because sites now appear in {@link #occupiedSites} in the
+	 * order they were populated rather than in site-index order.
+	 *
 	 * @return the index of the picked individual
 	 */
 	private int pickFocalSkipVacant() {
-		int nTot = getPopulationSize();
-		int pick = random0n(nTot);
-		if (pick + pick > nTot) {
-			pick = nTot - pick - 1;
-			return pickFocalTail(pick);
-		}
-		return pickFocalHead(pick);
+		if (!occupancyIndexValid)
+			rebuildOccupancyIndex();
+		int nOccupied = getPopulationSize();
+		if (nOccupied <= 0)
+			return pickFailed();
+		return occupiedSites[random0n(nOccupied)];
 	}
 
 	/**
 	 * Pick a focal individual uniformly at random but excluding the individual with
-	 * index <code>excl</code>.
-	 * 
+	 * index <code>excl</code>, which must itself currently be occupied. Draws
+	 * from the compact index of occupied sites in O(1); see
+	 * {@link #occupiedSites}. Draws exactly one random number, from the same
+	 * <code>[0, n)</code> range as the population-scanning implementation this
+	 * replaced; see {@link #pickFocalSkipVacant()}.
+	 *
 	 * @param excl the index of the excluded individual
 	 * @return the index of the picked individual
 	 */
 	private int pickFocalSkipVacant(int excl) {
-		int nTot = getPopulationSize() - 1;
-		int pick = random0n(nTot);
-		if (pick + pick > nTot) {
-			pick = nTot - pick - 1;
-			return pickFocalTail(pick, excl);
-		}
-		return pickFocalHead(pick, excl);
-	}
-
-	/**
-	 * Pick a focal individual uniformly at random starting from head.
-	 * 
-	 * @param pick the pick index
-	 * @return the index of the picked individual
-	 */
-	private int pickFocalHead(int pick) {
-		// start search at head, cannot stop halfway
-		// vacancies may be concentrated at tail
-		for (int n = 0; n < nPopulation; n++) {
-			if (!isVacantAt(n) && --pick < 0)
-				return n;
-		}
-		// should not get here, does not return control
-		return pickFailed();
-	}
-
-	/**
-	 * Pick a focal individual uniformly at random starting from head, excluding
-	 * individual <code>excl</code>.
-	 * 
-	 * @param pick the pick index
-	 * @param excl the index of the excluded individual
-	 * @return the index of the picked individual
-	 */
-	private int pickFocalHead(int pick, int excl) {
-		// start search at head, cannot stop halfway
-		// vacancies may be concentrated at tail
-		for (int n = 0; n < excl; n++) {
-			if (!isVacantAt(n) && --pick < 0)
-				return n;
-		}
-		// two loops avoid repeated n != excl checks
-		for (int n = excl + 1; n < nPopulation; n++) {
-			if (!isVacantAt(n) && --pick < 0)
-				return n;
-		}
-		// should not get here, does not return control
-		return pickFailed();
-	}
-
-	/**
-	 * Pick a focal individual uniformly at random starting from tail.
-	 * 
-	 * @param pick the pick index
-	 * @return the index of the picked individual
-	 */
-	private int pickFocalTail(int pick) {
-		// start search at tail, cannot stop halfway
-		// vacancies may be concentrated at head
-		for (int n = nPopulation - 1; n >= 0; n--) {
-			if (!isVacantAt(n) && --pick < 0)
-				return n;
-		}
-		// should not get here, does not return control
-		return pickFailed();
-	}
-
-	/**
-	 * Pick a focal individual uniformly at random starting from tail, excluding
-	 * individual <code>excl</code>.
-	 * 
-	 * @param pick the pick index
-	 * @param excl the index of the excluded individual
-	 * @return the index of the picked individual
-	 */
-	private int pickFocalTail(int pick, int excl) {
-		// start search at tail, cannot stop halfway
-		// vacancies may be concentrated at head
-		for (int n = nPopulation - 1; n > excl; n--) {
-			if (!isVacantAt(n) && --pick < 0)
-				return n;
-		}
-		// two loops avoid repeated n != excl checks
-		for (int n = excl - 1; n >= 0; n--) {
-			if (!isVacantAt(n) && --pick < 0)
-				return n;
-		}
-		// should not get here, does not return control
-		return pickFailed();
+		if (!occupancyIndexValid)
+			rebuildOccupancyIndex();
+		int nOccupied = getPopulationSize();
+		if (nOccupied <= 1)
+			return pickFailed();
+		int pos = siteToOccupied[excl];
+		int pick = random0n(nOccupied - 1);
+		if (pick >= pos)
+			pick++;
+		return occupiedSites[pick];
 	}
 
 	/**
@@ -990,6 +1136,24 @@ public abstract class IBSPopulation<M extends Module<?>, P extends IBSPopulation
 		debugScores(remainder);
 		// does not return control
 		return pickFailed();
+	}
+
+	/**
+	 * Last-resort recovery for a roulette-wheel draw: if accumulated rounding
+	 * left <code>hit</code> just short of dipping below zero on the last
+	 * candidate visited by the draw loop, award the pick to that candidate
+	 * provided its fitness is non-negligible. Otherwise the residual reflects a
+	 * genuine problem rather than roundoff.
+	 *
+	 * @param hit       the residual after subtracting every visited candidate's
+	 *                  fitness from the initial draw
+	 * @param candidate the last individual visited by the draw loop
+	 * @return the index of the picked individual
+	 */
+	protected int pickLastResort(double hit, int candidate) {
+		if (hit < RNGDistribution.EPS_PICK && getFitnessAt(candidate) > RNGDistribution.EPS_PICK)
+			return candidate;
+		return pickFailed(hit);
 	}
 
 	/**
@@ -1083,10 +1247,7 @@ public abstract class IBSPopulation<M extends Module<?>, P extends IBSPopulation
 			if (hit < 0.0)
 				return n;
 		}
-		if (hit < 1e-6 && getFitnessAt(nPopulation - 1) > 1e-6)
-			return nPopulation - 1;
-		// should not get here, does not return control
-		return pickFailed(hit);
+		return pickLastResort(hit, nPopulation - 1);
 	}
 
 	/**
@@ -1128,10 +1289,7 @@ public abstract class IBSPopulation<M extends Module<?>, P extends IBSPopulation
 			if (hit <= 0.0)
 				return n;
 		}
-		if (hit < 1e-6 && getFitnessAt(nPopulation - 1) > 1e-6)
-			return nPopulation - 1;
-		// should not get here, does not return control
-		return pickFailed(hit);
+		return pickLastResort(hit, nPopulation - 1);
 	}
 
 	/**
@@ -1187,15 +1345,8 @@ public abstract class IBSPopulation<M extends Module<?>, P extends IBSPopulation
 			if (hit < 0.0)
 				return n;
 		}
-		// last resort...
-		if (excl == nPopulation - 1) {
-			if (hit < 1e-6 && getFitnessAt(nPopulation - 2) > 1e-6)
-				return nPopulation - 2;
-			if (hit < 1e-6 && getFitnessAt(nPopulation - 1) > 1e-6)
-				return nPopulation - 1;
-		}
-		// should not get here, does not return control
-		return pickFailed(hit);
+		// last resort: rescue the last individual actually visited above
+		return pickLastResort(hit, excl == nPopulation - 1 ? nPopulation - 2 : nPopulation - 1);
 	}
 
 	/**
@@ -1258,7 +1409,7 @@ public abstract class IBSPopulation<M extends Module<?>, P extends IBSPopulation
 	private int pickFitFocalSkipVacant(int excl) {
 		// vacancies require some extra care
 		if (nPopulation >= GILLESPIE_OPTIMIZATION_THRESHOLD)
-			pickFitFocalSkipVacantGillespieOptimized(excl);
+			return pickFitFocalSkipVacantGillespieOptimized(excl);
 		double hit = random01() * (sumFitness - getFitnessAt(excl));
 		// two loops prevent repeated checks concerning excl
 		for (int n = 0; n < excl; n++) {
@@ -1275,8 +1426,8 @@ public abstract class IBSPopulation<M extends Module<?>, P extends IBSPopulation
 			if (hit <= 0.0)
 				return n;
 		}
-		// should not get here, does not return control
-		return pickFailed(hit);
+		// last resort: rescue the last individual actually visited above
+		return pickLastResort(hit, excl == nPopulation - 1 ? nPopulation - 2 : nPopulation - 1);
 	}
 
 	/**
@@ -1338,13 +1489,13 @@ public abstract class IBSPopulation<M extends Module<?>, P extends IBSPopulation
 		for (int n = 0; n < excl; n++) {
 			second = Math.max(second, getScoreAt(n));
 			// if a second individual has maximum score, no need to look further
-			if (Math.abs(second - max) < 1e-8)
+			if (Math.abs(second - max) < Model.EPS)
 				return second;
 		}
 		for (int n = excl + 1; n < nPopulation; n++) {
 			second = Math.max(second, getScoreAt(n));
 			// if a second individual has maximum score, no need to look further
-			if (Math.abs(second - max) < 1e-8)
+			if (Math.abs(second - max) < Model.EPS)
 				return second;
 		}
 		return second;
@@ -1357,6 +1508,7 @@ public abstract class IBSPopulation<M extends Module<?>, P extends IBSPopulation
 	 * @param hit the 'left-over fitness' from picking
 	 */
 	protected void debugScores(double hit) {
+		Logger logger = engine.getLogger();
 		if (!logger.isLoggable(Level.FINE))
 			return;
 		logger.fine("aborted in generation: " + Formatter.format(engine.getModel().getUpdates(), 2) + "\nscore dump:");
@@ -1375,26 +1527,28 @@ public abstract class IBSPopulation<M extends Module<?>, P extends IBSPopulation
 	}
 
 	/**
-	 * Pick a neighbour of the focal individual {@code me} with probability
-	 * proportional to their fitness.
-	 * 
+	 * Pick an upstream (in-)neighbour of the focal individual {@code me} with
+	 * probability proportional to their fitness. The returned neighbour is
+	 * guaranteed to be occupied.
+	 *
 	 * @param me the index of the focal individual
-	 * @return the index of a neighbour
+	 * @return the index of an upstream neighbour
 	 */
-	protected int pickFitNeighborAt(int me) {
-		return pickFitNeighborAt(me, false);
+	protected int pickUpstreamFitNeighborAt(int me) {
+		return pickUpstreamFitNeighborAt(me, false);
 	}
 
 	/**
-	 * Pick a neighbour of the focal individual {@code me} with probability
-	 * proportional to their fitness. If the flag {@code withSelf==true} then the
+	 * Pick an upstream (in-)neighbour of the focal individual {@code me} with
+	 * probability proportional to their fitness. The returned neighbour is
+	 * guaranteed to be occupied. If the flag {@code withSelf==true} then the
 	 * focal individual is included in the picking.
 	 *
 	 * @param me       the index of the focal individual
 	 * @param withSelf the flag whether to include self
-	 * @return the index of a neighbour
+	 * @return the index of an upstream neighbour
 	 */
-	protected int pickFitNeighborAt(int me, boolean withSelf) {
+	protected int pickUpstreamFitNeighborAt(int me, boolean withSelf) {
 		if (isNeutral)
 			return pickNeutralNeighbourAt(me, withSelf);
 
@@ -1406,94 +1560,23 @@ public abstract class IBSPopulation<M extends Module<?>, P extends IBSPopulation
 			return pickFitFocalIndividual(me);
 		}
 
-		if (vacantIdx < 0)
-			return pickFitNeighborNoVacantAt(me, withSelf);
-		return pickFitNeighborSkipVacantAt(me, withSelf);
-	}
-
-	/**
-	 * Pick a neighbour of the focal individual {@code me} with probability
-	 * proportional to their fitness assuming no vacant sites. If the flag
-	 * {@code withSelf==true} then the focal individual is included in the picking.
-	 *
-	 * @param me       the index of the focal individual
-	 * @param withSelf the flag whether to include self
-	 * @return the index of a neighbour
-	 */
-	private int pickFitNeighborNoVacantAt(int me, boolean withSelf) {
-		double totFitness = 0.0;
-		double myFit = 0.0;
-		if (withSelf) {
-			if (debugNModels == 0)
-				return me;
-			myFit = getFitnessAt(me);
-			totFitness = myFit;
-		}
-		totFitness += totFitnessNoVacant(me);
-		// negligible fitness, pick uniformly at random; same as neutral above
-		if (totFitness <= 1e-8)
-			return pickNeutralNeighbourAt(me, withSelf);
-
-		double hit = random01() * totFitness - myFit;
-		if (hit < 0.0)
-			return me;
-		for (int n = 0; n < debugNModels; n++) {
-			hit -= getFitnessAt(debugModels[n]);
-			if (hit < 0.0)
-				return debugModels[n];
-		}
-		// should not get here, does not return control
-		return pickFailed(hit);
-	}
-
-	/**
-	 * Compute total fitness of neighbours of individual {@code me} assuming no
-	 * vacant sites.
-	 * 
-	 * @param me the index of the focal individual
-	 * @return the total fitness of neighbours
-	 */
-	private double totFitnessNoVacant(int me) {
 		debugModels = competition.in[me];
 		debugNModels = competition.kin[me];
-		double totFitness = 0.0;
-		switch (debugNModels) {
-			case 0:
-				// no upstream neighbour
-				return -1;
-			case 1:
-				return debugModels[0];
-			default:
-		}
-		for (int n = 0; n < debugNModels; n++)
-			totFitness += getFitnessAt(debugModels[n]);
-		return totFitness;
-	}
-
-	/**
-	 * Pick a neighbour of the focal individual {@code me} with probability
-	 * proportional to their fitness assuming vacant sites. If the flag
-	 * {@code withSelf==true} then the focal individual is included in the picking.
-	 *
-	 * @param me       the index of the focal individual
-	 * @param withSelf the flag whether to include self
-	 * @return the index of a neighbour
-	 */
-	private int pickFitNeighborSkipVacantAt(int me, boolean withSelf) {
-		// vacancies require some extra care
-		debugModels = competition.in[me];
-		debugNModels = competition.kin[me];
-		double totFitness = 0.0;
 		double myFit = 0.0;
+		double totFitness = 0.0;
 		if (withSelf && !isVacantAt(me)) {
 			if (debugNModels == 0)
 				return me;
 			myFit = getFitnessAt(me);
 			totFitness = myFit;
 		}
-		totFitness += totFitnessSkipVacant(me);
+		for (int n = 0; n < debugNModels; n++) {
+			int neigh = debugModels[n];
+			if (!isVacantAt(neigh))
+				totFitness += getFitnessAt(neigh);
+		}
 		// negligible fitness, pick uniformly at random; same as neutral above
-		if (totFitness <= 1e-8)
+		if (totFitness <= Model.EPS)
 			return pickNeutralNeighbourAt(me, withSelf);
 
 		double hit = random01() * totFitness - myFit;
@@ -1512,42 +1595,12 @@ public abstract class IBSPopulation<M extends Module<?>, P extends IBSPopulation
 	}
 
 	/**
-	 * Compute total fitness of neighbours of individual {@code me} assuming vacant
-	 * sites.
-	 * 
-	 * @param me the index of the focal individual
-	 * @return the total fitness of neighbours
-	 */
-	private double totFitnessSkipVacant(int me) {
-		// vacancies require some extra care
-		debugModels = competition.in[me];
-		debugNModels = competition.kin[me];
-		double totFitness = 0.0;
-		switch (debugNModels) {
-			case 0:
-				return -1;
-			case 1:
-				int neigh = debugModels[0];
-				if (isVacantAt(neigh))
-					return -1;
-				return neigh;
-			default:
-		}
-		for (int n = 0; n < debugNModels; n++) {
-			int neigh = debugModels[n];
-			if (isVacantAt(neigh))
-				continue;
-			totFitness += getFitnessAt(neigh);
-		}
-		return totFitness;
-	}
-
-	/**
 	 * Helper method to do picking under neutral conditions (no or negligible
-	 * fitness differences). In well-mixed populations the picking includes the
-	 * focal individual if {@code withSelf==true}. Otherwise picking never includes
-	 * {@code me}.
-	 * 
+	 * fitness differences) for the {@link #pickUpstreamFitNeighborAt(int, boolean)}
+	 * family, i.e. picking is restricted to <em>upstream</em> (in-)neighbours. In
+	 * well-mixed populations the picking includes the focal individual if
+	 * {@code withSelf==true}. Otherwise picking never includes {@code me}.
+	 *
 	 * @param me       the index of the focal individual
 	 * @param withSelf the flag whether to include self
 	 * @return the index of a neighbour
@@ -1559,18 +1612,18 @@ public abstract class IBSPopulation<M extends Module<?>, P extends IBSPopulation
 				return pickFocalIndividual();
 			return pickFocalIndividual(me);
 		}
-		return pickNeighborSiteAt(me);
+		return pickUpstreamSiteAt(me);
 	}
 
 	/**
-	 * Picks a neighbouring site of the focal individual {@code me} uniformly at
-	 * random. This is where the focal individual places its offspring in the Moran
-	 * process under Birth-death updating. The original Moran process refers to
-	 * well-mixed (or mean-field) populations where the offspring can replace its
-	 * parent (albeit with a small probability of \(o(1/N)\), where \(N\) is the
-	 * population size). In contrast in the spatial Moran process the offspring
-	 * replaces a <em>neighbour</em> of the parent.
-	 * 
+	 * Picks a downstream (out-)neighbouring site of the focal individual
+	 * {@code me} uniformly at random. This is where the focal individual places
+	 * its offspring in the Moran process under Birth-death updating. The original
+	 * Moran process refers to well-mixed (or mean-field) populations where the
+	 * offspring can replace its parent (albeit with a small probability of
+	 * \(o(1/N)\), where \(N\) is the population size). In contrast in the spatial
+	 * Moran process the offspring replaces a <em>neighbour</em> of the parent.
+	 *
 	 * <h3>Notes:</h3>
 	 * <ol>
 	 * <li>The parent is never picked.
@@ -1578,12 +1631,12 @@ public abstract class IBSPopulation<M extends Module<?>, P extends IBSPopulation
 	 * </ol>
 	 *
 	 * @param me the index of the focal individual
-	 * @return the index of a neighbour
-	 * 
-	 * @see #pickFitNeighborAt(int)
+	 * @return the index of a downstream neighbour, or {@code -1} if none exists
+	 *
+	 * @see #pickUpstreamFitNeighborAt(int)
 	 * @see #updatePlayerMoranBirthDeath()
 	 */
-	public int pickNeighborSiteAt(int me) {
+	public int pickDownstreamSiteAt(int me) {
 		// mean-field
 		if (competition.isType(GeometryType.WELLMIXED))
 			return pickFocalSite(me);
@@ -1596,6 +1649,38 @@ public abstract class IBSPopulation<M extends Module<?>, P extends IBSPopulation
 				return -1;
 			case 1:
 				// place offspring in single downstream node
+				return debugModels[0];
+			default:
+				return debugModels[random0n(debugNModels)];
+		}
+	}
+
+	/**
+	 * Picks an upstream (in-)neighbouring site of the focal individual {@code me}
+	 * uniformly at random, i.e. an individual for which {@code me} is a
+	 * downstream neighbour and who could therefore place its own offspring at
+	 * {@code me}'s site. This is the mirror image of
+	 * {@link #pickDownstreamSiteAt(int)}, which considers only
+	 * <em>downstream</em> neighbours; here only <em>upstream</em>
+	 * (in-)neighbours are considered. On undirected geometries the two coincide.
+	 *
+	 * @param me the index of the focal individual
+	 * @return the index of an upstream neighbour, or {@code -1} if none exists
+	 *
+	 * @see #pickDownstreamSiteAt(int)
+	 */
+	public int pickUpstreamSiteAt(int me) {
+		// mean-field
+		if (competition.isType(GeometryType.WELLMIXED))
+			return pickFocalSite(me);
+
+		debugModels = competition.in[me];
+		debugNModels = competition.kin[me];
+		switch (debugNModels) {
+			case 0:
+				// no upstream neighbour? nothing threatens to invade this site
+				return -1;
+			case 1:
 				return debugModels[0];
 			default:
 				return debugModels[random0n(debugNModels)];
@@ -1616,7 +1701,8 @@ public abstract class IBSPopulation<M extends Module<?>, P extends IBSPopulation
 	 * @see IBSMCPopulation#updateFromModelAt(int, int)
 	 */
 	public void updateFromModelAt(int me, int you) {
-		tags[me] = tags[you];
+		if (tags != null)
+			tags[me] = tags[you];
 		debugModel = you;
 	}
 
@@ -1688,29 +1774,20 @@ public abstract class IBSPopulation<M extends Module<?>, P extends IBSPopulation
 			engine.fatal("playGameAt(int) should not be called for constant selection!");
 			// fatal does not return control
 		}
-		// any graph - interact with out-neighbors
-		// same as earlier approach to undirected graphs
 		if (adjustScores) {
 			throw new IllegalStateException("playGameAt(int idx) and adjustScores are incompatible!");
 		}
+		// undirected graph - out- and in-neighbours coincide, one pass suffices;
+		// directed graph - interact only with upstream (in-)neighbours by default,
+		// for consistency with competition, where only upstream neighbours compete
+		// TODO: add CLO option to control whether interactions on directed graphs
+		// are restricted to upstream neighbours, downstream neighbours, or both
+		boolean downstream = interaction.isUndirected();
 		if (module.isPairwise()) {
-			interGroup.pickAt(me, true);
-			playPairGameAt(interGroup);
-			// if undirected, we are done
-			if (interaction.isUndirected())
-				return;
-
-			// directed graph - additionally/separately interact with in-neighbors
-			interGroup.pickAt(me, false);
+			interGroup.pickAt(me, downstream);
 			playPairGameAt(interGroup);
 		} else {
-			interGroup.pickAt(me, true);
-			playGroupGameAt(interGroup);
-			// if undirected, we are done
-			if (interaction.isUndirected())
-				return;
-			// directed graph - additionally/separately interact with in-neighbors
-			interGroup.pickAt(me, false);
+			interGroup.pickAt(me, downstream);
 			playGroupGameAt(interGroup);
 		}
 	}
@@ -1722,8 +1799,8 @@ public abstract class IBSPopulation<M extends Module<?>, P extends IBSPopulation
 	 * <h3>Requirements/notes:</h3>
 	 * <ol>
 	 * <li>This optimized method is only applicable if
-	 * {@link IBSGroup.SamplingType#ALL}
-	 * is true and not {@link GeometryType#WELLMIXED}, i.e. if the interaction
+	 * {@link IBSGroup#SAMPLING_ALL}
+	 * is set and not {@link GeometryType#WELLMIXED}, i.e. if the interaction
 	 * group includes all neighbors but not all other members of the population.
 	 * <li>For pairwise interactions more efficient approaches are possible but
 	 * those require direct access to the trait and are hence delegated to
@@ -1754,70 +1831,31 @@ public abstract class IBSPopulation<M extends Module<?>, P extends IBSPopulation
 			adjustPairGameScoresAt(me);
 			return;
 		}
-		// any graph - interact with out-neighbors
-		// same as earlier approach to undirected graphs
-		if (interaction.isUndirected()) {
-			// undirected graph - same as earlier approach
-			// remove old scores
-			int[] neigh = interaction.out[me];
-			int nNeigh = competition.kout[me];
-			interGroup.setGroupAt(me, neigh, nNeigh);
-			yalpGroupGameAt(interGroup);
-			for (int i = 0; i < nNeigh; i++) {
-				int you = neigh[i];
-				interGroup.setGroupAt(you, interaction.out[you], interaction.kout[you]);
-				yalpGroupGameAt(interGroup);
-			}
-			commitTraitAt(me);
-			// add new scores
-			interGroup.setGroupAt(me, neigh, nNeigh);
-			playGroupGameAt(interGroup);
-			for (int i = 0; i < nNeigh; i++) {
-				int you = neigh[i];
-				interGroup.setGroupAt(you, interaction.out[you], interaction.kout[you]);
-				playGroupGameAt(interGroup);
-			}
-			return;
-		}
-
-		// directed graph - separately interact with in- and out-neighbors
+		// undirected graph - out- and in-neighbours coincide, one pass suffices;
+		// directed graph - interact only with upstream (in-)neighbours by default,
+		// for consistency with competition, where only upstream neighbours compete
+		// TODO: add CLO option to control whether interactions on directed graphs
+		// are restricted to upstream neighbours, downstream neighbours, or both
+		boolean downstream = interaction.isUndirected();
+		int[][] side = downstream ? interaction.out : interaction.in;
+		int[] sideDegree = downstream ? interaction.kout : interaction.kin;
+		int[] neigh = side[me];
+		int nNeigh = sideDegree[me];
 		// remove old scores
-		int[] neigh = interaction.out[me];
-		int nNeigh = interaction.kout[me];
 		interGroup.setGroupAt(me, neigh, nNeigh);
 		yalpGroupGameAt(interGroup);
 		for (int i = 0; i < nNeigh; i++) {
 			int you = neigh[i];
-			interGroup.setGroupAt(you, interaction.out[you], interaction.kout[you]);
-			yalpGroupGameAt(interGroup);
-		}
-		neigh = interaction.in[me];
-		nNeigh = interaction.kin[me];
-		interGroup.setGroupAt(me, neigh, nNeigh);
-		yalpGroupGameAt(interGroup);
-		for (int i = 0; i < nNeigh; i++) {
-			int you = neigh[i];
-			interGroup.setGroupAt(you, interaction.in[you], interaction.kin[you]);
+			interGroup.setGroupAt(you, side[you], sideDegree[you]);
 			yalpGroupGameAt(interGroup);
 		}
 		commitTraitAt(me);
 		// add new scores
-		neigh = interaction.out[me];
-		nNeigh = interaction.kout[me];
 		interGroup.setGroupAt(me, neigh, nNeigh);
 		playGroupGameAt(interGroup);
 		for (int i = 0; i < nNeigh; i++) {
 			int you = neigh[i];
-			interGroup.setGroupAt(you, interaction.out[you], interaction.kout[you]);
-			playGroupGameAt(interGroup);
-		}
-		neigh = interaction.in[me];
-		nNeigh = interaction.kin[me];
-		interGroup.setGroupAt(me, neigh, nNeigh);
-		playGroupGameAt(interGroup);
-		for (int i = 0; i < nNeigh; i++) {
-			int you = neigh[i];
-			interGroup.setGroupAt(you, interaction.in[you], interaction.kin[you]);
+			interGroup.setGroupAt(you, side[you], sideDegree[you]);
 			playGroupGameAt(interGroup);
 		}
 	}
@@ -1967,7 +2005,7 @@ public abstract class IBSPopulation<M extends Module<?>, P extends IBSPopulation
 	 * @param idxa the index of the first individual
 	 * @param idxb the index of the second individual
 	 */
-	public void swapScoresAt(int idxa, int idxb) {
+	private void swapScoresAt(int idxa, int idxb) {
 		double myScore = scores[idxa];
 		scores[idxa] = scores[idxb];
 		scores[idxb] = myScore;
@@ -2121,25 +2159,26 @@ public abstract class IBSPopulation<M extends Module<?>, P extends IBSPopulation
 	 * 
 	 * <h3>Discussions/extensions</h3>
 	 * <ol>
-	 * <li>Review migration. Exclusively used in Demes2x2. Should probably be
-	 * treated as an independent event, in particular independent of population or
-	 * player updates
 	 * <li>Implement Wright-Fisher update.
 	 * <li>How to scale realtime with multiple populations? How to define a
 	 * generation if population sizes can vary?
 	 * <li>{@link #updatePlayerEcology()} returns time increment in realtime units.
 	 * Everyone else does fine without...
 	 * </ol>
-	 * 
+	 * <p>
+	 * <strong>Note:</strong> for asynchronous updates, migration is dispatched
+	 * as an independent event by {@link IBS#pickEvent(IBSPopulation)}, on equal
+	 * footing with mutation and replication, rather than handled here - see
+	 * {@link #doMigration()}. Ecological (vacancy) population updates are the
+	 * exception: only diffusive migration is supported there, folded directly
+	 * into the ecological rate draw instead (see {@code IBSDPopulation}), see
+	 * {@link #checkMigration()}.
+	 *
 	 * @return the number of elapsed realtime units
 	 */
 	public int step() {
 		if (optimizeHomo && isMonomorphic()) {
 			return optimizeHomo();
-		}
-		if (pMigration > 0.0 && random01() < pMigration) {
-			doMigration();
-			return 1;
 		}
 		switch (populationUpdate.getType()) {
 			case SYNC:
@@ -2164,7 +2203,7 @@ public abstract class IBSPopulation<M extends Module<?>, P extends IBSPopulation
 			case ECOLOGY:
 				return updatePlayerEcology();
 			default:
-				logger.warning("unknown population update type (" + populationUpdate.getType().getKey() + ").");
+				engine.logWarning("unknown population update type (" + populationUpdate.getType().getKey() + ").");
 				return -1;
 		}
 	}
@@ -2177,7 +2216,7 @@ public abstract class IBSPopulation<M extends Module<?>, P extends IBSPopulation
 	 */
 	private int optimizeHomo() {
 		int dt = RNGDistribution.Geometric.next(rng.getRNG(), mutation.getProbability());
-		resetTraits();
+		clearTraits();
 		resetScores();
 		updateScores();
 		engine.fireModelChanged();
@@ -2349,7 +2388,7 @@ public abstract class IBSPopulation<M extends Module<?>, P extends IBSPopulation
 	 * @param focal the index of the individual to update
 	 */
 	public void debugUpdatePopulationAt(int focal) {
-		resetTraits();
+		clearTraits();
 		switch (populationUpdate.getType()) {
 			case SYNC: // synchronous updating - gets here only in debugging mode
 				debugFocal = focal;
@@ -2382,7 +2421,7 @@ public abstract class IBSPopulation<M extends Module<?>, P extends IBSPopulation
 				break;
 
 			default:
-				logger.warning("unknown population update type (" + populationUpdate.getType().getKey() + ").");
+				engine.logWarning("unknown population update type (" + populationUpdate.getType().getKey() + ").");
 				return;
 		}
 		debugMarkChange();
@@ -2428,7 +2467,7 @@ public abstract class IBSPopulation<M extends Module<?>, P extends IBSPopulation
 		// getScoreAt(me) + ") adopts "
 		// + getTraitNameAt(you) + " " + you + " (" + getScoreAt(you) + ")");
 		// // jf>
-		if (logger.isLoggable(Level.FINE) && debugFocal >= 0) {
+		if (engine.getLogger().isLoggable(Level.FINE) && debugFocal >= 0) {
 			StringBuilder sb = new StringBuilder();
 			sb.append("focal:").append(formatInfoAt(debugFocal, -1)).append(", ");
 			switch (debugNModels) {
@@ -2451,7 +2490,7 @@ public abstract class IBSPopulation<M extends Module<?>, P extends IBSPopulation
 			}
 			if (!debugSame)
 				sb.append(" changed");
-			logger.fine(sb.toString());
+			engine.getLogger().fine(sb.toString());
 		}
 	}
 
@@ -2490,6 +2529,10 @@ public abstract class IBSPopulation<M extends Module<?>, P extends IBSPopulation
 
 	/**
 	 * Update the scores of the focal individual with index {@code me}.
+	 * <p>
+	 * For non-adjustable scores the old score must be reset before committing a
+	 * switched trait so discrete trait score totals remain associated with the
+	 * trait that produced the score.
 	 * 
 	 * @param me       the index of the focal individual
 	 * @param switched {@code true} if the focal switched trait
@@ -2501,13 +2544,16 @@ public abstract class IBSPopulation<M extends Module<?>, P extends IBSPopulation
 				adjustGameScoresAt(me);
 			return;
 		}
-		if (switched)
-			commitTraitAt(me);
 		// no need to update ephemeral scores
-		if (playerScoring.equals(ScoringType.EPHEMERAL))
+		if (playerScoring.equals(ScoringType.EPHEMERAL)) {
+			if (switched)
+				commitTraitAt(me);
 			return;
+		}
 		if (switched || playerScoring.equals(ScoringType.RESET_ALWAYS))
 			resetScoreAt(me);
+		if (switched)
+			commitTraitAt(me);
 		// let me play single game
 		playGameAt(me);
 	}
@@ -2541,7 +2587,7 @@ public abstract class IBSPopulation<M extends Module<?>, P extends IBSPopulation
 			debugModel = pickFocalIndividual();
 			debugNModels = 0;
 		} else
-			debugModel = pickNeighborSiteAt(parent);
+			debugModel = pickDownstreamSiteAt(parent);
 		if (debugModel < 0)
 			return; // parent has no outgoing-neighbors (sink)
 		// note: do not return prematurely if <code>debugModel==debugFocal</code>
@@ -2573,7 +2619,7 @@ public abstract class IBSPopulation<M extends Module<?>, P extends IBSPopulation
 	 */
 	protected void updatePlayerMoranDeathBirthAt(int vacant) {
 		debugFocal = vacant;
-		debugModel = pickFitNeighborAt(vacant);
+		debugModel = pickUpstreamFitNeighborAt(vacant);
 		if (debugModel < 0)
 			return; // vacant has no incoming-neighbors (source)
 		maybeMutateMoran(debugModel, debugFocal);
@@ -2602,7 +2648,7 @@ public abstract class IBSPopulation<M extends Module<?>, P extends IBSPopulation
 	 */
 	protected void updatePlayerMoranImitateAt(int imitator) {
 		debugFocal = imitator;
-		debugModel = pickFitNeighborAt(imitator, true);
+		debugModel = pickUpstreamFitNeighborAt(imitator, true);
 		if (debugModel < 0)
 			return; // vacant has no incoming-neighbors (source)
 		maybeMutateMoran(debugModel, debugFocal);
@@ -2794,20 +2840,20 @@ public abstract class IBSPopulation<M extends Module<?>, P extends IBSPopulation
 		int bestPlayer = me;
 		// if the individual's score is highest but ties with a reference, the
 		// individual sticks to it's trait.
-		double bestScore = getFitnessAt(me) + 1e-8;
+		double bestScore = getFitnessAt(me) + Model.EPS;
 		boolean switched = false;
 
 		for (int i = 0; i < rGroupSize; i++) {
 			int aPlayer = refGroup[i];
 			double aScore = getFitnessAt(aPlayer);
 			double bScore = aScore;
-			if (Math.abs(bestScore - bScore) < 1e-8) {
+			if (Math.abs(bestScore - bScore) < Model.EPS) {
 				// we need some expert advice on which trait is the preferred one
 				// does 'me' prefer 'aPlayer' over 'bestPlayer'?
 				if (preferredPlayerBest(me, bestPlayer, aPlayer))
-					bScore += 1e-8;
+					bScore += Model.EPS;
 				else
-					bScore -= 1e-8;
+					bScore -= Model.EPS;
 			}
 			if (bestScore > bScore)
 				continue;
@@ -2857,7 +2903,7 @@ public abstract class IBSPopulation<M extends Module<?>, P extends IBSPopulation
 				switched = true;
 				continue;
 			}
-			if (Math.abs(aScore - bestScore) < 1e-8 && random01() < 0.5) {
+			if (Math.abs(aScore - bestScore) < Model.EPS && random01() < 0.5) {
 				// equal scores - switch with probability 50%
 				bestPlayer = aPlayer;
 				switched = true;
@@ -3021,8 +3067,9 @@ public abstract class IBSPopulation<M extends Module<?>, P extends IBSPopulation
 			return true;
 		}
 
-		for (int i = 1; i < rGroupSize; i++) {
-			// normalize cumulative probabilities only if and when needed
+		// normalize cumulative probabilities only if and when needed
+		norm = (1.0 - nProb) / norm;
+		for (int i = 0; i < rGroupSize; i++) {
 			if (choice < cProbs[i] * norm) {
 				updateFromModelAt(me, refGroup[i]);
 				return true;
@@ -3188,8 +3235,9 @@ public abstract class IBSPopulation<M extends Module<?>, P extends IBSPopulation
 			return true;
 		}
 
-		for (int i = 1; i < rGroupSize; i++) {
-			// normalize cumulative probabilities only if and when needed
+		// normalize cumulative probabilities only if and when needed
+		norm = (1.0 - nProb) / norm;
+		for (int i = 0; i < rGroupSize; i++) {
 			if (choice < cProbs[i] * norm) {
 				updateFromModelAt(me, refGroup[i]);
 				return true;
@@ -3290,6 +3338,7 @@ public abstract class IBSPopulation<M extends Module<?>, P extends IBSPopulation
 	 * @param choice     sampled random value that failed to match a candidate
 	 */
 	protected void debugUpdate(int me, int rGroupSize, double nProb, double norm, double choice) {
+		Logger logger = engine.getLogger();
 		if (!logger.isLoggable(Level.FINE))
 			return;
 		StringBuilder sb = new StringBuilder();
@@ -3358,7 +3407,7 @@ public abstract class IBSPopulation<M extends Module<?>, P extends IBSPopulation
 		}
 		if (playerScoring == ScoringType.EPHEMERAL) {
 			if (module.isPairwise()) {
-				if (interGroup.samplingType == SamplingType.RANDOM)
+				if (interGroup.nSamples > 0)
 					return interGroup.nSamples * score;
 				if (count == 0)
 					return (nPopulation - 1) * score;
@@ -3401,6 +3450,9 @@ public abstract class IBSPopulation<M extends Module<?>, P extends IBSPopulation
 		int ot = nTraits;
 		nTraits = module.getNTraits();
 		boolean doReset = (ot != nTraits);
+		int ovi = vacantIdx;
+		vacantIdx = module.getVacantIdx();
+		doReset |= (ovi != vacantIdx);
 		nPopulation = module.getNPopulation();
 		map2fit = module.getMap2Fitness();
 		playerUpdate = module.getPlayerUpdate();
@@ -3429,25 +3481,56 @@ public abstract class IBSPopulation<M extends Module<?>, P extends IBSPopulation
 			typeFitness = null;
 			typeScores = null;
 			maxFitness = 0.0;
+			// populations with a vacant trait never sample contacts
+			if (vacantIdx < 0)
+				checkContacts();
 		}
 
-		if (tags == null || tags.length != nPopulation)
-			tags = new double[nPopulation];
+		if (useTags) {
+			if (tags == null || tags.length != nPopulation)
+				tags = new double[nPopulation];
+		} else
+			tags = null;
 
 		// check for scenarios that are untested or work in progress
-		if (!interaction.isUndirected() && !module.isStatic())
-			logger.warning("interactions on directed graphs have received very limited testing...");
-
-		if (vacantIdx >= 0 && nGroup > 2)
-			logger.warning("group interactions with vacant sites have NOT been tested...");
-
+		checkLimitedTesting();
 		return doReset || checkOptimizations();
+	}
+
+	/**
+	 * Check the number of contacts in contact processes. In well-mixed populations
+	 * a susceptible individual receives \(k\,p\,x\) transmissions per update, where
+	 * \(k\) denotes the number of contacts, \(p\) the probability of transmission
+	 * and \(x\) the frequency of the transmitting trait. Only for \(k\,p\,x\ll1\)
+	 * do those act independently and the dynamics reduces to mass action, i.e. to
+	 * the mean-field dynamics of the corresponding differential equations. For more
+	 * contacts the exposures overlap, at most one of them can take effect per
+	 * update, and the effective rate of transmission saturates. A single contact,
+	 * \(k=1\), recovers mass action exactly and is the default.
+	 * <p>
+	 * In structured populations \(k\) is bounded by the neighbourhood size and does
+	 * not scale with the population size. No mean-field limit is expected there in
+	 * the first place, hence no warning.
+	 *
+	 * @see IBS#cloContacts
+	 * @see IBSDPopulation#countContactsAt(int, int)
+	 */
+	void checkContacts() {
+		if (!competition.isType(GeometryType.WELLMIXED))
+			return;
+		int nContacts = compGroup.getNSamples();
+		int nOthers = nPopulation - 1;
+		int k = (nContacts == IBSGroup.SAMPLING_ALL || nContacts >= nOthers) ? nOthers : nContacts;
+		if (k > 1)
+			engine.logWarning(
+					"effective rates scale with the number of contacts (" + k
+							+ ") and may saturate; use --contacts 1 for mean-field dynamics.");
 	}
 
 	/**
 	 * Check the interaction and competition geometries for consistency and adjust
 	 * if necessary (and feasible).
-	 * 
+	 *
 	 * @return {@code true} if reset is required
 	 */
 	boolean checkGeometry() {
@@ -3497,13 +3580,20 @@ public abstract class IBSPopulation<M extends Module<?>, P extends IBSPopulation
 				// try checking interaction geometry again
 				doReset |= updateGeometry(interaction, competition.getSize());
 				if (interaction.getSize() != competition.getSize()) {
-					logger.severe("incompatible interaction and competition geometries!");
+					engine.logError("incompatible interaction and competition geometries!");
 				}
 			}
 		}
 		// population structure may require special population sizes
 		module.setNPopulation(interaction.getSize());
 		nPopulation = interaction.getSize(); // keep local copy in sync
+		// check consistency of geometry (only if --consistency is set)
+		if (checkConsistency) {
+			if (!interaction.checkConsistency())
+				nIssues++;
+			if (!interaction.isSingle() && !competition.checkConsistency())
+				nIssues++;
+		}
 		return doReset;
 	}
 
@@ -3511,19 +3601,15 @@ public abstract class IBSPopulation<M extends Module<?>, P extends IBSPopulation
 	 * Update a geometry to the requested population size if this changes its
 	 * effective structure.
 	 *
-	 * @param geometry the geometry to validate and update
+	 * @param geometry       the geometry to validate and update
 	 * @param populationSize the requested population size
 	 * @return {@code true} if the geometry changed and a reset is required
 	 */
 	private boolean updateGeometry(AbstractGeometry geometry, int populationSize) {
-		AbstractGeometry updated = geometry.clone();
-		updated.setSize(populationSize);
-		updated.check();
-		if (geometry.similar(updated))
-			return false;
+		AbstractGeometry previous = geometry.clone();
 		geometry.setSize(populationSize);
-		geometry.check();
-		return true;
+		boolean doReset = geometry.check();
+		return doReset || !previous.similar(geometry);
 	}
 
 	/**
@@ -3538,12 +3624,12 @@ public abstract class IBSPopulation<M extends Module<?>, P extends IBSPopulation
 			double next = pAddwire[0];
 			double prev = interaction.getAddwire();
 			interaction.setAddwire(next);
-			doReset |= (Math.abs(prev - next) > 1e-8);
+			doReset |= (Math.abs(prev - next) > Model.EPS);
 			if (!interaction.isSingle()) {
 				next = pAddwire[1];
 				prev = competition.getAddwire();
 				competition.setAddwire(next);
-				doReset |= (Math.abs(prev - next) > 1e-8);
+				doReset |= (Math.abs(prev - next) > Model.EPS);
 			}
 		}
 		// set rewiring of links in geometries
@@ -3551,12 +3637,12 @@ public abstract class IBSPopulation<M extends Module<?>, P extends IBSPopulation
 			double next = pRewire[0];
 			double prev = interaction.getRewire();
 			interaction.setRewire(next);
-			doReset |= (Math.abs(prev - next) > 1e-8);
+			doReset |= (Math.abs(prev - next) > Model.EPS);
 			if (!interaction.isSingle()) {
 				next = pRewire[1];
 				prev = competition.getRewire();
 				competition.setRewire(next);
-				doReset |= (Math.abs(prev - next) > 1e-8);
+				doReset |= (Math.abs(prev - next) > Model.EPS);
 			}
 		}
 		return doReset;
@@ -3606,24 +3692,27 @@ public abstract class IBSPopulation<M extends Module<?>, P extends IBSPopulation
 	 * feasible).
 	 */
 	void checkMigration() {
-		if (pMigration < 1e-10 || migrationType == MigrationType.NONE) {
-			setMigrationType(MigrationType.NONE);
-			setMigrationProb(0.0);
-			distrMigrants = null;
+		if (migrationType == MigrationType.NONE)
 			return;
-		}
-		if (!interaction.isUndirected()) {
-			logger.warning("no migration on directed graphs!");
-			setMigrationType(MigrationType.NONE);
-		} else if (!interaction.isSingle()) {
-			logger.warning("no migration on graphs with different interaction and competition neighborhoods!");
-			setMigrationType(MigrationType.NONE);
-		} else if (interaction.isType(GeometryType.WELLMIXED)) {
-			logger.warning("no migration in well-mixed populations!");
-			setMigrationType(MigrationType.NONE);
-		}
-		// new instance to ensure potential changes in pMigration are reflected
-		distrMigrants = new RNGDistribution.Geometric(rng.getRNG(), 1.0 - pMigration);
+		String incompatible = null;
+		if (!interaction.isUndirected())
+			incompatible = "no migration on directed graphs!";
+		else if (!interaction.isSingle())
+			incompatible = "no migration on graphs with different interaction and competition neighborhoods!";
+		else if (interaction.isType(GeometryType.WELLMIXED))
+			incompatible = "no migration in well-mixed populations!";
+		else if (populationUpdate.getType() == PopulationUpdate.Type.ECOLOGY
+				&& migrationType != MigrationType.DIFFUSION)
+			// ecological (vacancy) populations draw death/birth/competition as
+			// competing rates in updatePlayerEcologyAt(); diffusive migration has
+			// been folded into that same rate-based draw (see IBSDPopulation), but
+			// birth-death/death-birth migration - a global, non-local process - has
+			// no equivalent there and remains unsupported for this population update
+			incompatible = "only diffusive migration supported for ecological population updates!";
+		if (incompatible == null)
+			return;
+		engine.logWarning(incompatible);
+		setMigrationType(MigrationType.NONE);
 	}
 
 	/**
@@ -3637,27 +3726,25 @@ public abstract class IBSPopulation<M extends Module<?>, P extends IBSPopulation
 		interaction.setInterspecies(opponent != this);
 		// check sampling in special geometries
 		if (interaction.isType(GeometryType.SQUARE) && interaction.isRegular() && interaction.getConnectivity() > 8 &&
-				interGroup.isSampling(IBSGroup.SamplingType.ALL) && nGroup > 2 && nGroup < 9) {
+				interGroup.isSampling(IBSGroup.SAMPLING_ALL) && nGroup > 2 && nGroup < 9) {
 			// if connectivity > 8 then the interaction pattern Group.SAMPLING_ALL with a
 			// group size between 2 and 8 (excluding boundaries is not allowed because this
 			// pattern requires a particular (internal) arrangement of the neighbors.
-			interGroup.setSampling(IBSGroup.SamplingType.RANDOM);
-			if (logger.isLoggable(Level.WARNING))
-				logger.warning(
-						"square " + interaction.getName()
-								+ " geometry has incompatible interaction pattern and neighborhood size"
-								+ " - using random sampling of interaction partners!");
+			interGroup.setNSamples(1);
+			engine.logWarning(
+					"square " + interaction.getName()
+							+ " geometry has incompatible interaction pattern and neighborhood size"
+							+ " - using random sampling of interaction partners!");
 		}
-		if (interaction.isType(GeometryType.CUBE) && interGroup.isSampling(IBSGroup.SamplingType.ALL) &&
+		if (interaction.isType(GeometryType.CUBE) && interGroup.isSampling(IBSGroup.SAMPLING_ALL) &&
 				nGroup > 2 && nGroup <= interaction.getConnectivity()) {
 			// Group.SAMPLING_ALL only works with pairwise interactions or all neighbors
 			// restrictions do not apply for PDE's
-			interGroup.setSampling(IBSGroup.SamplingType.RANDOM);
-			if (logger.isLoggable(Level.WARNING))
-				logger.warning(
-						"cubic " + interaction.getName()
-								+ " geometry has incompatible interaction pattern and neighborhood size"
-								+ " - using random sampling of interaction partners!");
+			interGroup.setNSamples(1);
+			engine.logWarning(
+					"cubic " + interaction.getName()
+							+ " geometry has incompatible interaction pattern and neighborhood size"
+							+ " - using random sampling of interaction partners!");
 		}
 
 		// currently: if pop has interaction structure different from WELLMIXED its
@@ -3671,7 +3758,7 @@ public abstract class IBSPopulation<M extends Module<?>, P extends IBSPopulation
 						|| !opponent.interaction.isType(GeometryType.WELLMIXED))) {
 			// at least for now, both populations need to be of the same size - except for
 			// well-mixed populations
-			logger.warning(
+			engine.logWarning(
 					"inter-species interactions with populations of different size limited to well-mixed structures"
 							+ " - well-mixed structure forced!");
 			interaction = ensureWellmixed(interaction, module.getNPopulation());
@@ -3686,7 +3773,7 @@ public abstract class IBSPopulation<M extends Module<?>, P extends IBSPopulation
 				(interaction.isType(GeometryType.WELLMIXED) ||
 						opponent.interaction.isType(GeometryType.WELLMIXED))) {
 			// enforce after both species were checked
-			logger.warning(
+			engine.logWarning(
 					"interspecies interactions combining well-mixed and structured populations not (yet) tested"
 							+ " - well-mixed structure forced!");
 			interaction = ensureWellmixed(interaction, module.getNPopulation());
@@ -3717,7 +3804,7 @@ public abstract class IBSPopulation<M extends Module<?>, P extends IBSPopulation
 				// non-adjustable and accumulated scores result in potentially unbounded payoffs
 				// - revert to averaged scores
 				setPlayerScoreAveraged(true);
-				logger.warning("accumulated scores may result in unbounded fitness - forcing averaged scores.");
+				engine.logWarning("accumulated scores may result in unbounded fitness - forcing averaged scores.");
 				adjustScores = doAdjustScores(); // should now be true
 			}
 		}
@@ -3739,21 +3826,53 @@ public abstract class IBSPopulation<M extends Module<?>, P extends IBSPopulation
 	}
 
 	/**
-	 * Check whether lookup tables for scores and fitness can be used. Free memory
-	 * if possible and request a reset if the use of lookup tables has changed.
-	 * 
+	 * Check whether lookup tables for scores and fitness can be used and allocate
+	 * (or free) the corresponding memory. Lookup tables hold a single entry per
+	 * trait rather than per individual and are possible for modules with static
+	 * payoffs as well as in well-mixed populations if scores are adjusted or are
+	 * ephemeral with all neighbours sampled.
+	 * <p>
+	 * <strong>Note:</strong> ephemeral scores are the only case that requires the
+	 * per-individual arrays {@link #scores}, {@link #fitness} and
+	 * {@link #interactions} <em>in addition</em> to the lookup tables because the
+	 * number of interactions varies between individuals.
+	 *
 	 * @param nGroup          the interaction group size
 	 * @param ephemeralScores the flag for ephemeral scores
 	 * @return {@code true} if reset is required
+	 *
+	 * @see #resetEphemeral(int)
+	 * @see IBSDPopulation#getScoreAt(int)
 	 */
 	boolean checkLookupTable(int nGroup, boolean ephemeralScores) {
 		hasLookupTable = module.isStatic() || //
 				(adjustScores && interaction.isType(GeometryType.WELLMIXED)) || //
 				(ephemeralScores && interaction.isType(GeometryType.WELLMIXED) //
-						&& interGroup.isSampling(SamplingType.ALL));
+						&& interGroup.isSampling(IBSGroup.SAMPLING_ALL));
 
-		if (!hasLookupTable || ephemeralScores)
-			return checkNoLookupTable(ephemeralScores);
+		if (!hasLookupTable || ephemeralScores) {
+			if (scores == null || scores.length != nPopulation)
+				scores = new double[nPopulation];
+			if (fitness == null || fitness.length != nPopulation)
+				fitness = new double[nPopulation];
+			if (interactions == null || interactions.length != nPopulation)
+				interactions = new int[nPopulation];
+		} else {
+			// with lookup tables scores, fitness and interaction arrays not needed
+			scores = null;
+			fitness = null;
+			interactions = null;
+		}
+
+		if (!hasLookupTable) {
+			// request reset if lookup tables had been in use because scores and
+			// fitness now need to be recalculated for every individual
+			boolean doReset = (typeFitness != null || typeScores != null);
+			typeFitness = null;
+			typeScores = null;
+			nMixedInter = -1;
+			return doReset;
+		}
 
 		// allocate memory for fitness lookup table
 		if (typeFitness == null || typeFitness.length != nTraits)
@@ -3765,43 +3884,13 @@ public abstract class IBSPopulation<M extends Module<?>, P extends IBSPopulation
 				typeFitness[n] = map2fit.map(typeScores[n]);
 			maxEffScoreIdx = -1;
 			nMixedInter = -1;
-		} else {
-			// allocate memory for score lookup table
-			if (typeScores == null || typeScores.length != nTraits)
-				typeScores = new double[nTraits];
-			nMixedInter = getNMixedInteractions(nGroup);
-		}
-		// with lookup tables scores, fitness and interaction arrays not needed
-		scores = null;
-		fitness = null;
-		interactions = null;
-		return false;
-	}
-
-	/**
-	 * Free memory used for lookup tables and allocate arrays for scores, fitness
-	 * and interactions. Returns {@code true} if reset is required.
-	 * 
-	 * @param ephemeralScores the flag for ephemeral scores
-	 * @return {@code true} if reset is required
-	 */
-	boolean checkNoLookupTable(boolean ephemeralScores) {
-		nMixedInter = -1;
-		// ephemeral scores need both (except in well-mixed populations)
-		if (scores == null || scores.length != nPopulation)
-			scores = new double[nPopulation];
-		if (fitness == null || fitness.length != nPopulation)
-			fitness = new double[nPopulation];
-		if (interactions == null || interactions.length != nPopulation)
-			interactions = new int[nPopulation];
-		if (ephemeralScores)
 			return false;
-		// request reset if we had lookup tables before to allocate arrays scores,
-		// fitness and interaction
-		boolean doReset = (typeFitness != null || typeScores != null);
-		typeFitness = null;
-		typeScores = null;
-		return doReset;
+		}
+		// allocate memory for score lookup table
+		if (typeScores == null || typeScores.length != nTraits)
+			typeScores = new double[nTraits];
+		nMixedInter = getNMixedInteractions(nGroup);
+		return false;
 	}
 
 	/**
@@ -3844,15 +3933,13 @@ public abstract class IBSPopulation<M extends Module<?>, P extends IBSPopulation
 
 		// best-response in well-mixed populations should skip sampling of references
 		if (playerUpdate.getType() == PlayerUpdate.Type.BEST_RESPONSE) {
-			compGroup.setSampling(IBSGroup.SamplingType.NONE);
-		} else if (compGroup.isSampling(IBSGroup.SamplingType.ALL)) {
+			compGroup.setNSamples(IBSGroup.SAMPLING_NONE);
+		} else if (compGroup.isSampling(IBSGroup.SAMPLING_ALL)) {
 			// 010320 using everyone as a reference in mean-field simulations is not
 			// feasible - except for best-response
 			// ecological updates are based on births and deaths rather than references
-			if (logger.isLoggable(Level.WARNING))
-				logger.warning("reference type (" + compGroup.getSampling()
-						+ ") unfeasible in well-mixed populations!");
-			compGroup.setSampling(IBSGroup.SamplingType.RANDOM);
+			engine.logWarning("reference type 'all' unfeasible in well-mixed populations - using single reference!");
+			compGroup.setNSamples(1);
 		}
 	}
 
@@ -3869,26 +3956,43 @@ public abstract class IBSPopulation<M extends Module<?>, P extends IBSPopulation
 		boolean doReset = false;
 		if (populationUpdate.getType() == PopulationUpdate.Type.ECOLOGY) {
 			optimizeHomo = false;
-			logger.warning(
+			engine.logWarning(
 					"optimizations for homogeneous states disabled (incompatible with variable population sizes).");
 			doReset = true;
 		}
 		double pMutation = mutation.getProbability();
 		if (pMutation <= 0.0) {
 			optimizeHomo = false;
-			logger.warning("optimizations for homogeneous states disabled (small mutations required).");
+			engine.logWarning("optimizations for homogeneous states disabled (small mutations required).");
 			doReset = true;
 		}
 		if (pMutation < 0.0 || pMutation > 0.1 * nPopulation) {
-			if (logger.isLoggable(Level.WARNING))
-				logger.warning(
-						"optimizations for homogeneous states not recommended (mutations in [0, "
-								+ (0.1 / nPopulation)
-								+ ") recommended, now " + Formatter.format(pMutation, 4)
-								+ ", proceeding)");
+			engine.logWarning(
+					"optimizations for homogeneous states not recommended (mutations in [0, "
+							+ (0.1 / nPopulation)
+							+ ") recommended, now " + Formatter.format(pMutation, 4)
+							+ ", proceeding)");
 			doReset = true;
 		}
 		return doReset;
+	}
+
+	/**
+	 * Emit warnings for configurations whose support status is limited.
+	 * <p>
+	 * Subclasses may override this hook to suppress or refine warnings for
+	 * configurations that are expected and exercised in a particular population
+	 * implementation.
+	 */
+	protected void checkLimitedTesting() {
+		if (!engine.getLogger().isLoggable(Level.WARNING))
+			return;
+		if (!interaction.isUndirected()
+				&& !module.isStatic())
+			engine.logWarning((isMultispecies ? module.getName() + ": " : "")
+					+ "interactions on directed graphs have received very limited testing...");
+		if (vacantIdx >= 0 && module.getNGroup() > 2)
+			engine.logWarning("group interactions with vacant sites have NOT been tested...");
 	}
 
 	/**
@@ -4016,10 +4120,9 @@ public abstract class IBSPopulation<M extends Module<?>, P extends IBSPopulation
 			// note: the maximum selection strength may be significantly higher if
 			// populations,
 			// on average, are unable to achieve the highest individual payoffs
-			if (logger.isLoggable(Level.WARNING))
-				logger.warning(
-						"selection strength too strong (numerical overflow) - reduced to (conservative) maximum of "
-								+ Formatter.format(map2fit.getSelection(), 4));
+			engine.logWarning(
+					"selection strength too strong (numerical overflow) - reduced to (conservative) maximum of "
+							+ Formatter.format(map2fit.getSelection(), 4));
 			updateMinMaxScores();
 		}
 
@@ -4062,12 +4165,11 @@ public abstract class IBSPopulation<M extends Module<?>, P extends IBSPopulation
 			return;
 		// avoid negative fitness for Moran type updates
 		if (minFitness < 0.0) {
-			if (logger.isLoggable(Level.WARNING))
-				logger.warning("Moran updates require fitness>=0 (score range [" + Formatter.format(minScore, 6)
-						+ ", " + Formatter.format(maxScore, 6) + "]; " + "fitness range ["
-						+ Formatter.format(minFitness, 6) + ", " + Formatter.format(maxFitness, 6) + "]).\n"
-						+ "Changed baseline fitness to " + map2fit.getBaseline()
-						+ (!map2fit.isMap(Map2Fitness.Map.STATIC) ? " with static payoff-to-fitness map" : ""));
+			engine.logWarning("Moran updates require fitness>=0 (score range [" + Formatter.format(minScore, 6)
+					+ ", " + Formatter.format(maxScore, 6) + "]; " + "fitness range ["
+					+ Formatter.format(minFitness, 6) + ", " + Formatter.format(maxFitness, 6) + "]).\n"
+					+ "Changed baseline fitness to " + map2fit.getBaseline()
+					+ (!map2fit.isMap(Map2Fitness.Map.STATIC) ? " with static payoff-to-fitness map" : ""));
 			// just change to something meaningful
 			map2fit.setMap(Map2Fitness.Map.STATIC);
 			map2fit.setBaseline(-minFitness);
@@ -4081,7 +4183,6 @@ public abstract class IBSPopulation<M extends Module<?>, P extends IBSPopulation
 		// (birth-death)
 		// reason: referenceGroup properly deals with hierarchies
 		// future: pick parent to populate vacated site (death-birth, fitness dependent)
-		compGroup.setSampling(IBSGroup.SamplingType.RANDOM);
 		compGroup.setNSamples(1);
 		// in the original Moran process offspring can replace the parent
 		compGroup.setSelf(competition.isType(GeometryType.WELLMIXED));
@@ -4099,7 +4200,7 @@ public abstract class IBSPopulation<M extends Module<?>, P extends IBSPopulation
 		if (!playerScoring.equals(ScoringType.EPHEMERAL))
 			return;
 
-		if (interGroup.isSampling(SamplingType.ALL)) {
+		if (interGroup.isSampling(IBSGroup.SAMPLING_ALL)) {
 			if (nGroup > 2) {
 				// single interaction with all members in neighbourhood
 				Arrays.fill(interactions, 1);
@@ -4131,14 +4232,14 @@ public abstract class IBSPopulation<M extends Module<?>, P extends IBSPopulation
 		if (tags != null)
 			for (int n = 0; n < nPopulation; n++)
 				tags[n] = n;
-		// if flagged as inconsistent, no (further) checks are performed
-		nIssues = (consistencyCheckRequested ? 0 : -1);
+		// reset issue counter for the current model state
+		nIssues = 0;
 	}
 
 	/**
-	 * The number of concistency issues encountered in the state of the IBS model.
+	 * The number of consistency issues encountered in the state of the IBS model.
 	 * 
-	 * @see #isConsistent()
+	 * @see #checkConsistency()
 	 */
 	int nIssues;
 
@@ -4146,18 +4247,22 @@ public abstract class IBSPopulation<M extends Module<?>, P extends IBSPopulation
 	 * The flag to indicate whether consistency checks on the state of the IBS model
 	 * are requested.
 	 * 
-	 * @see #isConsistent()
+	 * @see #checkConsistency()
 	 */
-	boolean consistencyCheckRequested;
+	boolean checkConsistency;
 
 	/**
 	 * Enable consistency checks of the state of the IBS model. Never use in
 	 * production.
-	 * 
+	 * <p>
+	 * Consistency issues are only ever reported as warnings; callers should check
+	 * whether warnings are loggable before requesting checks, see
+	 * {@link IBS#cloConsistency}.
+	 *
 	 * @param check {@code true} to request consistency checks
 	 */
-	public void setConsistencyCheck(boolean check) {
-		consistencyCheckRequested = check;
+	public void setCheckConsistency(boolean check) {
+		checkConsistency = check;
 	}
 
 	/**
@@ -4167,38 +4272,58 @@ public abstract class IBSPopulation<M extends Module<?>, P extends IBSPopulation
 	 * <p>
 	 * Execution time is of little concern here. Never use in the final simulation
 	 * code.
+	 * 
+	 * @return {@code true} if no inconsistencies were found, consistency checks
+	 *         are disabled, or inconsistencies already found.
 	 */
-	public void isConsistent() {
-		// nIssues < 0 means consistency checks disabled
-		// nIssues > 0 means inconsistencies already found
-		if (nIssues != 0 || !logger.isLoggable(Level.WARNING))
-			return;
+	public final boolean checkConsistency() {
+		if (!checkConsistency || nIssues > 0)
+			return true;
+		checkState();
 		if (module instanceof Payoffs)
-			checkConsistentFitness();
-		// TODO consistency checks for geometries & interactions
-		// interaction.isConsistent();
-		// if (!interaction.isSingle())
-		// competition.isConsistent();
-		if (nIssues > 0)
-			logger.warning(nIssues + " inconsistencies found @ " + engine.getModel().getUpdates());
+			checkFitness();
+		if (interaction.getType() == GeometryType.DYNAMIC) {
+			if (!interaction.checkConsistency())
+				nIssues++;
+			if (!interaction.isSingle() && !competition.checkConsistency())
+				nIssues++;
+		}
+		if (nIssues > 0) {
+			engine.logWarning(nIssues + " inconsistencies found @ " + engine.getModel().getUpdates());
+			return false;
+		}
+		return true;
+	}
+
+	/**
+	 * Check consistency of the state of the IBS model. Subclasses may override this
+	 * method to add checks for consistency of the state of the model. Never use in
+	 * production.
+	 */
+	void checkState() {
 	}
 
 	/**
 	 * Check consistency of scores and fitness values for modules that implement
 	 * Payoffs.
 	 */
-	void checkConsistentFitness() {
+	void checkFitness() {
 		for (int n = 0; n < nPopulation; n++)
-			checkIndividualConsistency(n);
+			checkIndividual(n);
 
 		if (adjustScores) {
 			if (hasLookupTable)
-				checkLookupTableConsistency();
+				checkLookupTable();
 			else
-				checkAdjustScoresConsistency();
+				checkAdjustScores();
 
 		} else {
-			checkNoAdjustScoresConsistency();
+			double checkFitness = 0.0;
+			for (int n = 0; n < nPopulation; n++)
+				checkFitness += getFitnessAt(n);
+			// see checkFitnessSum for why the tolerance is scaled to sumFitness
+			if (Math.abs(checkFitness - sumFitness) > Combinatorics.pow(10, -12 + Functions.magnitude(sumFitness)))
+				logAccountingIssue(checkFitness, sumFitness);
 		}
 	}
 
@@ -4207,28 +4332,28 @@ public abstract class IBSPopulation<M extends Module<?>, P extends IBSPopulation
 	 * 
 	 * @param n the index of the individual
 	 */
-	private void checkIndividualConsistency(int n) {
+	private void checkIndividual(int n) {
 		double scoren = getScoreAt(n);
 		if (Double.isNaN(scoren))
 			logScoringIssue(n, scoren, "is NaN...");
 
-		if (isVacantAt(n) && scoren > 1e-12)
+		if (isVacantAt(n) && scoren > Model.EPS_SMALL)
 			logScoringIssue(n, scoren, "of vacant site should be zero");
 		// check score range
-		if (scoren + 1e-12 < minScore || scoren - 1e-12 > maxScore)
+		if (scoren + Model.EPS_SMALL < minScore || scoren - Model.EPS_SMALL > maxScore)
 			logScoringIssue(n, scoren, "not in [" + minScore + ", " + maxScore + "]");
 		// check fitness
 		double fitn = getFitnessAt(n);
-		if (fitn + 1e-12 < minFitness || fitn - 1e-12 > maxFitness)
+		if (fitn + Model.EPS_SMALL < minFitness || fitn - Model.EPS_SMALL > maxFitness)
 			logScoringIssue(n, fitn, "not in [" + minFitness + ", " + maxFitness + "]");
-		if (Math.abs(map2fit.map(scoren) - fitn) > 1e-12)
+		if (Math.abs(map2fit.map(scoren) - fitn) > Model.EPS_SMALL)
 			logMapIssue(n, scoren, fitn);
 	}
 
 	/**
 	 * Check consistency of scores when using lookup tables.
 	 */
-	private void checkLookupTableConsistency() {
+	private void checkLookupTable() {
 		double[] typeScoresStore = typeScores;
 		double[] typeFitnessStore = ArrayMath.clone(typeFitness);
 		Arrays.fill(typeFitness, Double.MAX_VALUE);
@@ -4260,13 +4385,13 @@ public abstract class IBSPopulation<M extends Module<?>, P extends IBSPopulation
 		for (int n = 0; n < nTraits; n++) {
 			if (n == vacantIdx && typeScores[n] != typeScoresStore[n])
 				logScoringIssue(n, typeScoresStore[n], "instead of " + typeScores[n] + " (NaN)");
-			if (Math.abs(typeScores[n] - typeScoresStore[n]) > 1e-12)
+			if (Math.abs(typeScores[n] - typeScoresStore[n]) > Model.EPS_SMALL)
 				logScoringIssue(n, typeScoresStore[n], typeScores[n]);
 
 			typeFitness[n] = map2fit.map(typeScores[n]);
-			if (Math.abs(typeFitness[n] - typeFitnessStore[n]) > 1e-12)
+			if (Math.abs(typeFitness[n] - typeFitnessStore[n]) > Model.EPS_SMALL)
 				logFitnessIssue(n, typeFitnessStore[n], typeFitness[n]);
-			if (Math.abs(map2fit.map(typeScores[n]) - typeFitness[n]) > 1e-12)
+			if (Math.abs(map2fit.map(typeScores[n]) - typeFitness[n]) > Model.EPS_SMALL)
 				logMapIssue(n, typeScores[n], typeFitness[n]);
 		}
 	}
@@ -4277,23 +4402,26 @@ public abstract class IBSPopulation<M extends Module<?>, P extends IBSPopulation
 	 * @param sumFitnessStore the stored fitness sum
 	 */
 	private void checkFitnessSum(double sumFitnessStore) {
-		if (Math.abs(sumFitness - sumFitnessStore) > 1e-12)
+		if (Math.abs(sumFitness - sumFitnessStore) > Model.EPS_SMALL)
 			logAccountingIssue(sumFitnessStore, sumFitness);
 
 		double checkFitness = 0.0;
 		for (int n = 0; n < nPopulation; n++)
 			checkFitness += getFitnessAt(n);
 
-		if (Math.abs(sumFitness - checkFitness) > Combinatorics.pow(10, -11 + Functions.magnitude(sumFitness)))
+		// tolerance scales with sumFitness's magnitude (re-summing nPopulation
+		// doubles in a different order can drift by more than a flat epsilon);
+		// -12 matches EPS_SMALL at the low end of each magnitude bracket
+		if (Math.abs(sumFitness - checkFitness) > Combinatorics.pow(10, -12 + Functions.magnitude(sumFitness)))
 			logAccountingIssue("sum of fitness is ", sumFitnessStore, sumFitness,
 					"(delta=" + Math.abs(sumFitness - checkFitness) + ", max="
-							+ Combinatorics.pow(10, -11 + Functions.magnitude(sumFitness)) + ")");
+							+ Combinatorics.pow(10, -12 + Functions.magnitude(sumFitness)) + ")");
 	}
 
 	/**
 	 * Check consistency when not using lookup tables.
 	 */
-	private void checkAdjustScoresConsistency() {
+	private void checkAdjustScores() {
 		double[] scoresStore = scores;
 		scores = new double[nPopulation];
 		double[] fitnessStore = fitness;
@@ -4303,36 +4431,26 @@ public abstract class IBSPopulation<M extends Module<?>, P extends IBSPopulation
 		engine.getModel().update();
 
 		for (int n = 0; n < nPopulation; n++) {
-			if (Math.abs(scores[n] - scoresStore[n]) > 1e-12)
+			if (Math.abs(scores[n] - scoresStore[n]) > Model.EPS_SMALL)
 				logScoringIssue(n, scoresStore[n], scores[n]);
-			if (Math.abs(fitness[n] - fitnessStore[n]) > 1e-12)
+			if (Math.abs(fitness[n] - fitnessStore[n]) > Model.EPS_SMALL)
 				logFitnessIssue(n, fitnessStore[n], fitness[n]);
-			if (Math.abs(map2fit.map(scores[n]) - fitness[n]) > 1e-12)
+			if (Math.abs(map2fit.map(scores[n]) - fitness[n]) > Model.EPS_SMALL)
 				logMapIssue(n, scores[n], fitness[n]);
 		}
 
-		if (Math.abs(sumFitness - sumFitnessStore) > 1e-12)
+		if (Math.abs(sumFitness - sumFitnessStore) > Model.EPS_SMALL)
 			logAccountingIssue(sumFitnessStore, sumFitness);
 
 		double checkFitness = ArrayMath.norm(fitness);
-		if (Math.abs(sumFitness - checkFitness) > 1e-12)
+		// see checkFitnessSum for why the tolerance is scaled to sumFitness
+		if (Math.abs(sumFitness - checkFitness) > Combinatorics.pow(10, -12 + Functions.magnitude(sumFitness)))
 			logAccountingIssue(checkFitness, sumFitness);
 
 		// restore data
 		scores = scoresStore;
 		fitness = fitnessStore;
 		sumFitness = sumFitnessStore;
-	}
-
-	/**
-	 * Check consistency when scores are not adjusted.
-	 */
-	private void checkNoAdjustScoresConsistency() {
-		double checkFitness = 0.0;
-		for (int n = 0; n < nPopulation; n++)
-			checkFitness += getFitnessAt(n);
-		if (Math.abs(checkFitness - sumFitness) > 1e-8)
-			logAccountingIssue(checkFitness, sumFitness);
 	}
 
 	/**
@@ -4343,8 +4461,7 @@ public abstract class IBSPopulation<M extends Module<?>, P extends IBSPopulation
 	 * @param issue  the issue description
 	 */
 	void logScoringIssue(int idx, double actual, String issue) {
-		if (logger.isLoggable(Level.WARNING))
-			logger.warning("score issue @ " + idx + ": score=" + actual + " " + issue);
+		engine.logWarning("score issue @ " + idx + ": score=" + actual + " " + issue);
 		nIssues++;
 	}
 
@@ -4372,9 +4489,8 @@ public abstract class IBSPopulation<M extends Module<?>, P extends IBSPopulation
 	 * @param expected the expected score
 	 */
 	void logMapIssue(int idx, double actual, double expected) {
-		if (logger.isLoggable(Level.WARNING))
-			logger.warning("map issue @ " + idx + ": score=" + actual + " maps to " + map2fit.map(actual)
-					+ INSTEAD_OF + expected);
+		engine.logWarning("map issue @ " + idx + ": score=" + actual + " maps to " + map2fit.map(actual)
+				+ INSTEAD_OF + expected);
 		nIssues++;
 	}
 
@@ -4386,8 +4502,7 @@ public abstract class IBSPopulation<M extends Module<?>, P extends IBSPopulation
 	 * @param expected the expected fitness
 	 */
 	void logFitnessIssue(int idx, double actual, double expected) {
-		if (logger.isLoggable(Level.WARNING))
-			logger.warning("fit issue @ " + idx + ": fitness=" + actual + INSTEAD_OF + expected);
+		engine.logWarning("fit issue @ " + idx + ": fitness=" + actual + INSTEAD_OF + expected);
 		nIssues++;
 	}
 
@@ -4410,17 +4525,16 @@ public abstract class IBSPopulation<M extends Module<?>, P extends IBSPopulation
 	 * @param issue    the issue description
 	 */
 	void logAccountingIssue(String descr, double actual, double expected, String issue) {
-		if (logger.isLoggable(Level.WARNING))
-			logger.warning(
-					"accounting issue: " + descr + actual + INSTEAD_OF + expected + " " + issue);
+		engine.logWarning(
+				"accounting issue: " + descr + actual + INSTEAD_OF + expected + " " + issue);
 		nIssues++;
 	}
 
 	/**
-	 * Reset all traits in preparation of the next update step. Simply an
-	 * opportunity for customizations in subclasses.
+	 * Clear transient trait state that should persist only until the current model
+	 * update has been reported.
 	 */
-	public void resetTraits() {
+	public void clearTraits() {
 	}
 
 	/**
@@ -4673,9 +4787,11 @@ public abstract class IBSPopulation<M extends Module<?>, P extends IBSPopulation
 	 * array {@code mem}.
 	 * 
 	 * @param mem the array to copy the tags into
-	 * @return the array of tags
+	 * @return the array of tags; {@code mem} unchanged if tags are not tracked
 	 */
 	public double[] getTags(double[] mem) {
+		if (tags == null)
+			return mem;
 		System.arraycopy(tags, 0, mem, 0, nPopulation);
 		return mem;
 	}
@@ -4695,6 +4811,8 @@ public abstract class IBSPopulation<M extends Module<?>, P extends IBSPopulation
 	 * @param colorMap the map that converts tags into colors
 	 */
 	public <T> void getTagData(T[] colors, ColorMap<T> colorMap) {
+		if (tags == null)
+			return;
 		colorMap.translate(tags, colors);
 	}
 
@@ -4702,9 +4820,11 @@ public abstract class IBSPopulation<M extends Module<?>, P extends IBSPopulation
 	 * Gets the tag of the individual with index {@code idx}.
 	 *
 	 * @param idx the index of the individual
-	 * @return the tag number
+	 * @return the tag number, or {@code Double.NaN} if tags are not tracked
 	 */
 	public double getTagAt(int idx) {
+		if (tags == null)
+			return Double.NaN;
 		return tags[idx];
 	}
 
@@ -4712,9 +4832,11 @@ public abstract class IBSPopulation<M extends Module<?>, P extends IBSPopulation
 	 * Gets the formatted tag of the individual with index {@code idx} as string.
 	 *
 	 * @param idx the index of the individual
-	 * @return the tag as a string
+	 * @return the tag as a string, or {@code null} if tags are not tracked
 	 */
 	public String getTagNameAt(int idx) {
+		if (tags == null)
+			return null;
 		return Formatter.format(tags[idx], 4);
 	}
 
@@ -4723,12 +4845,15 @@ public abstract class IBSPopulation<M extends Module<?>, P extends IBSPopulation
 	 *
 	 * @param idx the index of the individual
 	 * @param tag the new tag of the individual
-	 * @return {@code true} if the tag changed
+	 * @return {@code true} if the tag changed; {@code false} if tags are not
+	 *         tracked
 	 */
 	public boolean setTagAt(int idx, double tag) {
+		if (tags == null)
+			return false;
 		double old = tags[idx];
 		tags[idx] = tag;
-		return (Math.abs(tag - old) < 1e-8);
+		return (Math.abs(tag - old) > Model.EPS);
 	}
 
 	/**
@@ -4753,7 +4878,7 @@ public abstract class IBSPopulation<M extends Module<?>, P extends IBSPopulation
 	 * @param sync the fraction that gets updated
 	 */
 	public void setSyncFraction(double sync) {
-		if (sync <= 0.0 || sync > 1.0 || Math.abs(syncFraction - sync) < 1e-8)
+		if (sync <= 0.0 || sync > 1.0 || Math.abs(syncFraction - sync) < Model.EPS)
 			return;
 		syncFraction = sync;
 	}
@@ -4768,12 +4893,17 @@ public abstract class IBSPopulation<M extends Module<?>, P extends IBSPopulation
 	}
 
 	/**
-	 * Sets the type of migrations to {@code type}.
-	 * 
+	 * Sets the type of migrations to {@code type}. Setting
+	 * {@link MigrationType#NONE}
+	 * also resets the migration probability to {@code 0.0}, keeping the two in
+	 * sync without relying on every caller to pair them.
+	 *
 	 * @param type the new type of migrations
 	 */
 	public void setMigrationType(MigrationType type) {
 		migrationType = type == null ? MigrationType.NONE : type;
+		if (migrationType == MigrationType.NONE)
+			pMigration = new double[] { 0.0 };
 	}
 
 	/**
@@ -4786,21 +4916,51 @@ public abstract class IBSPopulation<M extends Module<?>, P extends IBSPopulation
 	}
 
 	/**
-	 * Sets the migration probability to {@code aValue}.
-	 * 
+	 * Sets the migration probability to {@code aValue} for all traits.
+	 *
 	 * @param aValue the new migration probability
 	 */
 	public void setMigrationProb(double aValue) {
-		pMigration = aValue;
+		pMigration = new double[] { aValue };
 	}
 
 	/**
-	 * Gets the migration probability.
-	 * 
-	 * @return the migration probability
+	 * Sets the migration probability per trait to {@code rates}.
+	 *
+	 * @param rates the new migration probabilities, one per trait
+	 *
+	 * @see #getMigrationProb(int)
 	 */
-	public double getMigrationProb() {
-		return pMigration;
+	public void setMigrationProb(double[] rates) {
+		pMigration = (rates == null || rates.length == 0) ? new double[] { 0.0 } : rates;
+	}
+
+	/**
+	 * Gets the migration probability for {@code type}. Entries are cycled with
+	 * modulo indexing if fewer rates than traits were specified, e.g. a single
+	 * rate applies to all traits - so for modules with a single, trait-
+	 * independent rate (the common case), {@code getMigrationProb(0)} is simply
+	 * that rate, regardless of {@code type}.
+	 *
+	 * @param type the trait for which to get the migration probability
+	 * @return the migration probability of {@code type}
+	 */
+	public double getMigrationProb(int type) {
+		return pMigration[type % pMigration.length];
+	}
+
+	/**
+	 * Gets the largest migration probability across all traits - trivially equal
+	 * to {@link #getMigrationProb(int) getMigrationProb(0)} whenever a single,
+	 * trait-independent rate is set. Used as the upper bound to decide
+	 * whether/how often a migration event is attempted at all in the first
+	 * place, with the individual's own rate then thinning the accepted
+	 * attempts, see {@link #rejectMigrant(int)}.
+	 *
+	 * @return the largest migration probability across all traits
+	 */
+	public double getMaxMigrationProb() {
+		return ArrayMath.max(pMigration);
 	}
 
 	/**
@@ -5057,7 +5217,7 @@ public abstract class IBSPopulation<M extends Module<?>, P extends IBSPopulation
 	public int nextBinomial(double p, int n) {
 		if (n == 0)
 			return 0;
-		if (p > 1.0 - 1e-8)
+		if (p > 1.0 - Model.EPS)
 			return 0;
 
 		// check if gaussian approximation is suitable
@@ -5076,10 +5236,10 @@ public abstract class IBSPopulation<M extends Module<?>, P extends IBSPopulation
 				return i;
 			pi *= f;
 		}
-		if (logger.isLoggable(Level.WARNING)) {
+		if (engine.getLogger().isLoggable(Level.WARNING)) {
 			StringBuilder sb = new StringBuilder("What the heck are you doing here!!! (rand: ");
 			sb.append(uRand).append(", p: ").append(p).append(", n: ").append(n).append(" → ").append(sum).append(")");
-			logger.warning(sb.toString());
+			engine.logWarning(sb.toString());
 		}
 		return -1;
 	}

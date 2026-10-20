@@ -142,7 +142,7 @@ public class AdvectionJRE extends Advection {
 	}
 
 	/**
-	 * Called after the diffusion step completed.
+	 * Called after a worker completed its task.
 	 */
 	protected synchronized void done() {
 		pending = PDEWorkerPool.done(pending);

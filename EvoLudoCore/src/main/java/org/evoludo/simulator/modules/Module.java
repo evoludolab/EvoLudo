@@ -35,8 +35,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 
 import org.evoludo.math.ArrayMath;
 import org.evoludo.math.RNGDistribution;
@@ -49,6 +47,8 @@ import org.evoludo.simulator.models.IBS;
 import org.evoludo.simulator.models.IBSPopulation;
 import org.evoludo.simulator.models.LifecycleListener;
 import org.evoludo.simulator.models.Model;
+import org.evoludo.simulator.models.Model.DualDynamics;
+import org.evoludo.simulator.models.Model.DualDynamics.Dynamics;
 import org.evoludo.simulator.models.Model.HasDE;
 import org.evoludo.simulator.models.Model.HasIBS;
 import org.evoludo.simulator.models.ModelType;
@@ -103,11 +103,6 @@ public abstract class Module<T extends Module<T>>
 	protected EvoLudo engine;
 
 	/**
-	 * Logger for keeping track of and reporting events and issues.
-	 */
-	protected Logger logger;
-
-	/**
 	 * Reference to current model.
 	 */
 	protected Model model;
@@ -160,7 +155,9 @@ public abstract class Module<T extends Module<T>>
 	@SuppressWarnings("unchecked")
 	protected Module(EvoLudo engine, T partner) {
 		this.engine = engine;
-		logger = engine.getLogger();
+		cloDynamics.addKeys(Dynamics.values());
+		// parse before any option whose meaning depends on the regime, e.g. --init
+		cloDynamics.setPriority(-1);
 		T mod = (T) this;
 		if (partner == null) {
 			id = 0;
@@ -333,6 +330,12 @@ public abstract class Module<T extends Module<T>>
 		// currently only the Test module uses neither Discrete nor Continuous classes.
 		if (species == null)
 			species = new ArrayList<>();
+		// activate all traits by default; subclasses with only a subset
+		// must override this after calling super.load(). skip if nTraits
+		// isn't set yet - some subclasses only call setNTraits() later in
+		// their own load(), which takes care of this itself
+		if (nTraits > 0)
+			setActiveTraits(null);
 		engine.addCLOProvider(this);
 		engine.addLifecycleListener(this);
 		engine.addRunListener(this);
@@ -373,16 +376,36 @@ public abstract class Module<T extends Module<T>>
 	 * <p>
 	 * <strong>Note:</strong> All parameter changes that don't require a reset can
 	 * be made on the fly, in particular also while a model is running.
-	 * 
+	 * <p>
+	 * <strong>Important:</strong> overriding subclasses must incorporate the
+	 * result of {@code super.check()} into their own return value (typically
+	 * {@code doReset |= super.check()}) so that a pending
+	 * {@link #setNTraits(int, int)} change is not silently dropped.
+	 *
 	 * @return {@code true} to trigger reset
-	 * 
+	 *
 	 * @see EvoLudo#modelCheck()
 	 * @see EvoLudo#paramsDidChange()
 	 */
 	public boolean check() {
-		setActiveTraits(null);
-		return false;
+		boolean doReset = nTraitsChanged;
+		nTraitsChanged = false;
+		return doReset;
 	}
+
+	/**
+	 * Flags that {@link #setNTraits(int, int)} changed {@link #nTraits} or
+	 * {@link #vacantIdx} since the last call to {@link #check()}. Changing either
+	 * alters the dimension of essentially everything derived from them -
+	 * population arrays, color/name caches, view history buffers, etc. - so it
+	 * must always trigger a reset, regardless of whether the module's own
+	 * {@link #check()} override happens to resize its parameter arrays (e.g. via
+	 * a CLO re-parse triggered by {@link EvoLudo#requestParseCLO()}) before
+	 * noticing the change itself.
+	 *
+	 * @see #check()
+	 */
+	private boolean nTraitsChanged = false;
 
 	/**
 	 * Initialize Module based on current parameters. This requires that parameters
@@ -467,7 +490,7 @@ public abstract class Module<T extends Module<T>>
 		Collection<CLOption.Key> keys = cloModel.getKeys();
 		if (keys.isEmpty()) {
 			if (!helpRequested)
-				logger.severe("model not found!");
+				engine.logError("model not found!");
 			return helpCLO;
 		}
 		ModelType defaulttype = (ModelType) cloModel.match(cloModel.getDefault());
@@ -492,8 +515,8 @@ public abstract class Module<T extends Module<T>>
 				Model activeModel = engine.getModel();
 				if (activeModel != null) {
 					type = activeModel.getType();
-					if (!helpRequested && logger.isLoggable(Level.WARNING))
-						logger.warning(
+					if (!helpRequested)
+						engine.logWarning(
 								"invalid model type " + newModel + " - keep current type " + type.getKey() + ".");
 				} else {
 					type = defaulttype;
@@ -508,8 +531,8 @@ public abstract class Module<T extends Module<T>>
 		// NOTE: currently models cannot be mix'n'matched between species
 		engine.loadModel(type);
 		if (engine.getModel() == null) {
-			if (!helpRequested && logger.isLoggable(Level.SEVERE))
-				logger.severe("model type " + (type == null ? "" : "'" + type.getKey() + "' not supported!"));
+			if (!helpRequested)
+				engine.logError("model type " + (type == null ? "" : "'" + type.getKey() + "' not supported!"));
 			return helpCLO;
 		}
 		return cloarray;
@@ -522,9 +545,8 @@ public abstract class Module<T extends Module<T>>
 	 * @param type   the model type
 	 */
 	private void warnModel(String prefix, ModelType type) {
-		if (logger.isLoggable(Level.WARNING))
-			logger.warning(
-					prefix + " - " + (type == null ? "no default type." : "use default type " + type.getKey() + "."));
+		engine.logWarning(
+				prefix + " - " + (type == null ? "no default type." : "use default type " + type.getKey() + "."));
 	}
 
 	/**
@@ -570,7 +592,7 @@ public abstract class Module<T extends Module<T>>
 	public static final String VACANT_NAME = "Vacant";
 
 	/**
-	 * The default name of the vacant type (empty site).
+	 * The default color of the vacant type (empty site).
 	 */
 	public static final Color VACANT_COLOR = Color.GRAY;
 
@@ -651,8 +673,17 @@ public abstract class Module<T extends Module<T>>
 		// prevent requesting re-parsing of CLOs on initial load
 		if (this.nTraits > 0 && (this.nTraits != nTraits))
 			engine.requestParseCLO();
+		nTraitsChanged = (this.nTraits != nTraits || this.vacantIdx != vacantIdx);
 		this.nTraits = nTraits;
 		this.vacantIdx = vacantIdx;
+		if (nTraitsChanged) {
+			// cached names/colors and the active-trait bitmask are sized (and,
+			// for names/colors, populated) for the previous number of traits -
+			// discard so they get regenerated
+			traitName = null;
+			traitColor = null;
+			setActiveTraits(null);
+		}
 	}
 
 	/**
@@ -673,7 +704,8 @@ public abstract class Module<T extends Module<T>>
 	 */
 	public void setActiveTraits(boolean[] active) {
 		if (active == null) {
-			this.active = new boolean[nTraits];
+			if (this.active == null || this.active.length != nTraits)
+				this.active = new boolean[nTraits];
 			Arrays.fill(this.active, true);
 			nActive = nTraits;
 			return;
@@ -692,10 +724,6 @@ public abstract class Module<T extends Module<T>>
 	 * @return the array of active traits
 	 */
 	public boolean[] getActiveTraits() {
-		if (active == null || active.length != nTraits) {
-			active = new boolean[nTraits];
-			Arrays.fill(active, true);
-		}
 		return active;
 	}
 
@@ -737,30 +765,41 @@ public abstract class Module<T extends Module<T>>
 	}
 
 	/**
-	 * Set trait names. Underscores, '_', are converted to spaces.
+	 * Set trait names. The number of names must equal {@code nTraits}. For
+	 * modules that have vacant sites, the length may also be {@code nTraits - 1},
+	 * in which case the vacant type keeps its default name, see
+	 * {@link #VACANT_NAME}.
 	 * <p>
-	 * <strong>Note:</strong> If {@code names == null} or
-	 * {@code names.length &lt; nTraits} then additional traits are named "Trait A",
-	 * "Trait B", etc. If {@code names.length &gt; nTraits} then excess names are
-	 * ignored.
-	 * 
+	 * <strong>Note:</strong> If {@code names == null} then all traits are named
+	 * "Trait A", "Trait B", etc. (or {@link #VACANT_NAME} for the vacant type).
+	 *
 	 * @param names the names of the traits
+	 * @return {@code true} if names successfully set
+	 *
+	 * @see #VACANT_NAME
 	 */
-	public void setTraitNames(String[] names) {
+	public boolean setTraitNames(String[] names) {
+		if (names != null && !(names.length == nTraits || (hasVacant() && names.length == nTraits - 1)))
+			return false;
+		if (hasVacant() && names != null && names.length == nTraits - 1)
+			// caller omitted the vacant name - insert default
+			names = ArrayMath.insert(names, null, vacantIdx);
 		if (traitName == null || !(traitName.length == nTraits || (traitName.length == nTraits - 1 && hasVacant())))
 			traitName = new String[nTraits];
 		int idx = 0;
 		if (names != null) {
 			for (String n : names) {
 				if (n == null) {
-					traitName[idx++] = nameTrait(idx);
+					traitName[idx] = nameTrait(idx);
+					idx++;
 					continue;
 				}
-				traitName[idx++] = n.replace('_', ' ').trim();
+				traitName[idx++] = n.trim();
 			}
 		}
 		for (int i = idx; i < nTraits; i++)
 			traitName[i] = nameTrait(idx++);
+		return true;
 	}
 
 	/**
@@ -813,6 +852,20 @@ public abstract class Module<T extends Module<T>>
 	}
 
 	/**
+	 * Format {@code color} as an <code>(r,g,b)</code> triplet, or an
+	 * <code>(r,g,b,a)</code> quadruple if {@code color} is not fully opaque,
+	 * matching the syntax accepted by {@link CLOParser#parseColor(String)}.
+	 *
+	 * @param color the color to format
+	 * @return the formatted color triplet (or quadruple with alpha)
+	 */
+	private static String formatColor(Color color) {
+		int alpha = color.getAlpha();
+		String rgb = color.getRed() + "," + color.getGreen() + "," + color.getBlue();
+		return alpha == 255 ? "(" + rgb + ")" : "(" + rgb + "," + alpha + ")";
+	}
+
+	/**
 	 * Gets the colors for all traits.
 	 * 
 	 * @return the array of trait colors
@@ -832,6 +885,22 @@ public abstract class Module<T extends Module<T>>
 	 */
 	public Color[] getMeanColors() {
 		return getTraitColors();
+	}
+
+	/**
+	 * Gets the names for the mean values of traits. By default this is the same as
+	 * the trait names. Opportunity for subclasses to return different sets of names
+	 * for reporting mean values.
+	 * <p>
+	 * <strong>Note:</strong> the number of names must match the number of mean
+	 * values reported by the model, see {@link Model#getNMean(int)}.
+	 *
+	 * @return the array of mean value names
+	 *
+	 * @see #getMeanColors()
+	 */
+	public String[] getMeanNames() {
+		return getTraitNames();
 	}
 
 	/**
@@ -862,13 +931,16 @@ public abstract class Module<T extends Module<T>>
 	 */
 	public boolean setTraitColors(Color[] colors) {
 		if (colors == null) {
-			colors = new Color[nTraits];
-			System.arraycopy(defaultColor, 0, colors, 0, Math.min(nTraits, defaultColor.length));
-			if (nTraits > defaultColor.length) {
+			// vacant sites get their color inserted below, like for any other
+			// caller-supplied array - so only the active traits need default colors here
+			int nColors = hasVacant() ? nTraits - 1 : nTraits;
+			colors = new Color[nColors];
+			System.arraycopy(defaultColor, 0, colors, 0, Math.min(nColors, defaultColor.length));
+			if (nColors > defaultColor.length) {
 				// add random colors if needed - do not use the shared RNG to prevent
 				// interfering with reproducibility
 				RNGDistribution rng = new RNGDistribution.Uniform();
-				for (int n = defaultColor.length; n < nTraits; n++)
+				for (int n = defaultColor.length; n < nColors; n++)
 					colors[n] = new Color(rng.random0n(256), rng.random0n(256), rng.random0n(256));
 			}
 		}
@@ -876,8 +948,8 @@ public abstract class Module<T extends Module<T>>
 				|| (hasVacant() && (colors.length == nTraits - 1
 						|| colors.length == 2 * (nTraits - 1)))))
 			return false;
-		if (hasVacant()) {
-			// insert vacant color
+		if (hasVacant() && (colors.length == nTraits - 1 || colors.length == 2 * (nTraits - 1))) {
+			// caller omitted the vacant color - insert default(s)
 			if (colors.length == 2 * (nTraits - 1))
 				colors = ArrayMath.insert(colors, ColorMap.blendColors(VACANT_COLOR, Color.WHITE, 0.333),
 						nTraits + vacantIdx);
@@ -1023,11 +1095,33 @@ public abstract class Module<T extends Module<T>>
 
 	/**
 	 * Set the per capita birth rate for ecological population updates.
-	 * 
+	 *
 	 * @param birthRate the birth rate
 	 */
 	public void setBirthRate(double birthRate) {
-		this.birthRate = birthRate;
+		this.birthRate = checkRate(birthRate, "birth rate");
+	}
+
+	/**
+	 * Sets the birth rate for the single species of single-species modules from
+	 * the (potentially longer) vector {@code rates} parsed on the command line.
+	 * The default implementation only supports a single, trait-independent rate
+	 * and hence uses the first entry; any additional entries are ignored, with a
+	 * warning. Discrete-trait modules override this to interpret additional
+	 * entries as one rate per trait, see {@code Discrete#setBirthRate(double[])}.
+	 *
+	 * @param rates the parsed birth rate(s)
+	 *
+	 * @see #cloBirthRate
+	 */
+	public void setBirthRate(double[] rates) {
+		if (rates.length > 1) {
+			String sn = getName();
+			engine.logWarning("birth rate" + (sn.isEmpty() ? "" : " of " + sn)
+					+ " only supports a single value - ignoring " + (rates.length - 1)
+					+ " additional value(s).");
+		}
+		setBirthRate(rates[0]);
 	}
 
 	/**
@@ -1037,20 +1131,106 @@ public abstract class Module<T extends Module<T>>
 
 	/**
 	 * Sets the death rate for ecological population updates.
-	 * 
+	 *
 	 * @param rate the death rate
-	 * @return {@code true} if the death rate changed
 	 */
-	public boolean setDeathRate(double rate) {
-		double newrate = Math.max(0.0, rate);
-		boolean changed = (Math.abs(newrate - deathRate) > 1e-7);
-		deathRate = newrate;
-		return changed;
+	public void setDeathRate(double rate) {
+		deathRate = checkRate(rate, "death rate");
+	}
+
+	/**
+	 * Sets the death rate for the single species of single-species modules from
+	 * the (potentially longer) vector {@code rates} parsed on the command line.
+	 * The default implementation only supports a single, trait-independent rate
+	 * and hence uses the first entry; any additional entries are ignored, with a
+	 * warning. Discrete-trait modules override this to interpret additional
+	 * entries as one rate per trait, see {@code Discrete#setDeathRate(double[])}.
+	 *
+	 * @param rates the parsed death rate(s)
+	 *
+	 * @see #cloDeathRate
+	 */
+	public void setDeathRate(double[] rates) {
+		if (rates.length > 1) {
+			String sn = getName();
+			engine.logWarning("death rate" + (sn.isEmpty() ? "" : " of " + sn)
+					+ " only supports a single value - ignoring " + (rates.length - 1)
+					+ " additional value(s).");
+		}
+		setDeathRate(rates[0]);
+	}
+
+	/**
+	 * Ensures that an ecological rate is non-negative.
+	 *
+	 * @param rate     the rate to validate
+	 * @param rateName the name of the rate for warnings
+	 * @return {@code rate}, or {@code 0.0} when it is negative
+	 */
+	protected double checkRate(double rate, String rateName) {
+		if (rate >= 0.0)
+			return rate;
+		String sn = getName();
+		engine.logWarning(rateName + (sn.isEmpty() ? "" : " of " + sn)
+				+ " must be non-negative (changed to 0).");
+		return 0.0;
+	}
+
+	/**
+	 * Makes a validated copy of ecological rates.
+	 *
+	 * @param rates    the rates to copy and validate
+	 * @param rateName the name of the rate for warnings
+	 * @return a copy of {@code rates} with negative entries replaced by {@code 0.0}
+	 */
+	protected double[] checkRates(double[] rates, String rateName) {
+		double[] checkedRates = ArrayMath.clone(rates);
+		for (int i = 0; i < checkedRates.length; i++)
+			checkedRates[i] = checkRate(checkedRates[i], rateName);
+		return checkedRates;
+	}
+
+	/**
+	 * Parses a per-capita rate argument and assigns its values to all species. A
+	 * single-species module receives the full vector so that discrete modules can
+	 * apply individual rates to their traits. For multiple species, vector entries
+	 * are cycled across species.
+	 *
+	 * @param arg         the rate argument
+	 * @param isBirthRate {@code true} for birth rates, {@code false} for death
+	 *                    rates
+	 * @return {@code true} if at least one rate was parsed
+	 */
+	private boolean parseRates(String arg, boolean isBirthRate) {
+		double[] rates;
+		// allow vector delimiter as well as species delimiter for multiple species
+		if (arg.contains(CLOParser.SPECIES_DELIMITER))
+			rates = CLOParser.parseVector(arg, CLOParser.SPECIES_DELIMITER);
+		else
+			rates = CLOParser.parseVector(arg);
+		if (rates.length == 0)
+			return false;
+		if (species.size() == 1) {
+			if (isBirthRate)
+				species.get(0).setBirthRate(rates);
+			else
+				species.get(0).setDeathRate(rates);
+			return true;
+		}
+		int n = 0;
+		for (T pop : species) {
+			double rate = rates[n++ % rates.length];
+			if (isBirthRate)
+				pop.setBirthRate(rate);
+			else
+				pop.setDeathRate(rate);
+		}
+		return true;
 	}
 
 	/**
 	 * Gets the death rate for ecological population updates.
-	 * 
+	 *
 	 * @return the death rate
 	 */
 	public double getDeathRate() {
@@ -1216,6 +1396,7 @@ public abstract class Module<T extends Module<T>>
 					String[] geomargs = arg.split(CLOParser.SPECIES_DELIMITER);
 					boolean doReset = false;
 					int n = 0;
+					StringBuilder canonical = new StringBuilder();
 					for (T mod : species) {
 						String geomarg = geomargs[n++ % geomargs.length];
 						AbstractGeometry current = mod.structure;
@@ -1225,8 +1406,14 @@ public abstract class Module<T extends Module<T>>
 							mod.structure = next;
 							doReset = true;
 						}
+						if (n > 1)
+							canonical.append(CLOParser.SPECIES_DELIMITER);
+						canonical.append(mod.structure.getCLOArg());
 					}
 					engine.requiresReset(doReset);
+					// store the canonical, re-parseable form (e.g. 'N 4f' rather than
+					// 'N 4 f'), see AbstractGeometry#getCLOArg()
+					cloGeometry.setArg(canonical.toString());
 					return true;
 				}
 
@@ -1276,17 +1463,18 @@ public abstract class Module<T extends Module<T>>
 				public String getDescription() {
 					String descr = "";
 					int nSpecies = species.size();
+					String flag = "--" + cloNPopulation.getName();
 					switch (nSpecies) {
 						case 1:
-							return "--popsize <n>|<nxn>  population size n (or nxn, nXn)";
+							return flag + " <n>|<nxn>  population size n (or nxn, nXn)";
 						case 2:
-							descr = "--popsize <n0,n1>  size ni of population i, with\n";
+							descr = flag + " <n0,n1>  size ni of population i, with\n";
 							break;
 						case 3:
-							descr = "--popsize <n0,n1,n2>  size ni of population i, with\n";
+							descr = flag + " <n0,n1,n2>  size ni of population i, with\n";
 							break;
 						default:
-							descr = "--popsize <n0,...,n" + nSpecies + ">  size ni of population i, with\n";
+							descr = flag + " <n0,...,n" + nSpecies + ">  size ni of population i, with\n";
 					}
 					StringBuilder sb = new StringBuilder(descr);
 					for (int i = 0; i < nSpecies; i++)
@@ -1314,30 +1502,7 @@ public abstract class Module<T extends Module<T>>
 				 */
 				@Override
 				public boolean parse(String arg) {
-					double[] rates;
-					// allow vector delimiter as well as species delimiter for multiple species
-					if (arg.contains(CLOParser.SPECIES_DELIMITER))
-						rates = CLOParser.parseVector(arg, CLOParser.SPECIES_DELIMITER);
-					else
-						rates = CLOParser.parseVector(arg);
-					if (rates.length == 0)
-						return false;
-					int n = 0;
-					for (T pop : species) {
-						double rate = rates[n++ % rates.length];
-						// sanity checks
-						if (rate >= 0.0) {
-							pop.setBirthRate(rate);
-							continue;
-						}
-						if (logger.isLoggable(Level.WARNING)) {
-							String sn = pop.getName();
-							logger.warning("birth rate" + (sn.isEmpty() ? "" : " of " + sn)
-									+ " must be non-negative (changed to 0).");
-						}
-						pop.setBirthRate(0.0);
-					}
-					return true;
+					return parseRates(arg, true);
 				}
 
 				@Override
@@ -1346,6 +1511,10 @@ public abstract class Module<T extends Module<T>>
 					int nSpecies = species.size();
 					switch (nSpecies) {
 						case 1:
+							T pop = species.get(0);
+							if (pop instanceof Discrete && pop.getNTraits() > 1)
+								return "--birthrate <b0[,...,b" + pop.getNTraits()
+										+ "]>  per capita rates of reproduction of each trait";
 							return "--birthrate <b>  per capita rate of reproduction";
 						case 2:
 							descr = "--birthrate <b0[,b1]>  per capita rates of reproduction";
@@ -1375,30 +1544,7 @@ public abstract class Module<T extends Module<T>>
 				 */
 				@Override
 				public boolean parse(String arg) {
-					double[] rates;
-					// allow vector delimiter as well as species delimiter for multiple species
-					if (arg.contains(CLOParser.SPECIES_DELIMITER))
-						rates = CLOParser.parseVector(arg, CLOParser.SPECIES_DELIMITER);
-					else
-						rates = CLOParser.parseVector(arg);
-					if (rates.length == 0)
-						return false;
-					int n = 0;
-					for (T pop : species) {
-						double rate = rates[n++ % rates.length];
-						// sanity checks
-						if (rate >= 0.0) {
-							pop.setDeathRate(rate);
-							continue;
-						}
-						if (logger.isLoggable(Level.WARNING)) {
-							String sn = pop.getName();
-							logger.warning("death rate" + (sn.isEmpty() ? "" : " of " + sn)
-									+ " must be non-negative (changed to 0).");
-						}
-						pop.setDeathRate(0.0);
-					}
-					return true;
+					return parseRates(arg, false);
 				}
 
 				@Override
@@ -1407,6 +1553,9 @@ public abstract class Module<T extends Module<T>>
 					int nSpecies = species.size();
 					switch (nSpecies) {
 						case 1:
+							T pop = species.get(0);
+							if (pop instanceof Discrete && pop.getNTraits() > 1)
+								return "--deathrate <d0[,...,d" + pop.getNTraits() + "]>  rates of dying of each trait";
 							return "--deathrate <d>  rate of dying";
 						case 2:
 							descr = "--deathrate <d0[,d1]>  rates of dying";
@@ -1457,11 +1606,9 @@ public abstract class Module<T extends Module<T>>
 							pop.setCompetitionRates(cVec);
 							continue;
 						}
-						if (logger.isLoggable(Level.WARNING)) {
-							String sn = pop.getName();
-							logger.warning("competition rate" + (sn.isEmpty() ? "" : " of " + sn + " with kin ")
-									+ " must be non-negative.");
-						}
+						String sn = pop.getName();
+						engine.logWarning("competition rate" + (sn.isEmpty() ? "" : " of " + sn + " with kin ")
+								+ " must be non-negative.");
 						return false;
 					}
 					return true;
@@ -1543,7 +1690,10 @@ public abstract class Module<T extends Module<T>>
 				 */
 				@Override
 				public boolean parse(String arg) {
-					// activate all traits
+					// activate all traits first: parse() re-runs from scratch on every
+					// CLO re-parse (unlike load(), which only runs once per module
+					// switch), so a previous --disable must be cleared before
+					// (re-)applying the current one - or none, if arg == null
 					for (T pop : species)
 						pop.setActiveTraits(null);
 					if (arg == null)
@@ -1552,15 +1702,21 @@ public abstract class Module<T extends Module<T>>
 					int n = 0;
 					for (T pop : species) {
 						int[] dtraits = CLOParser.parseIntVector(disabledtraits[n++ % disabledtraits.length]);
-						int dist = dtraits.length;
 						int mint = model.isContinuous() ? 1 : 2;
-						if (pop.nTraits - mint < dist)
+						if (pop.nTraits - mint < dtraits.length)
 							return false;
+						int vac = pop.getVacantIdx();
 						for (int t : dtraits) {
-							if (t < 0 || t >= pop.nTraits)
+							// vacant trait cannot be disabled
+							if (t < 0 || t >= pop.nTraits || t == vac)
 								return false;
 							pop.active[t] = false;
 							pop.nActive--;
+						}
+						// need at least two active traits (including vacant)
+						if (pop.nActive < 2) {
+							pop.setActiveTraits(null);
+							return false;
 						}
 					}
 					return true;
@@ -1657,13 +1813,21 @@ public abstract class Module<T extends Module<T>>
 							sb.append("\n")
 									.append(aTrait.substring(traitlen - 16, traitlen))
 									.append(species.size() > 1 ? mod.getName() + "." : "")
-									.append(mod.getTraitName(n));
+									.append(mod.getTraitName(n))
+									.append(" [").append(formatColor(mod.getTraitColor(n))).append(", ")
+									.append(formatColor(mod.getTraitColor(n + nt))).append(']');
 						}
 					}
 					if (species.size() > 1)
 						sb.append("\n      settings for multi-species separated by '" + CLOParser.SPECIES_DELIMITER
 								+ "'");
 					return sb.toString();
+				}
+
+				@Override
+				public boolean showsCurrent() {
+					// current colors are already listed per trait above
+					return false;
 				}
 			});
 
@@ -1694,9 +1858,9 @@ public abstract class Module<T extends Module<T>>
 					int n = 0;
 					for (T pop : species) {
 						String[] names = namespecies[n++ % namespecies.length].split(CLOParser.VECTOR_DELIMITER);
-						if (names.length != nTraits)
+						// setTraitNames deals with an omitted vacant name
+						if (!pop.setTraitNames(names))
 							return false;
-						pop.setTraitNames(names);
 					}
 					return true;
 				}
@@ -1706,25 +1870,48 @@ public abstract class Module<T extends Module<T>>
 
 				@Override
 				public String getDescription() {
-					String descr;
 					int nt = -Integer.MAX_VALUE;
 					for (T pop : species)
 						nt = Math.max(nt, pop.getNTraits());
 
+					StringBuilder sb;
 					switch (nt) {
 						case 1:
-							descr = "--traitnames <n>  override trait name";
+							sb = new StringBuilder("--traitnames <n>  override trait name");
 							break;
 						case 2:
-							descr = "--traitnames <n1,n2>  override trait names";
+							sb = new StringBuilder("--traitnames <n1,n2>  override trait names");
 							break;
 						default:
-							descr = "--traitnames <n1,...,n" + nt + ">  override trait names";
+							sb = new StringBuilder("--traitnames <n1,...,n").append(nt)
+									.append(">  override trait names");
+					}
+					int idx = 0;
+					for (T mod : species) {
+						String speciesName = mod.getName();
+						if (species.size() > 1 && !speciesName.isEmpty())
+							sb.append("\n       Species: ").append(speciesName);
+						nt = mod.getNTraits();
+						for (int n = 0; n < nt; n++) {
+							sb.append("\n             ")
+									.append(idx + n)
+									.append(": ")
+									.append(mod.getTraitName(n));
+							if (mod instanceof HasDE && ((HasDE) mod).getDependent() == n)
+								sb.append(" (dependent)");
+						}
+						idx += nt;
 					}
 					if (species.size() > 1)
-						descr += "\n      settings for multi-species separated by '" + CLOParser.SPECIES_DELIMITER
-								+ "'";
-					return descr;
+						sb.append("\n      settings for multi-species separated by '" + CLOParser.SPECIES_DELIMITER
+								+ "'");
+					return sb.toString();
+				}
+
+				@Override
+				public boolean showsCurrent() {
+					// current trait names are already listed per trait above
+					return false;
 				}
 			});
 
@@ -1768,6 +1955,65 @@ public abstract class Module<T extends Module<T>>
 				}
 			});
 
+	/**
+	 * Whether the active dynamics regime is density based, for modules that
+	 * implement {@link DualDynamics}. Declared here - like
+	 * {@link Model#isDensity()} - so the plumbing is available to any module that
+	 * needs it without every implementer duplicating it; unused by modules that
+	 * don't implement {@link DualDynamics}.
+	 */
+	protected boolean isDensity = false;
+
+	/**
+	 * Check whether the active dynamics regime is density based.
+	 *
+	 * @return {@code true} if the dynamics regime is density based
+	 * @see DualDynamics
+	 */
+	public boolean isDensity() {
+		return isDensity;
+	}
+
+	/**
+	 * Set the active dynamics regime.
+	 *
+	 * @param isDensity {@code true} for density based, {@code false} for
+	 *                  frequency based dynamics
+	 * @see DualDynamics
+	 */
+	public void setDensity(boolean isDensity) {
+		this.isDensity = isDensity;
+	}
+
+	/**
+	 * Command line option to select the dynamics regime, for modules that
+	 * implement {@link DualDynamics}.
+	 * <p>
+	 * <strong>Note:</strong> option not automatically added. Modules that
+	 * implement {@link DualDynamics} get it registered by
+	 * {@link #collectCLO(CLOParser)} below.
+	 */
+	public final CLOption cloDynamics = new CLOption("dynamics", Dynamics.FREQUENCY.getKey(), CLOCategory.Module,
+			"--dynamics <d>  growth regime:", new CLODelegate() {
+				@Override
+				public boolean parse(String arg) {
+					Dynamics d = CLOption.match(arg, Dynamics.values());
+					if (d == null)
+						return false;
+					setDensity(d == Dynamics.DENSITY);
+					return true;
+				}
+			});
+
+	/**
+	 * Get the command line option for selecting the dynamics regime.
+	 *
+	 * @return the command line option for {@code --dynamics}
+	 */
+	public CLOption getCLODynamics() {
+		return cloDynamics;
+	}
+
 	@Override
 	public void collectCLO(CLOParser parser) {
 		if (this instanceof Features.Multispecies)
@@ -1776,6 +2022,8 @@ public abstract class Module<T extends Module<T>>
 		// prepare command line options
 		if (this instanceof Features.Groups)
 			parser.addCLO(cloNGroup);
+		if (this instanceof DualDynamics)
+			parser.addCLO(cloDynamics);
 
 		if (nTraits > 0) {
 			parser.addCLO(cloTraitColors);

@@ -36,6 +36,7 @@ import org.evoludo.simulator.ColorMapCSS;
 import org.evoludo.simulator.EvoLudoGWT;
 import org.evoludo.simulator.models.DModel;
 import org.evoludo.simulator.models.Data;
+import org.evoludo.simulator.models.Model;
 import org.evoludo.simulator.modules.Discrete;
 import org.evoludo.simulator.modules.Module;
 
@@ -112,28 +113,32 @@ public class S3 extends AbstractView<S3Graph> {
 		style.showYLevels = false;
 		// set map for converting data to S3 coordinates
 		S3Map map = ((HasS3) module).getS3Map(role);
-		if (map == null)
+		if (map == null) {
 			map = new S3Map(); // no roles by default
-		map.setNames(module.getTraitNames());
-		map.setColors(module.getTraitColors());
+			map.setNames(module.getTraitNames());
+			map.setColors(module.getTraitColors());
+		}
 		graph.setMap(map);
 		style.label = map.getLabel();
-		// show first three active traits
-		boolean[] active = module.getActiveTraits();
-		int[] order = new int[3];
-		int idx = 0;
-		for (int n = 0; n < active.length; n++) {
-			if (active[n]) {
-				order[idx++] = n;
-				if (idx == 3)
-					break;
-			}
-		}
-		if (idx != 3)
-			// less than 3 active traits
-			graph.displayMessage("Simplex S3 view requires at least 3 active traits!");
-		else
+		int[] order = ((HasS3) module).getS3Order();
+		if (order.length > 0)
 			map.setOrder(order);
+		else {
+			order = map.getOrder();
+			// default mapping: show the first three active traits
+			boolean[] active = module.getActiveTraits();
+			int idx = 0;
+			for (int n = 0; n < active.length; n++) {
+				if (active[n]) {
+					order[idx++] = n;
+					if (idx == 3)
+						break;
+				}
+			}
+			if (idx != 3)
+				// less than 3 active traits
+				graph.displayMessage("Simplex S3 view requires at least 3 active traits!");
+		}
 		return graph;
 	}
 
@@ -162,8 +167,7 @@ public class S3 extends AbstractView<S3Graph> {
 	}
 
 	@Override
-	public void modelDidInit() {
-		super.modelDidInit();
+	protected void onModelDidInit() {
 		for (S3Graph graph : graphs) {
 			model.getMeanTraits(graph.getModule().getId(), state);
 			graph.addData(Double.NaN, state, true);
@@ -174,7 +178,7 @@ public class S3 extends AbstractView<S3Graph> {
 	@Override
 	protected void updateData(boolean force) {
 		double newtime = model.getUpdates();
-		boolean isNext = (Math.abs(timestamp - newtime) > 1e-8);
+		boolean isNext = (Math.abs(timestamp - newtime) > Model.EPS);
 		for (S3Graph graph : graphs) {
 			if (isNext) {
 				model.getMeanTraits(graph.getModule().getId(), state);

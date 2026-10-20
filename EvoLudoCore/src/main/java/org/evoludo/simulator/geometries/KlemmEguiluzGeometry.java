@@ -128,13 +128,13 @@ public class KlemmEguiluzGeometry extends AbstractNetwork {
 				addEdgeAt(i, j);
 
 		nextnode: for (int n = nStart; n < size; n++) {
-			if (pSmallWorld < 1e-8) {
+			if (pSmallWorld < RNGDistribution.EPS) {
 				for (int i = 0; i < nActive; i++) {
 					addEdgeAt(n, active[i]);
 				}
 			} else {
 				for (int i = 0; i < nActive; i++) {
-					if (pSmallWorld > 1.0 - 1e-8 || rng.random01() < pSmallWorld) {
+					if (pSmallWorld > 1.0 - RNGDistribution.EPS || rng.random01() < pSmallWorld) {
 						int links = 0;
 						for (int j = 0; j < n; j++)
 							links += kout[j];
