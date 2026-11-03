@@ -76,10 +76,16 @@ import com.google.gwt.core.client.Scheduler;
  * style.xIncr determine the maximum historical range available for panning
  * (the absolute bounds are [absMin, absMax] where absMax is hard-coded to
  * 0.0 and absMin = absMax - capacity*xIncr).</li>
- * <li>The graph can operate with autoscaling for the y-axis (style.autoscaleY)
- * or with fixed y-limits. When autoscale is enabled, added data updates
- * yMin/yMax to at least cover observed values; ranges are expanded but
- * never shrunk automatically.</li>
+ * <li>The y-range changes only when necessary: added data that falls outside
+ * [yMin, yMax] expands the range to cover it, whether autoscaling
+ * (style.autoscaleY) is enabled or the limits were set explicitly; ranges
+ * are never shrunk automatically. Resets and re-initializations retain the
+ * y-range as long as the first sample of the new run fits, and otherwise
+ * fit the range to the new data from scratch. Initially, the range is fitted
+ * to the data if autoscaling is enabled. Fitting and expanding the range
+ * leave the same small margin as "Zoom to fit". The range bookkeeping is
+ * delegated to {@link GraphStyle#addYData(double, double)} and
+ * {@link GraphStyle#fitYRange(double, double)}.</li>
  * <li>Logarithmic y-scaling is supported (style.logScaleY), but it requires
  * strictly positive values; if negative or zero values are present the
  * graph disables log-scaling and issues a warning. When autoscaling and
@@ -195,18 +201,6 @@ public class LineGraph extends AbstractGraph<double[]>
 	 * The number of lines to plot.
 	 */
 	int nLines;
-
-	/**
-	 * Padding applied when fitting the y-axis to visible data.
-	 */
-	private static final double ZOOM_FIT_MARGIN = 0.05;
-
-	/**
-	 * Fraction of {@code yMax} below which a linear {@code y}-axis minimum is
-	 * considered insignificant and snapped to zero rather than given its own
-	 * (arbitrarily fine-grained) axis floor.
-	 */
-	private static final double MIN_YMAX_FRACTION = 0.01;
 
 	/**
 	 * Whether the model tracks real time for the current run (as opposed to only
@@ -439,13 +433,11 @@ public class LineGraph extends AbstractGraph<double[]>
 	public void reset() {
 		appendNextSample = false;
 		newTimeseries = false;
-		if (style.autoscaleY) {
-			style.yMin = Double.MAX_VALUE;
-			style.yMax = -Double.MAX_VALUE;
-		}
-		setLogY(style.logScaleY);
 		double oldXMin = style.xMin;
 		super.reset();
+		// after clearing the history: otherwise y-range adjustments for log
+		// scale would be derived from stale data
+		setLogY(style.logScaleY);
 		if (buffer == null || buffer.getCapacity() < MIN_BUFFER_SIZE)
 			buffer = new RingBuffer<double[]>(Math.max((int) bounds.getWidth(), DEFAULT_BUFFER_SIZE));
 		setSteps(steps * (style.xMax - style.xMin) / (style.xMax - oldXMin));
@@ -453,6 +445,7 @@ public class LineGraph extends AbstractGraph<double[]>
 
 	@Override
 	public void init() {
+		super.init();
 		newTimeseries = true;
 	}
 
@@ -511,6 +504,7 @@ public class LineGraph extends AbstractGraph<double[]>
 			double dt = data[0] - last[0];
 			if (Math.abs(dt) < Model.EPS) {
 				System.arraycopy(data, 0, last, 0, last.length);
+				updateYRange(last);
 				return;
 			}
 			if (appendNextSample) {
@@ -555,7 +549,7 @@ public class LineGraph extends AbstractGraph<double[]>
 	 */
 	private void appendData(double[] data) {
 		buffer.append(data);
-		updateAutoscale(data);
+		updateYRange(data);
 	}
 
 	/**
@@ -572,12 +566,13 @@ public class LineGraph extends AbstractGraph<double[]>
 	}
 
 	/**
-	 * Update autoscaled {@code y}-range from a newly appended sample.
+	 * Update the {@code y}-range from a newly buffered sample. The range only
+	 * changes if necessary, see {@link GraphStyle#addYData(double, double)}.
 	 *
 	 * @param data the latest buffered sample (updates prepended, real time
 	 *             appended)
 	 */
-	private void updateAutoscale(double[] data) {
+	private void updateYRange(double[] data) {
 		// only the plotted value columns (1..nLines) count for min/max - the
 		// leading updates and trailing real-time columns are excluded
 		double min = Double.POSITIVE_INFINITY;
@@ -592,33 +587,10 @@ public class LineGraph extends AbstractGraph<double[]>
 		if (style.logScaleY && min <= 0.0)
 			// keep log scale: ignore non-positive point for autoscale updates
 			return;
-		if (min <= 0.0)
-			style.logScaleY = false;
-		if (style.autoscaleY) {
-			// dynamically extend range if needed - never reduce (would need to
-			// consult RingBuffer for this)
-			if (max != Double.NEGATIVE_INFINITY)
-				style.yMax = Math.max(style.yMax, Functions.roundUp(max));
-			if (min != Double.POSITIVE_INFINITY) {
-				double newMin = (!style.logScaleY && min > 0.0) ? roundLinearYMin(min, style.yMax)
-						: Functions.roundDown(min);
-				style.yMin = Math.min(style.yMin, newMin);
-			}
-		}
-	}
-
-	/**
-	 * Round a candidate linear {@code y}-axis minimum down, snapping it to zero
-	 * if it is an insignificant fraction of the overall range.
-	 *
-	 * @param min  the candidate minimum (must be {@code > 0})
-	 * @param yMax the current {@code y}-axis maximum
-	 * @return the rounded minimum, or {@code 0.0} if snapped
-	 */
-	private double roundLinearYMin(double min, double yMax) {
-		if (yMax <= 0.0 || min < MIN_YMAX_FRACTION * yMax)
-			return 0.0;
-		return Functions.roundDown(min);
+		if (min == Double.POSITIVE_INFINITY)
+			// no finite values
+			return;
+		style.addYData(min, max);
 	}
 
 	/**
@@ -666,10 +638,60 @@ public class LineGraph extends AbstractGraph<double[]>
 	 *         should be hidden
 	 */
 	private double historyStepWidth(double[] current, double[] prev) {
-		double dt = Math.abs(xValue(current) - xValue(prev));
+		return historyStepWidth(current, prev, useRealTime);
+	}
+
+	/**
+	 * Return the displayed width of a step between buffered samples on the
+	 * updates or the real-time axis, see
+	 * {@link #historyStepWidth(double[], double[])}.
+	 *
+	 * @param current  the current newer sample
+	 * @param prev     the adjacent older sample
+	 * @param realTime {@code true} for the real-time axis, {@code false} for
+	 *                 updates
+	 * @return the displayed width of this history step, or {@code 0.0} if the step
+	 *         should be hidden
+	 */
+	private double historyStepWidth(double[] current, double[] prev, boolean realTime) {
+		double dt = Math.abs(xValue(current, realTime) - xValue(prev, realTime));
 		if (!Double.isFinite(dt) || dt == 0.0)
 			return 0.0;
 		return dt;
+	}
+
+	/**
+	 * Map a distance from the most recent sample on one x-axis to the distance
+	 * of the same point in the history on the other axis. Within the buffered
+	 * history the mapping interpolates linearly between samples; beyond it, the
+	 * distance is extrapolated using the average ratio of the two axes over the
+	 * history.
+	 *
+	 * @param dist         the distance from the most recent sample (positive into
+	 *                     the past)
+	 * @param fromRealTime {@code true} to map from the real-time axis to updates,
+	 *                     {@code false} for the reverse
+	 * @return the corresponding distance on the other axis
+	 */
+	private double mapXDistance(double dist, boolean fromRealTime) {
+		if (dist <= 0.0 || buffer == null)
+			return dist;
+		double fromAcc = 0.0;
+		double toAcc = 0.0;
+		Iterator<double[]> it = buffer.iterator();
+		double[] current = it.hasNext() ? it.next() : null;
+		while (it.hasNext()) {
+			double[] prev = it.next();
+			double dFrom = historyStepWidth(current, prev, fromRealTime);
+			double dTo = historyStepWidth(current, prev, !fromRealTime);
+			if (dFrom > 0.0 && fromAcc + dFrom >= dist)
+				return toAcc + dTo * (dist - fromAcc) / dFrom;
+			fromAcc += dFrom;
+			toAcc += dTo;
+			current = prev;
+		}
+		double ratio = (fromAcc > 0.0 && toAcc > 0.0) ? toAcc / fromAcc : 1.0;
+		return toAcc + (dist - fromAcc) * ratio;
 	}
 
 	/**
@@ -683,7 +705,20 @@ public class LineGraph extends AbstractGraph<double[]>
 	 * @return the x-coordinate to use for display
 	 */
 	private double xValue(double[] sample) {
-		return useRealTime ? sample[sample.length - 1] : sample[0];
+		return xValue(sample, useRealTime);
+	}
+
+	/**
+	 * Return the x-coordinate of a buffered sample on the updates or the
+	 * real-time axis, see {@link #xValue(double[])}.
+	 *
+	 * @param sample   the sample, updates prepended and real time appended
+	 * @param realTime {@code true} for the real-time axis, {@code false} for
+	 *                 updates
+	 * @return the x-coordinate on the requested axis
+	 */
+	private double xValue(double[] sample, boolean realTime) {
+		return realTime ? sample[sample.length - 1] : sample[0];
 	}
 
 	@Override
@@ -737,7 +772,7 @@ public class LineGraph extends AbstractGraph<double[]>
 
 	@Override
 	void setLogY(boolean logY) {
-		if (!hasHistory()) {
+		if (!hasHistory() || buffer.isEmpty()) {
 			super.setLogY(logY);
 			return;
 		}
@@ -755,8 +790,8 @@ public class LineGraph extends AbstractGraph<double[]>
 			return;
 		}
 		if (logY && bufmin == 0.0)
-			bufmin = MIN_YMAX_FRACTION * style.yMax;
-		style.yMin = logY ? Functions.roundDown(bufmin) : roundLinearYMin(bufmin, style.yMax);
+			bufmin = GraphStyle.MIN_YMAX_FRACTION * style.yMax;
+		style.yMin = logY ? Functions.roundDown(bufmin) : GraphStyle.roundLinearMin(bufmin, style.yMax);
 	}
 
 	/**
@@ -1388,7 +1423,7 @@ public class LineGraph extends AbstractGraph<double[]>
 		ContextMenuCheckBoxItem autoscaleYMenu = new ContextMenuCheckBoxItem("Autoscale", () -> {
 			style.autoscaleY = !style.autoscaleY;
 			if (style.autoscaleY)
-				updateYRangeFromBuffer(false, false);
+				updateYRangeFromBuffer(false);
 			paint(true);
 		});
 		ContextMenuItem fullYRangeMenu = new ContextMenuItem("Full range", () -> {
@@ -1445,18 +1480,23 @@ public class LineGraph extends AbstractGraph<double[]>
 	 * recomputing the visible window and tick spacing for the newly selected
 	 * axis. The two axes are not linearly related (real time can advance
 	 * arbitrarily faster or slower than updates depending on the model's
-	 * dynamics), so the previous zoom/pan state cannot be carried over
-	 * meaningfully - the full buffered history on the new axis is shown instead.
+	 * dynamics), so the visible window is mapped such that the same data
+	 * remains visible, see {@link #mapXDistance(double, boolean)}.
 	 *
 	 * @param realTime {@code true} to plot real time, {@code false} for updates
 	 */
 	private void switchAxis(boolean realTime) {
 		if (realTime == useRealTime)
 			return;
+		double newMin = -mapXDistance(-style.xMin, useRealTime);
+		double newMax = -mapXDistance(-style.xMax, useRealTime);
 		useRealTime = realTime;
 		style.xLabel = useRealTime ? realTimeLabel : updatesLabel;
-		if (updateXRangeFromBuffer())
+		if (Double.isFinite(newMin) && Double.isFinite(newMax) && newMin < newMax) {
+			style.xMin = newMin;
+			style.xMax = newMax;
 			style.xIncr = (style.xMax - style.xMin) / Math.max(1.0, steps);
+		}
 		if (style.offsetXTickLabels)
 			updateXTickOffset();
 		paint(true);
@@ -1499,18 +1539,10 @@ public class LineGraph extends AbstractGraph<double[]>
 		menu.add(new ContextMenuItem("Zoom to fit", () -> {
 			if (style.autoscaleY)
 				style.autoscaleY = false;
-			boolean addMargin = !style.percentY;
 			boolean updatedX = updateXRangeFromBuffer();
-			boolean updatedY = updateYRangeFromBuffer(true, addMargin);
-			if (updatedY && style.percentY) {
-				style.yMin = Math.max(0.0, style.yMin);
-				style.yMax = Math.min(1.0, style.yMax);
-				if (style.yMin > style.yMax) {
-					style.yMin = 0.0;
-					style.yMax = 1.0;
-				}
+			boolean updatedY = updateYRangeFromBuffer(true);
+			if (updatedY)
 				clampLogRange();
-			}
 			if (updatedX || updatedY)
 				paint(true);
 		}));
@@ -1519,13 +1551,13 @@ public class LineGraph extends AbstractGraph<double[]>
 	}
 
 	/**
-	 * Update the y-axis range based on buffered data.
+	 * Fit the y-axis range to buffered data, see
+	 * {@link GraphStyle#fitYRange(double, double)}.
 	 * 
 	 * @param visibleOnly whether to limit to the visible x-range
-	 * @param addMargin   whether to add a small top/bottom margin
 	 * @return {@code true} if the range was updated
 	 */
-	private boolean updateYRangeFromBuffer(boolean visibleOnly, boolean addMargin) {
+	private boolean updateYRangeFromBuffer(boolean visibleOnly) {
 		if (buffer == null || buffer.isEmpty())
 			return false;
 		double min = Double.POSITIVE_INFINITY;
@@ -1558,37 +1590,10 @@ public class LineGraph extends AbstractGraph<double[]>
 		}
 		if (min == Double.POSITIVE_INFINITY) {
 			if (visibleOnly)
-				return updateYRangeFromBuffer(false, addMargin);
+				return updateYRangeFromBuffer(false);
 			return false;
 		}
-		if (addMargin) {
-			double range = max - min;
-			double pad = range * ZOOM_FIT_MARGIN;
-			if (pad == 0.0)
-				pad = Math.max(1e-6, Math.abs(min) * ZOOM_FIT_MARGIN);
-			min -= pad;
-			max += pad;
-		}
-		if (style.logScaleY) {
-			if (max <= 0.0)
-				return false;
-			if (min <= 0.0)
-				min = max * 0.01;
-		}
-		double newMax = Functions.roundUp(max);
-		double newMin;
-		if (style.logScaleY) {
-			newMin = Functions.roundDown(min);
-			if (newMin <= 0.0)
-				newMin = min;
-		} else if (min > 0.0) {
-			newMin = roundLinearYMin(min, newMax);
-		} else {
-			newMin = Functions.roundDown(min);
-		}
-		style.yMin = newMin;
-		style.yMax = newMax;
-		return true;
+		return style.fitYRange(min, max);
 	}
 
 	/**

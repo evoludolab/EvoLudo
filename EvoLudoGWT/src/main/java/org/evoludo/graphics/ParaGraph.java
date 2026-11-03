@@ -37,7 +37,6 @@ import org.evoludo.geom.Rectangle2D;
 import org.evoludo.graphics.AbstractGraph.HasTrajectory;
 import org.evoludo.graphics.AbstractGraph.Shifting;
 import org.evoludo.graphics.AbstractGraph.Zooming;
-import org.evoludo.math.Functions;
 import org.evoludo.simulator.models.Model;
 import org.evoludo.simulator.modules.Module;
 import org.evoludo.simulator.views.BasicTooltipProvider;
@@ -919,46 +918,30 @@ public class ParaGraph extends AbstractGraph<double[]> implements Zooming, Shift
 	}
 
 	/**
-	 * Update autoscale ranges based on the most recent buffered point.
+	 * Update the axis ranges based on the most recent buffered point. The ranges
+	 * only change if necessary, see {@link GraphStyle#addXData(double, double)}
+	 * and {@link GraphStyle#addYData(double, double)}.
 	 */
 	private void updateAutoscale() {
-		if (!(style.autoscaleX || style.autoscaleY) || buffer == null || buffer.isEmpty())
+		if (buffer == null || buffer.isEmpty())
 			return;
 		double[] last = buffer.last();
 		map.data2Phase(last, autoscalePoint);
-		if (buffer.getSize() <= 1) {
+		if (buffer.getSize() <= 1)
 			map.reset();
-			applyRanges(autoscalePoint.getX(), autoscalePoint.getX(),
-					autoscalePoint.getY(), autoscalePoint.getY(), style.autoscaleX, style.autoscaleY);
-			return;
-		}
-		double minX = style.xMin;
-		double maxX = style.xMax;
-		double minY = style.yMin;
-		double maxY = style.yMax;
-		boolean expandX = false;
-		boolean expandY = false;
-		if (style.autoscaleX) {
-			if (autoscalePoint.getX() < minX) {
-				minX = autoscalePoint.getX();
-				expandX = true;
-			} else if (autoscalePoint.getX() > maxX) {
-				maxX = autoscalePoint.getX();
-				expandX = true;
-			}
-		}
-		if (style.autoscaleY) {
-			if (autoscalePoint.getY() < minY) {
-				minY = autoscalePoint.getY();
-				expandY = true;
-			} else if (autoscalePoint.getY() > maxY) {
-				maxY = autoscalePoint.getY();
-				expandY = true;
-			}
-		}
-		if (expandX || expandY)
-			applyRanges(minX, maxX, minY, maxY, expandX, expandY);
-		ensureAutoscaleVisible();
+		double x = autoscalePoint.getX();
+		double y = autoscalePoint.getY();
+		boolean expandX = Double.isFinite(x) && style.addXData(x, x);
+		// keep log scale: ignore non-positive points
+		boolean expandY = Double.isFinite(y) && !(style.logScaleY && y <= 0.0) && style.addYData(y, y);
+		if (expandX)
+			applyXConstraints();
+		if (expandY)
+			applyYConstraints();
+		if (expandX && expandY && !style.logScaleY && !(style.percentX && style.percentY))
+			enforceEqualAxisScale();
+		if (style.autoscaleX || style.autoscaleY)
+			ensureAutoscaleVisible();
 	}
 
 	/**
@@ -1009,7 +992,9 @@ public class ParaGraph extends AbstractGraph<double[]> implements Zooming, Shift
 	}
 
 	/**
-	 * Apply axis ranges with axis-specific constraints.
+	 * Fit axis ranges to the data (see {@link GraphStyle#fitXRange(double, double)}
+	 * and {@link GraphStyle#fitYRange(double, double)}) and apply axis-specific
+	 * constraints.
 	 *
 	 * @param minX   minimum x value
 	 * @param maxX   maximum x value
@@ -1020,49 +1005,11 @@ public class ParaGraph extends AbstractGraph<double[]> implements Zooming, Shift
 	 */
 	private void applyRanges(double minX, double maxX, double minY, double maxY, boolean applyX, boolean applyY) {
 		if (applyX) {
-			double min = minX;
-			double max = maxX;
-			if (min == max) {
-				min *= 0.99;
-				max /= 0.99;
-			}
-			if (style.percentX) {
-				min = clampPercentMin(min);
-				max = clampPercentMax(max);
-				if (min >= max) {
-					min = 0.0;
-					max = 1.0;
-				}
-				style.xMin = min;
-				style.xMax = max;
-			} else {
-				style.xMin = Functions.roundDown(min);
-				style.xMax = Functions.roundUp(max);
-			}
+			style.fitXRange(minX, maxX);
 			applyXConstraints();
 		}
-		if (applyY) {
-			double min = minY;
-			double max = maxY;
-			if (min == max) {
-				min *= 0.99;
-				max /= 0.99;
-			}
-			if (style.percentY) {
-				min = clampPercentMin(min);
-				max = clampPercentMax(max);
-				if (min >= max) {
-					min = 0.0;
-					max = 1.0;
-				}
-				style.yMin = min;
-				style.yMax = max;
-			} else {
-				style.yMin = Functions.roundDown(min);
-				style.yMax = Functions.roundUp(max);
-			}
+		if (applyY && style.fitYRange(minY, maxY))
 			applyYConstraints();
-		}
 		if (applyX && applyY && !style.logScaleY && !(style.percentX && style.percentY))
 			enforceEqualAxisScale();
 	}

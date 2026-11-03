@@ -854,9 +854,12 @@ public abstract class AbstractGraph<B> extends FocusPanel
 	}
 
 	/**
-	 * Reset the graph. Clear canvas and messages.
+	 * Reset the graph. Clear canvas and messages. Axis ranges adjusted to data
+	 * are retained if the data of the new run fits (see
+	 * {@link GraphStyle#newRun()}).
 	 */
 	public void reset() {
+		style.newRun();
 		clearMessage();
 		clearHistory();
 		updateCanvas();
@@ -868,9 +871,11 @@ public abstract class AbstractGraph<B> extends FocusPanel
 	}
 
 	/**
-	 * Initialize the graph. Do not clear graph.
+	 * Initialize the graph. Do not clear graph. Axis ranges adjusted to data are
+	 * retained if the data of the new run fits (see {@link GraphStyle#newRun()}).
 	 */
 	public void init() {
+		style.newRun();
 	}
 
 	/**

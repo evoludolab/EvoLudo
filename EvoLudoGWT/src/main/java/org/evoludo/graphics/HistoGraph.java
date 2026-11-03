@@ -105,9 +105,9 @@ import org.evoludo.util.Formatter;
  * {@code style.autoscaleY} is enabled the graph will adapt {@code style.yMin}
  * and {@code style.yMax} automatically based on the observed data values or the
  * configured normalization row.</li>
- * <li>Autoscaling rounds bounds to "nice" values using
- * {@link Functions#roundDown(double)} / {@link Functions#roundUp(double)} and
- * updates only when extrema change sufficiently to avoid jitter.</li>
+ * <li>Autoscaling rounds bounds to "nice" values and updates only when the
+ * data no longer fits or occupies only a small fraction of the range to avoid
+ * jitter, see {@link GraphStyle#trackYRange(double, double)}.</li>
  * <li>Bars are clipped and mapped into pixel space using {@code bounds} and the
  * current y-range; rendering ensures minimal visible height for very small
  * values.</li>
@@ -644,8 +644,8 @@ public class HistoGraph extends AbstractGraph<double[]> implements BasicTooltipP
 					yMax /= Math.max(1.0, nSamples);
 				}
 			}
-			updateAutoscaledYMax(yMax);
-			updateAutoscaledYMin(yMin);
+			if (!Double.isNaN(yMax) && !Double.isNaN(yMin))
+				style.trackYRange(yMin, yMax);
 			enforceMinimumPercentYRange();
 		}
 
@@ -663,46 +663,6 @@ public class HistoGraph extends AbstractGraph<double[]> implements BasicTooltipP
 	}
 
 	/**
-	 * Update and round {@link GraphStyle#yMax} when the observed maximum changed
-	 * sufficiently.
-	 * 
-	 * @param yMax observed maximum bin height
-	 */
-	private void updateAutoscaledYMax(double yMax) {
-		if (Double.isNaN(yMax))
-			return;
-		if (!(yMax > style.yMax || yMax < 0.8 * style.yMax))
-			return;
-		double roundedMax = roundAutoscale(yMax, true);
-		if (roundedMax <= style.yMin) {
-			double delta = Math.max(Math.abs(style.yMin) * 0.1, Model.EPS_SMALL);
-			roundedMax = roundAutoscale(style.yMin + delta, true);
-			if (roundedMax <= style.yMin)
-				roundedMax = style.yMin + delta;
-		}
-		style.yMax = roundedMax;
-	}
-
-	/**
-	 * Update and round {@link GraphStyle#yMin} when the observed minimum changed
-	 * sufficiently.
-	 * 
-	 * @param yMin observed minimum bin height
-	 */
-	private void updateAutoscaledYMin(double yMin) {
-		if (!(yMin < style.yMin || yMin > 1.25 * style.yMin))
-			return;
-		double roundedMin = roundAutoscale(yMin, false);
-		if (roundedMin >= style.yMax) {
-			double delta = Math.max(Math.abs(style.yMax) * 0.1, Model.EPS_SMALL);
-			roundedMin = roundAutoscale(style.yMax - delta, false);
-			if (roundedMin >= style.yMax)
-				roundedMin = style.yMax - delta;
-		}
-		style.yMin = roundedMin;
-	}
-
-	/**
 	 * Ensure percent-scaled histograms do not zoom into ranges below one
 	 * percentage point.
 	 */
@@ -715,26 +675,6 @@ public class HistoGraph extends AbstractGraph<double[]> implements BasicTooltipP
 			return;
 		}
 		style.yMin = Math.max(0.0, style.yMax - MIN_PERCENT_Y_RANGE);
-	}
-
-	/**
-	 * Round autoscaled bounds. Percent axes use one additional decimal order
-	 * compared to {@link Functions#round(double)} for higher sensitivity.
-	 *
-	 * @param value value to round
-	 * @param up    {@code true} to round up, {@code false} to round down
-	 * @return rounded value
-	 */
-	private double roundAutoscale(double value, boolean up) {
-		if (!style.percentY)
-			return up ? Functions.roundUp(value) : Functions.roundDown(value);
-		// percent aware rounding
-		int magnitude = Functions.magnitude(value) - 1;
-		double factor = Math.pow(10.0, magnitude);
-		if (factor == 0.0 || !Double.isFinite(factor))
-			return up ? Functions.roundUp(value) : Functions.roundDown(value);
-		double scaled = value / factor;
-		return (up ? Math.ceil(scaled) : Math.floor(scaled)) * factor;
 	}
 
 	/**

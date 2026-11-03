@@ -46,7 +46,6 @@ import org.evoludo.simulator.ColorMapCSS;
 import org.evoludo.simulator.EvoLudoGWT;
 import org.evoludo.simulator.models.DModel;
 import org.evoludo.simulator.models.Data;
-import org.evoludo.simulator.models.IBSC;
 import org.evoludo.simulator.models.Model;
 import org.evoludo.simulator.modules.Module;
 import org.evoludo.util.CLOption;
@@ -190,7 +189,7 @@ public class Mean extends AbstractView<LineGraph> implements Shifter, Zoomer {
 					else
 						// note: leave nState alone because of multi-species modules!
 						setupDFitGraph(graph);
-					hard |= setFitRange(graph);
+					graph.getStyle().yLabel = "payoffs";
 					break;
 
 				default:
@@ -236,9 +235,6 @@ public class Mean extends AbstractView<LineGraph> implements Shifter, Zoomer {
 		GraphStyle style = graph.getStyle();
 		style.yLabel = model.getMeanName(idx);
 		style.percentY = false;
-		IBSC cmodel = (IBSC) model;
-		style.yMin = cmodel.getTraitRangeMin(0)[idx];
-		style.yMax = cmodel.getTraitRangeMax(0)[idx];
 		Module<?> module = graph.getModule();
 		Color color = module.getMeanColors()[idx];
 		String[] traitcolors = new String[3];
@@ -247,31 +243,6 @@ public class Mean extends AbstractView<LineGraph> implements Shifter, Zoomer {
 		traitcolors[2] = traitcolors[1]; // max
 		graph.setColors(traitcolors);
 		graph.setMarkers(Collections.emptyList());
-	}
-
-	/**
-	 * Set the y-range for fitness graphs; returns true if the range changed.
-	 * 
-	 * @param graph the graph to configure
-	 * @return <code>true</code> if the y-range changed
-	 */
-	private boolean setFitRange(LineGraph graph) {
-		Module<?> module = graph.getModule();
-		int id = module.getId();
-		double min = model.getMinScore(id);
-		double max = model.getMaxScore(id);
-		if (max - min < Model.EPS) {
-			min -= 1.0;
-			max += 1.0;
-		}
-		GraphStyle style = graph.getStyle();
-		boolean rangeChanged = Math.abs(min - style.yMin) > Model.EPS || Math.abs(max - style.yMax) > Model.EPS;
-		if (rangeChanged) {
-			style.yMin = min;
-			style.yMax = max;
-		}
-		style.yLabel = "payoffs";
-		return rangeChanged;
 	}
 
 	/**
