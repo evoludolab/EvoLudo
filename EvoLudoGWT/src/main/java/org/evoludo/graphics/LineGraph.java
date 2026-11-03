@@ -38,7 +38,6 @@ import org.evoludo.geom.Point2D;
 import org.evoludo.graphics.AbstractGraph.HasLogScaleY;
 import org.evoludo.graphics.AbstractGraph.Shifting;
 import org.evoludo.graphics.AbstractGraph.Zooming;
-import org.evoludo.math.Functions;
 import org.evoludo.simulator.ColorMapCSS;
 import org.evoludo.simulator.models.Data;
 import org.evoludo.simulator.models.Model;
@@ -718,7 +717,7 @@ public class LineGraph extends AbstractGraph<double[]>
 	 * @return the x-coordinate on the requested axis
 	 */
 	private double xValue(double[] sample, boolean realTime) {
-		return realTime ? sample[sample.length - 1] : sample[0];
+		return sample[realTime ? sample.length - 1 : 0];
 	}
 
 	@Override
@@ -780,18 +779,18 @@ public class LineGraph extends AbstractGraph<double[]>
 			noLogY();
 			return;
 		}
-		style.logScaleY = logY;
-		if (!style.autoscaleY)
-			return;
-		double[] min = buffer.min(this::compareData);
-		double bufmin = minValue(min);
-		if (bufmin < 0.0) {
+		if (logY && minValue(buffer.min(this::compareData)) < 0.0) {
 			noLogY();
 			return;
 		}
-		if (logY && bufmin == 0.0)
-			bufmin = GraphStyle.MIN_YMAX_FRACTION * style.yMax;
-		style.yMin = logY ? Functions.roundDown(bufmin) : GraphStyle.roundLinearMin(bufmin, style.yMax);
+		style.logScaleY = logY;
+		if (style.autoscaleY) {
+			// refit range to the new scale, including margins
+			updateYRangeFromBuffer(false);
+			return;
+		}
+		if (logY && style.yMin <= 0.0)
+			style.yMin = GraphStyle.MIN_YMAX_FRACTION * style.yMax;
 	}
 
 	/**
@@ -1580,7 +1579,8 @@ public class LineGraph extends AbstractGraph<double[]>
 				continue;
 			for (int i = 1; i <= nLines; i++) {
 				double v = data[i];
-				if (!Double.isFinite(v))
+				// non-positive values cannot be shown on log scale
+				if (!Double.isFinite(v) || (style.logScaleY && v <= 0.0))
 					continue;
 				if (v < min)
 					min = v;

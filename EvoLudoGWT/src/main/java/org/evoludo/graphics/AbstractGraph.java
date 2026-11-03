@@ -30,6 +30,7 @@
 
 package org.evoludo.graphics;
 
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
@@ -1459,16 +1460,18 @@ public abstract class AbstractGraph<B> extends FocusPanel
 	 * @param h       frame height
 	 */
 	private void drawXLevels(int xLevels, double w, double h) {
-		if (xLevels <= 0)
+		double range = style.xMax - style.xMin;
+		if (xLevels <= 0 || range <= 0.0)
 			return;
-		int digits = computeLinearDigits(style.xMin, style.xMax, xLevels, style.percentX, false);
-		double frac = 1.0 / xLevels;
-		double incr = frac * w;
-		double level = 0.5 - incr;
+		double offset = (style.offsetXTickLabels && !style.percentX) ? style.xTickOffset : 0.0;
+		double min = style.xMin + offset;
+		double max = style.xMax + offset;
+		double step = niceTickStep(min, max, xLevels);
+		int digits = tickDigits(step, style.percentX);
 		g.setLineWidth(style.levelWidth);
-		for (int n = 0; n <= xLevels; n++) {
-			level += incr;
-			if (style.showXLevels && n > 0 && n < xLevels) {
+		for (double xval : niceTicks(min, max, step)) {
+			double level = 0.5 + (xval - min) / range * w;
+			if (style.showXLevels && level > 1.5 && level < w - 0.5) {
 				g.setStrokeStyle(style.levelColor);
 				strokeLine(level, 0, level, h);
 			}
@@ -1479,20 +1482,10 @@ public abstract class AbstractGraph<B> extends FocusPanel
 			if (style.showXTickLabels) {
 				setFont(style.ticksLabelFont);
 				g.setFillStyle(style.frameColor);
-				double xval = style.xMin + n * frac * (style.xMax - style.xMin);
-				if (style.offsetXTickLabels && !style.percentX)
-					xval += style.xTickOffset;
 				String tick = style.percentX ? Formatter.formatPercent(xval, digits) : Formatter.format(xval, digits);
-				// center tick labels with ticks, except for first/last labels at the edges
+				// center tick labels with ticks but keep them within the frame
 				double tickWidth = g.measureText(tick).getWidth();
-				double xpos;
-				if (n == 0) {
-					xpos = 2.0;
-				} else if (n == xLevels) {
-					xpos = level - tickWidth;
-				} else {
-					xpos = level - tickWidth * 0.5;
-				}
+				double xpos = Math.max(2.0, Math.min(level - tickWidth * 0.5, w + 0.5 - tickWidth));
 				g.fillText(tick, xpos, h + (style.tickLength + 12.5));
 			}
 		}
@@ -1526,35 +1519,190 @@ public abstract class AbstractGraph<B> extends FocusPanel
 	private void drawYLevels(int yLevels, double w, double h) {
 		if (yLevels <= 0)
 			return;
-		double tickMin = style.offsetYTickLabels ? style.yMin + style.yTickOffset : style.yMin;
-		double tickMax = style.offsetYTickLabels ? style.yMax + style.yTickOffset : style.yMax;
-		int digits = (!style.logScaleY)
-				? computeLinearDigits(tickMin, tickMax, yLevels, style.percentY, true)
-				: 2;
-		double frac = 1.0 / yLevels;
-		double incr = frac * h;
-		double level = 0.5 - incr;
+		if (style.logScaleY) {
+			drawLogYLevels(yLevels, w, h);
+			return;
+		}
+		double range = style.yMax - style.yMin;
+		if (range <= 0.0)
+			return;
+		double offset = style.offsetYTickLabels ? style.yTickOffset : 0.0;
+		double min = style.yMin + offset;
+		double max = style.yMax + offset;
+		double step = niceTickStep(min, max, yLevels);
+		int digits = tickDigits(step, style.percentY);
+		for (double tval : niceTicks(min, max, step)) {
+			double level = 0.5 + (1.0 - (tval - min) / range) * h;
+			drawYLevel(w, h, level, tval - offset, digits);
+		}
+	}
+
+	/**
+	 * Draw the y-levels of a logarithmic axis including ticks and tick labels.
+	 * Ticks are placed at decades or, if this yields too few ticks, at
+	 * {@code m·10^k} with {@code m ∈ {1, 2, 5}} or {@code m ∈ {1, ..., 9}}.
+	 *
+	 * @param yLevels the targeted number of horizontal levels
+	 * @param w       the width of the graph
+	 * @param h       the height of the graph
+	 */
+	private void drawLogYLevels(int yLevels, double w, double h) {
 		double[] range = computeYRange();
 		double ymin = range[0];
 		double yrange = range[1];
-		double tickStart = style.showYAxisRight ? w + 0.5 : 0.5;
-		double tickEnd = style.showYAxisRight ? w + 0.5 + style.tickLength : 0.5 - style.tickLength;
+		if (yrange <= 0.0 || !Double.isFinite(yrange))
+			return;
+		double[] ticks = new double[0];
+		for (double[] mantissas : LOG_TICK_MANTISSAS) {
+			ticks = logTicks(style.yMin, style.yMax, mantissas);
+			if (ticks.length >= Math.min(3, yLevels))
+				break;
+		}
+		for (double yval : ticks) {
+			double level = 0.5 + (1.0 - (Math.log10(yval) - ymin) / yrange) * h;
+			drawYLevel(w, h, level, yval, tickDigits(yval, false));
+		}
+	}
 
-		for (int n = 0; n <= yLevels; n++) {
-			level += incr;
-			if (style.showYLevels && n > 0 && n < yLevels) {
-				g.setStrokeStyle(style.levelColor);
-				strokeLine(0.5, level, w, level);
-			}
-			if (style.showYTicks) {
-				g.setStrokeStyle(style.frameColor);
-				strokeLine(tickStart, level, tickEnd, level);
-			}
-			if (style.showYTickLabels) {
-				double yval = computeYVal(n, frac, yrange, ymin);
-				drawYTickLabel(w, level, n, yval, digits);
+	/**
+	 * The mantissas of tick values on logarithmic axes, in order of preference.
+	 *
+	 * @see #drawLogYLevels(int, double, double)
+	 */
+	private static final double[][] LOG_TICK_MANTISSAS = { { 1.0 }, { 1.0, 2.0, 5.0 },
+			{ 1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0 } };
+
+	/**
+	 * Determine the ticks of the form {@code m·10^k} for the given mantissas
+	 * {@code m} within {@code [min, max]} on a logarithmic axis.
+	 *
+	 * @param min       the axis minimum (must be {@code > 0})
+	 * @param max       the axis maximum
+	 * @param mantissas the mantissas of the ticks
+	 * @return the tick values in increasing order
+	 */
+	static double[] logTicks(double min, double max, double[] mantissas) {
+		if (min <= 0.0 || max <= min)
+			return new double[0];
+		int kmin = (int) Math.floor(Math.log10(min));
+		int kmax = (int) Math.floor(Math.log10(max));
+		double[] ticks = new double[Math.min((kmax - kmin + 1) * mantissas.length, 1000)];
+		int n = 0;
+		for (int k = kmin; k <= kmax && n < ticks.length; k++) {
+			double mag = Math.pow(10.0, k);
+			for (double m : mantissas) {
+				double t = m * mag;
+				if (t >= min * (1.0 - 1e-9) && t <= max * (1.0 + 1e-9) && n < ticks.length)
+					ticks[n++] = t;
 			}
 		}
+		return Arrays.copyOf(ticks, n);
+	}
+
+	/**
+	 * Draw a single y-level including its guide line (unless at the frame), tick
+	 * and tick label.
+	 *
+	 * @param w      the width of the graph
+	 * @param h      the height of the graph
+	 * @param level  screen y-position of the level
+	 * @param yval   y-value represented by the level
+	 * @param digits decimal digits for tick label formatting
+	 */
+	private void drawYLevel(double w, double h, double level, double yval, int digits) {
+		g.setLineWidth(style.levelWidth);
+		if (style.showYLevels && level > 1.5 && level < h - 0.5) {
+			g.setStrokeStyle(style.levelColor);
+			strokeLine(0.5, level, w, level);
+		}
+		if (style.showYTicks) {
+			double tickStart = style.showYAxisRight ? w + 0.5 : 0.5;
+			double tickEnd = style.showYAxisRight ? w + 0.5 + style.tickLength : 0.5 - style.tickLength;
+			g.setStrokeStyle(style.frameColor);
+			strokeLine(tickStart, level, tickEnd, level);
+		}
+		if (style.showYTickLabels)
+			drawYTickLabel(w, level, yval, digits);
+	}
+
+	/**
+	 * Determine a "nice" spacing of ticks for an axis spanning
+	 * {@code [min, max]}: of the form {@code m·10^k} with
+	 * {@code m ∈ {1, 2, 2.5, 5}}, as close as possible to dividing the range into
+	 * {@code levels} intervals.
+	 *
+	 * @param min    the axis minimum
+	 * @param max    the axis maximum
+	 * @param levels the targeted number of intervals
+	 * @return the tick spacing
+	 */
+	static double niceTickStep(double min, double max, int levels) {
+		double raw = (max - min) / levels;
+		if (raw <= 0.0 || !Double.isFinite(raw))
+			return raw;
+		double mag = Math.pow(10.0, Math.floor(Math.log10(raw)));
+		double best = mag;
+		double bestDist = Double.MAX_VALUE;
+		for (double m : NICE_TICK_MANTISSAS) {
+			double dist = Math.abs(Math.log(m * mag / raw));
+			if (dist < bestDist) {
+				bestDist = dist;
+				best = m * mag;
+			}
+		}
+		return best;
+	}
+
+	/**
+	 * The mantissas of "nice" tick spacings.
+	 *
+	 * @see #niceTickStep(double, double, int)
+	 */
+	private static final double[] NICE_TICK_MANTISSAS = { 1.0, 2.0, 2.5, 5.0, 10.0 };
+
+	/**
+	 * Determine the ticks at multiples of {@code step} within {@code [min, max]}.
+	 *
+	 * @param min  the axis minimum
+	 * @param max  the axis maximum
+	 * @param step the tick spacing, see {@link #niceTickStep(double, double, int)}
+	 * @return the tick values in increasing order
+	 */
+	static double[] niceTicks(double min, double max, double step) {
+		if (step <= 0.0 || !Double.isFinite(step))
+			return new double[0];
+		double eps = step * 1e-6;
+		long first = (long) Math.ceil((min - eps) / step);
+		long last = (long) Math.floor((max + eps) / step);
+		int n = (int) Math.max(0, Math.min(last - first + 1, 1000));
+		double[] ticks = new double[n];
+		for (int i = 0; i < n; i++) {
+			double t = (first + i) * step;
+			// avoid labels like -0
+			ticks[i] = Math.abs(t) < eps ? 0.0 : t;
+		}
+		return ticks;
+	}
+
+	/**
+	 * Determine the number of decimal digits required to label ticks spaced by
+	 * {@code step}.
+	 *
+	 * @param step    the tick spacing
+	 * @param percent whether labels are formatted as percentages
+	 * @return the number of decimal digits
+	 */
+	static int tickDigits(double step, boolean percent) {
+		double units = Math.abs(percent ? 100.0 * step : step);
+		if (units <= 0.0 || !Double.isFinite(units))
+			return 0;
+		int digits = 0;
+		double scaled = units;
+		while (digits < 12 && Math.abs(scaled - Math.rint(scaled)) > 1e-6 * scaled) {
+			digits++;
+			scaled *= 10.0;
+		}
+		return digits;
 	}
 
 	/**
@@ -1576,31 +1724,14 @@ public abstract class AbstractGraph<B> extends FocusPanel
 	}
 
 	/**
-	 * Compute the y-value for tick number {@code n}.
-	 *
-	 * @param n      tick index
-	 * @param frac   fractional spacing between ticks
-	 * @param yrange total y-range (possibly logarithmic)
-	 * @param ymin   minimum y-value (possibly logarithmic)
-	 * @return the y-value represented by the tick
-	 */
-	private double computeYVal(int n, double frac, double yrange, double ymin) {
-		double yval = ymin + (1.0 - n * frac) * yrange;
-		if (style.logScaleY)
-			yval = Math.pow(10.0, yval);
-		return yval;
-	}
-
-	/**
 	 * Draw the y-axis tick label at the specified screen level.
 	 *
 	 * @param w      frame width
 	 * @param level  screen y-position for the tick
-	 * @param n      tick index
 	 * @param yval   y-value represented by the tick
 	 * @param digits decimal digits for tick label formatting
 	 */
-	private void drawYTickLabel(double w, double level, int n, double yval, int digits) {
+	private void drawYTickLabel(double w, double level, double yval, int digits) {
 		setFont(style.ticksLabelFont);
 		g.setFillStyle(style.frameColor);
 		double tickValue = style.offsetYTickLabels ? yval + style.yTickOffset : yval;
@@ -1613,7 +1744,8 @@ public abstract class AbstractGraph<B> extends FocusPanel
 			double labelWidth = measureYTickLabelWidth(numexp, style.percentY);
 			xpos = 0.5 - (style.tickLength + Y_TICK_LABEL_GAP) - labelWidth;
 		}
-		double ypos = level + (n == 0 ? 9 : 4.5);
+		// center label on tick but keep it within the frame at the top
+		double ypos = Math.max(level + 4.5, 9.5);
 		g.fillText(numexp[0], xpos, ypos);
 		xpos += g.measureText(numexp[0]).getWidth();
 		if (numexp.length > 1) {
@@ -1624,53 +1756,6 @@ public abstract class AbstractGraph<B> extends FocusPanel
 		}
 		if (style.percentY)
 			g.fillText("%", xpos, ypos);
-	}
-
-	/**
-	 * Compute the number of decimal digits needed for linear labels so consecutive
-	 * ticks remain distinct.
-	 *
-	 * @param min     axis minimum
-	 * @param max     axis maximum
-	 * @param levels  number of tick levels
-	 * @param percent whether values are percent formatted
-	 * @param pretty  whether to use pretty formatting for duplicates check
-	 * @return decimal digits for linear labels
-	 */
-	private int computeLinearDigits(double min, double max, int levels, boolean percent, boolean pretty) {
-		if (levels <= 0)
-			return 0;
-		double step = (max - min) / levels;
-		double stepUnits = percent ? Math.abs(step * 100.0) : Math.abs(step);
-		int digits = 0;
-		if (stepUnits > 0.0)
-			digits = (int) Math.max(0, Math.ceil(-Math.log10(stepUnits)));
-		digits = Math.min(digits, 12);
-		for (; digits < 12; digits++) {
-			String prev = null;
-			boolean dup = false;
-			for (int n = 0; n <= levels; n++) {
-				double val = min + n * step;
-				String label;
-				if (percent) {
-					label = pretty
-							? Formatter.formatPretty(100.0 * val, digits)
-							: Formatter.formatPercent(val, digits);
-				} else {
-					label = pretty
-							? Formatter.formatPretty(val, digits)
-							: Formatter.format(val, digits);
-				}
-				if (prev != null && prev.equals(label)) {
-					dup = true;
-					break;
-				}
-				prev = label;
-			}
-			if (!dup)
-				break;
-		}
-		return digits;
 	}
 
 	/**
@@ -1685,7 +1770,7 @@ public abstract class AbstractGraph<B> extends FocusPanel
 		double tickMin = style.offsetYTickLabels ? style.yMin + style.yTickOffset : style.yMin;
 		double tickMax = style.offsetYTickLabels ? style.yMax + style.yTickOffset : style.yMax;
 		return (!style.logScaleY)
-				? computeLinearDigits(tickMin, tickMax, levels, style.percentY, true)
+				? tickDigits(niceTickStep(tickMin, tickMax, levels), false)
 				: 2;
 	}
 

@@ -30,8 +30,6 @@
 
 package org.evoludo.graphics;
 
-import org.evoludo.math.Functions;
-
 /**
  * The style features for graphs. This is a collection of settings for line
  * styles, font sizes, ticks, padding, etc.
@@ -185,9 +183,9 @@ public class GraphStyle {
 
 	/**
 	 * The margin, as a fraction of the data range, added at both ends when
-	 * fitting an axis range to data. Not applied to percentage axes.
+	 * fitting an axis range to data.
 	 */
-	private static final double FIT_MARGIN = 0.05;
+	private static final double FIT_MARGIN = 0.02;
 
 	/**
 	 * The fraction of the axis range below which the data range must drop
@@ -377,13 +375,14 @@ public class GraphStyle {
 	}
 
 	/**
-	 * Compute the axis range that fits data spanning {@code [min, max]}. Except
-	 * for percentage axes, a margin of {@link #FIT_MARGIN} times the data range
-	 * is added at both ends, but non-negative data never results in a negative
-	 * minimum. Data without range is always padded to obtain a finite range. The
-	 * limits are rounded to two significant digits and an insignificant linear
-	 * minimum snaps to zero (see {@link #roundLinearMin(double, double)}).
-	 * Percentage axes are clamped to {@code [0, 1]}.
+	 * Compute the axis range that fits data spanning {@code [min, max]}. A margin
+	 * of {@link #FIT_MARGIN} times the data range is added at both ends; on
+	 * logarithmic axes the margin refers to the range in decades. Non-negative
+	 * data never results in a negative minimum and percentage axes are clamped
+	 * to {@code [0, 1]}. Data without range is padded to obtain a finite range.
+	 * On linear axes an insignificant minimum snaps to zero (see
+	 * {@link #snapLinearMin(double, double)}). The limits are not rounded because
+	 * ticks are placed at "nice" values within the range.
 	 *
 	 * @param min     the minimum of the data
 	 * @param max     the maximum of the data
@@ -393,29 +392,28 @@ public class GraphStyle {
 	 *         exists (non-positive data on log scale)
 	 */
 	private static double[] computeRange(double min, double max, boolean percent, boolean log) {
-		if (!percent || min == max) {
-			double pad = (max - min) * FIT_MARGIN;
-			if (pad == 0.0)
-				pad = Math.max(1e-6, Math.abs(min) * FIT_MARGIN);
-			min = (min >= 0.0) ? Math.max(0.0, min - pad) : min - pad;
-			max += pad;
-		}
+		double newMin;
+		double newMax;
 		if (log) {
 			if (max <= 0.0)
 				return null;
 			if (min <= 0.0)
 				min = max * MIN_YMAX_FRACTION;
-		}
-		double newMax = Functions.roundUp(max);
-		double newMin;
-		if (log) {
-			newMin = Functions.roundDown(min);
-			if (newMin <= 0.0)
-				newMin = min;
-		} else if (min > 0.0) {
-			newMin = roundLinearMin(min, newMax);
+			double lmin = Math.log10(min);
+			double lmax = Math.log10(max);
+			double pad = (lmax - lmin) * FIT_MARGIN;
+			if (pad == 0.0)
+				pad = Math.log10(1.0 + FIT_MARGIN);
+			newMin = Math.pow(10.0, lmin - pad);
+			newMax = Math.pow(10.0, lmax + pad);
 		} else {
-			newMin = Functions.roundDown(min);
+			double pad = (max - min) * FIT_MARGIN;
+			if (pad == 0.0)
+				pad = Math.max(1e-6, Math.abs(min) * FIT_MARGIN);
+			newMin = (min >= 0.0) ? Math.max(0.0, min - pad) : min - pad;
+			newMax = max + pad;
+			if (newMin > 0.0)
+				newMin = snapLinearMin(newMin, newMax);
 		}
 		if (percent) {
 			newMin = Math.max(0.0, newMin);
@@ -429,18 +427,18 @@ public class GraphStyle {
 	}
 
 	/**
-	 * Round a candidate linear axis minimum down, snapping it to zero if it is an
-	 * insignificant fraction of the overall range. If {@code max} is not a valid
-	 * maximum (below {@code min}), {@code min} is rounded down but never snapped.
+	 * Snap a candidate linear axis minimum to zero if it is an insignificant
+	 * fraction of the overall range. If {@code max} is not a valid maximum (below
+	 * {@code min}), {@code min} is never snapped.
 	 *
 	 * @param min the candidate minimum (must be {@code > 0})
 	 * @param max the axis maximum
-	 * @return the rounded minimum, or {@code 0.0} if snapped
+	 * @return {@code min}, or {@code 0.0} if snapped
 	 */
-	static double roundLinearMin(double min, double max) {
+	static double snapLinearMin(double min, double max) {
 		if (max >= min && min < MIN_YMAX_FRACTION * max)
 			return 0.0;
-		return Functions.roundDown(min);
+		return min;
 	}
 
 	/**
