@@ -7,7 +7,7 @@
     "java.debug.settings.onBuildFailureProceed": true,
     "java.import.maven.enabled": true,
     "java.import.gradle.enabled": false,
-    "java.jdt.ls.java.home": "/Library/Java/JavaVirtualMachines/temurin-21.jdk/Contents/Home",
+    "java.jdt.ls.java.home": "/Library/Java/JavaVirtualMachines/temurin-25.jdk/Contents/Home",
     "java.configuration.runtimes": [
         {
             "name": "JavaSE-17",
