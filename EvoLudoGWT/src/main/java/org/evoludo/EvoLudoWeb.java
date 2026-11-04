@@ -1401,14 +1401,18 @@ public class EvoLudoWeb extends Composite
 
 	/**
 	 * Helper method to toggle the visibility of {@link #evoludoCLOPanel} to view or
-	 * modify the parameter settings.
+	 * modify the parameter settings. When the panel is shown, the parameter field
+	 * receives focus, except in fullscreen mode on touch devices: there, focusing
+	 * the editable field raises the on-screen keyboard, which makes browsers such
+	 * as Safari on iPadOS exit fullscreen.
 	 */
 	public void toggleSettings() {
 		// toggle visibility of field for command line parameters
 		evoludoCLOPanel.setVisible(!evoludoCLOPanel.isVisible());
 		Scheduler.get().scheduleDeferred(() -> {
 			evoludoLayout.onResize();
-			NativeJS.focusOn(evoludoCLO.getElement());
+			if (evoludoCLOPanel.isVisible() && !(NativeJS.isFullscreen() && NativeJS.hasTouch()))
+				NativeJS.focusOn(evoludoCLO.getElement());
 		});
 	}
 
