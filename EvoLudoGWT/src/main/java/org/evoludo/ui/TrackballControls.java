@@ -49,7 +49,6 @@ import com.google.gwt.event.dom.client.TouchMoveHandler;
 import com.google.gwt.event.dom.client.TouchStartEvent;
 import com.google.gwt.event.dom.client.TouchStartHandler;
 import com.google.gwt.event.shared.HandlerRegistration;
-import com.google.gwt.user.client.Timer;
 import com.google.gwt.user.client.ui.RequiresResize;
 import com.google.gwt.user.client.ui.RootPanel;
 import com.google.gwt.user.client.ui.Widget;
@@ -67,18 +66,7 @@ import thothbot.parallax.core.shared.math.Vector3;
  * Trackball controls for 3D views adapted from Parallax and threejs
  * 
  * <h2>CSS Style Rules</h2> The different trackball actions of zooming, panning
- * and rotating change the style classes. As an example, this allow to change
- * the pointer style accordingly.
- * <dl>
- * <dt>.evoludo-cursorZoomIn</dt>
- * <dd>the 3D view is zooming in.</dd>
- * <dt>.evoludo-cursorZoomOut</dt>
- * <dd>the 3D view is zooming out.</dd>
- * <dt>.evoludo-cursorRotate</dt>
- * <dd>the 3D view is rotating</dd>
- * <dt>.evoludo-cursorMoveView</dt>
- * <dd>the 3D view is panning</dd>
- * </dl>
+ * and rotating change the style classes of the cursor through {@link Gesture}.
  * 
  * @author Christoph Hauert
  * 
@@ -190,6 +178,12 @@ public class TrackballControls extends Controls implements MouseWheelHandler, Mo
 	private boolean isDragging = false;
 
 	/**
+	 * The arbiter of gestures that move (rotate or pan) or zoom the view.
+	 */
+	private final Gesture gesture;
+
+
+	/**
 	 * <code>true</code> to disable dynamic damping of changes to the view..
 	 */
 	private boolean isDynamicUpdate = true;
@@ -273,16 +267,6 @@ public class TrackballControls extends Controls implements MouseWheelHandler, Mo
 	private HandlerRegistration touchEndHandler;
 
 	/**
-	 * CSS class name for changing the cursor while panning the view.
-	 */
-	protected static final String CSS_CURSOR_MOVE_VIEW = "evoludo-cursorMoveView";
-
-	/**
-	 * CSS class name for changing the cursor while rotating the view.
-	 */
-	protected static final String CSS_CURSOR_ROTATE_VIEW = "evoludo-cursorRotate";
-
-	/**
 	 * Creates a new instance of TrackballControls for the 3D scene displayed in
 	 * <code>widget</code> as seen from the <code>camera</code>.
 	 * 
@@ -292,6 +276,7 @@ public class TrackballControls extends Controls implements MouseWheelHandler, Mo
 	 */
 	public TrackballControls(Object3D camera, Widget widget) {
 		super(camera, widget);
+		gesture = new Gesture(widget.getElement());
 
 		if (widget.getClass() != RootPanel.class)
 			widget.getElement().setAttribute("tabindex", "-1");
@@ -546,7 +531,9 @@ public class TrackballControls extends Controls implements MouseWheelHandler, Mo
 	/**
 	 * {@inheritDoc}
 	 * <p>
-	 * Zooms the 3D view.
+	 * Zooms the 3D view. Zooming is disabled shortly after moving the view ended.
+	 *
+	 * @see Gesture#WHEEL_GRACE_MSEC
 	 */
 	@Override
 	public void onMouseWheel(MouseWheelEvent event) {
@@ -554,13 +541,11 @@ public class TrackballControls extends Controls implements MouseWheelHandler, Mo
 			return;
 		event.preventDefault();
 		double dy = event.getNativeDeltaY();
-		if (dy == 0.0)
+		if (dy == 0.0 || !gesture.wheel())
 			return;
 		zoomChange = Math.pow(zoomSpeed, dy);
 		doZoom = true;
-		getWidget().addStyleName(dy < 0 ? "evoludo-cursorZoomIn" : "evoludo-cursorZoomOut");
-		if (!t.isRunning())
-			t.schedule(200);
+		gesture.zooming(dy < 0);
 	}
 
 	/**
@@ -593,15 +578,15 @@ public class TrackballControls extends Controls implements MouseWheelHandler, Mo
 		if (event.getNativeButton() != NativeEvent.BUTTON_LEFT)
 			return;
 		isDragging = false;
-		getWidget().removeStyleName(CSS_CURSOR_ROTATE_VIEW);
-		getWidget().removeStyleName(CSS_CURSOR_MOVE_VIEW);
+		gesture.release();
 	}
 
 	/**
 	 * {@inheritDoc}
 	 * <p>
 	 * If the left mouse button is down, this dragging rotates or pans (if Shift-key
-	 * is pressed) the view of the 3D scene.
+	 * is pressed) the view of the 3D scene. Moving may be combined with zooming
+	 * (with the mouse wheel).
 	 */
 	@Override
 	public void onMouseMove(MouseMoveEvent event) {
@@ -614,26 +599,15 @@ public class TrackballControls extends Controls implements MouseWheelHandler, Mo
 				return;
 			panEnd = getMouseOnScreen(event.getX(), event.getY());
 			doPan = true;
-			getWidget().addStyleName(CSS_CURSOR_MOVE_VIEW);
+			gesture.move(Gesture.Move.VIEW);
 		} else {
 			if (!hasRotate)
 				return;
 			rotateEnd = getMouseProjectionOnBall(event.getX(), event.getY());
 			doRotate = true;
-			getWidget().addStyleName(CSS_CURSOR_ROTATE_VIEW);
+			gesture.move(Gesture.Move.ROTATE);
 		}
 	}
-
-	/**
-	 * Timer for reseting the CSS styling after zooming.
-	 */
-	private Timer t = new Timer() {
-		@Override
-		public void run() {
-			getWidget().removeStyleName("evoludo-cursorZoomIn");
-			getWidget().removeStyleName("evoludo-cursorZoomOut");
-		}
-	};
 
 	/**
 	 * Helper variable to keep track of the distance of two touches between
@@ -672,11 +646,13 @@ public class TrackballControls extends Controls implements MouseWheelHandler, Mo
 				Touch touch1 = touches.get(1);
 				int x1 = touch1.getRelativeX(ref);
 				int y1 = touch1.getRelativeY(ref);
-				double dX = x0 - x1;
-				double dY = y0 - y1;
+				double dX = (double) x0 - x1;
+				double dY = (double) y0 - y1;
 				pinchZoom = Math.sqrt(dX * dX + dY * dY);
 				// don't signal zooming just yet
 				doZoom = false;
+				if (hasRotate)
+					rotateStart = getMouseProjectionOnBall((x0 + x1) / 2, (y0 + y1) / 2);
 				event.preventDefault();
 				break;
 
@@ -688,8 +664,9 @@ public class TrackballControls extends Controls implements MouseWheelHandler, Mo
 	/**
 	 * {@inheritDoc}
 	 * <p>
-	 * For one-finger touch rotate the view and for two-finger touch zoom the view
-	 * of the 3D scene. Note panning for touch events is not (yet?) implemented.
+	 * For one-finger touch rotate the view and for two-finger touch zoom (pinch)
+	 * and rotate (move) the view of the 3D scene. Panning for touch events is not
+	 * (yet?) implemented.
 	 */
 	@Override
 	public void onTouchMove(TouchMoveEvent event) {
@@ -712,24 +689,27 @@ public class TrackballControls extends Controls implements MouseWheelHandler, Mo
 					return;
 				// process pinch zoom
 				Touch touch0 = touches.get(0);
-				int x0 = touch0.getClientX();
-				int y0 = touch0.getClientY();
+				Element ref0 = getWidget().getElement();
+				int x0 = touch0.getRelativeX(ref0);
+				int y0 = touch0.getRelativeY(ref0);
 				Touch touch1 = touches.get(1);
-				int x1 = touch1.getClientX();
-				int y1 = touch1.getClientY();
-				double dX = x0 - x1;
-				double dY = y0 - y1;
+				int x1 = touch1.getRelativeX(ref0);
+				int y1 = touch1.getRelativeY(ref0);
+				if (hasRotate) {
+					// moving the pinch rotates the view
+					rotateEnd = getMouseProjectionOnBall((x0 + x1) / 2, (y0 + y1) / 2);
+					doRotate = true;
+				}
+				double dX = (double) x0 - x1;
+				double dY = (double) y0 - y1;
 				double zoom = Math.sqrt(dX * dX + dY * dY);
-				zoomChange = pinchZoom / zoom;
-				// add some amplification
-				if (zoomChange > 1.0)
-					zoomChange *= 1.05;
-				else
-					zoomChange *= 0.952;
-				pinchZoom = zoom;
-				doZoom = true;
-				if (!t.isRunning())
-					t.schedule(300);
+				if (zoom > 0.0) {
+					// accumulate changes until the next update of the scene
+					double change = pinchZoom / zoom;
+					zoomChange = doZoom ? zoomChange * change : change;
+					pinchZoom = zoom;
+					doZoom = true;
+				}
 				event.preventDefault();
 				break;
 

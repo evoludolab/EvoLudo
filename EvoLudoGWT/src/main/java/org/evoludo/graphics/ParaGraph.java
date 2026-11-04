@@ -593,10 +593,7 @@ public class ParaGraph extends AbstractGraph<double[]> implements Zooming, Shift
 		double newViewCornerY = relY * state.h * state.zoomY - localY;
 		setViewCorner(state, newViewCornerX, newViewCornerY);
 		zoomFactor = newZoom;
-		if (zoomInertiaTimer != null && zoomInertiaTimer.isRunning()) {
-			double dz = newZoom - oldZoom;
-			element.addClassName(dz > 0 ? CURSOR_ZOOM_IN_CLASS : CURSOR_ZOOM_OUT_CLASS);
-		}
+		gesture.zooming(newZoom > oldZoom);
 		paint(true);
 	}
 

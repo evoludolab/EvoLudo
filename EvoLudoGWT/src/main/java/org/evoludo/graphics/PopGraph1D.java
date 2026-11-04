@@ -545,8 +545,7 @@ public class PopGraph1D extends PopGraph2D {
 				Math.min(maxX, Math.max(0.0, viewCorner.getX() + w * dz * fx)),
 				Math.min(maxY, Math.max(0.0, viewCorner.getY() + h * dz * fy)));
 		zoomFactor = newZoomFactor;
-		if (zoomInertiaTimer.isRunning())
-			element.addClassName(dz > 0 ? CURSOR_ZOOM_IN_CLASS : CURSOR_ZOOM_OUT_CLASS);
+		gesture.zooming(dz > 0);
 		paint(true);
 	}
 

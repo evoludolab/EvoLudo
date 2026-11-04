@@ -44,6 +44,7 @@ import org.evoludo.simulator.views.AbstractView;
 import org.evoludo.simulator.views.Distribution;
 import org.evoludo.ui.ContextMenu;
 import org.evoludo.ui.ContextMenuRadioItem;
+import org.evoludo.ui.Gesture;
 
 import com.google.gwt.core.client.JsArray;
 import com.google.gwt.dom.client.NativeEvent;
@@ -1139,10 +1140,8 @@ public class PopGraph2D extends GenericPopGraph<String, Network2D> implements Sh
 	 * <dl>
 	 * <dt>.evoludo-cursorGrabNode</dt>
 	 * <dd>removed from graph element.</dd>
-	 * <dt>.evoludo-cursorMoveNode</dt>
-	 * <dd>removed from graph element.</dd>
 	 * </dl>
-	 * 
+	 *
 	 * @see #onMouseMove(MouseMoveEvent)
 	 */
 	@Override
@@ -1150,7 +1149,6 @@ public class PopGraph2D extends GenericPopGraph<String, Network2D> implements Sh
 		super.onMouseUp(event);
 		if (event.getNativeButton() == NativeEvent.BUTTON_LEFT) {
 			if (hitDragged) {
-				element.removeClassName(CURSOR_MOVE_NODE_CLASS);
 				// reshow tooltip after dragging
 				hitDragged = false;
 				tooltip.update();
@@ -1166,14 +1164,9 @@ public class PopGraph2D extends GenericPopGraph<String, Network2D> implements Sh
 	 * If a node has been hit by a {@link MouseDownEvent} and is being dragged,
 	 * the position of the node is shifted. This allows to customize the display of
 	 * the graph.
-	 * 
-	 * <h3>CSS Style Rules</h3>
-	 * <dl>
-	 * <dt>.evoludo-cursorMoveNode</dt>
-	 * <dd>added to graph element when dragging a node.</dd>
-	 * </dl>
-	 * 
+	 *
 	 * @see #onMouseDown(MouseDownEvent)
+	 * @see Gesture#move(Gesture.Move)
 	 */
 	@Override
 	public void onMouseMove(MouseMoveEvent event) {
@@ -1182,7 +1175,7 @@ public class PopGraph2D extends GenericPopGraph<String, Network2D> implements Sh
 			int x = event.getX();
 			int y = event.getY();
 			if (!inside(x, y)) {
-				element.removeClassName("evoludo-cursorMoveNode");
+				gesture.pause();
 				mouseX = -Integer.MAX_VALUE;
 				mouseY = -Integer.MAX_VALUE;
 				return;
@@ -1193,7 +1186,7 @@ public class PopGraph2D extends GenericPopGraph<String, Network2D> implements Sh
 				return;
 			}
 			hitDragged = true;
-			element.addClassName("evoludo-cursorMoveNode");
+			gesture.move(Gesture.Move.NODE);
 			shiftNodeBy(hitNode, mouseX - x, mouseY - y);
 			mouseX = x;
 			mouseY = y;

@@ -47,6 +47,7 @@ import org.evoludo.simulator.views.BasicTooltipProvider;
 import org.evoludo.ui.ContextMenu;
 import org.evoludo.ui.ContextMenuCheckBoxItem;
 import org.evoludo.ui.ContextMenuItem;
+import org.evoludo.ui.Gesture;
 import org.evoludo.ui.Tooltip;
 import org.evoludo.util.Formatter;
 import org.evoludo.util.NativeJS;
@@ -86,7 +87,6 @@ import com.google.gwt.event.dom.client.TouchStartEvent;
 import com.google.gwt.event.dom.client.TouchStartHandler;
 import com.google.gwt.event.shared.HandlerRegistration;
 import com.google.gwt.user.client.Command;
-import com.google.gwt.user.client.Timer;
 import com.google.gwt.user.client.ui.FocusPanel;
 import com.google.gwt.user.client.ui.Label;
 import com.google.gwt.user.client.ui.LayoutPanel;
@@ -653,21 +653,6 @@ public abstract class AbstractGraph<B> extends FocusPanel
 	static final String CURSOR_GRAB_NODE_CLASS = "evoludo-cursorGrabNode";
 
 	/**
-	 * CSS class applied when the user is dragging a node.
-	 */
-	static final String CURSOR_MOVE_NODE_CLASS = "evoludo-cursorMoveNode";
-
-	/**
-	 * CSS class applied when the user is zooming in.
-	 */
-	static final String CURSOR_ZOOM_IN_CLASS = "evoludo-cursorZoomIn";
-
-	/**
-	 * CSS class applied when the user is zooming out.
-	 */
-	static final String CURSOR_ZOOM_OUT_CLASS = "evoludo-cursorZoomOut";
-
-	/**
 	 * Create the base class for graphs. Allocates the canvas, retrieves the shared
 	 * tooltip and context menu. Use the CSS class {@code evoludo-Canvas2D} for
 	 * custom formatting of the canvas element.
@@ -680,13 +665,6 @@ public abstract class AbstractGraph<B> extends FocusPanel
 		this.module = module;
 		if (this instanceof Zooming) {
 			viewCorner = new Point2D();
-			zoomInertiaTimer = new Timer() {
-				@Override
-				public void run() {
-					element.removeClassName(CURSOR_ZOOM_IN_CLASS);
-					element.removeClassName(CURSOR_ZOOM_OUT_CLASS);
-				}
-			};
 			zoomer = (Zoomer) (view instanceof Zoomer ? view : this);
 		}
 		if (this instanceof Shifting) {
@@ -2421,8 +2399,7 @@ public abstract class AbstractGraph<B> extends FocusPanel
 				Math.min(getMaxViewCornerY(newZoomFactor), Math.max(0, viewCorner.getY() + h * dz *
 						fy)));
 		zoomFactor = newZoomFactor;
-		if (zoomInertiaTimer.isRunning())
-			element.addClassName(dz > 0 ? CURSOR_ZOOM_IN_CLASS : CURSOR_ZOOM_OUT_CLASS);
+		gesture.zooming(dz > 0);
 		paint(true);
 	}
 
@@ -2469,6 +2446,11 @@ public abstract class AbstractGraph<B> extends FocusPanel
 	 * The flag to indicate whether the left mouse button is pressed.
 	 */
 	protected boolean leftMouseButton = false;
+
+	/**
+	 * The arbiter of gestures that shift or zoom the view.
+	 */
+	final Gesture gesture = new Gesture(getElement());
 
 	/**
 	 * The {@code x}-coordinate of the previous mouse or tap event.
@@ -2529,7 +2511,7 @@ public abstract class AbstractGraph<B> extends FocusPanel
 	@Override
 	public void onMouseOut(MouseOutEvent event) {
 		leftMouseButton = false;
-		element.removeClassName(CSS_CURSOR_MOVE_VIEW);
+		gesture.release();
 		if (mouseMoveHandler != null) {
 			mouseMoveHandler.removeHandler();
 			mouseMoveHandler = null;
@@ -2542,7 +2524,7 @@ public abstract class AbstractGraph<B> extends FocusPanel
 	 * If a node has been hit by a left-click, remember the node's index and the
 	 * current mouse coordinates. This information might be used by subsequent
 	 * {@link MouseMoveEvent}s.
-	 * 
+	 *
 	 * @see #onMouseMove(MouseMoveEvent)
 	 */
 	@Override
@@ -2552,7 +2534,7 @@ public abstract class AbstractGraph<B> extends FocusPanel
 			int y = event.getY();
 			if (!inside(x, y)) {
 				leftMouseButton = false;
-				element.removeClassName(CSS_CURSOR_MOVE_VIEW);
+				gesture.pause();
 				return;
 			}
 			mouseX = x;
@@ -2565,28 +2547,18 @@ public abstract class AbstractGraph<B> extends FocusPanel
 	}
 
 	/**
-	 * The CSS class name for the view movement cursor.
-	 */
-	protected static final String CSS_CURSOR_MOVE_VIEW = "evoludo-cursorMoveView";
-
-	/**
 	 * {@inheritDoc}
 	 * <p>
 	 * Cancel all interactions with the graph and reset node and mouse information.
-	 * 
-	 * <h2>CSS Style Rules</h2>
-	 * <dl>
-	 * <dt>.evoludo-cursorMoveView</dt>
-	 * <dd>removed from graph element.</dd>
-	 * </dl>
-	 * 
+	 *
 	 * @see #onMouseMove(MouseMoveEvent)
+	 * @see Gesture#release()
 	 */
 	@Override
 	public void onMouseUp(MouseUpEvent event) {
 		if (event.getNativeButton() == NativeEvent.BUTTON_LEFT) {
 			leftMouseButton = false;
-			element.removeClassName(CSS_CURSOR_MOVE_VIEW);
+			gesture.release();
 			if (mouseMoveHandler != null) {
 				mouseMoveHandler.removeHandler();
 				mouseMoveHandler = null;
@@ -2600,15 +2572,10 @@ public abstract class AbstractGraph<B> extends FocusPanel
 	 * <p>
 	 * If the left mouse-key is pressed the graph is shifted within its
 	 * viewport. Note this requires that the zoom level of the graph exceeds
-	 * {@code 1}.
-	 * 
-	 * <h2>CSS Style Rules</h2>
-	 * <dl>
-	 * <dt>.evoludo-cursorMoveView</dt>
-	 * <dd>added to graph element when shifting the view.</dd>
-	 * </dl>
-	 * 
+	 * {@code 1}. Shifting may be combined with zooming (with the mouse wheel).
+	 *
 	 * @see #onMouseDown(MouseDownEvent)
+	 * @see Gesture#move(Gesture.Move)
 	 */
 	@Override
 	public void onMouseMove(MouseMoveEvent event) {
@@ -2617,7 +2584,7 @@ public abstract class AbstractGraph<B> extends FocusPanel
 			int x = event.getX();
 			int y = event.getY();
 			if (!inside(x, y)) {
-				element.removeClassName(CSS_CURSOR_MOVE_VIEW);
+				gesture.pause();
 				mouseX = -Integer.MAX_VALUE;
 				mouseY = -Integer.MAX_VALUE;
 				return;
@@ -2627,7 +2594,7 @@ public abstract class AbstractGraph<B> extends FocusPanel
 				mouseY = y;
 				return;
 			}
-			element.addClassName(CSS_CURSOR_MOVE_VIEW);
+			gesture.move(Gesture.Move.VIEW);
 			shifter.shift(mouseX - x, mouseY - y);
 			mouseX = x;
 			mouseY = y;
@@ -2639,20 +2606,11 @@ public abstract class AbstractGraph<B> extends FocusPanel
 	 * {@inheritDoc}
 	 * <p>
 	 * Adjusts the zoom level of the graph, while preserving the location of the
-	 * mouse on the graph. The zooming has inertia.
-	 * 
-	 * <h2>CSS Style Rules</h2>
-	 * <dl>
-	 * <dt>.evoludo-cursorZoomIn</dt>
-	 * <dd>added to graph element when zooming in and removed when inertia
-	 * stops.</dd>
-	 * <dt>.evoludo-cursorZoomOut</dt>
-	 * <dd>added to graph element when zooming out and removed when inertia
-	 * stops.</dd>
-	 * </dl>
-	 * 
+	 * mouse on the graph. The zooming has inertia. Zooming is disabled shortly
+	 * after moving the view (or a node) ended.
+	 *
 	 * @see #zoom(double, int, int)
-	 * @see #zoomInertiaTimer
+	 * @see Gesture#wheel()
 	 */
 	@Override
 	public void onMouseWheel(MouseWheelEvent event) {
@@ -2662,11 +2620,9 @@ public abstract class AbstractGraph<B> extends FocusPanel
 			return;
 		event.preventDefault();
 		double dz = event.getNativeDeltaY();
-		if (hasMessage || dz == 0.0)
+		if (hasMessage || dz == 0.0 || !gesture.wheel())
 			return;
-		double zoom = Math.pow(Zooming.ZOOM_INCR, -dz);
-		zoomInertiaTimer.schedule(100);
-		zoomer.zoom(zoom, x, y);
+		zoomer.zoom(Math.pow(Zooming.ZOOM_INCR, -dz), x, y);
 	}
 
 	/**
@@ -2816,7 +2772,9 @@ public abstract class AbstractGraph<B> extends FocusPanel
 	 * <dt>Move one finger
 	 * <dd>Shift view
 	 * <dt>Pinch two fingers
-	 * <dd>Zoom view
+	 * <dd>Zoom view, centered between the fingers
+	 * <dt>Move two fingers
+	 * <dd>Shift view (combined with zooming if pinching at the same time)
 	 * </dl>
 	 * Touch moves are ignored while the context menu is showing, e.g. after it was
 	 * opened by a long touch and the finger has not yet been lifted.
@@ -2874,8 +2832,13 @@ public abstract class AbstractGraph<B> extends FocusPanel
 					pinchY = (relY0 + relY1) / 2;
 					return;
 				}
-				pinchX = (relX0 + relX1) / 2;
-				pinchY = (relY0 + relY1) / 2;
+				int centerX = (relX0 + relX1) / 2;
+				int centerY = (relY0 + relY1) / 2;
+				// moving the pinch shifts the view
+				if (pinchX != -Integer.MAX_VALUE && pinchY != -Integer.MAX_VALUE)
+					shift(pinchX - centerX, pinchY - centerY);
+				pinchX = centerX;
+				pinchY = centerY;
 				zoom(dist / pinchDist, pinchX, pinchY);
 				pinchDist = dist;
 				event.preventDefault();
@@ -2884,13 +2847,6 @@ public abstract class AbstractGraph<B> extends FocusPanel
 				break;
 		}
 	}
-
-	/**
-	 * The timer to remove the CSS classes {@code .evoludo-cursorZoomIn} or
-	 * {@code .evoludo-cursorZoomIn}, respectively, from the graph element after the
-	 * inertia of zooming has worn off.
-	 */
-	protected Timer zoomInertiaTimer;
 
 	/**
 	 * The zoom command for the context menu.

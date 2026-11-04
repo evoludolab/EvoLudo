@@ -1172,8 +1172,7 @@ public class LineGraph extends AbstractGraph<double[]>
 		}
 		if (Math.abs(style.xMin - oldXMin) < Model.EPS && Math.abs(style.xMax - oldXMax) < Model.EPS)
 			return;
-		if (zoomInertiaTimer != null && zoomInertiaTimer.isRunning())
-			element.addClassName(zoom > 1.0 ? CURSOR_ZOOM_IN_CLASS : CURSOR_ZOOM_OUT_CLASS);
+		gesture.zooming(zoom > 1.0);
 		schedulePaint();
 	}
 
