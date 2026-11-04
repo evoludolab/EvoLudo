@@ -398,12 +398,17 @@ public class ContextMenuItem extends Label
 	 * {@inheritDoc}
 	 * <p>
 	 * Open submenu, if context menu item controls one, and if the submenu has
-	 * <code>autoOpen</code> set to <code>true</code>. Otherwise do nothing.
+	 * <code>autoOpen</code> set to <code>true</code>. Otherwise close any open
+	 * submenu of the surrounding menu. The <code>event</code> is not used and may
+	 * be <code>null</code>, which allows {@link ContextMenu} to emulate hovering
+	 * for touches.
 	 */
 	@Override
 	public void onMouseOver(MouseOverEvent event) {
-		if (!hasSubmenu())
+		if (!hasSubmenu()) {
 			((ContextMenu) getParent()).closeChildMenu();
+			return;
+		}
 		if (!childMenu.isAttached())
 			open();
 		else

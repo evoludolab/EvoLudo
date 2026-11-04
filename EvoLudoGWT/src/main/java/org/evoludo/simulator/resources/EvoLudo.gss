@@ -343,8 +343,8 @@
 	color: #1d1d1f;
 }
 
-.gwt-ContextMenu .gwt-ContextMenuItem-selected:hover,
-.gwt-ContextMenu .gwt-ContextMenuRadioItem-selected:hover {
+.gwt-ContextMenu .gwt-ContextMenuItem-selected.highlight,
+.gwt-ContextMenu .gwt-ContextMenuRadioItem-selected.highlight {
 	background-color: rgba(0, 122, 255, 0.14) !important;
 }
 
@@ -383,14 +383,14 @@
 	background-color: transparent;
 }
 
-.gwt-ContextMenuItem:hover,
-.gwt-ContextMenuRadioItem:hover {
+.gwt-ContextMenuItem.highlight,
+.gwt-ContextMenuRadioItem.highlight {
 	background-color: rgba(0, 122, 255, 0.14);
 	color: #1d1d1f;
 }
 
-.gwt-ContextMenuItem.has-key:hover::after,
-.gwt-ContextMenuRadioItem.has-key:hover::after {
+.gwt-ContextMenuItem.has-key.highlight::after,
+.gwt-ContextMenuRadioItem.has-key.highlight::after {
 	color: rgba(60, 60, 67, 0.82);
 }
 

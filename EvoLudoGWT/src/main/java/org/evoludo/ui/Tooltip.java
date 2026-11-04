@@ -398,7 +398,26 @@ public class Tooltip extends HTML implements MouseOverHandler, MouseOutHandler, 
 	 * @param provider provides tooltip
 	 */
 	public void add(FocusPanel listener, Provider provider) {
-		participants.put(listener, new Registration(listener, provider));
+		// drop handlers of earlier registration (e.g. when widget is re-attached)
+		Registration previous = participants.put(listener, new Registration(listener, provider));
+		if (previous != null)
+			previous.removeHandler();
+	}
+
+	/**
+	 * Remove a previously registered <code>listener</code> widget from tooltip
+	 * requests. Closes the tooltip if it currently belongs to
+	 * <code>listener</code>.
+	 *
+	 * @param listener the widget to remove
+	 */
+	public void removeListener(FocusPanel listener) {
+		Registration registration = participants.remove(listener);
+		if (registration == null)
+			return;
+		registration.removeHandler();
+		if (current == registration)
+			close();
 	}
 
 	/**

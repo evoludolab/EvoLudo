@@ -51,6 +51,7 @@ import com.google.gwt.dom.client.Touch;
 import com.google.gwt.event.dom.client.MouseDownEvent;
 import com.google.gwt.event.dom.client.MouseMoveEvent;
 import com.google.gwt.event.dom.client.MouseUpEvent;
+import com.google.gwt.event.dom.client.TouchCancelEvent;
 import com.google.gwt.event.dom.client.TouchEndEvent;
 import com.google.gwt.event.dom.client.TouchMoveEvent;
 
@@ -1224,6 +1225,17 @@ public class PopGraph2D extends GenericPopGraph<String, Network2D> implements Sh
 				break;
 			default:
 		}
+	}
+
+	/**
+	 * {@inheritDoc}
+	 * <p>
+	 * Release any node selected for dragging.
+	 */
+	@Override
+	public void onTouchCancel(TouchCancelEvent event) {
+		super.onTouchCancel(event);
+		hitNode = -1;
 	}
 
 	/**

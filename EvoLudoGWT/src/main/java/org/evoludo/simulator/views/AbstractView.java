@@ -502,6 +502,12 @@ public abstract class AbstractView<G extends AbstractGraph<?>> extends Composite
 	public void reset(boolean hard) {
 		resetTimestamps();
 		if (allocateGraphs()) {
+			// graphs were recreated - new graphs of an active view need their
+			// mouse and touch handlers
+			if (isActive) {
+				for (G graph : graphs)
+					graph.activate();
+			}
 			int with = getOffsetWidth();
 			int height = getOffsetHeight();
 			if (with > 0 && height > 0)

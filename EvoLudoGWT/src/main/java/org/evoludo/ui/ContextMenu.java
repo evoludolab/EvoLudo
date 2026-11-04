@@ -49,6 +49,7 @@ import com.google.gwt.event.dom.client.HasTouchEndHandlers;
 import com.google.gwt.event.dom.client.HasTouchMoveHandlers;
 import com.google.gwt.event.dom.client.HasTouchStartHandlers;
 import com.google.gwt.event.dom.client.MouseDownEvent;
+import com.google.gwt.event.dom.client.MouseMoveEvent;
 import com.google.gwt.event.dom.client.MouseOutEvent;
 import com.google.gwt.event.dom.client.MouseOutHandler;
 import com.google.gwt.event.dom.client.MouseOverEvent;
@@ -79,7 +80,8 @@ import com.google.gwt.user.client.ui.Widget;
  * The context menu opens when the {@link ContextMenuHandler} fires (typically
  * by a right click on mouse as a pointing device and a two-finger tap/click on
  * a touch pad). For devices without a pointer the context menu is triggered by
- * a two-finger touch (after some configurable delay). The context menu is
+ * a long single-finger touch (after some configurable delay), provided the
+ * finger stays within {@link #TOUCH_SLOP} pixels. The context menu is
  * automatically closed for one of the following events:
  * <ol>
  * <li>an entry has been selected</li>
@@ -307,6 +309,21 @@ public class ContextMenu extends FlowPanel
 	private int longTouch = LONG_TOUCH_TIME;
 
 	/**
+	 * Maximum distance (in pixels) a single touch may drift from its starting point
+	 * and still count as a stationary long touch. Fingers resting on a touch screen
+	 * jitter and roll when lifted, which fires {@link TouchMoveEvent}s that must
+	 * neither cancel a pending context menu nor close one that just opened.
+	 */
+	private static final int TOUCH_SLOP = 10;
+
+	/**
+	 * Style name of the menu item underneath the pointer or finger. Replaces
+	 * {@code :hover}, which touch screens apply to (and keep on) the item touched
+	 * first and which iPadOS does not apply for trackpads.
+	 */
+	private static final String HIGHLIGHT_STYLE = "highlight";
+
+	/**
 	 * Reference to style of context menu. Most important to control positioning of
 	 * context menu.
 	 */
@@ -432,7 +449,48 @@ public class ContextMenu extends FlowPanel
 			if (!menu.isMouseOver && !menu.isAutoHide())
 				menu.close();
 		}, MouseDownEvent.getType());
+		// touches on the menu (including submenus) highlight the item underneath
+		// and execute it only once the finger is lifted. preventing the default
+		// suppresses emulated clicks (which execute items on touch down) as well as
+		// scrolling.
+		menu.addDomHandler(event -> {
+			event.preventDefault();
+			event.stopPropagation();
+			menu.touchOver(event.getTouches().get(0));
+		}, TouchStartEvent.getType());
+		menu.addDomHandler(event -> {
+			event.preventDefault();
+			event.stopPropagation();
+			menu.touchOver(event.getTouches().get(0));
+		}, TouchMoveEvent.getType());
+		menu.addDomHandler(event -> {
+			event.preventDefault();
+			event.stopPropagation();
+			menu.touchUp(event.getChangedTouches().get(0), true);
+		}, TouchEndEvent.getType());
+		menu.addDomHandler(event -> menu.touchUp(event.getChangedTouches().get(0), false),
+				TouchCancelEvent.getType());
+		menu.closeOnOutsideTouch();
+		// highlight item underneath pointer (replaces :hover, which iPadOS does not
+		// apply for trackpads); mouse moves in submenus bubble up to this menu
+		menu.addDomHandler(event -> menu.highlightAt(event.getClientX() + Window.getScrollLeft(),
+				event.getClientY() + Window.getScrollTop()), MouseMoveEvent.getType());
 	}
+
+	/**
+	 * Close the context menu when touching anywhere outside of it, including parts
+	 * of the page outside of the GWT application. The listener is registered on
+	 * the document in the capture phase such that it fires even if widgets stop
+	 * the propagation of touch events.
+	 */
+	private native void closeOnOutsideTouch() /*-{
+		var menu = this;
+		$doc.addEventListener("touchstart", $entry(function(event) {
+			var elem = menu.@com.google.gwt.user.client.ui.UIObject::getElement()();
+			if (elem.style.display != "none" && !elem.contains(event.target))
+				menu.@org.evoludo.ui.ContextMenu::close()();
+		}), { capture : true, passive : true });
+	}-*/;
 
 	/**
 	 * Check if context menu is visible.
@@ -542,7 +600,10 @@ public class ContextMenu extends FlowPanel
 	 * @param provider the provider of context menu entries
 	 */
 	public void addListenerWithProvider(Listener listener, Provider provider) {
-		participants.put(listener, new Registration(listener, provider));
+		// drop handlers of earlier registration (e.g. when widget is re-attached)
+		Registration previous = participants.put(listener, new Registration(listener, provider));
+		if (previous != null)
+			previous.removeHandler();
 	}
 
 	/**
@@ -552,10 +613,9 @@ public class ContextMenu extends FlowPanel
 	 * @param listener the widget to remove
 	 */
 	public void removeListener(Listener listener) {
-		Registration registration = participants.get(listener);
+		Registration registration = participants.remove(listener);
 		if (registration != null)
 			registration.removeHandler();
-		participants.remove(listener);
 	}
 
 	/**
@@ -633,7 +693,10 @@ public class ContextMenu extends FlowPanel
 	 * @see Provider#populateContextMenuAt(ContextMenu, int, int)
 	 */
 	public void showAt(Listener listener, int x, int y) {
-		Provider provider = participants.get(listener).getProvider();
+		Registration registration = participants.get(listener);
+		if (registration == null)
+			return; // listener no longer registered (e.g. detached during long touch)
+		Provider provider = registration.getProvider();
 		if (provider == null)
 			return;
 		clear();
@@ -860,11 +923,11 @@ public class ContextMenu extends FlowPanel
 	}
 
 	/**
-	 * Set delay (in milliseconds) before showing the context menu after a two
-	 * finger touch, provided that no other touch events fired during
-	 * <code>delay</code>.
-	 * 
-	 * @param delay the delay for showing context menu after two-finger touch
+	 * Set delay (in milliseconds) before showing the context menu after a long
+	 * single-finger touch, provided that the finger was neither lifted nor moved
+	 * by more than {@link #TOUCH_SLOP} during <code>delay</code>.
+	 *
+	 * @param delay the delay for showing context menu after long touch
 	 * 
 	 * @see #delayHide
 	 */
@@ -904,14 +967,26 @@ public class ContextMenu extends FlowPanel
 		}
 	};
 
+	/**
+	 * {@inheritDoc}
+	 * <p>
+	 * Show the context menu at the pointer location. Browsers that additionally
+	 * fire a native {@code contextmenu} event on long touches (e.g. Chrome on
+	 * Android) would otherwise show the menu twice, which clears and repopulates
+	 * the one already showing. Hence, the event is ignored while the finger that
+	 * opened the menu is still down.
+	 */
 	@Override
 	public void onContextMenu(ContextMenuEvent event) {
 		Object src = event.getSource();
 		if (!(src instanceof Listener))
 			return;
-		showAt((Listener) src, event.getNativeEvent().getClientX(), event.getNativeEvent().getClientY());
 		event.stopPropagation();
 		event.preventDefault();
+		if (touchTimer.listener != null && isVisible())
+			return; // menu already showing for this long touch
+		touchTimer.cancel();
+		showAt((Listener) src, event.getNativeEvent().getClientX(), event.getNativeEvent().getClientY());
 	}
 
 	/**
@@ -929,12 +1004,16 @@ public class ContextMenu extends FlowPanel
 	/**
 	 * {@inheritDoc}
 	 * <p>
-	 * Pointer exited context (sub)menu. Start timer to hide (sub)menu.
+	 * Pointer exited context (sub)menu. Update highlighted item (if any) and start
+	 * timer to hide (sub)menu. Note, GWT fires mouse over and out events only when
+	 * entering or exiting the widget but not when moving between its children,
+	 * i.e. menu items. Highlights inside the menu are updated on mouse moves.
 	 */
 	@Override
 	public void onMouseOut(MouseOutEvent event) {
 		isMouseOver = false;
 		setHideTimer();
+		contextMenu.highlightAt(event.getClientX() + Window.getScrollLeft(), event.getClientY() + Window.getScrollTop());
 	}
 
 	/**
@@ -964,7 +1043,9 @@ public class ContextMenu extends FlowPanel
 		int touchY = -1;
 
 		/**
-		 * Listening widget that triggered the scheduling for the context menu.
+		 * Listening widget that triggered the scheduling for the context menu. Reset
+		 * to <code>null</code> when the touch ends, i.e. non-<code>null</code> while a
+		 * single-finger touch is in progress.
 		 */
 		Listener listener;
 
@@ -1001,6 +1082,12 @@ public class ContextMenu extends FlowPanel
 	/**
 	 * {@inheritDoc}
 	 * <p>
+	 * A single finger touch schedules the context menu to open after
+	 * {@link #longTouch} milliseconds, unless the finger is lifted or moves in the
+	 * meantime. Additional fingers cancel the request. Any touch closes the context
+	 * menu first, hence a visible context menu during a touch was opened by that
+	 * touch.
+	 * <p>
 	 * <strong>Note:</strong> gesture events are proprietary implementations by
 	 * Apple. Let's try to do without and stick to more primitive touch events.
 	 */
@@ -1010,6 +1097,7 @@ public class ContextMenu extends FlowPanel
 		JsArray<Touch> touches = event.getTouches();
 		if (touches.length() > 1) {
 			touchTimer.cancel();
+			touchTimer.listener = null;
 			return;
 		}
 		Object src = event.getSource();
@@ -1027,23 +1115,116 @@ public class ContextMenu extends FlowPanel
 	 * {@inheritDoc}
 	 * <p>
 	 * One or more touches moved. Cancel request to show context menu (if
-	 * scheduled).
+	 * scheduled), unless a single touch merely jittered within {@link #TOUCH_SLOP}
+	 * of where it started. Once the context menu is open, the same finger selects
+	 * menu items: the item underneath is highlighted and submenus open, while
+	 * default actions such as scrolling are suppressed. Note, touch events keep
+	 * targeting the listener widget where the touch started and never reach the
+	 * menu items.
 	 * <p>
 	 * <strong>Note:</strong> gesture events are proprietary implementations by
 	 * Apple. Let's try to do without and stick to more primitive touch events.
 	 */
 	@Override
 	public void onTouchMove(TouchMoveEvent event) {
+		JsArray<Touch> touches = event.getTouches();
+		Touch touch = touches.get(0);
+		if (isVisible()) {
+			// menu opened by this touch - keep it open and track finger
+			event.preventDefault();
+			if (!isStill(touch))
+				touchOver(touch);
+			return;
+		}
+		if (touches.length() == 1 && isStill(touch))
+			return;
 		// cancel context menu
 		touchTimer.cancel();
-		contextMenu.close();
+	}
+
+	/**
+	 * Check whether <code>touch</code> is still within {@link #TOUCH_SLOP} of the
+	 * location where the touch started.
+	 *
+	 * @param touch the touch to check
+	 * @return <code>true</code> if the touch has not moved significantly
+	 */
+	private boolean isStill(Touch touch) {
+		return Math.abs(touch.getClientX() - touchTimer.touchX) <= TOUCH_SLOP
+				&& Math.abs(touch.getClientY() - touchTimer.touchY) <= TOUCH_SLOP;
+	}
+
+	/**
+	 * Highlight the menu item underneath <code>touch</code> and open its submenu
+	 * (or close other submenus), which emulates hovering for touches.
+	 *
+	 * @param touch the touch over the menu
+	 */
+	private void touchOver(Touch touch) {
+		ContextMenuItem item = highlightAt(touch.getPageX(), touch.getPageY());
+		if (item != null)
+			item.onMouseOver(null);
+	}
+
+	/**
+	 * The finger of <code>touch</code> was lifted: clear all highlights and, if
+	 * <code>select</code> is <code>true</code>, execute the menu item underneath.
+	 * Nothing is executed if the finger was lifted outside the menu, which then
+	 * stays open.
+	 *
+	 * @param touch  the touch that ended
+	 * @param select <code>true</code> to execute the menu item underneath
+	 */
+	private void touchUp(Touch touch, boolean select) {
+		ContextMenuItem item = highlightAt(touch.getPageX(), touch.getPageY());
+		// clear highlights (menu items may be reused)
+		highlightAt(Integer.MIN_VALUE, Integer.MIN_VALUE);
+		if (select && item != null)
+			item.action();
+	}
+
+	/**
+	 * Highlight the enabled menu item at page coordinates <code>(x, y)</code> and
+	 * clear the highlights of all other items, including those of open submenus.
+	 * Submenus are checked first because they overlay their parent menu.
+	 *
+	 * @param x horizontal page coordinate
+	 * @param y vertical page coordinate
+	 * @return the highlighted menu item or <code>null</code> if there is none
+	 */
+	private ContextMenuItem highlightAt(int x, int y) {
+		ContextMenuItem hit = null;
+		for (int n = getWidgetCount() - 1; n >= 0; n--) {
+			Widget widget = getWidget(n);
+			if (widget instanceof ContextMenu) {
+				ContextMenuItem sub = ((ContextMenu) widget).highlightAt(x, y);
+				if (hit == null)
+					hit = sub;
+				continue;
+			}
+			if (!(widget instanceof ContextMenuItem))
+				continue;
+			ContextMenuItem item = (ContextMenuItem) widget;
+			int dx = x - item.getAbsoluteLeft();
+			int dy = y - item.getAbsoluteTop();
+			boolean over = hit == null && item.isEnabled() && dx >= 0 && dx < item.getOffsetWidth() && dy >= 0
+					&& dy < item.getOffsetHeight();
+			item.setStyleName(HIGHLIGHT_STYLE, over);
+			if (over)
+				hit = item;
+		}
+		return hit;
 	}
 
 	/**
 	 * {@inheritDoc}
 	 * <p>
 	 * One or more touches ended. Cancel request to show context menu (if
-	 * scheduled).
+	 * scheduled). If the context menu was opened by this touch, the menu item
+	 * underneath the lifted finger is selected, unless the finger never moved.
+	 * Then the menu stays open for selections by tapping. In addition, the default
+	 * action is prevented to suppress emulated mouse events and clicks, which would
+	 * otherwise hit the context menu now located underneath the finger.
 	 * <p>
 	 * <strong>Note:</strong> gesture events are proprietary implementations by
 	 * Apple. Let's try to do without and stick to more primitive touch events.
@@ -1052,6 +1233,12 @@ public class ContextMenu extends FlowPanel
 	public void onTouchEnd(TouchEndEvent event) {
 		// at least one finger left device - cancel context menu
 		touchTimer.cancel();
+		touchTimer.listener = null;
+		if (!isVisible())
+			return;
+		event.preventDefault();
+		Touch touch = event.getChangedTouches().get(0);
+		touchUp(touch, !isStill(touch));
 	}
 
 	/**
@@ -1066,6 +1253,7 @@ public class ContextMenu extends FlowPanel
 	public void onTouchCancel(TouchCancelEvent event) {
 		// cancel context menu
 		touchTimer.cancel();
+		touchTimer.listener = null;
 	}
 
 	@Override

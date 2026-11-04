@@ -76,6 +76,8 @@ import com.google.gwt.event.dom.client.MouseUpEvent;
 import com.google.gwt.event.dom.client.MouseUpHandler;
 import com.google.gwt.event.dom.client.MouseWheelEvent;
 import com.google.gwt.event.dom.client.MouseWheelHandler;
+import com.google.gwt.event.dom.client.TouchCancelEvent;
+import com.google.gwt.event.dom.client.TouchCancelHandler;
 import com.google.gwt.event.dom.client.TouchEndEvent;
 import com.google.gwt.event.dom.client.TouchEndHandler;
 import com.google.gwt.event.dom.client.TouchMoveEvent;
@@ -309,7 +311,7 @@ import com.google.gwt.user.client.ui.RequiresResize;
 @SuppressWarnings("java:S110")
 public abstract class AbstractGraph<B> extends FocusPanel
 		implements MouseOutHandler, MouseWheelHandler, MouseDownHandler, MouseUpHandler, MouseMoveHandler, //
-		TouchStartHandler, TouchEndHandler, TouchMoveHandler, //
+		TouchStartHandler, TouchEndHandler, TouchMoveHandler, TouchCancelHandler, //
 		RequiresResize, Tooltip.Provider, ContextMenu.Listener, ContextMenu.Provider {
 
 	/**
@@ -462,6 +464,11 @@ public abstract class AbstractGraph<B> extends FocusPanel
 	 * The handler for {@link TouchMoveEvent}s.
 	 */
 	HandlerRegistration touchMoveHandler;
+
+	/**
+	 * The handler for {@link TouchCancelEvent}s.
+	 */
+	HandlerRegistration touchCancelHandler;
 
 	/**
 	 * The current zoom level.
@@ -730,7 +737,8 @@ public abstract class AbstractGraph<B> extends FocusPanel
 		if (canvas != null)
 			canvas.removeFromParent();
 		canvas = null;
-		contextMenu.remove(this);
+		contextMenu.removeListener(this);
+		tooltip.removeListener(this);
 		remove(wrapper);
 		wrapper = null;
 		super.onUnload();
@@ -765,6 +773,7 @@ public abstract class AbstractGraph<B> extends FocusPanel
 				mouseWheelHandler = addMouseWheelHandler(this);
 			touchStartHandler = addTouchStartHandler(this);
 			touchEndHandler = addTouchEndHandler(this);
+			touchCancelHandler = addTouchCancelHandler(this);
 		}
 		if (this instanceof Shifting) {
 			mouseOutHandler = addMouseOutHandler(this);
@@ -774,6 +783,8 @@ public abstract class AbstractGraph<B> extends FocusPanel
 				touchStartHandler = addTouchStartHandler(this);
 			if (touchEndHandler == null)
 				touchEndHandler = addTouchEndHandler(this);
+			if (touchCancelHandler == null)
+				touchCancelHandler = addTouchCancelHandler(this);
 		}
 	}
 
@@ -813,6 +824,9 @@ public abstract class AbstractGraph<B> extends FocusPanel
 		if (touchStartHandler != null)
 			touchStartHandler.removeHandler();
 		touchStartHandler = null;
+		if (touchCancelHandler != null)
+			touchCancelHandler.removeHandler();
+		touchCancelHandler = null;
 	}
 
 	@Override
@@ -1782,9 +1796,7 @@ public abstract class AbstractGraph<B> extends FocusPanel
 	 * @return the formatted tick label
 	 */
 	private String formatYTickLabel(double tickValue, int digits) {
-		return style.percentY
-				? Formatter.formatPretty(100.0 * tickValue, digits)
-				: Formatter.formatPretty(tickValue, digits);
+		return Formatter.formatPretty(style.percentY ? 100.0 * tickValue : tickValue, digits);
 	}
 
 	/**
@@ -2761,17 +2773,38 @@ public abstract class AbstractGraph<B> extends FocusPanel
 				break;
 			case 0:
 				touchEndTime = Duration.currentTimeMillis();
-				mouseX = -Integer.MAX_VALUE;
-				mouseY = -Integer.MAX_VALUE;
-				pinchX = -Integer.MAX_VALUE;
-				pinchY = -Integer.MAX_VALUE;
-				pinchDist = -Double.MAX_VALUE;
-				if (touchMoveHandler != null) {
-					touchMoveHandler.removeHandler();
-					touchMoveHandler = null;
-				}
+				resetTouches();
 				break;
 			default:
+		}
+	}
+
+	/**
+	 * {@inheritDoc}
+	 * <p>
+	 * The browser aborted the touch sequence (e.g. a system gesture took over), so
+	 * no {@link TouchEndEvent} follows. Reset as if all touches ended; otherwise
+	 * the touch move handler stays registered and keeps intercepting (and
+	 * preventing the default of) subsequent touch moves.
+	 */
+	@Override
+	public void onTouchCancel(TouchCancelEvent event) {
+		resetTouches();
+	}
+
+	/**
+	 * Clear the state of shifting and pinching gestures and remove the touch move
+	 * handler, which is only needed while touches are active.
+	 */
+	private void resetTouches() {
+		mouseX = -Integer.MAX_VALUE;
+		mouseY = -Integer.MAX_VALUE;
+		pinchX = -Integer.MAX_VALUE;
+		pinchY = -Integer.MAX_VALUE;
+		pinchDist = -Double.MAX_VALUE;
+		if (touchMoveHandler != null) {
+			touchMoveHandler.removeHandler();
+			touchMoveHandler = null;
 		}
 	}
 
@@ -2785,9 +2818,13 @@ public abstract class AbstractGraph<B> extends FocusPanel
 	 * <dt>Pinch two fingers
 	 * <dd>Zoom view
 	 * </dl>
+	 * Touch moves are ignored while the context menu is showing, e.g. after it was
+	 * opened by a long touch and the finger has not yet been lifted.
 	 */
 	@Override
 	public void onTouchMove(TouchMoveEvent event) {
+		if (ContextMenu.isShowing())
+			return;
 		JsArray<Touch> touches = event.getTouches();
 		switch (touches.length()) {
 			case 1:
