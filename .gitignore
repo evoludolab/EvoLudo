@@ -32,3 +32,6 @@ scratch/
 
 # ignore reference and report files for tests
 test/reports/
+
+# ignore playwright test artifacts
+/.playwright-mcp
