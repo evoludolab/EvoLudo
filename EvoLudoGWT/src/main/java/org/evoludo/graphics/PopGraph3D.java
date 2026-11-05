@@ -55,6 +55,7 @@ import com.google.gwt.dom.client.Style.Unit;
 import com.google.gwt.event.dom.client.MouseDownEvent;
 import com.google.gwt.event.dom.client.MouseUpEvent;
 import com.google.gwt.event.dom.client.TouchEndEvent;
+import com.google.gwt.event.dom.client.TouchStartEvent;
 import com.google.gwt.user.client.ui.RequiresResize;
 import com.google.gwt.user.client.ui.Widget;
 
@@ -293,6 +294,11 @@ public class PopGraph3D extends GenericPopGraph<MeshLambertMaterial, Network3DGW
 		// 3D graphs do not implement Shifting interface. Add mouse listeners here.
 		mouseDownHandler = addMouseDownHandler(this);
 		mouseUpHandler = addMouseUpHandler(this);
+		// zooming with the mouse wheel is handled by TrackballControls
+		if (mouseWheelHandler != null) {
+			mouseWheelHandler.removeHandler();
+			mouseWheelHandler = null;
+		}
 		if (hasRenderer()) {
 			graph3DPanel.forceLayout();
 			onResize();
@@ -981,6 +987,22 @@ public class PopGraph3D extends GenericPopGraph<MeshLambertMaterial, Network3DGW
 	@Override
 	public void onMouseUp(MouseUpEvent event) {
 		leftMouseButton = false;
+	}
+
+	/**
+	 * {@inheritDoc}
+	 * <p>
+	 * Touch moves for rotating and zooming the 3D scene are handled by
+	 * {@link TrackballControls}. Hence, remove the handler for touch moves added
+	 * by the super class, which shifts and zooms 2D graphs.
+	 */
+	@Override
+	public void onTouchStart(TouchStartEvent event) {
+		super.onTouchStart(event);
+		if (touchMoveHandler != null) {
+			touchMoveHandler.removeHandler();
+			touchMoveHandler = null;
+		}
 	}
 
 	/**
