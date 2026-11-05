@@ -624,8 +624,7 @@ public abstract class GenericPopGraph<T, N extends Network<?>> extends AbstractG
 		}
 		if (Duration.currentTimeMillis() - touchEndTime > 250.0) {
 			// single tap
-			mouseX = x;
-			mouseY = y;
+			gesture.start(x, y);
 			hitNode = node;
 			return;
 		}

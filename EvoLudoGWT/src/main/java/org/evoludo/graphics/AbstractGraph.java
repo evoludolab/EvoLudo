@@ -2448,19 +2448,10 @@ public abstract class AbstractGraph<B> extends FocusPanel
 	protected boolean leftMouseButton = false;
 
 	/**
-	 * The arbiter of gestures that shift or zoom the view.
+	 * The state of gestures that shift or zoom the view, including the tracked
+	 * position of the pointer (mouse or touches).
 	 */
 	final Gesture gesture = new Gesture(getElement());
-
-	/**
-	 * The {@code x}-coordinate of the previous mouse or tap event.
-	 */
-	protected int mouseX;
-
-	/**
-	 * The {@code y}-coordinate of the previous mouse or tap event.
-	 */
-	protected int mouseY;
 
 	/**
 	 * Check if the event coordinates are inside the interactive plot area.
@@ -2534,11 +2525,10 @@ public abstract class AbstractGraph<B> extends FocusPanel
 			int y = event.getY();
 			if (!inside(x, y)) {
 				leftMouseButton = false;
-				gesture.pause();
+				gesture.lose();
 				return;
 			}
-			mouseX = x;
-			mouseY = y;
+			gesture.start(x, y);
 			leftMouseButton = true;
 			if (mouseMoveHandler == null)
 				mouseMoveHandler = addMouseMoveHandler(this);
@@ -2584,20 +2574,13 @@ public abstract class AbstractGraph<B> extends FocusPanel
 			int x = event.getX();
 			int y = event.getY();
 			if (!inside(x, y)) {
-				gesture.pause();
-				mouseX = -Integer.MAX_VALUE;
-				mouseY = -Integer.MAX_VALUE;
+				gesture.lose();
 				return;
 			}
-			if (mouseX == -Integer.MAX_VALUE || mouseY == -Integer.MAX_VALUE) {
-				mouseX = x;
-				mouseY = y;
+			if (!gesture.drag(x, y))
 				return;
-			}
 			gesture.move(Gesture.Move.VIEW);
-			shifter.shift(mouseX - x, mouseY - y);
-			mouseX = x;
-			mouseY = y;
+			shifter.shift(gesture.getDX(), gesture.getDY());
 			event.preventDefault();
 		}
 	}
@@ -2631,21 +2614,6 @@ public abstract class AbstractGraph<B> extends FocusPanel
 	protected double touchEndTime = -Double.MAX_VALUE;
 
 	/**
-	 * The {@code x}-coordinate of the center of the pinching gesture.
-	 */
-	protected int pinchX = -Integer.MAX_VALUE;
-
-	/**
-	 * The {@code y}-coordinate of the center of the pinching gesture.
-	 */
-	protected int pinchY = -Integer.MAX_VALUE;
-
-	/**
-	 * The distance between the pinching gesture.
-	 */
-	protected double pinchDist = -Double.MAX_VALUE;
-
-	/**
 	 * {@inheritDoc}
 	 * <p>
 	 * The graph reacts to different kinds of touches: short touches or taps
@@ -2673,12 +2641,10 @@ public abstract class AbstractGraph<B> extends FocusPanel
 					int x = touch.getRelativeX(element);
 					int y = touch.getRelativeY(element);
 					if (inside(x, y)) {
-						mouseX = x;
-						mouseY = y;
+						gesture.start(x, y);
 						enableMove = true;
 					} else {
-						mouseX = -Integer.MAX_VALUE;
-						mouseY = -Integer.MAX_VALUE;
+						gesture.lose();
 					}
 					break;
 				case 2:
@@ -2690,16 +2656,10 @@ public abstract class AbstractGraph<B> extends FocusPanel
 					int x1 = touch1.getRelativeX(element);
 					int y1 = touch1.getRelativeY(element);
 					if (inside(x0, y0) && inside(x1, y1)) {
-						pinchX = (x0 + x1) / 2;
-						pinchY = (y0 + y1) / 2;
-						double dX = (double) x0 - x1;
-						double dY = (double) y0 - y1;
-						pinchDist = Math.sqrt(dX * dX + dY * dY);
+						gesture.startPinch(x0, y0, x1, y1);
 						enableMove = true;
 					} else {
-						pinchX = -Integer.MAX_VALUE;
-						pinchY = -Integer.MAX_VALUE;
-						pinchDist = -Double.MAX_VALUE;
+						gesture.lose();
 					}
 					break;
 				default:
@@ -2720,12 +2680,9 @@ public abstract class AbstractGraph<B> extends FocusPanel
 		JsArray<Touch> touches = event.getTouches();
 		switch (touches.length()) {
 			case 1:
-				// set mouse position to prevent jumps
+				// track remaining touch to prevent jumps
 				Touch touch = touches.get(0);
-				mouseX = touch.getRelativeX(element);
-				mouseY = touch.getRelativeY(element);
-				pinchX = -Integer.MAX_VALUE;
-				pinchY = -Integer.MAX_VALUE;
+				gesture.start(touch.getRelativeX(element), touch.getRelativeY(element));
 				break;
 			case 0:
 				touchEndTime = Duration.currentTimeMillis();
@@ -2753,11 +2710,7 @@ public abstract class AbstractGraph<B> extends FocusPanel
 	 * handler, which is only needed while touches are active.
 	 */
 	private void resetTouches() {
-		mouseX = -Integer.MAX_VALUE;
-		mouseY = -Integer.MAX_VALUE;
-		pinchX = -Integer.MAX_VALUE;
-		pinchY = -Integer.MAX_VALUE;
-		pinchDist = -Double.MAX_VALUE;
+		gesture.lose();
 		if (touchMoveHandler != null) {
 			touchMoveHandler.removeHandler();
 			touchMoveHandler = null;
@@ -2791,56 +2744,31 @@ public abstract class AbstractGraph<B> extends FocusPanel
 				int x = touch.getRelativeX(element);
 				int y = touch.getRelativeY(element);
 				if (!inside(x, y)) {
-					mouseX = -Integer.MAX_VALUE;
-					mouseY = -Integer.MAX_VALUE;
+					gesture.lose();
 					return;
 				}
-				if (mouseX == -Integer.MAX_VALUE || mouseY == -Integer.MAX_VALUE) {
-					mouseX = x;
-					mouseY = y;
+				if (!gesture.drag(x, y))
 					return;
-				}
-				shift(mouseX - x, mouseY - y);
-				mouseX = x;
-				mouseY = y;
+				shift(gesture.getDX(), gesture.getDY());
 				event.preventDefault();
 				break;
 			case 2:
 				// process pinch zoom
 				Touch touch0 = touches.get(0);
-				int relX0 = touch0.getRelativeX(element);
-				int relY0 = touch0.getRelativeY(element);
-				int clientX0 = touch0.getClientX();
-				int clientY0 = touch0.getClientY();
+				int x0 = touch0.getRelativeX(element);
+				int y0 = touch0.getRelativeY(element);
 				Touch touch1 = touches.get(1);
-				int relX1 = touch1.getRelativeX(element);
-				int relY1 = touch1.getRelativeY(element);
-				int clientX1 = touch1.getClientX();
-				int clientY1 = touch1.getClientY();
-				if (!inside(relX0, relY0) || !inside(relX1, relY1)) {
-					pinchDist = -Double.MAX_VALUE;
-					pinchX = -Integer.MAX_VALUE;
-					pinchY = -Integer.MAX_VALUE;
+				int x1 = touch1.getRelativeX(element);
+				int y1 = touch1.getRelativeY(element);
+				if (!inside(x0, y0) || !inside(x1, y1)) {
+					gesture.lose();
 					return;
 				}
-				double dX = (double) clientX0 - clientX1;
-				double dY = (double) clientY0 - clientY1;
-				double dist = Math.sqrt(dX * dX + dY * dY);
-				if (pinchDist <= 0.0) {
-					pinchDist = dist;
-					pinchX = (relX0 + relX1) / 2;
-					pinchY = (relY0 + relY1) / 2;
+				if (!gesture.pinch(x0, y0, x1, y1))
 					return;
-				}
-				int centerX = (relX0 + relX1) / 2;
-				int centerY = (relY0 + relY1) / 2;
 				// moving the pinch shifts the view
-				if (pinchX != -Integer.MAX_VALUE && pinchY != -Integer.MAX_VALUE)
-					shift(pinchX - centerX, pinchY - centerY);
-				pinchX = centerX;
-				pinchY = centerY;
-				zoom(dist / pinchDist, pinchX, pinchY);
-				pinchDist = dist;
+				shift(gesture.getDX(), gesture.getDY());
+				zoom(gesture.getScale(), gesture.getX(), gesture.getY());
 				event.preventDefault();
 				break;
 			default:

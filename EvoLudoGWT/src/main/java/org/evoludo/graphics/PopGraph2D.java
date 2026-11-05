@@ -1120,14 +1120,14 @@ public class PopGraph2D extends GenericPopGraph<String, Network2D> implements Sh
 	 */
 	@Override
 	public void onMouseDown(MouseDownEvent event) {
-		// super sets mouse coordinates and leftMouseButton when inside
+		// super starts tracking the mouse and sets leftMouseButton when inside
 		super.onMouseDown(event);
 		if (!leftMouseButton || !supportsNodeDragging()) {
 			hitNode = -1;
 			element.removeClassName(CURSOR_GRAB_NODE_CLASS);
 			return;
 		}
-		hitNode = findNodeAt(mouseX, mouseY);
+		hitNode = findNodeAt(event.getX(), event.getY());
 		if (hitNode >= 0) {
 			element.addClassName(CURSOR_GRAB_NODE_CLASS);
 		} else {
@@ -1175,21 +1175,14 @@ public class PopGraph2D extends GenericPopGraph<String, Network2D> implements Sh
 			int x = event.getX();
 			int y = event.getY();
 			if (!inside(x, y)) {
-				gesture.pause();
-				mouseX = -Integer.MAX_VALUE;
-				mouseY = -Integer.MAX_VALUE;
+				gesture.lose();
 				return;
 			}
-			if (mouseX == -Integer.MAX_VALUE || mouseY == -Integer.MAX_VALUE) {
-				mouseX = x;
-				mouseY = y;
+			if (!gesture.drag(x, y))
 				return;
-			}
 			hitDragged = true;
 			gesture.move(Gesture.Move.NODE);
-			shiftNodeBy(hitNode, mouseX - x, mouseY - y);
-			mouseX = x;
-			mouseY = y;
+			shiftNodeBy(hitNode, gesture.getDX(), gesture.getDY());
 			return;
 		}
 		super.onMouseMove(event);
@@ -1198,26 +1191,14 @@ public class PopGraph2D extends GenericPopGraph<String, Network2D> implements Sh
 	/**
 	 * {@inheritDoc}
 	 * <p>
-	 * The number of touches on the graph changed.
+	 * The number of touches on the graph changed. Release any node selected for
+	 * dragging if no touches remain.
 	 */
 	@Override
 	public void onTouchEnd(TouchEndEvent event) {
 		super.onTouchEnd(event);
-		JsArray<Touch> touches = event.getTouches();
-		switch (touches.length()) {
-			case 1: // down from two touches
-				Touch touch = touches.get(0);
-				int x = touch.getRelativeX(element);
-				int y = touch.getRelativeY(element);
-				// remember position of touch to prevent jumps
-				mouseX = x;
-				mouseY = y;
-				break;
-			case 0: // no more touches remaining - reset values
-				hitNode = -1;
-				break;
-			default:
-		}
+		if (event.getTouches().length() == 0)
+			hitNode = -1;
 	}
 
 	/**
@@ -1247,19 +1228,13 @@ public class PopGraph2D extends GenericPopGraph<String, Network2D> implements Sh
 			int x = touch.getRelativeX(element);
 			int y = touch.getRelativeY(element);
 			if (!inside(x, y)) {
-				mouseX = -Integer.MAX_VALUE;
-				mouseY = -Integer.MAX_VALUE;
+				gesture.lose();
 				return;
 			}
-			if (mouseX == -Integer.MAX_VALUE || mouseY == -Integer.MAX_VALUE) {
-				mouseX = x;
-				mouseY = y;
+			if (!gesture.drag(x, y))
 				return;
-			}
 			// shift position of node
-			shiftNodeBy(hitNode, mouseX - x, mouseY - y);
-			mouseX = x;
-			mouseY = y;
+			shiftNodeBy(hitNode, gesture.getDX(), gesture.getDY());
 			event.preventDefault();
 			return;
 		}

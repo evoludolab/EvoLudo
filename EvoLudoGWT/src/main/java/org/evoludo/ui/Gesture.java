@@ -45,9 +45,18 @@ import com.google.gwt.user.client.Timer;
  * The cursor for zooming in or out is shown only for zooming with the mouse
  * wheel, as opposed to e.g. pinching or the context menu.
  * <p>
+ * In addition, the position of the pointer (the mouse or a single touch) or
+ * the center of a pinch (two touches) is tracked for mouse as well as touch
+ * gestures. Handlers start tracking with {@link #start(int, int)} or
+ * {@link #startPinch(int, int, int, int)}, report subsequent positions through
+ * {@link #drag(int, int)} or {@link #pinch(int, int, int, int)}, and stop
+ * tracking with {@link #lose()} if the pointer left the interactive area or
+ * the touches ended. The displacement between subsequent positions is given by
+ * {@link #getDX()} and {@link #getDY()}, the change of the distance between the
+ * touches of a pinch by {@link #getScale()}.
+ * <p>
  * Each interactive view keeps its own instance. Mouse event handlers report
- * moving through {@link #move(Move)}, the mouse leaving the interactive area
- * while moving through {@link #pause()} and the end of the gesture through
+ * moving through {@link #move(Move)} and the end of the gesture through
  * {@link #release()}. Mouse wheel events are checked by {@link #wheel()} and
  * views report the direction of zooming through {@link #zooming(boolean)}.
  *
@@ -146,6 +155,45 @@ public class Gesture {
 	private double wheelTime = -Double.MAX_VALUE;
 
 	/**
+	 * The value of the coordinates of a position that is not tracked.
+	 */
+	private static final int UNTRACKED = Integer.MIN_VALUE;
+
+	/**
+	 * The {@code x}-coordinate of the tracked position of the pointer (or the
+	 * center of a pinch), or {@link #UNTRACKED}.
+	 */
+	private int x = UNTRACKED;
+
+	/**
+	 * The {@code y}-coordinate of the tracked position of the pointer (or the
+	 * center of a pinch), or {@link #UNTRACKED}.
+	 */
+	private int y = UNTRACKED;
+
+	/**
+	 * The distance between the touches of the tracked pinch, or {@code 0} if no
+	 * pinch is tracked.
+	 */
+	private double dist = 0.0;
+
+	/**
+	 * The horizontal displacement from the current to the previous position.
+	 */
+	private int dx;
+
+	/**
+	 * The vertical displacement from the current to the previous position.
+	 */
+	private int dy;
+
+	/**
+	 * The ratio of the current and previous distance between the touches of a
+	 * pinch.
+	 */
+	private double scale = 1.0;
+
+	/**
 	 * The timer to remove the cursor for zooming in or out
 	 * {@link #ZOOM_INERTIA_MSEC} after zooming stopped.
 	 */
@@ -168,14 +216,162 @@ public class Gesture {
 
 	/**
 	 * The mouse button was released (or the mouse left the view), which ends the
-	 * gesture and removes its cursors.
+	 * gesture, stops tracking and removes its cursors.
 	 */
 	public void release() {
 		if (moved)
 			moveEndTime = Duration.currentTimeMillis();
 		moved = false;
-		pause();
+		lose();
 		stopZooming();
+	}
+
+	/**
+	 * Start tracking the pointer at {@code (x, y)}, e.g. when the mouse button is
+	 * pressed, a single touch started or one of two touches ended.
+	 *
+	 * @param x the {@code x}-coordinate of the pointer
+	 * @param y the {@code y}-coordinate of the pointer
+	 */
+	public void start(int x, int y) {
+		this.x = x;
+		this.y = y;
+		dist = 0.0;
+	}
+
+	/**
+	 * Start tracking the pinch with touches at {@code (x0, y0)} and
+	 * {@code (x1, y1)}.
+	 *
+	 * @param x0 the {@code x}-coordinate of the first touch
+	 * @param y0 the {@code y}-coordinate of the first touch
+	 * @param x1 the {@code x}-coordinate of the second touch
+	 * @param y1 the {@code y}-coordinate of the second touch
+	 */
+	public void startPinch(int x0, int y0, int x1, int y1) {
+		x = (x0 + x1) / 2;
+		y = (y0 + y1) / 2;
+		dist = Math.hypot((double) x0 - x1, (double) y0 - y1);
+	}
+
+	/**
+	 * Stop tracking, e.g. because the pointer left the interactive area or the
+	 * touches ended. This also removes the cursor for moving until moving resumes.
+	 *
+	 * @see #move(Move)
+	 */
+	public void lose() {
+		x = UNTRACKED;
+		y = UNTRACKED;
+		dist = 0.0;
+		pause();
+	}
+
+	/**
+	 * The pointer moved to {@code (x, y)}. If the pointer was tracked, the
+	 * displacement is available through {@link #getDX()} and {@link #getDY()}.
+	 * Otherwise, start tracking at {@code (x, y)}.
+	 *
+	 * @param x the {@code x}-coordinate of the pointer
+	 * @param y the {@code y}-coordinate of the pointer
+	 * @return {@code true} if the pointer was tracked and moved
+	 */
+	public boolean drag(int x, int y) {
+		if (this.x == UNTRACKED || this.y == UNTRACKED) {
+			start(x, y);
+			return false;
+		}
+		dx = this.x - x;
+		dy = this.y - y;
+		this.x = x;
+		this.y = y;
+		return true;
+	}
+
+	/**
+	 * The touches of a pinch moved to {@code (x0, y0)} and {@code (x1, y1)}. If
+	 * the pinch was tracked, the displacement of its center is available through
+	 * {@link #getDX()} and {@link #getDY()} and the change of the distance between
+	 * the touches through {@link #getScale()}. Otherwise, start tracking the
+	 * pinch.
+	 *
+	 * @param x0 the {@code x}-coordinate of the first touch
+	 * @param y0 the {@code y}-coordinate of the first touch
+	 * @param x1 the {@code x}-coordinate of the second touch
+	 * @param y1 the {@code y}-coordinate of the second touch
+	 * @return {@code true} if the pinch was tracked and moved
+	 */
+	public boolean pinch(int x0, int y0, int x1, int y1) {
+		double prevDist = dist;
+		int prevX = x;
+		int prevY = y;
+		startPinch(x0, y0, x1, y1);
+		if (prevDist <= 0.0 || dist <= 0.0 || prevX == UNTRACKED || prevY == UNTRACKED)
+			return false;
+		dx = prevX - x;
+		dy = prevY - y;
+		scale = dist / prevDist;
+		return true;
+	}
+
+	/**
+	 * Get the {@code x}-coordinate of the tracked pointer (or center of the
+	 * pinch).
+	 *
+	 * @return the {@code x}-coordinate
+	 */
+	public int getX() {
+		return x;
+	}
+
+	/**
+	 * Get the {@code y}-coordinate of the tracked pointer (or center of the
+	 * pinch).
+	 *
+	 * @return the {@code y}-coordinate
+	 */
+	public int getY() {
+		return y;
+	}
+
+	/**
+	 * Get the horizontal displacement from the current to the previous position
+	 * of the pointer (or center of the pinch), i.e. the shift of the view that
+	 * follows the pointer.
+	 *
+	 * @return the horizontal displacement
+	 *
+	 * @see #drag(int, int)
+	 * @see #pinch(int, int, int, int)
+	 */
+	public int getDX() {
+		return dx;
+	}
+
+	/**
+	 * Get the vertical displacement from the current to the previous position of
+	 * the pointer (or center of the pinch), i.e. the shift of the view that
+	 * follows the pointer.
+	 *
+	 * @return the vertical displacement
+	 *
+	 * @see #drag(int, int)
+	 * @see #pinch(int, int, int, int)
+	 */
+	public int getDY() {
+		return dy;
+	}
+
+	/**
+	 * Get the ratio of the current and previous distance between the touches of
+	 * the pinch, i.e. the change of the zoom level.
+	 *
+	 * @return the change of the zoom level
+	 *
+	 * @see #pinch(int, int, int, int)
+	 */
+	public double getScale() {
+		return scale;
 	}
 
 	/**
@@ -203,12 +399,11 @@ public class Gesture {
 	}
 
 	/**
-	 * The pointer left the interactive area while moving. Remove the cursor for
-	 * moving until moving resumes.
+	 * Remove the cursor for moving until moving resumes.
 	 *
 	 * @see #move(Move)
 	 */
-	public void pause() {
+	private void pause() {
 		if (moving == null)
 			return;
 		element.removeClassName(moving.cursor);
