@@ -49,7 +49,6 @@ import org.evoludo.ui.ContextMenuItem;
 import org.evoludo.util.Formatter;
 import org.evoludo.util.RingBuffer;
 
-import com.google.gwt.core.client.Duration;
 import com.google.gwt.core.client.JsArray;
 import com.google.gwt.dom.client.Touch;
 import com.google.gwt.event.dom.client.DoubleClickEvent;
@@ -685,7 +684,7 @@ public class S3Graph extends AbstractGraph<double[]> implements Zooming, Shiftin
 	public void onTouchStart(TouchStartEvent event) {
 		super.onTouchStart(event);
 		JsArray<Touch> touches = event.getTouches();
-		if (Duration.currentTimeMillis() - touchEndTime > 250.0 || touches.length() > 1)
+		if (!gesture.isDoubleTap() || touches.length() > 1)
 			// single tap or multiple touches
 			return;
 

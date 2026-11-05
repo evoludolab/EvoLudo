@@ -46,7 +46,6 @@ import org.evoludo.ui.TrackballControls;
 import org.evoludo.util.CLOption;
 import org.evoludo.util.CLOParser;
 
-import com.google.gwt.core.client.Duration;
 import com.google.gwt.core.client.JavaScriptObject;
 import com.google.gwt.core.client.Scheduler;
 import com.google.gwt.dom.client.CanvasElement;
@@ -1016,7 +1015,7 @@ public class PopGraph3D extends GenericPopGraph<MeshLambertMaterial, Network3DGW
 		// @see org.evoludo.simulator.web.gwt.TrackballControls
 		if (event.getTouches().length() == 0) {
 			// no more touches remaining - reset values
-			touchEndTime = Duration.currentTimeMillis();
+			gesture.endTouches();
 		}
 	}
 

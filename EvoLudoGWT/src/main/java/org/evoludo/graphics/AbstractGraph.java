@@ -55,7 +55,6 @@ import org.evoludo.util.RingBuffer;
 
 import com.google.gwt.canvas.client.Canvas;
 import com.google.gwt.canvas.dom.client.Context2d;
-import com.google.gwt.core.client.Duration;
 import com.google.gwt.core.client.JsArray;
 import com.google.gwt.core.client.Scheduler.ScheduledCommand;
 import com.google.gwt.dom.client.Document;
@@ -2584,29 +2583,23 @@ public abstract class AbstractGraph<B> extends FocusPanel
 	}
 
 	/**
-	 * The time when the previous touch ended.
-	 */
-	protected double touchEndTime = -Double.MAX_VALUE;
-
-	/**
 	 * {@inheritDoc}
 	 * <p>
-	 * The graph reacts to different kinds of touches: short touches or taps
-	 * ({@code &lt;250} msec) and long touches ({@code &gt;250} msec). Long touches
-	 * trigger different actions depending on the number of fingers:
+	 * Unless the touch is a double tap (see {@link Gesture#isDoubleTap()}), which
+	 * subclasses may handle, the touches trigger different actions depending on
+	 * the number of fingers:
 	 * <dl>
 	 * <dt>Single finger
 	 * <dd>Initiate shifting the view
 	 * <dt>Two fingers
 	 * <dd>Initiate pinching zoom.
 	 * </dl>
-	 * 
+	 *
 	 * @see #onTouchMove(TouchMoveEvent)
 	 */
 	@Override
 	public void onTouchStart(TouchStartEvent event) {
-		if (Duration.currentTimeMillis() - touchEndTime > 250.0) {
-			// long touch(es)
+		if (!gesture.isDoubleTap()) {
 			JsArray<Touch> touches = event.getTouches();
 			boolean enableMove = false;
 			switch (touches.length()) {
@@ -2660,7 +2653,7 @@ public abstract class AbstractGraph<B> extends FocusPanel
 				gesture.start(touch.getRelativeX(element), touch.getRelativeY(element));
 				break;
 			case 0:
-				touchEndTime = Duration.currentTimeMillis();
+				gesture.endTouches();
 				resetTouches();
 				break;
 			default:

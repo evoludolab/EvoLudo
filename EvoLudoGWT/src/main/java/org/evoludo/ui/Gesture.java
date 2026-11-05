@@ -53,7 +53,9 @@ import com.google.gwt.user.client.Timer;
  * tracking with {@link #lose()} if the pointer left the interactive area or
  * the touches ended. The displacement between subsequent positions is given by
  * {@link #getDX()} and {@link #getDY()}, the change of the distance between the
- * touches of a pinch by {@link #getScale()}.
+ * touches of a pinch by {@link #getScale()}. Touch event handlers report the
+ * end of all touches through {@link #endTouches()}, such that
+ * {@link #isDoubleTap()} detects double taps.
  * <p>
  * Each interactive view keeps its own instance. Mouse event handlers
  * {@link #capture()} the mouse when the button is pressed, such that the
@@ -84,6 +86,12 @@ public class Gesture {
 	 * for zooming in or out is removed.
 	 */
 	public static final int ZOOM_INERTIA_MSEC = 150;
+
+	/**
+	 * The time (in milliseconds) after all touches ended during which a new touch
+	 * counts as a double tap.
+	 */
+	public static final double DOUBLE_TAP_MSEC = 250.0;
 
 	/**
 	 * The CSS class name for the cursor while zooming in.
@@ -166,6 +174,11 @@ public class Gesture {
 	 * The time when moving with the mouse ended.
 	 */
 	private double moveEndTime = -Double.MAX_VALUE;
+
+	/**
+	 * The time when all touches ended.
+	 */
+	private double touchEndTime = -Double.MAX_VALUE;
 
 	/**
 	 * The time of the last mouse wheel event that zoomed the view.
@@ -326,6 +339,27 @@ public class Gesture {
 		this.x = x;
 		this.y = y;
 		dist = 0.0;
+	}
+
+	/**
+	 * All touches ended. Record the time to detect double taps.
+	 *
+	 * @see #isDoubleTap()
+	 */
+	public void endTouches() {
+		touchEndTime = Duration.currentTimeMillis();
+	}
+
+	/**
+	 * Check whether a touch that starts now is a double tap, i.e. whether it
+	 * starts within {@link #DOUBLE_TAP_MSEC} after all touches ended.
+	 *
+	 * @return {@code true} for a double tap
+	 *
+	 * @see #endTouches()
+	 */
+	public boolean isDoubleTap() {
+		return Duration.currentTimeMillis() - touchEndTime <= DOUBLE_TAP_MSEC;
 	}
 
 	/**

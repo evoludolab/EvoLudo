@@ -622,7 +622,7 @@ public abstract class GenericPopGraph<T, N extends Network<?>> extends AbstractG
 			tooltip.close();
 			return;
 		}
-		if (Duration.currentTimeMillis() - touchEndTime > 250.0) {
+		if (!gesture.isDoubleTap()) {
 			// single tap
 			gesture.start(x, y);
 			hitNode = node;
