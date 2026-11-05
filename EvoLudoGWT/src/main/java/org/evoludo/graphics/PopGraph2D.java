@@ -51,13 +51,11 @@ import com.google.gwt.dom.client.NativeEvent;
 import com.google.gwt.dom.client.Touch;
 import com.google.gwt.event.dom.client.MouseDownEvent;
 import com.google.gwt.event.dom.client.MouseMoveEvent;
-import com.google.gwt.event.dom.client.MouseOutEvent;
 import com.google.gwt.event.dom.client.MouseUpEvent;
 import com.google.gwt.event.dom.client.TouchCancelEvent;
 import com.google.gwt.event.dom.client.TouchEndEvent;
 import com.google.gwt.event.dom.client.TouchMoveEvent;
 import com.google.gwt.event.dom.client.TouchStartEvent;
-import com.google.gwt.user.client.DOM;
 
 /**
  * The graphical representation of lattices and network structures in 2D. This
@@ -1133,8 +1131,7 @@ public class PopGraph2D extends GenericPopGraph<String, Network2D> implements Sh
 	 * <p>
 	 * If a node has been hit by a left-click, remember the node's index and its
 	 * position relative to the mouse. This information is used by subsequent
-	 * {@link MouseMoveEvent}s to drag the node. While dragging a node, the graph
-	 * captures all mouse events, such that the node keeps following the mouse
+	 * {@link MouseMoveEvent}s to drag the node. The node keeps following the mouse
 	 * (as closely as possible) even if the mouse leaves the graph.
 	 *
 	 * <h3>CSS Style Rules</h3>
@@ -1159,26 +1156,10 @@ public class PopGraph2D extends GenericPopGraph<String, Network2D> implements Sh
 		hitNode = findNodeAt(x, y);
 		if (hitNode >= 0) {
 			grabNode(x, y);
-			DOM.setCapture(element);
 			element.addClassName(CURSOR_GRAB_NODE_CLASS);
 		} else {
 			element.removeClassName(CURSOR_GRAB_NODE_CLASS);
 		}
-	}
-
-	/**
-	 * {@inheritDoc}
-	 * <p>
-	 * Ignored while dragging a node because the graph captures all mouse events
-	 * until the mouse button is released.
-	 *
-	 * @see #onMouseDown(MouseDownEvent)
-	 */
-	@Override
-	public void onMouseOut(MouseOutEvent event) {
-		if (leftMouseButton && hitNode >= 0)
-			return;
-		super.onMouseOut(event);
 	}
 
 	/**
@@ -1194,7 +1175,6 @@ public class PopGraph2D extends GenericPopGraph<String, Network2D> implements Sh
 	public void onMouseUp(MouseUpEvent event) {
 		super.onMouseUp(event);
 		if (event.getNativeButton() == NativeEvent.BUTTON_LEFT) {
-			DOM.releaseCapture(element);
 			if (hitDragged) {
 				// reshow tooltip after dragging
 				hitDragged = false;

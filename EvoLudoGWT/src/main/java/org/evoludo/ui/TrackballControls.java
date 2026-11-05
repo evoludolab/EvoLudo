@@ -314,6 +314,8 @@ public class TrackballControls extends Controls implements MouseWheelHandler, Mo
 	 * Remove mouse and touch handlers.
 	 */
 	public void unload() {
+		isDragging = false;
+		gesture.release();
 		if (mouseWheelHandler != null)
 			mouseWheelHandler.removeHandler();
 		if (mouseDownHandler != null)
@@ -551,7 +553,11 @@ public class TrackballControls extends Controls implements MouseWheelHandler, Mo
 	/**
 	 * {@inheritDoc}
 	 * <p>
-	 * Marks the potential start of updates to the view of the 3D scene.
+	 * Marks the potential start of updates to the view of the 3D scene. The view
+	 * captures the mouse until the button is released, such that rotating or
+	 * panning continues even if the mouse leaves the view.
+	 *
+	 * @see Gesture#capture()
 	 */
 	@Override
 	public void onMouseDown(MouseDownEvent event) {
@@ -561,6 +567,7 @@ public class TrackballControls extends Controls implements MouseWheelHandler, Mo
 		if (!isDragging)
 			return;
 
+		gesture.capture();
 		if (hasRotate)
 			rotateStart = getMouseProjectionOnBall(event.getX(), event.getY());
 		if (hasPan)

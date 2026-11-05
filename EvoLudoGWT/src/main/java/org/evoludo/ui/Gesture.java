@@ -55,9 +55,10 @@ import com.google.gwt.user.client.Timer;
  * {@link #getDX()} and {@link #getDY()}, the change of the distance between the
  * touches of a pinch by {@link #getScale()}.
  * <p>
- * Each interactive view keeps its own instance. Mouse event handlers report
- * moving through {@link #move(Move)} and the end of the gesture through
- * {@link #release()}. Mouse wheel events are checked by {@link #wheel()} and
+ * Each interactive view keeps its own instance. Mouse event handlers
+ * {@link #capture()} the mouse when the button is pressed, such that the
+ * gesture continues even if the mouse leaves the view, report moving through
+ * {@link #move(Move)} and the end of the gesture through {@link #release()}. Mouse wheel events are checked by {@link #wheel()} and
  * views report the direction of zooming through {@link #zooming(boolean)}.
  *
  * <h2>CSS Style Rules</h2>
@@ -145,6 +146,23 @@ public class Gesture {
 	private boolean moved = false;
 
 	/**
+	 * The value of {@link #pointerId} if the mouse pointer is unknown.
+	 */
+	private static final int NO_POINTER = -1;
+
+	/**
+	 * The id of the mouse pointer that was last pressed on the element of the
+	 * view, or {@link #NO_POINTER}.
+	 */
+	private int pointerId = NO_POINTER;
+
+	/**
+	 * The id of the mouse pointer captured by the element of the view, or
+	 * {@link #NO_POINTER}.
+	 */
+	private int captured = NO_POINTER;
+
+	/**
 	 * The time when moving with the mouse ended.
 	 */
 	private double moveEndTime = -Double.MAX_VALUE;
@@ -212,13 +230,84 @@ public class Gesture {
 	 */
 	public Gesture(Element element) {
 		this.element = element;
+		listenPointerDown(element);
 	}
 
 	/**
-	 * The mouse button was released (or the mouse left the view), which ends the
-	 * gesture, stops tracking and removes its cursors.
+	 * Record the id of the mouse pointer whenever it is pressed on
+	 * {@code element}. Pointer events precede the corresponding mouse events,
+	 * such that the id is known when handling {@code mousedown}.
+	 *
+	 * @param element the element of the view
+	 *
+	 * @see #capture()
+	 */
+	private native void listenPointerDown(Element element) /*-{
+		var self = this;
+		element.addEventListener("pointerdown", function(event) {
+			if (event.pointerType === "mouse")
+				self.@org.evoludo.ui.Gesture::pointerId = event.pointerId;
+		});
+	}-*/;
+
+	/**
+	 * The mouse button was pressed. The element of the view captures the mouse
+	 * pointer until the gesture is released, such that the gesture continues even
+	 * if the mouse leaves the view. In contrast to {@code DOM.setCapture(Element)},
+	 * pointer capture by the browser leaves mouse wheel events untouched (zooming
+	 * still works while moving), lets events bubble as usual and is released by the
+	 * browser when the mouse button is released.
+	 *
+	 * @see #release()
+	 */
+	public void capture() {
+		if (pointerId != NO_POINTER && setPointerCapture(element, pointerId))
+			captured = pointerId;
+	}
+
+	/**
+	 * Capture the pointer with id {@code id} by {@code element}.
+	 *
+	 * @param element the element of the view
+	 * @param id      the id of the pointer
+	 * @return {@code true} if the pointer was captured
+	 */
+	private static native boolean setPointerCapture(Element element, int id) /*-{
+		try {
+			element.setPointerCapture(id);
+			return true;
+		} catch (e) {
+			// pointer no longer active or pointer capture not supported
+			return false;
+		}
+	}-*/;
+
+	/**
+	 * Release the pointer with id {@code id} if captured by {@code element}.
+	 *
+	 * @param element the element of the view
+	 * @param id      the id of the pointer
+	 */
+	private static native void releasePointerCapture(Element element, int id) /*-{
+		try {
+			if (element.hasPointerCapture(id))
+				element.releasePointerCapture(id);
+		} catch (e) {
+			// pointer no longer active
+		}
+	}-*/;
+
+	/**
+	 * The mouse button was released (or the view deactivated), which ends the
+	 * gesture, releases the mouse pointer, stops tracking and removes its cursors.
+	 *
+	 * @see #capture()
 	 */
 	public void release() {
+		if (captured != NO_POINTER) {
+			releasePointerCapture(element, captured);
+			captured = NO_POINTER;
+		}
 		if (moved)
 			moveEndTime = Duration.currentTimeMillis();
 		moved = false;

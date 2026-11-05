@@ -71,8 +71,6 @@ import com.google.gwt.event.dom.client.MouseDownEvent;
 import com.google.gwt.event.dom.client.MouseDownHandler;
 import com.google.gwt.event.dom.client.MouseMoveEvent;
 import com.google.gwt.event.dom.client.MouseMoveHandler;
-import com.google.gwt.event.dom.client.MouseOutEvent;
-import com.google.gwt.event.dom.client.MouseOutHandler;
 import com.google.gwt.event.dom.client.MouseUpEvent;
 import com.google.gwt.event.dom.client.MouseUpHandler;
 import com.google.gwt.event.dom.client.MouseWheelEvent;
@@ -310,7 +308,7 @@ import com.google.gwt.user.client.ui.RequiresResize;
  */
 @SuppressWarnings("java:S110")
 public abstract class AbstractGraph<B> extends FocusPanel
-		implements MouseOutHandler, MouseWheelHandler, MouseDownHandler, MouseUpHandler, MouseMoveHandler, //
+		implements MouseWheelHandler, MouseDownHandler, MouseUpHandler, MouseMoveHandler, //
 		TouchStartHandler, TouchEndHandler, TouchMoveHandler, TouchCancelHandler, //
 		RequiresResize, Tooltip.Provider, ContextMenu.Listener, ContextMenu.Provider {
 
@@ -318,7 +316,7 @@ public abstract class AbstractGraph<B> extends FocusPanel
 	 * Graphs that support shifting should implement this interface. Basic shifting
 	 * capabilities are handled by {@link AbstractGraph}.
 	 */
-	public interface Shifting extends Shifter, MouseOutHandler, MouseDownHandler, MouseUpHandler, MouseMoveHandler, //
+	public interface Shifting extends Shifter, MouseDownHandler, MouseUpHandler, MouseMoveHandler, //
 			TouchStartHandler, TouchEndHandler, TouchMoveHandler {
 	}
 
@@ -424,11 +422,6 @@ public abstract class AbstractGraph<B> extends FocusPanel
 	 * The handler for {@link DoubleClickEvent}s.
 	 */
 	HandlerRegistration doubleClickHandler;
-
-	/**
-	 * The handler for {@link MouseOutEvent}s.
-	 */
-	HandlerRegistration mouseOutHandler;
 
 	/**
 	 * The handler for {@link MouseDownEvent}s.
@@ -754,7 +747,6 @@ public abstract class AbstractGraph<B> extends FocusPanel
 			touchCancelHandler = addTouchCancelHandler(this);
 		}
 		if (this instanceof Shifting) {
-			mouseOutHandler = addMouseOutHandler(this);
 			mouseDownHandler = addMouseDownHandler(this);
 			mouseUpHandler = addMouseUpHandler(this);
 			if (touchStartHandler == null)
@@ -775,6 +767,8 @@ public abstract class AbstractGraph<B> extends FocusPanel
 	public void deactivate() {
 		tooltip.close();
 		contextMenu.close();
+		leftMouseButton = false;
+		gesture.release();
 		if (doubleClickHandler != null)
 			doubleClickHandler.removeHandler();
 		doubleClickHandler = null;
@@ -784,9 +778,6 @@ public abstract class AbstractGraph<B> extends FocusPanel
 		if (mouseMoveHandler != null)
 			mouseMoveHandler.removeHandler();
 		mouseMoveHandler = null;
-		if (mouseOutHandler != null)
-			mouseOutHandler.removeHandler();
-		mouseOutHandler = null;
 		if (mouseWheelHandler != null)
 			mouseWheelHandler.removeHandler();
 		mouseWheelHandler = null;
@@ -2498,28 +2489,13 @@ public abstract class AbstractGraph<B> extends FocusPanel
 	/**
 	 * {@inheritDoc}
 	 * <p>
-	 * If mouse leaves graph while shifting the view stop shifting. Mouse events are
-	 * no longer received and hence it is impossible to track releasing or pressing
-	 * mouse buttons.
-	 */
-	@Override
-	public void onMouseOut(MouseOutEvent event) {
-		leftMouseButton = false;
-		gesture.release();
-		if (mouseMoveHandler != null) {
-			mouseMoveHandler.removeHandler();
-			mouseMoveHandler = null;
-		}
-	}
-
-	/**
-	 * {@inheritDoc}
-	 * <p>
-	 * If a node has been hit by a left-click, remember the node's index and the
-	 * current mouse coordinates. This information might be used by subsequent
-	 * {@link MouseMoveEvent}s.
+	 * If the left mouse button is pressed inside the graph, start tracking the
+	 * mouse for subsequent {@link MouseMoveEvent}s. The graph captures the mouse
+	 * until the button is released, such that the gesture continues even if the
+	 * mouse leaves the graph.
 	 *
 	 * @see #onMouseMove(MouseMoveEvent)
+	 * @see Gesture#capture()
 	 */
 	@Override
 	public void onMouseDown(MouseDownEvent event) {
@@ -2532,6 +2508,7 @@ public abstract class AbstractGraph<B> extends FocusPanel
 				return;
 			}
 			gesture.start(x, y);
+			gesture.capture();
 			leftMouseButton = true;
 			if (mouseMoveHandler == null)
 				mouseMoveHandler = addMouseMoveHandler(this);
@@ -2565,7 +2542,8 @@ public abstract class AbstractGraph<B> extends FocusPanel
 	 * <p>
 	 * If the left mouse-key is pressed the graph is shifted within its
 	 * viewport. Note this requires that the zoom level of the graph exceeds
-	 * {@code 1}. Shifting may be combined with zooming (with the mouse wheel).
+	 * {@code 1}. Shifting may be combined with zooming (with the mouse wheel) and
+	 * continues if the mouse leaves the graph.
 	 *
 	 * @see #onMouseDown(MouseDownEvent)
 	 * @see Gesture#move(Gesture.Move)
@@ -2574,13 +2552,7 @@ public abstract class AbstractGraph<B> extends FocusPanel
 	public void onMouseMove(MouseMoveEvent event) {
 		if (leftMouseButton) {
 			// shift view
-			int x = event.getX();
-			int y = event.getY();
-			if (!inside(x, y)) {
-				gesture.lose();
-				return;
-			}
-			if (!gesture.drag(x, y))
+			if (!gesture.drag(event.getX(), event.getY()))
 				return;
 			gesture.move(Gesture.Move.VIEW);
 			shifter.shift(gesture.getDX(), gesture.getDY());
