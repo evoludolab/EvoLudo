@@ -2361,9 +2361,9 @@ public abstract class AbstractGraph<B> extends FocusPanel
 	public void zoom(double zoom, int x, int y) {
 		if (hasMessage)
 			return;
-		zoom(zoom, (viewCorner.getX() + x - bounds.getX()) / (bounds.getWidth() *
-				zoomFactor),
-				(viewCorner.getY() + y - bounds.getY()) / (bounds.getHeight() * zoomFactor));
+		// event coordinates are relative to the graph, bounds relative to the canvas
+		zoom(zoom, (viewCorner.getX() + x - canvasPadX() - bounds.getX()) / (bounds.getWidth() * zoomFactor),
+				(viewCorner.getY() + y - canvasPadY() - bounds.getY()) / (bounds.getHeight() * zoomFactor));
 	}
 
 	/**

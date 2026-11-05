@@ -566,8 +566,9 @@ public class ParaGraph extends AbstractGraph<double[]> implements Zooming, Shift
 			return;
 		double minZoomX = computeMinZoom(state.baseRangeX, domain.getWidth());
 		double minZoomY = computeMinZoom(state.baseRangeY, domain.getHeight());
-		double localX = x - bounds.getX();
-		double localY = y - bounds.getY();
+		// as for tooltips, see getTooltipAt(int, int)
+		double localX = x - canvasPadX() - bounds.getX();
+		double localY = y - canvasPadY() - bounds.getY();
 		double ux = state.dataXFromLocal(localX);
 		double uy = state.dataYFromLocal(localY);
 		double minZoom = Math.min(minZoomX, minZoomY);
@@ -1238,28 +1239,27 @@ public class ParaGraph extends AbstractGraph<double[]> implements Zooming, Shift
 
 	@Override
 	public void onDoubleClick(DoubleClickEvent event) {
-		double x = event.getX() - style.frameWidth;
-		double y = event.getY();
-		processInitXY(x, y);
+		processInitXY(event.getX(), event.getY());
 	}
 
 	/**
-	 * Helper method to convert screen coordinates into an initial configuration and
-	 * set the controller's initial state.
-	 * 
-	 * @param x the {@code x}-coordinate on screen
-	 * @param y the {@code y}-coordinate on screen
+	 * Helper method to convert the coordinates {@code (x, y)} relative to the
+	 * graph into an initial configuration and set the controller's initial state.
+	 * The conversion matches that of the tooltips.
+	 *
+	 * @param x the {@code x}-coordinate relative to the graph
+	 * @param y the {@code y}-coordinate relative to the graph
+	 *
+	 * @see #getTooltipAt(int, int)
 	 */
-	private void processInitXY(double x, double y) {
-		double localX = x - bounds.getX();
-		double localY = y - bounds.getY();
-		if (!inside(localX, localY))
+	private void processInitXY(int x, int y) {
+		if (!inside(x, y))
 			return;
 		ViewState state = currentViewState();
 		if (!state.valid)
 			return;
-		double ux = state.dataXFromLocal(localX);
-		double uy = state.dataYFromLocal(localY);
+		double ux = state.dataXFromLocal(x - canvasPadX() - bounds.getX());
+		double uy = state.dataYFromLocal(y - canvasPadY() - bounds.getY());
 		double[] last = buffer.last();
 		int len = last.length;
 		double[] initState = new double[len - 1];
@@ -1268,7 +1268,6 @@ public class ParaGraph extends AbstractGraph<double[]> implements Zooming, Shift
 		view.setInitialState(initState);
 	}
 
-	// CHECK!
 	@Override
 	public void onTouchStart(TouchStartEvent event) {
 		super.onTouchStart(event);
