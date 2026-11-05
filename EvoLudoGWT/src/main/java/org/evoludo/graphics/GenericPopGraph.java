@@ -635,8 +635,15 @@ public abstract class GenericPopGraph<T, N extends Network<?>> extends AbstractG
 		event.preventDefault();
 	}
 
+	/**
+	 * {@inheritDoc}
+	 * <p>
+	 * Showing the context menu releases any node selected for dragging, e.g.
+	 * after a long touch on a node.
+	 */
 	@Override
 	public void populateContextMenuAt(ContextMenu menu, int x, int y) {
+		hitNode = -1;
 		if (hasMessage) {
 			// skip context menu entries
 			super.populateContextMenuAt(menu, x, y);

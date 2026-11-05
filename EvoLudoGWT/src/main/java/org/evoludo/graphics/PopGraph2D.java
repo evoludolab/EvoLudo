@@ -51,10 +51,13 @@ import com.google.gwt.dom.client.NativeEvent;
 import com.google.gwt.dom.client.Touch;
 import com.google.gwt.event.dom.client.MouseDownEvent;
 import com.google.gwt.event.dom.client.MouseMoveEvent;
+import com.google.gwt.event.dom.client.MouseOutEvent;
 import com.google.gwt.event.dom.client.MouseUpEvent;
 import com.google.gwt.event.dom.client.TouchCancelEvent;
 import com.google.gwt.event.dom.client.TouchEndEvent;
 import com.google.gwt.event.dom.client.TouchMoveEvent;
+import com.google.gwt.event.dom.client.TouchStartEvent;
+import com.google.gwt.user.client.DOM;
 
 /**
  * The graphical representation of lattices and network structures in 2D. This
@@ -912,9 +915,31 @@ public class PopGraph2D extends GenericPopGraph<String, Network2D> implements Sh
 		}
 		double dx = (bounds.getWidth() - diameter) * 0.5;
 		double dy = (bounds.getHeight() - diameter) * 0.5;
+		networkXAspect = bounds.getWidth() / diameter;
+		networkYAspect = bounds.getHeight() / diameter;
 		bounds.set(plotX + dx, plotY + dy, diameter, diameter);
 		style.showFrame = false;
 	}
+
+	/**
+	 * The ratio of the width of the plot area and the diameter of the network.
+	 * Nodes can be dragged within the plot area, i.e. horizontally within
+	 * {@code ±networkXAspect} times the radius of the network.
+	 *
+	 * @see #handleNetwork(int, int)
+	 * @see #dragNodeTo(int, int)
+	 */
+	private double networkXAspect = 1.0;
+
+	/**
+	 * The ratio of the height of the plot area and the diameter of the network.
+	 * Nodes can be dragged within the plot area, i.e. vertically within
+	 * {@code ±networkYAspect} times the radius of the network.
+	 *
+	 * @see #handleNetwork(int, int)
+	 * @see #dragNodeTo(int, int)
+	 */
+	private double networkYAspect = 1.0;
 
 	/**
 	 * Get the color of the node at index {@code node} as a CSS color string.
@@ -1106,16 +1131,18 @@ public class PopGraph2D extends GenericPopGraph<String, Network2D> implements Sh
 	/**
 	 * {@inheritDoc}
 	 * <p>
-	 * If a node has been hit by a left-click, remember the node's index and the
-	 * current mouse coordinates. This information might be used by subsequent
-	 * {@link MouseMoveEvent}s.
-	 * 
+	 * If a node has been hit by a left-click, remember the node's index and its
+	 * position relative to the mouse. This information is used by subsequent
+	 * {@link MouseMoveEvent}s to drag the node. While dragging a node, the graph
+	 * captures all mouse events, such that the node keeps following the mouse
+	 * (as closely as possible) even if the mouse leaves the graph.
+	 *
 	 * <h3>CSS Style Rules</h3>
 	 * <dl>
 	 * <dt>.evoludo-cursorGrabNode</dt>
 	 * <dd>added to graph element.</dd>
 	 * </dl>
-	 * 
+	 *
 	 * @see #onMouseMove(MouseMoveEvent)
 	 */
 	@Override
@@ -1127,12 +1154,31 @@ public class PopGraph2D extends GenericPopGraph<String, Network2D> implements Sh
 			element.removeClassName(CURSOR_GRAB_NODE_CLASS);
 			return;
 		}
-		hitNode = findNodeAt(event.getX(), event.getY());
+		int x = event.getX();
+		int y = event.getY();
+		hitNode = findNodeAt(x, y);
 		if (hitNode >= 0) {
+			grabNode(x, y);
+			DOM.setCapture(element);
 			element.addClassName(CURSOR_GRAB_NODE_CLASS);
 		} else {
 			element.removeClassName(CURSOR_GRAB_NODE_CLASS);
 		}
+	}
+
+	/**
+	 * {@inheritDoc}
+	 * <p>
+	 * Ignored while dragging a node because the graph captures all mouse events
+	 * until the mouse button is released.
+	 *
+	 * @see #onMouseDown(MouseDownEvent)
+	 */
+	@Override
+	public void onMouseOut(MouseOutEvent event) {
+		if (leftMouseButton && hitNode >= 0)
+			return;
+		super.onMouseOut(event);
 	}
 
 	/**
@@ -1148,6 +1194,7 @@ public class PopGraph2D extends GenericPopGraph<String, Network2D> implements Sh
 	public void onMouseUp(MouseUpEvent event) {
 		super.onMouseUp(event);
 		if (event.getNativeButton() == NativeEvent.BUTTON_LEFT) {
+			DOM.releaseCapture(element);
 			if (hitDragged) {
 				// reshow tooltip after dragging
 				hitDragged = false;
@@ -1162,8 +1209,8 @@ public class PopGraph2D extends GenericPopGraph<String, Network2D> implements Sh
 	 * {@inheritDoc}
 	 * <p>
 	 * If a node has been hit by a {@link MouseDownEvent} and is being dragged,
-	 * the position of the node is shifted. This allows to customize the display of
-	 * the graph.
+	 * the node follows the mouse as closely as possible, even outside of the
+	 * graph. This allows to customize the display of the graph.
 	 *
 	 * @see #onMouseDown(MouseDownEvent)
 	 * @see Gesture#move(Gesture.Move)
@@ -1172,17 +1219,9 @@ public class PopGraph2D extends GenericPopGraph<String, Network2D> implements Sh
 	public void onMouseMove(MouseMoveEvent event) {
 		if (supportsNodeDragging() && hitNode >= 0) {
 			event.preventDefault();
-			int x = event.getX();
-			int y = event.getY();
-			if (!inside(x, y)) {
-				gesture.lose();
-				return;
-			}
-			if (!gesture.drag(x, y))
-				return;
 			hitDragged = true;
 			gesture.move(Gesture.Move.NODE);
-			shiftNodeBy(hitNode, gesture.getDX(), gesture.getDY());
+			dragNodeTo(event.getX(), event.getY());
 			return;
 		}
 		super.onMouseMove(event);
@@ -1214,27 +1253,37 @@ public class PopGraph2D extends GenericPopGraph<String, Network2D> implements Sh
 
 	/**
 	 * {@inheritDoc}
+	 * <p>
+	 * If a node was touched, remember its position relative to the touch for
+	 * dragging the node.
+	 *
+	 * @see #onTouchMove(TouchMoveEvent)
+	 */
+	@Override
+	public void onTouchStart(TouchStartEvent event) {
+		// super sets hitNode if a node was touched
+		super.onTouchStart(event);
+		JsArray<Touch> touches = event.getTouches();
+		if (touches.length() == 1 && supportsNodeDragging() && hitNode >= 0) {
+			Touch touch = touches.get(0);
+			grabNode(touch.getRelativeX(element), touch.getRelativeY(element));
+		}
+	}
+
+	/**
+	 * {@inheritDoc}
 	 * <dl>
 	 * <dt>move one finger on node
-	 * <dd>shift node.
+	 * <dd>shift node. The node follows the touch as closely as possible, even
+	 * outside of the graph.
 	 * </dl>
 	 */
 	@Override
 	public void onTouchMove(TouchMoveEvent event) {
 		JsArray<Touch> touches = event.getTouches();
 		if (touches.length() == 1 && supportsNodeDragging() && hitNode >= 0) {
-			// shift node
 			Touch touch = touches.get(0);
-			int x = touch.getRelativeX(element);
-			int y = touch.getRelativeY(element);
-			if (!inside(x, y)) {
-				gesture.lose();
-				return;
-			}
-			if (!gesture.drag(x, y))
-				return;
-			// shift position of node
-			shiftNodeBy(hitNode, gesture.getDX(), gesture.getDY());
+			dragNodeTo(touch.getRelativeX(element), touch.getRelativeY(element));
 			event.preventDefault();
 			return;
 		}
@@ -1250,51 +1299,78 @@ public class PopGraph2D extends GenericPopGraph<String, Network2D> implements Sh
 	}
 
 	/**
-	 * Shift a single node with index {@code nodeidx} by {@code (dx, dy)}. Positive
-	 * {@code dx} shift the node to the right and positive {@code dy} shift upwards.
-	 * 
-	 * @param nodeidx the index of the node
-	 * @param dx      the horizontal shift of the node
-	 * @param dy      the vertical shift of the node
+	 * The horizontal offset of the dragged node relative to the pointer in network
+	 * coordinates.
+	 *
+	 * @see #grabNode(int, int)
 	 */
-	public void shiftNodeBy(int nodeidx, int dx, int dy) {
-		if (nodeidx < 0) {
-			// invalid node
-			return;
-		}
-		switch (network.getStatus()) {
-			case HAS_LAYOUT:
-				double rr = network.getRadius();
-				// bounds.width==bounds.height for networks
-				double iscale = (rr + rr) / (bounds.getWidth() * zoomFactor);
-				double xaspect;
-				double yaspect;
-				int width = getOffsetWidth();
-				int height = getOffsetHeight();
-				if (width < height) {
-					// portrait
-					xaspect = 1.0;
-					yaspect = (double) height / width;
-				} else {
-					// landscape
-					xaspect = (double) width / height;
-					yaspect = 1.0;
-				}
-				Node2D node = network.get(nodeidx);
-				double r = node.getR();
-				node.set(Math.max(-rr * xaspect + r, Math.min(rr * xaspect - r, node.getX() - dx * iscale)),
-						Math.max(-rr * yaspect + r, Math.min(rr * yaspect - r, node.getY() - dy * iscale)));
-				network.linkNodes();
-				drawNetwork();
-				return;
-			case NO_LAYOUT:
-				// lattices - shift view instead
-				shift(dx, dy);
-				return;
-			default:
-				// nothing (yet) to shift
-				return;
-		}
+	private double grabDX;
+
+	/**
+	 * The vertical offset of the dragged node relative to the pointer in network
+	 * coordinates.
+	 *
+	 * @see #grabNode(int, int)
+	 */
+	private double grabDY;
+
+	/**
+	 * Convert the coordinates {@code (x, y)} of the pointer (relative to the graph
+	 * element) to network coordinates. Keep aligned with
+	 * {@link #findNodeAt(int, int)}. Coordinates outside of the graph map to
+	 * positions outside of the network.
+	 *
+	 * @param x the {@code x}-coordinate of the pointer
+	 * @param y the {@code y}-coordinate of the pointer
+	 * @return the network coordinates
+	 */
+	private Point2D toNetwork(int x, int y) {
+		double rr = network.getRadius();
+		// bounds.width==bounds.height for networks
+		double iscale = (rr + rr) / bounds.getWidth();
+		double sx = (viewCorner.getX() + x - canvasPadX() - bounds.getX()) / zoomFactor - style.frameWidth * 0.5;
+		double sy = (viewCorner.getY() + y - canvasPadY() - bounds.getY()) / zoomFactor - style.frameWidth * 0.5;
+		return new Point2D(sx * iscale - rr, sy * iscale - rr);
+	}
+
+	/**
+	 * Grab the node {@link #hitNode} with the pointer at {@code (x, y)}, i.e.
+	 * remember the position of the node relative to the pointer for dragging.
+	 *
+	 * @param x the {@code x}-coordinate of the pointer
+	 * @param y the {@code y}-coordinate of the pointer
+	 *
+	 * @see #dragNodeTo(int, int)
+	 */
+	private void grabNode(int x, int y) {
+		Point2D pointer = toNetwork(x, y);
+		Node2D node = network.get(hitNode);
+		grabDX = node.getX() - pointer.getX();
+		grabDY = node.getY() - pointer.getY();
+	}
+
+	/**
+	 * Drag the node {@link #hitNode} such that it follows the pointer at
+	 * {@code (x, y)} as closely as possible. The node keeps its position relative
+	 * to the pointer when it was grabbed but remains entirely within the plot
+	 * area.
+	 *
+	 * @param x the {@code x}-coordinate of the pointer
+	 * @param y the {@code y}-coordinate of the pointer
+	 *
+	 * @see #grabNode(int, int)
+	 */
+	private void dragNodeTo(int x, int y) {
+		double rr = network.getRadius();
+		double xmax = rr * networkXAspect;
+		double ymax = rr * networkYAspect;
+		Point2D pointer = toNetwork(x, y);
+		Node2D node = network.get(hitNode);
+		double r = node.getR();
+		node.set(Math.max(-xmax + r, Math.min(xmax - r, pointer.getX() + grabDX)),
+				Math.max(-ymax + r, Math.min(ymax - r, pointer.getY() + grabDY)));
+		network.linkNodes();
+		drawNetwork();
 	}
 
 	@Override
