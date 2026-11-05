@@ -832,8 +832,10 @@ public abstract class AbstractGraph<B> extends FocusPanel
 	 * dimensions clears the canvas (even with no actual changes)!
 	 */
 	private void updateCanvas() {
-		int width = getOffsetWidth();
-		int height = getOffsetHeight();
+		// the wrapper excludes the (CSS) padding of the graph, i.e. it is the
+		// visible area of the canvas
+		int width = (wrapper == null ? 0 : wrapper.getOffsetWidth());
+		int height = (wrapper == null ? 0 : wrapper.getOffsetHeight());
 		// canvas is null for PopGraph3D
 		if (canvas == null || width == 0 || height == 0)
 			return;
@@ -1276,14 +1278,15 @@ public abstract class AbstractGraph<B> extends FocusPanel
 	public abstract void export(MyContext2d ctx);
 
 	/**
-	 * Calculate bounds of drawing area. If element has never been visible its size
-	 * is not yet known.
-	 * 
+	 * Calculate bounds of drawing area, i.e. of the canvas, which excludes the
+	 * (CSS) padding of the graph. If element has never been visible its size is
+	 * not yet known.
+	 *
 	 * @return {@code true} if bounds are successfully calculated.
 	 */
 	protected boolean calcBounds() {
-		int width = getOffsetWidth();
-		int height = getOffsetHeight();
+		int width = (wrapper == null ? 0 : wrapper.getOffsetWidth());
+		int height = (wrapper == null ? 0 : wrapper.getOffsetHeight());
 		if (width == 0 || height == 0)
 			return false;
 		calcBounds(width, height);
