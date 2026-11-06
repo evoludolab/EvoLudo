@@ -70,10 +70,11 @@ import com.google.gwt.core.client.Scheduler;
  * layout (e.g. mean, mean-sdev, mean+sdev).</li>
  * <li>The graph maintains an x-range [xMin, xMax] and a y-range [yMin,
  * yMax] via the Style object. The x-range is expressed in the same time
- * units as the first element of the data arrays. The buffer capacity and
- * style.xIncr determine the maximum historical range available for panning
- * (the absolute bounds are [absMin, absMax] where absMax is hard-coded to
- * 0.0 and absMin = absMax - capacity*xIncr).</li>
+ * units as the first element of the data arrays, relative to the most recent
+ * sample at 0.0. The buffered history determines the range available for
+ * panning and zooming, i.e. from its oldest sample, or from the default span
+ * DEFAULT_STEPS*xIncr if the history is shorter, through the most recent
+ * sample.</li>
  * <li>The y-range changes only when necessary: added data that falls outside
  * [yMin, yMax] expands the range to cover it, whether autoscaling
  * (style.autoscaleY) is enabled or the limits were set explicitly; ranges
@@ -117,16 +118,14 @@ import com.google.gwt.core.client.Scheduler;
  * using schedulePaint() to coalesce multiple requests.</li>
  * <li>Interaction:
  * <ul>
- * <li>shift(dx, dy) pans the x-range in multiples of style.xIncr. Small
- * mouse/touch deltas that do not exceed a single increment are
- * accumulated until sufficient movement occurs. Shifting respects the
- * absolute data bounds determined by the buffer capacity.</li>
+ * <li>shift(dx, dy) pans the x-range continuously, such that the data
+ * follows the pointer, within the available history.</li>
  * <li>zoom() resets the view to a default zoom focused on the latest
  * data (xMax = 0.0 and xMin = xMax - max(1, DEFAULT_STEPS*xIncr)).</li>
- * <li>zoom(double zoom, double x, double y) zooms around the right-hand
- * end (xMax is treated as the reference) and enforces a minimum
- * number of steps (MIN_STEPS). Zooming also snaps bounds to integer
- * multiples of style.xIncr and clamps to the available history.</li>
+ * <li>zoom(double zoom, double x, double y) zooms around the zoom center,
+ * such that the time under the pointer remains in place, enforces a
+ * minimum number of steps (MIN_STEPS) and clamps to the available
+ * history.</li>
  * </ul>
  * </li>
  * <li>Tooltips: getTooltipAt(int x,int y) converts pixel coordinates to
@@ -987,52 +986,39 @@ public class LineGraph extends AbstractGraph<double[]>
 	}
 
 	/**
-	 * The total shift in the {@code x}-direction.
+	 * {@inheritDoc}
+	 * <p>
+	 * Shifts the time window continuously, such that the data follows the
+	 * pointer. The window remains within the buffered history, ending at the most
+	 * recent sample at the latest. Vertical shifts are ignored.
+	 *
+	 * @see #maxSpan()
 	 */
-	int totDx;
-
-	/**
-	 * The total shift in the {@code y}-direction.
-	 */
-	int totDy;
-
 	@Override
 	public void shift(int dx, int dy) {
-		if (hasMessage)
+		if (hasMessage || dx == 0)
 			return;
-		totDx += dx;
-		totDy += dy;
-		double rx = totDx / bounds.getWidth();
-		double arx = Math.abs(rx);
 		double range = style.xMax - style.xMin;
-		// shift in multiples in xIncr
-		int units = (int) (range * arx / style.xIncr);
-		if (units == 0)
+		setXRange(style.xMin + dx * range / bounds.getWidth(), range);
+	}
+
+	/**
+	 * Set the time window to start at {@code xMin} and span {@code range}, but
+	 * keep it within the available history, i.e. between {@code -maxSpan()} and
+	 * the most recent sample at {@code 0}.
+	 *
+	 * @param xMin  the requested start of the window
+	 * @param range the span of the window
+	 *
+	 * @see #maxSpan()
+	 */
+	private void setXRange(double xMin, double range) {
+		double absMin = -Math.max(maxSpan(), range);
+		xMin = Math.max(absMin, Math.min(xMin, -range));
+		if (Math.abs(xMin - style.xMin) < Model.EPS && Math.abs(xMin + range - style.xMax) < Model.EPS)
 			return;
-		totDx = 0;
-		totDy = 0;
-		double shift = units * style.xIncr;
-		shift = (rx > 0.0 ? -shift : shift);
-		double maxRange = buffer.getCapacity() * style.xIncr;
-		double absMax = 0.0;
-		double absMin = absMax - maxRange;
-		if (shift > 0.0) {
-			// shift right; keep range if lower bound reaches minimum
-			style.xMin = Math.max(absMin, style.xMin - Math.max(style.xIncr, shift));
-			style.xMax = style.xMin + range;
-			if (style.xMax >= absMax) {
-				style.xMax = absMax;
-				style.xMin = absMax - range;
-			}
-		} else {
-			// shift left; keep range if upper bound reaches maximum
-			style.xMax = Math.min(absMax, style.xMax - Math.min(-style.xIncr, shift));
-			style.xMin = style.xMax - range;
-			if (style.xMin <= absMin) {
-				style.xMin = absMin;
-				style.xMax = absMin + range;
-			}
-		}
+		style.xMin = xMin;
+		style.xMax = xMin + range;
 		schedulePaint();
 	}
 
@@ -1053,33 +1039,32 @@ public class LineGraph extends AbstractGraph<double[]>
 		schedulePaint();
 	}
 
+	/**
+	 * {@inheritDoc}
+	 * <p>
+	 * Zooms the time window, such that the time at the zoom center remains in
+	 * place. The window spans at least {@link #MIN_STEPS} reporting intervals and
+	 * at most the available history.
+	 *
+	 * @param zoom the factor to zoom in (&gt;1) or out (&lt;1)
+	 * @param x    the zoom center as a fraction of the width of the plot
+	 * @param y    the zoom center as a fraction of the height of the plot
+	 *             (ignored)
+	 *
+	 * @see #maxSpan()
+	 */
 	@Override
 	public void zoom(double zoom, double x, double y) {
-		if (zoom <= 0.0 || Math.abs(zoom - 1.0) < Model.EPS)
+		if (hasMessage || zoom <= 0.0 || Math.abs(zoom - 1.0) < Model.EPS)
 			return;
-		double oldXMin = style.xMin;
-		double oldXMax = style.xMax;
-		double xMax = style.xMax;
-		double xMin = xMax - (style.xMax - style.xMin) / zoom;
-		int nSteps = (int) ((xMax - xMin) / style.xIncr);
-		if (nSteps < MIN_STEPS)
-			xMin = xMax - MIN_STEPS * style.xIncr;
-		double maxRange = buffer.getCapacity() * style.xIncr;
-		// note: maximum of zero is hardcoded...
-		double absMax = 0.0;
-		double absMin = absMax - maxRange;
-		style.xMin = Math.max(absMin, (int) (xMin / style.xIncr) * style.xIncr);
-		style.xMax = Math.min(0.0, (int) (xMax / style.xIncr) * style.xIncr);
-		// zooming out is hard with touch when fully zoomed in...
-		if (style.xMax - style.xMin <= style.xIncr) {
-			if (zoom < 1.0)
-				return;
-			style.xMin = style.xMax - style.xIncr;
-		}
-		if (Math.abs(style.xMin - oldXMin) < Model.EPS && Math.abs(style.xMax - oldXMax) < Model.EPS)
+		double range = style.xMax - style.xMin;
+		double newRange = Math.max(MIN_STEPS * style.xIncr, Math.min(range / zoom, maxSpan()));
+		if (Math.abs(newRange - range) < Model.EPS)
 			return;
-		gesture.zooming(zoom > 1.0);
-		schedulePaint();
+		double fx = Math.max(0.0, Math.min(1.0, x));
+		// keep the time at the zoom center in place
+		setXRange(style.xMin + fx * (range - newRange), newRange);
+		gesture.zooming(newRange < range);
 	}
 
 	/**
@@ -1502,31 +1487,47 @@ public class LineGraph extends AbstractGraph<double[]>
 	}
 
 	/**
+	 * Get the span of the buffered history along the selected {@code x}-axis, i.e.
+	 * the distance from the most recent to the oldest buffered sample, as
+	 * displayed by {@link #drawLines(double, double, double)}.
+	 *
+	 * @return the span of the history, or {@code 0} if not available
+	 */
+	private double historySpan() {
+		if (buffer == null || buffer.getSize() < 2)
+			return 0.0;
+		double span = 0.0;
+		Iterator<double[]> it = buffer.iterator();
+		double[] current = it.next();
+		while (it.hasNext()) {
+			double[] prev = it.next();
+			span += historyStepWidth(current, prev);
+			current = prev;
+		}
+		return Double.isFinite(span) ? span : 0.0;
+	}
+
+	/**
+	 * Get the largest span of the {@code x}-axis available for shifting and
+	 * zooming: the span of the buffered history, but at least the default span
+	 * (or the current span, if larger), such that the view does not shrink while
+	 * the history is still short.
+	 *
+	 * @return the largest available span
+	 */
+	private double maxSpan() {
+		double span = Math.max(historySpan(), DEFAULT_STEPS * style.xIncr);
+		return Math.max(span, style.xMax - style.xMin);
+	}
+
+	/**
 	 * Update the x-axis range to show all buffered data (latest segment only).
 	 * 
 	 * @return {@code true} if the range was updated
 	 */
 	private boolean updateXRangeFromBuffer() {
-		if (buffer == null || buffer.isEmpty())
-			return false;
-		double span = 0.0;
-		Iterator<double[]> it = buffer.iterator();
-		if (!it.hasNext())
-			return false;
-		double[] current = it.next();
-		if (!it.hasNext())
-			return false;
-		double[] prev = it.next();
-		double[] older = it.hasNext() ? it.next() : null;
-		while (true) {
-			span += historyStepWidth(current, prev);
-			if (older == null)
-				break;
-			current = prev;
-			prev = older;
-			older = it.hasNext() ? it.next() : null;
-		}
-		if (!Double.isFinite(span) || span <= 0.0)
+		double span = historySpan();
+		if (span <= 0.0)
 			return false;
 		style.xMax = 0.0;
 		style.xMin = -span;
