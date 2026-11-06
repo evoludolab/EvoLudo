@@ -1202,7 +1202,7 @@ public class IBSMCPopulation extends IBSPopulation<Continuous, IBSMCPopulation> 
 		}
 		if (vacantIdx >= 0)
 			status.append("; Density: ")
-					.append(Formatter.formatPercent((double) nOccupied / nPopulation, 1));
+					.append(Formatter.formatPercentFix((double) nOccupied / nPopulation, 1));
 		return status.toString();
 	}
 

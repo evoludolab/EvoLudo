@@ -900,7 +900,7 @@ public class Legend2D {
 	}
 
 	/**
-	 * Format a numeric gradient value for legend labels and tooltips.
+	 * Format a numeric gradient value for legend labels, omitting trailing zeros.
 	 *
 	 * @param value the value to format
 	 * @return formatted legend text

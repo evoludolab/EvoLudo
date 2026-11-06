@@ -468,7 +468,7 @@ public abstract class GenericPopGraph<T, N extends Network<?>> extends AbstractG
 		if (remaining <= 0.0) {
 			message = "Rendering network...";
 		} else {
-			message = "Laying out network...  " + Formatter.formatPercent(displayProgress, 2) + " relaxed, "
+			message = "Laying out network...  " + Formatter.formatPercentFix(displayProgress, 2) + " relaxed, "
 					+ Formatter.formatFix(remaining, 1) + " s remaining.";
 		}
 		displayMessage(message, false);

@@ -492,7 +492,7 @@ public class TBT extends Discrete implements Payoffs,
 				}
 				status.append(n2Names[i])
 						.append(": ")
-						.append(Formatter.formatPercent(n2Traits[i], 1));
+						.append(Formatter.formatPercentFix(n2Traits[i], 1));
 			}
 			return status.toString();
 		}

@@ -88,10 +88,20 @@ public class Formatter {
 			new DecimalFormat("0.###########E0"), new DecimalFormat("0.############E0") };
 
 	/**
+	 * Array of percentage formatters with 0 to up to 12 non-zero decimal digits.
+	 */
+	private static final DecimalFormat[] myPercentFormatters = { new DecimalFormat("##0%"),
+			new DecimalFormat("##0.#%"), new DecimalFormat("##0.##%"), new DecimalFormat("##0.###%"),
+			new DecimalFormat("##0.####%"), new DecimalFormat("##0.#####%"), new DecimalFormat("##0.######%"),
+			new DecimalFormat("##0.#######%"), new DecimalFormat("##0.########%"), new DecimalFormat("##0.#########%"),
+			new DecimalFormat("##0.##########%"), new DecimalFormat("##0.###########%"),
+			new DecimalFormat("##0.############%") };
+
+	/**
 	 * Array of percentage formatters with fixed number of digits ranging from 0 to
 	 * 12.
 	 */
-	private static final DecimalFormat[] myPercentFormatters = { new DecimalFormat("##0%"), new DecimalFormat("##0.0%"),
+	private static final DecimalFormat[] myPercentFixFormatters = { new DecimalFormat("##0%"), new DecimalFormat("##0.0%"),
 			new DecimalFormat("##0.00%"), new DecimalFormat("##0.000%"), new DecimalFormat("##0.0000%"),
 			new DecimalFormat("##0.00000%"), new DecimalFormat("##0.000000%"), new DecimalFormat("##0.0000000%"),
 			new DecimalFormat("##0.00000000%"), new DecimalFormat("##0.000000000%"),
@@ -551,16 +561,36 @@ public class Formatter {
 	}
 
 	/**
+	 * Format double <code>aDouble</code> as percent String with up to
+	 * <code>digits</code> decimal places (trailing zeroes are omitted).
+	 *
+	 * @param aDouble number to format
+	 * @param digits  maximum number of decimal places
+	 * @return formatted <code>double</code> as String
+	 *
+	 * @see #formatPercentFix(double, int)
+	 */
+	public static String formatPercent(double aDouble, int digits) {
+		// at least zero, at most MAX_DIGITS decimal digits
+		digits = Math.max(Math.min(digits, MAX_DIGITS), 0);
+		return (myPercentFormatters[digits]).format(aDouble);
+	}
+
+	/**
 	 * Format double <code>aDouble</code> as percent String with <code>digits</code>
-	 * decimal places (trailing zeroes are included).
-	 * 
+	 * decimal places (trailing zeroes are included). Useful for values that are
+	 * frequently updated, e.g. status lines, to prevent the width of the String
+	 * from fluctuating.
+	 *
 	 * @param aDouble number to format
 	 * @param digits  number of decimal places
 	 * @return formatted <code>double</code> as String
+	 *
+	 * @see #formatPercent(double, int)
 	 */
-	public static String formatPercent(double aDouble, int digits) {
-		// at least zero, at most six decimal digits
+	public static String formatPercentFix(double aDouble, int digits) {
+		// at least zero, at most MAX_DIGITS decimal digits
 		digits = Math.max(Math.min(digits, MAX_DIGITS), 0);
-		return (myPercentFormatters[digits]).format(aDouble);
+		return (myPercentFixFormatters[digits]).format(aDouble);
 	}
 }

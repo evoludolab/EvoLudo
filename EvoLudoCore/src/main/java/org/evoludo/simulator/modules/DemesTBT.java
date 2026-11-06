@@ -276,7 +276,7 @@ public class DemesTBT extends TBT {
 		public String getStatus() {
 			double gen = engine.getModel().getUpdates();
 			return super.getStatus() + ", pure: "
-					+ (gen > 0.0 ? Formatter.formatPercent((pure[COOPERATE] + pure[DEFECT]) / gen, 1)
+					+ (gen > 0.0 ? Formatter.formatPercentFix((pure[COOPERATE] + pure[DEFECT]) / gen, 1)
 							: "0.0%");
 		}
 

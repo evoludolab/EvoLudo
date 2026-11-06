@@ -1904,7 +1904,7 @@ public class ODE extends Model implements DModel {
 			}
 			sb.append(names[i]).append(": ")
 					.append(isDensity ? Formatter.format(state[i], 1)
-							: Formatter.formatPercent(state[i], 1));
+							: Formatter.formatPercentFix(state[i], 1));
 		}
 	}
 

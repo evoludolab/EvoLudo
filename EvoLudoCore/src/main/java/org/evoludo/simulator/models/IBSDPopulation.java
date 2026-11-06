@@ -1930,7 +1930,7 @@ public class IBSDPopulation extends IBSPopulation<Discrete, IBSDPopulation> {
 			if (status.length() > 0)
 				status.append(", ");
 			status.append(names[i]).append(": ")
-					.append(Formatter.formatPercent(traitsCount[i] * norm, 1));
+					.append(Formatter.formatPercentFix(traitsCount[i] * norm, 1));
 		}
 		return status.toString();
 	}
