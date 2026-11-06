@@ -47,7 +47,9 @@ import org.evoludo.simulator.models.IBS;
 import org.evoludo.simulator.models.IBSPopulation;
 import org.evoludo.simulator.models.LifecycleListener;
 import org.evoludo.simulator.models.Model;
+import org.evoludo.simulator.models.Model.DensityDynamics;
 import org.evoludo.simulator.models.Model.DualDynamics;
+import org.evoludo.simulator.models.Model.FrequencyDynamics;
 import org.evoludo.simulator.models.Model.DualDynamics.Dynamics;
 import org.evoludo.simulator.models.Model.HasDE;
 import org.evoludo.simulator.models.Model.HasIBS;
@@ -2002,13 +2004,18 @@ public abstract class Module<T extends Module<T>>
 	protected boolean isDensity = false;
 
 	/**
-	 * Check whether the active dynamics regime is density based.
+	 * Check whether the active dynamics regime is density based. Modules that
+	 * implement {@link DualDynamics} report the selected regime, all others the
+	 * regime declared by the marker interfaces {@link DensityDynamics} and
+	 * {@link FrequencyDynamics}, which is the default.
 	 *
 	 * @return {@code true} if the dynamics regime is density based
 	 * @see DualDynamics
 	 */
 	public boolean isDensity() {
-		return isDensity;
+		if (this instanceof DualDynamics)
+			return isDensity;
+		return this instanceof DensityDynamics;
 	}
 
 	/**

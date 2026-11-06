@@ -444,7 +444,7 @@ public class ODE extends Model implements DModel {
 	@Override
 	public boolean check() {
 		boolean wasDensity = isDensity;
-		// super.check() refreshes isDensity from species.get(0) before it's used below
+		// super.check() refreshes isDensity from the species before it's used below
 		boolean doReset = super.check();
 		dstate = null;
 		doReset |= evaluateSpecies();
@@ -2108,17 +2108,22 @@ public class ODE extends Model implements DModel {
 		parser.addCLO(cloInit);
 		cloInit.clearKeys();
 		cloInit.addKeys(InitType.values());
+		// the isDensity field may be stale until check() - ask the species directly;
+		// density based dynamics trump frequency based dynamics
+		boolean density = false;
+		for (Module<?> pop : species)
+			density |= pop.isDensity();
 		if (mod instanceof DualDynamics) {
 			// deliberately not pruned, unlike the fixed-regime branch below:
 			// (1) --init <key> alone (no --dynamics) must still be able to pick the
 			// regime, which needs all the other keys to still be registered, and
 			// (2) ODEInitialize.parse() needs a mismatched key to still match so it
 			// can reject it by content ("conflicts with --dynamics ..."). just point the
-			// default at the active one - isDensity already mirrors it, see Model#check()
-			cloInit.setDefault(isDensity ? InitType.UNITY.getKey() : InitType.UNIFORM.getKey());
+			// default at the active one
+			cloInit.setDefault(density ? InitType.UNITY.getKey() : InitType.UNIFORM.getKey());
 		} else {
 			// fixed regime: prune the keys of the other one from --init
-			if (isDensity) {
+			if (density) {
 				// remove frequency specific initialization options; 'uniform' is no longer
 				// a valid default, fall back to unit densities instead
 				cloInit.removeKey(InitType.RANDOM);

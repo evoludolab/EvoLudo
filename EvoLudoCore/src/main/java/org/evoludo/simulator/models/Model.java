@@ -189,12 +189,36 @@ public abstract class Model implements CLOProvider {
 	}
 
 	/**
-	 * Interface for modules that support both frequency and density based
-	 * dynamics. Not tied to {@link HasDE}: a module can offer both regimes purely
-	 * for individual based simulations, without any differential equation model
-	 * at all (see e.g. {@code EcoMeta} in the private package).
+	 * Marker interface for modules with frequency based dynamics. This is the
+	 * default: modules that implement neither {@code FrequencyDynamics} nor
+	 * {@link DensityDynamics} are frequency based.
+	 *
+	 * @see DensityDynamics
+	 * @see DualDynamics
 	 */
-	public interface DualDynamics {
+	public interface FrequencyDynamics {
+	}
+
+	/**
+	 * Marker interface for modules with density based dynamics. In models with
+	 * multiple species, density based dynamics trump frequency based dynamics,
+	 * i.e. the model is density based if any species is.
+	 *
+	 * @see FrequencyDynamics
+	 * @see DualDynamics
+	 * @see Model#isDensity()
+	 */
+	public interface DensityDynamics {
+	}
+
+	/**
+	 * Interface for modules that support both frequency and density based
+	 * dynamics and select the active regime, e.g. through {@code --dynamics}. Not
+	 * tied to {@link HasDE}: a module can offer both regimes purely for
+	 * individual based simulations, without any differential equation model at
+	 * all (see e.g. {@code EcoMeta} in the private package).
+	 */
+	public interface DualDynamics extends FrequencyDynamics, DensityDynamics {
 
 		/**
 		 * The two dynamics regimes.
@@ -674,7 +698,12 @@ public abstract class Model implements CLOProvider {
 	 * @see EvoLudo#logMessage(String)
 	 */
 	public boolean check() {
-		isDensity = species != null && !species.isEmpty() && species.get(0).isDensity();
+		// density based dynamics trump frequency based dynamics
+		isDensity = false;
+		if (species != null) {
+			for (Module<?> mod : species)
+				isDensity |= mod.isDensity();
+		}
 		return false;
 	}
 
@@ -939,12 +968,12 @@ public abstract class Model implements CLOProvider {
 	 * frequency based dynamics.
 	 * <p>
 	 * Returns the {@link #isDensity} field refreshed in {@link #check()} from the
-	 * first species' own {@link Module#isDensity()}: it already defaults to
-	 * {@code false} and only ever reports {@code true} for a module that
-	 * implements {@link DualDynamics} and was actually switched to density, so no
-	 * subclass need override either method. Fixed-regime density-only modules
-	 * aren't a use case yet; they would need their own marker interface rather
-	 * than piggybacking on this one.
+	 * species' own {@link Module#isDensity()}: the model is density based if any
+	 * species is, i.e. density based dynamics trump frequency based dynamics.
+	 * Modules declare their regime through the marker interfaces
+	 * {@link FrequencyDynamics} (the default) and {@link DensityDynamics}, or
+	 * select it through {@link DualDynamics}. Hence, no subclass need override
+	 * either method.
 	 *
 	 * @return {@code true} if the model is density based
 	 */
