@@ -102,7 +102,8 @@ import com.google.gwt.core.client.Scheduler;
  * <li>Data ingestion: addData(double t, double[] data) prepends time and
  * delegates to addData(double[]). addData(double[]) appends the data
  * array into the RingBuffer (the caller must ensure the first element is
- * time and the array is not modified afterwards). addData updates the
+ * time and the array is not modified afterwards), thinned by
+ * {@link Thinning} to conserve memory. addData updates the
  * autoscaled y-range and may disable log-scaling if non-positive values
  * are encountered.</li>
  * <li>Resetting/initialization: reset() prepares the buffer, initializes
@@ -420,14 +421,14 @@ public class LineGraph extends AbstractGraph<double[]>
 	private static final double TIME_SERIES_BREAK = Double.NaN;
 
 	/**
-	 * Flag indicating that the next sample must be appended to anchor a new run
-	 * after a restart or a change in time direction.
+	 * The thinning of the time series to conserve memory. Only the plotted values
+	 * are considered, i.e. neither updates nor real time.
 	 */
-	private boolean appendNextSample = false;
+	private final Thinning thinning = new Thinning.TimeSeries(() -> nLines, () -> style.logScaleY);
 
 	@Override
 	public void reset() {
-		appendNextSample = false;
+		thinning.reset(null);
 		newTimeseries = false;
 		double oldXMin = style.xMin;
 		super.reset();
@@ -467,20 +468,19 @@ public class LineGraph extends AbstractGraph<double[]>
 	 * either can be selected as the x-axis without maintaining a second, separately
 	 * synchronized buffer.
 	 *
-	 * @evoludo.impl If the change relative to the latest buffered sample is
-	 *               negligible, only the latest sample's time entries are updated
-	 *               unless the new sample is needed to anchor the beginning of a
-	 *               flat segment. Model initialization inserts a separator and
-	 *               starts a new buffered time series. Changes in the direction of
-	 *               time are always appended, and the following sample is retained
-	 *               once to anchor the new direction. Otherwise the data array is
-	 *               directly added to the buffer. It is the caller's
-	 *               responsibility to ensure that the first entry represents
-	 *               updates and the data remains unmodified.
+	 * @evoludo.impl Model initialization inserts a separator and starts a new
+	 *               buffered time series. In order to conserve memory the time
+	 *               series is thinned, i.e. the data replaces the most recent
+	 *               sample unless required to represent the time series. Changes
+	 *               in the direction of time are always retained. It is the
+	 *               caller's responsibility to ensure that the first entry
+	 *               represents updates and the data remains unmodified.
 	 *
 	 * @param data     the data to add (updates prepended)
 	 * @param realTime the real time of the data, or {@code Double.NaN} if not
 	 *                 available for this run
+	 *
+	 * @see Thinning
 	 */
 	public void addData(double[] data, double realTime) {
 		double[] extended = Arrays.copyOf(data, data.length + 1);
@@ -488,54 +488,42 @@ public class LineGraph extends AbstractGraph<double[]>
 		data = extended;
 		if (newTimeseries) {
 			newTimeseries = false;
-			if (!buffer.isEmpty()) {
+			if (!buffer.isEmpty())
 				appendSeparator(data.length);
-				appendData(data);
-				appendNextSample = true;
-				return;
+		}
+		if (buffer.isEmpty() || !Double.isFinite(buffer.last()[0])) {
+			// first sample of a new time series
+			appendData(data);
+			thinning.reset(data);
+			return;
+		}
+		double[] last = buffer.last();
+		double dt = data[0] - last[0];
+		if (Math.abs(dt) < Model.EPS) {
+			System.arraycopy(data, 0, last, 0, last.length);
+			updateYRange(last);
+			return;
+		}
+		int direction = dt > 0.0 ? 1 : -1;
+		int recentDirection = 0;
+		Iterator<double[]> iter = buffer.iterator();
+		if (iter.hasNext()) {
+			iter.next();
+			while (iter.hasNext()) {
+				double[] previous = iter.next();
+				if (!Double.isFinite(previous[0]))
+					break;
+				recentDirection = timeStepDirection(last[0], previous[0]);
+				if (recentDirection != 0)
+					break;
 			}
 		}
-		if (!buffer.isEmpty()) {
-			double[] last = buffer.last();
-			double dt = data[0] - last[0];
-			if (Math.abs(dt) < Model.EPS) {
-				System.arraycopy(data, 0, last, 0, last.length);
-				updateYRange(last);
-				return;
-			}
-			if (appendNextSample) {
-				appendData(data);
-				appendNextSample = false;
-				return;
-			}
-			int direction = dt > 0.0 ? 1 : -1;
-			int recentDirection = 0;
-			Iterator<double[]> iter = buffer.iterator();
-			if (iter.hasNext()) {
-				iter.next();
-				while (iter.hasNext()) {
-					double[] previous = iter.next();
-					if (!Double.isFinite(previous[0]))
-						break;
-					recentDirection = timeStepDirection(last[0], previous[0]);
-					if (recentDirection != 0)
-						break;
-				}
-			}
-			if (recentDirection != 0 && direction != recentDirection) {
-				appendData(data);
-				appendNextSample = true;
-				return;
-			}
-			if (updateTimeOnly(data, last)) {
-				// extend the flat segment along both axes
-				last[0] = data[0];
-				last[last.length - 1] = data[data.length - 1];
-				return;
-			}
-		}
-		// add new sample
-		appendData(data);
+		// retain the turning point and the first sample in the new direction
+		boolean reversal = recentDirection != 0 && direction != recentDirection;
+		if (reversal)
+			thinning.commit();
+		thinning.add(buffer, data, reversal);
+		updateYRange(data);
 	}
 
 	/**
@@ -587,26 +575,6 @@ public class LineGraph extends AbstractGraph<double[]>
 			// no finite values
 			return;
 		style.addYData(min, max);
-	}
-
-	/**
-	 * Return whether the latest buffered sample should only update its time entry.
-	 *
-	 * @param current candidate sample
-	 * @param last    latest buffered sample
-	 * @return {@code true} if only time should be updated
-	 */
-	private boolean updateTimeOnly(double[] current, double[] last) {
-		if (current == null || last == null)
-			return false;
-		if (current.length != last.length)
-			return false;
-		double t = current[0];
-		double lastt = last[0];
-		// non-finite times serve as timeseries separators.
-		if (!Double.isFinite(t) || !Double.isFinite(lastt))
-			return false;
-		return !keepSample(buffer, current, last);
 	}
 
 	/**
@@ -715,55 +683,6 @@ public class LineGraph extends AbstractGraph<double[]>
 	 */
 	private double xValue(double[] sample, boolean realTime) {
 		return sample[realTime ? sample.length - 1 : 0];
-	}
-
-	@Override
-	protected boolean keepSample(RingBuffer<double[]> buffer, double[] current, double[] last) {
-		double max = maxValueDelta(current, last);
-		if (!Double.isFinite(max))
-			return true;
-		if (max > MIN_NORM_DELTA)
-			return true;
-		if (buffer == null)
-			return false;
-		if (buffer.getSize() == 1)
-			return true;
-		if (buffer.getSize() < 2)
-			return false;
-		Iterator<double[]> iter = buffer.iterator();
-		if (!iter.hasNext())
-			return false;
-		iter.next();
-		if (!iter.hasNext())
-			return false;
-		double[] prev = iter.next();
-		return maxValueDelta(last, prev) > MIN_NORM_DELTA;
-	}
-
-	/**
-	 * Like {@code maxDelta(double[], double[])} but scoped to the plotted value
-	 * columns ({@code 1..nLines}), excluding the leading updates and trailing
-	 * real-time columns so that neither ever-increasing axis can interfere with
-	 * decimation of near-identical samples.
-	 *
-	 * @param current the current sample
-	 * @param last    the reference sample
-	 * @return the maximum absolute normalized difference among plotted values, or
-	 *         {@link Double#POSITIVE_INFINITY} if the samples are invalid or
-	 *         contain non-finite entries
-	 */
-	private double maxValueDelta(double[] current, double[] last) {
-		if (current == null || last == null || current.length != last.length || current.length < 2)
-			return Double.POSITIVE_INFINITY;
-		double max = 0.0;
-		for (int n = 1; n <= nLines; n++) {
-			double a = current[n];
-			double b = last[n];
-			if (!Double.isFinite(a) || !Double.isFinite(b))
-				return Double.POSITIVE_INFINITY;
-			max = Math.max(max, Math.abs(normDelta(a, b)));
-		}
-		return max;
 	}
 
 	@Override

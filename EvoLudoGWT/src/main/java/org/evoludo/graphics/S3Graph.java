@@ -273,18 +273,21 @@ public class S3Graph extends AbstractGraph<double[]> implements Zooming, Shiftin
 	 *               <ul>
 	 *               <li>The data array is cloned and the time prepended before
 	 *               adding it to the buffer.
-	 *               <li>In order to conserve memory the data is added only if the
-	 *               display-agnostic throttling heuristic accepts the sample,
-	 *               unless {@code force == true}.
+	 *               <li>In order to conserve memory the trajectory is thinned,
+	 *               i.e. the data replaces the most recent data unless required
+	 *               to represent the trajectory, or {@code force == true}.
 	 *               </ul>
-	 * 
+	 *
 	 * @param t     the time of the data
 	 * @param data  the data to add
 	 * @param force <code>true</code> to force adding the data
+	 *
+	 * @see Thinning
 	 */
 	public void addData(double t, double[] data, boolean force) {
 		if (buffer.isEmpty()) {
 			handleEmptyBuffer(t, data);
+			thinning.reset(buffer.last());
 			return;
 		}
 		double[] last = buffer.last();
@@ -296,13 +299,16 @@ public class S3Graph extends AbstractGraph<double[]> implements Zooming, Shiftin
 		}
 		if (Double.isNaN(t)) {
 			handleNaNTime(data, lastt);
+			thinning.reset(buffer.last());
 			return;
 		}
-		double[] sample = prependTime2Data(t, data);
-		if (force || keepSample(buffer, sample, last)) {
-			buffer.append(sample);
-		}
+		thinning.add(buffer, prependTime2Data(t, data), force);
 	}
+
+	/**
+	 * The thinning of the trajectory to conserve memory.
+	 */
+	private final Thinning thinning = new Thinning.Trajectory();
 
 	/**
 	 * Handle the case that the buffer is empty. Add data to the buffer and set the
