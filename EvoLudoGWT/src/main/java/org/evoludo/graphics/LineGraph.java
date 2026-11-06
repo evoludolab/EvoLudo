@@ -34,7 +34,6 @@ import java.awt.Color;
 import java.util.Arrays;
 import java.util.Iterator;
 
-import org.evoludo.geom.Point2D;
 import org.evoludo.graphics.AbstractGraph.HasLogScaleY;
 import org.evoludo.graphics.AbstractGraph.Shifting;
 import org.evoludo.graphics.AbstractGraph.Zooming;
@@ -149,8 +148,6 @@ import com.google.gwt.core.client.Scheduler;
  * <li>style: visual and interaction configuration (xMin/xMax/yMin/yMax,
  * xIncr, autoscaleY, logScaleY, markerSize, lineWidth, etc.).</li>
  * <li>paintScheduled: coalesces deferred paint requests.</li>
- * <li>pinchScale / pinch: state used for touch pinch gestures (scale and
- * center).</li>
  * </ul>
  *
  * <h3>Important implementation notes and caveats:</h3>
@@ -1069,16 +1066,6 @@ public class LineGraph extends AbstractGraph<double[]>
 		paint(true);
 		g = bak;
 	}
-
-	/**
-	 * The field to track the progress of the pinch gesture.
-	 */
-	double pinchScale = -Double.MAX_VALUE;
-
-	/**
-	 * The center of the pinch gesture.
-	 */
-	Point2D pinch = new Point2D(0.5, 0.5);
 
 	/**
 	 * The total shift in the {@code x}-direction.

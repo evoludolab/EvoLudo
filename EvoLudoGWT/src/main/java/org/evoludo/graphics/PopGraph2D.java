@@ -611,14 +611,26 @@ public class PopGraph2D extends GenericPopGraph<String, Network2D> implements Sh
 		return true;
 	}
 
+	/**
+	 * {@inheritDoc}
+	 * <p>
+	 * The bounds may be smaller than the canvas, e.g. for lattices. Hence, the
+	 * offset is based on the width of the (visible) canvas instead.
+	 */
 	@Override
 	protected double getMaxViewCornerX(double zoom) {
-		return getOffsetWidth() * (zoom - 1.0);
+		return wrapper.getOffsetWidth() * (zoom - 1.0);
 	}
 
+	/**
+	 * {@inheritDoc}
+	 * <p>
+	 * The bounds may be smaller than the canvas, e.g. for lattices. Hence, the
+	 * offset is based on the height of the (visible) canvas instead.
+	 */
 	@Override
 	protected double getMaxViewCornerY(double zoom) {
-		return getOffsetHeight() * (zoom - 1.0);
+		return wrapper.getOffsetHeight() * (zoom - 1.0);
 	}
 
 	/**

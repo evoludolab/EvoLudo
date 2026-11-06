@@ -2204,7 +2204,7 @@ public abstract class AbstractGraph<B> extends FocusPanel
 	 * Assumes scaled canvas coordinates, i.e. lower, left corner at {@code (0,0)}.
 	 */
 	protected void clearCanvas() {
-		g.clearRect(0, 0, getOffsetWidth(), getOffsetHeight());
+		g.clearRect(0, 0, wrapper.getOffsetWidth(), wrapper.getOffsetHeight());
 	}
 
 	/**
@@ -2265,7 +2265,7 @@ public abstract class AbstractGraph<B> extends FocusPanel
 			g.setFont("12px sans-serif");
 			if (autoscale) {
 				double textWidth = g.measureText(msg).getWidth();
-				double width = Math.max(1.0, getOffsetWidth());
+				double width = Math.max(1.0, wrapper.getOffsetWidth());
 				int fontSize = Math.min((int) (12.0 * 0.666 * width / Math.max(1.0, textWidth)), 24);
 				msgFontSize = Math.max(fontSize, 12);
 				msgLineHeight = msgFontSize * 1.4;
@@ -2274,7 +2274,7 @@ public abstract class AbstractGraph<B> extends FocusPanel
 		}
 		msgLabel.setText(msg);
 		Style msgStyle = msgLabel.getElement().getStyle();
-		double height = Math.max(1.0, getOffsetHeight());
+		double height = Math.max(1.0, wrapper.getOffsetHeight());
 		msgStyle.setFontSize(msgFontSize, Unit.PX);
 		msgStyle.setLineHeight(msgLineHeight, Unit.PX);
 		wrapper.setWidgetTopHeight(msgLabel, Math.max(0.0, (height - msgLineHeight) * 0.5), Unit.PX,
@@ -2420,18 +2420,21 @@ public abstract class AbstractGraph<B> extends FocusPanel
 
 	/**
 	 * Shift the (zoomed) graph within the view port by {@code (dx, dy)}. Default
-	 * implementation for graphs that implement {@code Shifting}.
-	 * 
+	 * implementation for graphs that implement {@code Shifting}. The view is
+	 * limited as for zooming.
+	 *
 	 * @param dx the horizontal shift of the graph
 	 * @param dy the vertical shift of the graph
-	 * 
+	 *
 	 * @see Shifting#shift(int, int)
+	 * @see #getMaxViewCornerX(double)
+	 * @see #getMaxViewCornerY(double)
 	 */
 	public void shift(int dx, int dy) {
 		if (hasMessage)
 			return;
-		viewCorner.set(Math.min(getOffsetWidth() * (zoomFactor - 1.0), Math.max(0, viewCorner.getX() + dx)),
-				Math.min(getOffsetHeight() * (zoomFactor - 1.0), Math.max(0, viewCorner.getY() + dy)));
+		viewCorner.set(Math.min(getMaxViewCornerX(zoomFactor), Math.max(0, viewCorner.getX() + dx)),
+				Math.min(getMaxViewCornerY(zoomFactor), Math.max(0, viewCorner.getY() + dy)));
 		paint(true);
 	}
 
