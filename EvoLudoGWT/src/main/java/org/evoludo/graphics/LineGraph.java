@@ -74,14 +74,17 @@ import com.google.gwt.core.client.Scheduler;
  * sample at 0.0. The buffered history determines the range available for
  * panning and zooming, i.e. from its oldest sample, or from the default span
  * DEFAULT_STEPS*xIncr if the history is shorter, through the most recent
- * sample.</li>
+ * sample. With autoscaling of the x-axis (style.autoscaleX, off by default)
+ * the x-range always shows the entire history; panning or zooming turns it
+ * off.</li>
  * <li>The y-range changes automatically only if autoscaling
- * (style.autoscaleY) is enabled: the range then tracks all buffered values,
- * i.e. it expands as needed and shrinks if the values occupy only a small
- * part of it, see {@link GraphStyle#trackYRange(double, double)}. Without
- * autoscaling the range remains unchanged and the time series may leave the
- * graph. Fitting the range leaves the same small margin as "Zoom to
- * fit", see {@link GraphStyle#fitYRange(double, double)}.</li>
+ * (style.autoscaleY) is enabled: the range then tracks the values in the
+ * visible time window, i.e. it expands as needed and shrinks if the values
+ * occupy only a small part of it, see
+ * {@link GraphStyle#trackYRange(double, double)}. Without autoscaling the
+ * range remains unchanged and the time series may leave the graph. Fitting
+ * the range leaves the same small margin as "Zoom to fit", see
+ * {@link GraphStyle#fitYRange(double, double)}.</li>
  * <li>Logarithmic y-scaling is supported (style.logScaleY), but it requires
  * strictly positive values; if negative or zero values are present the
  * graph disables log-scaling and issues a warning. When autoscaling and
@@ -101,15 +104,13 @@ import com.google.gwt.core.client.Scheduler;
  * delegates to addData(double[]). addData(double[]) appends the data
  * array into the RingBuffer (the caller must ensure the first element is
  * time and the array is not modified afterwards), thinned by
- * {@link Thinning} to conserve memory. addData updates the
- * autoscaled y-range and may disable log-scaling if non-positive values
- * are encountered.</li>
+ * {@link Thinning} to conserve memory.</li>
  * <li>Resetting/initialization: reset() prepares the buffer, initializes
  * autoscaled y-range and recomputes the number of steps along x relative
  * to the current view. Buffer size is at least DEFAULT_BUFFER_SIZE or the
  * view width, and steps are clamped between 1 and buffer capacity.</li>
- * <li>Painting: paint(boolean force) renders the lines, optional markers and
- * axes frame. The method clips drawing to the plotting area, supports
+ * <li>Painting: paint(boolean force) applies autoscaling, then renders the
+ * lines, optional markers and axes frame. The method clips drawing to the plotting area, supports
  * linear or log y-scaling, and draws colored lines and markers using the
  * module-provided color scheme. Painting is scheduled on the UI thread
  * using schedulePaint() to coalesce multiple requests.</li>
@@ -237,6 +238,8 @@ public class LineGraph extends AbstractGraph<double[]>
 	 */
 	public LineGraph(Mean view, Module<?> module) {
 		super(view, module);
+		// show a window of the recent history by default, see parse(String)
+		style.autoscaleX = false;
 	}
 
 	@Override
@@ -323,6 +326,7 @@ public class LineGraph extends AbstractGraph<double[]>
 	@Override
 	public boolean parse(String args) {
 		// set defaults
+		style.autoscaleX = false;
 		style.autoscaleY = true;
 		setLogY(false);
 		if (args == null)
@@ -489,12 +493,7 @@ public class LineGraph extends AbstractGraph<double[]>
 		}
 		if (buffer.isEmpty() || !Double.isFinite(buffer.last()[0])) {
 			// first sample of a new time series
-			if (buffer.isEmpty()) {
-				// history cleared
-				dataMin = Double.POSITIVE_INFINITY;
-				dataMax = Double.NEGATIVE_INFINITY;
-			}
-			appendData(data);
+			buffer.append(data);
 			thinning.reset(data);
 			return;
 		}
@@ -502,7 +501,6 @@ public class LineGraph extends AbstractGraph<double[]>
 		double dt = data[0] - last[0];
 		if (Math.abs(dt) < Model.EPS) {
 			System.arraycopy(data, 0, last, 0, last.length);
-			updateYRange(last);
 			return;
 		}
 		int direction = dt > 0.0 ? 1 : -1;
@@ -524,17 +522,6 @@ public class LineGraph extends AbstractGraph<double[]>
 		if (reversal)
 			thinning.commit();
 		thinning.add(buffer, data, reversal);
-		updateYRange(data);
-	}
-
-	/**
-	 * Append a sample to the history and update autoscaling metadata.
-	 *
-	 * @param data the sample to append (updates prepended, real time appended)
-	 */
-	private void appendData(double[] data) {
-		buffer.append(data);
-		updateYRange(data);
 	}
 
 	/**
@@ -551,42 +538,62 @@ public class LineGraph extends AbstractGraph<double[]>
 	}
 
 	/**
-	 * The minimum of all buffered values, for autoscaling.
-	 */
-	private double dataMin = Double.POSITIVE_INFINITY;
-
-	/**
-	 * The maximum of all buffered values, for autoscaling.
-	 */
-	private double dataMax = Double.NEGATIVE_INFINITY;
-
-	/**
-	 * Include the newly buffered sample {@code data} in the extent of all
-	 * buffered values and, if autoscaling is enabled, track the {@code y}-range
-	 * to fit all values, see {@link GraphStyle#trackYRange(double, double)}.
-	 * Without autoscaling the range remains unchanged, such that the time series
-	 * may leave the graph.
+	 * Fit the {@code y}-range to the values shown in the visible time window,
+	 * either once (see {@link GraphStyle#fitYRange(double, double)}) or for
+	 * autoscaling (see {@link GraphStyle#trackYRange(double, double)}). The
+	 * history is traversed as in {@link #drawLines(double, double, double)},
+	 * i.e. the position of a sample is its distance from the most recent sample,
+	 * and segments crossing the edges of the window contribute their values at
+	 * the edges. Non-positive values are ignored on logarithmic scales.
 	 *
-	 * @param data the latest buffered sample (updates prepended, real time
-	 *             appended)
+	 * @param track {@code true} to track the range for autoscaling
+	 * @return {@code true} if the range was updated
 	 */
-	private void updateYRange(double[] data) {
-		// only the plotted value columns (1..nLines) count for min/max - the
-		// leading updates and trailing real-time columns are excluded
-		for (int n = 1; n <= nLines; n++) {
-			double v = data[n];
-			if (!Double.isFinite(v))
-				continue;
-			dataMin = Math.min(dataMin, v);
-			dataMax = Math.max(dataMax, v);
+	private boolean fitYRangeToVisible(boolean track) {
+		if (buffer == null || buffer.isEmpty())
+			return false;
+		// window as distances from the most recent sample
+		double near = -style.xMax;
+		double far = -style.xMin;
+		double min = Double.POSITIVE_INFINITY;
+		double max = Double.NEGATIVE_INFINITY;
+		Iterator<double[]> it = buffer.iterator();
+		double[] current = it.next();
+		double[] prev = current;
+		double pos = 0.0;
+		double span = 0.0;
+		while (pos <= far) {
+			double from = Math.max(pos, near);
+			double to = Math.min(pos + span, far);
+			// skip hidden steps but include the most recent sample by itself
+			if (from <= to && (span > 0.0 || pos == 0.0)) {
+				double fa = span > 0.0 ? (from - pos) / span : 0.0;
+				double fb = span > 0.0 ? (to - pos) / span : 0.0;
+				// values are linear along segments: extremes lie at the ends;
+				// only the plotted columns 1..nLines count
+				for (int n = 1; n <= nLines; n++) {
+					double a = current[n] + fa * (prev[n] - current[n]);
+					double b = current[n] + fb * (prev[n] - current[n]);
+					double lo = Math.min(a, b);
+					double hi = Math.max(a, b);
+					if (!Double.isFinite(lo + hi) || (style.logScaleY && hi <= 0.0))
+						continue;
+					if (style.logScaleY && lo <= 0.0)
+						lo = hi;
+					min = Math.min(min, lo);
+					max = Math.max(max, hi);
+				}
+			}
+			pos += span;
+			if (!it.hasNext())
+				break;
+			current = prev;
+			prev = it.next();
+			span = historyStepWidth(current, prev);
 		}
-		if (!style.autoscaleY || dataMin == Double.POSITIVE_INFINITY)
-			// no autoscaling or no finite values
-			return;
-		if (style.logScaleY && dataMin <= 0.0)
-			// keep log scale: no valid range for non-positive values
-			return;
-		style.trackYRange(dataMin, dataMax);
+		if (min > max)
+			return false;
+		return track ? style.trackYRange(min, max) : style.fitYRange(min, max);
 	}
 
 	/**
@@ -714,7 +721,7 @@ public class LineGraph extends AbstractGraph<double[]>
 		style.logScaleY = logY;
 		if (style.autoscaleY) {
 			// refit range to the new scale, including margins
-			updateYRangeFromBuffer(false);
+			fitYRangeToVisible(false);
 			return;
 		}
 		if (logY && style.yMin <= 0.0)
@@ -775,6 +782,17 @@ public class LineGraph extends AbstractGraph<double[]>
 
 		double w = bounds.getWidth();
 		double h = bounds.getHeight();
+
+		// autoscaling: show the entire history and/or fit the visible values
+		if (style.autoscaleX) {
+			double span = Math.max(historySpan(), MIN_STEPS * style.xIncr);
+			if (span > 0.0) {
+				style.xMin = -span;
+				style.xMax = 0.0;
+			}
+		}
+		if (style.autoscaleY)
+			fitYRangeToVisible(true);
 
 		// draw the frame (border, gridlines, ticks, labels) first so that data
 		// drawn afterwards is never hidden underneath the frame stroke
@@ -1018,7 +1036,8 @@ public class LineGraph extends AbstractGraph<double[]>
 	/**
 	 * Set the time window to start at {@code xMin} and span {@code range}, but
 	 * keep it within the available history, i.e. between {@code -maxSpan()} and
-	 * the most recent sample at {@code 0}.
+	 * the most recent sample at {@code 0}. If the window moves, autoscaling of the
+	 * {@code x}-axis is turned off.
 	 *
 	 * @param xMin  the requested start of the window
 	 * @param range the span of the window
@@ -1030,6 +1049,7 @@ public class LineGraph extends AbstractGraph<double[]>
 		xMin = Math.max(absMin, Math.min(xMin, -range));
 		if (Math.abs(xMin - style.xMin) < Model.EPS && Math.abs(xMin + range - style.xMax) < Model.EPS)
 			return;
+		style.autoscaleX = false;
 		style.xMin = xMin;
 		style.xMax = xMin + range;
 		schedulePaint();
@@ -1322,10 +1342,14 @@ public class LineGraph extends AbstractGraph<double[]>
 
 	@Override
 	public void populateLocalAxesMenu(ContextMenu axesMenu) {
+		ContextMenuCheckBoxItem autoscaleXMenu = new ContextMenuCheckBoxItem("Autoscale", () -> {
+			style.autoscaleX = !style.autoscaleX;
+			paint(true);
+		});
 		ContextMenuCheckBoxItem autoscaleYMenu = new ContextMenuCheckBoxItem("Autoscale", () -> {
 			style.autoscaleY = !style.autoscaleY;
 			if (style.autoscaleY)
-				updateYRangeFromBuffer(false);
+				fitYRangeToVisible(false);
 			paint(true);
 		});
 		ContextMenuItem fullYRangeMenu = new ContextMenuItem("Full range", () -> {
@@ -1358,6 +1382,7 @@ public class LineGraph extends AbstractGraph<double[]>
 			switchAxis(!useRealTime);
 		});
 		String axisLabel = style.xLabel == null ? "time" : style.xLabel;
+		autoscaleXMenu.setChecked(style.autoscaleX);
 		autoscaleYMenu.setChecked(style.autoscaleY);
 		logYAxesMenu.setChecked(style.logScaleY);
 		logYAxesMenu.setEnabled(style.yMin >= 0.0);
@@ -1366,6 +1391,7 @@ public class LineGraph extends AbstractGraph<double[]>
 		realTimeMenu.setChecked(useRealTime);
 		realTimeMenu.setEnabled(realTimeAvailable);
 		axesMenu.addHeader("X-axis");
+		axesMenu.add(autoscaleXMenu);
 		axesMenu.add(fullXRangeMenu);
 		axesMenu.add(absoluteTimeMenu);
 		if (realTimeAvailable)
@@ -1442,7 +1468,7 @@ public class LineGraph extends AbstractGraph<double[]>
 			if (style.autoscaleY)
 				style.autoscaleY = false;
 			boolean updatedX = updateXRangeFromBuffer();
-			boolean updatedY = updateYRangeFromBuffer(true);
+			boolean updatedY = fitYRangeToVisible(false);
 			if (updatedY)
 				clampLogRange();
 			if (updatedX || updatedY)
@@ -1450,53 +1476,6 @@ public class LineGraph extends AbstractGraph<double[]>
 		}));
 		menu.addHeader("X-axis");
 		super.populateZoomMenu(menu);
-	}
-
-	/**
-	 * Fit the y-axis range to buffered data, see
-	 * {@link GraphStyle#fitYRange(double, double)}.
-	 * 
-	 * @param visibleOnly whether to limit to the visible x-range
-	 * @return {@code true} if the range was updated
-	 */
-	private boolean updateYRangeFromBuffer(boolean visibleOnly) {
-		if (buffer == null || buffer.isEmpty())
-			return false;
-		double min = Double.POSITIVE_INFINITY;
-		double max = Double.NEGATIVE_INFINITY;
-		double tMin = 0.0;
-		double tMax = 0.0;
-		if (visibleOnly) {
-			double[] latest = buffer.last();
-			if (latest == null)
-				return false;
-			double latestT = xValue(latest);
-			tMax = latestT + style.xMax;
-			tMin = latestT + style.xMin;
-		}
-		Iterator<double[]> it = buffer.ordered();
-		while (it.hasNext()) {
-			double[] data = it.next();
-			double t = xValue(data);
-			if (visibleOnly && (t < tMin || t > tMax))
-				continue;
-			for (int i = 1; i <= nLines; i++) {
-				double v = data[i];
-				// non-positive values cannot be shown on log scale
-				if (!Double.isFinite(v) || (style.logScaleY && v <= 0.0))
-					continue;
-				if (v < min)
-					min = v;
-				if (v > max)
-					max = v;
-			}
-		}
-		if (min == Double.POSITIVE_INFINITY) {
-			if (visibleOnly)
-				return updateYRangeFromBuffer(false);
-			return false;
-		}
-		return style.fitYRange(min, max);
 	}
 
 	/**
