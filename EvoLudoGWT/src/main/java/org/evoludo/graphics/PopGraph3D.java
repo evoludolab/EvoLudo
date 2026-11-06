@@ -53,7 +53,6 @@ import com.google.gwt.dom.client.NativeEvent;
 import com.google.gwt.dom.client.Style.Unit;
 import com.google.gwt.event.dom.client.MouseDownEvent;
 import com.google.gwt.event.dom.client.MouseUpEvent;
-import com.google.gwt.event.dom.client.TouchEndEvent;
 import com.google.gwt.event.dom.client.TouchStartEvent;
 import com.google.gwt.user.client.ui.RequiresResize;
 import com.google.gwt.user.client.ui.Widget;
@@ -1001,21 +1000,6 @@ public class PopGraph3D extends GenericPopGraph<MeshLambertMaterial, Network3DGW
 		if (touchMoveHandler != null) {
 			touchMoveHandler.removeHandler();
 			touchMoveHandler = null;
-		}
-	}
-
-	/**
-	 * {@inheritDoc}
-	 * <p>
-	 * The number of touches on the graph changed.
-	 */
-	@Override
-	public void onTouchEnd(TouchEndEvent event) {
-		// note: rotation of scene through touch events is managed by
-		// @see org.evoludo.simulator.web.gwt.TrackballControls
-		if (event.getTouches().length() == 0) {
-			// no more touches remaining - reset values
-			gesture.endTouches();
 		}
 	}
 

@@ -588,25 +588,16 @@ public abstract class GenericPopGraph<T, N extends Network<?>> extends AbstractG
 	/**
 	 * {@inheritDoc}
 	 * <p>
-	 * The graph reacts to different kinds of touches:
-	 * <dl>
-	 * <dt>short touch with two fingers ({@code &lt;250} msec)
-	 * <dd>display context menu.
-	 * <dt>single long touch ({@code &gt;250} msec) on a node
-	 * <dd>display the tooltip.
-	 * <dt>long touch with two fingers ({@code &gt;250} msec)
-	 * <dd>initiates pinching zoom.
-	 * <dt>double tap on a node
-	 * <dd>change the strategy of the node, if applicable.
-	 * </dl>
-	 * 
-	 * @see ContextMenu.Provider
-	 * @see #populateContextMenuAt(ContextMenu, int, int)
+	 * A single touch on a node selects the node, e.g. for dragging. Touches
+	 * elsewhere close the tooltip. Shifting, pinching and double taps are
+	 * processed by the super class.
+	 *
+	 * @see #onDoubleTap(int, int, Touch)
 	 * @see #onTouchMove(TouchMoveEvent)
 	 */
 	@Override
 	public void onTouchStart(TouchStartEvent event) {
-		// super processes pinching
+		// super processes shifting and pinching
 		super.onTouchStart(event);
 		JsArray<Touch> touches = event.getTouches();
 		if (touches.length() > 1) {
@@ -622,17 +613,25 @@ public abstract class GenericPopGraph<T, N extends Network<?>> extends AbstractG
 			tooltip.close();
 			return;
 		}
-		if (!gesture.isDoubleTap()) {
-			// single tap
-			gesture.start(x, y);
-			hitNode = node;
-			return;
-		}
-		// double tap?
+		gesture.start(x, y);
+		hitNode = node;
+	}
+
+	/**
+	 * {@inheritDoc}
+	 * <p>
+	 * A double tap on a node changes the trait of the node, if applicable.
+	 * Double taps elsewhere are ignored.
+	 */
+	@Override
+	protected boolean onDoubleTap(int x, int y, Touch touch) {
+		int node = findNodeAt(x, y);
+		if (node < 0)
+			return false;
 		if (!view.isRunning())
 			// population signals change back to us
 			view.mouseHitNode(module.getId(), node);
-		event.preventDefault();
+		return true;
 	}
 
 	/**

@@ -2588,12 +2588,11 @@ public abstract class AbstractGraph<B> extends FocusPanel
 	/**
 	 * {@inheritDoc}
 	 * <p>
-	 * Unless the touch is a double tap (see {@link Gesture#isDoubleTap()}), which
-	 * subclasses may handle, the touches trigger different actions depending on
-	 * the number of fingers:
+	 * The touches trigger different actions depending on the number of fingers:
 	 * <dl>
 	 * <dt>Single finger
-	 * <dd>Initiate shifting the view
+	 * <dd>Initiate shifting the view. The touch may also turn out to be a tap,
+	 * see {@link #onTouchEnd(TouchEndEvent)}.
 	 * <dt>Two fingers
 	 * <dd>Initiate pinching zoom.
 	 * </dl>
@@ -2602,49 +2601,56 @@ public abstract class AbstractGraph<B> extends FocusPanel
 	 */
 	@Override
 	public void onTouchStart(TouchStartEvent event) {
-		if (!gesture.isDoubleTap()) {
-			JsArray<Touch> touches = event.getTouches();
-			boolean enableMove = false;
-			switch (touches.length()) {
-				case 1:
-					// initiate shift view
-					Touch touch = touches.get(0);
-					int x = touch.getRelativeX(element);
-					int y = touch.getRelativeY(element);
-					if (inside(x, y)) {
-						gesture.start(x, y);
-						enableMove = true;
-					} else {
-						gesture.lose();
-					}
-					break;
-				case 2:
-					// initiate pinch zoom
-					Touch touch0 = touches.get(0);
-					int x0 = touch0.getRelativeX(element);
-					int y0 = touch0.getRelativeY(element);
-					Touch touch1 = touches.get(1);
-					int x1 = touch1.getRelativeX(element);
-					int y1 = touch1.getRelativeY(element);
-					if (inside(x0, y0) && inside(x1, y1)) {
-						gesture.startPinch(x0, y0, x1, y1);
-						enableMove = true;
-					} else {
-						gesture.lose();
-					}
-					break;
-				default:
-					break;
-			}
-			if (enableMove && touchMoveHandler == null)
-				touchMoveHandler = addTouchMoveHandler(this);
+		JsArray<Touch> touches = event.getTouches();
+		boolean enableMove = false;
+		switch (touches.length()) {
+			case 1:
+				// initiate shift view
+				Touch touch = touches.get(0);
+				int x = touch.getRelativeX(element);
+				int y = touch.getRelativeY(element);
+				gesture.startTap(x, y);
+				if (inside(x, y)) {
+					gesture.start(x, y);
+					enableMove = true;
+				} else {
+					gesture.lose();
+				}
+				break;
+			case 2:
+				// initiate pinch zoom
+				gesture.cancelTap();
+				Touch touch0 = touches.get(0);
+				int x0 = touch0.getRelativeX(element);
+				int y0 = touch0.getRelativeY(element);
+				Touch touch1 = touches.get(1);
+				int x1 = touch1.getRelativeX(element);
+				int y1 = touch1.getRelativeY(element);
+				if (inside(x0, y0) && inside(x1, y1)) {
+					gesture.startPinch(x0, y0, x1, y1);
+					enableMove = true;
+				} else {
+					gesture.lose();
+				}
+				break;
+			default:
+				gesture.cancelTap();
+				break;
 		}
+		if (enableMove && touchMoveHandler == null)
+			touchMoveHandler = addTouchMoveHandler(this);
 	}
 
 	/**
 	 * {@inheritDoc}
 	 * <p>
-	 * The number of touches on the graph changed.
+	 * The number of touches on the graph changed. If the last touch completes a
+	 * double tap, i.e. the second of two taps ends, the double tap is processed by
+	 * {@link #onDoubleTap(int, int, Touch)}. Processing double taps only when the
+	 * second touch ends allows the second touch to start dragging instead, as for
+	 * double clicks of the mouse.
+	 *
+	 * @see Gesture#endTap(int, int)
 	 */
 	@Override
 	public void onTouchEnd(TouchEndEvent event) {
@@ -2656,11 +2662,34 @@ public abstract class AbstractGraph<B> extends FocusPanel
 				gesture.start(touch.getRelativeX(element), touch.getRelativeY(element));
 				break;
 			case 0:
-				gesture.endTouches();
 				resetTouches();
+				JsArray<Touch> ended = event.getChangedTouches();
+				if (ended.length() == 0)
+					break;
+				Touch last = ended.get(0);
+				int x = last.getRelativeX(element);
+				int y = last.getRelativeY(element);
+				// prevent default (e.g. zooming the page) if double tap was processed
+				if (gesture.endTap(x, y) && onDoubleTap(x, y, last))
+					event.preventDefault();
 				break;
 			default:
 		}
+	}
+
+	/**
+	 * Process a double tap at {@code (x, y)}, relative to the graph. The default
+	 * ignores double taps.
+	 *
+	 * @param x     the {@code x}-coordinate of the double tap
+	 * @param y     the {@code y}-coordinate of the double tap
+	 * @param touch the touch that completed the double tap
+	 * @return {@code true} if the double tap was processed
+	 *
+	 * @see #onTouchEnd(TouchEndEvent)
+	 */
+	protected boolean onDoubleTap(int x, int y, Touch touch) {
+		return false;
 	}
 
 	/**
@@ -2673,6 +2702,7 @@ public abstract class AbstractGraph<B> extends FocusPanel
 	 */
 	@Override
 	public void onTouchCancel(TouchCancelEvent event) {
+		gesture.cancelTap();
 		resetTouches();
 	}
 

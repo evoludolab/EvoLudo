@@ -47,12 +47,10 @@ import org.evoludo.ui.ContextMenuItem;
 import org.evoludo.util.Formatter;
 import org.evoludo.util.RingBuffer;
 
-import com.google.gwt.core.client.JsArray;
 import com.google.gwt.core.client.Scheduler;
 import com.google.gwt.dom.client.Touch;
 import com.google.gwt.event.dom.client.DoubleClickEvent;
 import com.google.gwt.event.dom.client.DoubleClickHandler;
-import com.google.gwt.event.dom.client.TouchStartEvent;
 
 /**
  * ParaGraph is a specialized 2D parametric/phase-plane graph component for
@@ -1268,17 +1266,15 @@ public class ParaGraph extends AbstractGraph<double[]> implements Zooming, Shift
 		view.setInitialState(initState);
 	}
 
+	/**
+	 * {@inheritDoc}
+	 * <p>
+	 * A double tap sets the initial state, as does a double click.
+	 */
 	@Override
-	public void onTouchStart(TouchStartEvent event) {
-		super.onTouchStart(event);
-		JsArray<Touch> touches = event.getTouches();
-		if (!gesture.isDoubleTap() || touches.length() > 1)
-			// single tap or multiple touches
-			return;
-
-		Touch touch = touches.get(0);
-		processInitXY(touch.getRelativeX(element), touch.getRelativeY(element));
-		event.preventDefault();
+	protected boolean onDoubleTap(int x, int y, Touch touch) {
+		processInitXY(x, y);
+		return true;
 	}
 
 	@Override

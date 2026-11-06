@@ -54,8 +54,9 @@ import com.google.gwt.user.client.Timer;
  * the touches ended. The displacement between subsequent positions is given by
  * {@link #getDX()} and {@link #getDY()}, the change of the distance between the
  * touches of a pinch by {@link #getScale()}. Touch event handlers report the
- * end of all touches through {@link #endTouches()}, such that
- * {@link #isDoubleTap()} detects double taps.
+ * start and end of single touches through {@link #startTap(int, int)} and
+ * {@link #endTap(int, int)}, which detects double taps, or
+ * {@link #cancelTap()} if the touch is no tap.
  * <p>
  * Each interactive view keeps its own instance. Mouse event handlers
  * {@link #capture()} the mouse when the button is pressed, such that the
@@ -88,10 +89,30 @@ public class Gesture {
 	public static final int ZOOM_INERTIA_MSEC = 150;
 
 	/**
-	 * The time (in milliseconds) after all touches ended during which a new touch
-	 * counts as a double tap.
+	 * The time (in milliseconds) after a tap ended during which a second tap
+	 * starts a double tap.
 	 */
 	public static final double DOUBLE_TAP_MSEC = 250.0;
+
+	/**
+	 * The maximum distance (in pixels, horizontally and vertically) between the
+	 * first and the second tap of a double tap.
+	 */
+	public static final int DOUBLE_TAP_SLOP = 30;
+
+	/**
+	 * The maximum duration (in milliseconds) of a tap. Must be shorter than a long
+	 * touch, which opens the context menu.
+	 *
+	 * @see ContextMenu#LONG_TOUCH_TIME
+	 */
+	public static final double TAP_MSEC = 300.0;
+
+	/**
+	 * The maximum distance (in pixels, horizontally and vertically) a touch may
+	 * move to still count as a tap.
+	 */
+	public static final int TAP_SLOP = 10;
 
 	/**
 	 * The CSS class name for the cursor while zooming in.
@@ -176,9 +197,31 @@ public class Gesture {
 	private double moveEndTime = -Double.MAX_VALUE;
 
 	/**
-	 * The time when all touches ended.
+	 * The time when the current single touch started.
 	 */
-	private double touchEndTime = -Double.MAX_VALUE;
+	private double tapStartTime = -Double.MAX_VALUE;
+
+	/**
+	 * The time when the previous tap ended, or {@code -Double.MAX_VALUE} if no tap
+	 * may be followed by a double tap.
+	 */
+	private double tapEndTime = -Double.MAX_VALUE;
+
+	/**
+	 * The {@code x}-coordinate where the current (or previous) tap started.
+	 */
+	private int tapX;
+
+	/**
+	 * The {@code y}-coordinate where the current (or previous) tap started.
+	 */
+	private int tapY;
+
+	/**
+	 * The flag to indicate whether the current touch completes a double tap if it
+	 * turns out to be a tap.
+	 */
+	private boolean doubleTap = false;
 
 	/**
 	 * The time of the last mouse wheel event that zoomed the view.
@@ -342,24 +385,57 @@ public class Gesture {
 	}
 
 	/**
-	 * All touches ended. Record the time to detect double taps.
+	 * A single touch started at {@code (x, y)}, which may become a tap. If the
+	 * previous tap ended within {@link #DOUBLE_TAP_MSEC} and
+	 * {@link #DOUBLE_TAP_SLOP} of {@code (x, y)}, the touch may complete a double
+	 * tap.
 	 *
-	 * @see #isDoubleTap()
+	 * @param x the {@code x}-coordinate of the touch
+	 * @param y the {@code y}-coordinate of the touch
+	 *
+	 * @see #endTap(int, int)
 	 */
-	public void endTouches() {
-		touchEndTime = Duration.currentTimeMillis();
+	public void startTap(int x, int y) {
+		double now = Duration.currentTimeMillis();
+		doubleTap = now - tapEndTime <= DOUBLE_TAP_MSEC && Math.abs(x - tapX) <= DOUBLE_TAP_SLOP
+				&& Math.abs(y - tapY) <= DOUBLE_TAP_SLOP;
+		tapStartTime = now;
+		tapX = x;
+		tapY = y;
 	}
 
 	/**
-	 * Check whether a touch that starts now is a double tap, i.e. whether it
-	 * starts within {@link #DOUBLE_TAP_MSEC} after all touches ended.
-	 *
-	 * @return {@code true} for a double tap
-	 *
-	 * @see #endTouches()
+	 * The touch is no tap, e.g. because a second touch started or the touches
+	 * were cancelled.
 	 */
-	public boolean isDoubleTap() {
-		return Duration.currentTimeMillis() - touchEndTime <= DOUBLE_TAP_MSEC;
+	public void cancelTap() {
+		tapStartTime = -Double.MAX_VALUE;
+		tapEndTime = -Double.MAX_VALUE;
+		doubleTap = false;
+	}
+
+	/**
+	 * The single touch ended at {@code (x, y)}. The touch was a tap if it ended
+	 * within {@link #TAP_MSEC} after it started and moved no further than
+	 * {@link #TAP_SLOP}. In contrast to double clicks of the mouse, double taps
+	 * complete only when the second touch ends. Hence, the second touch may still
+	 * start dragging instead.
+	 *
+	 * @param x the {@code x}-coordinate where the touch ended
+	 * @param y the {@code y}-coordinate where the touch ended
+	 * @return {@code true} if the tap completed a double tap
+	 *
+	 * @see #startTap(int, int)
+	 */
+	public boolean endTap(int x, int y) {
+		double now = Duration.currentTimeMillis();
+		boolean isTap = now - tapStartTime <= TAP_MSEC && Math.abs(x - tapX) <= TAP_SLOP
+				&& Math.abs(y - tapY) <= TAP_SLOP;
+		boolean isDoubleTap = isTap && doubleTap;
+		// a double tap ends the sequence, such that a third tap starts a new one
+		tapEndTime = (isTap && !isDoubleTap) ? now : -Double.MAX_VALUE;
+		doubleTap = false;
+		return isDoubleTap;
 	}
 
 	/**

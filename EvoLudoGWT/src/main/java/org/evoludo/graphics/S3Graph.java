@@ -49,11 +49,9 @@ import org.evoludo.ui.ContextMenuItem;
 import org.evoludo.util.Formatter;
 import org.evoludo.util.RingBuffer;
 
-import com.google.gwt.core.client.JsArray;
 import com.google.gwt.dom.client.Touch;
 import com.google.gwt.event.dom.client.DoubleClickEvent;
 import com.google.gwt.event.dom.client.DoubleClickHandler;
-import com.google.gwt.event.dom.client.TouchStartEvent;
 
 /**
  * Graph for the simplex \(S_3\). The graph is used to visualize the evolution
@@ -680,18 +678,15 @@ public class S3Graph extends AbstractGraph<double[]> implements Zooming, Shiftin
 		processInitXY(event.getX(), event.getY(), event.getClientX(), event.getClientY(), false);
 	}
 
+	/**
+	 * {@inheritDoc}
+	 * <p>
+	 * A double tap sets the initial state, as does a double click.
+	 */
 	@Override
-	public void onTouchStart(TouchStartEvent event) {
-		super.onTouchStart(event);
-		JsArray<Touch> touches = event.getTouches();
-		if (!gesture.isDoubleTap() || touches.length() > 1)
-			// single tap or multiple touches
-			return;
-
-		Touch touch = touches.get(0);
-		processInitXY(touch.getRelativeX(getElement()), touch.getRelativeY(getElement()), touch.getClientX(),
-				touch.getClientY(), true);
-		event.preventDefault();
+	protected boolean onDoubleTap(int x, int y, Touch touch) {
+		processInitXY(x, y, touch.getClientX(), touch.getClientY(), true);
+		return true;
 	}
 
 	/**
