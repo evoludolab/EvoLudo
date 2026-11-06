@@ -838,12 +838,11 @@ public abstract class AbstractGraph<B> extends FocusPanel
 	}
 
 	/**
-	 * Reset the graph. Clear canvas and messages. Axis ranges adjusted to data
-	 * are retained if the data of the new run fits (see
-	 * {@link GraphStyle#newRun()}).
+	 * Reset the graph. Clear canvas and messages. Axis ranges are retained;
+	 * with autoscaling they follow the data of the new run, see
+	 * {@link GraphStyle#trackYRange(double, double)}.
 	 */
 	public void reset() {
-		style.newRun();
 		clearMessage();
 		clearHistory();
 		updateCanvas();
@@ -855,11 +854,11 @@ public abstract class AbstractGraph<B> extends FocusPanel
 	}
 
 	/**
-	 * Initialize the graph. Do not clear graph. Axis ranges adjusted to data are
-	 * retained if the data of the new run fits (see {@link GraphStyle#newRun()}).
+	 * Initialize the graph, e.g. for a new run. Do not clear graph. The default
+	 * does nothing.
 	 */
 	public void init() {
-		style.newRun();
+		// nothing to initialize by default
 	}
 
 	/**
@@ -1154,6 +1153,7 @@ public abstract class AbstractGraph<B> extends FocusPanel
 			bounds.adjust(0, 0, 0, -(style.tickLength + 2));
 		if (style.showYTicks)
 			adjustBoundsForYSide(style.tickLength + 2.0);
+		style.setFitMargins(bounds.getWidth(), bounds.getHeight());
 	}
 
 	/**

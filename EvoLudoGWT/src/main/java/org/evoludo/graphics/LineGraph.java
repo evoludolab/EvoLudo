@@ -75,16 +75,13 @@ import com.google.gwt.core.client.Scheduler;
  * panning and zooming, i.e. from its oldest sample, or from the default span
  * DEFAULT_STEPS*xIncr if the history is shorter, through the most recent
  * sample.</li>
- * <li>The y-range changes only when necessary: added data that falls outside
- * [yMin, yMax] expands the range to cover it, whether autoscaling
- * (style.autoscaleY) is enabled or the limits were set explicitly; ranges
- * are never shrunk automatically. Resets and re-initializations retain the
- * y-range as long as the first sample of the new run fits, and otherwise
- * fit the range to the new data from scratch. Initially, the range is fitted
- * to the data if autoscaling is enabled. Fitting and expanding the range
- * leave the same small margin as "Zoom to fit". The range bookkeeping is
- * delegated to {@link GraphStyle#addYData(double, double)} and
- * {@link GraphStyle#fitYRange(double, double)}.</li>
+ * <li>The y-range changes automatically only if autoscaling
+ * (style.autoscaleY) is enabled: the range then tracks all buffered values,
+ * i.e. it expands as needed and shrinks if the values occupy only a small
+ * part of it, see {@link GraphStyle#trackYRange(double, double)}. Without
+ * autoscaling the range remains unchanged and the time series may leave the
+ * graph. Fitting the range leaves the same small margin as "Zoom to
+ * fit", see {@link GraphStyle#fitYRange(double, double)}.</li>
  * <li>Logarithmic y-scaling is supported (style.logScaleY), but it requires
  * strictly positive values; if negative or zero values are present the
  * graph disables log-scaling and issues a warning. When autoscaling and
@@ -492,6 +489,11 @@ public class LineGraph extends AbstractGraph<double[]>
 		}
 		if (buffer.isEmpty() || !Double.isFinite(buffer.last()[0])) {
 			// first sample of a new time series
+			if (buffer.isEmpty()) {
+				// history cleared
+				dataMin = Double.POSITIVE_INFINITY;
+				dataMax = Double.NEGATIVE_INFINITY;
+			}
 			appendData(data);
 			thinning.reset(data);
 			return;
@@ -549,8 +551,21 @@ public class LineGraph extends AbstractGraph<double[]>
 	}
 
 	/**
-	 * Update the {@code y}-range from a newly buffered sample. The range only
-	 * changes if necessary, see {@link GraphStyle#addYData(double, double)}.
+	 * The minimum of all buffered values, for autoscaling.
+	 */
+	private double dataMin = Double.POSITIVE_INFINITY;
+
+	/**
+	 * The maximum of all buffered values, for autoscaling.
+	 */
+	private double dataMax = Double.NEGATIVE_INFINITY;
+
+	/**
+	 * Include the newly buffered sample {@code data} in the extent of all
+	 * buffered values and, if autoscaling is enabled, track the {@code y}-range
+	 * to fit all values, see {@link GraphStyle#trackYRange(double, double)}.
+	 * Without autoscaling the range remains unchanged, such that the time series
+	 * may leave the graph.
 	 *
 	 * @param data the latest buffered sample (updates prepended, real time
 	 *             appended)
@@ -558,22 +573,20 @@ public class LineGraph extends AbstractGraph<double[]>
 	private void updateYRange(double[] data) {
 		// only the plotted value columns (1..nLines) count for min/max - the
 		// leading updates and trailing real-time columns are excluded
-		double min = Double.POSITIVE_INFINITY;
-		double max = Double.NEGATIVE_INFINITY;
 		for (int n = 1; n <= nLines; n++) {
 			double v = data[n];
 			if (!Double.isFinite(v))
 				continue;
-			min = Math.min(min, v);
-			max = Math.max(max, v);
+			dataMin = Math.min(dataMin, v);
+			dataMax = Math.max(dataMax, v);
 		}
-		if (style.logScaleY && min <= 0.0)
-			// keep log scale: ignore non-positive point for autoscale updates
+		if (!style.autoscaleY || dataMin == Double.POSITIVE_INFINITY)
+			// no autoscaling or no finite values
 			return;
-		if (min == Double.POSITIVE_INFINITY)
-			// no finite values
+		if (style.logScaleY && dataMin <= 0.0)
+			// keep log scale: no valid range for non-positive values
 			return;
-		style.addYData(min, max);
+		style.trackYRange(dataMin, dataMax);
 	}
 
 	/**

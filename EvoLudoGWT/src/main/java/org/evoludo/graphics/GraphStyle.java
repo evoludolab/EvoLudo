@@ -182,10 +182,43 @@ public class GraphStyle {
 	}
 
 	/**
-	 * The margin, as a fraction of the data range, added at both ends when
-	 * fitting an axis range to data.
+	 * The minimal margin, as a fraction of the data range, added at both ends
+	 * when fitting an axis range to data.
 	 */
 	private static final double FIT_MARGIN = 0.02;
+
+	/**
+	 * The margin, as a fraction of the data range, added at both ends when
+	 * fitting the {@code x}-range to data. At least {@link #FIT_MARGIN} but
+	 * larger if needed to keep markers clear of the frame, see
+	 * {@link #setFitMargins(double, double)}.
+	 */
+	private double fitMarginX = FIT_MARGIN;
+
+	/**
+	 * The margin, as a fraction of the data range, added at both ends when
+	 * fitting the {@code y}-range to data. At least {@link #FIT_MARGIN} but
+	 * larger if needed to keep markers clear of the frame, see
+	 * {@link #setFitMargins(double, double)}.
+	 */
+	private double fitMarginY = FIT_MARGIN;
+
+	/**
+	 * Set the margins for fitting axis ranges to data such that markers of size
+	 * {@link #markerSize} at the extremes of the data remain clear of the frame
+	 * of a plotting area with the given size in pixels. The clearance {@code r}
+	 * includes the {@link #lineWidth} and the {@link #frameWidth}. A margin
+	 * {@code f} of the data range occupies {@code f / (1 + 2 f)} of the plotting
+	 * area, hence the clearance requires {@code f >= r / (size - 2 r)}.
+	 *
+	 * @param width  the width of the plotting area in pixels
+	 * @param height the height of the plotting area in pixels
+	 */
+	public void setFitMargins(double width, double height) {
+		double r = markerSize + lineWidth + frameWidth;
+		fitMarginX = width > 4.0 * r ? Math.max(FIT_MARGIN, r / (width - 2.0 * r)) : FIT_MARGIN;
+		fitMarginY = height > 4.0 * r ? Math.max(FIT_MARGIN, r / (height - 2.0 * r)) : FIT_MARGIN;
+	}
 
 	/**
 	 * The fraction of the axis range below which the data range must drop
@@ -201,123 +234,16 @@ public class GraphStyle {
 	static final double MIN_YMAX_FRACTION = 0.01;
 
 	/**
-	 * The flag to indicate that the {@code x}-range must be validated against
-	 * the next data added, i.e. at the start of a new run.
-	 *
-	 * @see #newRun()
-	 */
-	private boolean checkXRange = true;
-
-	/**
-	 * The flag to indicate whether the {@code x}-range has been adjusted to data
-	 * before. If not and autoscaling is enabled, the {@code x}-range is fitted to
-	 * the first data added.
-	 */
-	private boolean hasXRange = false;
-
-	/**
-	 * The flag to indicate that the {@code y}-range must be validated against
-	 * the next data added, i.e. at the start of a new run.
-	 *
-	 * @see #newRun()
-	 */
-	private boolean checkYRange = true;
-
-	/**
-	 * The flag to indicate whether the {@code y}-range has been adjusted to data
-	 * before. If not and autoscaling is enabled, the {@code y}-range is fitted to
-	 * the first data added.
-	 */
-	private boolean hasYRange = false;
-
-	/**
-	 * Signal the start of a new run, e.g. after a reset or re-initialization.
-	 * The current axis ranges are retained if the next data added fits, and
-	 * otherwise fitted to that data from scratch.
-	 *
-	 * @see #addXData(double, double)
-	 * @see #addYData(double, double)
-	 */
-	public void newRun() {
-		checkXRange = true;
-		checkYRange = true;
-	}
-
-	/**
-	 * Adjust the {@code x}-range to newly added data spanning
-	 * {@code [min, max]}. Same as {@link #addYData(double, double)} but for the
-	 * {@code x}-axis.
-	 *
-	 * @param min the minimum of the new data
-	 * @param max the maximum of the new data
-	 * @return {@code true} if the range changed
-	 */
-	public boolean addXData(double min, double max) {
-		boolean fits = (min >= xMin && max <= xMax);
-		boolean refit = checkXRange && (!fits || (autoscaleX && !hasXRange));
-		hasXRange |= checkXRange;
-		checkXRange = false;
-		if (refit) {
-			fitXRange(min, max);
-			return true;
-		}
-		if (fits)
-			return false;
-		double[] range = computeRange(Math.min(min, xMin), Math.max(max, xMax), percentX, false);
-		// expand only the exceeded limit(s)
-		if (min < xMin)
-			xMin = range[0];
-		if (max > xMax)
-			xMax = range[1];
-		return true;
-	}
-
-	/**
-	 * Adjust the {@code y}-range to newly added data spanning {@code [min, max]}.
-	 * The range changes only if necessary, i.e. if the data does not fit: at the
-	 * start of a new run (see {@link #newRun()}) the range is then fitted to the
-	 * new data from scratch, otherwise only the exceeded limit(s) are expanded to
-	 * cover the data, whether autoscaling is enabled or the limits were set
-	 * explicitly. The margin of an expanded limit refers to the range spanning
-	 * both the current axis and the data. The range is never shrunk. Initially,
-	 * the range is fitted to the data if autoscaling is enabled.
-	 *
-	 * @param min the minimum of the new data
-	 * @param max the maximum of the new data
-	 * @return {@code true} if the range changed
-	 *
-	 * @see #fitYRange(double, double)
-	 */
-	public boolean addYData(double min, double max) {
-		boolean fits = (min >= yMin && max <= yMax);
-		boolean refit = checkYRange && (!fits || (autoscaleY && !hasYRange));
-		hasYRange |= checkYRange;
-		checkYRange = false;
-		if (refit)
-			return fitYRange(min, max);
-		double hi = Math.max(max, yMax);
-		if (fits || (logScaleY && hi <= 0.0))
-			return false;
-		double[] range = computeRange(Math.min(min, yMin), hi, percentY, logScaleY);
-		// expand only the exceeded limit(s)
-		if (min < yMin)
-			yMin = range[0];
-		if (max > yMax)
-			yMax = range[1];
-		return true;
-	}
-
-	/**
 	 * Fit the {@code x}-range to data spanning {@code [min, max]}, e.g. to zoom
 	 * to fit or when enabling autoscaling.
 	 *
 	 * @param min the minimum of the data
 	 * @param max the maximum of the data
 	 *
-	 * @see #computeRange(double, double, boolean, boolean)
+	 * @see #computeRange(double, double, boolean, boolean, double)
 	 */
 	public void fitXRange(double min, double max) {
-		double[] range = computeRange(min, max, percentX, false);
+		double[] range = computeRange(min, max, percentX, false, fitMarginX);
 		xMin = range[0];
 		xMax = range[1];
 	}
@@ -331,36 +257,66 @@ public class GraphStyle {
 	 * @return {@code true} if the range was updated, {@code false} if no valid
 	 *         range exists (non-positive data on log scale)
 	 *
-	 * @see #computeRange(double, double, boolean, boolean)
+	 * @see #computeRange(double, double, boolean, boolean, double)
 	 */
 	public boolean fitYRange(double min, double max) {
 		if (logScaleY && max <= 0.0)
 			return false;
-		double[] range = computeRange(min, max, percentY, logScaleY);
+		double[] range = computeRange(min, max, percentY, logScaleY, fitMarginY);
 		yMin = range[0];
 		yMax = range[1];
 		return true;
 	}
 
 	/**
-	 * Track the {@code y}-range of data that may also decrease, e.g. the bars of
-	 * a histogram. The range is fitted to the data spanning {@code [min, max]}
-	 * if the data does not fit or if the data range dropped below
-	 * {@link #SHRINK_FRACTION} of the {@code y}-range.
+	 * Track the {@code x}-range of the data, for autoscaling. Same as
+	 * {@link #trackYRange(double, double)} but for the {@code x}-axis.
 	 *
 	 * @param min the minimum of the data
 	 * @param max the maximum of the data
 	 * @return {@code true} if the range was updated
 	 */
-	public boolean trackYRange(double min, double max) {
-		if (min >= yMin && max <= yMax && max - min >= SHRINK_FRACTION * (yMax - yMin))
+	public boolean trackXRange(double min, double max) {
+		double[] range = computeRange(min, max, percentX, false, fitMarginX);
+		if (range[0] >= xMin && range[1] <= xMax && max - min >= SHRINK_FRACTION * (xMax - xMin))
 			return false;
-		return fitYRange(min, max);
+		xMin = range[0];
+		xMax = range[1];
+		return true;
+	}
+
+	/**
+	 * Track the {@code y}-range of the data, for autoscaling. The data spanning
+	 * {@code [min, max]} comprises all data the range must fit, e.g. the bars of a
+	 * histogram or all trajectories in a phase plane. The range is fitted to the
+	 * data if the data including its margin, see
+	 * {@link #computeRange(double, double, boolean, boolean, double)}, does not fit or if
+	 * the data range dropped below {@link #SHRINK_FRACTION} of the
+	 * {@code y}-range. Hence, the range expands as needed to fit the data, never
+	 * lets data reach into the margin (or touch the frame), shrinks if the data
+	 * occupies only a small part of it, but does not jitter. Without
+	 * autoscaling, graphs leave their ranges unchanged, such that data may leave
+	 * the graph.
+	 *
+	 * @param min the minimum of the data
+	 * @param max the maximum of the data
+	 * @return {@code true} if the range was updated, {@code false} if the data
+	 *         fits or no valid range exists (non-positive data on log scale)
+	 */
+	public boolean trackYRange(double min, double max) {
+		if (logScaleY && max <= 0.0)
+			return false;
+		double[] range = computeRange(min, max, percentY, logScaleY, fitMarginY);
+		if (range[0] >= yMin && range[1] <= yMax && max - min >= SHRINK_FRACTION * (yMax - yMin))
+			return false;
+		yMin = range[0];
+		yMax = range[1];
+		return true;
 	}
 
 	/**
 	 * Compute the axis range that fits data spanning {@code [min, max]}. A margin
-	 * of {@link #FIT_MARGIN} times the data range is added at both ends; on
+	 * of {@code margin} times the data range is added at both ends; on
 	 * logarithmic axes the margin refers to the range in decades. Non-negative
 	 * data never results in a negative minimum and percentage axes are clamped
 	 * to {@code [0, 1]}. Data without range is padded to obtain a finite range.
@@ -375,23 +331,24 @@ public class GraphStyle {
 	 * @param max     the maximum of the data (must be {@code > 0} if {@code log})
 	 * @param percent {@code true} for percentage axes
 	 * @param log     {@code true} for logarithmic axes
+	 * @param margin  the margin as a fraction of the data range
 	 * @return the range as {@code {min, max}}
 	 */
-	private static double[] computeRange(double min, double max, boolean percent, boolean log) {
+	private static double[] computeRange(double min, double max, boolean percent, boolean log, double margin) {
 		double newMin;
 		double newMax;
 		if (log) {
 			double lmin = Math.log10(min > 0.0 ? min : max * MIN_YMAX_FRACTION);
 			double lmax = Math.log10(max);
-			double pad = (lmax - lmin) * FIT_MARGIN;
+			double pad = (lmax - lmin) * margin;
 			if (pad == 0.0)
-				pad = Math.log10(1.0 + FIT_MARGIN);
+				pad = Math.log10(1.0 + margin);
 			newMin = Math.pow(10.0, lmin - pad);
 			newMax = Math.pow(10.0, lmax + pad);
 		} else {
-			double pad = (max - min) * FIT_MARGIN;
+			double pad = (max - min) * margin;
 			if (pad == 0.0)
-				pad = Math.max(1e-6, Math.abs(min) * FIT_MARGIN);
+				pad = Math.max(1e-6, Math.abs(min) * margin);
 			newMin = min - pad;
 			newMax = max + pad;
 			// non-negative data: clamp at zero and snap insignificant minimum to zero

@@ -89,10 +89,12 @@ import com.google.gwt.event.dom.client.DoubleClickHandler;
  * <li>Tooltip support for coordinates via a configured tooltip provider.</li>
  * </ul>
  * </li>
- * <li>Autoscale axes to fit the visible data when enabled. Autoscaling computes
- * min/max ranges from the mapper over the current buffer and rounds to sensible
- * tick-friendly bounds. Percent scales are clamped to [0,1] when
- * configured.</li>
+ * <li>Autoscale axes to fit all buffered data when enabled. The ranges expand
+ * as needed and shrink if the data occupies only a small part of them, see
+ * {@link GraphStyle#trackXRange(double, double)}. Percent scales are clamped
+ * to [0,1] when configured. Manual zooming or shifting disables autoscaling,
+ * and without autoscaling trajectories may leave the graph. Zoom to fit fits
+ * the ranges to all data once.</li>
  * <li>Export trajectory data to a text format (time, x, y) using the configured
  * mapper and a {@link Formatter} for numeric formatting.</li>
  * </ul>
@@ -528,15 +530,27 @@ public class ParaGraph extends AbstractGraph<double[]> implements Zooming, Shift
 	}
 
 	/**
-	 * Automatically adjust the range of autoscaled axes to fit the data in the
-	 * buffer.
+	 * Apply autoscaling, e.g. when enabled: reset the zoom and fit the ranges of
+	 * autoscaled axes to all data in the buffer. Subsequently, the ranges track
+	 * the data as it is added. Manual zooming or shifting disables autoscaling.
+	 *
+	 * @see #updateAutoscale()
 	 */
 	public void autoscale() {
 		if (!(style.autoscaleX || style.autoscaleY) || buffer == null || buffer.isEmpty())
 			return;
+		super.zoom();
 		map.reset();
 		applyRanges(map.getMinX(buffer), map.getMaxX(buffer),
 				map.getMinY(buffer), map.getMaxY(buffer), style.autoscaleX, style.autoscaleY);
+	}
+
+	/**
+	 * Disable autoscaling because the view was zoomed or shifted manually.
+	 */
+	private void stopAutoscale() {
+		style.autoscaleX = false;
+		style.autoscaleY = false;
 	}
 
 	@Override
@@ -588,6 +602,7 @@ public class ParaGraph extends AbstractGraph<double[]> implements Zooming, Shift
 		double newZoom = Math.min(Zooming.ZOOM_MAX, Math.max(minZoom, zoomFactor * zoom));
 		if (Math.abs(newZoom - zoomFactor) < Model.EPS)
 			return;
+		stopAutoscale();
 		double relX = (ux - state.baseXMin) / state.baseRangeX;
 		double baseYMax = state.baseYMin + state.baseRangeY;
 		double relY = (baseYMax - uy) / state.baseRangeY;
@@ -601,6 +616,13 @@ public class ParaGraph extends AbstractGraph<double[]> implements Zooming, Shift
 		paint(true);
 	}
 
+	/**
+	 * {@inheritDoc}
+	 * <p>
+	 * Shifting the view disables autoscaling, as does zooming.
+	 *
+	 * @see #autoscale()
+	 */
 	@Override
 	public void shift(int dx, int dy) {
 		if (hasMessage)
@@ -608,9 +630,14 @@ public class ParaGraph extends AbstractGraph<double[]> implements Zooming, Shift
 		ViewState state = currentViewState();
 		if (!state.valid)
 			return;
-		double newViewCornerX = viewCorner.getX() + dx;
-		double newViewCornerY = viewCorner.getY() + dy;
-		setViewCorner(state, newViewCornerX, newViewCornerY);
+		double oldViewCornerX = viewCorner.getX();
+		double oldViewCornerY = viewCorner.getY();
+		setViewCorner(state, oldViewCornerX + dx, oldViewCornerY + dy);
+		if (Math.abs(viewCorner.getX() - oldViewCornerX) < Model.EPS
+				&& Math.abs(viewCorner.getY() - oldViewCornerY) < Model.EPS)
+			// view did not move, e.g. not zoomed in
+			return;
+		stopAutoscale();
 		paint(true);
 	}
 
@@ -776,29 +803,6 @@ public class ParaGraph extends AbstractGraph<double[]> implements Zooming, Shift
 		}
 
 		/**
-		 * Compute a view corner value that aligns the visible minimum with
-		 * {@code desiredMin}.
-		 *
-		 * @param desiredMin desired visible minimum
-		 * @return view corner x-position in pixels
-		 */
-		private double viewCornerXForMin(double desiredMin) {
-			return (desiredMin - baseXMin) * (zoomX * w) / baseRangeX;
-		}
-
-		/**
-		 * Compute a view corner value that aligns the visible maximum with
-		 * {@code desiredMax}.
-		 *
-		 * @param desiredMax desired visible maximum
-		 * @return view corner y-position in pixels
-		 */
-		private double viewCornerYForMax(double desiredMax) {
-			double baseYMax = baseYMin + baseRangeY;
-			return (baseYMax - desiredMax) * (zoomY * h) / baseRangeY;
-		}
-
-		/**
 		 * Compute per-axis zoom factors after applying domain constraints.
 		 *
 		 * @param factor requested zoom factor
@@ -919,77 +923,34 @@ public class ParaGraph extends AbstractGraph<double[]> implements Zooming, Shift
 	}
 
 	/**
-	 * Update the axis ranges based on the most recent buffered point. The ranges
-	 * only change if necessary, see {@link GraphStyle#addXData(double, double)}
-	 * and {@link GraphStyle#addYData(double, double)}.
+	 * Update the extent of all data with the most recent buffered point and, if
+	 * autoscaling is enabled, track the axis ranges to fit all data, see
+	 * {@link GraphStyle#trackXRange(double, double)} and
+	 * {@link GraphStyle#trackYRange(double, double)}. Without autoscaling the
+	 * ranges remain unchanged, such that trajectories may leave the graph.
 	 */
 	private void updateAutoscale() {
 		if (buffer == null || buffer.isEmpty())
 			return;
-		double[] last = buffer.last();
-		map.data2Phase(last, autoscalePoint);
+		// the map keeps track of the extent of all mapped data
+		map.data2Phase(buffer.last(), autoscalePoint);
 		if (buffer.getSize() <= 1)
 			map.reset();
-		double x = autoscalePoint.getX();
-		double y = autoscalePoint.getY();
-		boolean expandX = Double.isFinite(x) && style.addXData(x, x);
-		// keep log scale: ignore non-positive points
-		boolean expandY = Double.isFinite(y) && !(style.logScaleY && y <= 0.0) && style.addYData(y, y);
-		if (expandX)
+		boolean changed = false;
+		if (style.autoscaleX && style.trackXRange(map.getMinX(buffer), map.getMaxX(buffer))) {
 			applyXConstraints();
-		if (expandY)
+			changed = true;
+		}
+		// keep log scale: no valid range for non-positive data
+		double maxY = map.getMaxY(buffer);
+		if (style.autoscaleY && !(style.logScaleY && maxY <= 0.0)
+				&& style.trackYRange(map.getMinY(buffer), maxY)) {
 			applyYConstraints();
-		if (expandX && expandY && !style.logScaleY && !(style.percentX && style.percentY))
+			changed = true;
+		}
+		if (changed && style.autoscaleX && style.autoscaleY && !style.logScaleY
+				&& !(style.percentX && style.percentY))
 			enforceEqualAxisScale();
-		if (style.autoscaleX || style.autoscaleY)
-			ensureAutoscaleVisible();
-	}
-
-	/**
-	 * Shift the view corner to keep the latest autoscale point visible without
-	 * shrinking the current ranges.
-	 */
-	private void ensureAutoscaleVisible() {
-		if (viewCorner == null)
-			return;
-		ViewState state = currentViewState();
-		if (!state.valid)
-			return;
-		double newViewCornerX = viewCorner.getX();
-		double newViewCornerY = viewCorner.getY();
-		boolean shift = false;
-		double visibleRangeX = state.baseRangeX / state.zoomX;
-		double visibleRangeY = state.baseRangeY / state.zoomY;
-		double cornerX = viewCorner.getX();
-		double cornerY = viewCorner.getY();
-		double xMinVisible = state.baseXMin + (cornerX / (state.zoomX * state.w)) * state.baseRangeX;
-		double xMaxVisible = xMinVisible + visibleRangeX;
-		double baseYMax = state.baseYMin + state.baseRangeY;
-		double yMaxVisible = baseYMax - (cornerY / (state.zoomY * state.h)) * state.baseRangeY;
-		double yMinVisible = yMaxVisible - visibleRangeY;
-		if (style.autoscaleX) {
-			if (autoscalePoint.getX() < xMinVisible) {
-				newViewCornerX = state.viewCornerXForMin(autoscalePoint.getX());
-				shift = true;
-			} else if (autoscalePoint.getX() > xMaxVisible) {
-				double desiredMin = autoscalePoint.getX() - visibleRangeX;
-				newViewCornerX = state.viewCornerXForMin(desiredMin);
-				shift = true;
-			}
-		}
-		if (style.autoscaleY) {
-			if (autoscalePoint.getY() < yMinVisible) {
-				double desiredMax = autoscalePoint.getY() + visibleRangeY;
-				newViewCornerY = state.viewCornerYForMax(desiredMax);
-				shift = true;
-			} else if (autoscalePoint.getY() > yMaxVisible) {
-				newViewCornerY = state.viewCornerYForMax(autoscalePoint.getY());
-				shift = true;
-			}
-		}
-		if (!shift)
-			return;
-		setViewCorner(state, newViewCornerX, newViewCornerY);
 	}
 
 	/**
