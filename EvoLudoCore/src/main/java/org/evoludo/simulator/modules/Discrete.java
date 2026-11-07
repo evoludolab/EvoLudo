@@ -163,9 +163,11 @@ public abstract class Discrete extends Module<Discrete> {
 	}
 
 	/**
-	 * Per-trait birth rates, overriding {@link Module#birthRate}. {@code null}
-	 * as long as no per-trait rates have been set, in which case birth rates
-	 * fall back to the single, trait-independent {@link Module#birthRate}.
+	 * Per-trait birth rates, overriding {@link Module#birthRate}, with one entry
+	 * per trait and zero for the vacant type, see {@link #setBirthRate(double[])}.
+	 * {@code null} as long as no per-trait rates have been set, in which case
+	 * birth rates fall back to the single, trait-independent
+	 * {@link Module#birthRate}.
 	 */
 	protected double[] birthRates = null;
 
@@ -175,13 +177,22 @@ public abstract class Discrete extends Module<Discrete> {
 		super.setBirthRate(rate);
 	}
 
+	/**
+	 * {@inheritDoc}
+	 * <p>
+	 * The rates are assigned to the non-vacant traits in ascending order, cycling
+	 * through {@code rates} if fewer rates than traits were specified. The
+	 * vacant type has rate zero.
+	 *
+	 * @see #expandRates(double[])
+	 */
 	@Override
 	public void setBirthRate(double[] rates) {
 		if (rates.length <= 1) {
 			setBirthRate(rates.length == 0 ? 0.0 : rates[0]);
 			return;
 		}
-		birthRates = checkRates(rates, "birth rate");
+		birthRates = expandRates(checkRates(rates, "birth rate"));
 	}
 
 	@Override
@@ -190,15 +201,13 @@ public abstract class Discrete extends Module<Discrete> {
 	}
 
 	/**
-	 * Get the per capita birth rate of {@code type}. Entries are cycled with
-	 * modulo indexing if fewer rates than traits were specified, e.g. a single
-	 * rate applies to all traits.
+	 * Get the per capita birth rate of {@code type}.
 	 *
 	 * @param type the trait for which to get the birth rate
 	 * @return the birth rate of {@code type}
 	 */
 	public double getBirthRate(int type) {
-		return birthRates == null ? getBirthRate() : birthRates[type % birthRates.length];
+		return birthRates == null ? getBirthRate() : birthRates[type];
 	}
 
 	/**
@@ -214,13 +223,11 @@ public abstract class Discrete extends Module<Discrete> {
 
 	/**
 	 * Gets the birth rate of every non-vacant trait, in ascending trait-index
-	 * order (skipping {@link #vacantIdx}, if any), materializing the modulo
-	 * cycling of {@link #getBirthRate(int)} into a properly sized array (unlike
-	 * {@link #birthRates} itself, which may hold fewer entries, e.g. a single,
-	 * common rate, or even be {@code null}). Callers that need the birth rates
-	 * of all non-vacant traits at once, such as an ODE's per-type dynamics,
-	 * should use this instead of the raw field - it does not presume any
-	 * particular position of {@link #vacantIdx} among the traits.
+	 * order (skipping {@link #vacantIdx}, if any), unlike {@link #birthRates}
+	 * itself, which includes the vacant type or may be {@code null}. Callers
+	 * that need the birth rates of all non-vacant traits at once, such as an ODE's
+	 * per-type dynamics, should use this instead of the raw field - it does not
+	 * presume any particular position of {@link #vacantIdx} among the traits.
 	 *
 	 * @return the birth rate of each non-vacant trait
 	 */
@@ -236,9 +243,11 @@ public abstract class Discrete extends Module<Discrete> {
 	}
 
 	/**
-	 * Per-trait death rates, overriding {@link Module#deathRate}. {@code null}
-	 * as long as no per-trait rates have been set, in which case death rates
-	 * fall back to the single, trait-independent {@link Module#deathRate}.
+	 * Per-trait death rates, overriding {@link Module#deathRate}, with one entry
+	 * per trait and zero for the vacant type, see {@link #setDeathRate(double[])}.
+	 * {@code null} as long as no per-trait rates have been set, in which case
+	 * death rates fall back to the single, trait-independent
+	 * {@link Module#deathRate}.
 	 */
 	protected double[] deathRates = null;
 
@@ -248,13 +257,22 @@ public abstract class Discrete extends Module<Discrete> {
 		super.setDeathRate(rate);
 	}
 
+	/**
+	 * {@inheritDoc}
+	 * <p>
+	 * The rates are assigned to the non-vacant traits in ascending order, cycling
+	 * through {@code rates} if fewer rates than traits were specified. The
+	 * vacant type has rate zero.
+	 *
+	 * @see #expandRates(double[])
+	 */
 	@Override
 	public void setDeathRate(double[] rates) {
 		if (rates.length <= 1) {
 			setDeathRate(rates.length == 0 ? 0.0 : rates[0]);
 			return;
 		}
-		deathRates = checkRates(rates, "death rate");
+		deathRates = expandRates(checkRates(rates, "death rate"));
 	}
 
 	@Override
@@ -263,15 +281,13 @@ public abstract class Discrete extends Module<Discrete> {
 	}
 
 	/**
-	 * Get the per capita death rate of {@code type}. Entries are cycled with
-	 * modulo indexing if fewer rates than traits were specified, e.g. a single
-	 * rate applies to all traits.
+	 * Get the per capita death rate of {@code type}.
 	 *
 	 * @param type the trait for which to get the death rate
 	 * @return the death rate of {@code type}
 	 */
 	public double getDeathRate(int type) {
-		return deathRates == null ? getDeathRate() : deathRates[type % deathRates.length];
+		return deathRates == null ? getDeathRate() : deathRates[type];
 	}
 
 	/**
@@ -286,14 +302,32 @@ public abstract class Discrete extends Module<Discrete> {
 	}
 
 	/**
+	 * Expands per-trait {@code rates} to one entry per trait. The rates are
+	 * assigned to the non-vacant traits in ascending order, cycling through
+	 * {@code rates} if fewer were specified, e.g. a single rate applies to all
+	 * traits. The entry of the vacant type remains zero because vacant sites
+	 * neither reproduce nor die.
+	 *
+	 * @param rates the per-trait rates
+	 * @return the rates with one entry per trait
+	 */
+	private double[] expandRates(double[] rates) {
+		double[] expanded = new double[nTraits];
+		int j = 0;
+		for (int i = 0; i < nTraits; i++) {
+			if (i != vacantIdx)
+				expanded[i] = rates[j++ % rates.length];
+		}
+		return expanded;
+	}
+
+	/**
 	 * Gets the death rate of every non-vacant trait, in ascending trait-index
-	 * order (skipping {@link #vacantIdx}, if any), materializing the modulo
-	 * cycling of {@link #getDeathRate(int)} into a properly sized array (unlike
-	 * {@link #deathRates} itself, which may hold fewer entries, e.g. a single,
-	 * common rate, or even be {@code null}). Callers that need the death rates
-	 * of all non-vacant traits at once, such as an ODE's per-type dynamics,
-	 * should use this instead of the raw field - it does not presume any
-	 * particular position of {@link #vacantIdx} among the traits.
+	 * order (skipping {@link #vacantIdx}, if any), unlike {@link #deathRates}
+	 * itself, which includes the vacant type or may be {@code null}. Callers
+	 * that need the death rates of all non-vacant traits at once, such as an ODE's
+	 * per-type dynamics, should use this instead of the raw field - it does not
+	 * presume any particular position of {@link #vacantIdx} among the traits.
 	 *
 	 * @return the death rate of each non-vacant trait
 	 */

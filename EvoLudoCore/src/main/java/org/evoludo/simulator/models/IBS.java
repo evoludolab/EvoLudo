@@ -677,6 +677,13 @@ public abstract class IBS extends Model {
 	private int processEvents(int nUpdates, double gincr, double totRate) {
 		int n = 0;
 		while (n < nUpdates) {
+			if (totRate <= 0.0 || Double.isNaN(totRate)) {
+				// no events possible (e.g. all ecological rates zero): halt instead of
+				// picking from an empty distribution; resumable once rates change
+				engine.logWarning("no events possible (total update rate " + totRate + ") - halting.");
+				converged = true;
+				return n;
+			}
 			// update event
 			int dt = processEvent();
 			PopulationUpdate.Type updateType = debugFocalSpecies.getPopulationUpdate().getType();
@@ -1007,19 +1014,24 @@ public abstract class IBS extends Model {
 	 * 
 	 * @param rates the rates with which to pick the focal species
 	 * @param total the sum of the rates
-	 * @return the focal population or <code>null</code> if all populations extinct
+	 * @return the focal population or <code>null</code> if all rates are zero
 	 */
 	private IBSPopulation<?, ?> pickFocalSpecies(double[] rates, double total) {
 		if (!isMultispecies)
 			return population;
 		double pick = random01() * total;
+		int last = -1;
 		for (int i = 0; i < nSpecies; i++) {
+			if (rates[i] <= 0.0)
+				continue;
 			if (pick < rates[i])
 				// found focal species
 				return species.get(i).getIBSPopulation();
 			pick -= rates[i];
+			last = i;
 		}
-		return null;
+		// roundoff may leave pick just above the last positive rate
+		return (last < 0 ? null : species.get(last).getIBSPopulation());
 	}
 
 	/**

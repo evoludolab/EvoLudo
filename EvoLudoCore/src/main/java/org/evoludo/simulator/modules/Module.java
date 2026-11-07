@@ -1545,20 +1545,24 @@ public abstract class Module<T extends Module<T>>
 					switch (nSpecies) {
 						case 1:
 							T pop = species.get(0);
-							if (pop instanceof Discrete && pop.getNTraits() > 1)
-								return "--birthrate <b0[,...,b" + pop.getNTraits()
+							int nRates = pop.getNTraits() - (pop.hasVacant() ? 1 : 0);
+							if (pop instanceof Discrete && nRates > 1)
+								return "--birthrate <b0[," + (nRates > 2 ? "...," : "") + "b" + (nRates - 1)
 										+ "]>  per capita rates of reproduction of each trait";
 							return "--birthrate <b>  per capita rate of reproduction";
 						case 2:
-							descr = "--birthrate <b0[,b1]>  per capita rates of reproduction";
+							descr = "--birthrate <b0[" + CLOParser.SPECIES_DELIMITER
+									+ "b1]>  per capita rates of reproduction";
 							break;
 						default:
-							descr = "--birthrate <b0[,...,b" + nSpecies + "]>  per capita rates of reproduction";
+							descr = "--birthrate <b0[" + CLOParser.SPECIES_DELIMITER + "..."
+									+ CLOParser.SPECIES_DELIMITER + "b" + (nSpecies - 1)
+									+ "]>  per capita rates of reproduction";
 					}
 					if (hasMultitraitSpecies())
 						descr += "\n            (or <b0trait0,...>" + CLOParser.SPECIES_DELIMITER
-								+ "<b1trait0,...>... for per trait rates;\n            entries cycle if fewer than "
-								+ nSpecies + " given, e.g. a single\n            <btrait0,...> applies to every species)";
+								+ "<b1trait0,...>... for per trait\n            rates of non-vacant traits; entries cycle if fewer than "
+								+ nSpecies + "\n            given, e.g. a single <btrait0,...> applies to every species)";
 					return descr;
 				}
 			});
@@ -1589,19 +1593,22 @@ public abstract class Module<T extends Module<T>>
 					switch (nSpecies) {
 						case 1:
 							T pop = species.get(0);
-							if (pop instanceof Discrete && pop.getNTraits() > 1)
-								return "--deathrate <d0[,...,d" + pop.getNTraits() + "]>  rates of dying of each trait";
+							int nRates = pop.getNTraits() - (pop.hasVacant() ? 1 : 0);
+							if (pop instanceof Discrete && nRates > 1)
+								return "--deathrate <d0[," + (nRates > 2 ? "...," : "") + "d" + (nRates - 1)
+										+ "]>  rates of dying of each trait";
 							return "--deathrate <d>  rate of dying";
 						case 2:
-							descr = "--deathrate <d0[,d1]>  rates of dying";
+							descr = "--deathrate <d0[" + CLOParser.SPECIES_DELIMITER + "d1]>  rates of dying";
 							break;
 						default:
-							descr = "--deathrate <d0[,...,d" + nSpecies + "]>  rates of dying";
+							descr = "--deathrate <d0[" + CLOParser.SPECIES_DELIMITER + "..."
+									+ CLOParser.SPECIES_DELIMITER + "d" + (nSpecies - 1) + "]>  rates of dying";
 					}
 					if (hasMultitraitSpecies())
 						descr += "\n            (or <d0trait0,...>" + CLOParser.SPECIES_DELIMITER
-								+ "<d1trait0,...>... for per trait rates;\n            entries cycle if fewer than "
-								+ nSpecies + " given, e.g. a single\n            <dtrait0,...> applies to every species)";
+								+ "<d1trait0,...>... for per trait\n            rates of non-vacant traits; entries cycle if fewer than "
+								+ nSpecies + "\n            given, e.g. a single <dtrait0,...> applies to every species)";
 					return descr;
 				}
 			});
