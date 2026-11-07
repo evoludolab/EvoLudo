@@ -72,11 +72,6 @@ public class LV extends Discrete implements HasDE.ODE, HasDE.SDE, DualDynamics, 
 	static final int VACANT = 1;
 
 	/**
-	 * The reaction rates for prey reproduction, predation, and competition.
-	 */
-	double[] rates;
-
-	/**
 	 * Create a new instance of the Lotka-Volterra module.
 	 *
 	 * @param engine the pacemaker for running the module
@@ -237,11 +232,6 @@ class Predator extends Discrete implements Multispecies, HasDE {
 	 * The reference to the prey species.
 	 */
 	LV prey;
-
-	/**
-	 * The reaction rates for predator reproduction, predation, and competition.
-	 */
-	double[] rates;
 
 	/**
 	 * Create a new instance of the phage population.

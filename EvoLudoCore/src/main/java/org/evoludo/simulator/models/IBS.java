@@ -785,12 +785,12 @@ public abstract class IBS extends Model {
 			StringBuilder sb = new StringBuilder();
 			for (Module<?> mod : species) {
 				IBSPopulation<?, ?> pop = mod.getIBSPopulation();
-				if (sb.length() > 0) {
-					sb.append("<br/><i>");
-				} else {
-					sb.append("<i>");
-				}
-				sb.append(mod.getName()).append(":</i> ").append(pop.getStatus());
+				sb.append(sb.length() > 0 ? "<br/><i>" : "<i>").append(mod.getName()).append(":</i> ");
+				// single trait plus vacant sites: species name identifies the trait and
+				// vacant sites are implied
+				boolean single = mod instanceof Discrete && mod.getNTraits() == 2 && mod.hasVacant();
+				sb.append(single ? Formatter.formatPercentFix((double) pop.getPopulationSize() / mod.getNPopulation(), 1)
+						: pop.getStatus());
 			}
 			return sb.toString();
 		}

@@ -1862,8 +1862,11 @@ public class ODE extends Model implements DModel {
 	/**
 	 * Returns a string representation of the current state of the model.
 	 * The string contains the trait names and their respective frequencies or
-	 * densities, depending on the type of model. This is a convenience method for
-	 * use by subclasses.
+	 * densities, depending on the type of model. Vacant sites are omitted in
+	 * density models. In multi-species models, species with a single trait (plus
+	 * vacant sites) report only its frequency or density because the species
+	 * name identifies the trait and the vacant sites are implied. This is a
+	 * convenience method for use by subclasses.
 	 * 
 	 * @param state the current state of the model
 	 * @return a string representation of the current state
@@ -1872,40 +1875,23 @@ public class ODE extends Model implements DModel {
 		StringBuilder sb = new StringBuilder();
 		int from = 0;
 		for (Module<?> pop : species) {
-			int to = from + pop.getNTraits();
-			// omit status for vacant trait in density models
-			int vacant = isDensity ? from + pop.getVacantIdx() : -1;
-			if (isMultispecies) {
-				if (sb.length() > 0)
-					sb.append("<br/>");
-				sb.append("<i>").append(pop.getName()).append(":</i> ");
+			int nTraits = pop.getNTraits();
+			int vacant = pop.getVacantIdx();
+			boolean single = isMultispecies && vacant >= 0 && nTraits == 2;
+			if (isMultispecies)
+				sb.append(sb.length() > 0 ? "<br/><i>" : "<i>").append(pop.getName()).append(":</i> ");
+			String sep = "";
+			for (int i = 0; i < nTraits; i++) {
+				if (i == vacant && (isDensity || single))
+					continue;
+				double s = state[from + i];
+				sb.append(sep).append(single ? "" : names[from + i] + ": ")
+						.append(isDensity ? Formatter.format(s, 1) : Formatter.formatPercentFix(s, 1));
+				sep = ", ";
 			}
-			buildModelStatus(sb, state, from, to, vacant);
-			from = to;
+			from += nTraits;
 		}
 		return sb.toString();
-	}
-
-	/**
-	 * Build a comma separated status string for one population.
-	 * 
-	 * @param sb     the string builder to append to
-	 * @param state  the current state of the model
-	 * @param from   the start index of the population in the state array
-	 * @param to     the end index of the population in the state array
-	 * @param vacant the index of the vacant trait to omit (or -1 if none)
-	 */
-	private void buildModelStatus(StringBuilder sb, double[] state, int from, int to, int vacant) {
-		for (int i = from; i < to; i++) {
-			if (i == vacant)
-				continue;
-			if (sb.length() > 0) {
-				sb.append(", ");
-			}
-			sb.append(names[i]).append(": ")
-					.append(isDensity ? Formatter.format(state[i], 1)
-							: Formatter.formatPercentFix(state[i], 1));
-		}
 	}
 
 	/**
