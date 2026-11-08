@@ -897,10 +897,37 @@ public abstract class AbstractGraph<B> extends FocusPanel
 	 * @return {@code true} if painting skipped
 	 */
 	public boolean paint(boolean force) {
+		syncViewCorner();
 		if (!view.isActive() || hasMessage)
 			return true;
 		tooltip.update();
 		return false;
+	}
+
+	/**
+	 * The width of the bounds that {@link #viewCorner} refers to.
+	 */
+	private double viewWidth;
+
+	/**
+	 * The height of the bounds that {@link #viewCorner} refers to.
+	 */
+	private double viewHeight;
+
+	/**
+	 * Keep the visible region of zoomed graphs in place when the size of the
+	 * bounds changes, e.g. on resizing or toggling fullscreen. The view corner is
+	 * measured in pixels and hence scaled to the new size of the bounds.
+	 */
+	private void syncViewCorner() {
+		double w = bounds.getWidth();
+		double h = bounds.getHeight();
+		if (viewCorner == null || w <= 0.0 || h <= 0.0)
+			return;
+		if (viewWidth > 0.0 && viewHeight > 0.0)
+			viewCorner.set(viewCorner.getX() * w / viewWidth, viewCorner.getY() * h / viewHeight);
+		viewWidth = w;
+		viewHeight = h;
 	}
 
 	/**
