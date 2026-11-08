@@ -227,8 +227,8 @@ public class PopGraph2D extends GenericPopGraph<String, Network2D> implements Sh
 	 * @param specs legend data
 	 */
 	public void setLegendSpecs(Legend2D.Specs specs) {
-		legend.setSpecs(specs);
-		calcBounds();
+		if (legend.setSpecs(specs))
+			calcBounds();
 	}
 
 	@Override

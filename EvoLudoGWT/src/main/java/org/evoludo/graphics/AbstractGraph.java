@@ -2366,8 +2366,12 @@ public abstract class AbstractGraph<B> extends FocusPanel
 	public void shift(int dx, int dy) {
 		if (hasMessage)
 			return;
-		setViewCorner(viewCorner.getX() + dx, viewCorner.getY() + dy, zoomFactor);
-		paint(true);
+		double x = viewCorner.getX();
+		double y = viewCorner.getY();
+		setViewCorner(x + dx, y + dy, zoomFactor);
+		// repaint only if the view moved, e.g. not if the graph is not zoomed
+		if (viewCorner.getX() != x || viewCorner.getY() != y)
+			paint(true);
 	}
 
 	/**

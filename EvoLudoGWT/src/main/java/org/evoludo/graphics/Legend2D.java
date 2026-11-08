@@ -279,9 +279,15 @@ public class Legend2D {
 	 * Assign semantic legend data to this legend.
 	 *
 	 * @param legendSpecs legend data prepared by the view
+	 * @return {@code true} if the room reserved for the legend may change, which
+	 *         requires recalculating the bounds of the graph, see
+	 *         {@link #reserve(Rectangle2D)}
 	 */
-	void setSpecs(Specs legendSpecs) {
+	boolean setSpecs(Specs legendSpecs) {
+		Mode old = specs.mode;
 		this.specs = (legendSpecs == null ? Specs.none() : legendSpecs);
+		// the room for density gradients does not depend on their range
+		return old != specs.mode || specs.mode != Mode.DENSITY_GRADIENT;
 	}
 
 	/**
