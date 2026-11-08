@@ -97,8 +97,9 @@ import com.google.gwt.event.dom.client.DoubleClickHandler;
  * <li>Coordinate conversions for mouse/touch interactions map screen
  * coordinates to scaled simplex coordinates in [0,1] (see
  * {@link #scaledX(double)} / {@link #scaledY(double)}). A hit test
- * {@link #inside(double,double)} ensures interactions occur only when the
- * pointer is inside the simplex triangle.</li>
+ * {@link #inside(double,double)} ensures that tooltips are only shown when the
+ * pointer is inside the simplex triangle. Shifting and zooming work anywhere
+ * on the graph and can reveal the labels of the corners.</li>
  * </ul>
  *
  * <h3>Rendering details</h3>
@@ -754,10 +755,10 @@ public class S3Graph extends AbstractGraph<double[]> implements Zooming, Shiftin
 	@Override
 	public String getTooltipAt(int x, int y) {
 		// convert to user coordinates
-		if (!inside(x, y))
-			return null;
 		double sx = scaledX(x);
 		double sy = scaledY(y);
+		if (!inside(sx, sy))
+			return null;
 		if (tooltipProvider instanceof TooltipProvider.Simplex)
 			return ((TooltipProvider.Simplex) tooltipProvider).getTooltipAt(this, sx, sy);
 		if (tooltipProvider != null)
@@ -786,9 +787,18 @@ public class S3Graph extends AbstractGraph<double[]> implements Zooming, Shiftin
 		return (Segment2D.orientation(c2, c0, p) >= 0);
 	}
 
+	/**
+	 * {@inheritDoc}
+	 * <p>
+	 * The zoomed graph, including the labels of the corners, always covers the
+	 * canvas, i.e. the graph can be shifted to reveal any part of the canvas.
+	 */
 	@Override
-	protected boolean inside(int x, int y) {
-		return inside(scaledX(x), scaledY(y));
+	protected void setViewCorner(double x, double y, double zoom) {
+		double dz = zoom - 1.0;
+		viewCorner.set(
+				Math.min(dz * (wrapper.getOffsetWidth() - bounds.getX()), Math.max(-dz * bounds.getX(), x)),
+				Math.min(dz * (wrapper.getOffsetHeight() - bounds.getY()), Math.max(-dz * bounds.getY(), y)));
 	}
 
 	@Override
