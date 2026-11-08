@@ -892,6 +892,20 @@ public class S3Graph extends AbstractGraph<double[]> implements Zooming, Shiftin
 	}
 
 	/**
+	 * Convert the coordinates {@code (x, y)} relative to the graph into the
+	 * coordinates of the outline of the simplex, {@link #e0}, {@link #e1} and
+	 * {@link #e2}, i.e. relative to the bounds and without zooming or shifting.
+	 *
+	 * @param x the <code>x</code>-coordinate relative to the graph
+	 * @param y the <code>y</code>-coordinate relative to the graph
+	 * @return the point in coordinates of the outline
+	 */
+	private Point2D toSimplex(double x, double y) {
+		return new Point2D((viewCorner.getX() + x - canvasPadX() - bounds.getX()) / zoomFactor,
+				(viewCorner.getY() + y - canvasPadY() - bounds.getY()) / zoomFactor);
+	}
+
+	/**
 	 * Find the corner closest to the point {@code (x, y)}.
 	 * 
 	 * @param x the <code>x</code>-coordinate of the point
@@ -899,7 +913,7 @@ public class S3Graph extends AbstractGraph<double[]> implements Zooming, Shiftin
 	 * @return the index of the closest corner
 	 */
 	protected int closestCorner(double x, double y) {
-		Point2D p = new Point2D(x - bounds.getX(), y - bounds.getY());
+		Point2D p = toSimplex(x, y);
 		double d0 = p.distance2(e0);
 		double d1 = p.distance2(e1);
 		double d2 = p.distance2(e2);
@@ -921,7 +935,7 @@ public class S3Graph extends AbstractGraph<double[]> implements Zooming, Shiftin
 	 * @return the index of the closest edge
 	 */
 	protected int closestEdge(double x, double y) {
-		Point2D p = new Point2D(x - bounds.getX(), y - bounds.getY());
+		Point2D p = toSimplex(x, y);
 		double d0 = Segment2D.distance2(e0, e1, p);
 		double d1 = Segment2D.distance2(e1, e2, p);
 		double d2 = Segment2D.distance2(e2, e0, p);
