@@ -311,8 +311,9 @@ public abstract class AbstractView<G extends AbstractGraph<?>> extends Composite
 	 */
 	public boolean parse() {
 		boolean ok = true;
+		String args = (options == null ? "" : options);
 		for (G graph : graphs)
-			ok &= graph.parse(options);
+			ok &= graph.parse(args);
 		return ok;
 	}
 
@@ -914,6 +915,19 @@ public abstract class AbstractView<G extends AbstractGraph<?>> extends Composite
 		for (G graph : graphs) {
 			if (graph instanceof Zoomer)
 				((Zoomer) graph).zoom(zoom, x, y);
+		}
+	}
+
+	/**
+	 * Default implementation for synchronized resetting of the views of multiple
+	 * graphs.
+	 *
+	 * @see AbstractGraph.Zoomer#resetView()
+	 */
+	public void resetView() {
+		for (G graph : graphs) {
+			if (graph instanceof Zoomer)
+				((Zoomer) graph).resetView();
 		}
 	}
 

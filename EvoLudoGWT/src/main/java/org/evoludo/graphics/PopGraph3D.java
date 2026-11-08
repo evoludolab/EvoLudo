@@ -33,7 +33,6 @@ package org.evoludo.graphics;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
-import java.util.Objects;
 
 import org.evoludo.geom.Node3D;
 import org.evoludo.simulator.ColorMap3D;
@@ -794,27 +793,25 @@ public class PopGraph3D extends GenericPopGraph<MeshLambertMaterial, Network3DGW
 
 	@Override
 	public boolean parse(String args) {
-		if (Objects.equals(args, options))
+		if (args.equals(options))
 			return true;
 		options = args;
 		boolean ok = true;
 		// set default
 		mode = Mode.PERSPECTIVE;
-		if (args != null) {
-			for (String arg : args.split(CLOParser.VECTOR_DELIMITER)) {
-				arg = arg.trim();
-				if (arg.isEmpty())
-					continue;
-				Mode match = Mode.match(arg);
-				if (match == null) {
-					view.logWarning("view '" + view.getName() + "': unknown option '" + arg + "' - ignored.");
-					ok = false;
-					continue;
-				}
-				// the rendering modes are mutually exclusive, see
-				// Pop3D#populateContextMenu(ContextMenu) - the last one provided applies
-				mode = match;
+		for (String arg : args.split(CLOParser.VECTOR_DELIMITER)) {
+			arg = arg.trim();
+			if (arg.isEmpty())
+				continue;
+			Mode match = Mode.match(arg);
+			if (match == null) {
+				view.logWarning("view '" + view.getName() + "': unknown option '" + arg + "' - ignored.");
+				ok = false;
+				continue;
 			}
+			// the rendering modes are mutually exclusive, see
+			// Pop3D#populateContextMenu(ContextMenu) - the last one provided applies
+			mode = match;
 		}
 		if (mode.isEffect() && view.getNGraphs() > 1) {
 			// the effects are available for a single graph only
@@ -971,10 +968,13 @@ public class PopGraph3D extends GenericPopGraph<MeshLambertMaterial, Network3DGW
 	}
 
 	@Override
+	protected void zoom() {
+		graph3DScene.resetCamera();
+	}
+
+	@Override
 	public void zoom(double zoom) {
-		if (zoom <= 0.0)
-			graph3DScene.zoom();
-		else
+		if (zoom > 0.0)
 			graph3DScene.zoom(1.0 / zoom);
 	}
 
@@ -1253,10 +1253,11 @@ public class PopGraph3D extends GenericPopGraph<MeshLambertMaterial, Network3DGW
 		}
 
 		/**
-		 * Reset zoom level.
+		 * Reset the camera to its default position, orientation and zoom level.
 		 */
-		public void zoom() {
-			control.zoom();
+		public void resetCamera() {
+			if (control != null)
+				control.reset();
 		}
 
 		/**

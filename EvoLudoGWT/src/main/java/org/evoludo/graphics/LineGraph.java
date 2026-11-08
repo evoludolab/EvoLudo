@@ -33,7 +33,6 @@ package org.evoludo.graphics;
 import java.awt.Color;
 import java.util.Arrays;
 import java.util.Iterator;
-import java.util.Objects;
 
 import org.evoludo.graphics.AbstractGraph.HasLogScaleY;
 import org.evoludo.graphics.AbstractGraph.Shifting;
@@ -119,8 +118,9 @@ import com.google.gwt.core.client.Scheduler;
  * <ul>
  * <li>shift(dx, dy) pans the x-range continuously, such that the data
  * follows the pointer, within the available history.</li>
- * <li>zoom() resets the view to a default zoom focused on the latest
- * data (xMax = 0.0 and xMin = xMax - max(1, DEFAULT_STEPS*xIncr)).</li>
+ * <li>resetView() restores the default view focused on the latest data
+ * (xMax = 0.0 and xMin = xMax - max(1, DEFAULT_STEPS*xIncr)) and the
+ * defaults of the options, then applies the options of the view.</li>
  * <li>zoom(double zoom, double x, double y) zooms around the zoom center,
  * such that the time under the pointer remains in place, enforces a
  * minimum number of steps (MIN_STEPS) and clamps to the available
@@ -326,15 +326,13 @@ public class LineGraph extends AbstractGraph<double[]>
 
 	@Override
 	public boolean parse(String args) {
-		if (Objects.equals(args, options))
+		if (args.equals(options))
 			return true;
 		options = args;
 		// set defaults
 		style.autoscaleX = false;
 		style.autoscaleY = true;
 		setLogY(false);
-		if (args == null)
-			return true;
 		return parseArgs(args);
 	}
 
@@ -1068,10 +1066,9 @@ public class LineGraph extends AbstractGraph<double[]>
 	protected static final int DEFAULT_STEPS = 100;
 
 	@Override
-	public void zoom() {
+	protected void zoom() {
 		style.xMax = 0.0;
 		style.xMin = style.xMax - Math.max(1.0, DEFAULT_STEPS * style.xIncr);
-		schedulePaint();
 	}
 
 	/**

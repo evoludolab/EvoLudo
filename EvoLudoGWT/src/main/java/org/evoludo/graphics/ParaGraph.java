@@ -554,18 +554,18 @@ public class ParaGraph extends AbstractGraph<double[]> implements Zooming, Shift
 	}
 
 	@Override
-	public void zoom() {
+	protected void zoom() {
+		// by default both axes are autoscaled
+		style.autoscaleX = true;
+		style.autoscaleY = true;
 		super.zoom();
 		autoscale();
-		paint(true);
 	}
 
 	@Override
 	public void zoom(double zoom) {
-		if (zoom <= 0.0) {
-			zoom();
+		if (zoom <= 0.0)
 			return;
-		}
 		int cx = (int) Math.round(bounds.getX() + bounds.getWidth() * 0.5);
 		int cy = (int) Math.round(bounds.getY() + bounds.getHeight() * 0.5);
 		zoom(zoom, cx, cy);
@@ -573,12 +573,8 @@ public class ParaGraph extends AbstractGraph<double[]> implements Zooming, Shift
 
 	@Override
 	public void zoom(double zoom, int x, int y) {
-		if (hasMessage)
+		if (hasMessage || zoom <= 0.0)
 			return;
-		if (zoom <= 0.0) {
-			zoom();
-			return;
-		}
 		ViewState state = currentViewState();
 		if (!state.valid)
 			return;

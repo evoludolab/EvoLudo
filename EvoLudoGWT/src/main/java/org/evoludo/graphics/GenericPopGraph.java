@@ -648,6 +648,7 @@ public abstract class GenericPopGraph<T, N extends Network<?>> extends AbstractG
 			super.populateContextMenuAt(menu, x, y);
 			return;
 		}
+		addClearMenu(menu);
 		if (!hasStaticLayout()) {
 			menu.add(new ContextMenuItem("Shake", () -> network.shake(GenericPopGraph.this, 0.05), "S"));
 			menu.add(new ContextMenuCheckBoxItem("Animate layout", animate, () -> animate = !animate));
@@ -660,7 +661,6 @@ public abstract class GenericPopGraph<T, N extends Network<?>> extends AbstractG
 					model.getTraitData(module.getId(), data, colorMap);
 				paint(true);
 			}));
-		addClearMenu(menu);
 		// process debug node update
 		addDebugSubmenu(menu, x, y);
 		populateGraphContextMenu(menu, x, y);

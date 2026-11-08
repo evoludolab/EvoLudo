@@ -490,18 +490,20 @@ public class TrackballControls extends Controls implements MouseWheelHandler, Mo
 	}
 
 	/**
-	 * Reset zoom.
+	 * Reset the camera: look at the origin along the {@code z}-axis from the
+	 * initial distance, without rotation, panning or zooming.
 	 */
-	public void zoom() {
+	public void reset() {
+		doRotate = doZoom = doPan = false;
+		rotateStart.copy(rotateEnd);
+		panStart.copy(panEnd);
+		target.set(0.0, 0.0, 0.0);
 		Object3D camera = getObject();
-		if (camera instanceof PerspectiveCamera) {
-			double eyeDistance = eye.copy(getObject().getPosition()).sub(target).length();
-			zoom((initialDistance / eyeDistance));
-		}
-		if (camera instanceof OrthographicCamera) {
-			camera.getScale().set(1.0, 1.0, 1.0);
-			camera.updateMatrix();
-		}
+		camera.getPosition().set(0.0, 0.0, initialDistance);
+		camera.getUp().set(0.0, 1.0, 0.0);
+		camera.getScale().set(1.0, 1.0, 1.0);
+		camera.lookAt(target);
+		camera.updateMatrix();
 	}
 
 	/**

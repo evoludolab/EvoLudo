@@ -297,7 +297,7 @@ import com.google.gwt.user.client.ui.RequiresResize;
  * @see #activate()
  * @see #deactivate()
  * @see #paint()
- * @see #zoom()
+ * @see #resetView()
  * @see #shift(int,int)
  * @see AbstractGraph.Shifting
  * @see AbstractGraph.Shifter
@@ -340,7 +340,7 @@ public abstract class AbstractGraph<B> extends FocusPanel
 	 * Graphs that support zooming should implement this interface. Basic zooming
 	 * capabilities are handled by {@link AbstractGraph}.
 	 * 
-	 * @see AbstractGraph#zoom()
+	 * @see AbstractGraph#resetView()
 	 * @see AbstractGraph#zoom(double)
 	 * @see AbstractGraph#zoom(double, double, double)
 	 * @see AbstractGraph#zoom(double, int, int)
@@ -361,14 +361,9 @@ public abstract class AbstractGraph<B> extends FocusPanel
 		public final double ZOOM_MAX = 25.0;
 
 		/**
-		 * Reset zoom.
-		 */
-		public void zoom();
-
-		/**
 		 * Adjust zoom level by the factor {@code zoom}. Leave the center of the view in
-		 * place. If {@code zoom &leq; 0} reset zoom level.
-		 * 
+		 * place.
+		 *
 		 * @param zoom the new zoom level
 		 */
 		public void zoom(double zoom);
@@ -393,6 +388,12 @@ public abstract class AbstractGraph<B> extends FocusPanel
 		 * @see #onTouchMove(TouchMoveEvent)
 		 */
 		public void zoom(double zoom, int x, int y);
+
+		/**
+		 * Reset the view to its defaults, or as specified by the options of the view,
+		 * including zooming and shifting.
+		 */
+		public void resetView();
 	}
 
 	/**
@@ -714,11 +715,13 @@ public abstract class AbstractGraph<B> extends FocusPanel
 	}
 
 	/**
-	 * The options most recently parsed by this graph, or {@code null} if none.
+	 * The options most recently parsed by this graph, empty if none, or
+	 * {@code null} to force parsing.
 	 *
 	 * @see #parse(String)
+	 * @see #resetView()
 	 */
-	protected String options;
+	protected String options = "";
 
 	/**
 	 * Restore the default settings of the graph and parse the options
@@ -726,7 +729,7 @@ public abstract class AbstractGraph<B> extends FocusPanel
 	 * changed through the GUI, e.g. the context menu, when the model is reset or
 	 * parameters change. Default implementation does nothing.
 	 *
-	 * @param args the options for the graph, or {@code null} for the defaults
+	 * @param args the options for the graph, empty for the defaults
 	 * @return {@code true} if parsing was successful
 	 */
 	public boolean parse(String args) {
@@ -995,18 +998,22 @@ public abstract class AbstractGraph<B> extends FocusPanel
 	}
 
 	/**
-	 * Add a clear-history entry to the context menu when this graph stores history.
+	 * Add a clear-history entry to the context menu when this graph stores history
+	 * and a reset-view entry when it supports zooming.
 	 *
 	 * @param menu the context menu to populate
 	 */
 	protected void addClearMenu(ContextMenu menu) {
-		if (!hasHistory())
-			return;
-		menu.add(new ContextMenuItem("Clear", () -> {
-			clearHistory();
-			paint(true);
-		}));
-		menu.addSeparator();
+		int nItems = menu.getWidgetCount();
+		if (hasHistory())
+			menu.add(new ContextMenuItem("Clear", () -> {
+				clearHistory();
+				paint(true);
+			}));
+		if (zoomer != null)
+			menu.add(new ContextMenuItem("Reset view", zoomer::resetView));
+		if (menu.getWidgetCount() > nItems)
+			menu.addSeparator();
 	}
 
 	/**
@@ -1051,7 +1058,6 @@ public abstract class AbstractGraph<B> extends FocusPanel
 	protected void populateZoomMenu(ContextMenu menu) {
 		menu.add(new ContextMenuItem("Zoom in (2x)", new ZoomCommand(2.0)));
 		menu.add(new ContextMenuItem("Zoom out (0.5x)", new ZoomCommand(0.5)));
-		menu.add(new ContextMenuItem("Reset zoom", new ZoomCommand(0.0)));
 	}
 
 	/**
@@ -2178,11 +2184,29 @@ public abstract class AbstractGraph<B> extends FocusPanel
 	}
 
 	/**
-	 * Reset zoom. Default implementation for graphs that implement {@code Zooming}.
-	 * 
-	 * @see Zooming#zoom()
+	 * Reset the view: restore the default zoom and shift, see {@link #zoom()},
+	 * then restore the defaults of the options and apply the options of the view
+	 * again, see {@link #parse(String)}. Default implementation for graphs that
+	 * implement {@code Zooming}.
+	 *
+	 * @see Zoomer#resetView()
 	 */
-	public void zoom() {
+	public void resetView() {
+		zoom();
+		String args = options;
+		// force parsing
+		options = null;
+		parse(args);
+		if (!hasMessage)
+			paint(true);
+	}
+
+	/**
+	 * Restore the default zoom level and shift of the view.
+	 *
+	 * @see #resetView()
+	 */
+	protected void zoom() {
 		zoomFactor = 1.0;
 		if (viewCorner != null)
 			viewCorner.set(0.0, 0.0);
@@ -2191,18 +2215,14 @@ public abstract class AbstractGraph<B> extends FocusPanel
 	/**
 	 * Adjust zoom level by the factor {@code zoom}. Default implementation for
 	 * graphs that implement {@code Zooming}.
-	 * 
+	 *
 	 * @param zoom the new zoom level
-	 * 
+	 *
 	 * @see Zooming#zoom(double)
 	 */
 	public void zoom(double zoom) {
-		if (zoom <= 0.0) {
-			zoom();
-			if (!hasMessage)
-				paint(true);
+		if (zoom <= 0.0)
 			return;
-		}
 		zoom(zoom, 0.5, 0.5);
 	}
 
