@@ -434,14 +434,12 @@ public class LineGraph extends AbstractGraph<double[]>
 	public void reset() {
 		thinning.reset(null);
 		newTimeseries = false;
-		double oldXMin = style.xMin;
 		super.reset();
 		// after clearing the history: otherwise y-range adjustments for log
 		// scale would be derived from stale data
 		setLogY(style.logScaleY);
 		if (buffer == null || buffer.getCapacity() < MIN_BUFFER_SIZE)
 			buffer = new RingBuffer<double[]>(Math.max((int) bounds.getWidth(), DEFAULT_BUFFER_SIZE));
-		setSteps(steps * (style.xMax - style.xMin) / (style.xMax - oldXMin));
 	}
 
 	@Override

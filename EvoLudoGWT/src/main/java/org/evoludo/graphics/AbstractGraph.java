@@ -848,15 +848,14 @@ public abstract class AbstractGraph<B> extends FocusPanel
 	}
 
 	/**
-	 * Reset the graph. Clear canvas and messages. Axis ranges are retained;
-	 * with autoscaling they follow the data of the new run, see
-	 * {@link GraphStyle#trackYRange(double, double)}.
+	 * Reset the graph. Clear canvas and messages. The view, i.e. zooming, shifting
+	 * and axis ranges, is retained; with autoscaling the ranges follow the data of
+	 * the new run, see {@link GraphStyle#trackYRange(double, double)}.
 	 */
 	public void reset() {
 		clearMessage();
 		clearHistory();
 		updateCanvas();
-		zoom();
 		// recalculate bounds so that any message reflecting a still-valid display
 		// constraint (e.g. population too big) is restored rather than left cleared
 		// with stale, unusable dimensions

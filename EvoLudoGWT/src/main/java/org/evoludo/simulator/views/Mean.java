@@ -326,11 +326,12 @@ public class Mean extends AbstractView<LineGraph> implements Shifter, Zoomer {
 		style.showXLevels = false;
 		double rFreq = model.getTimeStep();
 		if (Math.abs(style.xIncr - rFreq) > Model.EPS) {
+			// new time scale: show the most recent history
 			style.xIncr = rFreq;
 			style.xMin = -graph.getSteps() * style.xIncr;
+			style.xMax = 0.0;
 			hard = true;
 		}
-		style.xMax = 0.0;
 		if (hard)
 			graph.reset();
 	}
