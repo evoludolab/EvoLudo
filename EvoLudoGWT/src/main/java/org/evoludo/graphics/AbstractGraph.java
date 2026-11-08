@@ -1199,6 +1199,12 @@ public abstract class AbstractGraph<B> extends FocusPanel
 			bounds.adjust(0, 0, 0, -(style.tickLength + 2));
 		if (style.showYTicks)
 			adjustBoundsForYSide(style.tickLength + 2.0);
+		// keep the frame on whole pixels for crisp lines, see drawFrameBorder(),
+		// without encroaching on the room for labels
+		double left = Math.ceil(bounds.getX());
+		double top = Math.ceil(bounds.getY());
+		bounds.set(left, top, Math.floor(bounds.getX() + bounds.getWidth()) - left,
+				Math.floor(bounds.getY() + bounds.getHeight()) - top);
 		style.setFitMargins(bounds.getWidth(), bounds.getHeight());
 	}
 
