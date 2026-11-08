@@ -1166,7 +1166,7 @@ public abstract class AbstractGraph<B> extends FocusPanel
 	 *
 	 * @return {@code true} if bounds are successfully calculated.
 	 */
-	protected boolean calcBounds() {
+	public boolean calcBounds() {
 		int width = (wrapper == null ? 0 : wrapper.getOffsetWidth());
 		int height = (wrapper == null ? 0 : wrapper.getOffsetHeight());
 		if (width == 0 || height == 0)
@@ -1235,10 +1235,11 @@ public abstract class AbstractGraph<B> extends FocusPanel
 			} else {
 				digits = computeYTickDigits(4);
 			}
-			cachedMidYTickLabelWidth = measureMidYTickLabelWidth(digits);
+			double width = measureMidYTickLabelWidth(digits);
 			if (style.percentY)
-				cachedMidYTickLabelWidth = Math.max(cachedMidYTickLabelWidth,
-						measureYTickLabelWidth(new String[] { "100.0" }, true));
+				width = Math.max(width, measureYTickLabelWidth(new String[] { "100.0" }, true));
+			// share the width with the other graphs of the view to line up frames
+			cachedMidYTickLabelWidth = view.getYTickLabelWidth(this, width);
 			adjustBoundsForYSide(cachedMidYTickLabelWidth);
 			adjustBoundsForYSide(Y_TICK_LABEL_GAP + 2.0);
 		}

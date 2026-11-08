@@ -1069,9 +1069,55 @@ public abstract class AbstractView<G extends AbstractGraph<?>> extends Composite
 	 * @param height the height of the view
 	 */
 	public void setBounds(int width, int height) {
+		yTickLabelWidth = 0.0;
 		for (G graph : graphs)
 			graph.calcBounds(width, height);
 	}
+
+	/**
+	 * The width reserved for the tick labels of the {@code y}-axes, shared by all
+	 * graphs of this view such that their frames line up.
+	 */
+	private double yTickLabelWidth = 0.0;
+
+	/**
+	 * Get the width to reserve for the tick labels of the {@code y}-axis of
+	 * {@code graph}, which requires {@code width}. All graphs of this view reserve
+	 * the same width, i.e. the widest required, such that their frames line up. If
+	 * {@code graph} requires more than the current width, the bounds of the other
+	 * graphs are recalculated.
+	 *
+	 * @param graph the graph that calculates its bounds
+	 * @param width the width required by {@code graph}
+	 * @return the width to reserve
+	 */
+	public double getYTickLabelWidth(AbstractGraph<?> graph, double width) {
+		if (width <= yTickLabelWidth)
+			return yTickLabelWidth;
+		yTickLabelWidth = width;
+		if (isAligning)
+			return width;
+		isAligning = true;
+		double aligned;
+		do {
+			// other graphs may require even more width
+			aligned = yTickLabelWidth;
+			for (G other : graphs) {
+				if (other != graph && other.calcBounds())
+					other.paint(true);
+			}
+		} while (yTickLabelWidth > aligned);
+		isAligning = false;
+		return yTickLabelWidth;
+	}
+
+	/**
+	 * The flag to indicate that the bounds of graphs are being recalculated to
+	 * line up their frames.
+	 *
+	 * @see #getYTickLabelWidth(AbstractGraph, double)
+	 */
+	private boolean isAligning = false;
 
 	/**
 	 * The flag to indicate whether an update is already scheduled. Subsequent
