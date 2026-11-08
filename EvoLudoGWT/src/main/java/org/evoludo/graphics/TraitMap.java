@@ -63,7 +63,8 @@ public class TraitMap implements Data2Phase, BasicTooltipProvider {
 	}
 
 	/**
-	 * Flag indicating whether the axes are fixed. The default is fixed axes.
+	 * Flag indicating whether the axes are fixed. The default is axes that can be
+	 * changed.
 	 */
 	boolean hasFixedAxes = false;
 
@@ -97,18 +98,27 @@ public class TraitMap implements Data2Phase, BasicTooltipProvider {
 	 */
 	protected double maxY;
 
+	/**
+	 * The most recent data point included in the extremes, {@link #minX},
+	 * {@link #maxX}, {@link #minY} and {@link #maxY}.
+	 */
+	private double[] lastData;
+
 	@Override
 	public void reset() {
 		minX = Double.POSITIVE_INFINITY;
 		maxX = Double.NEGATIVE_INFINITY;
 		minY = Double.POSITIVE_INFINITY;
 		maxY = Double.NEGATIVE_INFINITY;
+		lastData = null;
 	}
 
 	@Override
 	public void setTraits(int[] x, int[] y) {
 		stateX = ArrayMath.clone(x);
 		stateY = ArrayMath.clone(y);
+		// extremes refer to previous traits
+		reset();
 	}
 
 	@Override
@@ -138,25 +148,46 @@ public class TraitMap implements Data2Phase, BasicTooltipProvider {
 
 	@Override
 	public boolean data2Phase(double[] data, Point2D point) {
-		// NOTE: data[0] is time
-		double x = data[stateX[0] + 1];
-		int nx = stateX.length;
-		if (nx > 1) {
-			for (int n = 1; n < nx; n++)
-				x += data[stateX[n] + 1];
-		}
-		minX = Math.min(minX, x);
-		maxX = Math.max(maxX, x);
-		double y = data[stateY[0] + 1];
-		int ny = stateY.length;
-		if (ny > 1) {
-			for (int n = 1; n < ny; n++)
-				y += data[stateY[n] + 1];
-		}
-		minY = Math.min(minY, y);
-		maxY = Math.max(maxY, y);
-		point.set(x, y);
+		point.set(sum(data, stateX), sum(data, stateY));
 		return true;
+	}
+
+	/**
+	 * Sum the values of {@code data} across all the trait indices in {@code idxs}.
+	 *
+	 * @param data the data point (with time as the first element)
+	 * @param idxs the array of trait indices
+	 * @return the sum of the values
+	 */
+	private static double sum(double[] data, int[] idxs) {
+		// NOTE: data[0] is time
+		double sum = 0.0;
+		for (int idx : idxs)
+			sum += data[idx + 1];
+		return sum;
+	}
+
+	/**
+	 * Extend the extremes by the data points added to {@code buffer} since the
+	 * last update. Only buffered data counts, not, e.g., mapped markers.
+	 *
+	 * @param buffer the buffer with data points
+	 */
+	private void update(RingBuffer<double[]> buffer) {
+		if (buffer == null || buffer.isEmpty() || buffer.last() == lastData)
+			return;
+		// iterate from the most recent data point backwards
+		for (double[] data : buffer) {
+			if (data == lastData)
+				break;
+			double x = sum(data, stateX);
+			double y = sum(data, stateY);
+			minX = Math.min(minX, x);
+			maxX = Math.max(maxX, x);
+			minY = Math.min(minY, y);
+			maxY = Math.max(maxY, y);
+		}
+		lastData = buffer.last();
 	}
 
 	@Override
@@ -174,74 +205,26 @@ public class TraitMap implements Data2Phase, BasicTooltipProvider {
 
 	@Override
 	public double getMinX(RingBuffer<double[]> buffer) {
-		if (!Double.isFinite(minX))
-			minX = findMin(buffer, stateX);
+		update(buffer);
 		return minX;
 	}
 
 	@Override
 	public double getMaxX(RingBuffer<double[]> buffer) {
-		if (!Double.isFinite(maxX))
-			maxX = findMax(buffer, stateX);
+		update(buffer);
 		return maxX;
 	}
 
 	@Override
 	public double getMinY(RingBuffer<double[]> buffer) {
-		if (!Double.isFinite(minY))
-			minY = findMin(buffer, stateY);
+		update(buffer);
 		return minY;
 	}
 
 	@Override
 	public double getMaxY(RingBuffer<double[]> buffer) {
-		if (!Double.isFinite(maxY))
-			maxY = findMax(buffer, stateY);
+		update(buffer);
 		return maxY;
-	}
-
-	/**
-	 * Find the minimum value of the data in the buffer accross all the indices in
-	 * <code>idxs</code>.
-	 * 
-	 * @param buffer the buffer with data points
-	 * @param idxs   the array of indices
-	 * @return the minimum value
-	 */
-	private double findMin(RingBuffer<double[]> buffer, int[] idxs) {
-		double min = Double.POSITIVE_INFINITY;
-		for (double[] data : buffer) {
-			double d = data[idxs[0] + 1];
-			int nd = idxs.length;
-			if (nd > 1) {
-				for (int n = 1; n < nd; n++)
-					d += data[idxs[n] + 1];
-			}
-			min = Math.min(min, d);
-		}
-		return min;
-	}
-
-	/**
-	 * Find the maximum value of the data in the buffer accross all the indices in
-	 * <code>idxs</code>.
-	 * 
-	 * @param buffer the buffer with data points
-	 * @param idxs   the array of indices
-	 * @return the maximum value
-	 */
-	private double findMax(RingBuffer<double[]> buffer, int[] idxs) {
-		double max = Double.NEGATIVE_INFINITY;
-		for (double[] data : buffer) {
-			double d = data[idxs[0] + 1];
-			int nd = idxs.length;
-			if (nd > 1) {
-				for (int n = 1; n < nd; n++)
-					d += data[idxs[n] + 1];
-			}
-			max = Math.max(max, d);
-		}
-		return max;
 	}
 
 	@Override

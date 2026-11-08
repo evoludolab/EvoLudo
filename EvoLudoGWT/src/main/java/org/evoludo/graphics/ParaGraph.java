@@ -546,6 +546,20 @@ public class ParaGraph extends AbstractGraph<double[]> implements Zooming, Shift
 	}
 
 	/**
+	 * Show the full range of frequencies, {@code [0, 1]} on both axes, without
+	 * zooming or autoscaling.
+	 */
+	public void showFullRange() {
+		stopAutoscale();
+		super.zoom();
+		style.xMin = 0.0;
+		style.xMax = 1.0;
+		style.yMin = 0.0;
+		style.yMax = 1.0;
+		paint(true);
+	}
+
+	/**
 	 * Disable autoscaling because the view was zoomed or shifted manually.
 	 */
 	private void stopAutoscale() {
@@ -906,11 +920,6 @@ public class ParaGraph extends AbstractGraph<double[]> implements Zooming, Shift
 	 */
 	private static final double NEAR_ZERO = 1e-14;
 
-	/**
-	 * Reusable point for autoscale calculations.
-	 */
-	private final Point2D autoscalePoint = new Point2D();
-
 	@Override
 	public void clearHistory() {
 		super.clearHistory();
@@ -919,8 +928,8 @@ public class ParaGraph extends AbstractGraph<double[]> implements Zooming, Shift
 	}
 
 	/**
-	 * Update the extent of all data with the most recent buffered point and, if
-	 * autoscaling is enabled, track the axis ranges to fit all data, see
+	 * If autoscaling is enabled, track the axis ranges to fit the extent of all
+	 * buffered data, as reported by the map, see
 	 * {@link GraphStyle#trackXRange(double, double)} and
 	 * {@link GraphStyle#trackYRange(double, double)}. Without autoscaling the
 	 * ranges remain unchanged, such that trajectories may leave the graph.
@@ -928,8 +937,7 @@ public class ParaGraph extends AbstractGraph<double[]> implements Zooming, Shift
 	private void updateAutoscale() {
 		if (buffer == null || buffer.isEmpty())
 			return;
-		// the map keeps track of the extent of all mapped data
-		map.data2Phase(buffer.last(), autoscalePoint);
+		// the map keeps track of the extent of all buffered data
 		if (buffer.getSize() <= 1)
 			map.reset();
 		boolean changed = false;

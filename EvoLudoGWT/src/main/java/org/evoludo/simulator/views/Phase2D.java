@@ -390,16 +390,7 @@ public class Phase2D extends AbstractView<ParaGraph> {
 			graph.autoscale();
 			graph.paint(true);
 		});
-		ContextMenuItem fullRangeMenu = new ContextMenuItem("Full range", () -> {
-			GraphStyle style = graph.getStyle();
-			style.autoscaleX = false;
-			style.autoscaleY = false;
-			style.xMin = 0.0;
-			style.xMax = 1.0;
-			style.yMin = 0.0;
-			style.yMax = 1.0;
-			graph.paint(true);
-		});
+		ContextMenuItem fullRangeMenu = new ContextMenuItem("Full range", graph::showFullRange);
 		GraphStyle style = graph.getStyle();
 		autoscaleMenu.setChecked(style.autoscaleX && style.autoscaleY);
 		axesMenu.add(autoscaleMenu);
@@ -542,6 +533,8 @@ public class Phase2D extends AbstractView<ParaGraph> {
 				map.setTraits(toggleState(map.getTraitsX(), traitItems), map.getTraitsY());
 			else
 				map.setTraits(map.getTraitsX(), toggleState(map.getTraitsY(), traitItems));
+			// refit autoscaled axes to the new traits
+			graph.autoscale();
 			Phase2D.this.reset(false);
 		}
 
