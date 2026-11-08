@@ -2629,7 +2629,8 @@ public abstract class AbstractGraph<B> extends FocusPanel
 				}
 				if (!gesture.drag(x, y))
 					return;
-				shift(gesture.getDX(), gesture.getDY());
+				if (shifter != null)
+					shifter.shift(gesture.getDX(), gesture.getDY());
 				event.preventDefault();
 				break;
 			case 2:
@@ -2647,8 +2648,10 @@ public abstract class AbstractGraph<B> extends FocusPanel
 				if (!gesture.pinch(x0, y0, x1, y1))
 					return;
 				// moving the pinch shifts the view
-				shift(gesture.getDX(), gesture.getDY());
-				zoom(gesture.getScale(), gesture.getX(), gesture.getY());
+				if (shifter != null)
+					shifter.shift(gesture.getDX(), gesture.getDY());
+				if (zoomer != null)
+					zoomer.zoom(gesture.getScale(), gesture.getX(), gesture.getY());
 				event.preventDefault();
 				break;
 			default:
