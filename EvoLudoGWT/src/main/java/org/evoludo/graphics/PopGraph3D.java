@@ -33,6 +33,7 @@ package org.evoludo.graphics;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Objects;
 
 import org.evoludo.geom.Node3D;
 import org.evoludo.simulator.ColorMap3D;
@@ -793,6 +794,9 @@ public class PopGraph3D extends GenericPopGraph<MeshLambertMaterial, Network3DGW
 
 	@Override
 	public boolean parse(String args) {
+		if (Objects.equals(args, options))
+			return true;
+		options = args;
 		boolean ok = true;
 		// set default
 		mode = Mode.PERSPECTIVE;

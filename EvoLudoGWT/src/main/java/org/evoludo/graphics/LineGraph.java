@@ -33,6 +33,7 @@ package org.evoludo.graphics;
 import java.awt.Color;
 import java.util.Arrays;
 import java.util.Iterator;
+import java.util.Objects;
 
 import org.evoludo.graphics.AbstractGraph.HasLogScaleY;
 import org.evoludo.graphics.AbstractGraph.Shifting;
@@ -325,6 +326,9 @@ public class LineGraph extends AbstractGraph<double[]>
 
 	@Override
 	public boolean parse(String args) {
+		if (Objects.equals(args, options))
+			return true;
+		options = args;
 		// set defaults
 		style.autoscaleX = false;
 		style.autoscaleY = true;

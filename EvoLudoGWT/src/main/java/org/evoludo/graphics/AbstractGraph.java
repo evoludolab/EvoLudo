@@ -714,9 +714,19 @@ public abstract class AbstractGraph<B> extends FocusPanel
 	}
 
 	/**
-	 * Parse the arguments for the graph. Default implementation does nothing.
-	 * 
-	 * @param args the arguments for the graph
+	 * The options most recently parsed by this graph, or {@code null} if none.
+	 *
+	 * @see #parse(String)
+	 */
+	protected String options;
+
+	/**
+	 * Restore the default settings of the graph and parse the options
+	 * {@code args}, unless they were already parsed. This preserves settings
+	 * changed through the GUI, e.g. the context menu, when the model is reset or
+	 * parameters change. Default implementation does nothing.
+	 *
+	 * @param args the options for the graph, or {@code null} for the defaults
 	 * @return {@code true} if parsing was successful
 	 */
 	public boolean parse(String args) {

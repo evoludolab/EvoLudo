@@ -302,13 +302,14 @@ public abstract class AbstractView<G extends AbstractGraph<?>> extends Composite
 
 	/**
 	 * Parse the arguments provided to this view. The default implementation simply
-	 * passes the currently configured option string to all graphs.
+	 * passes the currently configured option string to all graphs, which apply
+	 * them only if they changed.
 	 *
 	 * @return {@code true} if the arguments were successfully parsed
+	 *
+	 * @see AbstractGraph#parse(String)
 	 */
 	public boolean parse() {
-		if (options == null)
-			return true;
 		boolean ok = true;
 		for (G graph : graphs)
 			ok &= graph.parse(options);
