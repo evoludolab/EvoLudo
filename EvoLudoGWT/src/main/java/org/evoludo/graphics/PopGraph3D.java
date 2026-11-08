@@ -266,8 +266,13 @@ public class PopGraph3D extends GenericPopGraph<MeshLambertMaterial, Network3DGW
 	 * @return {@code true} if a camera is available for rendering
 	 */
 	private boolean ensureCamera() {
-		if (graph3DCamera != null)
+		if (graph3DCamera != null) {
+			// resetting the network clears the shared camera: register this one again
+			// to keep the perspectives of different views in sync
+			if (network != null && network.getWorldView() == null)
+				network.setWorldView(graph3DCamera);
 			return true;
+		}
 		if (network == null || graph3DScene == null)
 			return false;
 		graph3DCamera = network.getWorldView();
