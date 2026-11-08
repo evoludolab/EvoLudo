@@ -359,14 +359,6 @@ public abstract class AbstractGraph<B> extends FocusPanel
 		 * The maximum zoom level.
 		 */
 		public final double ZOOM_MAX = 25.0;
-
-		/**
-		 * Adjust zoom level by the factor {@code zoom}. Leave the center of the view in
-		 * place.
-		 *
-		 * @param zoom the new zoom level
-		 */
-		public void zoom(double zoom);
 	}
 
 	/**
@@ -388,6 +380,14 @@ public abstract class AbstractGraph<B> extends FocusPanel
 		 * @see #onTouchMove(TouchMoveEvent)
 		 */
 		public void zoom(double zoom, int x, int y);
+
+		/**
+		 * Adjust zoom level by the factor {@code zoom}. Leave the center of the view in
+		 * place.
+		 *
+		 * @param zoom the new zoom level
+		 */
+		public void zoom(double zoom);
 
 		/**
 		 * Reset the view to its defaults, or as specified by the options of the view,
@@ -999,17 +999,18 @@ public abstract class AbstractGraph<B> extends FocusPanel
 
 	/**
 	 * Add a clear-history entry to the context menu when this graph stores history
-	 * and a reset-view entry when it supports zooming.
+	 * and a reset-view entry when it supports zooming. The view decides which
+	 * graphs are affected.
 	 *
 	 * @param menu the context menu to populate
+	 *
+	 * @see AbstractView#clearHistory(AbstractGraph)
+	 * @see Zoomer#resetView()
 	 */
 	protected void addClearMenu(ContextMenu menu) {
 		int nItems = menu.getWidgetCount();
 		if (hasHistory())
-			menu.add(new ContextMenuItem("Clear", () -> {
-				clearHistory();
-				paint(true);
-			}));
+			menu.add(new ContextMenuItem("Clear", () -> view.clearHistory(this)));
 		if (zoomer != null)
 			menu.add(new ContextMenuItem("Reset view", zoomer::resetView));
 		if (menu.getWidgetCount() > nItems)
@@ -2681,11 +2682,12 @@ public abstract class AbstractGraph<B> extends FocusPanel
 		/**
 		 * {@inheritDoc}
 		 * <p>
-		 * Adjusts the zoom level by the factor {@code zoom},
+		 * Adjusts the zoom level by the factor {@code zoom}, for all graphs if the
+		 * view handles zooming.
 		 */
 		@Override
 		public void execute() {
-			zoom(zoom);
+			zoomer.zoom(zoom);
 		}
 	}
 

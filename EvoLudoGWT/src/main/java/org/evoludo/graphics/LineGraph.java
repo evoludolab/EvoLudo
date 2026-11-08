@@ -230,6 +230,13 @@ public class LineGraph extends AbstractGraph<double[]>
 	private String realTimeLabel = "time";
 
 	/**
+	 * The view of this graph. The graphs of the view share the time axis.
+	 *
+	 * @see Mean#forAllGraphs(java.util.function.Consumer)
+	 */
+	private final Mean mean;
+
+	/**
 	 * Create new line graph for {@code view}. The {@code id} is used to
 	 * distinguish different graphs of the same module to visualize different
 	 * components of the data and represents the index of the data column.
@@ -239,6 +246,7 @@ public class LineGraph extends AbstractGraph<double[]>
 	 */
 	public LineGraph(Mean view, Module<?> module) {
 		super(view, module);
+		mean = view;
 		// show a window of the recent history by default, see parse(String)
 		style.autoscaleX = false;
 	}
@@ -1341,9 +1349,13 @@ public class LineGraph extends AbstractGraph<double[]>
 
 	@Override
 	public void populateLocalAxesMenu(ContextMenu axesMenu) {
+		// x-axis settings apply to all graphs of the view, y-axis settings to this one
 		ContextMenuCheckBoxItem autoscaleXMenu = new ContextMenuCheckBoxItem("Autoscale", () -> {
-			style.autoscaleX = !style.autoscaleX;
-			paint(true);
+			boolean autoscale = !style.autoscaleX;
+			mean.forAllGraphs(g -> {
+				g.style.autoscaleX = autoscale;
+				g.paint(true);
+			});
 		});
 		ContextMenuCheckBoxItem autoscaleYMenu = new ContextMenuCheckBoxItem("Autoscale", () -> {
 			style.autoscaleY = !style.autoscaleY;
@@ -1360,25 +1372,31 @@ public class LineGraph extends AbstractGraph<double[]>
 			}
 			paint(true);
 		});
-		ContextMenuItem fullXRangeMenu = new ContextMenuItem("Full range", () -> {
-			if (updateXRangeFromBuffer())
-				paint(true);
-		});
+		ContextMenuItem fullXRangeMenu = new ContextMenuItem("Full range", () -> mean.forAllGraphs(g -> {
+			if (g.updateXRangeFromBuffer())
+				g.paint(true);
+		}));
 		ContextMenuCheckBoxItem logYAxesMenu = new ContextMenuCheckBoxItem("Logarithmic", () -> {
 			setLogY(!style.logScaleY);
 			paint(true);
 		});
 		ContextMenuCheckBoxItem absoluteTimeMenu = new ContextMenuCheckBoxItem("Absolute " + style.xLabel, () -> {
-			style.offsetXTickLabels = !style.offsetXTickLabels;
-			if (style.offsetXTickLabels)
-				updateXTickOffset();
-			else
-				style.xTickOffset = 0.0;
-			paint(true);
+			boolean absolute = !style.offsetXTickLabels;
+			mean.forAllGraphs(g -> {
+				g.style.offsetXTickLabels = absolute;
+				if (absolute)
+					g.updateXTickOffset();
+				else
+					g.style.xTickOffset = 0.0;
+				g.paint(true);
+			});
 		});
 		ContextMenuCheckBoxItem realTimeMenu = new ContextMenuCheckBoxItem("Use " + realTimeLabel, () -> {
-			userSetAxis = true;
-			switchAxis(!useRealTime);
+			boolean realTime = !useRealTime;
+			mean.forAllGraphs(g -> {
+				g.userSetAxis = true;
+				g.switchAxis(realTime);
+			});
 		});
 		String axisLabel = style.xLabel == null ? "time" : style.xLabel;
 		autoscaleXMenu.setChecked(style.autoscaleX);
@@ -1463,16 +1481,16 @@ public class LineGraph extends AbstractGraph<double[]>
 
 	@Override
 	protected void populateZoomMenu(ContextMenu menu) {
-		menu.add(new ContextMenuItem("Zoom to fit", () -> {
-			if (style.autoscaleY)
-				style.autoscaleY = false;
-			boolean updatedX = updateXRangeFromBuffer();
-			boolean updatedY = fitYRangeToVisible(false);
+		menu.add(new ContextMenuItem("Zoom to fit", () -> mean.forAllGraphs(g -> {
+			if (g.style.autoscaleY)
+				g.style.autoscaleY = false;
+			boolean updatedX = g.updateXRangeFromBuffer();
+			boolean updatedY = g.fitYRangeToVisible(false);
 			if (updatedY)
-				clampLogRange();
+				g.clampLogRange();
 			if (updatedX || updatedY)
-				paint(true);
-		}));
+				g.paint(true);
+		})));
 		menu.addHeader("X-axis");
 		super.populateZoomMenu(menu);
 	}

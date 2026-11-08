@@ -932,6 +932,32 @@ public abstract class AbstractView<G extends AbstractGraph<?>> extends Composite
 	}
 
 	/**
+	 * Default implementation for synchronized zooming of multiple graphs, keeping
+	 * their centers in place.
+	 *
+	 * @param zoom the zoom factor
+	 *
+	 * @see AbstractGraph.Zoomer#zoom(double)
+	 */
+	public void zoom(double zoom) {
+		for (G graph : graphs) {
+			if (graph instanceof Zoomer)
+				((Zoomer) graph).zoom(zoom);
+		}
+	}
+
+	/**
+	 * Clear the history of {@code graph}. Views whose graphs share the history,
+	 * e.g. the time axis, clear the history of all graphs.
+	 *
+	 * @param graph the graph whose history is cleared
+	 */
+	public void clearHistory(AbstractGraph<?> graph) {
+		graph.clearHistory();
+		graph.paint(true);
+	}
+
+	/**
 	 * Opportunity for view to implement keyboard shortcut for actions (repeating).
 	 * If the key remains pressed this event is triggered repeatedly.
 	 * 
