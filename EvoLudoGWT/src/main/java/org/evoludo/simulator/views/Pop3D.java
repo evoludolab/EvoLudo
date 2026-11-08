@@ -193,7 +193,16 @@ public class Pop3D extends GenericPop<MeshLambertMaterial, Network3DGWT, PopGrap
 		for (Module<?> mod : species)
 			nGraphs += displaySingle(mod) ? 1 : 2;
 
-		if (graphs.size() == nGraphs)
+		// graphs must belong to the same species
+		boolean compatible = graphs.size() == nGraphs;
+		int idx = 0;
+		for (Module<?> mod : species) {
+			if (!compatible)
+				break;
+			compatible = graphs.get(idx++).getModule() == mod
+					&& (displaySingle(mod) || graphs.get(idx++).getModule() == mod);
+		}
+		if (compatible)
 			return false;
 
 		destroyGraphs();
@@ -218,7 +227,7 @@ public class Pop3D extends GenericPop<MeshLambertMaterial, Network3DGWT, PopGrap
 		}
 		int width = 100 / gCols;
 		int height = 100 / gRows;
-		int idx = 0;
+		idx = 0;
 		for (Module<?> mod : species) {
 			PopGraph3D graph = graphs.get(idx++);
 			graph.setSize(width + "%", height + "%");
@@ -263,11 +272,12 @@ public class Pop3D extends GenericPop<MeshLambertMaterial, Network3DGWT, PopGrap
 		super.reset(hard);
 		// IMPORTANT: to avoid problems with WebGL and 3D rendering, each graph needs to
 		// have its own color map
-		boolean inter = true;
+		Module<?> prev = null;
 		for (PopGraph3D graph : graphs) {
-			// update geometries associated with the graphs
-			setGraphGeometry(graph, inter);
-			inter = !inter;
+			// update geometries associated with the graphs: the first graph of each
+			// species shows the interaction, a second one the competition geometry
+			setGraphGeometry(graph, graph.getModule() != prev);
+			prev = graph.getModule();
 
 			Module<?> module = graph.getModule();
 			ColorMap<MeshLambertMaterial> cMap = createColorMap(module);

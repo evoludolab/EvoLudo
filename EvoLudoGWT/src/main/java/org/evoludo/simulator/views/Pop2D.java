@@ -206,16 +206,19 @@ public class Pop2D extends GenericPop<String, Network2D, PopGraph2D> implements 
 		boolean compatible = graphs.size() == nGraphs;
 		if (compatible) {
 			int idx = 0;
+			// graphs must belong to the same species and match the geometries
 			for (Module<?> mod : species) {
+				PopGraph2D graph = graphs.get(idx++);
 				AbstractGeometry geometry = resolveIBSGeometry(mod, true);
-				if (isLinearGeometry(geometry) != (graphs.get(idx++) instanceof PopGraph1D)) {
+				if (graph.getModule() != mod || isLinearGeometry(geometry) != (graph instanceof PopGraph1D)) {
 					compatible = false;
 					break;
 				}
 				if (displaySingle(mod))
 					continue;
+				graph = graphs.get(idx++);
 				geometry = resolveIBSGeometry(mod, false);
-				if (isLinearGeometry(geometry) != (graphs.get(idx++) instanceof PopGraph1D)) {
+				if (graph.getModule() != mod || isLinearGeometry(geometry) != (graph instanceof PopGraph1D)) {
 					compatible = false;
 					break;
 				}
@@ -333,11 +336,12 @@ public class Pop2D extends GenericPop<String, Network2D, PopGraph2D> implements 
 	@Override
 	public void reset(boolean hard) {
 		super.reset(hard);
-		boolean inter = true;
+		Module<?> prev = null;
 		for (PopGraph2D graph : graphs) {
-			// update geometries associated with the graphs
-			setGraphGeometry(graph, inter);
-			inter = !inter;
+			// update geometries associated with the graphs: the first graph of each
+			// species shows the interaction, a second one the competition geometry
+			setGraphGeometry(graph, graph.getModule() != prev);
+			prev = graph.getModule();
 
 			// configure graphical style and detect if this requires a hard reset
 			boolean changed = configureGraph(graph);
