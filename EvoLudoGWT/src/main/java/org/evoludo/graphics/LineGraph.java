@@ -1481,9 +1481,8 @@ public class LineGraph extends AbstractGraph<double[]>
 
 	@Override
 	protected void populateZoomMenu(ContextMenu menu) {
+		// one-off fit, autoscaling remains unchanged
 		menu.add(new ContextMenuItem("Zoom to fit", () -> mean.forAllGraphs(g -> {
-			if (g.style.autoscaleY)
-				g.style.autoscaleY = false;
 			boolean updatedX = g.updateXRangeFromBuffer();
 			boolean updatedY = g.fitYRangeToVisible(false);
 			if (updatedY)
