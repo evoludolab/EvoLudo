@@ -105,10 +105,10 @@ import com.google.gwt.core.client.Scheduler;
  * array into the RingBuffer (the caller must ensure the first element is
  * time and the array is not modified afterwards), thinned by
  * {@link Thinning} to conserve memory.</li>
- * <li>Resetting/initialization: reset() prepares the buffer, initializes
- * autoscaled y-range and recomputes the number of steps along x relative
- * to the current view. Buffer size is at least DEFAULT_BUFFER_SIZE or the
- * view width, and steps are clamped between 1 and buffer capacity.</li>
+ * <li>Resetting/initialization: reset() clears the history and prepares the
+ * buffer, but retains the view. Buffer size is at least DEFAULT_BUFFER_SIZE
+ * or the view width. A new time step, see setTimeStep(double), shows the
+ * most recent history.</li>
  * <li>Painting: paint(boolean force) applies autoscaling, then renders the
  * lines, optional markers and axes frame. The method clips drawing to the plotting area, supports
  * linear or log y-scaling, and draws colored lines and markers using the
@@ -140,8 +140,8 @@ import com.google.gwt.core.client.Scheduler;
  *
  * <h3>Fields of interest (summary):</h3>
  * <ul>
- * <li>steps: number of steps shown along the x-axis (clamped to [1,
- * buffer.capacity]).</li>
+ * <li>timeStep: time between samples, i.e. the reporting interval of the
+ * model.</li>
  * <li>buffer: RingBuffer&lt;double[]&gt; storing historical data arrays (time +
  * values).</li>
  * <li>style: visual and interaction configuration (xMin/xMax/yMin/yMax,
@@ -186,11 +186,6 @@ import com.google.gwt.core.client.Scheduler;
 @SuppressWarnings("java:S110")
 public class LineGraph extends AbstractGraph<double[]>
 		implements Shifting, Zooming, HasLogScaleY, BasicTooltipProvider {
-
-	/**
-	 * The default number of (time) steps shown on this graph.
-	 */
-	double steps = DEFAULT_STEPS;
 
 	/**
 	 * The number of lines to plot.
@@ -1108,21 +1103,26 @@ public class LineGraph extends AbstractGraph<double[]>
 	}
 
 	/**
-	 * Get the number of steps along the {@code x}-axis.
-	 * 
-	 * @return the number of steps
+	 * The time between subsequent samples, i.e. the reporting interval of the
+	 * model. Unlike {@code style.xIncr} it does not change when switching the
+	 * {@code x}-axis between updates and real time.
 	 */
-	public double getSteps() {
-		return steps;
-	}
+	private double timeStep = 0.0;
 
 	/**
-	 * Set the number of steps along the {@code x}-axis.
-	 * 
-	 * @param steps the number of steps
+	 * Set the time between subsequent samples. A new time step resets the view to
+	 * show the most recent history and requires a reset of the graph.
+	 *
+	 * @param timeStep the time between samples
+	 * @return {@code true} if the time step changed
 	 */
-	public void setSteps(double steps) {
-		this.steps = Math.max(1.0, Math.min(buffer.getCapacity(), steps));
+	public boolean setTimeStep(double timeStep) {
+		if (Math.abs(this.timeStep - timeStep) < Model.EPS)
+			return false;
+		this.timeStep = timeStep;
+		style.xIncr = timeStep;
+		zoom();
+		return true;
 	}
 
 	@Override
@@ -1440,7 +1440,7 @@ public class LineGraph extends AbstractGraph<double[]>
 		if (Double.isFinite(newMin) && Double.isFinite(newMax) && newMin < newMax) {
 			style.xMin = newMin;
 			style.xMax = newMax;
-			style.xIncr = (style.xMax - style.xMin) / Math.max(1.0, steps);
+			style.xIncr = (style.xMax - style.xMin) / DEFAULT_STEPS;
 		}
 		if (style.offsetXTickLabels)
 			updateXTickOffset();
