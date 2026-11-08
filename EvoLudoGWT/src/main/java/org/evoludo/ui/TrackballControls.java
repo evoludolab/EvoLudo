@@ -601,6 +601,12 @@ public class TrackballControls extends Controls implements MouseWheelHandler, Mo
 	public void onMouseMove(MouseMoveEvent event) {
 		if (!isDragging)
 			return;
+		if (!Gesture.isPrimaryButtonDown(event.getNativeEvent())) {
+			// button released without mouse up event, e.g. outside of the window
+			isDragging = false;
+			gesture.release();
+			return;
+		}
 
 		boolean isShift = event.isShiftKeyDown();
 		if (isShift) {

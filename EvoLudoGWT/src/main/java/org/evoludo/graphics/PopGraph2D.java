@@ -47,11 +47,9 @@ import org.evoludo.ui.ContextMenuRadioItem;
 import org.evoludo.ui.Gesture;
 
 import com.google.gwt.core.client.JsArray;
-import com.google.gwt.dom.client.NativeEvent;
 import com.google.gwt.dom.client.Touch;
 import com.google.gwt.event.dom.client.MouseDownEvent;
 import com.google.gwt.event.dom.client.MouseMoveEvent;
-import com.google.gwt.event.dom.client.MouseUpEvent;
 import com.google.gwt.event.dom.client.TouchCancelEvent;
 import com.google.gwt.event.dom.client.TouchEndEvent;
 import com.google.gwt.event.dom.client.TouchMoveEvent;
@@ -1200,17 +1198,15 @@ public class PopGraph2D extends GenericPopGraph<String, Network2D> implements Sh
 	 * @see #onMouseMove(MouseMoveEvent)
 	 */
 	@Override
-	public void onMouseUp(MouseUpEvent event) {
-		super.onMouseUp(event);
-		if (event.getNativeButton() == NativeEvent.BUTTON_LEFT) {
-			if (hitDragged) {
-				// reshow tooltip after dragging
-				hitDragged = false;
-				tooltip.update();
-			}
-			hitNode = -1;
-			element.removeClassName(CURSOR_GRAB_NODE_CLASS);
+	protected void endDrag() {
+		super.endDrag();
+		if (hitDragged) {
+			// reshow tooltip after dragging
+			hitDragged = false;
+			tooltip.update();
 		}
+		hitNode = -1;
+		element.removeClassName(CURSOR_GRAB_NODE_CLASS);
 	}
 
 	/**
@@ -1225,6 +1221,8 @@ public class PopGraph2D extends GenericPopGraph<String, Network2D> implements Sh
 	 */
 	@Override
 	public void onMouseMove(MouseMoveEvent event) {
+		if (isReleased(event))
+			return;
 		if (supportsNodeDragging() && hitNode >= 0) {
 			event.preventDefault();
 			hitDragged = true;

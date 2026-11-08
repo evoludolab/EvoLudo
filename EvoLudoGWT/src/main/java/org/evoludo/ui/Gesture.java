@@ -32,6 +32,7 @@ package org.evoludo.ui;
 
 import com.google.gwt.core.client.Duration;
 import com.google.gwt.dom.client.Element;
+import com.google.gwt.dom.client.NativeEvent;
 import com.google.gwt.user.client.Timer;
 
 /**
@@ -320,6 +321,20 @@ public class Gesture {
 		if (pointerId != NO_POINTER && setPointerCapture(element, pointerId))
 			captured = pointerId;
 	}
+
+	/**
+	 * Check if the primary (left) mouse button is pressed during the mouse event
+	 * {@code event}. Releasing the button outside of the browser window does not
+	 * necessarily trigger a {@code mouseup} event, such that a gesture may remain
+	 * active without the button being pressed. Mouse moves report the actual state
+	 * of the buttons.
+	 *
+	 * @param event the mouse event
+	 * @return {@code true} if the primary button is pressed
+	 */
+	public static native boolean isPrimaryButtonDown(NativeEvent event) /*-{
+		return (event.buttons & 1) !== 0;
+	}-*/;
 
 	/**
 	 * Capture the pointer with id {@code id} by {@code element}.

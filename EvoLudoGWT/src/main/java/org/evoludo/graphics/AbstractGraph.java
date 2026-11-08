@@ -2461,14 +2461,42 @@ public abstract class AbstractGraph<B> extends FocusPanel
 	@Override
 	public void onMouseUp(MouseUpEvent event) {
 		if (event.getNativeButton() == NativeEvent.BUTTON_LEFT) {
-			leftMouseButton = false;
-			gesture.release();
-			if (mouseMoveHandler != null) {
-				mouseMoveHandler.removeHandler();
-				mouseMoveHandler = null;
-			}
+			endDrag();
 			event.preventDefault();
 		}
+	}
+
+	/**
+	 * End dragging with the left mouse button: stop tracking the mouse and
+	 * release the gesture.
+	 *
+	 * @see #onMouseUp(MouseUpEvent)
+	 * @see #isReleased(MouseMoveEvent)
+	 */
+	protected void endDrag() {
+		leftMouseButton = false;
+		gesture.release();
+		if (mouseMoveHandler != null) {
+			mouseMoveHandler.removeHandler();
+			mouseMoveHandler = null;
+		}
+	}
+
+	/**
+	 * Check if the left mouse button was released without a
+	 * {@link MouseUpEvent}, e.g. outside of the browser window, and, if so, end
+	 * dragging.
+	 *
+	 * @param event the mouse move event
+	 * @return {@code true} if dragging ended
+	 *
+	 * @see Gesture#isPrimaryButtonDown(NativeEvent)
+	 */
+	protected boolean isReleased(MouseMoveEvent event) {
+		if (!leftMouseButton || Gesture.isPrimaryButtonDown(event.getNativeEvent()))
+			return false;
+		endDrag();
+		return true;
 	}
 
 	/**
@@ -2484,6 +2512,8 @@ public abstract class AbstractGraph<B> extends FocusPanel
 	 */
 	@Override
 	public void onMouseMove(MouseMoveEvent event) {
+		if (isReleased(event))
+			return;
 		if (leftMouseButton) {
 			// shift view
 			if (!gesture.drag(event.getX(), event.getY()))
