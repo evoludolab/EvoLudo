@@ -129,9 +129,7 @@ import org.evoludo.util.Formatter;
  * {@code view.type} (degree, fitness, trait and several statistics types have
  * specialized tooltip formats).</li>
  * <li>Context menu support includes an Axes submenu with autoscaling,
- * full-range,
- * and right y-axis controls; autoscaling can be enabled/disabled via
- * {@link #enableAutoscaleYMenu(boolean)}.</li>
+ * full-range and right y-axis controls.</li>
  * </ul>
  *
  * <h2>Usage notes and important constraints</h2>
@@ -950,20 +948,6 @@ public class HistoGraph extends AbstractGraph<double[]> implements BasicTooltipP
 				+ Formatter.formatPercent(data[row][bar] / getSamples(), 2) + TABLE_ROW_END + TABLE_END);
 	}
 
-	/**
-	 * The flag to indicate whether the autoscale y-axis menu is enabled.
-	 */
-	private boolean enableAutoscaleYMenu = true;
-
-	/**
-	 * Enable or disable the autoscale y-axis menu.
-	 * 
-	 * @param enable {@code true} to enable the autoscale menu
-	 */
-	public void enableAutoscaleYMenu(boolean enable) {
-		enableAutoscaleYMenu = enable;
-	}
-
 	@Override
 	public void populateContextMenuAt(ContextMenu menu, int x, int y) {
 		view.addAxesMenu(menu, this);
@@ -982,7 +966,6 @@ public class HistoGraph extends AbstractGraph<double[]> implements BasicTooltipP
 			paint(true);
 		});
 		autoscaleYMenu.setChecked(style.autoscaleY);
-		autoscaleYMenu.setEnabled(enableAutoscaleYMenu);
 		axesMenu.add(autoscaleYMenu);
 		if (hasFullRangeMenu())
 			axesMenu.add(fullRangeMenu);
