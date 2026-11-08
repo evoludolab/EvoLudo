@@ -580,8 +580,9 @@ public class ParaGraph extends AbstractGraph<double[]> implements Zooming, Shift
 	public void zoom(double zoom) {
 		if (zoom <= 0.0)
 			return;
-		int cx = (int) Math.round(bounds.getX() + bounds.getWidth() * 0.5);
-		int cy = (int) Math.round(bounds.getY() + bounds.getHeight() * 0.5);
+		// center of the graph in coordinates relative to the graph, as for events
+		int cx = (int) Math.round(canvasPadX() + bounds.getX() + bounds.getWidth() * 0.5);
+		int cy = (int) Math.round(canvasPadY() + bounds.getY() + bounds.getHeight() * 0.5);
 		zoom(zoom, cx, cy);
 	}
 

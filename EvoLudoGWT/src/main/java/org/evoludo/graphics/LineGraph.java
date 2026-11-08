@@ -1147,7 +1147,8 @@ public class LineGraph extends AbstractGraph<double[]>
 
 	@Override
 	protected boolean inside(int x, int y) {
-		return bounds.contains(x, y);
+		// event coordinates are relative to the graph, bounds relative to the canvas
+		return bounds.contains(x - canvasPadX(), y - canvasPadY());
 	}
 
 	@Override

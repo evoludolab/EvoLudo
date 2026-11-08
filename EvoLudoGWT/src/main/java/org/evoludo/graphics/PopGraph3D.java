@@ -974,13 +974,16 @@ public class PopGraph3D extends GenericPopGraph<MeshLambertMaterial, Network3DGW
 
 	@Override
 	protected void zoom() {
-		graph3DScene.resetCamera();
+		if (graph3DScene != null)
+			graph3DScene.resetCamera();
 	}
 
 	@Override
 	public void zoom(double zoom) {
-		if (zoom > 0.0)
-			graph3DScene.zoom(1.0 / zoom);
+		// the scene may not (yet) be available, e.g. before the graph is shown
+		if (hasMessage || zoom <= 0.0 || graph3DScene == null)
+			return;
+		graph3DScene.zoom(1.0 / zoom);
 	}
 
 	@Override
@@ -1272,7 +1275,9 @@ public class PopGraph3D extends GenericPopGraph<MeshLambertMaterial, Network3DGW
 		 * @param zoom the new zoom level
 		 */
 		public void zoom(double zoom) {
-			control.zoom(zoom);
+			// the control is only available once the scene has started
+			if (control != null)
+				control.zoom(zoom);
 		}
 	}
 

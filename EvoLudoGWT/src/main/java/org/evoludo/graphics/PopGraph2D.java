@@ -590,7 +590,7 @@ public class PopGraph2D extends GenericPopGraph<String, Network2D> implements Sh
 
 	@Override
 	public String getTooltipAt(int x, int y) {
-		return inside(x, y) ? super.getTooltipAt(x, y) : legend.getTooltipAt(x, y);
+		return onGraph(x, y) ? super.getTooltipAt(x, y) : legend.getTooltipAt(x, y);
 	}
 
 	/**
@@ -1296,8 +1296,16 @@ public class PopGraph2D extends GenericPopGraph<String, Network2D> implements Sh
 		super.onTouchMove(event);
 	}
 
-	@Override
-	protected boolean inside(int x, int y) {
+	/**
+	 * Check if the coordinates {@code (x, y)} are on the graph, i.e. within its
+	 * (zoomed and shifted) bounds rather than, e.g., on the legend. Shifting and
+	 * zooming work anywhere, see {@link #inside(int, int)}.
+	 *
+	 * @param x the {@code x}-coordinate relative to the graph element
+	 * @param y the {@code y}-coordinate relative to the graph element
+	 * @return {@code true} if on the graph
+	 */
+	private boolean onGraph(int x, int y) {
 		// keep aligned with findNodeAt() for consistency
 		double sx = (viewCorner.getX() + x - canvasPadX() - bounds.getX()) / zoomFactor - style.frameWidth * 0.5;
 		double sy = (viewCorner.getY() + y - canvasPadY() - bounds.getY()) / zoomFactor - style.frameWidth * 0.5;
