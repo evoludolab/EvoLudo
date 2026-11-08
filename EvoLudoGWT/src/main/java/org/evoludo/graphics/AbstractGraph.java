@@ -55,6 +55,7 @@ import org.evoludo.util.RingBuffer;
 import com.google.gwt.canvas.client.Canvas;
 import com.google.gwt.canvas.dom.client.Context2d;
 import com.google.gwt.core.client.JsArray;
+import com.google.gwt.core.client.Scheduler;
 import com.google.gwt.core.client.Scheduler.ScheduledCommand;
 import com.google.gwt.dom.client.Document;
 import com.google.gwt.dom.client.Element;
@@ -859,6 +860,8 @@ public abstract class AbstractGraph<B> extends FocusPanel
 		clearMessage();
 		clearHistory();
 		updateCanvas();
+		// the room for tick labels adjusts to the new run
+		drawnYTickLabelWidth = 0.0;
 		// recalculate bounds so that any message reflecting a still-valid display
 		// constraint (e.g. population too big) is restored rather than left cleared
 		// with stale, unusable dimensions
@@ -1238,6 +1241,8 @@ public abstract class AbstractGraph<B> extends FocusPanel
 			double width = measureMidYTickLabelWidth(digits);
 			if (style.percentY)
 				width = Math.max(width, measureYTickLabelWidth(new String[] { "100.0" }, true));
+			// room for the widest tick label drawn since the last reset
+			width = Math.max(width, drawnYTickLabelWidth);
 			// share the width with the other graphs of the view to line up frames
 			cachedMidYTickLabelWidth = view.getYTickLabelWidth(this, width);
 			adjustBoundsForYSide(cachedMidYTickLabelWidth);
@@ -1316,7 +1321,32 @@ public abstract class AbstractGraph<B> extends FocusPanel
 		drawGraphLabel(gscale);
 
 		g.restore();
+		if (drawnYTickLabelWidth > cachedMidYTickLabelWidth + 0.5 && !isRelayoutScheduled) {
+			// tick labels need more room, e.g. after autoscaling or zooming
+			isRelayoutScheduled = true;
+			Scheduler.get().scheduleDeferred(() -> {
+				isRelayoutScheduled = false;
+				if (calcBounds())
+					paint(true);
+			});
+		}
 	}
+
+	/**
+	 * The width of the widest tick label of the {@code y}-axis drawn since the
+	 * last reset. Ensures that the room reserved for the tick labels grows when
+	 * the range of the {@code y}-axis changes, e.g. through autoscaling or zooming,
+	 * but does not shrink until the graph is reset, which avoids jittery frames.
+	 *
+	 * @see #adjustBoundsForTickLabels()
+	 */
+	private double drawnYTickLabelWidth = 0.0;
+
+	/**
+	 * The flag to indicate that recalculating the bounds is scheduled because the
+	 * tick labels of the {@code y}-axis require more room.
+	 */
+	private boolean isRelayoutScheduled = false;
 
 	/**
 	 * Draw the bounding box of the graph frame.
@@ -1616,13 +1646,13 @@ public abstract class AbstractGraph<B> extends FocusPanel
 		double tickValue = style.offsetYTickLabels ? yval + style.yTickOffset : yval;
 		String tick = formatYTickLabel(tickValue, digits);
 		String[] numexp = tick.split("\\^");
+		double labelWidth = measureYTickLabelWidth(numexp, style.percentY);
+		drawnYTickLabelWidth = Math.max(drawnYTickLabelWidth, labelWidth);
 		double xpos;
-		if (style.showYAxisRight) {
+		if (style.showYAxisRight)
 			xpos = w + 0.5 + (style.tickLength + Y_TICK_LABEL_GAP);
-		} else {
-			double labelWidth = measureYTickLabelWidth(numexp, style.percentY);
+		else
 			xpos = 0.5 - (style.tickLength + Y_TICK_LABEL_GAP) - labelWidth;
-		}
 		// center label on tick but keep it within the frame at the top
 		double ypos = Math.max(level + 4.5, 9.5);
 		g.fillText(numexp[0], xpos, ypos);
