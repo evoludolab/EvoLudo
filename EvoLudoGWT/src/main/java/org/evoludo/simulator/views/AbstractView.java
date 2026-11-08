@@ -34,6 +34,7 @@ import java.util.ArrayList;
 import java.util.Date;
 import java.util.Iterator;
 import java.util.List;
+import java.util.function.Consumer;
 
 import org.evoludo.graphics.AbstractGraph;
 import org.evoludo.graphics.AbstractGraph.HasTrajectory;
@@ -944,6 +945,18 @@ public abstract class AbstractView<G extends AbstractGraph<?>> extends Composite
 			if (graph instanceof Zoomer)
 				((Zoomer) graph).zoom(zoom);
 		}
+	}
+
+	/**
+	 * Apply {@code action} to all graphs of this view, e.g. for actions through
+	 * the context menu of one graph that concern all graphs, such as the shared
+	 * time axis of {@link Mean} or the layout of networks in {@link GenericPop}.
+	 *
+	 * @param action the action to apply to each graph
+	 */
+	public void forAllGraphs(Consumer<? super G> action) {
+		for (G graph : graphs)
+			action.accept(graph);
 	}
 
 	/**

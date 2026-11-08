@@ -228,6 +228,7 @@ public class LineGraph extends AbstractGraph<double[]>
 	 * The view of this graph. The graphs of the view share the time axis.
 	 *
 	 * @see Mean#forAllGraphs(java.util.function.Consumer)
+	 * @see Mean#clearHistory(AbstractGraph)
 	 */
 	private final Mean mean;
 

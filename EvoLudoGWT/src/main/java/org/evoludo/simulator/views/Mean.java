@@ -34,7 +34,6 @@ import java.awt.Color;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-import java.util.function.Consumer;
 
 import org.evoludo.graphics.AbstractGraph;
 import org.evoludo.graphics.AbstractGraph.Shifter;
@@ -336,18 +335,6 @@ public class Mean extends AbstractView<LineGraph> implements Shifter, Zoomer {
 	public void modelSettings() {
 		super.modelSettings();
 		reset(false);
-	}
-
-	/**
-	 * Apply {@code action} to all graphs of this view. The graphs share the time
-	 * axis, such that actions concerning the time axis, e.g. through the context
-	 * menu of one graph, apply to all graphs.
-	 *
-	 * @param action the action to apply to each graph
-	 */
-	public void forAllGraphs(Consumer<LineGraph> action) {
-		for (LineGraph graph : graphs)
-			action.accept(graph);
 	}
 
 	@Override

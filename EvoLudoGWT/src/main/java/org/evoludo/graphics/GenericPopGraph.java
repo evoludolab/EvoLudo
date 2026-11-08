@@ -30,6 +30,8 @@
 
 package org.evoludo.graphics;
 
+import java.util.function.Consumer;
+
 import org.evoludo.graphics.AbstractGraph.Zooming;
 import org.evoludo.simulator.ColorMap;
 import org.evoludo.simulator.Network;
@@ -649,23 +651,55 @@ public abstract class GenericPopGraph<T, N extends Network<?>> extends AbstractG
 			return;
 		}
 		addClearMenu(menu);
+		// layout and display settings apply to all graphs of the view
 		if (!hasStaticLayout()) {
-			menu.add(new ContextMenuItem("Shake", () -> network.shake(GenericPopGraph.this, 0.05), "S"));
-			menu.add(new ContextMenuCheckBoxItem("Animate layout", animate, () -> animate = !animate));
+			menu.add(new ContextMenuItem("Shake", () -> forAllGraphs(g -> {
+				if (!g.hasStaticLayout())
+					g.network.shake(g, 0.05);
+			}), "S"));
+			menu.add(new ContextMenuCheckBoxItem("Animate layout", animate, () -> {
+				boolean animated = !animate;
+				forAllGraphs(g -> g.animate = animated);
+			}));
 		}
 		if (colorMap instanceof ColorMap.Index)
 			menu.add(new ContextMenuCheckBoxItem("Mark recent changes", markChanged, () -> {
-				setMarkChanged(!markChanged);
-				Model model = view.getModel();
-				if (model != null)
-					model.getTraitData(module.getId(), data, colorMap);
-				paint(true);
+				boolean mark = !markChanged;
+				forAllGraphs(g -> g.updateMarkChanged(mark));
 			}));
 		// process debug node update
 		addDebugSubmenu(menu, x, y);
 		populateGraphContextMenu(menu, x, y);
 
 		super.populateContextMenuAt(menu, x, y);
+	}
+
+	/**
+	 * Apply {@code action} to all graphs of the view.
+	 *
+	 * @param action the action to apply to each graph
+	 *
+	 * @see AbstractView#forAllGraphs(Consumer)
+	 */
+	private void forAllGraphs(Consumer<GenericPopGraph<?, ?>> action) {
+		view.forAllGraphs(graph -> action.accept((GenericPopGraph<?, ?>) graph));
+	}
+
+	/**
+	 * Mark recently changed traits, or not, and update the colors of the nodes.
+	 *
+	 * @param mark {@code true} to mark recently changed traits
+	 *
+	 * @see #setMarkChanged(boolean)
+	 */
+	private void updateMarkChanged(boolean mark) {
+		if (!(colorMap instanceof ColorMap.Index))
+			return;
+		setMarkChanged(mark);
+		Model model = view.getModel();
+		if (model != null)
+			model.getTraitData(module.getId(), data, colorMap);
+		paint(true);
 	}
 
 	/**
