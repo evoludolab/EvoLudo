@@ -221,6 +221,8 @@ public class Distribution extends AbstractView<PopGraph2D> implements TooltipPro
 			PopGraph2D graph = module.getNTraits() == 1
 					? new PopGraph1D(this, module)
 					: new DistrGraph2D(this, module);
+			// set here because users can move the y-axis to the right
+			graph.getStyle().showYAxisRight = false;
 			wrapper.add(graph);
 			graphs.add(graph);
 			// even if nGraphs did not change, the geometries associated with the graphs
@@ -305,7 +307,6 @@ public class Distribution extends AbstractView<PopGraph2D> implements TooltipPro
 		style.showYLabel = true;
 		style.showYTickLabels = true;
 		style.showYTicks = true;
-		style.showYAxisRight = false;
 		if (hard)
 			graph.reset();
 	}

@@ -451,7 +451,7 @@ public class Histogram extends AbstractView<HistoGraph> {
 				HistoGraph graph = new HistoGraph(this, module, n);
 				wrapper.add(graph);
 				graphs.add(graph);
-				applyDefaultStyle(graph.getStyle());
+				applyDefaultStyle(graph.getStyle(), false);
 				applyTraitStyle(graph, n);
 			}
 		}
@@ -477,7 +477,7 @@ public class Histogram extends AbstractView<HistoGraph> {
 				boolean isGroupEnd = (n == (nTraits - 1));
 				boolean isLastOverall = (++idx == nGraphs);
 				GraphStyle style = graph.getStyle();
-				applyDefaultStyle(style);
+				applyDefaultStyle(style, true);
 				applyFitnessStyle(graph, n);
 				applyXDecorations(style, isGroupEnd, isLastOverall);
 			}
@@ -511,7 +511,7 @@ public class Histogram extends AbstractView<HistoGraph> {
 				boolean isGroupEnd = (n == (nHisto - 1));
 				boolean isLastOverall = (++idx == nGraphs);
 				GraphStyle style = graph.getStyle();
-				applyDefaultStyle(style);
+				applyDefaultStyle(style, false);
 				applyDegreeStyle(graph, n, nHisto);
 				applyXDecorations(style, isGroupEnd, isLastOverall);
 			}
@@ -544,7 +544,7 @@ public class Histogram extends AbstractView<HistoGraph> {
 				boolean isGroupEnd = (n == (nTraits - 1));
 				boolean isLastOverall = (++idx == nGraphs);
 				GraphStyle style = graph.getStyle();
-				applyDefaultStyle(style);
+				applyDefaultStyle(style, true);
 				applyFixationProbabilityStyle(graph, n);
 				applyXDecorations(style, isGroupEnd, isLastOverall);
 			}
@@ -579,7 +579,7 @@ public class Histogram extends AbstractView<HistoGraph> {
 				boolean isGroupEnd = isAbsorption;
 				boolean isLastOverall = (++idx == nGraphs);
 				GraphStyle style = graph.getStyle();
-				applyDefaultStyle(style);
+				applyDefaultStyle(style, true);
 				applyFixationTimeStyle(graph, n, isAbsorption, false);
 				applyXDecorations(style, isGroupEnd, isLastOverall);
 			}
@@ -604,7 +604,7 @@ public class Histogram extends AbstractView<HistoGraph> {
 				boolean isGroupEnd = (n == (nTraits - 1));
 				boolean isLastOverall = (++idx == nGraphs);
 				GraphStyle style = graph.getStyle();
-				applyDefaultStyle(style);
+				applyDefaultStyle(style, true);
 				applyStationaryStyle(graph, n);
 				applyXDecorations(style, isGroupEnd, isLastOverall);
 			}
@@ -612,14 +612,20 @@ public class Histogram extends AbstractView<HistoGraph> {
 	}
 
 	/**
-	 * Apply default style settings to the given graph style.
-	 * 
-	 * @param style the graph style to modify
+	 * Apply default style settings to the given graph style of a newly allocated
+	 * graph. Settings that users can change through the context menu, such as the
+	 * range and autoscaling of the {@code y}-axis, are set here only and are
+	 * retained when the view is reset.
+	 *
+	 * @param style     the graph style to modify
+	 * @param autoscale {@code true} to autoscale the {@code y}-axis
 	 */
-	private void applyDefaultStyle(GraphStyle style) {
+	private void applyDefaultStyle(GraphStyle style, boolean autoscale) {
 		style.yLabel = "frequency";
 		style.percentY = true;
-		style.autoscaleY = false;
+		style.autoscaleY = autoscale;
+		style.yMin = 0.0;
+		style.yMax = 1.0;
 		style.showYLabel = true;
 		style.showYTickLabels = true;
 		style.showYAxisRight = false;
@@ -665,8 +671,6 @@ public class Histogram extends AbstractView<HistoGraph> {
 			style.xMax = max;
 			hard = true;
 		}
-		style.yMin = 0.0;
-		style.yMax = 1.0;
 		style.xLabel = cmod.getTraitName(n);
 		Color[] colors = cmod.getTraitColors();
 		style.graphColor = ColorMapCSS.Color2Css(colors[n]);
@@ -688,13 +692,7 @@ public class Histogram extends AbstractView<HistoGraph> {
 		if (model.isDensity()) {
 			style.yLabel = "density";
 			style.percentY = false;
-			style.yMin = 0.0;
-			style.yMax = 0.0;
-		} else {
-			style.yMin = 0.0;
-			style.yMax = 1.0;
 		}
-		style.autoscaleY = true;
 		style.xLabel = "payoffs";
 		if (model.isContinuous())
 			style.showLabel = isMultispecies;
@@ -767,8 +765,6 @@ public class Histogram extends AbstractView<HistoGraph> {
 		else
 			style.showLabel = true;
 		style.graphColor = "#444";
-		style.yMin = 0.0;
-		style.yMax = 1.0;
 		style.xMin = 0.0;
 		style.xMax = maxDegree(inter, comp);
 	}
@@ -782,12 +778,9 @@ public class Histogram extends AbstractView<HistoGraph> {
 	private void applyFixationProbabilityStyle(HistoGraph graph, int n) {
 		GraphStyle style = graph.getStyle();
 		style.yLabel = "probability";
-		style.autoscaleY = true;
 		style.xLabel = "node";
 		style.showLabel = true;
 		Module<?> module = graph.getModule();
-		style.yMin = 0.0;
-		style.yMax = 1.0;
 		style.xMin = 0;
 		style.xMax = (model.isSDE() ? 1 : module.getNPopulation() - 1);
 		style.label = module.getTraitName(n);
@@ -807,9 +800,6 @@ public class Histogram extends AbstractView<HistoGraph> {
 	private void applyFixationTimeStyle(HistoGraph graph, int n, boolean isAbsorption, boolean isDistribution) {
 		GraphStyle style = graph.getStyle();
 		style.showLabel = true;
-		style.autoscaleY = true;
-		style.yMin = 0.0;
-		style.yMax = 1.0;
 		Module<?> module = graph.getModule();
 		int nPop = module.getNPopulation();
 		if (isAbsorption) {
@@ -846,7 +836,6 @@ public class Histogram extends AbstractView<HistoGraph> {
 	private void applyStationaryStyle(HistoGraph graph, int n) {
 		GraphStyle style = graph.getStyle();
 		style.yLabel = "visits";
-		style.autoscaleY = true;
 		style.showLabel = true;
 		style.percentX = false;
 		Module<?> module = graph.getModule();

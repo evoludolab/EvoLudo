@@ -318,9 +318,10 @@ public class Pop2D extends GenericPop<String, Network2D, PopGraph2D> implements 
 	 * @return a graph with matching specialization
 	 */
 	private PopGraph2D createGraph(Module<?> module, AbstractGeometry geometry) {
-		if (isLinearGeometry(geometry))
-			return new PopGraph1D(this, module);
-		return new PopGraph2D(this, module);
+		PopGraph2D graph = isLinearGeometry(geometry) ? new PopGraph1D(this, module) : new PopGraph2D(this, module);
+		// set here because users can change the legend position
+		graph.getStyle().legendPos = (type == Data.TRAIT ? GraphStyle.Position.NONE : GraphStyle.Position.EAST);
+		return graph;
 	}
 
 	@Override
@@ -464,8 +465,6 @@ public class Pop2D extends GenericPop<String, Network2D, PopGraph2D> implements 
 	private boolean configureGraph(PopGraph2D graph) {
 		AbstractGeometry geometry = graph.getGeometry();
 		GraphStyle style = graph.getStyle();
-		style.legendPos = (type == Data.TRAIT ? GraphStyle.Position.NONE : GraphStyle.Position.EAST);
-
 		if (geometry.isType(GeometryType.LINEAR)) {
 			// frame, ticks, labels needed
 			style.xLabel = "nodes";
