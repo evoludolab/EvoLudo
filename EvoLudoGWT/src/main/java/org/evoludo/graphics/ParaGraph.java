@@ -91,7 +91,7 @@ import com.google.gwt.event.dom.client.DoubleClickHandler;
  * </li>
  * <li>Autoscale axes to fit all buffered data when enabled. The ranges expand
  * as needed and shrink if the data occupies only a small part of them, see
- * {@link GraphStyle#trackXRange(double, double)}. Percent scales are clamped
+ * {@link GraphStyle#fitXRange(double, double, boolean)}. Percent scales are clamped
  * to [0,1] when configured. Manual zooming or shifting disables autoscaling,
  * and without autoscaling trajectories may leave the graph. Zoom to fit fits
  * the ranges to all data once.</li>
@@ -537,12 +537,22 @@ public class ParaGraph extends AbstractGraph<double[]> implements Zooming, Shift
 	 * @see #updateAutoscale()
 	 */
 	public void autoscale() {
-		if (!(style.autoscaleX || style.autoscaleY) || buffer == null || buffer.isEmpty())
+		fit(style.autoscaleX, style.autoscaleY);
+	}
+
+	/**
+	 * Reset the zoom and fit the ranges of the axes {@code x} and/or {@code y} to
+	 * all data in the buffer, e.g. for autoscaling or zooming to fit.
+	 *
+	 * @param x {@code true} to fit the {@code x}-axis
+	 * @param y {@code true} to fit the {@code y}-axis
+	 */
+	private void fit(boolean x, boolean y) {
+		if (!(x || y) || buffer == null || buffer.isEmpty())
 			return;
 		super.zoom();
 		map.reset();
-		applyRanges(map.getMinX(buffer), map.getMaxX(buffer),
-				map.getMinY(buffer), map.getMaxY(buffer), style.autoscaleX, style.autoscaleY);
+		fitRanges(x, y, false);
 	}
 
 	/**
@@ -930,10 +940,8 @@ public class ParaGraph extends AbstractGraph<double[]> implements Zooming, Shift
 
 	/**
 	 * If autoscaling is enabled, track the axis ranges to fit the extent of all
-	 * buffered data, as reported by the map, see
-	 * {@link GraphStyle#trackXRange(double, double)} and
-	 * {@link GraphStyle#trackYRange(double, double)}. Without autoscaling the
-	 * ranges remain unchanged, such that trajectories may leave the graph.
+	 * buffered data. Without autoscaling the ranges remain unchanged, such that
+	 * trajectories may leave the graph.
 	 */
 	private void updateAutoscale() {
 		if (buffer == null || buffer.isEmpty())
@@ -941,43 +949,27 @@ public class ParaGraph extends AbstractGraph<double[]> implements Zooming, Shift
 		// the map keeps track of the extent of all buffered data
 		if (buffer.getSize() <= 1)
 			map.reset();
-		boolean changed = false;
-		if (style.autoscaleX && style.trackXRange(map.getMinX(buffer), map.getMaxX(buffer))) {
-			applyXConstraints();
-			changed = true;
-		}
-		// keep log scale: no valid range for non-positive data
-		double maxY = map.getMaxY(buffer);
-		if (style.autoscaleY && !(style.logScaleY && maxY <= 0.0)
-				&& style.trackYRange(map.getMinY(buffer), maxY)) {
-			applyYConstraints();
-			changed = true;
-		}
-		if (changed && style.autoscaleX && style.autoscaleY && !style.logScaleY
-				&& !(style.percentX && style.percentY))
-			enforceEqualAxisScale();
+		fitRanges(style.autoscaleX, style.autoscaleY, true);
 	}
 
 	/**
-	 * Fit axis ranges to the data (see {@link GraphStyle#fitXRange(double, double)}
-	 * and {@link GraphStyle#fitYRange(double, double)}) and apply axis-specific
-	 * constraints.
+	 * Fit the ranges of the axes {@code x} and/or {@code y} to the extent of all
+	 * buffered data, as reported by the map, and apply axis-specific constraints.
+	 * Linear axes are equally scaled if both are fitted.
 	 *
-	 * @param minX   minimum x value
-	 * @param maxX   maximum x value
-	 * @param minY   minimum y value
-	 * @param maxY   maximum y value
-	 * @param applyX whether to update the x-axis range
-	 * @param applyY whether to update the y-axis range
+	 * @param x     {@code true} to fit the {@code x}-axis
+	 * @param y     {@code true} to fit the {@code y}-axis
+	 * @param track {@code true} to only refit if needed, for autoscaling, see
+	 *              {@link GraphStyle#fitYRange(double, double, boolean)}
 	 */
-	private void applyRanges(double minX, double maxX, double minY, double maxY, boolean applyX, boolean applyY) {
-		if (applyX) {
-			style.fitXRange(minX, maxX);
+	private void fitRanges(boolean x, boolean y, boolean track) {
+		boolean fitX = x && style.fitXRange(map.getMinX(buffer), map.getMaxX(buffer), track);
+		if (fitX)
 			applyXConstraints();
-		}
-		if (applyY && style.fitYRange(minY, maxY))
+		boolean fitY = y && style.fitYRange(map.getMinY(buffer), map.getMaxY(buffer), track);
+		if (fitY)
 			applyYConstraints();
-		if (applyX && applyY && !style.logScaleY && !(style.percentX && style.percentY))
+		if ((fitX || fitY) && x && y && !style.logScaleY && !(style.percentX && style.percentY))
 			enforceEqualAxisScale();
 	}
 
@@ -1085,18 +1077,6 @@ public class ParaGraph extends AbstractGraph<double[]> implements Zooming, Shift
 		}
 		style.yMin = snapNearZero(min);
 		style.yMax = max;
-	}
-
-	/**
-	 * Set axis ranges to fit the full buffered trajectory and reset zoom factor.
-	 */
-	private void zoomToFit() {
-		if (buffer == null || buffer.isEmpty())
-			return;
-		super.zoom();
-		map.reset();
-		applyRanges(map.getMinX(buffer), map.getMaxX(buffer),
-				map.getMinY(buffer), map.getMaxY(buffer), true, true);
 	}
 
 	/**
@@ -1288,7 +1268,7 @@ public class ParaGraph extends AbstractGraph<double[]> implements Zooming, Shift
 	protected void populateZoomMenu(ContextMenu menu) {
 		super.populateZoomMenu(menu);
 		menu.add(new ContextMenuItem("Zoom to fit", () -> {
-			zoomToFit();
+			fit(true, true);
 			paint(true);
 		}));
 	}

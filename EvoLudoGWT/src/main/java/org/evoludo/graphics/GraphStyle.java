@@ -222,7 +222,8 @@ public class GraphStyle {
 
 	/**
 	 * The fraction of the axis range below which the data range must drop
-	 * before {@link #trackYRange(double, double)} shrinks the range.
+	 * before autoscaling shrinks the range, see
+	 * {@link #fitYRange(double, double, boolean)}.
 	 */
 	private static final double SHRINK_FRACTION = 0.75;
 
@@ -234,51 +235,17 @@ public class GraphStyle {
 	static final double MIN_YMAX_FRACTION = 0.01;
 
 	/**
-	 * Fit the {@code x}-range to data spanning {@code [min, max]}, e.g. to zoom
-	 * to fit or when enabling autoscaling.
+	 * Fit the {@code x}-range to data spanning {@code [min, max]}, see
+	 * {@link #fitYRange(double, double, boolean)}.
 	 *
-	 * @param min the minimum of the data
-	 * @param max the maximum of the data
-	 *
-	 * @see #computeRange(double, double, boolean, boolean, double)
-	 */
-	public void fitXRange(double min, double max) {
-		double[] range = computeRange(min, max, percentX, false, fitMarginX);
-		xMin = range[0];
-		xMax = range[1];
-	}
-
-	/**
-	 * Fit the {@code y}-range to data spanning {@code [min, max]}, e.g. to zoom
-	 * to fit or when enabling autoscaling.
-	 *
-	 * @param min the minimum of the data
-	 * @param max the maximum of the data
-	 * @return {@code true} if the range was updated, {@code false} if no valid
-	 *         range exists (non-positive data on log scale)
-	 *
-	 * @see #computeRange(double, double, boolean, boolean, double)
-	 */
-	public boolean fitYRange(double min, double max) {
-		if (logScaleY && max <= 0.0)
-			return false;
-		double[] range = computeRange(min, max, percentY, logScaleY, fitMarginY);
-		yMin = range[0];
-		yMax = range[1];
-		return true;
-	}
-
-	/**
-	 * Track the {@code x}-range of the data, for autoscaling. Same as
-	 * {@link #trackYRange(double, double)} but for the {@code x}-axis.
-	 *
-	 * @param min the minimum of the data
-	 * @param max the maximum of the data
+	 * @param min   the minimum of the data
+	 * @param max   the maximum of the data
+	 * @param track {@code true} to only refit if needed, for autoscaling
 	 * @return {@code true} if the range was updated
 	 */
-	public boolean trackXRange(double min, double max) {
+	public boolean fitXRange(double min, double max, boolean track) {
 		double[] range = computeRange(min, max, percentX, false, fitMarginX);
-		if (range[0] >= xMin && range[1] <= xMax && max - min >= SHRINK_FRACTION * (xMax - xMin))
+		if (track && range[0] >= xMin && range[1] <= xMax && max - min >= SHRINK_FRACTION * (xMax - xMin))
 			return false;
 		xMin = range[0];
 		xMax = range[1];
@@ -286,28 +253,25 @@ public class GraphStyle {
 	}
 
 	/**
-	 * Track the {@code y}-range of the data, for autoscaling. The data spanning
-	 * {@code [min, max]} comprises all data the range must fit, e.g. the bars of a
-	 * histogram or all trajectories in a phase plane. The range is fitted to the
-	 * data if the data including its margin, see
-	 * {@link #computeRange(double, double, boolean, boolean, double)}, does not fit or if
-	 * the data range dropped below {@link #SHRINK_FRACTION} of the
-	 * {@code y}-range. Hence, the range expands as needed to fit the data, never
-	 * lets data reach into the margin (or touch the frame), shrinks if the data
-	 * occupies only a small part of it, but does not jitter. Without
-	 * autoscaling, graphs leave their ranges unchanged, such that data may leave
-	 * the graph.
+	 * Fit the {@code y}-range to data spanning {@code [min, max]}, including a
+	 * margin, see {@link #computeRange(double, double, boolean, boolean, double)}.
+	 * For autoscaling the range only tracks the data, i.e. is refitted only if the
+	 * data does not fit or if the data range dropped below
+	 * {@link #SHRINK_FRACTION} of the {@code y}-range. Hence, the range expands as
+	 * needed, never lets data reach into the margin (or touch the frame), shrinks
+	 * if the data occupies only a small part of it, but does not jitter.
 	 *
-	 * @param min the minimum of the data
-	 * @param max the maximum of the data
+	 * @param min   the minimum of the data
+	 * @param max   the maximum of the data
+	 * @param track {@code true} to only refit if needed, for autoscaling
 	 * @return {@code true} if the range was updated, {@code false} if the data
 	 *         fits or no valid range exists (non-positive data on log scale)
 	 */
-	public boolean trackYRange(double min, double max) {
+	public boolean fitYRange(double min, double max, boolean track) {
 		if (logScaleY && max <= 0.0)
 			return false;
 		double[] range = computeRange(min, max, percentY, logScaleY, fitMarginY);
-		if (range[0] >= yMin && range[1] <= yMax && max - min >= SHRINK_FRACTION * (yMax - yMin))
+		if (track && range[0] >= yMin && range[1] <= yMax && max - min >= SHRINK_FRACTION * (yMax - yMin))
 			return false;
 		yMin = range[0];
 		yMax = range[1];

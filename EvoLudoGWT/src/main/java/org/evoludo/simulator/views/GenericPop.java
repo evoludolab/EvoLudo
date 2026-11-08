@@ -31,6 +31,8 @@
 package org.evoludo.simulator.views;
 
 import java.awt.Color;
+import java.util.ArrayList;
+import java.util.List;
 
 import org.evoludo.graphics.AbstractGraph;
 import org.evoludo.graphics.GenericPopGraph;
@@ -198,6 +200,34 @@ public abstract class GenericPop<T, N extends Network<?>, G extends GenericPopGr
 	static boolean displaySingle(Module<?> module) {
 		IBSPopulation<?, ?> pop = module.getIBSPopulation();
 		return AbstractGeometry.displaySingle(pop.getInteractionGeometry(), pop.getCompetitionGeometry());
+	}
+
+	/**
+	 * Get the species shown by the graphs of IBS models and arrange the graphs:
+	 * one graph per species, or two if the interaction and competition geometries
+	 * require separate graphs (see {@link #displaySingle(Module)}), in which case
+	 * the first shows the interaction geometry. Each species occupies a row,
+	 * unless there are only two graphs, which are arranged horizontally.
+	 *
+	 * @return the species of each graph
+	 */
+	List<Module<?>> layoutIBSGraphs() {
+		List<? extends Module<?>> species = engine.getModule().getSpecies();
+		List<Module<?>> slots = new ArrayList<>();
+		gCols = 1;
+		for (Module<?> mod : species) {
+			slots.add(mod);
+			if (displaySingle(mod))
+				continue;
+			slots.add(mod);
+			gCols = 2;
+		}
+		gRows = species.size();
+		if (gRows * gCols == 2) {
+			gRows = 1;
+			gCols = 2;
+		}
+		return slots;
 	}
 
 	/**

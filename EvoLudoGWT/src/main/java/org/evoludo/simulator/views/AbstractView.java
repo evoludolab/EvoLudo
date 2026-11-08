@@ -39,8 +39,6 @@ import java.util.function.Consumer;
 import org.evoludo.graphics.AbstractGraph;
 import org.evoludo.graphics.AbstractGraph.HasTrajectory;
 import org.evoludo.graphics.AbstractGraph.MyContext2d;
-import org.evoludo.graphics.AbstractGraph.Shifter;
-import org.evoludo.graphics.AbstractGraph.Zoomer;
 import org.evoludo.graphics.GenericPopGraph;
 import org.evoludo.graphics.GraphStyle;
 import org.evoludo.simulator.EvoLudo;
@@ -896,10 +894,7 @@ public abstract class AbstractView<G extends AbstractGraph<?>> extends Composite
 	 * @see AbstractGraph.Shifter#shift(int, int)
 	 */
 	public void shift(int dx, int dy) {
-		for (G graph : graphs) {
-			if (graph instanceof Shifter)
-				((Shifter) graph).shift(dx, dy);
-		}
+		graphs.forEach(graph -> graph.shift(dx, dy));
 	}
 
 	/**
@@ -913,10 +908,7 @@ public abstract class AbstractView<G extends AbstractGraph<?>> extends Composite
 	 * @see AbstractGraph.Zoomer#zoom(double, int, int)
 	 */
 	public void zoom(double zoom, int x, int y) {
-		for (G graph : graphs) {
-			if (graph instanceof Zoomer)
-				((Zoomer) graph).zoom(zoom, x, y);
-		}
+		graphs.forEach(graph -> graph.zoom(zoom, x, y));
 	}
 
 	/**
@@ -926,10 +918,7 @@ public abstract class AbstractView<G extends AbstractGraph<?>> extends Composite
 	 * @see AbstractGraph.Zoomer#resetView()
 	 */
 	public void resetView() {
-		for (G graph : graphs) {
-			if (graph instanceof Zoomer)
-				((Zoomer) graph).resetView();
-		}
+		graphs.forEach(AbstractGraph::resetView);
 	}
 
 	/**
@@ -941,10 +930,7 @@ public abstract class AbstractView<G extends AbstractGraph<?>> extends Composite
 	 * @see AbstractGraph.Zoomer#zoom(double)
 	 */
 	public void zoom(double zoom) {
-		for (G graph : graphs) {
-			if (graph instanceof Zoomer)
-				((Zoomer) graph).zoom(zoom);
-		}
+		graphs.forEach(graph -> graph.zoom(zoom));
 	}
 
 	/**
@@ -955,8 +941,7 @@ public abstract class AbstractView<G extends AbstractGraph<?>> extends Composite
 	 * @param action the action to apply to each graph
 	 */
 	public void forAllGraphs(Consumer<? super G> action) {
-		for (G graph : graphs)
-			action.accept(graph);
+		graphs.forEach(action);
 	}
 
 	/**
@@ -1094,43 +1079,38 @@ public abstract class AbstractView<G extends AbstractGraph<?>> extends Composite
 	private double yTickLabelWidth = 0.0;
 
 	/**
-	 * Get the width to reserve for the tick labels of the {@code y}-axis of
-	 * {@code graph}, which requires {@code width}. All graphs of this view reserve
-	 * the same width, i.e. the widest required, such that their frames line up. If
-	 * {@code graph} requires more than the current width, the bounds of the other
-	 * graphs are recalculated.
+	 * Get the width to reserve for the tick labels of the {@code y}-axes of a graph
+	 * that requires {@code width}. All graphs of this view reserve the widest
+	 * width required, such that their frames line up. If {@code width} exceeds the
+	 * current width, the bounds of all graphs are recalculated (deferred).
 	 *
-	 * @param graph the graph that calculates its bounds
-	 * @param width the width required by {@code graph}
+	 * @param width the width required by a graph
 	 * @return the width to reserve
 	 */
-	public double getYTickLabelWidth(AbstractGraph<?> graph, double width) {
-		if (width <= yTickLabelWidth)
-			return yTickLabelWidth;
-		yTickLabelWidth = width;
-		if (isAligning)
-			return width;
-		isAligning = true;
-		double aligned;
-		do {
-			// other graphs may require even more width
-			aligned = yTickLabelWidth;
-			for (G other : graphs) {
-				if (other != graph && other.calcBounds())
-					other.paint(true);
+	public double getYTickLabelWidth(double width) {
+		if (width > yTickLabelWidth) {
+			yTickLabelWidth = width;
+			if (!isRelayoutScheduled) {
+				isRelayoutScheduled = true;
+				Scheduler.get().scheduleDeferred(() -> {
+					isRelayoutScheduled = false;
+					for (G graph : graphs) {
+						if (graph.calcBounds())
+							graph.paint(true);
+					}
+				});
 			}
-		} while (yTickLabelWidth > aligned);
-		isAligning = false;
+		}
 		return yTickLabelWidth;
 	}
 
 	/**
-	 * The flag to indicate that the bounds of graphs are being recalculated to
-	 * line up their frames.
+	 * The flag to indicate that recalculating the bounds of all graphs is
+	 * scheduled to line up their frames.
 	 *
-	 * @see #getYTickLabelWidth(AbstractGraph, double)
+	 * @see #getYTickLabelWidth(double)
 	 */
-	private boolean isAligning = false;
+	private boolean isRelayoutScheduled = false;
 
 	/**
 	 * The flag to indicate whether an update is already scheduled. Subsequent

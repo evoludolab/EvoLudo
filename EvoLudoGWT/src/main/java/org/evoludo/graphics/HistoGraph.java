@@ -107,7 +107,7 @@ import org.evoludo.util.Formatter;
  * configured normalization row.</li>
  * <li>Autoscaling rounds bounds to "nice" values and updates only when the
  * data no longer fits or occupies only a small fraction of the range to avoid
- * jitter, see {@link GraphStyle#trackYRange(double, double)}.</li>
+ * jitter, see {@link GraphStyle#fitYRange(double, double, boolean)}.</li>
  * <li>Bars are clipped and mapped into pixel space using {@code bounds} and the
  * current y-range; rendering ensures minimal visible height for very small
  * values.</li>
@@ -643,7 +643,7 @@ public class HistoGraph extends AbstractGraph<double[]> implements BasicTooltipP
 				}
 			}
 			if (!Double.isNaN(yMax) && !Double.isNaN(yMin))
-				style.trackYRange(yMin, yMax);
+				style.fitYRange(yMin, yMax, true);
 			enforceMinimumPercentYRange();
 		}
 

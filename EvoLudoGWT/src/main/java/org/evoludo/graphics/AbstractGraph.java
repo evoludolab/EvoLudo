@@ -55,7 +55,6 @@ import org.evoludo.util.RingBuffer;
 import com.google.gwt.canvas.client.Canvas;
 import com.google.gwt.canvas.dom.client.Context2d;
 import com.google.gwt.core.client.JsArray;
-import com.google.gwt.core.client.Scheduler;
 import com.google.gwt.core.client.Scheduler.ScheduledCommand;
 import com.google.gwt.dom.client.Document;
 import com.google.gwt.dom.client.Element;
@@ -83,7 +82,6 @@ import com.google.gwt.event.dom.client.TouchMoveHandler;
 import com.google.gwt.event.dom.client.TouchStartEvent;
 import com.google.gwt.event.dom.client.TouchStartHandler;
 import com.google.gwt.event.shared.HandlerRegistration;
-import com.google.gwt.user.client.Command;
 import com.google.gwt.user.client.ui.FocusPanel;
 import com.google.gwt.user.client.ui.Label;
 import com.google.gwt.user.client.ui.LayoutPanel;
@@ -266,8 +264,6 @@ import com.google.gwt.user.client.ui.RequiresResize;
  * <ul>
  * <li>MyContext2d — a thin subclass of Context2d that exposes setLineDash for
  * dashed lines.</li>
- * <li>ZoomCommand — small Command implementation used by context menu items
- * to apply zoom factors.</li>
  * </ul>
  *
  * <h2>Notes and implementation details</h2>
@@ -854,7 +850,7 @@ public abstract class AbstractGraph<B> extends FocusPanel
 	/**
 	 * Reset the graph. Clear canvas and messages. The view, i.e. zooming, shifting
 	 * and axis ranges, is retained; with autoscaling the ranges follow the data of
-	 * the new run, see {@link GraphStyle#trackYRange(double, double)}.
+	 * the new run, see {@link GraphStyle#fitYRange(double, double, boolean)}.
 	 */
 	public void reset() {
 		clearMessage();
@@ -1087,8 +1083,9 @@ public abstract class AbstractGraph<B> extends FocusPanel
 	 * @param menu the zoom submenu to populate
 	 */
 	protected void populateZoomMenu(ContextMenu menu) {
-		menu.add(new ContextMenuItem("Zoom in (2x)", new ZoomCommand(2.0)));
-		menu.add(new ContextMenuItem("Zoom out (0.5x)", new ZoomCommand(0.5)));
+		// zoom all graphs if the view handles zooming
+		menu.add(new ContextMenuItem("Zoom in (2x)", () -> zoomer.zoom(2.0)));
+		menu.add(new ContextMenuItem("Zoom out (0.5x)", () -> zoomer.zoom(0.5)));
 	}
 
 	/**
@@ -1250,7 +1247,7 @@ public abstract class AbstractGraph<B> extends FocusPanel
 			// room for the widest tick label drawn since the last reset
 			width = Math.max(width, drawnYTickLabelWidth);
 			// share the width with the other graphs of the view to line up frames
-			cachedMidYTickLabelWidth = view.getYTickLabelWidth(this, width);
+			cachedMidYTickLabelWidth = view.getYTickLabelWidth(width);
 			adjustBoundsForYSide(cachedMidYTickLabelWidth);
 			adjustBoundsForYSide(Y_TICK_LABEL_GAP + 2.0);
 		}
@@ -1327,15 +1324,9 @@ public abstract class AbstractGraph<B> extends FocusPanel
 		drawGraphLabel(gscale);
 
 		g.restore();
-		if (drawnYTickLabelWidth > cachedMidYTickLabelWidth + 0.5 && !isRelayoutScheduled) {
-			// tick labels need more room, e.g. after autoscaling or zooming
-			isRelayoutScheduled = true;
-			Scheduler.get().scheduleDeferred(() -> {
-				isRelayoutScheduled = false;
-				if (calcBounds())
-					paint(true);
-			});
-		}
+		// tick labels need more room, e.g. after autoscaling or zooming
+		if (drawnYTickLabelWidth > cachedMidYTickLabelWidth + 0.5)
+			view.getYTickLabelWidth(drawnYTickLabelWidth);
 	}
 
 	/**
@@ -1347,12 +1338,6 @@ public abstract class AbstractGraph<B> extends FocusPanel
 	 * @see #adjustBoundsForTickLabels()
 	 */
 	private double drawnYTickLabelWidth = 0.0;
-
-	/**
-	 * The flag to indicate that recalculating the bounds is scheduled because the
-	 * tick labels of the {@code y}-axis require more room.
-	 */
-	private boolean isRelayoutScheduled = false;
 
 	/**
 	 * Draw the bounding box of the graph frame.
@@ -2743,37 +2728,6 @@ public abstract class AbstractGraph<B> extends FocusPanel
 				break;
 			default:
 				break;
-		}
-	}
-
-	/**
-	 * The zoom command for the context menu.
-	 */
-	public class ZoomCommand implements Command {
-
-		/**
-		 * The adjustment factor of the zoom level.
-		 */
-		double zoom = -1.0;
-
-		/**
-		 * Create a new zoom command with an adjustment factor of {@code zoom}.
-		 * 
-		 * @param zoom the zoom adjustment factor
-		 */
-		public ZoomCommand(double zoom) {
-			this.zoom = Math.max(0, zoom);
-		}
-
-		/**
-		 * {@inheritDoc}
-		 * <p>
-		 * Adjusts the zoom level by the factor {@code zoom}, for all graphs if the
-		 * view handles zooming.
-		 */
-		@Override
-		public void execute() {
-			zoomer.zoom(zoom);
 		}
 	}
 

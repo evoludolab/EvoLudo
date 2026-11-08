@@ -198,69 +198,32 @@ public class Pop2D extends GenericPop<String, Network2D, PopGraph2D> implements 
 		// revise network layout routines)
 		// - another alternative is to add context menu to toggle between the different
 		// link sets (could be difficult if one is a lattice...)
-		int nGraphs = 0;
-		List<? extends Module<?>> species = engine.getModule().getSpecies();
-		for (Module<?> mod : species)
-			nGraphs += displaySingle(mod) ? 1 : 2;
-
-		boolean compatible = graphs.size() == nGraphs;
-		if (compatible) {
-			int idx = 0;
-			// graphs must belong to the same species and match the geometries
-			for (Module<?> mod : species) {
-				PopGraph2D graph = graphs.get(idx++);
-				AbstractGeometry geometry = resolveIBSGeometry(mod, true);
-				if (graph.getModule() != mod || isLinearGeometry(geometry) != (graph instanceof PopGraph1D)) {
-					compatible = false;
-					break;
-				}
-				if (displaySingle(mod))
-					continue;
-				graph = graphs.get(idx++);
-				geometry = resolveIBSGeometry(mod, false);
-				if (graph.getModule() != mod || isLinearGeometry(geometry) != (graph instanceof PopGraph1D)) {
-					compatible = false;
-					break;
-				}
-			}
+		List<Module<?>> slots = layoutIBSGraphs();
+		// graphs must belong to the same species and match the geometries; the
+		// first graph of each species shows the interaction geometry
+		boolean compatible = graphs.size() == slots.size();
+		Module<?> prev = null;
+		for (int n = 0; compatible && n < slots.size(); n++) {
+			Module<?> mod = slots.get(n);
+			PopGraph2D graph = graphs.get(n);
+			compatible = graph.getModule() == mod
+					&& isLinearGeometry(resolveIBSGeometry(mod, mod != prev)) == (graph instanceof PopGraph1D);
+			prev = mod;
 		}
 		if (compatible)
 			return false;
 
 		destroyGraphs();
-		gCols = 1;
-		for (Module<?> mod : species) {
-			AbstractGeometry geometry = resolveIBSGeometry(mod, true);
-			PopGraph2D graph = createGraph(mod, geometry);
+		// destroying graphs resets the layout
+		layoutIBSGraphs();
+		prev = null;
+		for (Module<?> mod : slots) {
+			PopGraph2D graph = createGraph(mod, resolveIBSGeometry(mod, mod != prev));
 			wrapper.add(graph);
 			graphs.add(graph);
-			if (displaySingle(mod))
-				continue;
-			geometry = resolveIBSGeometry(mod, false);
-			graph = createGraph(mod, geometry);
-			wrapper.add(graph);
-			graphs.add(graph);
-			// arrange graphs horizontally
-			gCols = 2;
-		}
-		gRows = species.size();
-		if (gRows * gCols == 2) {
-			// always arrange horizontally if only two graphs
-			gRows = 1;
-			gCols = 2;
-		}
-		int width = 100 / gCols;
-		int height = 100 / gRows;
-		int idx = 0;
-		for (Module<?> mod : species) {
-			PopGraph2D graph = graphs.get(idx++);
-			graph.setSize(width + "%", height + "%");
-			setGraphGeometry(graph, true);
-			if (displaySingle(mod))
-				continue;
-			graph = graphs.get(idx++);
-			graph.setSize(width + "%", height + "%");
-			setGraphGeometry(graph, false);
+			graph.setSize(100 / gCols + "%", 100 / gRows + "%");
+			setGraphGeometry(graph, mod != prev);
+			prev = mod;
 		}
 		return true;
 	}

@@ -188,55 +188,26 @@ public class Pop3D extends GenericPop<MeshLambertMaterial, Network3DGWT, PopGrap
 		// revise network layout routines)
 		// - another alternative is to add context menu to toggle between the different
 		// link sets (could be difficult if one is a lattice...)
-		int nGraphs = 0;
-		List<? extends Module<?>> species = engine.getModule().getSpecies();
-		for (Module<?> mod : species)
-			nGraphs += displaySingle(mod) ? 1 : 2;
-
+		List<Module<?>> slots = layoutIBSGraphs();
 		// graphs must belong to the same species
-		boolean compatible = graphs.size() == nGraphs;
-		int idx = 0;
-		for (Module<?> mod : species) {
-			if (!compatible)
-				break;
-			compatible = graphs.get(idx++).getModule() == mod
-					&& (displaySingle(mod) || graphs.get(idx++).getModule() == mod);
-		}
+		boolean compatible = graphs.size() == slots.size();
+		for (int n = 0; compatible && n < slots.size(); n++)
+			compatible = graphs.get(n).getModule() == slots.get(n);
 		if (compatible)
 			return false;
 
 		destroyGraphs();
-		gCols = 1;
-		for (Module<?> mod : species) {
+		// destroying graphs resets the layout
+		layoutIBSGraphs();
+		Module<?> prev = null;
+		for (Module<?> mod : slots) {
 			PopGraph3D graph = new PopGraph3D(this, mod);
 			wrapper.add(graph);
 			graphs.add(graph);
-			if (displaySingle(mod))
-				continue;
-			graph = new PopGraph3D(this, mod);
-			wrapper.add(graph);
-			graphs.add(graph);
-			// arrange graphs horizontally
-			gCols = 2;
-		}
-		gRows = species.size();
-		if (gRows * gCols == 2) {
-			// always arrange horizontally if only two graphs
-			gRows = 1;
-			gCols = 2;
-		}
-		int width = 100 / gCols;
-		int height = 100 / gRows;
-		idx = 0;
-		for (Module<?> mod : species) {
-			PopGraph3D graph = graphs.get(idx++);
-			graph.setSize(width + "%", height + "%");
-			setGraphGeometry(graph, true);
-			if (displaySingle(mod))
-				continue;
-			graph = graphs.get(idx++);
-			graph.setSize(width + "%", height + "%");
-			setGraphGeometry(graph, false);
+			graph.setSize(100 / gCols + "%", 100 / gRows + "%");
+			// the first graph of each species shows the interaction geometry
+			setGraphGeometry(graph, mod != prev);
+			prev = mod;
 		}
 		return true;
 	}

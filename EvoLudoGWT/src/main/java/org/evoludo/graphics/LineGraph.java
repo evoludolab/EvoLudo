@@ -81,10 +81,9 @@ import com.google.gwt.core.client.Scheduler;
  * (style.autoscaleY) is enabled: the range then tracks the values in the
  * visible time window, i.e. it expands as needed and shrinks if the values
  * occupy only a small part of it, see
- * {@link GraphStyle#trackYRange(double, double)}. Without autoscaling the
- * range remains unchanged and the time series may leave the graph. Fitting
- * the range leaves the same small margin as "Zoom to fit", see
- * {@link GraphStyle#fitYRange(double, double)}.</li>
+ * {@link GraphStyle#fitYRange(double, double, boolean)}. Without autoscaling
+ * the range remains unchanged and the time series may leave the graph.
+ * Fitting the range leaves the same small margin as "Zoom to fit".</li>
  * <li>Logarithmic y-scaling is supported (style.logScaleY), but it requires
  * strictly positive values; if negative or zero values are present the
  * graph disables log-scaling and issues a warning. When autoscaling and
@@ -543,8 +542,8 @@ public class LineGraph extends AbstractGraph<double[]>
 
 	/**
 	 * Fit the {@code y}-range to the values shown in the visible time window,
-	 * either once (see {@link GraphStyle#fitYRange(double, double)}) or for
-	 * autoscaling (see {@link GraphStyle#trackYRange(double, double)}). The
+	 * either once or for autoscaling, see
+	 * {@link GraphStyle#fitYRange(double, double, boolean)}. The
 	 * history is traversed as in {@link #drawLines(double, double, double)},
 	 * i.e. the position of a sample is its distance from the most recent sample,
 	 * and segments crossing the edges of the window contribute their values at
@@ -597,7 +596,7 @@ public class LineGraph extends AbstractGraph<double[]>
 		}
 		if (min > max)
 			return false;
-		return track ? style.trackYRange(min, max) : style.fitYRange(min, max);
+		return style.fitYRange(min, max, track);
 	}
 
 	/**
@@ -788,13 +787,8 @@ public class LineGraph extends AbstractGraph<double[]>
 		double h = bounds.getHeight();
 
 		// autoscaling: show the entire history and/or fit the visible values
-		if (style.autoscaleX) {
-			double span = Math.max(historySpan(), MIN_STEPS * style.xIncr);
-			if (span > 0.0) {
-				style.xMin = -span;
-				style.xMax = 0.0;
-			}
-		}
+		if (style.autoscaleX)
+			updateXRangeFromBuffer();
 		if (style.autoscaleY)
 			fitYRangeToVisible(true);
 
@@ -1531,12 +1525,13 @@ public class LineGraph extends AbstractGraph<double[]>
 	}
 
 	/**
-	 * Update the x-axis range to show all buffered data (latest segment only).
-	 * 
+	 * Update the x-axis range to show all buffered data, but at least
+	 * {@link #MIN_STEPS} reporting intervals.
+	 *
 	 * @return {@code true} if the range was updated
 	 */
 	private boolean updateXRangeFromBuffer() {
-		double span = historySpan();
+		double span = Math.max(historySpan(), MIN_STEPS * style.xIncr);
 		if (span <= 0.0)
 			return false;
 		style.xMax = 0.0;
