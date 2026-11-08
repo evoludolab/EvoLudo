@@ -614,23 +614,39 @@ public class PopGraph2D extends GenericPopGraph<String, Network2D> implements Sh
 	/**
 	 * {@inheritDoc}
 	 * <p>
-	 * The bounds may be smaller than the canvas, e.g. for lattices. Hence, the
-	 * offset is based on the width of the (visible) canvas instead.
+	 * The bounds may be smaller than the canvas, e.g. for lattices centered in a
+	 * wider canvas, and the zoomed graph extends beyond the bounds. Each edge of
+	 * the zoomed graph can be shifted up to the margin of the canvas but no
+	 * further. The margin is the smaller of the horizontal and vertical offsets of
+	 * the bounds, i.e. the margin along the tighter side. Graphs with axes, i.e. a
+	 * decorated frame, and unzoomed graphs are limited to the bounds as usual.
 	 */
 	@Override
-	protected double getMaxViewCornerX(double zoom) {
-		return wrapper.getOffsetWidth() * (zoom - 1.0);
+	protected void setViewCorner(double x, double y, double zoom) {
+		if (zoom <= 1.0 || style.showDecoratedFrame) {
+			super.setViewCorner(x, y, zoom);
+			return;
+		}
+		double margin = Math.min(bounds.getX(), bounds.getY());
+		viewCorner.set(
+				limit(x, bounds.getX() - margin,
+						bounds.getX() + margin + zoom * bounds.getWidth() - wrapper.getOffsetWidth()),
+				limit(y, bounds.getY() - margin,
+						bounds.getY() + margin + zoom * bounds.getHeight() - wrapper.getOffsetHeight()));
 	}
 
 	/**
-	 * {@inheritDoc}
-	 * <p>
-	 * The bounds may be smaller than the canvas, e.g. for lattices. Hence, the
-	 * offset is based on the height of the (visible) canvas instead.
+	 * Limit {@code value} to the interval between {@code a} and {@code b}, in
+	 * either order. If the zoomed graph is larger than the canvas, its edges must
+	 * not enter the canvas; otherwise the graph must remain within the canvas.
+	 *
+	 * @param value the value to limit
+	 * @param a     one end of the interval
+	 * @param b     the other end of the interval
+	 * @return the limited value
 	 */
-	@Override
-	protected double getMaxViewCornerY(double zoom) {
-		return wrapper.getOffsetHeight() * (zoom - 1.0);
+	private static double limit(double value, double a, double b) {
+		return Math.max(Math.min(a, b), Math.min(Math.max(a, b), value));
 	}
 
 	/**

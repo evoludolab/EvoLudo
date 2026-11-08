@@ -2292,37 +2292,27 @@ public abstract class AbstractGraph<B> extends FocusPanel
 		double dz = newZoomFactor - zoomFactor;
 		if (Math.abs(dz) < Model.EPS)
 			return;
-		double w = bounds.getWidth();
-		double h = bounds.getHeight();
-		viewCorner.set(Math.min(getMaxViewCornerX(newZoomFactor), Math.max(0, viewCorner.getX() +
-				w * dz * fx)),
-				Math.min(getMaxViewCornerY(newZoomFactor), Math.max(0, viewCorner.getY() + h * dz *
-						fy)));
+		setViewCorner(viewCorner.getX() + bounds.getWidth() * dz * fx,
+				viewCorner.getY() + bounds.getHeight() * dz * fy, newZoomFactor);
 		zoomFactor = newZoomFactor;
 		gesture.zooming(dz > 0);
 		paint(true);
 	}
 
 	/**
-	 * Get the maximum horizontal view-corner offset for the zoom factor
-	 * {@code zoom}.
+	 * Set the view corner to {@code (x, y)}, limited to the admissible range for
+	 * the zoom factor {@code zoom}. By default, the zoomed graph always covers the
+	 * bounds, i.e. the view corner ranges from {@code 0} to
+	 * {@code bounds.getWidth() * (zoom - 1)} horizontally, and analogously
+	 * vertically.
 	 *
+	 * @param x    the requested horizontal offset
+	 * @param y    the requested vertical offset
 	 * @param zoom the zoom factor
-	 * @return the maximum horizontal offset
 	 */
-	protected double getMaxViewCornerX(double zoom) {
-		return bounds.getWidth() * (zoom - 1.0);
-	}
-
-	/**
-	 * Get the maximum vertical view-corner offset for the zoom factor
-	 * {@code zoom}.
-	 *
-	 * @param zoom the zoom factor
-	 * @return the maximum vertical offset
-	 */
-	protected double getMaxViewCornerY(double zoom) {
-		return bounds.getHeight() * (zoom - 1.0);
+	protected void setViewCorner(double x, double y, double zoom) {
+		viewCorner.set(Math.min(bounds.getWidth() * (zoom - 1.0), Math.max(0.0, x)),
+				Math.min(bounds.getHeight() * (zoom - 1.0), Math.max(0.0, y)));
 	}
 
 	/**
@@ -2334,14 +2324,12 @@ public abstract class AbstractGraph<B> extends FocusPanel
 	 * @param dy the vertical shift of the graph
 	 *
 	 * @see Shifting#shift(int, int)
-	 * @see #getMaxViewCornerX(double)
-	 * @see #getMaxViewCornerY(double)
+	 * @see #setViewCorner(double, double, double)
 	 */
 	public void shift(int dx, int dy) {
 		if (hasMessage)
 			return;
-		viewCorner.set(Math.min(getMaxViewCornerX(zoomFactor), Math.max(0, viewCorner.getX() + dx)),
-				Math.min(getMaxViewCornerY(zoomFactor), Math.max(0, viewCorner.getY() + dy)));
+		setViewCorner(viewCorner.getX() + dx, viewCorner.getY() + dy, zoomFactor);
 		paint(true);
 	}
 
