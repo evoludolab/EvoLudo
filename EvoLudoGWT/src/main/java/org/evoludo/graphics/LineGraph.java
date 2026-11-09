@@ -512,11 +512,13 @@ public class LineGraph extends AbstractGraph<double[]>
 			iter.next();
 			while (iter.hasNext()) {
 				double[] previous = iter.next();
-				if (!Double.isFinite(previous[0]))
+				double step = last[0] - previous[0];
+				if (!Double.isFinite(step))
 					break;
-				recentDirection = timeStepDirection(last[0], previous[0]);
-				if (recentDirection != 0)
+				if (Math.abs(step) >= Model.EPS) {
+					recentDirection = step > 0.0 ? 1 : -1;
 					break;
+				}
 			}
 		}
 		// retain the turning point and the first sample in the new direction
@@ -557,79 +559,99 @@ public class LineGraph extends AbstractGraph<double[]>
 		// window as distances from the most recent sample
 		double near = -style.xMax;
 		double far = -style.xMin;
-		double min = Double.POSITIVE_INFINITY;
-		double max = Double.NEGATIVE_INFINITY;
-		Iterator<double[]> it = buffer.iterator();
-		double[] current = it.next();
-		double[] prev = current;
-		double pos = 0.0;
-		double span = 0.0;
-		while (pos <= far) {
+		double[] range = { Double.POSITIVE_INFINITY, Double.NEGATIVE_INFINITY };
+		// the most recent sample by itself
+		if (near <= 0.0 && far >= 0.0)
+			extendYRange(range, buffer.last(), buffer.last(), 0.0, 0.0);
+		forEachStep((current, prev, pos, span) -> {
 			double from = Math.max(pos, near);
 			double to = Math.min(pos + span, far);
-			// skip hidden steps but include the most recent sample by itself
-			if (from <= to && (span > 0.0 || pos == 0.0)) {
-				double fa = span > 0.0 ? (from - pos) / span : 0.0;
-				double fb = span > 0.0 ? (to - pos) / span : 0.0;
-				// values are linear along segments: extremes lie at the ends;
-				// only the plotted columns 1..nLines count
-				for (int n = 1; n <= nLines; n++) {
-					double a = current[n] + fa * (prev[n] - current[n]);
-					double b = current[n] + fb * (prev[n] - current[n]);
-					double lo = Math.min(a, b);
-					double hi = Math.max(a, b);
-					if (!Double.isFinite(lo + hi) || (style.logScaleY && hi <= 0.0))
-						continue;
-					if (style.logScaleY && lo <= 0.0)
-						lo = hi;
-					min = Math.min(min, lo);
-					max = Math.max(max, hi);
-				}
-			}
-			pos += span;
-			if (!it.hasNext())
-				break;
-			current = prev;
-			prev = it.next();
-			span = historyStepWidth(current, prev);
-		}
-		if (min > max)
+			if (from <= to)
+				extendYRange(range, current, prev, (from - pos) / span, (to - pos) / span);
+			return pos + span <= far;
+		});
+		if (range[0] > range[1])
 			return false;
-		return style.fitYRange(min, max, track);
+		return style.fitYRange(range[0], range[1], track);
 	}
 
 	/**
-	 * Get the direction of a time step.
+	 * Extend {@code range} by the plotted values ({@code 1..nLines}) along the
+	 * segment from {@code current} to {@code prev} between the fractions
+	 * {@code fa} and {@code fb} of the segment. Values are linear along segments,
+	 * hence the extremes lie at the ends. Non-positive values are ignored on
+	 * logarithmic scales.
 	 *
-	 * @param newerTime the newer time value
-	 * @param olderTime the older time value
-	 * @return {@code +1} for forward time, {@code -1} for backward time, or
-	 *         {@code 0} if no finite direction can be inferred
+	 * @param range   the minimum and maximum to extend
+	 * @param current the newer sample
+	 * @param prev    the older sample
+	 * @param fa      the fraction of the segment where the part starts
+	 * @param fb      the fraction of the segment where the part ends
 	 */
-	private int timeStepDirection(double newerTime, double olderTime) {
-		double dt = newerTime - olderTime;
-		if (!Double.isFinite(dt) || Math.abs(dt) < Model.EPS)
-			return 0;
-		return dt > 0.0 ? 1 : -1;
+	private void extendYRange(double[] range, double[] current, double[] prev, double fa, double fb) {
+		for (int n = 1; n <= nLines; n++) {
+			double a = current[n] + fa * (prev[n] - current[n]);
+			double b = current[n] + fb * (prev[n] - current[n]);
+			double lo = Math.min(a, b);
+			double hi = Math.max(a, b);
+			if (!Double.isFinite(lo + hi) || (style.logScaleY && hi <= 0.0))
+				continue;
+			if (style.logScaleY && lo <= 0.0)
+				lo = hi;
+			range[0] = Math.min(range[0], lo);
+			range[1] = Math.max(range[1], hi);
+		}
 	}
 
 	/**
-	 * Return whether a step between buffered samples should contribute to the
-	 * displayed history.
-	 *
-	 * @param current the current newer sample
-	 * @param prev    the adjacent older sample
-	 * @return the displayed width of this history step, or {@code 0.0} if the step
-	 *         should be hidden
+	 * Visitor of the steps between consecutive samples of the history, see
+	 * {@link LineGraph#forEachStep(StepVisitor)}.
 	 */
-	private double historyStepWidth(double[] current, double[] prev) {
-		return historyStepWidth(current, prev, useRealTime);
+	private interface StepVisitor {
+
+		/**
+		 * Visit the step from {@code current} to the older sample {@code prev}.
+		 *
+		 * @param current the newer sample
+		 * @param prev    the older sample
+		 * @param pos     the distance of {@code current} from the most recent sample
+		 *                along the {@code x}-axis
+		 * @param span    the displayed width of the step
+		 * @return {@code true} to continue with the next older step
+		 */
+		boolean visit(double[] current, double[] prev, double pos, double span);
+	}
+
+	/**
+	 * Visit the displayed steps of the history, starting with the most recent
+	 * sample. Hidden steps, e.g. across separators of time series, are skipped.
+	 *
+	 * @param visitor the visitor of the steps
+	 * @return the distance of the oldest visited sample from the most recent one
+	 */
+	private double forEachStep(StepVisitor visitor) {
+		double pos = 0.0;
+		if (buffer == null || buffer.isEmpty())
+			return pos;
+		Iterator<double[]> it = buffer.iterator();
+		double[] current = it.next();
+		while (it.hasNext()) {
+			double[] prev = it.next();
+			double span = historyStepWidth(current, prev, useRealTime);
+			if (span > 0.0) {
+				boolean more = visitor.visit(current, prev, pos, span);
+				pos += span;
+				if (!more)
+					break;
+			}
+			current = prev;
+		}
+		return pos;
 	}
 
 	/**
 	 * Return the displayed width of a step between buffered samples on the
-	 * updates or the real-time axis, see
-	 * {@link #historyStepWidth(double[], double[])}.
+	 * updates or the real-time axis.
 	 *
 	 * @param current  the current newer sample
 	 * @param prev     the adjacent older sample
@@ -726,8 +748,7 @@ public class LineGraph extends AbstractGraph<double[]>
 			fitYRangeToVisible(false);
 			return;
 		}
-		if (logY && style.yMin <= 0.0)
-			style.yMin = GraphStyle.MIN_YMAX_FRACTION * style.yMax;
+		clampLogRange();
 	}
 
 	/**
@@ -808,15 +829,8 @@ public class LineGraph extends AbstractGraph<double[]>
 		// (getTooltipAt(double, double)), so a data point at yMin or yMax is
 		// drawn exactly on the frame border, with no gap and no discrepancy
 		// between what is plotted, labelled, and reported in tooltips
-		double ymin;
-		double yrange;
-		if (style.logScaleY) {
-			ymin = Math.log10(style.yMin);
-			yrange = Math.log10(style.yMax) - ymin;
-		} else {
-			ymin = style.yMin;
-			yrange = style.yMax - ymin;
-		}
+		double ymin = yCoord(style.yMin);
+		double yrange = yCoord(style.yMax) - ymin;
 		double yScale = (yrange == 0.0) ? 1.0 : h / yrange;
 
 		g.save();
@@ -844,37 +858,32 @@ public class LineGraph extends AbstractGraph<double[]>
 	 *               {@code ymin} to a pixel offset
 	 */
 	private void drawLines(double width, double ymin, double yScale) {
-		Iterator<double[]> it = buffer.iterator();
-		if (!it.hasNext() || nLines <= 0)
+		if (nLines <= 0)
 			return;
-
-		double[] current = it.next();
-		if (!it.hasNext())
-			return;
-		double[] prev = it.next();
-		double[] older = it.hasNext() ? it.next() : null;
 		g.setLineWidth(style.lineWidth);
 		double xScale = width / (style.xMax - style.xMin);
-		double start = -style.xMax * xScale;
+		double x0 = -style.xMax * xScale;
+		forEachStep((current, prev, pos, span) -> {
+			double end = x0 - pos * xScale;
+			double start = end - span * xScale;
+			if (start < 0.0)
+				drawSegmentClipped(start, end, prev, current, ymin, yScale, width);
+			return start > -width;
+		});
+	}
 
-		double end = start;
-		while (true) {
-			double span = historyStepWidth(current, prev);
-			if (span > 0.0) {
-				start -= span * xScale;
-				if (start < 0.0) {
-					drawSegmentClipped(start, end, prev, current, ymin, yScale, width);
-					if (start <= -width)
-						break;
-				}
-				end = start;
-			}
-			if (older == null)
-				break;
-			current = prev;
-			prev = older;
-			older = it.hasNext() ? it.next() : null;
-		}
+	/**
+	 * Map {@code y} to the coordinate along the {@code y}-axis, i.e. its logarithm
+	 * on logarithmic scales, where non-positive values map to the minimum of the
+	 * axis.
+	 *
+	 * @param y the value
+	 * @return the coordinate along the {@code y}-axis
+	 */
+	private double yCoord(double y) {
+		if (!style.logScaleY)
+			return y;
+		return Math.log10(y > 0.0 ? y : style.yMin);
 	}
 
 	/**
@@ -900,14 +909,13 @@ public class LineGraph extends AbstractGraph<double[]>
 			if (style.logScaleY && current[n + 1] <= 0.0)
 				continue;
 			g.setFillStyle(colors[n]);
-			double y = (style.logScaleY ? Math.log10(current[n + 1]) : current[n + 1]) - ymin;
-			fillCircle(start, y * yScale, style.markerSize);
+			fillCircle(start, (yCoord(current[n + 1]) - ymin) * yScale, style.markerSize);
 		}
 	}
 
 	/**
-	 * Draw a historical segment between 'start' and 'end', handling clipping
-	 * against the visible window (-w .. 0) and log/linear y transforms.
+	 * Draw a historical segment between 'start' and 'end', clipped to the visible
+	 * window (-w .. 0).
 	 *
 	 * @param start   starting x-coordinate of the segment
 	 * @param end     ending x-coordinate of the segment
@@ -923,36 +931,16 @@ public class LineGraph extends AbstractGraph<double[]>
 			double[] prev, double[] current,
 			double ymin, double yScale, double width) {
 		boolean reverse = current[0] < prev[0];
+		double s = Math.max(-width, start);
+		double e = Math.min(0.0, end);
 		for (int n = 0; n < nLines; n++) {
 			setStrokeStyleAt(n);
 			g.setLineDash(reverse ? style.dottedLine : style.solidLine);
-			double pi;
-			double ci;
-			if (style.logScaleY) {
-				double pval = prev[n + 1];
-				double cval = current[n + 1];
-				if (pval <= 0.0)
-					pval = style.yMin;
-				if (cval <= 0.0)
-					cval = style.yMin;
-				pi = Math.log10(pval) - ymin;
-				ci = Math.log10(cval) - ymin;
-			} else {
-				pi = prev[n + 1] - ymin;
-				ci = current[n + 1] - ymin;
-			}
-			// fully inside visible area
-			if (start >= -width && end <= 0.0) {
-				strokeLine(start, pi * yScale, end, ci * yScale);
-			} else {
-				double s = Math.max(-width, start);
-				double e = Math.min(0, end);
-				double denom = (end - start);
-				double m = (denom == 0.0) ? 0.0 : (ci - pi) / denom;
-				if (style.logScaleY && m > 0.0)
-					m = Math.log10(m);
-				strokeLine(s, (pi + m * (s - start)) * yScale, e, (ci - m * (end - e)) * yScale);
-			}
+			double pi = yCoord(prev[n + 1]) - ymin;
+			double ci = yCoord(current[n + 1]) - ymin;
+			// clip at the edges of the visible area
+			double m = (end == start) ? 0.0 : (ci - pi) / (end - start);
+			strokeLine(s, (pi + m * (s - start)) * yScale, e, (ci - m * (end - e)) * yScale);
 		}
 		g.setLineDash(style.solidLine);
 	}
@@ -975,7 +963,7 @@ public class LineGraph extends AbstractGraph<double[]>
 				double mn1 = mark[n + 1];
 				if (style.logScaleY && mn1 <= 0.0)
 					continue;
-				double myn = ((style.logScaleY ? Math.log10(mn1) : mn1) - ymin) * yScale;
+				double myn = (yCoord(mn1) - ymin) * yScale;
 				g.setStrokeStyle(markerColors[n % markerColors.length]);
 				strokeLine(-width, myn, 0.0, myn);
 			}
@@ -1147,17 +1135,8 @@ public class LineGraph extends AbstractGraph<double[]>
 	@Override
 	public String getTooltipAt(double x, double y) {
 		double mouset = style.xMin + x * (style.xMax - style.xMin);
-		double ymin;
-		double yrange;
-		if (style.logScaleY) {
-			ymin = Math.log10(style.yMin);
-			yrange = Math.log10(style.yMax) - ymin;
-		} else {
-			ymin = style.yMin;
-			yrange = style.yMax - ymin;
-		}
-
-		double yval = ymin + y * yrange;
+		double ymin = yCoord(style.yMin);
+		double yval = ymin + y * (yCoord(style.yMax) - ymin);
 		if (style.logScaleY)
 			yval = Math.pow(10.0, yval);
 
@@ -1189,7 +1168,7 @@ public class LineGraph extends AbstractGraph<double[]>
 		tip.append(TABLE_ROW_START_RIGHT)
 				.append(style.yLabel)
 				.append(TABLE_CELL_NEXT)
-				.append(style.percentY ? Formatter.formatPercent(yval, 1) : Formatter.format(yval, 2))
+				.append(formatY(yval, 1))
 				.append(TABLE_ROW_END);
 	}
 
@@ -1201,38 +1180,28 @@ public class LineGraph extends AbstractGraph<double[]>
 	 * @return the interpolated data array (time + values) or null if not found
 	 */
 	private double[] findInterpolationForMouse(double mouset) {
-		Iterator<double[]> it = buffer.iterator();
-		double accum = 0.0;
-		if (!it.hasNext())
-			return new double[0];
-		double[] current = it.next();
-		if (!it.hasNext())
-			return new double[0];
-		double[] prev = it.next();
-		double[] older = it.hasNext() ? it.next() : null;
-		while (true) {
-			double dt = current[0] - prev[0];
-			double span = historyStepWidth(current, prev);
-			if (span > 0.0) {
-				accum -= span;
-				if (accum <= mouset) {
-					double fx = 1.0 - (mouset - accum) / span;
-					double[] inter = new double[current.length];
-					inter[0] = current[0] - fx * dt;
-					for (int n = 1; n < inter.length; n++) {
-						inter[n] = interpolate(current[n], prev[n], fx);
-					}
-					return inter;
-					// return new InterpResult(current, prev, fx, time);
-				}
-			}
-			if (older == null)
-				break;
-			current = prev;
-			prev = older;
-			older = it.hasNext() ? it.next() : null;
-		}
-		return new double[0];
+		double[][] inter = { new double[0] };
+		forEachStep((current, prev, pos, span) -> {
+			if (-(pos + span) > mouset)
+				return true;
+			double fx = -(mouset + pos) / span;
+			inter[0] = new double[current.length];
+			for (int n = 0; n < current.length; n++)
+				inter[0][n] = (1.0 - fx) * current[n] + fx * prev[n];
+			return false;
+		});
+		return inter[0];
+	}
+
+	/**
+	 * Format the value {@code y} along the {@code y}-axis.
+	 *
+	 * @param y      the value
+	 * @param digits the number of digits
+	 * @return the formatted value
+	 */
+	private String formatY(double y, int digits) {
+		return style.percentY ? Formatter.formatPercent(y, digits) : Formatter.format(y, digits);
 	}
 
 	/**
@@ -1274,9 +1243,9 @@ public class LineGraph extends AbstractGraph<double[]>
 				.append(ColorMapCSS.Color2Css(colors[0]))
 				.append(";'>mean")
 				.append(TABLE_CELL_NEXT)
-				.append(style.percentY ? Formatter.formatPercent(inter[1], 2) : Formatter.format(inter[1], 2));
-		tip.append(" ± ")
-				.append(style.percentY ? Formatter.formatPercent(inter[2], 2) : Formatter.format(inter[2], 2))
+				.append(formatY(inter[1], 2))
+				.append(" ± ")
+				.append(formatY(inter[2], 2))
 				.append(TABLE_ROW_END); // mean, mean-sdev, mean+sdev
 	}
 
@@ -1310,25 +1279,8 @@ public class LineGraph extends AbstractGraph<double[]>
 					.append(ColorMapCSS.Color2Css(color)).append(";'>")
 					.append(name)
 					.append(TABLE_CELL_NEXT);
-			if (Double.isNaN(inter[n1])) {
-				tip.append("-");
-			} else {
-				tip.append(style.percentY ? Formatter.formatPercent(inter[n1], 2) : Formatter.format(inter[n1], 2));
-			}
-			tip.append(TABLE_ROW_END);
+			tip.append(Double.isNaN(inter[n1]) ? "-" : formatY(inter[n1], 2)).append(TABLE_ROW_END);
 		}
-	}
-
-	/**
-	 * Interpolate linearly between {@code current} and {@code prev} at {@code x}.
-	 * 
-	 * @param left  the left value
-	 * @param right the right value
-	 * @param x     the location inbetween
-	 * @return the interpolated value
-	 */
-	private double interpolate(double left, double right, double x) {
-		return (1.0 - x) * left + x * right;
 	}
 
 	@Override
@@ -1496,17 +1448,7 @@ public class LineGraph extends AbstractGraph<double[]>
 	 * @return the span of the history, or {@code 0} if not available
 	 */
 	private double historySpan() {
-		if (buffer == null || buffer.getSize() < 2)
-			return 0.0;
-		double span = 0.0;
-		Iterator<double[]> it = buffer.iterator();
-		double[] current = it.next();
-		while (it.hasNext()) {
-			double[] prev = it.next();
-			span += historyStepWidth(current, prev);
-			current = prev;
-		}
-		return Double.isFinite(span) ? span : 0.0;
+		return forEachStep((current, prev, pos, span) -> true);
 	}
 
 	/**
@@ -1569,6 +1511,6 @@ public class LineGraph extends AbstractGraph<double[]>
 			return;
 		}
 		if (style.yMin <= 0.0)
-			style.yMin = 0.01 * style.yMax;
+			style.yMin = GraphStyle.MIN_YMAX_FRACTION * style.yMax;
 	}
 }
