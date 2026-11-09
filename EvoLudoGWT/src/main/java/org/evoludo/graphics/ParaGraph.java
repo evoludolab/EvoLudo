@@ -272,12 +272,13 @@ public class ParaGraph extends AbstractGraph<double[]> implements Zooming, Shift
 			g.setStrokeStyle(style.trajColor);
 			g.setLineWidth(style.lineWidth);
 			drawTrajectory(currPt, nextPt, xScale, yScale);
+			g.restore();
+			drawFrame(4, 4);
+			// markers on top of the frame and not clipped
 			if (withMarkers)
 				drawStartEndMarkers(currPt, xScale, yScale);
 			if (markers != null)
 				drawCustomMarkers(currPt, xScale, yScale);
-			g.restore();
-			drawFrame(4, 4);
 		}
 		g.restore();
 	}
@@ -372,6 +373,9 @@ public class ParaGraph extends AbstractGraph<double[]> implements Zooming, Shift
 	private void drawMarkerCircle(Point2D pt, double xScale, double yScale, boolean fill, double radius) {
 		double sx = (pt.getX() - style.xMin) * xScale;
 		double sy = (style.yMax - pt.getY()) * yScale;
+		// skip markers outside of the frame, e.g. when zoomed in
+		if (sx < 0.0 || sx > bounds.getWidth() || sy < 0.0 || sy > bounds.getHeight())
+			return;
 		if (fill)
 			fillCircle(sx, sy, radius);
 		else
