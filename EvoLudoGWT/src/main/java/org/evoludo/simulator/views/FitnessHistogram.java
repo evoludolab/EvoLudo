@@ -39,7 +39,6 @@ import org.evoludo.simulator.ColorMapCSS;
 import org.evoludo.simulator.EvoLudoGWT;
 import org.evoludo.simulator.models.CModel;
 import org.evoludo.simulator.models.DModel;
-import org.evoludo.simulator.models.Data;
 import org.evoludo.simulator.modules.Module;
 
 /**
@@ -58,7 +57,7 @@ public class FitnessHistogram extends TraitHistogram {
 	 * @param engine the pacemaker for running the model
 	 */
 	public FitnessHistogram(EvoLudoGWT engine) {
-		super(engine, Data.FITNESS);
+		super(engine);
 	}
 
 	@Override

@@ -36,7 +36,6 @@ import org.evoludo.graphics.GraphStyle;
 import org.evoludo.graphics.HistoGraph;
 import org.evoludo.simulator.ColorMapCSS;
 import org.evoludo.simulator.EvoLudoGWT;
-import org.evoludo.simulator.models.Data;
 import org.evoludo.simulator.models.Model;
 import org.evoludo.simulator.modules.Module;
 import org.evoludo.util.Formatter;
@@ -75,15 +74,12 @@ public abstract class Histogram extends AbstractView<HistoGraph> implements Basi
 	protected boolean isMultispecies;
 
 	/**
-	 * Construct a new view to display histograms. The type of data distinguishes
-	 * histograms of traits and fitness, see {@link AbstractView#getType()}.
+	 * Construct a new view to display histograms.
 	 *
 	 * @param engine the pacemaker for running the model
-	 * @param type   {@link Data#TRAIT}, {@link Data#FITNESS} or
-	 *               {@link Data#UNDEFINED}
 	 */
-	protected Histogram(EvoLudoGWT engine, Data type) {
-		super(engine, type);
+	protected Histogram(EvoLudoGWT engine) {
+		super(engine);
 	}
 
 	/**

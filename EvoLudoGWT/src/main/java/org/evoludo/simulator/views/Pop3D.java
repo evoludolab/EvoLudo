@@ -44,7 +44,6 @@ import org.evoludo.simulator.geometries.AbstractGeometry;
 import org.evoludo.simulator.EvoLudoGWT;
 import org.evoludo.simulator.models.CModel;
 import org.evoludo.simulator.models.DModel;
-import org.evoludo.simulator.models.Data;
 import org.evoludo.simulator.models.Model.HasDE;
 import org.evoludo.simulator.modules.Continuous;
 import org.evoludo.simulator.modules.Continuous.ColorModelType;
@@ -157,10 +156,10 @@ public class Pop3D extends GenericPop<MeshLambertMaterial, Network3DGWT, PopGrap
 	 * EvoLudo model in 3D.
 	 * 
 	 * @param engine the pacemaker for running the model
-	 * @param type   the type of data to display
+	 * @param isFitness {@code true} to show fitness, {@code false} for traits
 	 */
-	public Pop3D(EvoLudoGWT engine, Data type) {
-		super(engine, type);
+	public Pop3D(EvoLudoGWT engine, boolean isFitness) {
+		super(engine, isFitness);
 	}
 
 	@Override
@@ -271,16 +270,11 @@ public class Pop3D extends GenericPop<MeshLambertMaterial, Network3DGWT, PopGrap
 	 * @return configured color map
 	 */
 	private ColorMap<MeshLambertMaterial> createColorMap(Module<?> module) {
-		switch (type) {
-			case TRAIT:
-				if (model.isContinuous())
-					return createTraitColorMapContinuous(module);
-				return createTraitColorMapDiscreteOrPDE(module);
-			case FITNESS:
-				return createFitnessColorMap(module);
-			default:
-				throw new UnsupportedOperationException("Data type '" + type + "' not yet implemented");
-		}
+		if (isFitness)
+			return createFitnessColorMap(module);
+		if (model.isContinuous())
+			return createTraitColorMapContinuous(module);
+		return createTraitColorMapDiscreteOrPDE(module);
 	}
 
 	/**

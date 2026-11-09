@@ -46,7 +46,6 @@ import org.evoludo.simulator.Network;
 import org.evoludo.simulator.Network.Status;
 import org.evoludo.simulator.geometries.AbstractGeometry;
 import org.evoludo.simulator.geometries.GeometryType;
-import org.evoludo.simulator.models.Data;
 import org.evoludo.simulator.models.IBS;
 import org.evoludo.simulator.models.IBSPopulation;
 import org.evoludo.simulator.models.Model;
@@ -102,32 +101,25 @@ public abstract class GenericPop<T, N extends Network<?>, G extends GenericPopGr
 	protected int hitNode = -1;
 
 	/**
-	 * The type of data to display.
+	 * The flag to indicate whether the view shows fitness, otherwise traits.
 	 */
-	private final String dim;
+	protected final boolean isFitness;
 
 	/**
 	 * Construct a new view to display the configuration of the current state of the
 	 * EvoLudo model in 2D or 3D.
 	 * 
-	 * @param engine the pacemaker for running the model
-	 * @param type   the type of data to display
+	 * @param engine    the pacemaker for running the model
+	 * @param isFitness {@code true} to show fitness, {@code false} for traits
 	 */
-	protected GenericPop(EvoLudoGWT engine, Data type) {
-		super(engine, type);
-		dim = (this instanceof Pop2D) ? "2D" : "3D";
+	protected GenericPop(EvoLudoGWT engine, boolean isFitness) {
+		super(engine);
+		this.isFitness = isFitness;
 	}
 
 	@Override
 	public String getName() {
-		switch (type) {
-			case TRAIT:
-				return "Traits - " + dim + " Structure";
-			case FITNESS:
-				return "Fitness - " + dim + " Structure";
-			default:
-				return null;
-		}
+		return (isFitness ? "Fitness - " : "Traits - ") + (this instanceof Pop2D ? "2D" : "3D") + " Structure";
 	}
 
 	@Override
@@ -255,7 +247,7 @@ public abstract class GenericPop<T, N extends Network<?>, G extends GenericPopGr
 			graph.setGeometry(((PDE) model).getGeometry());
 			return;
 		}
-		graph.displayMessage("No structure to display in " + type + " model.");
+		graph.displayMessage("No structure to display in " + model.getType().getKey() + " model.");
 	}
 
 	@Override
@@ -282,18 +274,12 @@ public abstract class GenericPop<T, N extends Network<?>, G extends GenericPopGr
 			Object[] graphData = graph.getData();
 			if (graphData == null || graph.getColorMap() == null)
 				continue;
-			switch (type) {
-				case TRAIT:
-					model.getTraitData(graph.getModule().getId(), graph.getData(), graph.getColorMap());
-					break;
-				case FITNESS:
-					// cast should be safe for fitness data
-					model.getFitnessData(graph.getModule().getId(), graph.getData(),
-							(ColorMap.Gradient1D<T>) graph.getColorMap());
-					break;
-				default:
-					break;
-			}
+			if (isFitness)
+				// cast should be safe for fitness data
+				model.getFitnessData(graph.getModule().getId(), graph.getData(),
+						(ColorMap.Gradient1D<T>) graph.getColorMap());
+			else
+				model.getTraitData(graph.getModule().getId(), graph.getData(), graph.getColorMap());
 			graph.update(isNext);
 			updated = true;
 		}
@@ -311,7 +297,7 @@ public abstract class GenericPop<T, N extends Network<?>, G extends GenericPopGr
 			return;
 		}
 		for (G graph : graphs)
-			graph.displayMessage("No view available for " + type + " model.");
+			graph.displayMessage("No view available for " + model.getType().getKey() + " model.");
 	}
 
 	/**
@@ -450,16 +436,10 @@ public abstract class GenericPop<T, N extends Network<?>, G extends GenericPopGr
 		String color = graph1d.getHistoryColorAt(idx, node);
 		if (color == null)
 			return;
-		switch (type) {
-			case TRAIT:
-				appendLinearHistoryTraitTip(graph1d, module, color, tip);
-				return;
-			case FITNESS:
-				appendLinearHistoryFitnessTip(graph1d, color, tip);
-				return;
-			default:
-				return;
-		}
+		if (isFitness)
+			appendLinearHistoryFitnessTip(graph1d, color, tip);
+		else
+			appendLinearHistoryTraitTip(graph1d, module, color, tip);
 	}
 
 	/**
@@ -526,7 +506,7 @@ public abstract class GenericPop<T, N extends Network<?>, G extends GenericPopGr
 				.append(TABLE_ROW_END)
 				.append(TABLE_ROW_START)
 				.append("Trait");
-		if (type == Data.TRAIT) {
+		if (!isFitness) {
 			// trait: use color-data to color trait
 			tip.append(TABLE_CELL_NEXT_COLOR)
 					.append(graph.getCSSColorAt(node))
@@ -566,7 +546,7 @@ public abstract class GenericPop<T, N extends Network<?>, G extends GenericPopGr
 		tip.append(TABLE_ROW_END)
 				.append(TABLE_ROW_START)
 				.append("Densities");
-		if (type == Data.TRAIT)
+		if (!isFitness)
 			tip.append(TABLE_CELL_NEXT_COLOR)
 					.append(graph.getCSSColorAt(node))
 					.append(TABLE_CELL_BULLET);
@@ -604,7 +584,7 @@ public abstract class GenericPop<T, N extends Network<?>, G extends GenericPopGr
 		tip.append(TABLE_ROW_START)
 				.append("Fitness")
 				.append(TABLE_CELL_NEXT);
-		if (type == Data.FITNESS)
+		if (isFitness)
 			tip.append(SPAN_COLOR)
 					.append(graph.getCSSColorAt(node))
 					.append(TABLE_CELL_BULLET);
@@ -656,7 +636,7 @@ public abstract class GenericPop<T, N extends Network<?>, G extends GenericPopGr
 		tip.append(TABLE_ROW_START)
 				.append("Fitness")
 				.append(TABLE_CELL_NEXT);
-		if (type == Data.FITNESS)
+		if (isFitness)
 			tip.append(SPAN_COLOR)
 					.append(graph.getCSSColorAt(node)).append(TABLE_CELL_BULLET);
 		appendFormattedValues(tip, fitness, vac, map, false);

@@ -35,7 +35,6 @@ import java.util.logging.Level;
 
 import org.evoludo.graphics.AbstractGraph;
 import org.evoludo.simulator.EvoLudoGWT;
-import org.evoludo.simulator.models.Data;
 import org.evoludo.simulator.models.Mode;
 import org.evoludo.ui.ContextMenu;
 import org.evoludo.ui.ContextMenuItem;
@@ -166,7 +165,7 @@ public class Console extends AbstractView<AbstractGraph<?>> implements ContextMe
 	 * @param engine the pacemaker for running the model
 	 */
 	public Console(EvoLudoGWT engine) {
-		super(engine, Data.UNDEFINED);
+		super(engine);
 		log = new Log();
 		wrapper.add(log);
 	}

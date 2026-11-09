@@ -33,7 +33,6 @@ package org.evoludo.simulator.views;
 import org.evoludo.graphics.GraphStyle;
 import org.evoludo.graphics.HistoGraph;
 import org.evoludo.simulator.EvoLudoGWT;
-import org.evoludo.simulator.models.Data;
 import org.evoludo.simulator.models.Mode;
 import org.evoludo.simulator.models.Model;
 import org.evoludo.simulator.modules.Module;
@@ -59,7 +58,7 @@ public class StationaryHistogram extends Histogram {
 	 * @param engine the pacemaker for running the model
 	 */
 	public StationaryHistogram(EvoLudoGWT engine) {
-		super(engine, Data.UNDEFINED);
+		super(engine);
 	}
 
 	@Override

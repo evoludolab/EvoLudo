@@ -36,7 +36,6 @@ import org.evoludo.graphics.GraphStyle;
 import org.evoludo.graphics.HistoGraph;
 import org.evoludo.simulator.ColorMapCSS;
 import org.evoludo.simulator.EvoLudoGWT;
-import org.evoludo.simulator.models.Data;
 import org.evoludo.simulator.models.FixationData;
 import org.evoludo.simulator.models.Mode;
 import org.evoludo.simulator.modules.Discrete;
@@ -74,7 +73,7 @@ public abstract class FixationHistogram extends Histogram {
 	 * @param statusPrefix the prefix of the status
 	 */
 	protected FixationHistogram(EvoLudoGWT engine, String statusPrefix) {
-		super(engine, Data.UNDEFINED);
+		super(engine);
 		this.statusPrefix = statusPrefix;
 	}
 

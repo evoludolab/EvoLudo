@@ -38,7 +38,6 @@ import org.evoludo.graphics.AbstractGraph.HasLogScaleY;
 import org.evoludo.graphics.AbstractGraph.Shifting;
 import org.evoludo.graphics.AbstractGraph.Zooming;
 import org.evoludo.simulator.ColorMapCSS;
-import org.evoludo.simulator.models.Data;
 import org.evoludo.simulator.models.Model;
 import org.evoludo.simulator.modules.Continuous;
 import org.evoludo.simulator.modules.Module;
@@ -1291,13 +1290,12 @@ public class LineGraph extends AbstractGraph<double[]>
 	private void appendTipTraits(StringBuilder tip, double[] inter, Color[] colors) {
 		// N.B. inter has updates prepended and real time appended around the
 		// nLines plotted values - bound the loop by nLines, not inter.length
-		Data type = view.getType();
 		boolean[] active = module.getActiveTraits();
 		for (int n = 0; n < nLines; n++) {
 			int n1 = n + 1;
 			String name;
 			Color color;
-			if (n1 == nLines && type == Data.FITNESS) {
+			if (n1 == nLines && ((Mean) view).isFitness()) {
 				name = "average";
 				color = Color.BLACK;
 			} else {

@@ -35,7 +35,6 @@ import org.evoludo.graphics.S3Graph;
 import org.evoludo.simulator.ColorMapCSS;
 import org.evoludo.simulator.EvoLudoGWT;
 import org.evoludo.simulator.models.DModel;
-import org.evoludo.simulator.models.Data;
 import org.evoludo.simulator.models.Model;
 import org.evoludo.simulator.modules.Discrete;
 import org.evoludo.simulator.modules.Module;
@@ -62,7 +61,7 @@ public class S3 extends AbstractView<S3Graph> {
 	 * @param engine the pacemaker for running the model
 	 */
 	public S3(EvoLudoGWT engine) {
-		super(engine, Data.TRAIT);
+		super(engine);
 	}
 
 	@Override

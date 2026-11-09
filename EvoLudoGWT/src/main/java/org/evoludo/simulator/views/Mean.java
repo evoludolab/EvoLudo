@@ -46,7 +46,6 @@ import org.evoludo.simulator.ColorMap;
 import org.evoludo.simulator.ColorMapCSS;
 import org.evoludo.simulator.EvoLudoGWT;
 import org.evoludo.simulator.models.DModel;
-import org.evoludo.simulator.models.Data;
 import org.evoludo.simulator.models.Model;
 import org.evoludo.simulator.modules.Module;
 import org.evoludo.util.CLOption;
@@ -79,7 +78,6 @@ import org.evoludo.util.CLOption;
  * 
  * @see org.evoludo.simulator.views.AbstractView
  * @see org.evoludo.graphics.LineGraph
- * @see org.evoludo.simulator.models.Data
  * @see org.evoludo.simulator.models.DModel
  * @see org.evoludo.simulator.models.IBSC
  */
@@ -91,26 +89,34 @@ public class Mean extends AbstractView<LineGraph> implements Shifter, Zoomer {
 	double[] state;
 
 	/**
+	 * The flag to indicate whether the view shows fitness, otherwise traits.
+	 */
+	private final boolean isFitness;
+
+	/**
 	 * Construct a new view to display the time series data of the current EvoLudo
 	 * model.
 	 * 
-	 * @param engine the pacemaker for running the model
-	 * @param type   the type of data to display
+	 * @param engine    the pacemaker for running the model
+	 * @param isFitness {@code true} to show fitness, {@code false} for traits
 	 */
-	public Mean(EvoLudoGWT engine, Data type) {
-		super(engine, type);
+	public Mean(EvoLudoGWT engine, boolean isFitness) {
+		super(engine);
+		this.isFitness = isFitness;
+	}
+
+	/**
+	 * Check whether the view shows fitness.
+	 * 
+	 * @return {@code true} for fitness, {@code false} for traits
+	 */
+	public boolean isFitness() {
+		return isFitness;
 	}
 
 	@Override
 	public String getName() {
-		switch (type) {
-			case TRAIT:
-				return "Traits - Mean";
-			case FITNESS:
-				return "Fitness - Mean";
-			default:
-				return null;
-		}
+		return isFitness ? "Fitness - Mean" : "Traits - Mean";
 	}
 
 	@Override
@@ -127,7 +133,7 @@ public class Mean extends AbstractView<LineGraph> implements Shifter, Zoomer {
 		for (Module<?> module : species) {
 			// only one graph per species for fitness data
 			// but separate graphs for multiple continuous traits
-			if (model.isContinuous() && type == Data.TRAIT)
+			if (model.isContinuous() && !isFitness)
 				nGraphs += module.getNTraits();
 			else
 				nGraphs++;
@@ -174,28 +180,17 @@ public class Mean extends AbstractView<LineGraph> implements Shifter, Zoomer {
 		int idx = 0; // index of trait in continuous models
 
 		for (LineGraph graph : graphs) {
-			switch (type) {
-				case TRAIT:
-					if (model.isContinuous()) {
-						setupCTraitGraph(graph, idx);
-						idx++;
-					} else {
-						setupDTraitGraph(graph);
-					}
-					break;
-
-				case FITNESS:
-					if (model.isContinuous())
-						setupCFitGraph(graph);
-					else
-						// note: leave nState alone because of multi-species modules!
-						setupDFitGraph(graph);
-					graph.getStyle().yLabel = "payoffs";
-					break;
-
-				default:
-					throw new IllegalArgumentException("Unknown data type: " + type);
-			}
+			if (isFitness) {
+				if (model.isContinuous())
+					setupCFitGraph(graph);
+				else
+					// note: leave nState alone because of multi-species modules!
+					setupDFitGraph(graph);
+				graph.getStyle().yLabel = "payoffs";
+			} else if (model.isContinuous())
+				setupCTraitGraph(graph, idx++);
+			else
+				setupDTraitGraph(graph);
 			finishGraphSetup(graph, hard);
 		}
 		update(hard);
@@ -366,27 +361,16 @@ public class Mean extends AbstractView<LineGraph> implements Shifter, Zoomer {
 				int id = module.getId();
 				int nState = model.getNMean(id);
 				double[] data;
-				switch (type) {
-					case TRAIT:
-						if (newmod) {
-							model.getMeanTraits(id, state);
-							idx = 0;
-						}
-						if (model.isContinuous())
-							data = updateCTraitGraph(nState, idx++);
-						else
-							data = updateDTraitGraph(nState);
-						break;
-					case FITNESS:
-						if (newmod)
-							model.getMeanFitness(id, state);
-						if (model.isContinuous())
-							data = updateCFitGraph();
-						else
-							data = updateDFitGraph(nState);
-						break;
-					default:
-						throw new IllegalArgumentException("Unknown data type: " + type);
+				if (isFitness) {
+					if (newmod)
+						model.getMeanFitness(id, state);
+					data = model.isContinuous() ? updateCFitGraph() : updateDFitGraph(nState);
+				} else {
+					if (newmod) {
+						model.getMeanTraits(id, state);
+						idx = 0;
+					}
+					data = model.isContinuous() ? updateCTraitGraph(nState, idx++) : updateDTraitGraph(nState);
 				}
 				data[0] = newtime;
 				graph.addData(data, realTime);

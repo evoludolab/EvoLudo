@@ -46,7 +46,6 @@ import org.evoludo.simulator.EvoLudoGWT;
 import org.evoludo.simulator.Resources;
 import org.evoludo.simulator.geometries.AbstractGeometry;
 import org.evoludo.simulator.models.ChangeListener;
-import org.evoludo.simulator.models.Data;
 import org.evoludo.simulator.models.LifecycleListener;
 import org.evoludo.simulator.models.Mode;
 import org.evoludo.simulator.models.Model;
@@ -106,11 +105,6 @@ public abstract class AbstractView<G extends AbstractGraph<?>> extends Composite
 	protected ModelType getModelType() {
 		return engine.getModule().getModelType();
 	}
-
-	/**
-	 * The type of data shown in this graph.
-	 */
-	Data type;
 
 	/**
 	 * The list of graphs that are displayed in this view.
@@ -181,11 +175,9 @@ public abstract class AbstractView<G extends AbstractGraph<?>> extends Composite
 	 *               current implementation of context menu and tooltips
 	 * 
 	 * @param engine the EvoLudo engine
-	 * @param type   the type of data shown in this view
 	 */
-	protected AbstractView(EvoLudoGWT engine, Data type) {
+	protected AbstractView(EvoLudoGWT engine) {
 		this.engine = engine;
-		this.type = type;
 		this.graphs = new ArrayList<>();
 		wrapper = new FlowPanel();
 		wrapper.getElement().getStyle().setPosition(Position.RELATIVE);
@@ -339,15 +331,6 @@ public abstract class AbstractView<G extends AbstractGraph<?>> extends Composite
 		}
 		graphs.clear();
 		gRows = gCols = 1;
-	}
-
-	/**
-	 * Get the type of data visualized on the graph.
-	 *
-	 * @return the data type
-	 */
-	public Data getType() {
-		return type;
 	}
 
 	/**

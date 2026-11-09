@@ -40,7 +40,6 @@ import org.evoludo.simulator.EvoLudoGWT;
 import org.evoludo.simulator.geometries.AbstractGeometry;
 import org.evoludo.simulator.geometries.GeometryFeatures;
 import org.evoludo.simulator.geometries.GeometryType;
-import org.evoludo.simulator.models.Data;
 import org.evoludo.simulator.models.IBSPopulation;
 import org.evoludo.simulator.modules.Module;
 
@@ -69,7 +68,7 @@ public class DegreeHistogram extends Histogram {
 	 * @param engine the pacemaker for running the model
 	 */
 	public DegreeHistogram(EvoLudoGWT engine) {
-		super(engine, Data.UNDEFINED);
+		super(engine);
 	}
 
 	@Override

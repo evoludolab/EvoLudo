@@ -39,7 +39,6 @@ import org.evoludo.math.ArrayMath;
 import org.evoludo.simulator.ColorMapCSS;
 import org.evoludo.simulator.EvoLudoGWT;
 import org.evoludo.simulator.models.DModel;
-import org.evoludo.simulator.models.Data;
 import org.evoludo.simulator.models.Model;
 import org.evoludo.simulator.modules.Discrete;
 import org.evoludo.simulator.modules.Module;
@@ -168,7 +167,7 @@ public class Phase2D extends AbstractView<ParaGraph> {
 	 * @param engine the pacemaker for running the model
 	 */
 	public Phase2D(EvoLudoGWT engine) {
-		super(engine, Data.UNDEFINED);
+		super(engine);
 	}
 
 	@Override

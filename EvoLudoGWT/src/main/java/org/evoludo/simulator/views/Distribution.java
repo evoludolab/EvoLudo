@@ -47,7 +47,6 @@ import org.evoludo.simulator.EvoLudoGWT;
 import org.evoludo.simulator.geometries.AbstractGeometry;
 import org.evoludo.simulator.geometries.GeometryType;
 import org.evoludo.simulator.models.CModel;
-import org.evoludo.simulator.models.Data;
 import org.evoludo.simulator.models.Model;
 import org.evoludo.simulator.modules.Continuous;
 import org.evoludo.simulator.modules.Module;
@@ -178,10 +177,9 @@ public class Distribution extends AbstractView<PopGraph2D> implements TooltipPro
 	 * current EvoLudo model.
 	 * 
 	 * @param engine the pacemaker for running the model
-	 * @param type   the type of data to display
 	 */
-	public Distribution(EvoLudoGWT engine, Data type) {
-		super(engine, type);
+	public Distribution(EvoLudoGWT engine) {
+		super(engine);
 	}
 
 	@Override
@@ -245,12 +243,8 @@ public class Distribution extends AbstractView<PopGraph2D> implements TooltipPro
 	@Override
 	public void reset(boolean hard) {
 		super.reset(hard);
-		for (PopGraph2D graph : graphs) {
-			if (!type.equals(Data.TRAIT)) {
-				throw new UnsupportedOperationException("Distribution: not implemented for type " + type);
-			}
+		for (PopGraph2D graph : graphs)
 			resetTrait(graph, hard);
-		}
 		update(hard);
 	}
 
@@ -331,9 +325,6 @@ public class Distribution extends AbstractView<PopGraph2D> implements TooltipPro
 			boolean doUpdate = (isActive || graph.hasHistory());
 			if (!doUpdate)
 				continue;
-			if (!type.equals(Data.TRAIT)) {
-				throw new UnsupportedOperationException("Distribution: not implemented for type " + type);
-			}
 			// casts ok because trait histograms make sense only for continuous models
 			((CModel) model).get2DTraitHistogramData(graph.getModule().getId(),
 					bins, traitXIdx, traitYIdx);

@@ -47,7 +47,6 @@ import org.evoludo.simulator.geometries.AbstractGeometry;
 import org.evoludo.simulator.geometries.GeometryType;
 import org.evoludo.simulator.models.CModel;
 import org.evoludo.simulator.models.DModel;
-import org.evoludo.simulator.models.Data;
 import org.evoludo.simulator.models.Model;
 import org.evoludo.simulator.models.Model.HasDE;
 import org.evoludo.simulator.models.PDE;
@@ -163,10 +162,10 @@ public class Pop2D extends GenericPop<String, Network2D, PopGraph2D> implements 
 	 * EvoLudo model in 2D.
 	 * 
 	 * @param engine the pacemaker for running the model
-	 * @param type   the type of data to display
+	 * @param isFitness {@code true} to show fitness, {@code false} for traits
 	 */
-	public Pop2D(EvoLudoGWT engine, Data type) {
-		super(engine, type);
+	public Pop2D(EvoLudoGWT engine, boolean isFitness) {
+		super(engine, isFitness);
 	}
 
 	@Override
@@ -286,7 +285,7 @@ public class Pop2D extends GenericPop<String, Network2D, PopGraph2D> implements 
 	private PopGraph2D createGraph(Module<?> module, AbstractGeometry geometry) {
 		PopGraph2D graph = isLinearGeometry(geometry) ? new PopGraph1D(this, module) : new PopGraph2D(this, module);
 		// set here because users can change the legend position
-		graph.getStyle().legendPos = (type == Data.TRAIT ? GraphStyle.Position.NONE : GraphStyle.Position.EAST);
+		graph.getStyle().legendPos = (isFitness ? GraphStyle.Position.EAST : GraphStyle.Position.NONE);
 		return graph;
 	}
 
@@ -334,29 +333,18 @@ public class Pop2D extends GenericPop<String, Network2D, PopGraph2D> implements 
 	private Legend2D.Specs createLegendSpecs(PopGraph2D graph) {
 		Module<?> module = graph.getModule();
 		ColorMap<String> colorMap = graph.getColorMap();
-		switch (type) {
-			case FITNESS:
-				if (!(colorMap instanceof ColorMap.Gradient1D))
-					return Legend2D.Specs.none();
-				double min = model.getMinFitness(module.getId());
-				double max = model.getMaxFitness(module.getId());
-				return Legend2D.Specs.fitnessGradient(min, max, collectFitnessLegendMarkers(module));
-
-			case TRAIT:
-				if (module instanceof Discrete) {
-					if (!(colorMap instanceof ColorMap.Index))
-						return Legend2D.Specs.none();
-					return Legend2D.Specs.discreteTrait(getDiscreteTraitLegendLabels(module));
-				}
-				if (module instanceof Continuous && module.getNTraits() == 1
-						&& colorMap instanceof ColorMap.Gradient1D) {
-					return Legend2D.Specs.continuousTrait();
-				}
-				//$FALL-THROUGH$
-
-			default:
+		if (isFitness) {
+			if (!(colorMap instanceof ColorMap.Gradient1D))
 				return Legend2D.Specs.none();
+			double min = model.getMinFitness(module.getId());
+			double max = model.getMaxFitness(module.getId());
+			return Legend2D.Specs.fitnessGradient(min, max, collectFitnessLegendMarkers(module));
 		}
+		if (module instanceof Discrete && colorMap instanceof ColorMap.Index)
+			return Legend2D.Specs.discreteTrait(getDiscreteTraitLegendLabels(module));
+		if (module instanceof Continuous && module.getNTraits() == 1 && colorMap instanceof ColorMap.Gradient1D)
+			return Legend2D.Specs.continuousTrait();
+		return Legend2D.Specs.none();
 	}
 
 	/**
@@ -486,16 +474,11 @@ public class Pop2D extends GenericPop<String, Network2D, PopGraph2D> implements 
 	 * @return configured color map
 	 */
 	private ColorMap<String> createColorMap(Module<?> module) {
-		switch (type) {
-			case TRAIT:
-				if (model.isContinuous())
-					return createTraitColorMapContinuous(module);
-				return createTraitColorMapDiscreteOrPDE(module);
-			case FITNESS:
-				return createFitnessColorMap(module);
-			default:
-				throw new UnsupportedOperationException("Data type '" + type + "' not yet implemented");
-		}
+		if (isFitness)
+			return createFitnessColorMap(module);
+		if (model.isContinuous())
+			return createTraitColorMapContinuous(module);
+		return createTraitColorMapDiscreteOrPDE(module);
 	}
 
 	/**

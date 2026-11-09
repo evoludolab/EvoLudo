@@ -37,7 +37,6 @@ import java.util.List;
 import java.util.Map;
 
 import org.evoludo.simulator.EvoLudoGWT;
-import org.evoludo.simulator.models.Data;
 import org.evoludo.simulator.models.Mode;
 import org.evoludo.simulator.models.Model;
 import org.evoludo.simulator.modules.Module;
@@ -511,19 +510,19 @@ public class ViewController {
 	 */
 	private void addStrategyViews(Module<?> module, boolean isODESDE, Map<String, AbstractView<?>> oldViews) {
 		if (module instanceof HasPop2D.Traits && !isODESDE)
-			addView(new Pop2D(engine, Data.TRAIT), oldViews);
+			addView(new Pop2D(engine, false), oldViews);
 		if (NativeJS.isWebGLSupported() && module instanceof HasPop3D.Traits && !isODESDE)
-			addView(new Pop3D(engine, Data.TRAIT), oldViews);
+			addView(new Pop3D(engine, false), oldViews);
 		if (module instanceof HasPhase2D)
 			addView(new Phase2D(engine), oldViews);
 		if (module instanceof HasMean.Traits)
-			addView(new Mean(engine, Data.TRAIT), oldViews);
+			addView(new Mean(engine, false), oldViews);
 		if (module instanceof HasS3 && module.getNActive() >= 3)
 			addView(new S3(engine), oldViews);
 		if (module instanceof HasHistogram.Strategy)
 			addView(new TraitHistogram(engine), oldViews);
 		if (module instanceof HasDistribution.Strategy)
-			addView(new Distribution(engine, Data.TRAIT), oldViews);
+			addView(new Distribution(engine), oldViews);
 	}
 
 	/**
@@ -535,11 +534,11 @@ public class ViewController {
 	 */
 	private void addFitnessViews(Module<?> module, boolean isODESDE, Map<String, AbstractView<?>> oldViews) {
 		if (module instanceof HasPop2D.Fitness && !isODESDE)
-			addView(new Pop2D(engine, Data.FITNESS), oldViews);
+			addView(new Pop2D(engine, true), oldViews);
 		if (NativeJS.isWebGLSupported() && module instanceof HasPop3D.Fitness && !isODESDE)
-			addView(new Pop3D(engine, Data.FITNESS), oldViews);
+			addView(new Pop3D(engine, true), oldViews);
 		if (module instanceof HasMean.Fitness)
-			addView(new Mean(engine, Data.FITNESS), oldViews);
+			addView(new Mean(engine, true), oldViews);
 		if (module instanceof HasHistogram.Fitness)
 			addView(new FitnessHistogram(engine), oldViews);
 	}

@@ -36,7 +36,6 @@ import org.evoludo.graphics.GraphStyle;
 import org.evoludo.graphics.HistoGraph;
 import org.evoludo.simulator.EvoLudoGWT;
 import org.evoludo.simulator.models.CModel;
-import org.evoludo.simulator.models.Data;
 import org.evoludo.simulator.modules.Continuous;
 import org.evoludo.simulator.modules.Module;
 import org.evoludo.ui.ContextMenu;
@@ -67,17 +66,7 @@ public class TraitHistogram extends Histogram {
 	 * @param engine the pacemaker for running the model
 	 */
 	public TraitHistogram(EvoLudoGWT engine) {
-		this(engine, Data.TRAIT);
-	}
-
-	/**
-	 * Construct a new view to display histograms of {@code type}, for subclasses.
-	 *
-	 * @param engine the pacemaker for running the model
-	 * @param type   the type of data to display
-	 */
-	protected TraitHistogram(EvoLudoGWT engine, Data type) {
-		super(engine, type);
+		super(engine);
 	}
 
 	@Override
