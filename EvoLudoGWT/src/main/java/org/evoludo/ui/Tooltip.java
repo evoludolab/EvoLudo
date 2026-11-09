@@ -35,7 +35,6 @@ import java.util.HashMap;
 import org.evoludo.util.NativeJS;
 
 import com.google.gwt.core.client.JsArray;
-import com.google.gwt.dom.client.Element;
 import com.google.gwt.dom.client.Style;
 import com.google.gwt.dom.client.Style.Display;
 import com.google.gwt.dom.client.Style.Position;
@@ -61,7 +60,6 @@ import com.google.gwt.user.client.Timer;
 import com.google.gwt.user.client.Window;
 import com.google.gwt.user.client.ui.FocusPanel;
 import com.google.gwt.user.client.ui.HTML;
-import com.google.gwt.user.client.ui.RootPanel;
 
 /**
  * Tooltip extension to GWT's user interface.
@@ -191,20 +189,11 @@ public class Tooltip extends HTML implements MouseOverHandler, MouseOutHandler, 
 
 		@Override
 		public void removeHandler() {
-			if (mouseOverHandler != null)
-				mouseOverHandler.removeHandler();
-			if (mouseOutHandler != null)
-				mouseOutHandler.removeHandler();
-			if (mouseMoveHandler != null)
-				mouseMoveHandler.removeHandler();
-			if (mouseWheelHandler != null)
-				mouseWheelHandler.removeHandler();
-			if (touchStartHandler != null)
-				touchStartHandler.removeHandler();
-			if (touchEndHandler != null)
-				touchEndHandler.removeHandler();
-			if (touchMoveHandler != null)
-				touchMoveHandler.removeHandler();
+			for (HandlerRegistration handler : new HandlerRegistration[] { mouseOverHandler, mouseOutHandler,
+					mouseMoveHandler, mouseWheelHandler, touchStartHandler, touchEndHandler, touchMoveHandler }) {
+				if (handler != null)
+					handler.removeHandler();
+			}
 		}
 	}
 
@@ -352,8 +341,7 @@ public class Tooltip extends HTML implements MouseOverHandler, MouseOutHandler, 
 	public static Tooltip sharedTooltip() {
 		if (tooltip == null) {
 			tooltip = new Tooltip();
-			RootPanel.get().add(tooltip);
-			tooltip.style.setPosition(Position.FIXED);
+			HasFullscreenChangeHandlers.relocateForFullscreen(tooltip);
 			Window.addWindowScrollHandler(event -> tooltip.close());
 			if (NativeJS.isFullscreenSupported())
 				tooltip.fullscreenHandler = tooltip.addFullscreenChangeHandler(tooltip);
@@ -516,15 +504,7 @@ public class Tooltip extends HTML implements MouseOverHandler, MouseOutHandler, 
 	 *                 restored
 	 */
 	public void showEphemeralTip(FocusPanel listener, int x, int y, boolean isTouch, String tip, int duration) {
-		if (tip == null) {
-			close();
-			return;
-		}
-		if (!acceptsTooltipEvents()) {
-			close();
-			return;
-		}
-		current = participants.get(listener);
+		current = (tip == null || !acceptsTooltipEvents()) ? null : participants.get(listener);
 		if (current == null) {
 			close();
 			return;
@@ -577,29 +557,20 @@ public class Tooltip extends HTML implements MouseOverHandler, MouseOutHandler, 
 	}
 
 	/**
-	 * Helper method: update contents and visibility of tooltip.
-	 * 
-	 * @return <code>true</code> if tooltip is visible.
+	 * Helper method: update contents and visibility of tooltip. A temporary
+	 * message takes precedence over the tooltip of the current provider.
 	 */
-	private boolean updateTooltip() {
-		if (current == null) {
+	private void updateTooltip() {
+		String tip = ephemeralTip;
+		if (current != null && tip == null)
+			tip = current.provider.getTooltipAt(x + Window.getScrollLeft() - current.listener.getAbsoluteLeft(),
+					y + Window.getScrollTop() - current.listener.getAbsoluteTop());
+		if (current == null || tip == null) {
 			close();
-			return false;
-		}
-		if (ephemeralTip != null) {
-			setHTML(ephemeralTip);
-			show();
-			return true;
-		}
-		String tip = current.provider.getTooltipAt(x + Window.getScrollLeft() - current.listener.getAbsoluteLeft(),
-				y + Window.getScrollTop() - current.listener.getAbsoluteTop());
-		if (tip == null) {
-			close();
-			return false;
+			return;
 		}
 		setHTML(tip);
 		show();
-		return true;
 	}
 
 	/**
@@ -610,13 +581,8 @@ public class Tooltip extends HTML implements MouseOverHandler, MouseOutHandler, 
 	 */
 	public void setPosition(int x, int y) {
 		style.setPosition(Position.FIXED);
-		if (touchEvent) {
-			style.setLeft(x + TOUCH_SHIFT_X, Unit.PX);
-			style.setTop(y + TOUCH_SHIFT_Y, Unit.PX);
-		} else {
-			style.setLeft(x + offsetX, Unit.PX);
-			style.setTop(y + offsetY, Unit.PX);
-		}
+		style.setLeft(x + (touchEvent ? TOUCH_SHIFT_X : offsetX), Unit.PX);
+		style.setTop(y + (touchEvent ? TOUCH_SHIFT_Y : offsetY), Unit.PX);
 	}
 
 	/**
@@ -757,13 +723,6 @@ public class Tooltip extends HTML implements MouseOverHandler, MouseOutHandler, 
 		current = null;
 	}
 
-	@Override
-	public HandlerRegistration addFullscreenChangeHandler(FullscreenChangeHandler handler) {
-		String eventname = NativeJS.fullscreenChangeEventName();
-		NativeJS.addFullscreenChangeHandler(eventname, handler);
-		return () -> NativeJS.removeFullscreenChangeHandler(eventname, handler);
-	}
-
 	/**
 	 * {@inheritDoc}
 	 * <p>
@@ -772,19 +731,9 @@ public class Tooltip extends HTML implements MouseOverHandler, MouseOutHandler, 
 	 */
 	@Override
 	public void onFullscreenChange(FullscreenChangeEvent event) {
-		if (tooltip == null)
-			return;
 		// note: if we want to be smart, we can relocate the tooltip only if the
 		// fullscreen element is among our listeners. worth it? see also ContexMenu.
-		Element fs = NativeJS.getFullscreenElement();
-		if (fs != null) {
-			// entered fullscreen
-			fs.appendChild(tooltip.getElement());
-		} else {
-			// exited fullscreen
-			RootPanel.get().add(tooltip);
-		}
-		// position fixed can get lost when relocating element
-		tooltip.style.setPosition(Position.FIXED);
+		if (tooltip != null)
+			HasFullscreenChangeHandlers.relocateForFullscreen(tooltip);
 	}
 }

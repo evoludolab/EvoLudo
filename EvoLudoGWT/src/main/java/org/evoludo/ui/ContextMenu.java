@@ -35,7 +35,6 @@ import java.util.HashMap;
 import org.evoludo.util.NativeJS;
 
 import com.google.gwt.core.client.JsArray;
-import com.google.gwt.dom.client.Element;
 import com.google.gwt.dom.client.Style;
 import com.google.gwt.dom.client.Style.Display;
 import com.google.gwt.dom.client.Style.Position;
@@ -402,30 +401,11 @@ public class ContextMenu extends FlowPanel
 	public static ContextMenu sharedContextMenu() {
 		if (contextMenu == null) {
 			contextMenu = new ContextMenu();
-			setupContextMenuLocation(contextMenu);
+			HasFullscreenChangeHandlers.relocateForFullscreen(contextMenu);
 			setupContextMenuHandlers(contextMenu);
 			contextMenu.participants = new HashMap<>();
 		}
 		return contextMenu;
-	}
-
-	/**
-	 * Place the context menu in the DOM: in the fullscreen element, if there is
-	 * one, otherwise in the {@link RootPanel}.
-	 * <p>
-	 * <strong>Note:</strong> the menu is moved within the DOM rather than removed
-	 * from its parent first, which would break its functionality.
-	 * 
-	 * @param menu the context menu
-	 */
-	private static void setupContextMenuLocation(ContextMenu menu) {
-		Element fs = NativeJS.getFullscreenElement();
-		if (fs != null)
-			fs.appendChild(menu.getElement());
-		else
-			RootPanel.get().add(menu);
-		// position fixed can get lost when relocating element
-		menu.style.setPosition(Position.FIXED);
 	}
 
 	/**
@@ -1246,13 +1226,6 @@ public class ContextMenu extends FlowPanel
 		touchTimer.listener = null;
 	}
 
-	@Override
-	public HandlerRegistration addFullscreenChangeHandler(FullscreenChangeHandler handler) {
-		String eventname = NativeJS.fullscreenChangeEventName();
-		NativeJS.addFullscreenChangeHandler(eventname, handler);
-		return () -> NativeJS.removeFullscreenChangeHandler(eventname, handler);
-	}
-
 	/**
 	 * {@inheritDoc}
 	 * <p>
@@ -1264,6 +1237,6 @@ public class ContextMenu extends FlowPanel
 		// note: if we want to be smart, we can relocate the context menu only if the
 		// fullscreen element is among our listeners. worth it? see also Tooltip
 		if (contextMenu != null)
-			setupContextMenuLocation(contextMenu);
+			HasFullscreenChangeHandlers.relocateForFullscreen(contextMenu);
 	}
 }

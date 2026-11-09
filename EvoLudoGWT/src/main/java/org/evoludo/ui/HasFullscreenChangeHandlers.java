@@ -30,8 +30,14 @@
 
 package org.evoludo.ui;
 
+import org.evoludo.util.NativeJS;
+
+import com.google.gwt.dom.client.Element;
+import com.google.gwt.dom.client.Style.Position;
 import com.google.gwt.event.shared.HandlerRegistration;
 import com.google.gwt.event.shared.HasHandlers;
+import com.google.gwt.user.client.ui.RootPanel;
+import com.google.gwt.user.client.ui.Widget;
 
 /**
  * A widget that implements this interface provides registration for
@@ -47,5 +53,29 @@ public interface HasFullscreenChangeHandlers extends HasHandlers {
 	 * @param handler the fullscreenchange handler
 	 * @return {@link HandlerRegistration} used to remove this handler
 	 */
-	HandlerRegistration addFullscreenChangeHandler(FullscreenChangeHandler handler);
+	default HandlerRegistration addFullscreenChangeHandler(FullscreenChangeHandler handler) {
+		String eventname = NativeJS.fullscreenChangeEventName();
+		NativeJS.addFullscreenChangeHandler(eventname, handler);
+		return () -> NativeJS.removeFullscreenChangeHandler(eventname, handler);
+	}
+
+	/**
+	 * Place the shared, fixed-position {@code widget}, e.g. a context menu or
+	 * tooltip, in the fullscreen element, if there is one, otherwise in the
+	 * {@link RootPanel}, such that it remains visible in fullscreen mode.
+	 * <p>
+	 * <strong>Note:</strong> the widget is moved within the DOM rather than removed
+	 * from its parent first, which would break its functionality.
+	 * 
+	 * @param widget the widget to place
+	 */
+	static void relocateForFullscreen(Widget widget) {
+		Element fs = NativeJS.getFullscreenElement();
+		if (fs != null)
+			fs.appendChild(widget.getElement());
+		else
+			RootPanel.get().add(widget);
+		// position fixed can get lost when relocating element
+		widget.getElement().getStyle().setPosition(Position.FIXED);
+	}
 }
