@@ -599,13 +599,6 @@ public abstract class AbstractGraph<B> extends FocusPanel
 	private static final double Y_AXIS_LABEL_THICKNESS = 12.0;
 
 	/**
-	 * Optional override for the horizontal offset of the y-axis label. When this is
-	 * not set, the offset is derived from the cached y-axis tick-label width and
-	 * the configured label gap.
-	 */
-	protected double yAxisLabelTickSkip = Double.NaN;
-
-	/**
 	 * Cached width of the midpoint y tick label from the most recent bounds
 	 * calculation.
 	 */
@@ -1782,8 +1775,6 @@ public abstract class AbstractGraph<B> extends FocusPanel
 	 *         tick labels
 	 */
 	protected double getYAxisLabelTickSkip() {
-		if (!Double.isNaN(yAxisLabelTickSkip))
-			return yAxisLabelTickSkip;
 		if (style.showYTickLabels) {
 			double labelWidth = cachedMidYTickLabelWidth;
 			if (Double.isNaN(labelWidth)) {
