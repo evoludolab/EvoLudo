@@ -768,15 +768,12 @@ public abstract class AbstractView<G extends AbstractGraph<?>> extends Composite
 	 * @return current capacity or {@code -1} if unavailable
 	 */
 	protected int getBufferCapacity() {
-		int capacity = -1;
 		for (G graph : graphs) {
 			RingBuffer<?> history = graph.getBuffer();
-			if (history == null)
-				continue;
-			if (capacity < 0)
-				capacity = history.getCapacity();
+			if (history != null)
+				return history.getCapacity();
 		}
-		return capacity;
+		return -1;
 	}
 
 	/**

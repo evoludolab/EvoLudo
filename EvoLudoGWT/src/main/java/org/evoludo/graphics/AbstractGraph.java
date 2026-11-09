@@ -1225,21 +1225,9 @@ public abstract class AbstractGraph<B> extends FocusPanel
 		String font = g.getFont();
 		setFont(style.ticksLabelFont);
 		if (style.showYTickLabels) {
-			setFont(style.ticksLabelFont);
 			// NOTE: cannot use style.Max or similar because then widths might end up
 			// different in views with multiple graphs
-			// bounds.width -= g.measureText("100%").getWidth()+(int)(4); // tick label
-			// width plus some padding
-			int digits;
-			if (style.percentY) {
-				if (style.yMax <= 1.0)
-					digits = 1;
-				else
-					digits = 0;
-			} else {
-				digits = computeYTickDigits(4);
-			}
-			double width = measureMidYTickLabelWidth(digits);
+			double width = measureMidYTickLabelWidth(computeYTickDigits(4));
 			if (style.percentY)
 				width = Math.max(width, measureYTickLabelWidth(new String[] { "100.0" }, true));
 			// room for the widest tick label drawn since the last reset
@@ -1451,9 +1439,8 @@ public abstract class AbstractGraph<B> extends FocusPanel
 	 * @param h       the height of the graph
 	 */
 	private void drawLogYLevels(int yLevels, double w, double h) {
-		double[] range = computeYRange();
-		double ymin = range[0];
-		double yrange = range[1];
+		double ymin = Math.log10(style.yMin);
+		double yrange = Math.log10(style.yMax) - ymin;
 		if (yrange <= 0.0 || !Double.isFinite(yrange))
 			return;
 		double[] ticks = new double[0];
@@ -1607,24 +1594,6 @@ public abstract class AbstractGraph<B> extends FocusPanel
 			scaled *= 10.0;
 		}
 		return digits;
-	}
-
-	/**
-	 * Compute the (possibly logarithmic) y-range for tick computations.
-	 * 
-	 * @return array {ymin, yrange}
-	 */
-	private double[] computeYRange() {
-		double ymin;
-		double yrange;
-		if (style.logScaleY) {
-			ymin = Math.log10(style.yMin);
-			yrange = Math.log10(style.yMax) - ymin;
-		} else {
-			ymin = style.yMin;
-			yrange = style.yMax - ymin;
-		}
-		return new double[] { ymin, yrange };
 	}
 
 	/**
@@ -1788,18 +1757,8 @@ public abstract class AbstractGraph<B> extends FocusPanel
 	protected double getYAxisLabelTickSkip() {
 		if (style.showYTickLabels) {
 			double labelWidth = cachedMidYTickLabelWidth;
-			if (Double.isNaN(labelWidth)) {
-				int digits;
-				if (style.percentY) {
-					if (style.yMax <= 1.0)
-						digits = 1;
-					else
-						digits = 0;
-				} else {
-					digits = computeYTickDigits(4);
-				}
-				labelWidth = measureMidYTickLabelWidth(digits);
-			}
+			if (Double.isNaN(labelWidth))
+				labelWidth = measureMidYTickLabelWidth(computeYTickDigits(4));
 			return labelWidth + Y_AXIS_LABEL_RESERVED_GAP;
 		}
 		return Y_AXIS_LABEL_MIN_GAP;
@@ -1816,16 +1775,13 @@ public abstract class AbstractGraph<B> extends FocusPanel
 			return;
 		int labelFontSize = (int) Math.min(20, Math.max(10, bounds.getHeight() * 0.05));
 		g.setFillStyle(style.labelColor);
-		if (gscale > 0.0) {
-			g.save();
+		g.save();
+		// undo the scaling of the content, if any
+		if (gscale > 0.0)
 			g.scale(1.0 / gscale, 1.0 / gscale);
-			setFont("bold " + labelFontSize + PX_SANS_SERIF);
-			g.fillText(style.label, 4, (int) (labelFontSize * 1.2));
-			g.restore();
-		} else {
-			setFont("bold " + labelFontSize + PX_SANS_SERIF);
-			g.fillText(style.label, 4, (int) (labelFontSize * 1.2));
-		}
+		setFont("bold " + labelFontSize + PX_SANS_SERIF);
+		g.fillText(style.label, 4, (int) (labelFontSize * 1.2));
+		g.restore();
 	}
 
 	/**
@@ -1850,21 +1806,7 @@ public abstract class AbstractGraph<B> extends FocusPanel
 	 * @param cssfont the font for drawing
 	 */
 	protected void setFont(String cssfont) {
-		// adjust size
-		int idx;
-		int start = cssfont.length();
-		for (idx = 0; idx < start; idx++) {
-			if (Character.isDigit(cssfont.charAt(idx))) {
-				start = idx;
-				break;
-			}
-		}
-		for (idx = start; idx < cssfont.length(); idx++) {
-			if (!Character.isDigit(cssfont.charAt(idx)))
-				break;
-		}
-		double size = Integer.parseInt(cssfont.substring(start, idx));
-		g.setFont(cssfont.substring(0, start) + (int) size + cssfont.substring(idx));
+		g.setFont(cssfont);
 	}
 
 	/**
@@ -1926,12 +1868,8 @@ public abstract class AbstractGraph<B> extends FocusPanel
 					closed = false;
 					break;
 				case PathIterator.SEG_CLOSE:
-					g.closePath();
+					closePath(fill);
 					closed = true;
-					if (fill)
-						g.fill();
-					else
-						g.stroke();
 					break;
 				default:
 			}

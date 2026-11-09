@@ -829,7 +829,7 @@ public class LineGraph extends AbstractGraph<double[]>
 		g.scale(1.0, -1.0);
 
 		// map [yMin, yMax] (or their logs) onto [0, h] - the same mapping used by
-		// the tick labels (AbstractGraph#computeYRange) and tooltips
+		// the tick labels (AbstractGraph#drawLogYLevels) and tooltips
 		// (getTooltipAt(double, double)), so a data point at yMin or yMax is
 		// drawn exactly on the frame border, with no gap and no discrepancy
 		// between what is plotted, labelled, and reported in tooltips
