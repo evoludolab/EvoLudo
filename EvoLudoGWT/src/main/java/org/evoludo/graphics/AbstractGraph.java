@@ -1346,6 +1346,12 @@ public abstract class AbstractGraph<B> extends FocusPanel
 	}
 
 	/**
+	 * The smallest distance (in pixels) between levels and the frame. Levels
+	 * closer to the frame are not drawn.
+	 */
+	private static final double LEVEL_GAP = 4.0;
+
+	/**
 	 * Draw regular vertical guide lines, ticks, and labels.
 	 *
 	 * @param xLevels number of levels
@@ -1364,7 +1370,7 @@ public abstract class AbstractGraph<B> extends FocusPanel
 		g.setLineWidth(style.levelWidth);
 		for (double xval : niceTicks(min, max, step)) {
 			double level = 0.5 + (xval - min) / range * w;
-			if (style.showXLevels && level > 1.5 && level < w - 0.5) {
+			if (style.showXLevels && level > LEVEL_GAP + 0.5 && level < w + 0.5 - LEVEL_GAP) {
 				g.setStrokeStyle(style.levelColor);
 				strokeLine(level, 0, level, h);
 			}
@@ -1504,7 +1510,7 @@ public abstract class AbstractGraph<B> extends FocusPanel
 	 */
 	private void drawYLevel(double w, double h, double level, double yval, int digits) {
 		g.setLineWidth(style.levelWidth);
-		if (style.showYLevels && level > 1.5 && level < h - 0.5) {
+		if (style.showYLevels && level > LEVEL_GAP + 0.5 && level < h + 0.5 - LEVEL_GAP) {
 			g.setStrokeStyle(style.levelColor);
 			strokeLine(0.5, level, w, level);
 		}
@@ -2308,8 +2314,8 @@ public abstract class AbstractGraph<B> extends FocusPanel
 	 * coordinates relative to the bounds: clear the canvas and apply the scaling
 	 * of the display, the shift and the zoom. The caller restores the context.
 	 *
-	 * @param clip {@code true} to clip the content to the bounds, e.g. for graphs
-	 *             with axes, see {@link #drawFrameForView(int, int)}
+	 * @param clip {@code true} to clip the content to the inside of the frame,
+	 *             e.g. for graphs with axes, see {@link #drawFrameForView(int, int)}
 	 * @return {@code true} if the canvas is ready for drawing, {@code false} if a
 	 *         message is displayed
 	 */
@@ -2319,14 +2325,29 @@ public abstract class AbstractGraph<B> extends FocusPanel
 		g.save();
 		g.scale(scale, scale);
 		clearCanvas();
+		applyView(clip);
+		return true;
+	}
+
+	/**
+	 * Apply the shift and the zoom to the canvas, which is scaled for the display,
+	 * for drawing the graph content in coordinates relative to the bounds.
+	 *
+	 * @param clip {@code true} to clip the content to the inside of the frame
+	 *
+	 * @see #prepCanvas(boolean)
+	 */
+	protected void applyView(boolean clip) {
 		if (clip) {
+			// the frame is centered at bounds + 0.5, see drawFrameBorder(double, double)
+			double inset = 0.5 * (1.0 + style.frameWidth);
 			g.beginPath();
-			g.rect(bounds.getX(), bounds.getY(), bounds.getWidth(), bounds.getHeight());
+			g.rect(bounds.getX() + inset, bounds.getY() + inset, bounds.getWidth() - style.frameWidth,
+					bounds.getHeight() - style.frameWidth);
 			g.clip();
 		}
 		g.translate(bounds.getX() - viewCorner.getX(), bounds.getY() - viewCorner.getY());
 		g.scale(zoomFactor, zoomFactor);
-		return true;
 	}
 
 	/**

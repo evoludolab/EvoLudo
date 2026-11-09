@@ -334,23 +334,31 @@ public class PopGraph1D extends PopGraph2D {
 		}
 		if (!prepCanvas(true))
 			return;
-		invalidated = false;
-		drawLinearContent();
+		// draw the frame first, such that its levels lie behind the distribution
 		g.restore();
+		invalidated = false;
 		if (style.offsetYTickLabels)
 			updateYTickOffset();
 		else
 			style.yTickOffset = 0.0;
 		drawFrameForView(4, 4);
+		g.save();
+		g.scale(scale, scale);
+		applyView(true);
+		drawLinearContent();
+		g.restore();
 		legend.draw();
 	}
 
 	/**
-	 * Draw linear lattice content without frame.
+	 * Draw linear lattice content without frame. Empty bins are not drawn, such
+	 * that the levels of the frame show.
 	 */
 	private void drawLinearContent() {
 		if (geometry == null || dh <= 0)
 			return;
+		ColorMap<String> cMap = getColorMap();
+		String empty = cMap instanceof ColorMap.Gradient1D ? ((ColorMap.Gradient1D<String>) cMap).translate(0.0) : null;
 		// draw visible rows only
 		double rowHeight = zoomFactor * dh;
 		int startRow = (int) (viewCorner.getY() / rowHeight);
@@ -360,8 +368,10 @@ public class PopGraph1D extends PopGraph2D {
 			String[] state = buffer.get(row);
 			int yshift = row * dh;
 			for (int n = 0; n < geometry.getSize() && n < state.length; n++) {
-				g.setFillStyle(state[n]);
-				fillRect(xshift, yshift, dw, dh);
+				if (!state[n].equals(empty)) {
+					g.setFillStyle(state[n]);
+					fillRect(xshift, yshift, dw, dh);
+				}
 				xshift += dw;
 			}
 		}
