@@ -103,6 +103,11 @@ public class PopGraph3D extends GenericPopGraph<MeshLambertMaterial, Network3DGW
 	private static final double LINK_WIDTH = 1.2;
 
 	/**
+	 * The gap between units of hierarchical structures in world coordinates.
+	 */
+	private static final int HIERARCHY_GAP = 8;
+
+	/**
 	 * The panel for rendering the 3D graph.
 	 */
 	RenderingPanel graph3DPanel;
@@ -343,8 +348,7 @@ public class PopGraph3D extends GenericPopGraph<MeshLambertMaterial, Network3DGW
 	@Override
 	protected void drawLattice() {
 		GeometryType type = geometry.getType();
-		boolean isHierarchy = (type == GeometryType.HIERARCHY);
-		if (isHierarchy)
+		if (type == GeometryType.HIERARCHY)
 			type = ((HierarchicalGeometry) geometry).getSubType();
 		// geometries that have special/fixed layout
 		switch (type) {
@@ -354,10 +358,10 @@ public class PopGraph3D extends GenericPopGraph<MeshLambertMaterial, Network3DGW
 			case SQUARE_NEUMANN:
 			case SQUARE_MOORE:
 			case SQUARE:
-				drawLatticeSquare();
+				drawLatticeSquare(false);
 				break;
 			case SQUARE_NEUMANN_2ND:
-				drawLatticeSquareNeumann2nd();
+				drawLatticeSquare(true);
 				break;
 			case HEXAGONAL:
 				drawLatticeHexagonal();
@@ -384,16 +388,11 @@ public class PopGraph3D extends GenericPopGraph<MeshLambertMaterial, Network3DGW
 		// place spheres
 		int k = 0;
 		for (Mesh mesh : spheres) {
-			Node3D node = nodes[k];
-			Vector3 vec = mesh.getPosition();
-			vec.set(node.getX(), node.getY(), node.getZ());
+			Node3D node = nodes[k++];
 			double radius = 2.0 * node.getR() / Network3D.UNIVERSE_RADIUS;
-			vec = mesh.getScale();
-			vec.setX(radius);
-			vec.setY(radius);
-			vec.setZ(radius);
+			mesh.getScale().set(radius, radius, radius);
+			mesh.getPosition().set(node.getX(), node.getY(), node.getZ());
 			mesh.updateMatrix();
-			k++;
 		}
 		network.linkNodes();
 		drawUniverse();
@@ -432,20 +431,12 @@ public class PopGraph3D extends GenericPopGraph<MeshLambertMaterial, Network3DGW
 			linkRenderer = null;
 			return;
 		}
-		if (linkRenderer == null)
+		if (linkRenderer == null) {
 			linkRenderer = new Link3D();
-		updateLinkAppearance();
+			linkRenderer.setLineWidth(LINK_WIDTH);
+		}
 		linkRenderer.setLinks(lines, geometry.isUndirected() ? ColorMap3D.UNDIRECTED : ColorMap3D.DIRECTED);
 		scene.add(linkRenderer);
-	}
-
-	/**
-	 * Synchronize the world-space link width with the renderer.
-	 */
-	private void updateLinkAppearance() {
-		if (linkRenderer == null)
-			return;
-		linkRenderer.setLineWidth(LINK_WIDTH);
 	}
 
 	/**
@@ -453,151 +444,61 @@ public class PopGraph3D extends GenericPopGraph<MeshLambertMaterial, Network3DGW
 	 * cube configurations.
 	 */
 	private void drawLatticeCube() {
-		int side;
-		int zdim;
+		int size = geometry.getSize();
 		// NOVA settings
-		if (geometry.getSize() == 25000) {
-			zdim = 10;
-			side = 50;
-		} else {
-			side = (int) (Math.pow(geometry.getSize(), 1.0 / 3.0) + 0.5);
-			zdim = side;
-		}
-		double incr = (Network3D.UNIVERSE_RADIUS + Network3D.UNIVERSE_RADIUS) / side;
-		double radius = Math.max(1.0, incr * 0.3);
+		int side = (size == 25000 ? 50 : (int) (Math.pow(size, 1.0 / 3.0) + 0.5));
+		int zdim = (size == 25000 ? 10 : side);
+		double incr = 2.0 * Network3D.UNIVERSE_RADIUS / side;
+		double box = 1.75 * Math.max(1.0, incr * 0.3);
+		Iterator<Mesh> meshes = initUniverse(new BoxGeometry(box, box, box));
 		double shift = (side - 1) * 0.5 * incr;
 		double zshift = (zdim - 1) * 0.5 * incr;
-		initUniverse(new BoxGeometry(1.75 * radius, 1.75 * radius, 1.75 * radius));
-		Iterator<Mesh> meshes = spheres.iterator();
-		double posk = -zshift;
-		for (int k = 0; k < zdim; k++) {
-			double posj = -shift;
-			for (int j = 0; j < side; j++) {
-				double posi = -shift;
-				for (int i = 0; i < side; i++) {
-					Mesh mesh = meshes.next();
-					mesh.setPosition(new Vector3(posi, posj, posk));
-					mesh.updateMatrix();
-					posi += incr;
-				}
-				posj += incr;
-			}
-			posk += incr;
-		}
+		for (int k = 0; k < zdim; k++)
+			for (int j = 0; j < side; j++)
+				for (int i = 0; i < side; i++)
+					place(meshes, i * incr - shift, j * incr - shift, k * incr - zshift);
 	}
 
 	/**
-	 * Layout nodes in a square arrangement (Neumann, Moore, or standard). Supports
-	 * hierarchical structures with gaps.
-	 */
-	private void drawLatticeSquare() {
-		int side = (int) Math.sqrt(geometry.getSize());
-		double incr = (Network3D.UNIVERSE_RADIUS + Network3D.UNIVERSE_RADIUS) / side;
-		double radius = Math.max(1.0, incr * 0.4);
-		double shift = (side - 1) * 0.5 * incr;
-
-		boolean isHierarchy = (geometry.getType() == GeometryType.HIERARCHY);
-		int hLevels = 0;
-		int[] hPeriods = new int[0];
-
-		if (isHierarchy) {
-			shift += computeHierarchyShift(side);
-			HierarchicalGeometry hGeom = (HierarchicalGeometry) geometry;
-			int[] hierarchy = hGeom.getHierarchyLevels();
-			hLevels = hierarchy.length - 1;
-			hPeriods = new int[hLevels];
-			hPeriods[0] = (int) Math.sqrt(hierarchy[hLevels]);
-			for (int i = 1; i < hLevels; i++) {
-				hPeriods[i] = hPeriods[i - 1] * (int) Math.sqrt(hierarchy[hLevels - i]);
-			}
-		}
-
-		initUniverse(new BoxGeometry(1.75 * radius, 1.75 * radius, 1.75 * radius));
-		Iterator<Mesh> meshes = spheres.iterator();
-		double posj = -shift;
-
-		for (int j = 0; j < side; j++) {
-			if (isHierarchy && j > 0) {
-				posj += applyHierarchyGap(j, hLevels, hPeriods);
-			}
-			double posi = -shift;
-			for (int i = 0; i < side; i++) {
-				if (isHierarchy && i > 0) {
-					posi += applyHierarchyGap(i, hLevels, hPeriods);
-				}
-				Mesh mesh = meshes.next();
-				mesh.setPosition(new Vector3(posi, posj, 0));
-				mesh.updateMatrix();
-				posi += incr;
-			}
-			posj += incr;
-		}
-	}
-
-	/**
-	 * Compute the total shift needed for hierarchical structures.
+	 * Layout nodes in a square arrangement with gaps between the units of
+	 * hierarchical structures. For second-order von Neumann neighbourhoods the
+	 * heights of neighbouring nodes alternate.
 	 * 
-	 * @param side the side length of the grid
-	 * @return the additional shift for hierarchy
+	 * @param staggered {@code true} to alternate the heights of nodes
 	 */
-	private double computeHierarchyShift(int side) {
-		final int HIERARCHY_GAP = 8;
-		HierarchicalGeometry hGeom = (HierarchicalGeometry) geometry;
-		int[] hierarchy = hGeom.getHierarchyLevels();
-		int hLevels = hierarchy.length - 1;
-		int[] hPeriods = new int[hLevels];
-		hPeriods[0] = (int) Math.sqrt(hierarchy[hLevels]);
-		int totGap = side / hPeriods[0] - 1;
-		for (int i = 1; i < hLevels; i++) {
-			hPeriods[i] = hPeriods[i - 1] * (int) Math.sqrt(hierarchy[hLevels - i]);
-			totGap += side / hPeriods[i] - 1;
-		}
-		return totGap * HIERARCHY_GAP * 0.5;
-	}
-
-	/**
-	 * Apply hierarchical gap at the specified position.
-	 * 
-	 * @param pos      the current position (row or column)
-	 * @param hLevels  the number of hierarchy levels
-	 * @param hPeriods the period array for each hierarchy level
-	 * @return the gap to apply
-	 */
-	private double applyHierarchyGap(int pos, int hLevels, int[] hPeriods) {
-		final int HIERARCHY_GAP = 8;
-		double gap = 0;
-		for (int l = 0; l < hLevels; l++) {
-			if (pos % hPeriods[l] != 0)
-				break;
-			gap += HIERARCHY_GAP;
-		}
-		return gap;
-	}
-
-	/**
-	 * Layout nodes in a square arrangement with 2nd order Neumann neighborhood.
-	 */
-	private void drawLatticeSquareNeumann2nd() {
+	private void drawLatticeSquare(boolean staggered) {
 		int side = (int) Math.sqrt(geometry.getSize());
-		double incr = (Network3D.UNIVERSE_RADIUS + Network3D.UNIVERSE_RADIUS) / side;
+		double incr = 2.0 * Network3D.UNIVERSE_RADIUS / side;
 		double radius = Math.max(1.0, incr * 0.4);
-		double shift = (side - 1) * 0.5 * incr;
-		initUniverse(new BoxGeometry(1.75 * radius, 1.75 * radius, 1.75 * radius));
-		Iterator<Mesh> meshes = spheres.iterator();
-		double posj = -shift;
-		double posz = 0.4375 * radius;
-		for (int j = 0; j < side; j++) {
-			double posi = -shift;
-			for (int i = 0; i < side; i++) {
-				Mesh mesh = meshes.next();
-				mesh.setPosition(new Vector3(posi, posj, posz));
-				mesh.updateMatrix();
-				posi += incr;
-				posz = -posz;
+		// periods of the hierarchical units, from the smallest to the largest
+		int[] periods = new int[0];
+		if (geometry.getType() == GeometryType.HIERARCHY) {
+			int[] hierarchy = ((HierarchicalGeometry) geometry).getHierarchyLevels();
+			int hLevels = hierarchy.length - 1;
+			periods = new int[hLevels];
+			int period = 1;
+			for (int i = 0; i < hLevels; i++) {
+				period *= (int) Math.sqrt(hierarchy[hLevels - i]);
+				periods[i] = period;
 			}
-			posz = -posz;
-			posj += incr;
 		}
+		// positions along either axis, including the gaps between units
+		double[] pos = new double[side];
+		for (int n = 1; n < side; n++) {
+			pos[n] = pos[n - 1] + incr;
+			for (int period : periods) {
+				if (n % period != 0)
+					break;
+				pos[n] += HIERARCHY_GAP;
+			}
+		}
+		double shift = 0.5 * pos[side - 1];
+		double box = 1.75 * radius;
+		Iterator<Mesh> meshes = initUniverse(new BoxGeometry(box, box, box));
+		double z = (staggered ? 0.4375 * radius : 0.0);
+		for (int j = 0; j < side; j++)
+			for (int i = 0; i < side; i++)
+				place(meshes, pos[i] - shift, pos[j] - shift, (i + j) % 2 == 0 ? z : -z);
 	}
 
 	/**
@@ -605,65 +506,50 @@ public class PopGraph3D extends GenericPopGraph<MeshLambertMaterial, Network3DGW
 	 */
 	private void drawLatticeHexagonal() {
 		int side = (int) Math.sqrt(geometry.getSize());
-		double hincr = (Network3D.UNIVERSE_RADIUS + Network3D.UNIVERSE_RADIUS) / side;
-		double hincr2 = hincr * 0.5;
+		double hincr = 2.0 * Network3D.UNIVERSE_RADIUS / side;
 		double vincr = hincr * 0.5 * Math.sqrt(3.0);
-		double radius = Math.max(1.0, hincr * 0.4);
+		Iterator<Mesh> meshes = initUniverse(new SphereGeometry(Math.max(1.0, hincr * 0.4), 16, 12));
 		double shift = (side - 0.5) * 0.5 * hincr;
-		initUniverse(new SphereGeometry(radius, 16, 12));
-		Iterator<Mesh> meshes = spheres.iterator();
-		double posj = -(side - 1) * 0.5 * vincr;
-		for (int j = 0; j < side; j++) {
-			double posi = -shift + (j % 2) * hincr2;
-			for (int i = 0; i < side; i++) {
-				Mesh mesh = meshes.next();
-				mesh.setPosition(new Vector3(posi, posj, 0));
-				mesh.updateMatrix();
-				posi += hincr;
-			}
-			posj += vincr;
-		}
+		double vshift = (side - 1) * 0.5 * vincr;
+		for (int j = 0; j < side; j++)
+			for (int i = 0; i < side; i++)
+				place(meshes, (i + 0.5 * (j % 2)) * hincr - shift, j * vincr - vshift, 0.0);
 	}
 
 	/**
-	 * Layout nodes in a triangular arrangement.
+	 * Layout nodes in a triangular arrangement: first the nodes pointing up, then
+	 * the nodes pointing down.
 	 */
 	private void drawLatticeTriangular() {
 		int side = (int) Math.sqrt(geometry.getSize());
 		int size2 = side / 2;
-		double vincr = (Network3D.UNIVERSE_RADIUS + Network3D.UNIVERSE_RADIUS) / side;
-		double vincr2 = vincr * 0.5;
+		double vincr = 2.0 * Network3D.UNIVERSE_RADIUS / side;
 		double hincr = vincr * Math.sqrt(3.0);
-		double hincr2 = hincr * 0.5;
-		double radius = Math.max(1.0, vincr * 0.4);
+		Iterator<Mesh> meshes = initUniverse(new SphereGeometry(Math.max(1.0, vincr * 0.4), 16, 12));
 		double shift = (size2 - 0.5) * 0.5 * hincr;
 		double vshift = (side - 1.25) * 0.75 * vincr;
-		initUniverse(new SphereGeometry(radius, 16, 12));
-		Iterator<Mesh> meshes = spheres.iterator();
-		// even nodes
-		double posj = -vshift;
-		for (int j = 0; j < side; j++) {
-			double posi = -shift;
-			for (int i = 0; i < size2; i++) {
-				Mesh mesh = meshes.next();
-				mesh.setPosition(new Vector3(posi, posj, 0));
-				mesh.updateMatrix();
-				posi += hincr;
+		for (int odd = 0; odd < 2; odd++) {
+			double y = -vshift - 0.5 * odd * vincr;
+			for (int j = 0; j < side; j++) {
+				for (int i = 0; i < size2; i++)
+					place(meshes, (i + 0.5 * odd) * hincr - shift, y, 0.0);
+				y += (1 + (j + odd) % 2) * vincr;
 			}
-			posj += (1 + (j % 2)) * vincr;
 		}
-		// odd nodes
-		posj = -vshift - vincr2;
-		for (int j = 0; j < side; j++) {
-			double posi = -shift + hincr2;
-			for (int i = 0; i < size2; i++) {
-				Mesh mesh = meshes.next();
-				mesh.setPosition(new Vector3(posi, posj, 0));
-				mesh.updateMatrix();
-				posi += hincr;
-			}
-			posj += (2 - (j % 2)) * vincr;
-		}
+	}
+
+	/**
+	 * Place the next mesh of {@code meshes} at {@code (x, y, z)}.
+	 * 
+	 * @param meshes the meshes to place
+	 * @param x      the {@code x}-coordinate
+	 * @param y      the {@code y}-coordinate
+	 * @param z      the {@code z}-coordinate
+	 */
+	private static void place(Iterator<Mesh> meshes, double x, double y, double z) {
+		Mesh mesh = meshes.next();
+		mesh.getPosition().set(x, y, z);
+		mesh.updateMatrix();
 	}
 
 	/**
@@ -671,8 +557,9 @@ public class PopGraph3D extends GenericPopGraph<MeshLambertMaterial, Network3DGW
 	 * material (colour).
 	 * 
 	 * @param unit the geometry of the unit (sphere) representing a node
+	 * @return the iterator over the meshes of the nodes, for placing them
 	 */
-	protected void initUniverse(thothbot.parallax.core.shared.core.Geometry unit) {
+	protected Iterator<Mesh> initUniverse(thothbot.parallax.core.shared.core.Geometry unit) {
 		spheres.clear();
 		// allocate elements of universe - place them later
 		// NOTE: must rely on geometry.getSize() (instead of network.nNodes) because
@@ -687,6 +574,7 @@ public class PopGraph3D extends GenericPopGraph<MeshLambertMaterial, Network3DGW
 			spheres.add(mesh);
 		}
 		invalidated = false;
+		return spheres.iterator();
 	}
 
 	/**
@@ -862,12 +750,22 @@ public class PopGraph3D extends GenericPopGraph<MeshLambertMaterial, Network3DGW
 			return;
 		// note: the projection needs to be set first - the effects require a
 		// perspective projection
-		if (isOrthographic() != (mode == Mode.PARALLEL))
-			setOrthographic(mode == Mode.PARALLEL);
-		if (isAnaglyph() != (mode == Mode.ANAGLYPH))
-			setAnaglyph(mode == Mode.ANAGLYPH);
-		if (isVR() != (mode == Mode.VR))
-			setVR(mode == Mode.VR);
+		if ((graph3DCamera instanceof OrthographicCamera) != (mode == Mode.PARALLEL)) {
+			graph3DScene.setOrtho(mode == Mode.PARALLEL);
+			drawUniverse();
+			paint(true);
+		}
+		Mode active = (effect instanceof Anaglyph ? Mode.ANAGLYPH : effect instanceof Stereo ? Mode.VR : null);
+		if (active == (mode.isEffect() ? mode : null))
+			return;
+		WebGLRenderer renderer = graph3DPanel.getRenderer();
+		if (effect != null)
+			renderer.deletePlugin(effect);
+		effect = null;
+		if (mode == Mode.ANAGLYPH)
+			effect = new Anaglyph(renderer, graph3DScene.getScene());
+		else if (mode == Mode.VR)
+			effect = new Stereo(renderer, graph3DScene.getScene());
 	}
 
 	@Override
@@ -1015,80 +913,6 @@ public class PopGraph3D extends GenericPopGraph<MeshLambertMaterial, Network3DGW
 		}
 	}
 
-	/**
-	 * Set the projection of the camera. If {@code setOrtho == true} the camera uses
-	 * an orthographic (parallel) projection and a perspective projection otherwise.
-	 * 
-	 * @param orthographic the flag to set an orthographic (parallel) projection for
-	 *                     the camera
-	 */
-	private void setOrthographic(boolean orthographic) {
-		if (graph3DScene == null)
-			return;
-		graph3DScene.setOrtho(orthographic);
-		drawUniverse();
-		paint(true);
-	}
-
-	/**
-	 * Check if the camera uses an orthographic projection.
-	 * 
-	 * @return {@code true} for orthographic projections
-	 */
-	private boolean isOrthographic() {
-		return (graph3DCamera instanceof OrthographicCamera);
-	}
-
-	/**
-	 * Set the anaglyph effect for the 3D view.
-	 * 
-	 * @param anaglyph {@code true} enable the anaglyph effect
-	 */
-	private void setAnaglyph(boolean anaglyph) {
-		if (!hasRenderer())
-			return;
-		if (!anaglyph || isVR()) {
-			graph3DPanel.getRenderer().deletePlugin(effect);
-			effect = null;
-		}
-		if (anaglyph)
-			effect = new Anaglyph(graph3DPanel.getRenderer(), graph3DScene.getScene());
-	}
-
-	/**
-	 * Check if the graph is displayed as an anaglyph.
-	 * 
-	 * @return {@code true} if anaglyph shown
-	 */
-	private boolean isAnaglyph() {
-		return (effect instanceof Anaglyph);
-	}
-
-	/**
-	 * Set the stereo effect for the 3D view.
-	 * 
-	 * @param vr {@code true} to enable the stereo effect
-	 */
-	private void setVR(boolean vr) {
-		if (!hasRenderer())
-			return;
-		if (!vr || isAnaglyph()) {
-			graph3DPanel.getRenderer().deletePlugin(effect);
-			effect = null;
-		}
-		if (vr)
-			effect = new Stereo(graph3DPanel.getRenderer(), graph3DScene.getScene());
-	}
-
-	/**
-	 * Check if the graph is displayed with stereo effect.
-	 * 
-	 * @return {@code true} if stereo effect shown
-	 */
-	private boolean isVR() {
-		return (effect instanceof Stereo);
-	}
-
 	@Override
 	public void export(MyContext2d ctx) {
 		// no scaling required - the canvas already renders at the resolution of the
@@ -1100,14 +924,6 @@ public class PopGraph3D extends GenericPopGraph<MeshLambertMaterial, Network3DGW
 	 * The class for animating the 3D network structure.
 	 */
 	public class Pop3DScene extends AnimatedScene implements RequiresResize {
-
-		/**
-		 * Create a scene wrapper for the outer graph; scene elements are configured in
-		 * {@link PopGraph3D#drawUniverse()}.
-		 */
-		public Pop3DScene() {
-			// Intentionally empty: no additional initialization needed.
-		}
 
 		/**
 		 * The control for rotating and zooming the scene.
@@ -1252,7 +1068,6 @@ public class PopGraph3D extends GenericPopGraph<MeshLambertMaterial, Network3DGW
 			if (view.isActive()) {
 				if (control != null) {
 					control.update();
-					updateLinkAppearance();
 					getRenderer().render(getScene(), graph3DCamera);
 				}
 				return;
@@ -1292,7 +1107,6 @@ public class PopGraph3D extends GenericPopGraph<MeshLambertMaterial, Network3DGW
 		if (!hasRenderer() || graph3DScene.getCanvas() == null)
 			return;
 		graph3DScene.onResize();
-		updateLinkAppearance();
 		graph3DPanel.forceLayout();
 	}
 
