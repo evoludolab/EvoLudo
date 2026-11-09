@@ -41,7 +41,6 @@ import org.evoludo.simulator.EvoLudoGWT;
 import org.evoludo.simulator.models.Model;
 import org.evoludo.simulator.modules.Module;
 import org.evoludo.util.Formatter;
-import org.evoludo.util.NativeJS;
 
 /**
  * Base class of the views of histograms. The view stacks one {@link HistoGraph}
@@ -474,6 +473,6 @@ public abstract class Histogram extends AbstractView<HistoGraph> implements Basi
 				export.append("\n");
 			}
 		}
-		NativeJS.export("data:text/csv;base64," + NativeJS.b64encode(export.toString()), "evoludo_stat.csv");
+		exportCSV(export, "evoludo_stat.csv");
 	}
 }

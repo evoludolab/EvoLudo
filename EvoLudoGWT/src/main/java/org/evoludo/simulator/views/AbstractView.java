@@ -67,7 +67,6 @@ import com.google.gwt.core.client.Scheduler;
 import com.google.gwt.core.client.ScriptInjector;
 import com.google.gwt.dom.client.Style.Position;
 import com.google.gwt.i18n.client.DateTimeFormat;
-import com.google.gwt.user.client.Command;
 import com.google.gwt.user.client.ui.ComplexPanel;
 import com.google.gwt.user.client.ui.Composite;
 import com.google.gwt.user.client.ui.FlowPanel;
@@ -976,41 +975,13 @@ public abstract class AbstractView<G extends AbstractGraph<?>> extends Composite
 	 * @return {@code true} if the key was handled
 	 */
 	public boolean onKeyUp(String key) {
-		switch (key) {
-			case "S":
-				// save svg snapshot (if supported)
-				if (!hasExportType(ExportType.SVG))
-					return false;
-				exportSVG();
-				break;
-			case "P":
-				// save png snapshot (if supported)
-				if (!hasExportType(ExportType.PNG))
-					return false;
-				exportPNG();
-				break;
-			case "C":
-				// export csv data (if supported)
-				if (!hasExportType(ExportType.CSV_STAT))
-					return false;
-				exportStatData();
-				break;
-			default:
-				return false;
-		}
-		return true;
-	}
-
-	/**
-	 * Checks if the view supports the export type {@code type}.
-	 * 
-	 * @param type the export type to check
-	 * @return {@code true} if the view supports the export type
-	 */
-	private boolean hasExportType(ExportType type) {
-		for (ExportType e : exportTypes())
-			if (e == type)
+		// export types supported by this view
+		for (ExportType type : exportTypes()) {
+			if (key.equals(type.key)) {
+				export(type);
 				return true;
+			}
+		}
 		return false;
 	}
 
@@ -1182,29 +1153,23 @@ public abstract class AbstractView<G extends AbstractGraph<?>> extends Composite
 			fullscreenMenu.setChecked(NativeJS.isFullscreen());
 		}
 
-		ContextMenuItem restoreMenu = null;
-		ContextMenuItem exportSubmenuTrigger = null;
 		// process exports context menu (suppress in ePub, regardless of whether a
 		// standalone lab or not)
-		if (!NativeJS.isEPub()) {
-			ContextMenu exportSubmenu = new ContextMenu(menu);
-			exportSubmenu.add(createExportMenuItem(ExportType.STATE));
-			for (ExportType e : exportTypes()) {
-				if (e == ExportType.STATE)
-					continue; // always included
+		if (NativeJS.isEPub())
+			return;
+		ContextMenu exportSubmenu = new ContextMenu(menu);
+		// the state is always included
+		exportSubmenu.add(createExportMenuItem(ExportType.STATE));
+		for (ExportType e : exportTypes()) {
+			if (e != ExportType.STATE)
 				exportSubmenu.add(createExportMenuItem(e));
-			}
-			menu.addSeparator();
-			exportSubmenuTrigger = menu.add("Export", exportSubmenu);
-			restoreMenu = new ContextMenuItem("Restore...", () -> engine.restoreFromFile());
 		}
 		boolean idle = !engine.isRunning();
-		if (restoreMenu != null) {
-			restoreMenu.setEnabled(idle);
-			menu.add(restoreMenu);
-		}
-		if (exportSubmenuTrigger != null)
-			exportSubmenuTrigger.setEnabled(idle);
+		menu.addSeparator();
+		menu.add("Export", exportSubmenu).setEnabled(idle);
+		ContextMenuItem restoreMenu = new ContextMenuItem("Restore...", () -> engine.restoreFromFile());
+		restoreMenu.setEnabled(idle);
+		menu.add(restoreMenu);
 	}
 
 	/**
@@ -1231,44 +1196,44 @@ public abstract class AbstractView<G extends AbstractGraph<?>> extends Composite
 		/**
 		 * Scalable vector graphics format, {@code svg}
 		 */
-		SVG("Vector graphics (svg)"),
+		SVG("Vector graphics (svg)", "S"),
 
 		/**
 		 * Portable document format, {@code pdf} (not yet implemented).
 		 */
-		PDF("Vector graphics (pdf)"),
+		PDF("Vector graphics (pdf)", null),
 
 		/**
 		 * Encapsulated postscript format, {@code eps} (not yet implemented).
 		 */
-		EPS("Vector graphics (eps)"),
+		EPS("Vector graphics (eps)", null),
 
 		/**
 		 * Portable network graphics format, {@code png}
 		 */
-		PNG("Bitmap graphics (png)"),
+		PNG("Bitmap graphics (png)", "P"),
 
 		/**
 		 * Statistics data as a comma separated list, {@code csv}
 		 */
-		CSV_STAT("Statistics (csv)"),
+		CSV_STAT("Statistics (csv)", "C"),
 
 		/**
 		 * Trajectory data as a comma separated list, {@code csv} (not yet implemented).
 		 */
-		CSV_TRAJ("Trajectory (csv)"),
+		CSV_TRAJ("Trajectory (csv)", null),
 
 		/**
 		 * Mean state data as a comma separated list, {@code csv} (not yet implemented).
 		 */
-		CSV_MEAN("Mean state (csv)"),
+		CSV_MEAN("Mean state (csv)", null),
 
 		/**
 		 * Current state of simulation, {@code plist}
 		 * 
 		 * @see EvoLudo#exportState()
 		 */
-		STATE("State (plist)");
+		STATE("State (plist)", "E");
 
 		/**
 		 * The title of the export type.
@@ -1276,12 +1241,20 @@ public abstract class AbstractView<G extends AbstractGraph<?>> extends Composite
 		String title;
 
 		/**
+		 * The keyboard shortcut (with Shift) for the export type or {@code null} if
+		 * none.
+		 */
+		String key;
+
+		/**
 		 * The constructor for the export type.
 		 * 
 		 * @param title the title of the export type
+		 * @param key   the keyboard shortcut or {@code null} if none
 		 */
-		ExportType(String title) {
+		ExportType(String title, String key) {
 			this.title = title;
+			this.key = key;
 		}
 
 		@Override
@@ -1307,18 +1280,7 @@ public abstract class AbstractView<G extends AbstractGraph<?>> extends Composite
 	 * @return menu item for the export type
 	 */
 	private ContextMenuItem createExportMenuItem(ExportType type) {
-		switch (type) {
-			case SVG:
-				return new ContextMenuItem(type.toString(), new ExportCommand(type), "⇧S");
-			case PNG:
-				return new ContextMenuItem(type.toString(), new ExportCommand(type), "⇧P");
-			case CSV_STAT:
-				return new ContextMenuItem(type.toString(), new ExportCommand(type), "⇧C");
-			case STATE:
-				return new ContextMenuItem(type.toString(), new ExportCommand(type), "⇧E");
-			default:
-				return new ContextMenuItem(type.toString(), new ExportCommand(type));
-		}
+		return new ContextMenuItem(type.toString(), () -> export(type), type.key == null ? null : "⇧" + type.key);
 	}
 
 	/**
@@ -1479,9 +1441,8 @@ public abstract class AbstractView<G extends AbstractGraph<?>> extends Composite
 						.append("\n");
 			}
 		}
-		if (export.length() == header)
-			return;
-		NativeJS.export("data:text/csv;base64," + NativeJS.b64encode(export.toString()), "evoludo_mean.csv");
+		if (export.length() > header)
+			exportCSV(export, "evoludo_mean.csv");
 	}
 
 	/**
@@ -1498,33 +1459,17 @@ public abstract class AbstractView<G extends AbstractGraph<?>> extends Composite
 				continue;
 			((HasTrajectory) graph).exportTrajectory(export);
 		}
-		if (export.length() == header)
-			return;
-		NativeJS.export("data:text/csv;base64," + NativeJS.b64encode(export.toString()), "evoludo_traj.csv");
+		if (export.length() > header)
+			exportCSV(export, "evoludo_traj.csv");
 	}
 
 	/**
-	 * The export command triggered by the context menu entries.
+	 * Export {@code data} as a comma separated list to the file {@code filename}.
+	 * 
+	 * @param data     the data to export
+	 * @param filename the name of the file
 	 */
-	public class ExportCommand implements Command {
-
-		/**
-		 * The type of data to export.
-		 */
-		ExportType exportType;
-
-		/**
-		 * The constructor for the export command.
-		 * 
-		 * @param type the type of data to export
-		 */
-		public ExportCommand(ExportType type) {
-			exportType = type;
-		}
-
-		@Override
-		public void execute() {
-			export(exportType);
-		}
+	protected static void exportCSV(CharSequence data, String filename) {
+		NativeJS.export("data:text/csv;base64," + NativeJS.b64encode(data.toString()), filename);
 	}
 }
