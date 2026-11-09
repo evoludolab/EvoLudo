@@ -103,6 +103,17 @@ public interface BasicTooltipProvider {
 			+ "box-sizing:border-box;vertical-align:-0.08em;margin-right:0.25em;'></span> ";
 
 	/**
+	 * Get a table row of a tooltip with {@code label} and {@code value}.
+	 *
+	 * @param label the label of the row
+	 * @param value the value of the row
+	 * @return the table row
+	 */
+	static String tableRow(String label, Object value) {
+		return TABLE_ROW_START + label + TABLE_CELL_NEXT + value + TABLE_ROW_END;
+	}
+
+	/**
 	 * Get the tooltip at the scaled coordinates {@code (x,y)} with the origin in
 	 * the lower left corner of the graph.
 	 * 

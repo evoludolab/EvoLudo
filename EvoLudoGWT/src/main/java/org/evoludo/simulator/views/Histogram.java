@@ -30,6 +30,8 @@
 
 package org.evoludo.simulator.views;
 
+import static org.evoludo.simulator.views.BasicTooltipProvider.tableRow;
+
 import java.util.List;
 
 import org.evoludo.graphics.GraphStyle;
@@ -320,10 +322,10 @@ public abstract class Histogram extends AbstractView<HistoGraph> implements Basi
 		double width = (style.xMax - style.xMin) / graph.getNBins();
 		String note = graph.getNoteAt(bar);
 		return TABLE_STYLE
-				+ tooltipRow(style.xLabel, "[" + Formatter.format(style.xMin + bar * width, 2) + ", "
+				+ tableRow(style.xLabel, "[" + Formatter.format(style.xMin + bar * width, 2) + ", "
 						+ Formatter.format(style.xMin + (bar + 1) * width, 2) + ")")
 				+ tooltipValue(graph, bar)
-				+ (note == null ? "" : tooltipRow("Note", note)) + TABLE_END;
+				+ (note == null ? "" : tableRow("Note", note)) + TABLE_END;
 	}
 
 	/**
@@ -344,8 +346,8 @@ public abstract class Histogram extends AbstractView<HistoGraph> implements Basi
 		int first = (bar * n + nBins - 1) / nBins;
 		int last = (bar == nBins - 1 ? max : ((bar + 1) * n + nBins - 1) / nBins - 1);
 		return TABLE_STYLE
-				+ tooltipRow(graph.getStyle().xLabel, last > first ? "[" + first + "-" + last + "]" : first)
-				+ (samples ? tooltipRow("samples", (long) graph.getSamples(bar)) : "")
+				+ tableRow(graph.getStyle().xLabel, last > first ? "[" + first + "-" + last + "]" : first)
+				+ (samples ? tableRow("samples", (long) graph.getSamples(bar)) : "")
 				+ tooltipValue(graph, bar) + TABLE_END;
 	}
 
@@ -359,19 +361,8 @@ public abstract class Histogram extends AbstractView<HistoGraph> implements Basi
 	private static String tooltipValue(HistoGraph graph, int bar) {
 		GraphStyle style = graph.getStyle();
 		double value = graph.getData(bar);
-		return tooltipRow(style.yLabel,
+		return tableRow(style.yLabel,
 				style.percentY ? Formatter.formatPercent(value, 2) : Formatter.format(value, 2));
-	}
-
-	/**
-	 * Get a tooltip row with {@code label} and {@code value}.
-	 * 
-	 * @param label the label
-	 * @param value the value
-	 * @return the tooltip row
-	 */
-	private static String tooltipRow(String label, Object value) {
-		return TABLE_ROW_START + label + TABLE_CELL_NEXT + value + TABLE_ROW_END;
 	}
 
 	@Override
