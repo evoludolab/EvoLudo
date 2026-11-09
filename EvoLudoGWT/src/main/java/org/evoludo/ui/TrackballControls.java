@@ -535,7 +535,8 @@ public class TrackballControls extends Controls implements MouseWheelHandler, Mo
 	/**
 	 * {@inheritDoc}
 	 * <p>
-	 * Zooms the 3D view. Zooming is disabled shortly after moving the view ended.
+	 * Zooms the 3D view. Zooming is disabled while moving the view and shortly
+	 * after moving ended.
 	 *
 	 * @see Gesture#WHEEL_GRACE_MSEC
 	 */
@@ -594,8 +595,7 @@ public class TrackballControls extends Controls implements MouseWheelHandler, Mo
 	 * {@inheritDoc}
 	 * <p>
 	 * If the left mouse button is down, this dragging rotates or pans (if Shift-key
-	 * is pressed) the view of the 3D scene. Moving may be combined with zooming
-	 * (with the mouse wheel).
+	 * is pressed) the view of the 3D scene.
 	 */
 	@Override
 	public void onMouseMove(MouseMoveEvent event) {

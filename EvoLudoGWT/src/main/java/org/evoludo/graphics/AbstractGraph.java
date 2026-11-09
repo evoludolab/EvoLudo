@@ -2487,8 +2487,7 @@ public abstract class AbstractGraph<B> extends FocusPanel
 	 * <p>
 	 * If the left mouse-key is pressed the graph is shifted within its
 	 * viewport. Note this requires that the zoom level of the graph exceeds
-	 * {@code 1}. Shifting may be combined with zooming (with the mouse wheel) and
-	 * continues if the mouse leaves the graph.
+	 * {@code 1}. Shifting continues if the mouse leaves the graph.
 	 *
 	 * @see #onMouseDown(MouseDownEvent)
 	 * @see Gesture#move(Gesture.Move)
@@ -2511,8 +2510,8 @@ public abstract class AbstractGraph<B> extends FocusPanel
 	 * {@inheritDoc}
 	 * <p>
 	 * Adjusts the zoom level of the graph, while preserving the location of the
-	 * mouse on the graph. The zooming has inertia. Zooming is disabled shortly
-	 * after moving the view (or a node) ended.
+	 * mouse on the graph. The zooming has inertia. Zooming is disabled while
+	 * moving the view (or a node) and shortly after moving ended.
 	 *
 	 * @see #zoom(double, int, int)
 	 * @see Gesture#wheel()

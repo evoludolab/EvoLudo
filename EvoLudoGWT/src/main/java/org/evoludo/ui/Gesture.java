@@ -38,10 +38,11 @@ import com.google.gwt.user.client.Timer;
 /**
  * The state of mouse gestures that move (e.g. shift, rotate or pan the view or
  * shift a node) or zoom the view (with the mouse wheel), including the cursors
- * that reflect the gesture. Moving and zooming may be combined freely, as for
- * touch gestures. However, some pointing devices (e.g. trackpads) emit spurious
- * wheel events when the mouse button is released. Hence, mouse wheel events are
- * ignored within {@link #WHEEL_GRACE_MSEC} after moving ended.
+ * that reflect the gesture. Touch gestures may combine moving and zooming
+ * freely. However, some pointing devices (e.g. trackpads or the Magic Mouse)
+ * emit spurious wheel events just before and after the mouse button is
+ * released. Hence, mouse wheel events are ignored while moving and within
+ * {@link #WHEEL_GRACE_MSEC} after moving ended.
  * <p>
  * The cursor for zooming in or out is shown only for zooming with the mouse
  * wheel, as opposed to e.g. pinching or the context menu.
@@ -311,8 +312,8 @@ public class Gesture {
 	 * The mouse button was pressed. The element of the view captures the mouse
 	 * pointer until the gesture is released, such that the gesture continues even
 	 * if the mouse leaves the view. In contrast to {@code DOM.setCapture(Element)},
-	 * pointer capture by the browser leaves mouse wheel events untouched (zooming
-	 * still works while moving), lets events bubble as usual and is released by the
+	 * pointer capture by the browser leaves mouse wheel events untouched, lets
+	 * events bubble as usual and is released by the
 	 * browser when the mouse button is released.
 	 *
 	 * @see #release()
@@ -643,15 +644,16 @@ public class Gesture {
 
 	/**
 	 * Check whether a mouse wheel event may zoom the view and, if so, record its
-	 * time. Wheel events are ignored within {@link #WHEEL_GRACE_MSEC} after moving
-	 * ended, because some pointing devices emit spurious wheel events when the
+	 * time. Wheel events are ignored while moving and within
+	 * {@link #WHEEL_GRACE_MSEC} after moving ended, because some pointing devices
+	 * (e.g. the Magic Mouse) emit spurious wheel events just before and after the
 	 * button is released.
 	 *
 	 * @return {@code true} if the view may be zoomed
 	 */
 	public boolean wheel() {
 		double now = Duration.currentTimeMillis();
-		if (now - moveEndTime < WHEEL_GRACE_MSEC)
+		if (moved || now - moveEndTime < WHEEL_GRACE_MSEC)
 			return false;
 		wheelTime = now;
 		return true;
