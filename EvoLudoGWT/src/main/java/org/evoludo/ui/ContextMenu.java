@@ -410,19 +410,21 @@ public class ContextMenu extends FlowPanel
 	}
 
 	/**
-	 * Setup location of context menu in DOM. If fullscreen is supported, the
-	 * context
-	 * menu is added to the fullscreen element, otherwise to the {@link RootPanel}.
+	 * Place the context menu in the DOM: in the fullscreen element, if there is
+	 * one, otherwise in the {@link RootPanel}.
+	 * <p>
+	 * <strong>Note:</strong> the menu is moved within the DOM rather than removed
+	 * from its parent first, which would break its functionality.
 	 * 
 	 * @param menu the context menu
 	 */
 	private static void setupContextMenuLocation(ContextMenu menu) {
 		Element fs = NativeJS.getFullscreenElement();
-		if (fs != null) {
+		if (fs != null)
 			fs.appendChild(menu.getElement());
-		} else {
+		else
 			RootPanel.get().add(menu);
-		}
+		// position fixed can get lost when relocating element
 		menu.style.setPosition(Position.FIXED);
 	}
 
@@ -759,14 +761,9 @@ public class ContextMenu extends FlowPanel
 	 * context menu.
 	 */
 	public void closeAll() {
-		if (isSubmenu()) {
-			// close submenu
-			parentMenu.closeChildMenu();
+		close();
+		if (isSubmenu())
 			parentMenu.closeAll();
-			return;
-		}
-		// this is the top level
-		setVisible(false);
 	}
 
 	/**
@@ -1024,13 +1021,6 @@ public class ContextMenu extends FlowPanel
 	public class TouchTimer extends Timer {
 
 		/**
-		 * Create a timer to handle delayed touch-triggered context menus.
-		 */
-		public TouchTimer() {
-			// Default constructor - no initialization needed
-		}
-
-		/**
 		 * Horizontal position of touch event scheduled to trigger context menu
 		 * (relative to browser window).
 		 */
@@ -1271,21 +1261,9 @@ public class ContextMenu extends FlowPanel
 	 */
 	@Override
 	public void onFullscreenChange(FullscreenChangeEvent event) {
-		if (contextMenu == null)
-			return;
 		// note: if we want to be smart, we can relocate the context menu only if the
 		// fullscreen element is among our listeners. worth it? see also Tooltip
-		Element fs = NativeJS.getFullscreenElement();
-		// note: do not remove contextMenu from parent! this breaks it's functionality!
-		// instead, just move contextMenu within the DOM.
-		if (fs != null) {
-			// entered fullscreen
-			fs.appendChild(contextMenu.getElement());
-		} else {
-			// exited fullscreen
-			RootPanel.get().add(contextMenu);
-		}
-		// position fixed can get lost when relocating element
-		contextMenu.style.setPosition(Position.FIXED);
+		if (contextMenu != null)
+			setupContextMenuLocation(contextMenu);
 	}
 }
