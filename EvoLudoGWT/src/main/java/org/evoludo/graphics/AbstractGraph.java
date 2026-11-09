@@ -1767,7 +1767,10 @@ public abstract class AbstractGraph<B> extends FocusPanel
 		double tickskip = getYAxisLabelTickSkip();
 		setFont(style.axesLabelFont);
 		String ylabel = style.yLabel + (style.logScaleY ? " (log)" : "");
-		double xpos = style.showYAxisRight ? w + tickskip + style.tickLength + Y_TICK_LABEL_GAP
+		// the rotated label extends from its baseline towards the tick labels on the
+		// right side (but away from them on the left): shift it by about its ascent
+		double xpos = style.showYAxisRight
+				? w + tickskip + style.tickLength + Y_TICK_LABEL_GAP + 0.5 * Y_AXIS_LABEL_THICKNESS
 				: -(tickskip + style.tickLength + Y_TICK_LABEL_GAP);
 		fillTextVertical(ylabel, xpos, (h + g.measureText(ylabel).getWidth()) / 2);
 	}
