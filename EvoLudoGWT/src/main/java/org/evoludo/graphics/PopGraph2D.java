@@ -115,8 +115,7 @@ import com.google.gwt.event.dom.client.TouchStartEvent;
  * The paint method orchestrates drawing:
  * <ul>
  * <li>When a static lattice layout is available it delegates to dedicated
- * drawXxx methods (drawTriangular, drawHoneycomb, drawSquareLattice,
- * drawSquareNeumann2nd).</li>
+ * drawXxx methods (drawTriangular, drawHoneycomb, drawSquareLattice).</li>
  * <li>For arbitrary networks the drawNetwork method scales the universe,
  * draws links and nodes (with per-node color optimization) and supports
  * node diameter computation (dR).</li>
@@ -364,10 +363,7 @@ public class PopGraph2D extends GenericPopGraph<String, Network2D> implements Sh
 		if (!prepCanvas(false))
 			return;
 		invalidated = false;
-		GeometryType type = geometry.getType();
-		if (isHierarchy)
-			type = ((HierarchicalGeometry) geometry).getSubType();
-
+		GeometryType type = getLatticeType();
 		switch (type) {
 			case TRIANGULAR:
 				drawTriangular();
@@ -378,10 +374,10 @@ public class PopGraph2D extends GenericPopGraph<String, Network2D> implements Sh
 			case SQUARE_NEUMANN:
 			case SQUARE_MOORE:
 			case SQUARE:
-				drawSquareLattice();
+				drawSquareLattice(false);
 				break;
 			case SQUARE_NEUMANN_2ND:
-				drawSquareNeumann2nd();
+				drawSquareLattice(true);
 				break;
 			default:
 				view.logWarning("Unsupported geometry: " + type.getTitle());
@@ -399,7 +395,6 @@ public class PopGraph2D extends GenericPopGraph<String, Network2D> implements Sh
 		triup.translate(0, dh);
 		tridown.translate(dw2, 0);
 		int s2 = side / 2;
-		int dht = -side * dh;
 		for (int h = 0; h < side; h += 2) {
 			int row = h * side;
 			for (int w = 0; w < side; w += 2) {
@@ -426,8 +421,6 @@ public class PopGraph2D extends GenericPopGraph<String, Network2D> implements Sh
 			triup.translate(dwtm, dh);
 			tridown.translate(dwtp, dh);
 		}
-		triup.translate(0, dht);
-		tridown.translate(0, dht);
 		drawFrame(0, 0);
 	}
 
@@ -438,7 +431,6 @@ public class PopGraph2D extends GenericPopGraph<String, Network2D> implements Sh
 		Path2D hex = Path2D.createPolygon2D(new double[] { 0, -dw2, -dw2, 0, dw2, dw2 },
 				new double[] { 0, dh3, dh, dh + dh3, dh, dh3 });
 		hex.translate(dw2, 0);
-		int dht = -side * dh;
 		int dwt = -side * dw;
 		for (int h = 0; h < side; h++) {
 			int row = h * side;
@@ -450,30 +442,30 @@ public class PopGraph2D extends GenericPopGraph<String, Network2D> implements Sh
 			int wt = dwt - (2 * (h % 2) - 1) * dw2;
 			hex.translate(wt, dh);
 		}
-		if (side % 2 == 0)
-			hex.translate(0, dht);
-		else
-			hex.translate(-dw2, dht);
 		drawFrame(0, 0);
 	}
 
 	/**
-	 * Draw square (hierarchical) lattice (SQUARE, SQUARE_MOORE, SQUARE_NEUMANN).
+	 * Draw square (hierarchical) lattices. For second-order von Neumann
+	 * neighbourhoods, nodes on alternating sublattices are drawn as circles.
+	 *
+	 * @param neumann2nd {@code true} for second-order von Neumann neighbourhoods
 	 */
-	private void drawSquareLattice() {
+	private void drawSquareLattice(boolean neumann2nd) {
 		int yshift = (int) bounds.getHeight() - dh;
 		int row = 0;
 		for (int h = 0; h < side; h++) {
-			if (isHierarchy && h > 0) {
+			if (h > 0)
 				yshift -= hierarchyGapAt(h);
-			}
 			int xshift = 0;
 			for (int w = 0; w < side; w++) {
-				if (isHierarchy && w > 0) {
+				if (w > 0)
 					xshift += hierarchyGapAt(w);
-				}
 				g.setFillStyle(data[row + w]);
-				fillRect(xshift, yshift, dw, dh);
+				if (neumann2nd && h % 2 != w % 2)
+					fillCircle(xshift + dw2, yshift + dw2, dw2);
+				else
+					fillRect(xshift, yshift, dw, dh);
 				xshift += dw;
 			}
 			yshift -= dh;
@@ -483,12 +475,12 @@ public class PopGraph2D extends GenericPopGraph<String, Network2D> implements Sh
 	}
 
 	/**
-	 * Compute number of hierarchy gaps that occur before the given index.
-	 * This encapsulates the previous inline loop that counted levels until the
-	 * first non-divisor was encountered.
+	 * Compute the gap before the row or column {@code idx} of hierarchical
+	 * structures, i.e. the number of hierarchical levels with a unit starting at
+	 * {@code idx}.
 	 *
 	 * @param idx the row or column index
-	 * @return total gap in pixels to subtract/add for this index
+	 * @return the gap in pixels
 	 */
 	private int hierarchyGapAt(int idx) {
 		int gaps = 0;
@@ -498,32 +490,6 @@ public class PopGraph2D extends GenericPopGraph<String, Network2D> implements Sh
 			gaps++;
 		}
 		return gaps * HIERARCHY_GAP;
-	}
-
-	/**
-	 * Draw the special SQUARE_NEUMANN_2ND lattice.
-	 */
-	private void drawSquareNeumann2nd() {
-		int yshift = (int) bounds.getHeight() - dh;
-		int row = 0;
-		for (int h = 0; h < side; h++) {
-			int xshift = 0;
-			for (int w = 0; w < side; w++) {
-				g.setFillStyle(data[row + w]);
-				if (h % 2 == w % 2) {
-					fillRect(xshift, yshift, dw, dh);
-					xshift += dw;
-				} else {
-					xshift += dw2;
-					int yc = yshift + dw2;
-					fillCircle(xshift, yc, dw2);
-					xshift += dw2;
-				}
-			}
-			yshift -= dh;
-			row += side;
-		}
-		drawFrame(0, 0);
 	}
 
 	@Override
@@ -721,12 +687,10 @@ public class PopGraph2D extends GenericPopGraph<String, Network2D> implements Sh
 		dh = 0;
 		dR = 0.0;
 
-		GeometryType type = geometry.getType();
-		isHierarchy = (type == GeometryType.HIERARCHY);
-		if (isHierarchy)
-			type = ((HierarchicalGeometry) geometry).getSubType();
+		isHierarchy = (geometry.getType() == GeometryType.HIERARCHY);
+		GeometryType type = getLatticeType();
 		if (!isHierarchy || !type.isSquareLattice())
-			hPeriods = null;
+			hLevels = 0;
 
 		// dispatch to concise handlers for each geometry
 		// note: rewiring or adding links destroys the regular structure of lattices,
@@ -772,6 +736,18 @@ public class PopGraph2D extends GenericPopGraph<String, Network2D> implements Sh
 	}
 
 	/**
+	 * Get the type of the lattice, i.e. the type of the units of hierarchical
+	 * structures.
+	 *
+	 * @return the type of the lattice
+	 */
+	private GeometryType getLatticeType() {
+		if (isHierarchy)
+			return ((HierarchicalGeometry) geometry).getSubType();
+		return geometry.getType();
+	}
+
+	/**
 	 * Adjust bounds to make room for legend.
 	 */
 	@Override
@@ -797,8 +773,6 @@ public class PopGraph2D extends GenericPopGraph<String, Network2D> implements Sh
 	 */
 	private void handleTriangular(int width, int height) {
 		side = (int) (Math.sqrt(geometry.getSize()) + 0.5);
-		double plotX = bounds.getX();
-		double plotY = bounds.getY();
 		int diameter = (int) Math.min(bounds.getWidth(), bounds.getHeight());
 		dw2 = diameter / (side + 3);
 		int bWidth = dw2 * (side + 1);
@@ -808,11 +782,7 @@ public class PopGraph2D extends GenericPopGraph<String, Network2D> implements Sh
 			bounds.setSize(width, height);
 			return;
 		}
-		int bHeight = dh * side;
-		double dx = (bounds.getWidth() - bWidth) * 0.5;
-		double dy = (bounds.getHeight() - bHeight) * 0.5;
-		bounds.set(plotX + dx, plotY + dy, bWidth, bHeight);
-		style.showFrame = false;
+		centerBounds(bWidth, dh * side);
 	}
 
 	/**
@@ -823,8 +793,6 @@ public class PopGraph2D extends GenericPopGraph<String, Network2D> implements Sh
 	 */
 	private void handleHoneycomb(int width, int height) {
 		side = (int) (Math.sqrt(geometry.getSize()) + 0.5);
-		double plotX = bounds.getX();
-		double plotY = bounds.getY();
 		int diameter = (int) Math.min(bounds.getWidth(), bounds.getHeight());
 		dw2 = diameter / (2 * side + 1);
 		int bWidth = dw2 * (2 * side + 1);
@@ -835,11 +803,7 @@ public class PopGraph2D extends GenericPopGraph<String, Network2D> implements Sh
 			bounds.setSize(width, height);
 			return;
 		}
-		int bHeight = dh3 * (3 * side + 1);
-		double dx = (bounds.getWidth() - bWidth) * 0.5;
-		double dy = (bounds.getHeight() - bHeight) * 0.5;
-		bounds.set(plotX + dx, plotY + dy, bWidth, bHeight);
-		style.showFrame = false;
+		centerBounds(bWidth, dh3 * (3 * side + 1));
 	}
 
 	/**
@@ -892,8 +856,6 @@ public class PopGraph2D extends GenericPopGraph<String, Network2D> implements Sh
 	 * @param height the height of the canvas
 	 */
 	private void handleNetwork(int width, int height) {
-		double plotX = bounds.getX();
-		double plotY = bounds.getY();
 		int diameter = (int) Math.min(bounds.getWidth(), bounds.getHeight());
 		int radius = diameter / 2;
 		dR = Math.sqrt(radius * radius * 2.0 / geometry.getSize());
@@ -901,11 +863,21 @@ public class PopGraph2D extends GenericPopGraph<String, Network2D> implements Sh
 			bounds.setSize(width, height);
 			return;
 		}
-		double dx = (bounds.getWidth() - diameter) * 0.5;
-		double dy = (bounds.getHeight() - diameter) * 0.5;
 		networkXAspect = bounds.getWidth() / diameter;
 		networkYAspect = bounds.getHeight() / diameter;
-		bounds.set(plotX + dx, plotY + dy, diameter, diameter);
+		centerBounds(diameter, diameter);
+	}
+
+	/**
+	 * Center bounds of size {@code width} by {@code height} within the current
+	 * bounds. The frame is not shown.
+	 *
+	 * @param width  the width of the new bounds
+	 * @param height the height of the new bounds
+	 */
+	private void centerBounds(double width, double height) {
+		bounds.set(bounds.getX() + (bounds.getWidth() - width) * 0.5,
+				bounds.getY() + (bounds.getHeight() - height) * 0.5, width, height);
 		style.showFrame = false;
 	}
 
@@ -961,11 +933,7 @@ public class PopGraph2D extends GenericPopGraph<String, Network2D> implements Sh
 		int isx = (int) (sx + 0.5);
 		int isy = (int) (sy + 0.5);
 
-		GeometryType type = geometry.getType();
-		if (isHierarchy)
-			type = ((HierarchicalGeometry) geometry).getSubType();
-
-		switch (type) {
+		switch (getLatticeType()) {
 			// 3D views must deal with this
 			case CUBE:
 			case LINEAR:
@@ -1058,16 +1026,14 @@ public class PopGraph2D extends GenericPopGraph<String, Network2D> implements Sh
 		// node 0 in lower left corner
 		int c = x / dw;
 		int r = side - 1 - y / dh;
-		if (isHierarchy) {
-			int wgap = 0;
-			int hgap = 0;
-			for (int i = 0; i < hLevels; i++) {
-				wgap += c / hPeriods[i]; // gaps left of mouse
-				hgap += (side - 1 - r) / hPeriods[i];
-			}
-			c = (x - wgap * HIERARCHY_GAP) / dw;
-			r = side - 1 - (y - hgap * HIERARCHY_GAP) / dh;
+		int wgap = 0;
+		int hgap = 0;
+		for (int i = 0; i < hLevels; i++) {
+			wgap += c / hPeriods[i]; // gaps left of mouse
+			hgap += (side - 1 - r) / hPeriods[i];
 		}
+		c = (x - wgap * HIERARCHY_GAP) / dw;
+		r = side - 1 - (y - hgap * HIERARCHY_GAP) / dh;
 		return r * side + c;
 	}
 
@@ -1358,13 +1324,5 @@ public class PopGraph2D extends GenericPopGraph<String, Network2D> implements Sh
 				Math.max(-ymax + r, Math.min(ymax - r, pointer.getY() + grabDY)));
 		network.linkNodes();
 		drawNetwork();
-	}
-
-	@Override
-	public void export(MyContext2d ctx) {
-		MyContext2d bak = g;
-		g = ctx;
-		paint(true);
-		g = bak;
 	}
 }

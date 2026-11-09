@@ -993,14 +993,6 @@ public class LineGraph extends AbstractGraph<double[]>
 		paintScheduled = true;
 	}
 
-	@Override
-	public void export(MyContext2d ctx) {
-		MyContext2d bak = g;
-		g = ctx;
-		paint(true);
-		g = bak;
-	}
-
 	/**
 	 * {@inheritDoc}
 	 * <p>

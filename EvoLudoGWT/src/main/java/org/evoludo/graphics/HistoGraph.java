@@ -614,14 +614,6 @@ public class HistoGraph extends AbstractGraph<double[]> implements BasicTooltipP
 	}
 
 	@Override
-	public void export(MyContext2d ctx) {
-		MyContext2d bak = g;
-		g = ctx;
-		paint(true);
-		g = bak;
-	}
-
-	@Override
 	public boolean paint(boolean force) {
 		if (super.paint(force) || data == null)
 			return true;

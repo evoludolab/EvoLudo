@@ -1146,11 +1146,16 @@ public abstract class AbstractGraph<B> extends FocusPanel
 	}
 
 	/**
-	 * Export the graphical context {@code ctx}.
+	 * Export the graph by painting it onto the graphical context {@code ctx}.
 	 * 
 	 * @param ctx the graphical context to export
 	 */
-	public abstract void export(MyContext2d ctx);
+	public void export(MyContext2d ctx) {
+		MyContext2d bak = g;
+		g = ctx;
+		paint(true);
+		g = bak;
+	}
 
 	/**
 	 * Calculate bounds of drawing area, i.e. of the canvas, which excludes the
