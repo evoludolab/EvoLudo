@@ -974,109 +974,41 @@ public class ParaGraph extends AbstractGraph<double[]> implements Zooming, Shift
 	}
 
 	/**
-	 * Enforce equal units-per-pixel scale on both axes for linear plots.
+	 * Enforce equal units-per-pixel scale on both axes for linear plots: the
+	 * larger scale applies to both axes, as far as the domain permits. The ranges
+	 * are expanded around their centers but remain within the domain, e.g. are
+	 * non-negative, see {@link #updateDomain()}.
 	 */
 	private void enforceEqualAxisScale() {
 		double w = bounds.getWidth();
 		double h = bounds.getHeight();
-		if (w <= 0.0 || h <= 0.0)
-			return;
-		double rangeX = style.xMax - style.xMin;
-		double rangeY = style.yMax - style.yMin;
-		if (rangeX <= 0.0 || rangeY <= 0.0)
+		if (w <= 0.0 || h <= 0.0 || style.xMax <= style.xMin || style.yMax <= style.yMin)
 			return;
 		updateDomain();
-		double domainMinX = domain.getX();
-		double domainMaxX = domain.getX() + domain.getWidth();
-		double domainMinY = domain.getY();
-		double domainMaxY = domain.getY() + domain.getHeight();
-		boolean clampX = Double.isFinite(domain.getWidth());
-		boolean clampY = Double.isFinite(domain.getHeight());
-		double scaleX = rangeX / w;
-		double scaleY = rangeY / h;
-		if (Math.abs(scaleX - scaleY) < Model.EPS_SMALL)
-			return;
-		if (scaleX > scaleY) {
-			double targetRangeY = scaleX * h;
-			if (clampY && targetRangeY > domain.getHeight()) {
-				targetRangeY = domain.getHeight();
-				setCenteredY(targetRangeY, clampY, domainMinY, domainMaxY);
-				double targetScale = targetRangeY / h;
-				double targetRangeX = targetScale * w;
-				setCenteredX(targetRangeX, clampX, domainMinX, domainMaxX);
-				return;
-			}
-			setCenteredY(targetRangeY, clampY, domainMinY, domainMaxY);
-			return;
-		}
-		double targetRangeX = scaleY * w;
-		if (clampX && targetRangeX > domain.getWidth()) {
-			targetRangeX = domain.getWidth();
-			setCenteredX(targetRangeX, clampX, domainMinX, domainMaxX);
-			double targetScale = targetRangeX / w;
-			double targetRangeY = targetScale * h;
-			setCenteredY(targetRangeY, clampY, domainMinY, domainMaxY);
-			return;
-		}
-		setCenteredX(targetRangeX, clampX, domainMinX, domainMaxX);
+		double scale = Math.min(Math.max((style.xMax - style.xMin) / w, (style.yMax - style.yMin) / h),
+				Math.min(domain.getWidth() / w, domain.getHeight() / h));
+		double[] x = centered(style.xMin, style.xMax, scale * w, domain.getX(), domain.getWidth());
+		double[] y = centered(style.yMin, style.yMax, scale * h, domain.getY(), domain.getHeight());
+		style.xMin = x[0];
+		style.xMax = x[1];
+		style.yMin = y[0];
+		style.yMax = y[1];
 	}
 
 	/**
-	 * Center and optionally clamp the x-range.
+	 * Center a range of width {@code range} on {@code [min, max]} but keep it
+	 * within the domain {@code [lower, lower + size]}, preferably by shifting it.
 	 *
-	 * @param range     target range
-	 * @param clamp     whether to clamp to the domain
-	 * @param domainMin domain minimum
-	 * @param domainMax domain maximum
+	 * @param min   the current minimum
+	 * @param max   the current maximum
+	 * @param range the width of the new range
+	 * @param lower the lower bound of the domain
+	 * @param size  the size of the domain (may be infinite)
+	 * @return the new range {@code [min, max]}
 	 */
-	private void setCenteredX(double range, boolean clamp, double domainMin, double domainMax) {
-		double cx = 0.5 * (style.xMin + style.xMax);
-		double min = cx - 0.5 * range;
-		double max = cx + 0.5 * range;
-		if (clamp) {
-			if (min < domainMin) {
-				max += domainMin - min;
-				min = domainMin;
-			}
-			if (max > domainMax) {
-				min -= max - domainMax;
-				max = domainMax;
-			}
-			if (min < domainMin) {
-				min = domainMin;
-			}
-		}
-		style.xMin = snapNearZero(min);
-		style.xMax = max;
-	}
-
-	/**
-	 * Center and optionally clamp the y-range.
-	 *
-	 * @param range     target range
-	 * @param clamp     whether to clamp to the domain
-	 * @param domainMin domain minimum
-	 * @param domainMax domain maximum
-	 */
-	private void setCenteredY(double range, boolean clamp, double domainMin, double domainMax) {
-		double cy = 0.5 * (style.yMin + style.yMax);
-		double min = cy - 0.5 * range;
-		double max = cy + 0.5 * range;
-		if (clamp) {
-			if (min < domainMin) {
-				max += domainMin - min;
-				min = domainMin;
-			}
-			if (max > domainMax) {
-				min -= max - domainMax;
-				max = domainMax;
-			}
-			if (min < domainMin) {
-				min = domainMin;
-			}
-		}
-		style.yMin = snapNearZero(min);
-		style.yMax = max;
+	private double[] centered(double min, double max, double range, double lower, double size) {
+		double newMin = Math.max(lower, Math.min(0.5 * (min + max - range), lower + size - range));
+		return new double[] { snapNearZero(newMin), Math.min(newMin + range, lower + size) };
 	}
 
 	/**
