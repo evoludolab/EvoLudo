@@ -34,7 +34,6 @@ import java.awt.Color;
 
 import org.evoludo.math.Combinatorics;
 import org.evoludo.simulator.EvoLudo;
-import org.evoludo.simulator.models.Data;
 import org.evoludo.simulator.models.Model.HasDE;
 import org.evoludo.simulator.models.Model.HasIBS;
 import org.evoludo.simulator.modules.Features.Static;
@@ -199,22 +198,25 @@ public class Moran extends Discrete implements Static,
 	}
 
 	@Override
-	public double[] getCustomLevels(Data type, int trait) {
-		// currently reference levels only available for Moran (birth-death) updates
-		// in IBS models (otherwise ibs is null, see reset(Model)
-		if (model == null || !model.isIBS() || !getIBSPopulation().getPopulationUpdate().isMoran())
-			return new double[0];
-		// Note:
-		// - return reference levels for fixation probabilities and times based
-		// on analytical calculations for the Moran process
-		switch (type) {
-			case STATISTICS_FIXATION_PROBABILITY:
-				return getReferenceProb(trait);
-			case STATISTICS_FIXATION_TIME:
-				return getReferenceTime(trait);
-			default:
-				return new double[0];
-		}
+	public double[] getFixationProbabilityLevels(int trait) {
+		return hasReferenceLevels() ? getReferenceProb(trait) : new double[0];
+	}
+
+	@Override
+	public double[] getFixationTimeLevels(int trait) {
+		return hasReferenceLevels() ? getReferenceTime(trait) : new double[0];
+	}
+
+	/**
+	 * Check whether analytical reference levels are available for fixation
+	 * probabilities and times. Currently this requires Moran (birth-death) updates
+	 * in IBS models.
+	 * 
+	 * @return {@code true} if reference levels are available
+	 */
+	private boolean hasReferenceLevels() {
+		// otherwise ibs is null, see reset(Model)
+		return model != null && model.isIBS() && getIBSPopulation().getPopulationUpdate().isMoran();
 	}
 
 	/**

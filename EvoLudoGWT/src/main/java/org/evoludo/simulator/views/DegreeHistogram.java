@@ -69,7 +69,12 @@ public class DegreeHistogram extends Histogram {
 	 * @param engine the pacemaker for running the model
 	 */
 	public DegreeHistogram(EvoLudoGWT engine) {
-		super(engine, Data.DEGREE);
+		super(engine, Data.UNDEFINED);
+	}
+
+	@Override
+	public String getName() {
+		return "Structure - Degree";
 	}
 
 	@Override

@@ -62,6 +62,11 @@ public class FitnessHistogram extends TraitHistogram {
 	}
 
 	@Override
+	public String getName() {
+		return "Fitness - Histogram";
+	}
+
+	@Override
 	protected boolean isAutoscaleY() {
 		return true;
 	}

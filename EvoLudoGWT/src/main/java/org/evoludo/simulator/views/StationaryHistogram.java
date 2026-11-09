@@ -34,6 +34,7 @@ import org.evoludo.graphics.GraphStyle;
 import org.evoludo.graphics.HistoGraph;
 import org.evoludo.simulator.EvoLudoGWT;
 import org.evoludo.simulator.models.Data;
+import org.evoludo.simulator.models.Mode;
 import org.evoludo.simulator.models.Model;
 import org.evoludo.simulator.modules.Module;
 import org.evoludo.ui.ContextMenu;
@@ -58,7 +59,17 @@ public class StationaryHistogram extends Histogram {
 	 * @param engine the pacemaker for running the model
 	 */
 	public StationaryHistogram(EvoLudoGWT engine) {
-		super(engine, Data.STATISTICS_STATIONARY);
+		super(engine, Data.UNDEFINED);
+	}
+
+	@Override
+	public String getName() {
+		return "Statistics - Stationary distribution";
+	}
+
+	@Override
+	Mode getMode() {
+		return Mode.STATISTICS_UPDATE;
 	}
 
 	@Override

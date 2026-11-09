@@ -81,6 +81,11 @@ public class TraitHistogram extends Histogram {
 	}
 
 	@Override
+	public String getName() {
+		return "Traits - Histogram";
+	}
+
+	@Override
 	protected boolean isAutoscaleY() {
 		return false;
 	}

@@ -37,7 +37,6 @@ import org.evoludo.graphics.HistoGraph;
 import org.evoludo.simulator.ColorMapCSS;
 import org.evoludo.simulator.EvoLudoGWT;
 import org.evoludo.simulator.models.Data;
-import org.evoludo.simulator.models.Mode;
 import org.evoludo.simulator.models.Model;
 import org.evoludo.simulator.modules.Module;
 import org.evoludo.util.Formatter;
@@ -76,10 +75,12 @@ public abstract class Histogram extends AbstractView<HistoGraph> implements Basi
 	protected boolean isMultispecies;
 
 	/**
-	 * Construct a new view to display the histogram of {@code type}.
+	 * Construct a new view to display histograms. The type of data distinguishes
+	 * histograms of traits and fitness, see {@link AbstractView#getType()}.
 	 *
 	 * @param engine the pacemaker for running the model
-	 * @param type   the type of data to display
+	 * @param type   {@link Data#TRAIT}, {@link Data#FITNESS} or
+	 *               {@link Data#UNDEFINED}
 	 */
 	protected Histogram(EvoLudoGWT engine, Data type) {
 		super(engine, type);
@@ -126,16 +127,6 @@ public abstract class Histogram extends AbstractView<HistoGraph> implements Basi
 	 */
 	protected boolean isAutoscaleY() {
 		return true;
-	}
-
-	@Override
-	public Mode getMode() {
-		return type.getMode();
-	}
-
-	@Override
-	public String getName() {
-		return type.toString();
 	}
 
 	@Override
@@ -313,8 +304,22 @@ public abstract class Histogram extends AbstractView<HistoGraph> implements Basi
 	 * @param graph the graph
 	 * @param bar   the index of the bin
 	 * @return the tooltip
+	 * 
+	 * @see #getRangeTooltip(HistoGraph, int)
 	 */
 	public String getTooltipAt(HistoGraph graph, int bar) {
+		return getRangeTooltip(graph, bar);
+	}
+
+	/**
+	 * Get the tooltip for bin {@code bar} of {@code graph} with the range of the
+	 * bin, its value and the notes of markers in the bin.
+	 * 
+	 * @param graph the graph
+	 * @param bar   the index of the bin
+	 * @return the tooltip
+	 */
+	protected static String getRangeTooltip(HistoGraph graph, int bar) {
 		GraphStyle style = graph.getStyle();
 		double width = (style.xMax - style.xMin) / graph.getNBins();
 		String note = graph.getNoteAt(bar);
@@ -405,13 +410,8 @@ public abstract class Histogram extends AbstractView<HistoGraph> implements Basi
 	@Override
 	public void modelSettings() {
 		// check if settings changed the number of graphs
-		if (graphs.size() != countGraphs()) {
-			// reallocate graphs
+		if (graphs.size() != countGraphs())
 			reset(true);
-			return;
-		}
-		for (HistoGraph graph : graphs)
-			graph.getStyle().customYLevels = ((HasHistogram) graph.getModule()).getCustomLevels(type, graph.getRow());
 	}
 
 	@Override
@@ -434,9 +434,20 @@ public abstract class Histogram extends AbstractView<HistoGraph> implements Basi
 			graph.paint(force);
 	}
 
+	/**
+	 * Get the name of the data shown, i.e. the name of the view without its
+	 * category, in lower case.
+	 * 
+	 * @return the name of the data
+	 */
+	protected String getDataName() {
+		String name = getName();
+		return name.substring(name.indexOf("- ") + 2).toLowerCase();
+	}
+
 	@Override
 	protected ExportType[] exportTypes() {
-		if (type.isStatistics())
+		if (getMode().isStatistics())
 			return new ExportType[] { ExportType.SVG, ExportType.PNG, ExportType.CSV_STAT };
 		return new ExportType[] { ExportType.SVG, ExportType.PNG };
 	}
@@ -445,9 +456,7 @@ public abstract class Histogram extends AbstractView<HistoGraph> implements Basi
 	protected void exportStatData() {
 		// NOTE: consider exporting more data (e.g. overall fix probs/times, sdev);
 		// initial configuration for statistics, structure
-		String name = type.toString();
-		StringBuilder export = new StringBuilder("# ")
-				.append(name.substring(name.indexOf("- ") + 2).toLowerCase()).append("\n");
+		StringBuilder export = new StringBuilder("# ").append(getDataName()).append("\n");
 		Module<?> module = null;
 		for (HistoGraph graph : graphs) {
 			if (module != graph.getModule()) {

@@ -46,7 +46,8 @@ import org.evoludo.simulator.views.Console;
 import org.evoludo.simulator.views.DegreeHistogram;
 import org.evoludo.simulator.views.Distribution;
 import org.evoludo.simulator.views.FitnessHistogram;
-import org.evoludo.simulator.views.FixationHistogram;
+import org.evoludo.simulator.views.FixationProbabilityHistogram;
+import org.evoludo.simulator.views.FixationTimeHistogram;
 import org.evoludo.simulator.views.HasDistribution;
 import org.evoludo.simulator.views.HasHistogram;
 import org.evoludo.simulator.views.HasMean;
@@ -565,9 +566,9 @@ public class ViewController {
 	private void addStatisticsViews(Module<?> module, Model model, Map<String, AbstractView<?>> oldViews) {
 		if (model != null && model.permitsMode(Mode.STATISTICS_SAMPLE)) {
 			if (module instanceof HasHistogram.StatisticsProbability)
-				addView(new FixationHistogram(engine, Data.STATISTICS_FIXATION_PROBABILITY), oldViews);
+				addView(new FixationProbabilityHistogram(engine), oldViews);
 			if (module instanceof HasHistogram.StatisticsTime)
-				addView(new FixationHistogram(engine, Data.STATISTICS_FIXATION_TIME), oldViews);
+				addView(new FixationTimeHistogram(engine), oldViews);
 		}
 		if (model != null && model.permitsMode(Mode.STATISTICS_UPDATE)
 				&& module instanceof HasHistogram.StatisticsStationary) {

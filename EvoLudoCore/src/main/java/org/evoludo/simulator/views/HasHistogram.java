@@ -32,14 +32,13 @@ package org.evoludo.simulator.views;
 
 import java.awt.Color;
 
-import org.evoludo.simulator.models.Data;
 import org.evoludo.simulator.models.SampleListener;
 
 /**
  * {@link org.evoludo.simulator.modules.Module Module}s that implement the
  * {@code HasHistogram} interface request a graphical view to depicts a
  * histogram of data in their GUI:
- * {@link org.evoludo.simulator.views.Histogram} in GWT and
+ * subclasses of {@code org.evoludo.simulator.views.Histogram} in GWT and
  * {@link org.evoludo.simulator.views.MVCTraitHistogram},
  * {@link org.evoludo.simulator.views.MVFitHistogram} in JRE for a single
  * continuous trait or the fitness distribution, respectively.
@@ -51,22 +50,6 @@ import org.evoludo.simulator.models.SampleListener;
  */
 
 public abstract interface HasHistogram {
-
-	/**
-	 * Some models may provide reference values for histograms as a horizontal line
-	 * marking a particular value. For example this is the case for statistics of
-	 * fixation probabilities or times in the
-	 * {@code org.evoludo.simulator.modules.Moran Moran} module where the analytical
-	 * results are provided as a reference to highlight the effects of population
-	 * structures.
-	 * 
-	 * @param type the type of data shown in the histogram
-	 * @param idx  the index of the trait
-	 * @return the array of levels for reference
-	 */
-	public default double[] getCustomLevels(Data type, int idx) {
-		return new double[0];
-	}
 
 	/**
 	 * Get the number of traits in the {@link org.evoludo.simulator.modules.Module
@@ -89,7 +72,7 @@ public abstract interface HasHistogram {
 	 * {@code HasHistogram.Strategy} interface include histograms of strategy
 	 * distributions. Currently this only applies to continuous modules.
 	 * 
-	 * @see org.evoludo.simulator.views.Histogram
+	 * @see org.evoludo.simulator.views.TraitHistogram
 	 * @see org.evoludo.simulator.views.MVCTraitHistogram
 	 */
 	public interface Strategy extends HasHistogram {
@@ -101,7 +84,7 @@ public abstract interface HasHistogram {
 	 * distributions. For discrete modules the distribution is show for each trait
 	 * separately.
 	 * 
-	 * @see org.evoludo.simulator.views.Histogram
+	 * @see org.evoludo.simulator.views.FitnessHistogram
 	 * @see org.evoludo.simulator.views.MVFitHistogram
 	 */
 	public interface Fitness extends HasHistogram {
@@ -114,7 +97,7 @@ public abstract interface HasHistogram {
 	 * separately for interaction and reference graphs, as well as for incoming and
 	 * outgoing links (for directed graphs).
 	 * 
-	 * @see org.evoludo.simulator.views.Histogram
+	 * @see org.evoludo.simulator.views.DegreeHistogram
 	 */
 	public interface Degree extends HasHistogram {
 	}
@@ -125,9 +108,22 @@ public abstract interface HasHistogram {
 	 * running statistics over multiple runs and include histograms of fixation
 	 * probabilities.
 	 * 
-	 * @see org.evoludo.simulator.views.Histogram
+	 * @see org.evoludo.simulator.views.FixationProbabilityHistogram
 	 */
 	public interface StatisticsProbability extends HasHistogram, SampleListener {
+
+		/**
+		 * Some modules may provide reference values for the fixation probabilities,
+		 * shown as horizontal lines. For example, the
+		 * {@code org.evoludo.simulator.modules.Moran Moran} module provides the
+		 * analytical results to highlight the effects of population structures.
+		 * 
+		 * @param trait the index of the trait
+		 * @return the reference levels
+		 */
+		public default double[] getFixationProbabilityLevels(int trait) {
+			return new double[0];
+		}
 	}
 
 	/**
@@ -135,9 +131,23 @@ public abstract interface HasHistogram {
 	 * {@code HasHistogram.StatisticsTime} interface must be capable of running
 	 * statistics over multiple runs and include histograms of fixation times.
 	 * 
-	 * @see org.evoludo.simulator.views.Histogram
+	 * @see org.evoludo.simulator.views.FixationTimeHistogram
 	 */
 	public interface StatisticsTime extends HasHistogram, SampleListener {
+
+		/**
+		 * Some modules may provide reference values for the fixation times, shown as
+		 * horizontal lines.
+		 * 
+		 * @param trait the index of the trait, {@code nTraits} for the absorption
+		 *              time
+		 * @return the reference levels
+		 * 
+		 * @see StatisticsProbability#getFixationProbabilityLevels(int)
+		 */
+		public default double[] getFixationTimeLevels(int trait) {
+			return new double[0];
+		}
 	}
 
 	/**
@@ -147,7 +157,7 @@ public abstract interface HasHistogram {
 	 * (frequencies of strategies) are visited, which eventually converges to
 	 * a stationary distributions in ergodic settings.
 	 * 
-	 * @see org.evoludo.simulator.views.Histogram
+	 * @see org.evoludo.simulator.views.StationaryHistogram
 	 */
 	public interface StatisticsStationary extends HasHistogram {
 	}
