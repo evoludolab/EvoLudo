@@ -1363,43 +1363,6 @@ public class EvoLudoWeb extends Composite
 	Button evoludoSettings;
 
 	/**
-	 * Toggle visibility of the text field {@link #evoludoCLOPanel} to view or
-	 * modify the parameter settings.
-	 *
-	 * @param event the {@link ClickEvent} that was fired
-	 * 
-	 * @see #onSettingsTouchEnd(TouchEndEvent)
-	 */
-	@UiHandler("evoludoSettings")
-	public void onSettingsClick(ClickEvent event) {
-		toggleSettings();
-	}
-
-	/**
-	 * Touch of parameter button started. Suppress default behaviour (prevents
-	 * magnifying glass and text selection).
-	 *
-	 * @param event the {@link TouchStartEvent} that was fired
-	 */
-	@UiHandler("evoludoSettings")
-	public void onSettingsTouchStart(TouchStartEvent event) {
-		event.preventDefault();
-	}
-
-	/**
-	 * Toggle visibility of {@link #evoludoCLOPanel} to view or modify the parameter
-	 * settings. Touch of Settings-button ended.
-	 *
-	 * @param event the {@link TouchEndEvent} that was fired
-	 * 
-	 * @see #onSettingsClick(ClickEvent)
-	 */
-	@UiHandler("evoludoSettings")
-	public void onSettingsTouchEnd(TouchEndEvent event) {
-		toggleSettings();
-	}
-
-	/**
 	 * Helper method to toggle the visibility of {@link #evoludoCLOPanel} to view or
 	 * modify the parameter settings. When the panel is shown, the parameter field
 	 * receives focus, except in fullscreen mode on touch devices: there, focusing
@@ -1505,19 +1468,6 @@ public class EvoLudoWeb extends Composite
 	Button evoludoInitReset;
 
 	/**
-	 * Initialize or reset EvoLudo model (action depends on title of button). Button
-	 * changes to <code>Reset</code> if <code>Alt</code> key is pressed and reverts
-	 * to <code>Init</code> after it is released.
-	 *
-	 * @param event the ClickEvent that was fired
-	 */
-	@UiHandler("evoludoInitReset")
-	public void onInitResetClick(ClickEvent event) {
-		// init/reset simulation
-		initReset();
-	}
-
-	/**
 	 * On touch devices, the <code>Init</code> button changes to <code>Reset</code>
 	 * for extended touches. This timer controls the delay before <code>Reset</code>
 	 * is shown. Any other touch event during this period cancels the timer.
@@ -1529,42 +1479,6 @@ public class EvoLudoWeb extends Composite
 			keyController.showAltModeFromTouch();
 		}
 	};
-
-	/**
-	 * Schedule showing alternate/context buttons after a long touch and prevent
-	 * default handling.
-	 *
-	 * @param event the touch event (must not be {@code null})
-	 */
-	private void scheduleAltButtons(TouchStartEvent event) {
-		showAltTouchTimer.schedule(ContextMenu.LONG_TOUCH_TIME);
-		event.preventDefault();
-	}
-
-	/**
-	 * Touch of <code>Init</code> button started. Set timer for switching to
-	 * <code>Reset</code>. Suppress default behaviour (prevents magnifying glass and
-	 * text selection).
-	 *
-	 * @param event the TouchStartEvent that was fired
-	 */
-	@UiHandler("evoludoInitReset")
-	public void onInitResetTouchStart(TouchStartEvent event) {
-		scheduleAltButtons(event);
-	}
-
-	/**
-	 * Touch of <code>Init</code> (or <code>Reset</code>) button ended. Take the
-	 * appropriate action.
-	 * 
-	 * @param event the TouchEndEvent that was fired
-	 */
-	@UiHandler("evoludoInitReset")
-	public void onInitResetTouchEnd(TouchEndEvent event) {
-		showAltTouchTimer.cancel();
-		initReset();
-		keyController.hideAltModeFromTouch();
-	}
 
 	/**
 	 * Initialize or reset EvoLudo model. If model is running wait until next update
@@ -1584,44 +1498,16 @@ public class EvoLudoWeb extends Composite
 	Button evoludoStartStop;
 
 	/**
-	 * <code>Start</code>, <code>Stop</code> button clicked. Start EvoLudo model if
-	 * not running and stop model if running. Button changes title accordingly.
-	 *
-	 * @param event the ClickEvent that was fired
+	 * Start EvoLudo model if not running and stop model if running. Button changes
+	 * title accordingly.
 	 */
-	@UiHandler("evoludoStartStop")
-	public void onStartStopClick(ClickEvent event) {
+	public void startStop() {
 		if (requestRelaxationStop())
 			return;
 		if (engine.isRunning() || SettingsController.isReady())
 			engine.startStop();
 		else
 			engine.logWarning("another EvoLudo instance is already running!");
-	}
-
-	/**
-	 * Touch of <code>Start</code>, <code>Stop</code> button started. Suppress
-	 * default behaviour (prevents magnifying glass and text selection).
-	 * 
-	 * @param event the TouchStartEvent that was fired
-	 */
-	@UiHandler("evoludoStartStop")
-	public void onStartStopTouchStart(TouchStartEvent event) {
-		event.preventDefault();
-	}
-
-	/**
-	 * Touch of <code>Start</code>, <code>Stop</code> button ended. Start EvoLudo
-	 * model if not running and stop model if running. Button changes title
-	 * accordingly.
-	 * 
-	 * @param event the TouchEndEvent that was fired
-	 */
-	@UiHandler("evoludoStartStop")
-	public void onStartStopTouchEnd(TouchEndEvent event) {
-		if (requestRelaxationStop())
-			return;
-		engine.startStop();
 	}
 
 	/**
@@ -1645,38 +1531,72 @@ public class EvoLudoWeb extends Composite
 	Button evoludoStep;
 
 	/**
-	 * <code>Next</code> button clicked. Advances the EvoLudo model by a single
-	 * step. If the model is running, this is ignored.
+	 * Button {@code Settings}, {@code Init}/{@code Reset}, {@code Start}/{@code Stop}
+	 * or {@code Step} clicked. Take the action of the button.
 	 *
 	 * @param event the ClickEvent that was fired
+	 *
+	 * @see #buttonAction(Object)
 	 */
-	@UiHandler("evoludoStep")
-	public void onStepClick(ClickEvent event) {
-		prevNextDebug();
+	@UiHandler({ "evoludoSettings", "evoludoInitReset", "evoludoStartStop", "evoludoStep" })
+	public void onButtonClick(ClickEvent event) {
+		buttonAction(event.getSource());
 	}
 
 	/**
-	 * Touch of <code>Next</code> button started. Suppress default behaviour
-	 * (prevents magnifying glass and text selection).
+	 * Touch of a button started. Suppress default behaviour (prevents magnifying
+	 * glass and text selection). Long touches of the {@code Init} and {@code Step}
+	 * buttons show their alternative labels, e.g. {@code Reset}.
 	 *
 	 * @param event the TouchStartEvent that was fired
 	 */
-	@UiHandler("evoludoStep")
-	public void onStepTouchStart(TouchStartEvent event) {
-		scheduleAltButtons(event);
+	@UiHandler({ "evoludoSettings", "evoludoInitReset", "evoludoStartStop", "evoludoStep" })
+	public void onButtonTouchStart(TouchStartEvent event) {
+		event.preventDefault();
+		if (hasAltLabel(event.getSource()))
+			showAltTouchTimer.schedule(ContextMenu.LONG_TOUCH_TIME);
 	}
 
 	/**
-	 * Touch of <code>Next</code> button ended. Advances the EvoLudo model by a
-	 * single step. If the model is running, this is ignored.
+	 * Touch of a button ended. Take the action of the button, as for clicks, and
+	 * restore the original labels after long touches.
 	 *
 	 * @param event the TouchEndEvent that was fired
 	 */
-	@UiHandler("evoludoStep")
-	public void onStepTouchEnd(TouchEndEvent event) {
+	@UiHandler({ "evoludoSettings", "evoludoInitReset", "evoludoStartStop", "evoludoStep" })
+	public void onButtonTouchEnd(TouchEndEvent event) {
+		Object button = event.getSource();
 		showAltTouchTimer.cancel();
-		prevNextDebug();
-		keyController.hideAltModeFromTouch();
+		buttonAction(button);
+		if (hasAltLabel(button))
+			keyController.hideAltModeFromTouch();
+	}
+
+	/**
+	 * Check whether {@code button} shows an alternative label for long touches.
+	 *
+	 * @param button the button
+	 * @return {@code true} for the {@code Init} and {@code Step} buttons
+	 */
+	private boolean hasAltLabel(Object button) {
+		return button == evoludoInitReset || button == evoludoStep;
+	}
+
+	/**
+	 * Take the action of {@code button}: toggle the settings, initialize or reset
+	 * the model, start or stop it, or advance it by a single step.
+	 *
+	 * @param button the button that was clicked or touched
+	 */
+	private void buttonAction(Object button) {
+		if (button == evoludoSettings)
+			toggleSettings();
+		else if (button == evoludoInitReset)
+			initReset();
+		else if (button == evoludoStartStop)
+			startStop();
+		else
+			prevNextDebug();
 	}
 
 	/**
