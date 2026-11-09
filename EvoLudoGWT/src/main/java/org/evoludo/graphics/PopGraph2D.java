@@ -361,7 +361,7 @@ public class PopGraph2D extends GenericPopGraph<String, Network2D> implements Sh
 
 	@Override
 	protected void drawLattice() {
-		if (!prepCanvas())
+		if (!prepCanvas(false))
 			return;
 		invalidated = false;
 		GeometryType type = geometry.getType();
@@ -479,10 +479,7 @@ public class PopGraph2D extends GenericPopGraph<String, Network2D> implements Sh
 			yshift -= dh;
 			row += side;
 		}
-		if (style.showDecoratedFrame)
-			drawFrame(4, 4);
-		else
-			drawFrame(0, 0);
+		drawFrame(0, 0);
 	}
 
 	/**
@@ -526,15 +523,12 @@ public class PopGraph2D extends GenericPopGraph<String, Network2D> implements Sh
 			yshift -= dh;
 			row += side;
 		}
-		if (style.showDecoratedFrame)
-			drawFrame(4, 4);
-		else
-			drawFrame(0, 0);
+		drawFrame(0, 0);
 	}
 
 	@Override
 	protected void drawNetwork() {
-		if (!prepCanvas())
+		if (!prepCanvas(false))
 			return;
 		invalidated = false;
 		int nNodes = geometry.getSize();
@@ -574,39 +568,9 @@ public class PopGraph2D extends GenericPopGraph<String, Network2D> implements Sh
 		legend.draw();
 	}
 
-	/**
-	 * Draw frame and legend overlays without the content clip. Subclasses that keep
-	 * content pan/zoom separate can reuse this after mapping viewport ranges.
-	 *
-	 * @param decoratedFrame {@code true} to draw the decorated frame
-	 */
-	protected void drawFrameOverlay(boolean decoratedFrame) {
-		g.save();
-		g.scale(scale, scale);
-		g.translate(bounds.getX(), bounds.getY());
-		drawFrame(decoratedFrame ? 4 : 0, decoratedFrame ? 4 : 0);
-		g.restore();
-	}
-
 	@Override
 	public String getTooltipAt(int x, int y) {
 		return onGraph(x, y) ? super.getTooltipAt(x, y) : legend.getTooltipAt(x, y);
-	}
-
-	/**
-	 * Helper method to get the canvas ready for drawing the graph.
-	 * 
-	 * @return {@code true} if the canvas is ready for drawing
-	 */
-	private boolean prepCanvas() {
-		if (hasMessage)
-			return false;
-		g.save();
-		g.scale(scale, scale);
-		clearCanvas();
-		g.translate(bounds.getX() - viewCorner.getX(), bounds.getY() - viewCorner.getY());
-		g.scale(zoomFactor, zoomFactor);
-		return true;
 	}
 
 	/**
@@ -989,11 +953,9 @@ public class PopGraph2D extends GenericPopGraph<String, Network2D> implements Sh
 		if (hasMessage || network == null || invalidated || network.isStatus(Status.LAYOUT_IN_PROGRESS))
 			return FINDNODEAT_OUT_OF_BOUNDS;
 
-		// the frame border is a centered stroke drawn inside the zoomed content
-		// transform, so only half its width extends past the content origin that
-		// bounds refers to; both axes need the identical correction
-		double sx = (viewCorner.getX() + x - canvasPadX() - bounds.getX()) / zoomFactor - style.frameWidth * 0.5;
-		double sy = (viewCorner.getY() + y - canvasPadY() - bounds.getY()) / zoomFactor - style.frameWidth * 0.5;
+		Point2D p = toLattice(x, y);
+		double sx = p.getX();
+		double sy = p.getY();
 		if (sx < 0.0 || sx > bounds.getWidth() || sy < 0.0 || sy > bounds.getHeight())
 			return FINDNODEAT_OUT_OF_BOUNDS;
 		int isx = (int) (sx + 0.5);
@@ -1306,10 +1268,23 @@ public class PopGraph2D extends GenericPopGraph<String, Network2D> implements Sh
 	 * @return {@code true} if on the graph
 	 */
 	private boolean onGraph(int x, int y) {
-		// keep aligned with findNodeAt() for consistency
-		double sx = (viewCorner.getX() + x - canvasPadX() - bounds.getX()) / zoomFactor - style.frameWidth * 0.5;
-		double sy = (viewCorner.getY() + y - canvasPadY() - bounds.getY()) / zoomFactor - style.frameWidth * 0.5;
-		return sx >= 0.0 && sx <= bounds.getWidth() && sy >= 0.0 && sy <= bounds.getHeight();
+		Point2D p = toLattice(x, y);
+		return p.getX() >= 0.0 && p.getX() <= bounds.getWidth() && p.getY() >= 0.0 && p.getY() <= bounds.getHeight();
+	}
+
+	/**
+	 * Convert the coordinates {@code (x, y)} relative to the graph into
+	 * coordinates of the lattice or network, see {@link #toContent(double, double)}.
+	 * The frame border is a centered stroke drawn with the zoomed content, such
+	 * that only half its width extends past the origin of the content.
+	 *
+	 * @param x the {@code x}-coordinate relative to the graph
+	 * @param y the {@code y}-coordinate relative to the graph
+	 * @return the coordinates of the lattice or network
+	 */
+	protected Point2D toLattice(int x, int y) {
+		double half = style.frameWidth * 0.5;
+		return toContent(x, y).shift(-half, -half);
 	}
 
 	/**
@@ -1342,9 +1317,7 @@ public class PopGraph2D extends GenericPopGraph<String, Network2D> implements Sh
 		double rr = network.getRadius();
 		// bounds.width==bounds.height for networks
 		double iscale = (rr + rr) / bounds.getWidth();
-		double sx = (viewCorner.getX() + x - canvasPadX() - bounds.getX()) / zoomFactor - style.frameWidth * 0.5;
-		double sy = (viewCorner.getY() + y - canvasPadY() - bounds.getY()) / zoomFactor - style.frameWidth * 0.5;
-		return new Point2D(sx * iscale - rr, sy * iscale - rr);
+		return toLattice(x, y).scale(iscale).shift(-rr, -rr);
 	}
 
 	/**

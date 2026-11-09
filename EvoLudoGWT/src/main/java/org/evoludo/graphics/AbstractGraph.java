@@ -2284,9 +2284,79 @@ public abstract class AbstractGraph<B> extends FocusPanel
 	public void zoom(double zoom, int x, int y) {
 		if (hasMessage)
 			return;
+		Point2D center = toContent(x, y);
+		zoom(zoom, center.getX() / bounds.getWidth(), center.getY() / bounds.getHeight());
+	}
+
+	/**
+	 * Convert the coordinates {@code (x, y)} relative to the graph, e.g. of mouse
+	 * events, into coordinates of the graph content, i.e. relative to the bounds
+	 * and without zooming or shifting.
+	 *
+	 * @param x the {@code x}-coordinate relative to the graph
+	 * @param y the {@code y}-coordinate relative to the graph
+	 * @return the coordinates of the graph content
+	 */
+	protected Point2D toContent(double x, double y) {
 		// event coordinates are relative to the graph, bounds relative to the canvas
-		zoom(zoom, (viewCorner.getX() + x - canvasPadX() - bounds.getX()) / (bounds.getWidth() * zoomFactor),
-				(viewCorner.getY() + y - canvasPadY() - bounds.getY()) / (bounds.getHeight() * zoomFactor));
+		return new Point2D((viewCorner.getX() + x - canvasPadX() - bounds.getX()) / zoomFactor,
+				(viewCorner.getY() + y - canvasPadY() - bounds.getY()) / zoomFactor);
+	}
+
+	/**
+	 * Prepare the canvas for drawing the zoomed and shifted graph content in
+	 * coordinates relative to the bounds: clear the canvas and apply the scaling
+	 * of the display, the shift and the zoom. The caller restores the context.
+	 *
+	 * @param clip {@code true} to clip the content to the bounds, e.g. for graphs
+	 *             with axes, see {@link #drawFrameForView(int, int)}
+	 * @return {@code true} if the canvas is ready for drawing, {@code false} if a
+	 *         message is displayed
+	 */
+	protected boolean prepCanvas(boolean clip) {
+		if (hasMessage)
+			return false;
+		g.save();
+		g.scale(scale, scale);
+		clearCanvas();
+		if (clip) {
+			g.beginPath();
+			g.rect(bounds.getX(), bounds.getY(), bounds.getWidth(), bounds.getHeight());
+			g.clip();
+		}
+		g.translate(bounds.getX() - viewCorner.getX(), bounds.getY() - viewCorner.getY());
+		g.scale(zoomFactor, zoomFactor);
+		return true;
+	}
+
+	/**
+	 * Draw the frame of a zoomed and shifted graph with axes, which, unlike the
+	 * content, remains in place. The axes show the visible part of their ranges.
+	 *
+	 * @param xLevels the number of vertical levels
+	 * @param yLevels the number of horizontal levels
+	 */
+	protected void drawFrameForView(int xLevels, int yLevels) {
+		double xMin = style.xMin;
+		double xMax = style.xMax;
+		double yMin = style.yMin;
+		double yMax = style.yMax;
+		// axis units per pixel
+		double dx = (xMax - xMin) / (zoomFactor * bounds.getWidth());
+		double dy = (yMax - yMin) / (zoomFactor * bounds.getHeight());
+		style.xMin += viewCorner.getX() * dx;
+		style.xMax = style.xMin + bounds.getWidth() * dx;
+		style.yMax -= viewCorner.getY() * dy;
+		style.yMin = style.yMax - bounds.getHeight() * dy;
+		g.save();
+		g.scale(scale, scale);
+		g.translate(bounds.getX(), bounds.getY());
+		drawFrame(xLevels, yLevels);
+		g.restore();
+		style.xMin = xMin;
+		style.xMax = xMax;
+		style.yMin = yMin;
+		style.yMax = yMax;
 	}
 
 	/**

@@ -59,12 +59,12 @@ public class DistrGraph2D extends PopGraph2D {
 
 	@Override
 	protected void drawLattice() {
-		if (!prepContentCanvas())
+		if (!prepCanvas(true))
 			return;
 		invalidated = false;
 		drawSquareContent();
 		g.restore();
-		drawFrameOverlay();
+		drawFrameForView(4, 4);
 		legend.draw();
 	}
 
@@ -73,27 +73,6 @@ public class DistrGraph2D extends PopGraph2D {
 		String tip = super.getTooltipAt(x, y);
 		element.removeClassName(EVOLUDO_CURSOR_NODE);
 		return tip;
-	}
-
-	/**
-	 * Prepare canvas so only content participates in pan/zoom transforms.
-	 *
-	 * @return {@code true} if canvas is ready for drawing
-	 */
-	private boolean prepContentCanvas() {
-		if (hasMessage)
-			return false;
-		g.save();
-		g.scale(scale, scale);
-		clearCanvas();
-		g.beginPath();
-		g.rect(bounds.getX(), bounds.getY(), bounds.getWidth(), bounds.getHeight());
-		g.clip();
-		double vx = (viewCorner == null ? 0.0 : viewCorner.getX());
-		double vy = (viewCorner == null ? 0.0 : viewCorner.getY());
-		g.translate(bounds.getX() - vx, bounds.getY() - vy);
-		g.scale(zoomFactor, zoomFactor);
-		return true;
 	}
 
 	/**
@@ -114,51 +93,5 @@ public class DistrGraph2D extends PopGraph2D {
 			yshift -= dh;
 			row += side;
 		}
-	}
-
-	/**
-	 * Draw frame and axis decorations without pan/zoom transforms.
-	 */
-	private void drawFrameOverlay() {
-		double baseXMin = style.xMin;
-		double baseXMax = style.xMax;
-		double baseYMin = style.yMin;
-		double baseYMax = style.yMax;
-		applyViewportRanges(baseXMin, baseXMax, baseYMin, baseYMax);
-		drawFrameOverlay(style.showDecoratedFrame);
-		style.xMin = baseXMin;
-		style.xMax = baseXMax;
-		style.yMin = baseYMin;
-		style.yMax = baseYMax;
-	}
-
-	/**
-	 * Map current pan/zoom state to visible axis ranges for frame labels/ticks.
-	 *
-	 * @param baseXMin baseline x minimum
-	 * @param baseXMax baseline x maximum
-	 * @param baseYMin baseline y minimum
-	 * @param baseYMax baseline y maximum
-	 */
-	private void applyViewportRanges(double baseXMin, double baseXMax, double baseYMin, double baseYMax) {
-		double w = bounds.getWidth();
-		double h = bounds.getHeight();
-		double z = Math.max(1e-12, zoomFactor);
-		if (w <= 0.0 || h <= 0.0)
-			return;
-		double xRange = baseXMax - baseXMin;
-		double yRange = baseYMax - baseYMin;
-		if (xRange <= 0.0 || yRange <= 0.0)
-			return;
-		double vx = (viewCorner == null ? 0.0 : viewCorner.getX());
-		double vy = (viewCorner == null ? 0.0 : viewCorner.getY());
-		double fx0 = Math.max(0.0, Math.min(1.0, vx / (z * w)));
-		double fx1 = Math.max(0.0, Math.min(1.0, (vx + w) / (z * w)));
-		double fy0 = Math.max(0.0, Math.min(1.0, vy / (z * h)));
-		double fy1 = Math.max(0.0, Math.min(1.0, (vy + h) / (z * h)));
-		style.xMin = baseXMin + fx0 * xRange;
-		style.xMax = baseXMin + fx1 * xRange;
-		style.yMax = baseYMax - fy0 * yRange;
-		style.yMin = baseYMax - fy1 * yRange;
 	}
 }

@@ -285,7 +285,8 @@ public class Distribution extends AbstractView<PopGraph2D> implements TooltipPro
 			double rFreq = model.getTimeStep();
 			// adjust y-axis scaling if report frequency has changed
 			if (Math.abs(style.yIncr - rFreq) > 1e-6) {
-				style.yMax = 0.0;
+				// ticks at the middle of rows, starting with the most recent at 0
+				style.yMax = 0.5 * rFreq;
 				style.yIncr = -rFreq;
 				hard = true;
 			}

@@ -36,12 +36,12 @@ import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
 
+import org.evoludo.geom.Point2D;
 import org.evoludo.math.ArrayMath;
 import org.evoludo.simulator.ColorMap;
 import org.evoludo.simulator.Network.Status;
 import org.evoludo.simulator.geometries.AbstractGeometry;
 import org.evoludo.simulator.geometries.GeometryType;
-import org.evoludo.simulator.models.Model;
 import org.evoludo.simulator.modules.Module;
 import org.evoludo.simulator.views.AbstractView;
 import org.evoludo.ui.ContextMenu;
@@ -332,34 +332,17 @@ public class PopGraph1D extends PopGraph2D {
 			super.drawLattice();
 			return;
 		}
-		if (!prepContentCanvas())
+		if (!prepCanvas(true))
 			return;
 		invalidated = false;
 		drawLinearContent();
 		g.restore();
-		drawFrameOverlay();
+		if (style.offsetYTickLabels)
+			updateYTickOffset();
+		else
+			style.yTickOffset = 0.0;
+		drawFrameForView(4, 4);
 		legend.draw();
-	}
-
-	/**
-	 * Prepare canvas so only content participates in pan/zoom transforms.
-	 *
-	 * @return {@code true} if canvas is ready for drawing
-	 */
-	private boolean prepContentCanvas() {
-		if (hasMessage)
-			return false;
-		g.save();
-		g.scale(scale, scale);
-		clearCanvas();
-		g.beginPath();
-		g.rect(bounds.getX(), bounds.getY(), bounds.getWidth(), bounds.getHeight());
-		g.clip();
-		double vx = (viewCorner == null ? 0.0 : viewCorner.getX());
-		double vy = (viewCorner == null ? 0.0 : viewCorner.getY());
-		g.translate(bounds.getX() - vx, bounds.getY() - vy);
-		g.scale(zoomFactor, zoomFactor);
-		return true;
 	}
 
 	/**
@@ -368,14 +351,10 @@ public class PopGraph1D extends PopGraph2D {
 	private void drawLinearContent() {
 		if (geometry == null || dh <= 0)
 			return;
-		double vy = (viewCorner == null ? 0.0 : viewCorner.getY());
-		double z = Math.max(1e-12, zoomFactor);
-		int nRows = buffer.getSize();
-		if (nRows == 0)
-			return;
-		int startRow = Math.max(0, (int) Math.floor(vy / (z * dh)));
-		int rowsVisible = Math.max(1, (int) Math.ceil(bounds.getHeight() / (z * dh)) + 2);
-		int endRow = Math.min(nRows, startRow + rowsVisible);
+		// draw visible rows only
+		double rowHeight = zoomFactor * dh;
+		int startRow = (int) (viewCorner.getY() / rowHeight);
+		int endRow = Math.min(buffer.getSize(), startRow + (int) Math.ceil(bounds.getHeight() / rowHeight) + 2);
 		for (int row = startRow; row < endRow; row++) {
 			int xshift = 0;
 			String[] state = buffer.get(row);
@@ -386,60 +365,6 @@ public class PopGraph1D extends PopGraph2D {
 				xshift += dw;
 			}
 		}
-	}
-
-	/**
-	 * Draw frame and axis decorations without pan/zoom transforms.
-	 */
-	private void drawFrameOverlay() {
-		double baseXMin = style.xMin;
-		double baseXMax = style.xMax;
-		double baseYMin = style.yMin;
-		double baseYMax = style.yMax;
-		if (style.offsetYTickLabels)
-			updateYTickOffset();
-		else
-			style.yTickOffset = 0.0;
-		applyViewportRanges(baseXMin, baseXMax, baseYMin, baseYMax);
-		drawFrameOverlay(true);
-		style.xMin = baseXMin;
-		style.xMax = baseXMax;
-		style.yMin = baseYMin;
-		style.yMax = baseYMax;
-	}
-
-	/**
-	 * Map current pan/zoom state to visible axis ranges for frame labels/ticks.
-	 *
-	 * @param baseXMin baseline x minimum
-	 * @param baseXMax baseline x maximum
-	 * @param baseYMin baseline y minimum
-	 * @param baseYMax baseline y maximum
-	 */
-	private void applyViewportRanges(double baseXMin, double baseXMax, double baseYMin, double baseYMax) {
-		double w = bounds.getWidth();
-		double h = bounds.getHeight();
-		double z = Math.max(1e-12, zoomFactor);
-		if (w <= 0.0 || h <= 0.0)
-			return;
-		double xRange = baseXMax - baseXMin;
-		double yRange = baseYMax - baseYMin;
-		if (xRange <= 0.0 || yRange <= 0.0)
-			return;
-		double vx = (viewCorner == null ? 0.0 : viewCorner.getX());
-		double vy = (viewCorner == null ? 0.0 : viewCorner.getY());
-		double fx0 = Math.max(0.0, Math.min(1.0, vx / (z * w)));
-		double fx1 = Math.max(0.0, Math.min(1.0, (vx + w) / (z * w)));
-		double rowsPerViewport = h / dh;
-		if (rowsPerViewport <= 1.0)
-			return;
-		double yPerRow = (baseYMin - baseYMax) / (rowsPerViewport - 1.0);
-		double topRow = vy / (z * dh);
-		double bottomRow = (vy + h) / (z * dh) - 1.0;
-		style.xMin = baseXMin + fx0 * xRange;
-		style.xMax = baseXMin + fx1 * xRange;
-		style.yMax = baseYMax + topRow * yPerRow;
-		style.yMin = baseYMax + bottomRow * yPerRow;
 	}
 
 	@Override
@@ -488,7 +413,8 @@ public class PopGraph1D extends PopGraph2D {
 		int dy = (bHeight - adjh) / 2;
 		bounds.set(plotX + dx, bounds.getY() + dy, adjw, adjh);
 		legend.setBounds(width, height, bounds);
-		style.setYRange(steps - 1);
+		// each row spans one time step on the y-axis, see Distribution
+		style.setYRange(steps);
 		style.showFrame = true;
 	}
 
@@ -498,11 +424,9 @@ public class PopGraph1D extends PopGraph2D {
 		if (hasMessage || network == null || invalidated || network.isStatus(Status.LAYOUT_IN_PROGRESS))
 			return FINDNODEAT_OUT_OF_BOUNDS;
 
-		// the frame border is a centered stroke drawn inside the zoomed content
-		// transform, so only half its width extends past the content origin that
-		// bounds refers to; both axes need the identical correction
-		double sx = (viewCorner.getX() + x - canvasPadX() - bounds.getX()) / zoomFactor - style.frameWidth * 0.5;
-		double sy = (viewCorner.getY() + y - canvasPadY() - bounds.getY()) / zoomFactor - style.frameWidth * 0.5;
+		Point2D p = toLattice(x, y);
+		double sx = p.getX();
+		double sy = p.getY();
 		if (sx < 0.0 || sx > bounds.getWidth() || sy < 0.0 || sy > bounds.getHeight())
 			return FINDNODEAT_OUT_OF_BOUNDS;
 		int isx = (int) (sx + 0.5);
@@ -514,52 +438,18 @@ public class PopGraph1D extends PopGraph2D {
 		return r * geometry.getSize() + c;
 	}
 
-	@Override
-	public void shift(int dx, int dy) {
-		if (hasMessage)
-			return;
-		double z = zoomFactor;
-		double maxX = Math.max(0.0, z * bounds.getWidth() - bounds.getWidth());
-		double contentHeight = getContentHeight();
-		double maxY = Math.max(0.0, z * contentHeight - bounds.getHeight());
-		viewCorner.set(
-				Math.min(maxX, Math.max(0.0, viewCorner.getX() + dx)),
-				Math.min(maxY, Math.max(0.0, viewCorner.getY() + dy)));
-		paint(true);
-	}
-
-	@Override
-	protected void zoom(double zoom, double fx, double fy) {
-		if (hasMessage)
-			return;
-		double newZoomFactor = Math.min(Zooming.ZOOM_MAX, Math.max(1.0, zoomFactor * zoom));
-		double dz = newZoomFactor - zoomFactor;
-		if (Math.abs(dz) < Model.EPS)
-			return;
-		double w = bounds.getWidth();
-		double h = bounds.getHeight();
-		double contentHeight = getContentHeight();
-		double maxX = Math.max(0.0, w * (newZoomFactor - 1.0));
-		double maxY = Math.max(0.0, contentHeight * newZoomFactor - h);
-		viewCorner.set(
-				Math.min(maxX, Math.max(0.0, viewCorner.getX() + w * dz * fx)),
-				Math.min(maxY, Math.max(0.0, viewCorner.getY() + h * dz * fy)));
-		zoomFactor = newZoomFactor;
-		gesture.zooming(dz > 0);
-		paint(true);
-	}
-
 	/**
-	 * Return content height in graph coordinates, taking buffered history into
-	 * account.
-	 *
-	 * @return content height in pixels
+	 * {@inheritDoc}
+	 * <p>
+	 * The history may extend below the bounds and can be revealed by shifting the
+	 * zoomed graph.
 	 */
-	private double getContentHeight() {
-		double contentHeight = bounds.getHeight();
-		if (buffer != null && dh > 0)
-			contentHeight = Math.max(contentHeight, buffer.getSize() * (double) dh);
-		return contentHeight;
+	@Override
+	protected void setViewCorner(double x, double y, double zoom) {
+		double h = bounds.getHeight();
+		double maxY = Math.max(h, buffer.getSize() * (double) dh) * zoom - h;
+		viewCorner.set(Math.min(bounds.getWidth() * (zoom - 1.0), Math.max(0.0, x)),
+				Math.min(maxY, Math.max(0.0, y)));
 	}
 
 	/**

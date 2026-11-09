@@ -96,7 +96,7 @@ import com.google.gwt.event.dom.client.DoubleClickHandler;
  * true.</li>
  * <li>Coordinate conversions for mouse/touch interactions map screen
  * coordinates to scaled simplex coordinates in [0,1] (see
- * {@link #scaledX(double)} / {@link #scaledY(double)}). A hit test
+ * {@link #toScaled(int, int)}). A hit test
  * {@link #inside(double,double)} ensures that tooltips are only shown when the
  * pointer is inside the simplex triangle. Shifting and zooming work anywhere
  * on the graph and can reveal the labels of the corners.</li>
@@ -363,12 +363,8 @@ public class S3Graph extends AbstractGraph<double[]> implements Zooming, Shiftin
 	 * @param withMarkers <code>true</code> to mark start and end points
 	 */
 	private void paintS3(boolean withMarkers) {
-		g.save();
-		g.scale(scale, scale);
-		clearCanvas();
-		g.translate(bounds.getX() - viewCorner.getX(), bounds.getY() - viewCorner.getY());
-		g.scale(zoomFactor, zoomFactor);
-
+		if (!prepCanvas(false))
+			return;
 		double w = bounds.getWidth();
 		double h = bounds.getHeight();
 
@@ -697,26 +693,16 @@ public class S3Graph extends AbstractGraph<double[]> implements Zooming, Shiftin
 	}
 
 	/**
-	 * Convert the {@code x}-component of the screen coordinates {@code (x, y)} into
-	 * scaled (Cartesian) coordinates in {@code [0, 1]}.
+	 * Convert the coordinates {@code (x, y)} relative to the graph into scaled
+	 * (Cartesian) coordinates in {@code [0, 1]}.
 	 * 
-	 * @param x the {@code x}-coordinate on screen
-	 * @return the scaled coordinate
+	 * @param x the {@code x}-coordinate relative to the graph
+	 * @param y the {@code y}-coordinate relative to the graph
+	 * @return the scaled coordinates
 	 */
-	double scaledX(double x) {
-		return ((viewCorner.getX() + x - canvasPadX() - bounds.getX()) / zoomFactor + 0.5) / (bounds.getWidth() - 1.0);
-	}
-
-	/**
-	 * Convert the {@code y}-component of the screen coordinates {@code (x, y)} into
-	 * scaled (Cartesian) coordinates in {@code [0, 1]}.
-	 * 
-	 * @param y the {@code y}-coordinate on screen
-	 * @return the scaled coordinate
-	 */
-	double scaledY(double y) {
-		return 1.0 - ((viewCorner.getY() + y - canvasPadY() - bounds.getY()) / zoomFactor + 0.5)
-				/ (bounds.getHeight() - 1.0);
+	private Point2D toScaled(int x, int y) {
+		Point2D p = toContent(x, y);
+		return p.set((p.getX() + 0.5) / (bounds.getWidth() - 1.0), 1.0 - (p.getY() + 0.5) / (bounds.getHeight() - 1.0));
 	}
 
 	/**
@@ -735,7 +721,8 @@ public class S3Graph extends AbstractGraph<double[]> implements Zooming, Shiftin
 			return;
 		}
 		// convert to user coordinates
-		double[] s3 = map.s32Data(scaledX(x), scaledY(y));
+		Point2D p = toScaled(x, y);
+		double[] s3 = map.s32Data(p.getX(), p.getY());
 		view.setInitialState(s3);
 	}
 
@@ -755,8 +742,9 @@ public class S3Graph extends AbstractGraph<double[]> implements Zooming, Shiftin
 	@Override
 	public String getTooltipAt(int x, int y) {
 		// convert to user coordinates
-		double sx = scaledX(x);
-		double sy = scaledY(y);
+		Point2D p = toScaled(x, y);
+		double sx = p.getX();
+		double sy = p.getY();
 		if (!inside(sx, sy))
 			return null;
 		if (tooltipProvider instanceof TooltipProvider.Simplex)
@@ -902,20 +890,6 @@ public class S3Graph extends AbstractGraph<double[]> implements Zooming, Shiftin
 	}
 
 	/**
-	 * Convert the coordinates {@code (x, y)} relative to the graph into the
-	 * coordinates of the outline of the simplex, {@link #e0}, {@link #e1} and
-	 * {@link #e2}, i.e. relative to the bounds and without zooming or shifting.
-	 *
-	 * @param x the <code>x</code>-coordinate relative to the graph
-	 * @param y the <code>y</code>-coordinate relative to the graph
-	 * @return the point in coordinates of the outline
-	 */
-	private Point2D toSimplex(double x, double y) {
-		return new Point2D((viewCorner.getX() + x - canvasPadX() - bounds.getX()) / zoomFactor,
-				(viewCorner.getY() + y - canvasPadY() - bounds.getY()) / zoomFactor);
-	}
-
-	/**
 	 * Find the corner closest to the point {@code (x, y)}.
 	 * 
 	 * @param x the <code>x</code>-coordinate of the point
@@ -923,7 +897,7 @@ public class S3Graph extends AbstractGraph<double[]> implements Zooming, Shiftin
 	 * @return the index of the closest corner
 	 */
 	protected int closestCorner(double x, double y) {
-		Point2D p = toSimplex(x, y);
+		Point2D p = toContent(x, y);
 		double d0 = p.distance2(e0);
 		double d1 = p.distance2(e1);
 		double d2 = p.distance2(e2);
@@ -945,7 +919,7 @@ public class S3Graph extends AbstractGraph<double[]> implements Zooming, Shiftin
 	 * @return the index of the closest edge
 	 */
 	protected int closestEdge(double x, double y) {
-		Point2D p = toSimplex(x, y);
+		Point2D p = toContent(x, y);
 		double d0 = Segment2D.distance2(e0, e1, p);
 		double d1 = Segment2D.distance2(e1, e2, p);
 		double d2 = Segment2D.distance2(e2, e0, p);
