@@ -2360,6 +2360,16 @@ public abstract class AbstractGraph<B> extends FocusPanel
 	}
 
 	/**
+	 * Get the smallest zoom factor. By default, graphs cannot be zoomed out
+	 * beyond their full view.
+	 *
+	 * @return the smallest zoom factor
+	 */
+	protected double getMinZoom() {
+		return 1.0;
+	}
+
+	/**
 	 * Helper method to adjust zoom level with the zoom center at the scaled
 	 * coordinates {@code (fx, fy)}, specified as a fraction of the view port in
 	 * horizontal and vertical directions, respectively.
@@ -2374,7 +2384,7 @@ public abstract class AbstractGraph<B> extends FocusPanel
 	protected void zoom(double zoom, double fx, double fy) {
 		if (hasMessage)
 			return;
-		double newZoomFactor = Math.min(Zooming.ZOOM_MAX, Math.max(1.0, zoomFactor * zoom));
+		double newZoomFactor = Math.min(Zooming.ZOOM_MAX, Math.max(getMinZoom(), zoomFactor * zoom));
 		double dz = newZoomFactor - zoomFactor;
 		if (Math.abs(dz) < Model.EPS)
 			return;

@@ -90,9 +90,10 @@ import com.google.gwt.event.dom.client.DoubleClickHandler;
  * </li>
  * <li>Autoscale axes independently to fit all buffered data when enabled. The
  * ranges expand as needed and shrink if the data occupies only a small part of
- * them, see {@link GraphStyle#fitXRange(double, double, boolean)}. Zooming and
- * shifting change the axes ranges directly, which remain non-negative and, on
- * percent axes, at most {@code 1}. Manual zooming or shifting disables
+ * them, see {@link GraphStyle#fitXRange(double, double, boolean)}. As for
+ * other graphs, zooming and shifting move the view, while the axes show the
+ * visible ranges, but the view may extend beyond the fitted ranges, see
+ * {@link #setViewCorner(double, double, double)}. Zooming or shifting disables
  * autoscaling, and without autoscaling trajectories may leave the graph. Zoom
  * to fit fits the ranges to all data once.</li>
  * <li>Export trajectory data to a text format (time, x, y) using the configured
@@ -254,32 +255,26 @@ public class ParaGraph extends AbstractGraph<double[]> implements Zooming, Shift
 	 * @param withMarkers <code>true</code> to mark start and end points
 	 */
 	private void paintPara(boolean withMarkers) {
+		if (!(style.xMax > style.xMin && style.yMax > style.yMin) || !prepCanvas(true))
+			return;
+		// trajectory in coordinates of the content, see prepCanvas(boolean)
+		double xScale = bounds.getWidth() / (style.xMax - style.xMin);
+		double yScale = bounds.getHeight() / (style.yMax - style.yMin);
+		Point2D nextPt = new Point2D();
+		Point2D currPt = new Point2D();
+		g.setStrokeStyle(style.trajColor);
+		g.setLineWidth(style.lineWidth / zoomFactor);
+		drawTrajectory(currPt, nextPt, xScale, yScale);
+		g.restore();
+		drawFrameForView(4, 4);
+		// markers on top of the frame, not clipped and not scaled
 		g.save();
 		g.scale(scale, scale);
-		clearCanvas();
-		if (style.xMax > style.xMin && style.yMax > style.yMin) {
-			double w = bounds.getWidth();
-			double h = bounds.getHeight();
-			double xScale = w / (style.xMax - style.xMin);
-			double yScale = h / (style.yMax - style.yMin);
-			g.translate(bounds.getX(), bounds.getY());
-			g.save();
-			g.beginPath();
-			g.rect(0, 0, w, h);
-			g.clip();
-			Point2D nextPt = new Point2D();
-			Point2D currPt = new Point2D();
-			g.setStrokeStyle(style.trajColor);
-			g.setLineWidth(style.lineWidth);
-			drawTrajectory(currPt, nextPt, xScale, yScale);
-			g.restore();
-			drawFrame(4, 4);
-			// markers on top of the frame and not clipped
-			if (withMarkers)
-				drawStartEndMarkers(currPt, xScale, yScale);
-			if (markers != null)
-				drawCustomMarkers(currPt, xScale, yScale);
-		}
+		g.translate(bounds.getX() - viewCorner.getX(), bounds.getY() - viewCorner.getY());
+		if (withMarkers)
+			drawStartEndMarkers(currPt, xScale * zoomFactor, yScale * zoomFactor);
+		if (markers != null)
+			drawCustomMarkers(currPt, xScale * zoomFactor, yScale * zoomFactor);
 		g.restore();
 	}
 
@@ -374,7 +369,9 @@ public class ParaGraph extends AbstractGraph<double[]> implements Zooming, Shift
 		double sx = (pt.getX() - style.xMin) * xScale;
 		double sy = (style.yMax - pt.getY()) * yScale;
 		// skip markers outside of the frame, e.g. when zoomed in
-		if (sx < 0.0 || sx > bounds.getWidth() || sy < 0.0 || sy > bounds.getHeight())
+		double vx = sx - viewCorner.getX();
+		double vy = sy - viewCorner.getY();
+		if (vx < 0.0 || vx > bounds.getWidth() || vy < 0.0 || vy > bounds.getHeight())
 			return;
 		if (fill)
 			fillCircle(sx, sy, radius);
@@ -414,7 +411,13 @@ public class ParaGraph extends AbstractGraph<double[]> implements Zooming, Shift
 	 */
 	public void showFullRange() {
 		super.zoom();
-		setView(0.0, 1.0, 1.0, 1.0);
+		style.autoscaleX = false;
+		style.autoscaleY = false;
+		style.xMin = 0.0;
+		style.xMax = 1.0;
+		style.yMin = 0.0;
+		style.yMax = 1.0;
+		paint(true);
 	}
 
 	@Override
@@ -428,82 +431,39 @@ public class ParaGraph extends AbstractGraph<double[]> implements Zooming, Shift
 	/**
 	 * {@inheritDoc}
 	 * <p>
-	 * Zooms the ranges of both axes, such that the point at the zoom center
-	 * remains in place, but see {@link #setView(double, double, double, double)}.
-	 * Zooming in is limited to {@link Zooming#ZOOM_MAX} relative to the fitted
-	 * ranges.
+	 * Unlike for other graphs, the view is not limited to the axes ranges but to
+	 * non-negative values and, on percent axes, to at most {@code 1}. Zooming or
+	 * shifting disables autoscaling, such that the view remains in place.
 	 */
 	@Override
-	protected void zoom(double zoom, double fx, double fy) {
-		if (hasMessage || zoom <= 0.0)
-			return;
-		double newZoom = Math.min(Zooming.ZOOM_MAX, zoomFactor * zoom);
-		zoom = newZoom / zoomFactor;
-		double xRange = style.xMax - style.xMin;
-		double yRange = style.yMax - style.yMin;
-		fx = Math.max(0.0, Math.min(1.0, fx));
-		fy = Math.max(0.0, Math.min(1.0, fy));
-		if (setView(style.xMin + fx * xRange * (1.0 - 1.0 / zoom), xRange / zoom,
-				style.yMax - fy * yRange * (1.0 - 1.0 / zoom), yRange / zoom)) {
-			zoomFactor = newZoom;
-			gesture.zooming(zoom > 1.0);
+	protected void setViewCorner(double x, double y, double zoom) {
+		// pixels per unit on the axes
+		double px = zoom * bounds.getWidth() / (style.xMax - style.xMin);
+		double py = zoom * bounds.getHeight() / (style.yMax - style.yMin);
+		double xHi = style.percentX ? 1.0 : Double.POSITIVE_INFINITY;
+		double yHi = style.percentY ? 1.0 : Double.POSITIVE_INFINITY;
+		viewCorner.set(Math.max(-style.xMin * px, Math.min((xHi - style.xMin) * px - bounds.getWidth(), x)),
+				Math.max((style.yMax - yHi) * py, Math.min(style.yMax * py - bounds.getHeight(), y)));
+		if (zoom != 1.0 || viewCorner.getX() != 0.0 || viewCorner.getY() != 0.0) {
+			style.autoscaleX = false;
+			style.autoscaleY = false;
 		}
-	}
-
-	@Override
-	public void zoom(double zoom, int x, int y) {
-		// event coordinates are relative to the graph, bounds relative to the canvas
-		zoom(zoom, (x - canvasPadX() - bounds.getX()) / bounds.getWidth(),
-				(y - canvasPadY() - bounds.getY()) / bounds.getHeight());
 	}
 
 	/**
 	 * {@inheritDoc}
 	 * <p>
-	 * Shifts the ranges of both axes, such that the trajectory follows the
-	 * pointer, but see {@link #setView(double, double, double, double)}.
+	 * Zooming out is limited to the full range of percent axes and to
+	 * {@link Zooming#ZOOM_MAX} otherwise.
 	 */
 	@Override
-	public void shift(int dx, int dy) {
-		if (hasMessage)
-			return;
-		double xRange = style.xMax - style.xMin;
-		double yRange = style.yMax - style.yMin;
-		setView(style.xMin + dx * xRange / bounds.getWidth(), xRange, //
-				style.yMax - dy * yRange / bounds.getHeight(), yRange);
-	}
-
-	/**
-	 * Show {@code [xMin, xMin + xRange]} on the {@code x}-axis and
-	 * {@code [yMax - yRange, yMax]} on the {@code y}-axis, limited to non-negative
-	 * values and to at most {@code 1} on percent axes. If the view changes,
-	 * autoscaling is turned off and the graph repainted.
-	 *
-	 * @param xMin   the requested minimum of the {@code x}-axis
-	 * @param xRange the requested range of the {@code x}-axis
-	 * @param yMax   the requested maximum of the {@code y}-axis
-	 * @param yRange the requested range of the {@code y}-axis
-	 * @return {@code true} if the view changed
-	 */
-	private boolean setView(double xMin, double xRange, double yMax, double yRange) {
-		double xHi = style.percentX ? 1.0 : Double.POSITIVE_INFINITY;
-		double yHi = style.percentY ? 1.0 : Double.POSITIVE_INFINITY;
-		xRange = Math.min(xRange, xHi);
-		yRange = Math.min(yRange, yHi);
-		xMin = Math.max(0.0, Math.min(xMin, xHi - xRange));
-		double yMin = Math.max(0.0, Math.min(yMax - yRange, yHi - yRange));
-		// relative changes of the axes ranges
-		if ((Math.abs(xMin - style.xMin) + Math.abs(xMin + xRange - style.xMax)) / xRange
-				+ (Math.abs(yMin - style.yMin) + Math.abs(yMin + yRange - style.yMax)) / yRange < Model.EPS)
-			return false;
-		style.autoscaleX = false;
-		style.autoscaleY = false;
-		style.xMin = xMin;
-		style.xMax = xMin + xRange;
-		style.yMin = yMin;
-		style.yMax = yMin + yRange;
-		paint(true);
-		return true;
+	protected double getMinZoom() {
+		double min = 1.0 / Zooming.ZOOM_MAX;
+		if (style.percentX)
+			min = Math.max(min, style.xMax - style.xMin);
+		if (style.percentY)
+			min = Math.max(min, style.yMax - style.yMin);
+		return Math.min(1.0, min);
 	}
 
 	@Override
@@ -607,18 +567,21 @@ public class ParaGraph extends AbstractGraph<double[]> implements Zooming, Shift
 	 * @return the phase plane coordinates or {@code null} if outside of the frame
 	 */
 	private Point2D toPhase(int x, int y) {
-		double fx = (x - canvasPadX() - bounds.getX()) / bounds.getWidth();
-		double fy = (y - canvasPadY() - bounds.getY()) / bounds.getHeight();
-		if (!(fx >= 0.0 && fx <= 1.0 && fy >= 0.0 && fy <= 1.0))
+		double w = bounds.getWidth();
+		double h = bounds.getHeight();
+		double fx = x - canvasPadX() - bounds.getX();
+		double fy = y - canvasPadY() - bounds.getY();
+		if (!(fx >= 0.0 && fx <= w && fy >= 0.0 && fy <= h))
 			return null;
-		return new Point2D(style.xMin + fx * (style.xMax - style.xMin), style.yMax - fy * (style.yMax - style.yMin));
+		Point2D p = toContent(x, y);
+		return p.set(style.xMin + p.getX() / w * (style.xMax - style.xMin),
+				style.yMax - p.getY() / h * (style.yMax - style.yMin));
 	}
 
 	@Override
 	protected boolean inside(int x, int y) {
 		return toPhase(x, y) != null;
 	}
-
 
 	@Override
 	protected void populateZoomMenu(ContextMenu menu) {
