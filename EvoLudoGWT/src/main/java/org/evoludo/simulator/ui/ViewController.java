@@ -43,7 +43,10 @@ import org.evoludo.simulator.models.Model;
 import org.evoludo.simulator.modules.Module;
 import org.evoludo.simulator.views.AbstractView;
 import org.evoludo.simulator.views.Console;
+import org.evoludo.simulator.views.DegreeHistogram;
 import org.evoludo.simulator.views.Distribution;
+import org.evoludo.simulator.views.FitnessHistogram;
+import org.evoludo.simulator.views.FixationHistogram;
 import org.evoludo.simulator.views.HasDistribution;
 import org.evoludo.simulator.views.HasHistogram;
 import org.evoludo.simulator.views.HasMean;
@@ -51,12 +54,13 @@ import org.evoludo.simulator.views.HasPhase2D;
 import org.evoludo.simulator.views.HasPop2D;
 import org.evoludo.simulator.views.HasPop3D;
 import org.evoludo.simulator.views.HasS3;
-import org.evoludo.simulator.views.Histogram;
 import org.evoludo.simulator.views.Mean;
 import org.evoludo.simulator.views.Phase2D;
 import org.evoludo.simulator.views.Pop2D;
 import org.evoludo.simulator.views.Pop3D;
 import org.evoludo.simulator.views.S3;
+import org.evoludo.simulator.views.StationaryHistogram;
+import org.evoludo.simulator.views.TraitHistogram;
 import org.evoludo.util.CLOCategory;
 import org.evoludo.util.CLODelegate;
 import org.evoludo.util.CLOParser;
@@ -516,7 +520,7 @@ public class ViewController {
 		if (module instanceof HasS3 && module.getNActive() >= 3)
 			addView(new S3(engine), oldViews);
 		if (module instanceof HasHistogram.Strategy)
-			addView(new Histogram(engine, Data.TRAIT), oldViews);
+			addView(new TraitHistogram(engine), oldViews);
 		if (module instanceof HasDistribution.Strategy)
 			addView(new Distribution(engine, Data.TRAIT), oldViews);
 	}
@@ -536,7 +540,7 @@ public class ViewController {
 		if (module instanceof HasMean.Fitness)
 			addView(new Mean(engine, Data.FITNESS), oldViews);
 		if (module instanceof HasHistogram.Fitness)
-			addView(new Histogram(engine, Data.FITNESS), oldViews);
+			addView(new FitnessHistogram(engine), oldViews);
 	}
 
 	/**
@@ -548,7 +552,7 @@ public class ViewController {
 	 */
 	private void addStructureViews(Module<?> module, boolean isODESDE, Map<String, AbstractView<?>> oldViews) {
 		if (module instanceof HasHistogram.Degree && !isODESDE)
-			addView(new Histogram(engine, Data.DEGREE), oldViews);
+			addView(new DegreeHistogram(engine), oldViews);
 	}
 
 	/**
@@ -561,13 +565,13 @@ public class ViewController {
 	private void addStatisticsViews(Module<?> module, Model model, Map<String, AbstractView<?>> oldViews) {
 		if (model != null && model.permitsMode(Mode.STATISTICS_SAMPLE)) {
 			if (module instanceof HasHistogram.StatisticsProbability)
-				addView(new Histogram(engine, Data.STATISTICS_FIXATION_PROBABILITY), oldViews);
+				addView(new FixationHistogram(engine, Data.STATISTICS_FIXATION_PROBABILITY), oldViews);
 			if (module instanceof HasHistogram.StatisticsTime)
-				addView(new Histogram(engine, Data.STATISTICS_FIXATION_TIME), oldViews);
+				addView(new FixationHistogram(engine, Data.STATISTICS_FIXATION_TIME), oldViews);
 		}
 		if (model != null && model.permitsMode(Mode.STATISTICS_UPDATE)
 				&& module instanceof HasHistogram.StatisticsStationary) {
-			addView(new Histogram(engine, Data.STATISTICS_STATIONARY), oldViews);
+			addView(new StationaryHistogram(engine), oldViews);
 		}
 	}
 
