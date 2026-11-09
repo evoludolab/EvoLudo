@@ -76,17 +76,6 @@ import thothbot.parallax.core.shared.math.Vector3;
 public class TrackballControls extends Controls implements MouseWheelHandler, MouseDownHandler, MouseUpHandler,
 		MouseMoveHandler, TouchStartHandler, TouchMoveHandler, TouchEndHandler, RequiresResize {
 
-	// XXX should probably use currently unused max/minDistance instead...
-	// /**
-	// * The minimum distance to the object. Determines how close you can zoom in.
-	// */
-	// private double minDistance = 0.0;
-	//
-	// /**
-	// * The maximum distance to the object. Determines how far you can zoom out.
-	// */
-	// private double maxDistance = Double.MAX_VALUE;
-
 	/**
 	 * Maximum eye distance. How far you can zoom out.
 	 */
@@ -204,8 +193,6 @@ public class TrackballControls extends Controls implements MouseWheelHandler, Mo
 	 */
 	private Vector3 target;
 
-	// private Vector3 lastPosition;
-
 	/**
 	 * Location of eye.
 	 */
@@ -282,7 +269,6 @@ public class TrackballControls extends Controls implements MouseWheelHandler, Mo
 			widget.getElement().setAttribute("tabindex", "-1");
 
 		target = new Vector3();
-		// lastPosition = new Vector3();
 		eye = new Vector3();
 		rotateStart = new Vector3();
 		rotateEnd = new Vector3();
@@ -316,20 +302,11 @@ public class TrackballControls extends Controls implements MouseWheelHandler, Mo
 	public void unload() {
 		isDragging = false;
 		gesture.release();
-		if (mouseWheelHandler != null)
-			mouseWheelHandler.removeHandler();
-		if (mouseDownHandler != null)
-			mouseDownHandler.removeHandler();
-		if (mouseMoveHandler != null)
-			mouseMoveHandler.removeHandler();
-		if (mouseUpHandler != null)
-			mouseUpHandler.removeHandler();
-		if (touchStartHandler != null)
-			touchStartHandler.removeHandler();
-		if (touchMoveHandler != null)
-			touchMoveHandler.removeHandler();
-		if (touchEndHandler != null)
-			touchEndHandler.removeHandler();
+		for (HandlerRegistration handler : new HandlerRegistration[] { mouseWheelHandler, mouseDownHandler,
+				mouseMoveHandler, mouseUpHandler, touchStartHandler, touchMoveHandler, touchEndHandler }) {
+			if (handler != null)
+				handler.removeHandler();
+		}
 	}
 
 	/**
@@ -422,24 +399,6 @@ public class TrackballControls extends Controls implements MouseWheelHandler, Mo
 		this.dynamicDampingFactor = dynamicDampingFactor;
 	}
 
-	// /**
-	// * Sets minimum distance to the object. Default 0
-	// *
-	// * @param minDistance
-	// */
-	// public void setMinDistance(double minDistance) {
-	// this.minDistance = minDistance;
-	// }
-
-	// /**
-	// * Sets maximum distance to the object. Default Infinity.
-	// *
-	// * @param maxDistance
-	// */
-	// public void setMaxDistance(double maxDistance) {
-	// this.maxDistance = maxDistance;
-	// }
-
 	/**
 	 * Get the target point where the eye is looking.
 	 * 
@@ -482,11 +441,7 @@ public class TrackballControls extends Controls implements MouseWheelHandler, Mo
 		}
 
 		getObject().getPosition().add(target, eye);
-		// checkDistances();
 		getObject().lookAt(target);
-
-		// if( lastPosition.distanceTo(getObject().getPosition())>0 )
-		// lastPosition.copy(getObject().getPosition());
 	}
 
 	/**
@@ -638,42 +593,18 @@ public class TrackballControls extends Controls implements MouseWheelHandler, Mo
 	@Override
 	public void onTouchStart(TouchStartEvent event) {
 		JsArray<Touch> touches = event.getTouches();
-		switch (touches.length()) {
-			case 1:
-				if (!hasRotate)
-					return;
-				Touch touch = touches.get(0);
-				Element ref = getWidget().getElement();
-				int x = touch.getRelativeX(ref);
-				int y = touch.getRelativeY(ref);
-				rotateStart = getMouseProjectionOnBall(x, y);
-				event.preventDefault();
-				break;
-
-			case 2:
-				if (!hasZoom)
-					return;
-				// start of pinching
-				Touch touch0 = touches.get(0);
-				ref = getWidget().getElement();
-				int x0 = touch0.getRelativeX(ref);
-				int y0 = touch0.getRelativeY(ref);
-				Touch touch1 = touches.get(1);
-				int x1 = touch1.getRelativeX(ref);
-				int y1 = touch1.getRelativeY(ref);
-				double dX = (double) x0 - x1;
-				double dY = (double) y0 - y1;
-				pinchZoom = Math.sqrt(dX * dX + dY * dY);
-				// don't signal zooming just yet
-				doZoom = false;
-				if (hasRotate)
-					rotateStart = getMouseProjectionOnBall((x0 + x1) / 2, (y0 + y1) / 2);
-				event.preventDefault();
-				break;
-
-			default:
-				// more than two touch points
-		}
+		int nTouches = touches.length();
+		if (nTouches == 1 && hasRotate)
+			rotateStart = getTouchProjectionOnBall(touches, 1);
+		else if (nTouches == 2 && hasZoom) {
+			// start of pinching; don't signal zooming just yet
+			pinchZoom = getPinchDistance(touches);
+			doZoom = false;
+			if (hasRotate)
+				rotateStart = getTouchProjectionOnBall(touches, 2);
+		} else
+			return;
+		event.preventDefault();
 	}
 
 	/**
@@ -686,51 +617,27 @@ public class TrackballControls extends Controls implements MouseWheelHandler, Mo
 	@Override
 	public void onTouchMove(TouchMoveEvent event) {
 		JsArray<Touch> touches = event.getTouches();
-		switch (touches.length()) {
-			case 1:
-				if (!hasRotate)
-					return;
-				Touch touch = touches.get(0);
-				Element ref = getWidget().getElement();
-				int x = touch.getRelativeX(ref);
-				int y = touch.getRelativeY(ref);
-				rotateEnd = getMouseProjectionOnBall(x, y);
+		int nTouches = touches.length();
+		if (nTouches == 1 && hasRotate) {
+			rotateEnd = getTouchProjectionOnBall(touches, 1);
+			doRotate = true;
+		} else if (nTouches == 2 && hasZoom) {
+			if (hasRotate) {
+				// moving the pinch rotates the view
+				rotateEnd = getTouchProjectionOnBall(touches, 2);
 				doRotate = true;
-				event.preventDefault();
-				break;
-
-			case 2:
-				if (!hasZoom)
-					return;
-				// process pinch zoom
-				Touch touch0 = touches.get(0);
-				Element ref0 = getWidget().getElement();
-				int x0 = touch0.getRelativeX(ref0);
-				int y0 = touch0.getRelativeY(ref0);
-				Touch touch1 = touches.get(1);
-				int x1 = touch1.getRelativeX(ref0);
-				int y1 = touch1.getRelativeY(ref0);
-				if (hasRotate) {
-					// moving the pinch rotates the view
-					rotateEnd = getMouseProjectionOnBall((x0 + x1) / 2, (y0 + y1) / 2);
-					doRotate = true;
-				}
-				double dX = (double) x0 - x1;
-				double dY = (double) y0 - y1;
-				double zoom = Math.sqrt(dX * dX + dY * dY);
-				if (zoom > 0.0) {
-					// accumulate changes until the next update of the scene
-					double change = pinchZoom / zoom;
-					zoomChange = doZoom ? zoomChange * change : change;
-					pinchZoom = zoom;
-					doZoom = true;
-				}
-				event.preventDefault();
-				break;
-
-			default:
-				// more than two touches
-		}
+			}
+			double zoom = getPinchDistance(touches);
+			if (zoom > 0.0) {
+				// accumulate changes until the next update of the scene
+				double change = pinchZoom / zoom;
+				zoomChange = doZoom ? zoomChange * change : change;
+				pinchZoom = zoom;
+				doZoom = true;
+			}
+		} else
+			return;
+		event.preventDefault();
 	}
 
 	/**
@@ -741,17 +648,41 @@ public class TrackballControls extends Controls implements MouseWheelHandler, Mo
 	 */
 	@Override
 	public void onTouchEnd(TouchEndEvent event) {
-		if (!hasRotate)
-			return;
 		JsArray<Touch> touches = event.getTouches();
-		if (touches.length() == 1) {
-			// went from two touches to one touch - record position to prevent jumps
-			Touch touch = touches.get(0);
-			Element ref = getWidget().getElement();
-			int x = touch.getRelativeX(ref);
-			int y = touch.getRelativeY(ref);
-			rotateStart = getMouseProjectionOnBall(x, y);
+		// went from two touches to one touch - record position to prevent jumps
+		if (hasRotate && touches.length() == 1)
+			rotateStart = getTouchProjectionOnBall(touches, 1);
+	}
+
+	/**
+	 * Convert the center of the first {@code n} {@code touches} to coordinates on
+	 * the (virtual) trackball, see {@link #getMouseProjectionOnBall(int, int)}.
+	 *
+	 * @param touches the touches
+	 * @param n       the number of touches
+	 * @return coordinates of the center on the trackball
+	 */
+	private Vector3 getTouchProjectionOnBall(JsArray<Touch> touches, int n) {
+		Element ref = getWidget().getElement();
+		int x = 0;
+		int y = 0;
+		for (int i = 0; i < n; i++) {
+			x += touches.get(i).getRelativeX(ref);
+			y += touches.get(i).getRelativeY(ref);
 		}
+		return getMouseProjectionOnBall(x / n, y / n);
+	}
+
+	/**
+	 * Get the distance between the first two {@code touches}.
+	 *
+	 * @param touches the touches
+	 * @return the distance between the touches
+	 */
+	private static double getPinchDistance(JsArray<Touch> touches) {
+		double dx = (double) touches.get(0).getClientX() - touches.get(1).getClientX();
+		double dy = (double) touches.get(0).getClientY() - touches.get(1).getClientY();
+		return Math.sqrt(dx * dx + dy * dy);
 	}
 
 	/**
@@ -770,8 +701,6 @@ public class TrackballControls extends Controls implements MouseWheelHandler, Mo
 	 * The mouse coordinates on the virtual trackball.
 	 */
 	private Vector3 mouseOnBall = new Vector3();
-	// private Vector3 projection = new Vector3();
-	// private Vector3 projSide = new Vector3();
 
 	/**
 	 * Convert pointer coordinates to coordinates on (virtual) trackball (unit
@@ -797,29 +726,8 @@ public class TrackballControls extends Controls implements MouseWheelHandler, Mo
 		projection.add(getObject().getUp().clone().cross(eye).setLength(mouseOnBall.getX()));
 		projection.add(eye.setLength(mouseOnBall.getZ()));
 
-		// attempts to avoid the clone-ing fail for unknown reasons...
-		// projection.copy(getObject().getUp());
-		// projSide.copy(projection).cross(eye).setLength(mouseOnBall.getX());
-		// projection.setLength(mouseOnBall.getY());
-		// projection.add(projSide);
-		// projection.add(eye.setLength(mouseOnBall.getZ()));
-
-		// projection.copy(getObject().getUp()).setLength(mouseOnBall.getY());
-		// projection.add(projSide.copy(getObject().getUp()).cross(eye).setLength(mouseOnBall.getX()));
-		// projection.add(eye.setLength(mouseOnBall.getZ()));
-
 		return projection;
 	}
-
-	// private void checkDistances() {
-	// if( isZoom || isPan ) {
-	// if( getObject().getPosition().lengthSq()>maxDistance*maxDistance )
-	// getObject().getPosition().setLength(maxDistance);
-	//
-	// if( eye.lengthSq()<minDistance*minDistance )
-	// getObject().getPosition().add(target, eye.setLength(minDistance));
-	// }
-	// }
 
 	/**
 	 * Update eye and target for (dynamical) panning.
