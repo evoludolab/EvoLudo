@@ -386,6 +386,16 @@ public class HistoGraph extends AbstractGraph<double[]> implements BasicTooltipP
 	}
 
 	/**
+	 * Get the index of the data row shown by this histogram, e.g. the index of the
+	 * trait.
+	 *
+	 * @return the index of the data row
+	 */
+	public int getRow() {
+		return row;
+	}
+
+	/**
 	 * Get the number of samples for this histogram.
 	 * 
 	 * @return the number of samples

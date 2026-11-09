@@ -360,253 +360,100 @@ public class Histogram extends AbstractView<HistoGraph> {
 	 * @return number of histogram panels required
 	 */
 	private int countGraphs() {
-		int nGraphs = 0;
 		List<? extends Module<?>> species = engine.getModule().getSpecies();
 		isMultispecies = (species.size() > 1);
-		for (Module<?> mod : species) {
-			int nTraits = mod.getNTraits();
-			switch (type) {
-				case TRAIT:
-					// this only makes sense for continuous traits
-					nGraphs += nTraits;
-					break;
-				case FITNESS:
-					if (model.isContinuous())
-						nGraphs++;
-					else {
-						nGraphs += nTraits;
-						if (mod.getVacantIdx() >= 0)
-							nGraphs--;
-					}
-					break;
-				case DEGREE:
-					if (model.isIBS()) {
-						IBSPopulation<?, ?> ibspop = mod.getIBSPopulation();
-						nGraphs += getDegreeGraphs(ibspop.getInteractionGeometry(), ibspop.getCompetitionGeometry());
-					} else {
-						// for non-IBS models just one degree graph
-						nGraphs++;
-					}
-					break;
-				case STATISTICS_STATIONARY:
-					nGraphs += nTraits;
-					break;
-				case STATISTICS_FIXATION_TIME:
-					nGraphs++;
-					//$FALL-THROUGH$
-				case STATISTICS_FIXATION_PROBABILITY:
-					nGraphs += nTraits;
-					// no graph for vacant trait if monostop
-					if (mod.getVacantIdx() >= 0 && mod instanceof Discrete && ((Discrete) mod).getMonoStop())
-						nGraphs--;
-					break;
-				default:
-					throw new IllegalArgumentException("Unknown data type: " + type);
-			}
-		}
+		int nGraphs = 0;
+		for (Module<?> module : species)
+			nGraphs += getGraphRows(module).length;
 		return nGraphs;
 	}
 
 	/**
-	 * Create and configure graphs for all species.
+	 * Get the data rows of the graphs for {@code module}, i.e. typically the
+	 * indices of the traits, based on the current {@link Data} type and module
+	 * settings.
 	 * 
-	 * @param nGraphs total number of graphs to create across species
+	 * @param module the module
+	 * @return the data rows of the graphs
 	 */
-	private void createGraphs(int nGraphs) {
-		List<? extends Module<?>> species = engine.getModule().getSpecies();
+	private int[] getGraphRows(Module<?> module) {
+		int nTraits = module.getNTraits();
+		int vacant = module.getVacantIdx();
 		switch (type) {
 			case TRAIT:
-				addTraitGraphs(species);
-				return;
-			case FITNESS:
-				addFitnessGraphs(species, nGraphs);
-				return;
-			case DEGREE:
-				addDegreeGraphs(species, nGraphs);
-				return;
-			case STATISTICS_FIXATION_PROBABILITY:
-				addFixationProbabilityGraphs(species, nGraphs);
-				return;
-			case STATISTICS_FIXATION_TIME:
-				addFixationTimeGraphs(species, nGraphs);
-				return;
 			case STATISTICS_STATIONARY:
-				addStationaryGraphs(species, nGraphs);
-				return;
+				return rows(nTraits, -1);
+			case FITNESS:
+				// vacant sites are a trait only in discrete modules
+				return model.isContinuous() ? rows(1, -1) : rows(nTraits, vacant);
+			case DEGREE:
+				if (!model.isIBS())
+					return rows(1, -1);
+				AbstractGeometry[] geometries = getGeometries(module);
+				return rows(getDegreeGraphs(geometries[0], geometries[1]), -1);
+			case STATISTICS_FIXATION_TIME:
+			case STATISTICS_FIXATION_PROBABILITY:
+				// no graph for vacant trait if monostop; fixation times include absorption
+				int skip = (vacant >= 0 && module instanceof Discrete && ((Discrete) module).getMonoStop()) ? vacant
+						: -1;
+				return rows(type == Data.STATISTICS_FIXATION_TIME ? nTraits + 1 : nTraits, skip);
 			default:
 				throw new IllegalArgumentException("Unknown data type: " + type);
 		}
 	}
 
 	/**
-	 * Add trait histogram for the given module. Makes sense only for modules with
-	 * continuous traits.
+	 * Get the rows {@code 0, ..., n - 1} except {@code skip}.
 	 * 
-	 * @param species the list of modules to consider
+	 * @param n    the number of rows
+	 * @param skip the row to skip or {@code -1}
+	 * @return the rows
 	 */
-	private void addTraitGraphs(List<? extends Module<?>> species) {
-		for (Module<?> module : species) {
-			int nGraphs = module.getNTraits();
-			for (int n = 0; n < nGraphs; n++) {
-				HistoGraph graph = new HistoGraph(this, module, n);
-				wrapper.add(graph);
-				graphs.add(graph);
-				applyDefaultStyle(graph.getStyle(), false);
-				applyTraitStyle(graph, n);
-			}
+	private static int[] rows(int n, int skip) {
+		int[] rows = new int[skip >= 0 && skip < n ? n - 1 : n];
+		int i = 0;
+		for (int r = 0; r < n; r++) {
+			if (r != skip)
+				rows[i++] = r;
 		}
+		return rows;
 	}
 
 	/**
-	 * Add fitness graphs for the given module.
+	 * Get the interaction and competition geometries of {@code module}.
 	 * 
-	 * @param species the list of modules to consider
-	 * @param nGraphs total number of graphs being created
+	 * @param module the module
+	 * @return the interaction and competition geometries
 	 */
-	private void addFitnessGraphs(List<? extends Module<?>> species, int nGraphs) {
+	private AbstractGeometry[] getGeometries(Module<?> module) {
+		if (!model.isIBS())
+			return new AbstractGeometry[] { module.getGeometry(), module.getGeometry() };
+		IBSPopulation<?, ?> ibspop = module.getIBSPopulation();
+		return new AbstractGeometry[] { ibspop.getInteractionGeometry(), ibspop.getCompetitionGeometry() };
+	}
+
+	/**
+	 * Create and configure graphs for all species. The x-axis shows tick labels
+	 * for the last graph of each species and the label for the last graph overall.
+	 * 
+	 * @param nGraphs total number of graphs to create across species
+	 */
+	private void createGraphs(int nGraphs) {
 		int idx = 0;
-		for (Module<?> module : species) {
-			int nTraits = (model.isContinuous() ? 1 : module.getNTraits());
-			int vacant = module.getVacantIdx();
-			for (int n = 0; n < nTraits; n++) {
-				if (n == vacant)
+		for (Module<?> module : engine.getModule().getSpecies()) {
+			int[] rows = getGraphRows(module);
+			for (int row : rows) {
+				HistoGraph graph = new HistoGraph(this, module, row);
+				wrapper.add(graph);
+				graphs.add(graph);
+				idx++;
+				if (type == Data.DEGREE && (model.isODE() || model.isSDE()))
 					continue;
-				HistoGraph graph = new HistoGraph(this, module, n);
-				wrapper.add(graph);
-				graphs.add(graph);
-				boolean isGroupEnd = (n == (nTraits - 1));
-				boolean isLastOverall = (++idx == nGraphs);
 				GraphStyle style = graph.getStyle();
-				applyDefaultStyle(style, true);
-				applyFitnessStyle(graph, n);
-				applyXDecorations(style, isGroupEnd, isLastOverall);
-			}
-		}
-	}
-
-	/**
-	 * Add degree graphs for the given module.
-	 * 
-	 * @param species the list of modules to consider
-	 * @param nGraphs total number of graphs being created
-	 */
-	private void addDegreeGraphs(List<? extends Module<?>> species, int nGraphs) {
-		int idx = 0;
-		for (Module<?> module : species) {
-			if (model.isODE() || model.isSDE()) {
-				HistoGraph graph = new HistoGraph(this, module, 0);
-				wrapper.add(graph);
-				graphs.add(graph);
-				continue;
-			}
-			int nHisto = 1;
-			if (model.isIBS()) {
-				IBSPopulation<?, ?> ibspop = module.getIBSPopulation();
-				nHisto = getDegreeGraphs(ibspop.getInteractionGeometry(), ibspop.getCompetitionGeometry());
-			}
-			for (int n = 0; n < nHisto; n++) {
-				HistoGraph graph = new HistoGraph(this, module, n);
-				wrapper.add(graph);
-				graphs.add(graph);
-				boolean isGroupEnd = (n == (nHisto - 1));
-				boolean isLastOverall = (++idx == nGraphs);
-				GraphStyle style = graph.getStyle();
-				applyDefaultStyle(style, false);
-				applyDegreeStyle(graph, n, nHisto);
-				applyXDecorations(style, isGroupEnd, isLastOverall);
-			}
-		}
-	}
-
-	/**
-	 * Add fixation probability graphs for the given module.
-	 * 
-	 * @param species the list of modules to consider
-	 * @param nGraphs total number of graphs being created
-	 */
-	private void addFixationProbabilityGraphs(List<? extends Module<?>> species, int nGraphs) {
-		int idx = 0;
-		for (Module<?> module : species) {
-			int nTraits = module.getNTraits();
-			int skip = -1;
-			int vacant = module.getVacantIdx();
-			// no graph for vacant trait if monostop
-			if (module.getVacantIdx() >= 0 && module instanceof Discrete && ((Discrete) module).getMonoStop())
-				skip = vacant;
-
-			for (int n = 0; n < nTraits; n++) {
-				if (n == skip)
-					continue;
-				HistoGraph graph = new HistoGraph(this, module, n);
-				graph.setNormalized(nTraits);
-				wrapper.add(graph);
-				graphs.add(graph);
-				boolean isGroupEnd = (n == (nTraits - 1));
-				boolean isLastOverall = (++idx == nGraphs);
-				GraphStyle style = graph.getStyle();
-				applyDefaultStyle(style, true);
-				applyFixationProbabilityStyle(graph, n);
-				applyXDecorations(style, isGroupEnd, isLastOverall);
-			}
-		}
-	}
-
-	/**
-	 * Add fixation time graphs for the given module.
-	 * 
-	 * @param species the list of modules to consider
-	 * @param nGraphs total number of graphs being created
-	 */
-	private void addFixationTimeGraphs(List<? extends Module<?>> species, int nGraphs) {
-		int idx = 0;
-		for (Module<?> module : species) {
-			int nTraits = module.getNTraits();
-			int skip = -1;
-			int vacant = module.getVacantIdx();
-			// no graph for vacant trait if monostop
-			if (vacant >= 0 &&
-					module instanceof Discrete && ((Discrete) module).getMonoStop())
-				skip = vacant;
-
-			for (int n = 0; n <= nTraits; n++) {
-				if (n == skip)
-					continue;
-				HistoGraph graph = new HistoGraph(this, module, n);
-				graph.setNormalized(n + nTraits + 1);
-				wrapper.add(graph);
-				graphs.add(graph);
-				boolean isAbsorption = (n == nTraits);
-				boolean isGroupEnd = isAbsorption;
-				boolean isLastOverall = (++idx == nGraphs);
-				GraphStyle style = graph.getStyle();
-				applyDefaultStyle(style, true);
-				applyFixationTimeStyle(graph, n, isAbsorption, false);
-				applyXDecorations(style, isGroupEnd, isLastOverall);
-			}
-		}
-	}
-
-	/**
-	 * Add stationary distribution graphs for the given module.
-	 * 
-	 * @param species the list of modules to consider
-	 * @param nGraphs total number of graphs being created
-	 */
-	private void addStationaryGraphs(List<? extends Module<?>> species, int nGraphs) {
-		int idx = 0;
-		for (Module<?> module : species) {
-			int nTraits = module.getNTraits();
-			for (int n = 0; n < nTraits; n++) {
-				HistoGraph graph = new HistoGraph(this, module, n);
-				graph.setNormalized(false);
-				wrapper.add(graph);
-				graphs.add(graph);
-				boolean isGroupEnd = (n == (nTraits - 1));
-				boolean isLastOverall = (++idx == nGraphs);
-				GraphStyle style = graph.getStyle();
-				applyDefaultStyle(style, true);
-				applyStationaryStyle(graph, n);
-				applyXDecorations(style, isGroupEnd, isLastOverall);
+				applyDefaultStyle(style, type != Data.TRAIT && type != Data.DEGREE);
+				style.showXLabel = (idx == nGraphs);
+				style.showXTickLabels = style.showXLabel || row == rows[rows.length - 1];
+				applyStyle(graph);
 			}
 		}
 	}
@@ -636,18 +483,6 @@ public class Histogram extends AbstractView<HistoGraph> {
 		style.showLabel = false;
 		style.showXLabel = false;
 		style.showXTickLabels = false;
-	}
-
-	/**
-	 * Configure x-axis decorations based on group and overall position.
-	 *
-	 * @param style          graph style to update
-	 * @param showTickLabels whether to show x-axis tick labels
-	 * @param showLabel      whether to show the x-axis label
-	 */
-	private void applyXDecorations(GraphStyle style, boolean showTickLabels, boolean showLabel) {
-		style.showXTickLabels = showTickLabels || showLabel;
-		style.showXLabel = showLabel;
 	}
 
 	/**
@@ -740,25 +575,16 @@ public class Histogram extends AbstractView<HistoGraph> {
 	/**
 	 * Apply style settings for degree histograms.
 	 * 
-	 * @param graph   the graph to style
-	 * @param n       the index of the graph
-	 * @param nGraphs the total number of graphs
+	 * @param graph the graph to style
+	 * @param n     the index of the graph
 	 */
-	private void applyDegreeStyle(HistoGraph graph, int n, int nGraphs) {
-		Module<?> module = graph.getModule();
+	private void applyDegreeStyle(HistoGraph graph, int n) {
 		GraphStyle style = graph.getStyle();
 		style.xLabel = "degree";
-
-		AbstractGeometry inter;
-		AbstractGeometry comp;
-		if (model.isPDE()) {
-			inter = comp = module.getGeometry();
-		} else {
-			IBSPopulation<?, ?> ibspop = module.getIBSPopulation();
-			inter = ibspop.getInteractionGeometry();
-			comp = ibspop.getCompetitionGeometry();
-		}
-		String[] labels = getDegreeLabels(nGraphs, inter.isUndirected());
+		AbstractGeometry[] geometries = getGeometries(graph.getModule());
+		AbstractGeometry inter = geometries[0];
+		AbstractGeometry comp = geometries[1];
+		String[] labels = getDegreeLabels(getDegreeGraphs(inter, comp), inter.isUndirected());
 		style.label = labels[n];
 		if (model.isContinuous())
 			style.showLabel = isMultispecies;
@@ -792,17 +618,15 @@ public class Histogram extends AbstractView<HistoGraph> {
 	/**
 	 * Apply style settings for fixation time histograms.
 	 * 
-	 * @param graph          the graph to style
-	 * @param n              the index of the graph
-	 * @param isAbsorption   {@code true} for the absorption-time graph
-	 * @param isDistribution {@code true} when plotting fixation-time distributions
+	 * @param graph the graph to style
+	 * @param n     the index of the graph, {@code nTraits} for the absorption time
 	 */
-	private void applyFixationTimeStyle(HistoGraph graph, int n, boolean isAbsorption, boolean isDistribution) {
+	private void applyFixationTimeStyle(HistoGraph graph, int n) {
 		GraphStyle style = graph.getStyle();
 		style.showLabel = true;
 		Module<?> module = graph.getModule();
 		int nPop = module.getNPopulation();
-		if (isAbsorption) {
+		if (n == module.getNTraits()) {
 			style.label = "Absorption";
 			style.graphColor = ColorMapCSS.Color2Css(Color.BLACK);
 		} else {
@@ -810,7 +634,7 @@ public class Histogram extends AbstractView<HistoGraph> {
 			style.label = module.getTraitName(n);
 			style.graphColor = ColorMapCSS.Color2Css(colors[n]);
 		}
-		if (isDistribution) {
+		if (doFixtimeDistr(module)) {
 			style.xMin = 0.0;
 			style.xMax = Functions.roundUp(nPop * 0.25);
 			style.xLabel = "fixation time";
@@ -864,27 +688,25 @@ public class Histogram extends AbstractView<HistoGraph> {
 	@Override
 	public void reset(boolean hard) {
 		super.reset(hard);
-		switch (type) {
-			case TRAIT:
-				hard |= resetTraitGraphs();
-				break;
-			case FITNESS:
-				hard |= resetFitnessGraphs();
-				break;
-			case DEGREE:
-				resetDegreeGraphs();
-				break;
-			case STATISTICS_FIXATION_PROBABILITY:
-				resetFixationProbabilityGraphs();
-				break;
-			case STATISTICS_FIXATION_TIME:
-				resetFixationTimeGraphs();
-				break;
-			case STATISTICS_STATIONARY:
-				resetStationaryGraphs();
-				break;
-			default:
-				throw new IllegalArgumentException("Unknown data type: " + type);
+		degreeProcessed = false;
+		Module<?> module = null;
+		double[][] data = null;
+		int idx = 0;
+		for (HistoGraph graph : graphs) {
+			// graphs of the same species share their data
+			if (graph.getModule() != module) {
+				module = graph.getModule();
+				data = graph.getData();
+			}
+			int[] size = resetGraph(graph, idx++);
+			if (size == null) {
+				graph.setData(null);
+				continue;
+			}
+			if (data == null || data.length != size[0] || data[0].length != size[1])
+				data = new double[size[0]][size[1]];
+			graph.setData(data);
+			hard |= applyStyle(graph);
 		}
 		if (hard) {
 			for (HistoGraph graph : graphs)
@@ -894,208 +716,106 @@ public class Histogram extends AbstractView<HistoGraph> {
 	}
 
 	/**
-	 * Reset trait graphs.
+	 * Reset {@code graph} for the current {@link Data} type and model, e.g. its
+	 * markers, normalization and binning.
 	 * 
-	 * @return {@code true} if hard reset is required
+	 * @param graph the graph to reset
+	 * @param idx   the index of the graph across species
+	 * @return the number of rows and columns of the data, or {@code null} if the
+	 *         graph shows no data
 	 */
-	private boolean resetTraitGraphs() {
-		Module<?> oldmod = null;
-		double[][] data = null;
-		int idx = 0;
-		boolean hard = false;
-		for (HistoGraph graph : graphs) {
-			graph.clearMarkers();
-			GraphStyle style = graph.getStyle();
-			Module<?> module = graph.getModule();
-			boolean newPop = (oldmod != module);
-			oldmod = module;
-			if (newPop)
-				data = graph.getData();
-			int nTraits = module.getNTraits();
-			Color[] colors = module.getTraitColors();
-			List<double[]> markers = model.getMarkers();
-			for (double[] mark : markers)
-				graph.addMarker(mark[idx + 1], ColorMapCSS.Color2Css(colors[idx]), null,
-						mark[0] > 0.0 ? style.dashedLine : style.dottedLine);
-			if (newPop || data == null || data.length != nTraits || data[0].length != histogramBins)
-				data = new double[nTraits][histogramBins];
-			graph.setData(data);
-			hard |= applyTraitStyle(graph, idx);
-			idx++;
-		}
-		return hard;
-	}
-
-	/**
-	 * Reset fitness graphs.
-	 * 
-	 * @return {@code true} if hard reset is required
-	 */
-	private boolean resetFitnessGraphs() {
-		Module<?> oldmod = null;
-		double[][] data = null;
-		int idx = 0;
-		boolean hard = false;
-		for (HistoGraph graph : graphs) {
-			graph.clearMarkers();
-			Module<?> module = graph.getModule();
-			boolean newPop = (oldmod != module);
-			oldmod = module;
-			if (newPop) {
-				data = graph.getData();
-				idx = 0;
-			}
-			int nTraits = (model.isContinuous() ? 1 : module.getNTraits());
-			// vacant sites are a trait only in discrete modules
-			if (module.getVacantIdx() >= 0 && !model.isContinuous())
-				nTraits--;
-			if (newPop || data == null || data.length != nTraits || data[0].length != histogramBins)
-				data = new double[nTraits][histogramBins];
-			graph.setData(data);
-			hard |= applyFitnessStyle(graph, idx);
-			idx++;
-		}
-		return hard;
-	}
-
-	/**
-	 * Reset degree graphs.
-	 */
-	private void resetDegreeGraphs() {
-		degreeProcessed = false;
-		Module<?> oldmod = null;
-		double[][] data = null;
-		int idx = 0;
-		boolean isOSDE = model.isODE() || model.isSDE();
-		boolean isPDE = model.isPDE();
-		for (HistoGraph graph : graphs) {
-			Module<?> module = graph.getModule();
-			if (oldmod != module)
-				data = graph.getData();
-			oldmod = module;
-			if (isOSDE) {
-				graph.setData(null);
-				continue;
-			}
-			AbstractGeometry inter;
-			AbstractGeometry comp;
-			if (isPDE) {
-				inter = comp = module.getGeometry();
-			} else {
-				IBSPopulation<?, ?> ibspop = module.getIBSPopulation();
-				inter = ibspop.getInteractionGeometry();
-				comp = ibspop.getCompetitionGeometry();
-			}
-			int rows = getDegreeGraphs(inter, comp);
-			int cols = getDegreeBins(inter, comp);
-			if (data == null || data.length != rows || data[0].length != cols)
-				data = new double[rows][cols];
-			graph.setData(data);
-			applyDegreeStyle(graph, idx, rows);
-			idx++;
-		}
-	}
-
-	/**
-	 * Reset fixation probability graphs.
-	 */
-	private void resetFixationProbabilityGraphs() {
-		Module<?> oldmod = null;
-		double[][] data = null;
-		int idx = 0;
-		boolean isSDE = model.isSDE();
-		for (HistoGraph graph : graphs) {
-			Module<?> module = graph.getModule();
-			boolean newPop = (oldmod != module);
-			oldmod = module;
-			if (newPop)
-				data = graph.getData();
-			int nTraits = module.getNTraits();
-			int nPop = (isSDE ? 1 : module.getNPopulation());
-			int maxBins = graph.getMaxBins();
-			if (maxBins <= 0)
-				maxBins = Math.min(nPop, HistoGraph.DEFAULT_BINS);
-			binSize = 1;
-			int bins = nPop;
-			while (bins > maxBins) {
-				bins = nPop / ++binSize;
-			}
-			// allocate memory for data if size changed
-			if (data == null || data.length != nTraits + 1 || data[0].length != bins)
-				data = new double[nTraits + 1][bins];
-			scale2bins = 1.0 / binSize;
-			graph.setData(data);
-			applyFixationProbabilityStyle(graph, idx);
-			model.resetStatisticsSample();
-			idx++;
-		}
-	}
-
-	/**
-	 * Reset fixation time graphs. Depending on the population size either the
-	 * fixation times are show for each node or as a distribution.
-	 */
-	private void resetFixationTimeGraphs() {
-		Module<?> oldmod = null;
-		double[][] data = null;
-		int idx = 0;
-		for (HistoGraph graph : graphs) {
-			Module<?> module = graph.getModule();
-			boolean newPop = (oldmod != module);
-			oldmod = module;
-			if (newPop) {
-				data = graph.getData();
-				idx = 0;
-			}
-			int nTraits = module.getNTraits();
-			boolean doFixtimeDistr = doFixtimeDistr(module);
-			if (doFixtimeDistr) {
-				// widen the bins by one pixel; multiply before dividing to avoid
-				// integer division truncating the ratio to zero
-				int maxBins = graph.getMaxBins() * (HistoGraph.MIN_BIN_WIDTH + 1)
-						/ (HistoGraph.MIN_BIN_WIDTH + 2);
-				if (data == null || data.length != nTraits + 1 || data[0].length != maxBins)
-					data = new double[nTraits + 1][maxBins];
+	private int[] resetGraph(HistoGraph graph, int idx) {
+		Module<?> module = graph.getModule();
+		int nTraits = module.getNTraits();
+		int nPop = module.getNPopulation();
+		int maxBins = graph.getMaxBins();
+		switch (type) {
+			case TRAIT:
+				graph.clearMarkers();
+				String color = ColorMapCSS.Color2Css(module.getTraitColors()[graph.getRow()]);
+				GraphStyle style = graph.getStyle();
+				// markers refer to the traits of all species
+				for (double[] mark : model.getMarkers())
+					graph.addMarker(mark[idx + 1], color, null, mark[0] > 0.0 ? style.dashedLine : style.dottedLine);
+				return new int[] { nTraits, histogramBins };
+			case FITNESS:
+				graph.clearMarkers();
+				// vacant sites are a trait only in discrete modules
+				if (!model.isContinuous() && module.getVacantIdx() >= 0)
+					nTraits--;
+				return new int[] { model.isContinuous() ? 1 : nTraits, histogramBins };
+			case DEGREE:
+				if (model.isODE() || model.isSDE())
+					return null;
+				AbstractGeometry[] geometries = getGeometries(module);
+				return new int[] { getDegreeGraphs(geometries[0], geometries[1]),
+						getDegreeBins(geometries[0], geometries[1]) };
+			case STATISTICS_FIXATION_PROBABILITY:
+				model.resetStatisticsSample();
+				graph.setNormalized(nTraits);
+				int n = (model.isSDE() ? 1 : nPop);
+				if (maxBins <= 0)
+					maxBins = Math.min(n, HistoGraph.DEFAULT_BINS);
+				binSize = 1;
+				int bins = n;
+				while (bins > maxBins)
+					bins = n / ++binSize;
+				scale2bins = 1.0 / binSize;
+				return new int[] { nTraits + 1, bins };
+			case STATISTICS_FIXATION_TIME:
+				model.resetStatisticsSample();
+				if (doFixtimeDistr(module)) {
+					graph.setNormalized(false);
+					graph.setNormalized(-1);
+					// widen the bins by one pixel; multiply before dividing to avoid
+					// integer division truncating the ratio to zero
+					return new int[] { nTraits + 1,
+							maxBins * (HistoGraph.MIN_BIN_WIDTH + 1) / (HistoGraph.MIN_BIN_WIDTH + 2) };
+				}
+				graph.setNormalized(true);
+				graph.setNormalized(graph.getRow() + nTraits + 1);
+				// doFixtimeDistr ensures nPop <= HistoGraph.DEFAULT_BINS
+				return new int[] { 2 * (nTraits + 1), nPop };
+			case STATISTICS_STATIONARY:
 				graph.setNormalized(false);
-				graph.setNormalized(-1);
-			} else {
-				// doFixtimeDistr must ensure nPop <= HistoGraph.DEFAULT_BINS
-				int nPop = module.getNPopulation();
-				if (data == null || data.length != 2 * (nTraits + 1) || data[0].length != nPop)
-					data = new double[2 * (nTraits + 1)][nPop];
-			}
-			graph.setData(data);
-			applyFixationTimeStyle(graph, idx, idx == nTraits, doFixtimeDistr);
-			model.resetStatisticsSample();
-			idx++;
+				int nBins = Math.max(1, Math.min(nPop, maxBins <= 0 ? HistoGraph.DEFAULT_BINS : maxBins));
+				scale2bins = nBins;
+				return new int[] { nTraits, nBins };
+			default:
+				throw new IllegalArgumentException("Unknown data type: " + type);
 		}
 	}
 
 	/**
-	 * Reset stationary distribution graphs.
+	 * Apply the style settings for the current {@link Data} type to
+	 * {@code graph}.
+	 * 
+	 * @param graph the graph to style
+	 * @return {@code true} if hard reset is required
 	 */
-	private void resetStationaryGraphs() {
-		Module<?> oldmod = null;
-		double[][] data = null;
-		int idx = 0;
-		for (HistoGraph graph : graphs) {
-			Module<?> module = graph.getModule();
-			boolean newPop = (oldmod != module);
-			oldmod = module;
-			if (newPop)
-				data = graph.getData();
-			int nTraits = module.getNTraits();
-			int maxBins = graph.getMaxBins();
-			if (maxBins <= 0)
-				maxBins = HistoGraph.DEFAULT_BINS;
-			int nBins = Math.max(1, Math.min(module.getNPopulation(), maxBins));
-			if (data == null || data.length != nTraits || data[0].length != nBins)
-				data = new double[nTraits][nBins];
-			scale2bins = nBins;
-			graph.setData(data);
-			applyStationaryStyle(graph, idx);
-			idx++;
+	private boolean applyStyle(HistoGraph graph) {
+		int row = graph.getRow();
+		switch (type) {
+			case TRAIT:
+				return applyTraitStyle(graph, row);
+			case FITNESS:
+				return applyFitnessStyle(graph, row);
+			case DEGREE:
+				applyDegreeStyle(graph, row);
+				break;
+			case STATISTICS_FIXATION_PROBABILITY:
+				applyFixationProbabilityStyle(graph, row);
+				break;
+			case STATISTICS_FIXATION_TIME:
+				applyFixationTimeStyle(graph, row);
+				break;
+			case STATISTICS_STATIONARY:
+				applyStationaryStyle(graph, row);
+				break;
+			default:
+				throw new IllegalArgumentException("Unknown data type: " + type);
 		}
+		return false;
 	}
 
 	@Override
@@ -1106,12 +826,8 @@ public class Histogram extends AbstractView<HistoGraph> {
 			reset(true);
 			return;
 		}
-		int idx = 0;
-		for (HistoGraph graph : graphs) {
-			Module<?> module = graph.getModule();
-			GraphStyle style = graph.getStyle();
-			style.customYLevels = ((HasHistogram) module).getCustomLevels(type, idx++);
-		}
+		for (HistoGraph graph : graphs)
+			graph.getStyle().customYLevels = ((HasHistogram) graph.getModule()).getCustomLevels(type, graph.getRow());
 	}
 
 	@Override
@@ -1184,10 +900,8 @@ public class Histogram extends AbstractView<HistoGraph> {
 			timestamp = newtime;
 			switch (type) {
 				case TRAIT:
-					updateTrait();
-					break;
 				case FITNESS:
-					updateFitness();
+					updateHistograms();
 					break;
 				case DEGREE:
 					updateDegree();
@@ -1205,31 +919,21 @@ public class Histogram extends AbstractView<HistoGraph> {
 	}
 
 	/**
-	 * Update trait histograms (continuous models).
+	 * Update trait (continuous models) or fitness histograms. Graphs of the same
+	 * species share their data.
 	 */
-	private void updateTrait() {
-		double[][] data = null;
-		CModel cmodel = (CModel) model;
-		for (HistoGraph graph : graphs) {
-			double[][] graphdata = graph.getData();
-			if (data != graphdata) {
-				data = graphdata;
-				cmodel.getTraitHistogramData(graph.getModule().getId(), data);
-			}
-		}
-	}
-
-	/**
-	 * Update fitness histograms.
-	 */
-	private void updateFitness() {
+	private void updateHistograms() {
 		double[][] data = null;
 		for (HistoGraph graph : graphs) {
 			double[][] graphdata = graph.getData();
-			if (data != graphdata) {
-				data = graphdata;
-				model.getFitnessHistogramData(graph.getModule().getId(), data);
-			}
+			if (data == graphdata)
+				continue;
+			data = graphdata;
+			int id = graph.getModule().getId();
+			if (type == Data.TRAIT)
+				((CModel) model).getTraitHistogramData(id, data);
+			else
+				model.getFitnessHistogramData(id, data);
 		}
 	}
 
@@ -1240,27 +944,19 @@ public class Histogram extends AbstractView<HistoGraph> {
 		double[][] data = null;
 		for (HistoGraph graph : graphs) {
 			Module<?> module = graph.getModule();
-			IBSPopulation<?, ?> ibspop = module.getIBSPopulation();
-			AbstractGeometry inter = ibspop.getInteractionGeometry();
-			AbstractGeometry comp = ibspop.getCompetitionGeometry();
-
+			if (model.isDE() && handleDEGraph(graph, module))
+				continue;
+			AbstractGeometry[] geometries = getGeometries(module);
+			AbstractGeometry inter = geometries[0];
+			AbstractGeometry comp = geometries[1];
 			boolean needsUpdate = !degreeProcessed
 					|| (inter != null && inter.isType(GeometryType.DYNAMIC))
 					|| (comp != null && comp.isType(GeometryType.DYNAMIC));
-
 			double[][] graphdata = graph.getData();
-			if ((model.isDE() && handleDEGraph(graph, module))
-					|| !needsUpdate
-					|| graphdata == null
-					|| inter == null
-					|| comp == null) {
+			if (!needsUpdate || graphdata == null || inter == null || comp == null || data == graphdata)
 				continue;
-			}
-
-			// initialize or reuse data buffer and compute histogram if buffer changed
-			if (data != graphdata) {
-				data = ensureDegreeData(graph, inter, comp, graphdata);
-			}
+			// initialize or reuse data buffer and compute histogram
+			data = ensureDegreeData(graph, inter, comp, graphdata);
 		}
 	}
 
