@@ -167,6 +167,13 @@ public class DegreeHistogram extends Histogram {
 		degreeProcessed = true;
 	}
 
+	@Override
+	public String getTooltipAt(HistoGraph graph, int bar) {
+		// the x-axis covers degrees [0, kmax)
+		int kmax = (int) graph.getStyle().xMax;
+		return getIntTooltip(graph, bar, kmax, kmax - 1, false);
+	}
+
 	/**
 	 * Display a message on {@code graph} for DE models, except PDE models with
 	 * irregular structures.

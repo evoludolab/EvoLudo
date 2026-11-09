@@ -40,6 +40,7 @@ import org.evoludo.simulator.models.Data;
 import org.evoludo.simulator.models.Mode;
 import org.evoludo.simulator.models.Model;
 import org.evoludo.simulator.modules.Module;
+import org.evoludo.util.Formatter;
 import org.evoludo.util.NativeJS;
 
 /**
@@ -61,7 +62,7 @@ import org.evoludo.util.NativeJS;
  *
  * @see HistoGraph
  */
-public abstract class Histogram extends AbstractView<HistoGraph> {
+public abstract class Histogram extends AbstractView<HistoGraph> implements BasicTooltipProvider {
 
 	/**
 	 * Small epsilon to avoid floating point truncation when mapping values to bins.
@@ -303,6 +304,73 @@ public abstract class Histogram extends AbstractView<HistoGraph> {
 		int row = graph.getRow();
 		style.label = (isMultispecies ? module.getName() + ": " : "") + module.getTraitName(row);
 		style.graphColor = ColorMapCSS.Color2Css(module.getTraitColors()[row]);
+	}
+
+	/**
+	 * Get the tooltip for bin {@code bar} of {@code graph}. By default, this shows
+	 * the range of the bin, its value and the notes of markers in the bin.
+	 * 
+	 * @param graph the graph
+	 * @param bar   the index of the bin
+	 * @return the tooltip
+	 */
+	public String getTooltipAt(HistoGraph graph, int bar) {
+		GraphStyle style = graph.getStyle();
+		double width = (style.xMax - style.xMin) / graph.getNBins();
+		String note = graph.getNoteAt(bar);
+		return TABLE_STYLE
+				+ tooltipRow(style.xLabel, "[" + Formatter.format(style.xMin + bar * width, 2) + ", "
+						+ Formatter.format(style.xMin + (bar + 1) * width, 2) + ")")
+				+ tooltipValue(graph, bar)
+				+ (note == null ? "" : tooltipRow("Note", note)) + TABLE_END;
+	}
+
+	/**
+	 * Get the tooltip for bin {@code bar} of {@code graph} with integer values
+	 * {@code 0, 1, ..., max}, where value {@code v < n} maps to bin
+	 * {@code floor(v nBins / n)} and the last bin includes all values up to
+	 * {@code max}.
+	 * 
+	 * @param graph   the graph
+	 * @param bar     the index of the bin
+	 * @param n       the number of values spread evenly across bins
+	 * @param max     the largest value
+	 * @param samples {@code true} to include the number of samples of the bin
+	 * @return the tooltip
+	 */
+	protected static String getIntTooltip(HistoGraph graph, int bar, int n, int max, boolean samples) {
+		int nBins = graph.getNBins();
+		int first = (bar * n + nBins - 1) / nBins;
+		int last = (bar == nBins - 1 ? max : ((bar + 1) * n + nBins - 1) / nBins - 1);
+		return TABLE_STYLE
+				+ tooltipRow(graph.getStyle().xLabel, last > first ? "[" + first + "-" + last + "]" : first)
+				+ (samples ? tooltipRow("samples", (long) graph.getSamples(bar)) : "")
+				+ tooltipValue(graph, bar) + TABLE_END;
+	}
+
+	/**
+	 * Get the tooltip row for the value of bin {@code bar} of {@code graph}.
+	 * 
+	 * @param graph the graph
+	 * @param bar   the index of the bin
+	 * @return the tooltip row
+	 */
+	private static String tooltipValue(HistoGraph graph, int bar) {
+		GraphStyle style = graph.getStyle();
+		double value = graph.getData(bar);
+		return tooltipRow(style.yLabel,
+				style.percentY ? Formatter.formatPercent(value, 2) : Formatter.format(value, 2));
+	}
+
+	/**
+	 * Get a tooltip row with {@code label} and {@code value}.
+	 * 
+	 * @param label the label
+	 * @param value the value
+	 * @return the tooltip row
+	 */
+	private static String tooltipRow(String label, Object value) {
+		return TABLE_ROW_START + label + TABLE_CELL_NEXT + value + TABLE_ROW_END;
 	}
 
 	@Override

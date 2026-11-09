@@ -115,6 +115,15 @@ public class StationaryHistogram extends Histogram {
 	}
 
 	@Override
+	public String getTooltipAt(HistoGraph graph, int bar) {
+		if (model.isDE())
+			return super.getTooltipAt(graph, bar);
+		// trait counts 0, ..., nPop
+		int nPop = graph.getModule().getNPopulation();
+		return getIntTooltip(graph, bar, nPop, nPop, false);
+	}
+
+	@Override
 	public String getStatus(boolean force) {
 		if (isLoaded && model.hasConverged()) {
 			engine.logWarning("Non ergodic system - no stationary distribution!");

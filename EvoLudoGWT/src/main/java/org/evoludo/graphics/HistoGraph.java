@@ -35,7 +35,6 @@ import java.util.Arrays;
 
 import org.evoludo.math.ArrayMath;
 import org.evoludo.math.Functions;
-import org.evoludo.simulator.models.Data;
 import org.evoludo.simulator.models.Model;
 import org.evoludo.simulator.modules.Module;
 import org.evoludo.simulator.views.BasicTooltipProvider;
@@ -43,7 +42,6 @@ import org.evoludo.simulator.views.Histogram;
 import org.evoludo.ui.ContextMenu;
 import org.evoludo.ui.ContextMenuCheckBoxItem;
 import org.evoludo.ui.ContextMenuItem;
-import org.evoludo.util.Formatter;
 
 /**
  * A histogram graph used to render and interact with binned data.
@@ -125,9 +123,8 @@ import org.evoludo.util.Formatter;
  * which allows the graph to include marker descriptions in tooltips.</li>
  * <li>The graph provides tooltip text for a pixel coordinate via
  * {@link #getTooltipAt(int, int)} and for a bin index via
- * {@link #getTooltipAt(int)}. Tooltip content varies by the histogram
- * {@code view.type} (degree, fitness, trait and several statistics types have
- * specialized tooltip formats).</li>
+ * {@link #getTooltipAt(int)}. The content comes from the view, see
+ * {@link Histogram#getTooltipAt(HistoGraph, int)}.</li>
  * <li>Context menu support includes an Axes submenu with autoscaling,
  * full-range and right y-axis controls.</li>
  * </ul>
@@ -804,158 +801,17 @@ public class HistoGraph extends AbstractGraph<double[]> implements BasicTooltipP
 	public String getTooltipAt(int bar) {
 		// note label is null for undirected graph with the same interaction and
 		// competition graphs
-		StringBuilder tip = new StringBuilder(
-				style.showLabel && style.label != null ? "<b>" + style.label + "</b><br/>" : "");
-		switch (view.getType()) {
-			case DEGREE:
-				appendTipDegree(tip, bar);
-				break;
-			case TRAIT:
-			case FITNESS:
-				appendBinTooltip(tip, bar);
-				break;
-			case STATISTICS_FIXATION_PROBABILITY:
-				appendTipFixProb(tip, bar);
-				break;
-			case STATISTICS_FIXATION_TIME:
-				appendTipFixTime(tip, bar);
-				break;
-			case STATISTICS_STATIONARY:
-				appendTipStationary(tip, bar);
-				break;
-			default:
-				// no additional info
-				break;
-		}
-		return tip.toString();
+		return (style.showLabel && style.label != null ? "<b>" + style.label + "</b><br/>" : "")
+				+ ((Histogram) view).getTooltipAt(this, bar);
 	}
 
 	/**
-	 * Append degree tooltip. Bins may span several degrees for graphs with a wide
-	 * range of degrees.
-	 *
-	 * @param tip the tooltip string builder
-	 * @param bar the bar index
-	 */
-	private void appendTipDegree(StringBuilder tip, int bar) {
-		double perBin = (style.xMax - style.xMin) / nBins;
-		int first = (int) Math.round(style.xMin + bar * perBin);
-		int last = (int) Math.round(style.xMin + (bar + 1) * perBin) - 1;
-		String degree = (last > first ? "[" + first + ", " + last + "]" : Integer.toString(first));
-		tip.append(TABLE_STYLE);
-		tip.append(TABLE_ROW_START + style.xLabel + TABLE_CELL_NEXT + degree + TABLE_ROW_END);
-		tip.append(TABLE_ROW_START + style.yLabel + TABLE_CELL_NEXT
-				+ Formatter.formatPercent(data[row][bar], 2) + TABLE_ROW_END + TABLE_END);
-	}
-
-	/**
-	 * Append tooltip for bin at mouse coordinates.
+	 * Get the number of bins.
 	 * 
-	 * @param tip the tooltip string builder
-	 * @param bar the bar index
+	 * @return the number of bins
 	 */
-	private void appendBinTooltip(StringBuilder tip, int bar) {
-		tip.append(TABLE_STYLE);
-		tip.append(TABLE_ROW_START + style.xLabel + TABLE_CELL_NEXT + "["
-				+ Formatter.format(style.xMin + bar * (style.xMax - style.xMin) / nBins, 2) +
-				", " + Formatter.format(style.xMin + (bar + 1) * (style.xMax - style.xMin) / nBins, 2)
-				+ ")" + TABLE_ROW_END);
-		tip.append(TABLE_ROW_START + style.yLabel + TABLE_CELL_NEXT + Formatter.formatPercent(data[row][bar], 2)
-				+ TABLE_ROW_END);
-		String note = getNoteAt(bar);
-		if (note != null)
-			tip.append(TABLE_ROW_START + "Note" + TABLE_CELL_NEXT + note + TABLE_ROW_END);
-		tip.append(TABLE_END);
-	}
-
-	/**
-	 * Append fixation probability tooltip.
-	 * 
-	 * @param tip the tooltip string builder
-	 * @param bar the bar index
-	 */
-	private void appendTipFixProb(StringBuilder tip, int bar) {
-		tip.append(TABLE_STYLE);
-		tip.append(TABLE_ROW_START + style.xLabel + TABLE_CELL_NEXT);
-		int binSize = (int) ((style.xMax + 1) / nBins);
-		if (binSize == 1) {
-			tip.append(bar + TABLE_ROW_END);
-		} else {
-			int start = bar * binSize;
-			int end = start + binSize - 1;
-			if (bar == nBins - 1) {
-				// careful with last bin
-				end = Math.max(end, (int) style.xMax);
-			}
-			String separator = (end - start > 1) ? "-" : ",";
-			tip.append("[" + start + separator + end + "]" + TABLE_ROW_END);
-		}
-		int nTraits = data.length - 1;
-		double norm = data[nTraits][bar];
-		tip.append(TABLE_ROW_START + "samples" + TABLE_CELL_NEXT + (int) norm + TABLE_ROW_END);
-		if (style.percentY) {
-			tip.append(TABLE_ROW_START + style.yLabel + TABLE_CELL_NEXT
-					+ (norm > 0.0 ? Formatter.formatPercent(data[row][bar] / norm, 2) : "0") +
-					TABLE_ROW_END + TABLE_END);
-		} else {
-			tip.append(TABLE_ROW_START + style.yLabel + TABLE_CELL_NEXT
-					+ (norm > 0.0 ? Formatter.format(data[row][bar] / norm, 2) : "0") +
-					TABLE_ROW_END + TABLE_END);
-		}
-	}
-
-	/**
-	 * Append fixation time tooltip.
-	 * 
-	 * @param tip the tooltip string builder
-	 * @param bar the bar index
-	 */
-	private void appendTipFixTime(StringBuilder tip, int bar) {
-		tip.append(TABLE_STYLE + TABLE_ROW_START + style.xLabel + TABLE_CELL_NEXT);
-		int nPop = module.getNPopulation();
-		if (nPop > data[0].length) {
-			tip.append("[" + Formatter.format(style.xMin + (double) bar / nBins * (style.xMax - style.xMin), 2)
-					+ "-" +
-					Formatter.format(style.xMin + (double) (bar + 1) / nBins * (style.xMax - style.xMin), 2)
-					+ ")");
-		} else {
-			tip.append(bar + TABLE_ROW_END +
-					TABLE_ROW_START + "samples" + TABLE_CELL_NEXT + (int) getSamples(bar));
-		}
-		tip.append(TABLE_ROW_END + TABLE_ROW_START + style.yLabel + TABLE_CELL_NEXT);
-		if (style.percentY)
-			tip.append(Formatter.formatPercent(getData(bar), 2) + "</td>");
-		else
-			tip.append(Formatter.format(getData(bar), 2) + "</td>");
-		tip.append("</tr></table>");
-	}
-
-	/**
-	 * Append stationary distribution tooltip.
-	 * 
-	 * @param tip the tooltip string builder
-	 * @param bar the bar index
-	 */
-	private void appendTipStationary(StringBuilder tip, int bar) {
-		tip.append(TABLE_STYLE + //
-				TABLE_ROW_START + style.xLabel + TABLE_CELL_NEXT);
-		int nPop = module.getNPopulation();
-		int binSize = (nPop + 1) / DEFAULT_BINS + 1;
-		if (binSize == 1) {
-			tip.append(bar + TABLE_ROW_END);
-		} else {
-			int start = bar * binSize;
-			int end = start + binSize - 1;
-			if (bar == nBins - 1) {
-				// careful with last bin
-				nPop = module.getNPopulation();
-				end = Math.max(end, nPop);
-			}
-			String separator = (end - start > 1) ? "-" : ",";
-			tip.append("[" + start + separator + end + "]" + TABLE_ROW_END);
-		}
-		tip.append(TABLE_ROW_START + style.yLabel + TABLE_CELL_NEXT
-				+ Formatter.formatPercent(data[row][bar] / getSamples(), 2) + TABLE_ROW_END + TABLE_END);
+	public int getNBins() {
+		return nBins;
 	}
 
 	@Override
@@ -977,44 +833,22 @@ public class HistoGraph extends AbstractGraph<double[]> implements BasicTooltipP
 		});
 		autoscaleYMenu.setChecked(style.autoscaleY);
 		axesMenu.add(autoscaleYMenu);
-		if (hasFullRangeMenu())
-			axesMenu.add(fullRangeMenu);
+		axesMenu.add(fullRangeMenu);
 	}
 
 	/**
-	 * Determine whether the full-range action is applicable.
-	 *
-	 * @return {@code true} if the full-range menu item should be shown
-	 */
-	private boolean hasFullRangeMenu() {
-		return style.percentX
-				|| style.percentY
-				|| view.getType() == Data.STATISTICS_FIXATION_TIME;
-	}
-
-	/**
-	 * Apply full-range bounds according to axis style and histogram type.
+	 * Apply the full range: {@code [0, 1]} for percent axes, otherwise
+	 * {@code [0, y]} for the {@code y}-axis, where {@code y} is the observed
+	 * maximum rounded up.
 	 */
 	private void applyFullRange() {
 		if (style.percentX) {
 			style.xMin = 0.0;
 			style.xMax = 1.0;
 		}
-		if (style.percentY || view.getType() == Data.STATISTICS_FIXATION_PROBABILITY) {
-			style.yMin = 0.0;
-			style.yMax = 1.0;
-			return;
-		}
-		if (view.getType() != Data.STATISTICS_FIXATION_TIME) {
-			return;
-		}
-		double yMax = computeObservedYMax();
 		style.yMin = 0.0;
-		if (!Double.isFinite(yMax) || yMax <= 0.0) {
-			style.yMax = 1.0;
-			return;
-		}
-		style.yMax = Math.max(Functions.roundUp(yMax), Model.EPS_SMALL);
+		double yMax = (style.percentY ? 1.0 : computeObservedYMax());
+		style.yMax = (!Double.isFinite(yMax) || yMax <= 0.0) ? 1.0 : Math.max(Functions.roundUp(yMax), Model.EPS_SMALL);
 	}
 
 	/**

@@ -147,7 +147,8 @@ public class FixationHistogram extends Histogram {
 		int bins = n;
 		while (bins > maxBins)
 			bins = n / ++binSize;
-		scale2bins = 1.0 / binSize;
+		// spread nodes evenly across bins
+		scale2bins = (double) bins / n;
 		return new int[] { nTraits + 1, bins };
 	}
 
@@ -237,6 +238,15 @@ public class FixationHistogram extends Histogram {
 			for (HistoGraph g : graphs)
 				g.paint(false);
 		}
+	}
+
+	@Override
+	public String getTooltipAt(HistoGraph graph, int bar) {
+		if (isTime() && doFixtimeDistr(graph.getModule()))
+			return super.getTooltipAt(graph, bar);
+		// nodes 0, ..., nPop - 1
+		int max = (int) graph.getStyle().xMax;
+		return getIntTooltip(graph, bar, max + 1, max, true);
 	}
 
 	@Override
