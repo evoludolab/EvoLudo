@@ -30,6 +30,8 @@
 
 package org.evoludo.simulator.views;
 
+import static org.evoludo.simulator.views.BasicTooltipProvider.tableRowRight;
+
 import java.util.List;
 
 import javax.swing.JPopupMenu;
@@ -199,7 +201,7 @@ public class MVDPhase2D extends MVAbstract implements StateGraphListener {
 		return "Strategy - Phase 2D";
 	}
 
-	public class TraitMap implements Data2Phase, BasicTooltipProvider {
+	public class TraitMap implements Data2Phase {
 
 		@Override
 		public boolean data2Phase(double[] data, Point2D point) {
@@ -231,24 +233,13 @@ public class MVDPhase2D extends MVAbstract implements StateGraphListener {
 
 		@Override
 		public String getTooltipAt(double x, double y) {
-			StringBuilder tip = new StringBuilder(TABLE_STYLE)
-					.append(TABLE_ROW_START_RIGHT)
-					.append(getXAxisLabel()).append(TABLE_CELL_NEXT)
-					.append(Formatter.formatPercent(x, 2)).append(TABLE_ROW_END);
-			tip.append(TABLE_ROW_START_RIGHT)
-					.append(getYAxisLabel()).append(TABLE_CELL_NEXT)
-					.append(Formatter.formatPercent(y, 2)).append(TABLE_ROW_END);
-			tip.append("<tr><td colspan='2' style='font-size:1pt'><hr/></td></tr>");
-			tip.append(TABLE_ROW_START_RIGHT)
-					.append(getTraitName(2)).append(TABLE_CELL_NEXT)
-					.append(Formatter.formatPercent(1.0 - x, 2)).append(TABLE_ROW_END);
-			tip.append(TABLE_ROW_START_RIGHT)
-					.append(getTraitName(1)).append(TABLE_CELL_NEXT)
-					.append(Formatter.formatPercent(x * (1.0 - y), 2)).append(TABLE_ROW_END);
-			tip.append(TABLE_ROW_START_RIGHT)
-					.append(getTraitName(0)).append(TABLE_CELL_NEXT)
-					.append(Formatter.formatPercent(x * y, 2)).append(TABLE_ROW_END);
-			return tip.append(TABLE_END).toString();
+			return TABLE_STYLE + tableRowRight(getXAxisLabel(), Formatter.formatPercent(x, 2))
+					+ tableRowRight(getYAxisLabel(), Formatter.formatPercent(y, 2))
+					+ "<tr><td colspan='2' style='font-size:1pt'><hr/></td></tr>"
+					+ tableRowRight(getTraitName(2), Formatter.formatPercent(1.0 - x, 2))
+					+ tableRowRight(getTraitName(1), Formatter.formatPercent(x * (1.0 - y), 2))
+					+ tableRowRight(getTraitName(0), Formatter.formatPercent(x * y, 2))
+					+ TABLE_END;
 		}
 
 		protected String getTraitName(int idx) {

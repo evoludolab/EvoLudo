@@ -114,6 +114,31 @@ public interface BasicTooltipProvider {
 	}
 
 	/**
+	 * Get a table row of a tooltip with the right-aligned {@code label} and
+	 * {@code value}.
+	 *
+	 * @param label the label of the row
+	 * @param value the value of the row
+	 * @return the table row
+	 */
+	static String tableRowRight(String label, Object value) {
+		return TABLE_ROW_START_RIGHT + label + TABLE_CELL_NEXT + value + TABLE_ROW_END;
+	}
+
+	/**
+	 * Get a table row of a tooltip with the right-aligned {@code label} in the CSS
+	 * color {@code color} and {@code value}.
+	 *
+	 * @param color the CSS color of the label
+	 * @param label the label of the row
+	 * @param value the value of the row
+	 * @return the table row
+	 */
+	static String tableRowColor(String color, String label, Object value) {
+		return TABLE_ROW_START_COLOR + color + ";'>" + label + TABLE_CELL_NEXT + value + TABLE_ROW_END;
+	}
+
+	/**
 	 * Get the tooltip at the scaled coordinates {@code (x,y)} with the origin in
 	 * the lower left corner of the graph.
 	 * 

@@ -30,6 +30,8 @@
 
 package org.evoludo.simulator.modules;
 
+import static org.evoludo.simulator.views.BasicTooltipProvider.tableRowRight;
+
 import java.awt.Color;
 
 import org.evoludo.geom.Point2D;
@@ -37,7 +39,6 @@ import org.evoludo.simulator.EvoLudo;
 import org.evoludo.simulator.models.Model.HasDE;
 import org.evoludo.simulator.models.Model.HasIBS;
 import org.evoludo.simulator.modules.Features.Payoffs;
-import org.evoludo.simulator.views.BasicTooltipProvider;
 import org.evoludo.simulator.views.HasHistogram;
 import org.evoludo.simulator.views.HasMean;
 import org.evoludo.simulator.views.HasPhase2D;
@@ -389,7 +390,7 @@ public class Mutualism extends Discrete implements Payoffs,
 	 * The map for translating the data of the ecological public goods game models
 	 * into 2D phase plane representation.
 	 */
-	public class MutualismMap implements Data2Phase, BasicTooltipProvider {
+	public class MutualismMap implements Data2Phase {
 
 		/**
 		 * Create the 2D projection helper using the surrounding module settings.
@@ -429,25 +430,12 @@ public class Mutualism extends Discrete implements Payoffs,
 
 		@Override
 		public String getTooltipAt(double x, double y) {
-			StringBuilder tip = new StringBuilder(TABLE_STYLE)
-					.append(TABLE_ROW_START_RIGHT)
-					.append(getName()).append(": ").append(getTraitName(COOPERATE))
-					.append(TABLE_CELL_NEXT).append(Formatter.formatPercent(x, 2))
-					.append(TABLE_ROW_END);
-			tip.append(TABLE_STYLE).append(TABLE_ROW_START_RIGHT)
-					.append(getName()).append(": ").append(getTraitName(DEFECT))
-					.append(TABLE_CELL_NEXT).append(Formatter.formatPercent(1.0 - x, 2))
-					.append(TABLE_ROW_END);
-			tip.append(TABLE_STYLE).append(TABLE_ROW_START_RIGHT)
-					.append(partner.getName()).append(": ").append(partner.getTraitName(COOPERATE))
-					.append(TABLE_CELL_NEXT).append(Formatter.formatPercent(y, 2))
-					.append(TABLE_ROW_END);
-			tip.append(TABLE_STYLE).append(TABLE_ROW_START_RIGHT)
-					.append(partner.getName()).append(": ").append(partner.getTraitName(DEFECT))
-					.append(TABLE_CELL_NEXT).append(Formatter.formatPercent(1.0 - y, 2))
-					.append(TABLE_ROW_END);
-			tip.append(TABLE_END);
-			return tip.toString();
+			return TABLE_STYLE + tableRowRight(getXAxisLabel(), Formatter.formatPercent(x, 2))
+					+ tableRowRight(getName() + ": " + getTraitName(DEFECT), Formatter.formatPercent(1.0 - x, 2))
+					+ tableRowRight(getYAxisLabel(), Formatter.formatPercent(y, 2))
+					+ tableRowRight(partner.getName() + ": " + partner.getTraitName(DEFECT),
+							Formatter.formatPercent(1.0 - y, 2))
+					+ TABLE_END;
 		}
 	}
 

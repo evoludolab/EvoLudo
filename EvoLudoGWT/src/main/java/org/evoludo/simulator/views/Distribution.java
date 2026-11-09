@@ -30,6 +30,8 @@
 
 package org.evoludo.simulator.views;
 
+import static org.evoludo.simulator.views.BasicTooltipProvider.tableRow;
+
 import java.awt.Color;
 import java.util.List;
 
@@ -414,84 +416,46 @@ public class Distribution extends AbstractView<PopGraph2D> implements TooltipPro
 		if (node < 0)
 			return null;
 		GraphStyle style = graph.getStyle();
-		int binsAxis = nBins;
-		PopGraph2D popGraph = (graph instanceof PopGraph2D ? (PopGraph2D) graph : null);
 		StringBuilder tip = new StringBuilder(TABLE_STYLE);
 		if (style.label != null)
-			tip.append("<b>")
-					.append(style.label)
-					.append("</b>");
-		tip.append(TABLE_ROW_START)
-				.append(style.xLabel)
-				.append(TABLE_CELL_NEXT);
-		Module<?> module = engine.getModule();
-		int nTraits = module.getNTraits();
-		if (nTraits == 1) {
-			int bar = node % binsAxis;
-			int row = node / binsAxis;
-			double time = -row * model.getTimeStep();
-			tip.append("[")
-					.append(Formatter.format(style.xMin + bar * (style.xMax - style.xMin) / binsAxis, 2))
-					.append(", ")
-					.append(Formatter.format(style.xMin + (bar + 1) * (style.xMax - style.xMin) / binsAxis, 2))
-					.append("]")
-					.append(TABLE_ROW_END);
-			double frequency = INVALID_FREQUENCY;
-			if (popGraph instanceof PopGraph1D) {
-				RingBuffer<String[]> history = popGraph.getBuffer();
-				if (history != null && row < history.getSize()) {
-					String[] rowData = history.get(row);
-					frequency = ((PopGraph1D) popGraph).decodeBin(rowData, bar, binsAxis);
-				}
-			}
-			if (frequency < 0.0 && !(popGraph instanceof PopGraph1D) && bar < bins.length)
-				frequency = bins[bar];
-			if (frequency >= 0.0) {
-				tip.append(TABLE_ROW_START)
-						.append("frequency")
-						.append(TABLE_CELL_NEXT)
-						.append(Formatter.formatPercent(frequency, 1))
-						.append(TABLE_ROW_END);
-			}
-			// + 0.0: silly trick to avoid -0 display
-			tip.append(TABLE_ROW_START)
-					.append(style.yLabel)
-					.append(TABLE_CELL_NEXT)
-					.append(Formatter.format(time + 0.0, 2));
-		} else {
-			int bar1 = node % binsAxis;
-			int bar2 = node / binsAxis;
-			// horizontal trait
-			tip.append("[")
-					.append(Formatter.format(style.xMin + bar1 * (style.xMax - style.xMin) / binsAxis, 2))
-					.append(", ")
-					.append(Formatter.format(style.xMin + (bar1 + 1) * (style.xMax - style.xMin) / binsAxis, 2))
-					.append("]")
-					.append(TABLE_ROW_END);
+			tip.append("<b>").append(style.label).append("</b>");
+		int bar = node % nBins;
+		int row = node / nBins;
+		tip.append(tableRow(style.xLabel, binRange(style.xMin, style.xMax, bar)));
+		boolean single = (engine.getModule().getNTraits() == 1);
+		double frequency = INVALID_FREQUENCY;
+		if (!single) {
 			// vertical trait
-			tip.append(TABLE_ROW_START)
-					.append(style.yLabel)
-					.append(TABLE_CELL_NEXT)
-					.append("[")
-					.append(Formatter.format(style.yMin + bar2 * (style.yMax - style.yMin) / binsAxis, 2))
-					.append(", ")
-					.append(Formatter.format(style.yMin + (bar2 + 1) * (style.yMax - style.yMin) / binsAxis, 2))
-					.append("]");
-			// report frequency
-			double frequency = INVALID_FREQUENCY;
+			tip.append(tableRow(style.yLabel, binRange(style.yMin, style.yMax, row)));
 			if (node < bins.length)
 				frequency = bins[node];
-			if (frequency >= 0.0) {
-				tip.append(TABLE_ROW_START)
-						.append("frequency")
-						.append(TABLE_CELL_NEXT)
-						.append(Formatter.formatPercent(frequency, 1))
-						.append(TABLE_ROW_END);
-			}
-		}
-		tip.append(TABLE_ROW_END)
-				.append(TABLE_END);
-		return tip.toString();
+		} else if (graph instanceof PopGraph1D) {
+			// rows of single traits show the history
+			RingBuffer<String[]> history = ((PopGraph1D) graph).getBuffer();
+			if (history != null && row < history.getSize())
+				frequency = ((PopGraph1D) graph).decodeBin(history.get(row), bar, nBins);
+		} else if (bar < bins.length)
+			frequency = bins[bar];
+		if (frequency >= 0.0)
+			tip.append(tableRow("frequency", Formatter.formatPercent(frequency, 1)));
+		if (single)
+			// + 0.0: silly trick to avoid -0 display
+			tip.append(tableRow(style.yLabel, Formatter.format(-row * model.getTimeStep() + 0.0, 2)));
+		return tip.append(TABLE_END).toString();
+	}
+
+	/**
+	 * Get the range of values of bin {@code bin} along an axis spanning
+	 * {@code min} to {@code max}.
+	 *
+	 * @param min the minimum of the axis
+	 * @param max the maximum of the axis
+	 * @param bin the index of the bin
+	 * @return the formatted range of the bin
+	 */
+	private String binRange(double min, double max, int bin) {
+		return "[" + Formatter.format(min + bin * (max - min) / nBins, 2) + ", "
+				+ Formatter.format(min + (bin + 1) * (max - min) / nBins, 2) + "]";
 	}
 
 	@Override

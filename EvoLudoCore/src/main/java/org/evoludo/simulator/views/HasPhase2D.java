@@ -30,7 +30,10 @@
 
 package org.evoludo.simulator.views;
 
+import static org.evoludo.simulator.views.BasicTooltipProvider.tableRowRight;
+
 import org.evoludo.geom.Point2D;
+import org.evoludo.util.Formatter;
 import org.evoludo.util.RingBuffer;
 
 /**
@@ -71,9 +74,16 @@ public interface HasPhase2D {
 
 	/**
 	 * Interface for providing custom mappings from data to 2D phase
-	 * plane projections.
+	 * plane projections. By default, tooltips show the coordinates on the phase
+	 * plane as percentages.
 	 */
-	public static interface Data2Phase {
+	public static interface Data2Phase extends BasicTooltipProvider {
+
+		@Override
+		public default String getTooltipAt(double x, double y) {
+			return TABLE_STYLE + tableRowRight(getXAxisLabel(), Formatter.formatPercent(x, 2))
+					+ tableRowRight(getYAxisLabel(), Formatter.formatPercent(y, 2)) + TABLE_END;
+		}
 
 		/**
 		 * Convert data array to point on phase plane. Note: <code>data</code> includes

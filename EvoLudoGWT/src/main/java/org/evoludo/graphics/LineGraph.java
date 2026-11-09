@@ -30,6 +30,10 @@
 
 package org.evoludo.graphics;
 
+import static org.evoludo.simulator.views.BasicTooltipProvider.tableRowColor;
+
+import static org.evoludo.simulator.views.BasicTooltipProvider.tableRowRight;
+
 import java.awt.Color;
 import java.util.Arrays;
 import java.util.Iterator;
@@ -1131,37 +1135,18 @@ public class LineGraph extends AbstractGraph<double[]>
 		double yval = ymin + y * (yCoord(style.yMax) - ymin);
 		if (style.logScaleY)
 			yval = Math.pow(10.0, yval);
-
 		StringBuilder tip = new StringBuilder(TABLE_STYLE);
-		appendTipHeader(tip, mouset, yval);
-		appendTipInterpolation(tip, mouset);
-		tip.append(TABLE_END);
-		return tip.toString();
-	}
-
-	/**
-	 * Build and append the static header rows (label, x and y rows) to the tooltip.
-	 * 
-	 * @param tip    builder receiving the markup
-	 * @param mouset x-axis value under the cursor
-	 * @param yval   y-axis value under the cursor
-	 */
-	private void appendTipHeader(StringBuilder tip, double mouset, double yval) {
-		if (style.label != null) {
-			tip.append(TABLE_ROW_START)
-					.append(style.label)
-					.append(TABLE_ROW_END);
+		if (style.label != null)
+			tip.append(TABLE_ROW_START).append(style.label).append(TABLE_ROW_END);
+		tip.append(tableRowRight(style.xLabel, Formatter.format(mouset, 2)))
+				.append(tableRowRight(style.yLabel, formatY(yval, 1)));
+		// interpolated values of the data at the time under the cursor
+		double[] inter = findInterpolationForMouse(mouset);
+		if (inter.length > 0) {
+			tip.append(TABLE_SEPARATOR).append(tableRowRight(style.xLabel, Formatter.format(xValue(inter), 2)));
+			appendTipValues(tip, inter);
 		}
-		tip.append(TABLE_ROW_START_RIGHT)
-				.append(style.xLabel)
-				.append(TABLE_CELL_NEXT)
-				.append(Formatter.format(mouset, 2))
-				.append(TABLE_ROW_END);
-		tip.append(TABLE_ROW_START_RIGHT)
-				.append(style.yLabel)
-				.append(TABLE_CELL_NEXT)
-				.append(formatY(yval, 1))
-				.append(TABLE_ROW_END);
+		return tip.append(TABLE_END).toString();
 	}
 
 	/**
@@ -1197,81 +1182,30 @@ public class LineGraph extends AbstractGraph<double[]>
 	}
 
 	/**
-	 * Append interpolated values (either Continuous mean±sdev or trait values)
-	 * to the tooltip builder using the precomputed interpolation result.
+	 * Append the interpolated values to the tooltip: mean ± sdev for continuous
+	 * modules, the values of the traits otherwise. For fitness, the last line is
+	 * the average.
 	 * 
-	 * @param tip    the tooltip builder
-	 * @param mouset the mouse time
+	 * @param tip   the tooltip builder
+	 * @param inter the interpolated data, with updates prepended and real time
+	 *              appended around the {@code nLines} plotted values
 	 */
-	private void appendTipInterpolation(StringBuilder tip, double mouset) {
-		double[] inter = findInterpolationForMouse(mouset);
-		if (inter.length == 0)
-			return;
-		// time row
-		tip.append(TABLE_SEPARATOR)
-				.append(TABLE_ROW_START_RIGHT)
-				.append(style.xLabel)
-				.append(TABLE_CELL_NEXT)
-				.append(Formatter.format(xValue(inter), 2))
-				.append(TABLE_ROW_END);
-
+	private void appendTipValues(StringBuilder tip, double[] inter) {
 		Color[] colors = module.getMeanColors();
 		if (module instanceof Continuous) {
-			appendTipContinuous(tip, inter, colors);
+			tip.append(tableRowColor(ColorMapCSS.Color2Css(colors[0]), "mean",
+					formatY(inter[1], 2) + " ± " + formatY(inter[2], 2)));
 			return;
 		}
-		appendTipTraits(tip, inter, colors);
-	}
-
-	/**
-	 * Append mean ± sdev row for Continuous modules.
-	 * 
-	 * @param tip    the tooltip builder
-	 * @param inter  the interpolated data array
-	 * @param colors the colors for each trait
-	 */
-	private void appendTipContinuous(StringBuilder tip, double[] inter, Color[] colors) {
-		tip.append(TABLE_ROW_START_COLOR)
-				.append(ColorMapCSS.Color2Css(colors[0]))
-				.append(";'>mean")
-				.append(TABLE_CELL_NEXT)
-				.append(formatY(inter[1], 2))
-				.append(" ± ")
-				.append(formatY(inter[2], 2))
-				.append(TABLE_ROW_END); // mean, mean-sdev, mean+sdev
-	}
-
-	/**
-	 * Append individual trait rows for non-Continuous modules.
-	 * 
-	 * @param tip    the tooltip builder
-	 * @param inter  the interpolated data array
-	 * @param colors the colors for each trait
-	 */
-	private void appendTipTraits(StringBuilder tip, double[] inter, Color[] colors) {
-		// N.B. inter has updates prepended and real time appended around the
-		// nLines plotted values - bound the loop by nLines, not inter.length
 		boolean[] active = module.getActiveTraits();
 		for (int n = 0; n < nLines; n++) {
-			int n1 = n + 1;
-			String name;
-			Color color;
-			if (n1 == nLines && ((Mean) view).isFitness()) {
-				name = "average";
-				color = Color.BLACK;
-			} else {
-				if (active != null && n < active.length && !active[n])
-					continue;
-				name = module.getTraitName(n);
-				color = colors[n];
-			}
-			if (name == null)
+			boolean average = (n == nLines - 1 && ((Mean) view).isFitness());
+			if (!average && active != null && n < active.length && !active[n])
 				continue;
-			tip.append(TABLE_ROW_START_COLOR)
-					.append(ColorMapCSS.Color2Css(color)).append(";'>")
-					.append(name)
-					.append(TABLE_CELL_NEXT);
-			tip.append(Double.isNaN(inter[n1]) ? "-" : formatY(inter[n1], 2)).append(TABLE_ROW_END);
+			String name = average ? "average" : module.getTraitName(n);
+			if (name != null)
+				tip.append(tableRowColor(ColorMapCSS.Color2Css(average ? Color.BLACK : colors[n]), name,
+						Double.isNaN(inter[n + 1]) ? "-" : formatY(inter[n + 1], 2)));
 		}
 	}
 

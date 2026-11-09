@@ -30,6 +30,8 @@
 
 package org.evoludo.simulator.views;
 
+import static org.evoludo.simulator.views.BasicTooltipProvider.tableRowRight;
+
 import java.awt.Color;
 
 import org.evoludo.geom.Point2D;
@@ -267,11 +269,7 @@ public class S3Map implements BasicTooltipProvider {
 		double[] tip = s32Data(sx, sy);
 		StringBuilder msg = new StringBuilder(TABLE_STYLE);
 		for (int i = 0; i < 3; i++)
-			msg.append(TABLE_ROW_START_RIGHT)
-					.append(getName(i))
-					.append(TABLE_CELL_NEXT)
-					.append(Formatter.formatPercent(tip[order[i]], 2))
-					.append(TABLE_ROW_END);
+			msg.append(tableRowRight(getName(i), Formatter.formatPercent(tip[order[i]], 2)));
 		return msg.append(TABLE_END).toString();
 	}
 }

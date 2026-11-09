@@ -39,7 +39,6 @@ import org.evoludo.simulator.models.Model;
 import org.evoludo.simulator.models.Model.HasDE;
 import org.evoludo.simulator.models.Model.HasIBS;
 import org.evoludo.simulator.modules.Features.Payoffs;
-import org.evoludo.simulator.views.BasicTooltipProvider;
 import org.evoludo.simulator.views.HasHistogram;
 import org.evoludo.simulator.views.HasMean;
 import org.evoludo.simulator.views.HasPhase2D;
@@ -50,7 +49,6 @@ import org.evoludo.util.CLODelegate;
 import org.evoludo.util.CLOParser;
 import org.evoludo.util.CLOption;
 import org.evoludo.util.CLOCategory;
-import org.evoludo.util.Formatter;
 
 /**
  * Cooperation in ecological public goods interactions.
@@ -354,7 +352,7 @@ public class EcoPGG extends Discrete implements Payoffs,
 	 * Map translating ecological public goods data to a 2D phase plane and tooltip
 	 * content.
 	 */
-	public class EcoPGGMap implements Data2Phase, BasicTooltipProvider {
+	public class EcoPGGMap implements Data2Phase {
 
 		/**
 		 * Create the 2D projection helper using the surrounding module settings.
@@ -389,18 +387,6 @@ public class EcoPGG extends Discrete implements Payoffs,
 		@Override
 		public String getYAxisLabel() {
 			return "relative fraction of cooperators";
-		}
-
-		@Override
-		public String getTooltipAt(double x, double y) {
-			StringBuilder tip = new StringBuilder(TABLE_STYLE)
-					.append(TABLE_ROW_START_RIGHT)
-					.append(getXAxisLabel()).append(TABLE_CELL_NEXT)
-					.append(Formatter.formatPercent(x, 2)).append(TABLE_ROW_END);
-			tip.append(TABLE_ROW_START_RIGHT)
-					.append(getYAxisLabel()).append(TABLE_CELL_NEXT)
-					.append(Formatter.formatPercent(y, 2)).append(TABLE_ROW_END);
-			return tip.append(TABLE_END).toString();
 		}
 	}
 

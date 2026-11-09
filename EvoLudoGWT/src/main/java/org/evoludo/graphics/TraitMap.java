@@ -30,9 +30,10 @@
 
 package org.evoludo.graphics;
 
+import static org.evoludo.simulator.views.BasicTooltipProvider.tableRowRight;
+
 import org.evoludo.geom.Point2D;
 import org.evoludo.math.ArrayMath;
-import org.evoludo.simulator.views.BasicTooltipProvider;
 import org.evoludo.simulator.views.HasPhase2D;
 import org.evoludo.simulator.views.HasPhase2D.Data2Phase;
 import org.evoludo.util.Formatter;
@@ -46,7 +47,7 @@ import org.evoludo.util.RingBuffer;
  * 
  * @see HasPhase2D#getPhase2DMap()
  */
-public class TraitMap implements Data2Phase, BasicTooltipProvider {
+public class TraitMap implements Data2Phase {
 
 	/**
 	 * The ParaGraph instance.
@@ -229,19 +230,10 @@ public class TraitMap implements Data2Phase, BasicTooltipProvider {
 
 	@Override
 	public String getTooltipAt(double x, double y) {
-		StringBuilder sb = new StringBuilder(TABLE_STYLE + TABLE_ROW_START_RIGHT);
-		sb.append(this.paraGraph.style.xLabel) //
-				.append(TABLE_CELL_NEXT)
-				.append(this.paraGraph.style.percentX ? Formatter.formatPercent(x, 2)
-						: Formatter.format(x, 2))
-				.append(TABLE_ROW_END);
-		sb.append(TABLE_ROW_START_RIGHT) //
-				.append(this.paraGraph.style.yLabel) //
-				.append(TABLE_CELL_NEXT)
-				.append(this.paraGraph.style.percentY ? Formatter.formatPercent(y, 2)
-						: Formatter.format(y, 2))
-				.append(TABLE_ROW_END);
-		sb.append(TABLE_END);
-		return sb.toString();
+		GraphStyle style = paraGraph.style;
+		return TABLE_STYLE
+				+ tableRowRight(style.xLabel, style.percentX ? Formatter.formatPercent(x, 2) : Formatter.format(x, 2))
+				+ tableRowRight(style.yLabel, style.percentY ? Formatter.formatPercent(y, 2) : Formatter.format(y, 2))
+				+ TABLE_END;
 	}
 }

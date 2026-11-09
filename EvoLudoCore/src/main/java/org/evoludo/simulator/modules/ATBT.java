@@ -45,14 +45,12 @@ import org.evoludo.simulator.models.IBSDPopulation;
 import org.evoludo.simulator.models.Model;
 import org.evoludo.simulator.models.RungeKutta;
 import org.evoludo.simulator.models.ModelType;
-import org.evoludo.simulator.views.BasicTooltipProvider;
 import org.evoludo.simulator.views.HasPhase2D;
 import org.evoludo.simulator.views.HasS3;
 import org.evoludo.util.CLODelegate;
 import org.evoludo.util.CLOParser;
 import org.evoludo.util.CLOption;
 import org.evoludo.util.CLOCategory;
-import org.evoludo.util.Formatter;
 
 /**
  * The module for investigating the evolutionary dynamics in asymmetric
@@ -432,7 +430,7 @@ public class ATBT extends TBT implements HasS3, HasPhase2D {
 	 * a 2D phase plane: fraction of cooperators along {@code x}-axis and fraction
 	 * of rich patches along {@code y}-axis.
 	 */
-	public class ATBTMap implements Data2Phase, BasicTooltipProvider {
+	public class ATBTMap implements Data2Phase {
 
 		/**
 		 * Create the 2D projection helper using the surrounding module settings.
@@ -470,18 +468,6 @@ public class ATBT extends TBT implements HasS3, HasPhase2D {
 		@Override
 		public String getYAxisLabel() {
 			return "frequency of rich patches";
-		}
-
-		@Override
-		public String getTooltipAt(double x, double y) {
-			StringBuilder tip = new StringBuilder(TABLE_STYLE)
-					.append(TABLE_ROW_START_RIGHT)
-					.append(getXAxisLabel()).append(TABLE_CELL_NEXT)
-					.append(Formatter.formatPercent(x, 2)).append(TABLE_ROW_END);
-			tip.append(TABLE_ROW_START_RIGHT)
-					.append(getYAxisLabel()).append(TABLE_CELL_NEXT)
-					.append(Formatter.formatPercent(y, 2)).append(TABLE_ROW_END);
-			return tip.append(TABLE_END).toString();
 		}
 	}
 
