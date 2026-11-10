@@ -465,7 +465,7 @@ public class PopGraph2D extends GenericPopGraph<String, Network2D> implements Sh
 				if (neumann2nd && h % 2 != w % 2)
 					fillCircle(xshift + dw2, yshift + dw2, dw2);
 				else
-					fillRect(xshift, yshift, dw, dh);
+					fillRectSnapped(xshift, yshift, dw, dh);
 				xshift += dw;
 			}
 			yshift -= dh;

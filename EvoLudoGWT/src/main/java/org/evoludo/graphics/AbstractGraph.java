@@ -1927,6 +1927,40 @@ public abstract class AbstractGraph<B> extends FocusPanel
 	}
 
 	/**
+	 * Fill the rectangle with origin at {@code (x,y)}, width {@code w} and height
+	 * {@code h} in coordinates of the zoomed and shifted content, see
+	 * {@link #applyView(boolean)}, with its edges snapped to whole device pixels.
+	 * Rectangles tiling the content then share their edges exactly: otherwise
+	 * anti-aliasing of fractional edges leaves faint seams between neighbouring
+	 * rectangles.
+	 * 
+	 * @param x the {@code x}-coordinate of the origin
+	 * @param y the {@code y}-coordinate of the origin
+	 * @param w the width of the rectangle
+	 * @param h the height of the rectangle
+	 */
+	protected void fillRectSnapped(double x, double y, double w, double h) {
+		double ox = bounds.getX() - viewCorner.getX();
+		double oy = bounds.getY() - viewCorner.getY();
+		double x0 = snap(x, ox);
+		double y0 = snap(y, oy);
+		g.fillRect(x0, y0, snap(x + w, ox) - x0, snap(y + h, oy) - y0);
+	}
+
+	/**
+	 * Snap the content coordinate {@code c} to the nearest coordinate that maps
+	 * onto a whole device pixel, given the {@code offset} of the content in CSS
+	 * pixels.
+	 * 
+	 * @param c      the content coordinate
+	 * @param offset the offset of the content
+	 * @return the snapped content coordinate
+	 */
+	private double snap(double c, double offset) {
+		return (Math.rint((offset + zoomFactor * c) * scale) / scale - offset) / zoomFactor;
+	}
+
+	/**
 	 * Draw the outline of the 2D node.
 	 * 
 	 * @param node the node to draw

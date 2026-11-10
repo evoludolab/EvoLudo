@@ -87,7 +87,7 @@ public class DistrGraph2D extends PopGraph2D {
 			int xshift = 0;
 			for (int w = 0; w < side; w++) {
 				g.setFillStyle(data[row + w]);
-				fillRect(xshift, yshift, dw, dh);
+				fillRectSnapped(xshift, yshift, dw, dh);
 				xshift += dw;
 			}
 			yshift -= dh;

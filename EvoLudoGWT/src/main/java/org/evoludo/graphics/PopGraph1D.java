@@ -364,15 +364,12 @@ public class PopGraph1D extends PopGraph2D {
 		int startRow = (int) (viewCorner.getY() / rowHeight);
 		int endRow = Math.min(buffer.getSize(), startRow + (int) Math.ceil(bounds.getHeight() / rowHeight) + 2);
 		for (int row = startRow; row < endRow; row++) {
-			int xshift = 0;
 			String[] state = buffer.get(row);
-			int yshift = row * dh;
 			for (int n = 0; n < geometry.getSize() && n < state.length; n++) {
-				if (!state[n].equals(empty)) {
-					g.setFillStyle(state[n]);
-					fillRect(xshift, yshift, dw, dh);
-				}
-				xshift += dw;
+				if (state[n].equals(empty))
+					continue;
+				g.setFillStyle(state[n]);
+				fillRectSnapped(n * dw, row * dh, dw, dh);
 			}
 		}
 	}
