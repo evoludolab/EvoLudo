@@ -853,25 +853,6 @@ public class EvoLudoGWT extends EvoLudo {
 		logMessage("state saved in 'evoludo.plist'.");
 	}
 
-	@Override
-	public void exportState(String filename) {
-		String state = encodeState();
-		if (state == null)
-			return;
-		NativeJS.export("data:text/x-plist;base64," + NativeJS.b64encode(state), filename);
-		logger.info("state saved in "+ filename +".");
-	}
-
-	// @Override
-	// public void helpCLO() {
-	// 	super.helpCLO();
-	// 	logger.info("<pre>EvoLudoWeb\nList of command line options for module '" //
-	// 			+ activeModule.getKey() + "' and model '" //
-	// 			+ activeModel.getModelType().getKey() + "':\n" //
-	// 			+ parser.helpCLO(true) + "</pre>");
-	// 	requestAction(PendingAction.CONSOLE, true);
-	// }
-
 	/**
 	 * Command line option to request that the EvoLudo model signals when a snapshot
 	 * can be taken, e.g. with <code>playwright</code>.
