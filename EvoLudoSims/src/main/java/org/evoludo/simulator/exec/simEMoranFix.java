@@ -42,12 +42,8 @@ import org.evoludo.util.CLOParser;
 /**
  * Simulations to investigate the Moran process on graph structured populations.
  * 
- * @author Christoph Hauert
+ * @author George Berry & Christoph Hauert
  * 
- * @see "Lieberman, E., Hauert, C., & Nowak, M. A. (2005).
- *      <em>Evolutionary dynamics on graphs.</em>Nature, 433(7023), 312-316.
- *      <a href='http://dx.doi.org/10.1038/nature03204'>doi:
- *      10.1038/nature03204</a>"
  */
 public class simEMoranFix extends EcoMoran {
 
@@ -87,27 +83,19 @@ public class simEMoranFix extends EcoMoran {
 
 	@Override
 	public void run() {
-
 		model.requestMode(Mode.STATISTICS_SAMPLE);
 		long nextReport = -1;
 		long msecStart = System.currentTimeMillis();
-
 		if (progress)
 			nextReport = 10;
-
 		engine.writeHeader();
 		out = jrengine.getOutput();
-
-		long nSamples = (long) engine.getModel().getNSamples();
 		double[][] fixProb = new double[nPopulation][2];
-
-		// evolve population
-		for (long r = 1; r <= nSamples; r++) {
+		for (long r = 1; r <= engine.getModel().getNSamples(); r++) {
 			jrengine.modelReset();
 			FixationData fixData = jrengine.generateSample();
 			int typeFixed = (fixData.typeFixed == fixData.mutantTrait ? 0 : 1);
 			fixProb[fixData.popSize - 1][typeFixed]++;
-
 			if (progress && nextReport == r) {
 				out.println("# runs: " + r + ", " + msecToString(System.currentTimeMillis() - msecStart));
 				nextReport *= 10;
@@ -119,10 +107,9 @@ public class simEMoranFix extends EcoMoran {
 		double weightedSamples = 0.0;
 		double nodeSamples;
 		for (int n = 1; n < nPopulation + 1; n++) {
-
 			double[] node = fixProb[n - 1];
-			out.println(n + ", " + node[0] + ", " + node[1]);
 			nodeSamples = node[0] + node[1];
+			out.println(n + ", " + node[0] + ", " + node[1]);
 			if (nodeSamples == 0) {
 				continue;
 			}
@@ -174,26 +161,6 @@ public class simEMoranFix extends EcoMoran {
 	public double getNSamples() {
 		return nSamples;
 	}
-
-	/**
-	 * Command line option for setting the number of samples for statistics.
-	 */
-	// final CLOption cloSamples = new CLOption("samples", "100000",
-	// EvoLudo.catSimulation, // 10^5
-	// "--samples <s> number of samples",
-	// new CLODelegate() {
-	// @Override
-	// public boolean parse(String arg) {
-	// setNSamples(CLOParser.parseLong(arg));
-	// return true;
-	// }
-
-	// @Override
-	// public void report(PrintStream output) {
-	// // output.println("# samples: "+activeModel.getNStatisticsSamples());
-	// output.println("# samples: " + engine.getModel().getNStatisticsSamples());
-	// }
-	// });
 
 	@Override
 	public void collectCLO(CLOParser parser) {
