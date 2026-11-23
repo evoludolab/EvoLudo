@@ -30,7 +30,9 @@
 
 package org.evoludo.simulator.models;
 
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 
 import org.evoludo.math.ArrayMath;
@@ -2288,6 +2290,9 @@ public class IBSDPopulation extends IBSPopulation<Discrete, IBSDPopulation> {
 			case KALEIDOSCOPE:
 				initKaleidoscope();
 				break;
+
+			case NUMBER:
+				initNumber();
 		}
 		if (ArrayMath.norm(traitsCount) != nPopulation)
 			// fatal does not return control
@@ -2320,6 +2325,30 @@ public class IBSDPopulation extends IBSPopulation<Discrete, IBSDPopulation> {
 			setTraitAt(n, aTrait);
 			traitsCount[aTrait]++;
 		}
+	}
+
+	protected void initNumber() {
+
+		Arrays.fill(traitsCount, 0);
+		// different traits active
+		List<Integer> strategyInds = new ArrayList<>();
+		for (int i = 0; i < nPopulation; i++) {
+			strategyInds.add(i);
+		}
+		Collections.shuffle(strategyInds);
+
+		for (int aStrat = 0; aStrat < init.args.length; aStrat++) {
+			int popNumber = (int) init.args[aStrat];
+			List<Integer> specStrategyInds = new ArrayList<>(strategyInds.subList(0,
+					popNumber));
+			strategyInds.subList(0, popNumber).clear();
+
+			for (int strategyInd : specStrategyInds) {
+				setTraitAt(strategyInd, aStrat);
+				traitsCount[aStrat]++;
+			}
+		}
+
 	}
 
 	/**
@@ -2424,6 +2453,9 @@ public class IBSDPopulation extends IBSPopulation<Discrete, IBSDPopulation> {
 	 * @param monoFreq the frequency of the monomorphic trait
 	 */
 	public void initMono(int monoType, double monoFreq) {
+		if (monoFreq <= 0.0) {
+			monoFreq = 1.0;
+		}
 		monoType = monoType % nTraits;
 		if (!module.getActiveTraits()[monoType] || (monoType == vacantIdx && monoFreq < 1.0 - Model.EPS)) {
 			engine.logWarning("mono trait " + module.getTraitName(monoType)
@@ -2500,6 +2532,7 @@ public class IBSDPopulation extends IBSPopulation<Discrete, IBSDPopulation> {
 			fix.mutantNode = loc;
 			fix.mutantTrait = mutantType;
 			fix.residentTrait = residentType;
+			fix.popSize = getPopulationSize();
 		}
 		if (loc < 0)
 			return;

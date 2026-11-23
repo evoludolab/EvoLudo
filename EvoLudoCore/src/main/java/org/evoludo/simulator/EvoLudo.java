@@ -70,6 +70,7 @@ import org.evoludo.simulator.modules.NetGames;
 import org.evoludo.simulator.modules.RSP;
 import org.evoludo.simulator.modules.SIR;
 import org.evoludo.simulator.modules.TBT;
+import org.evoludo.simulator.modules.EcoMoran;
 import org.evoludo.util.CLOParser;
 import org.evoludo.util.CLOProvider;
 import org.evoludo.util.CLOption;
@@ -1323,6 +1324,7 @@ public abstract class EvoLudo
 		addModule(new EcoPGG(this));
 		addModule(new CSD(this));
 		addModule(new CLabour(this));
+		addModule(new EcoMoran(this));
 		addModule(new NetGames(this));
 		addModule(new SIR(this));
 		addModule(new LV(this));

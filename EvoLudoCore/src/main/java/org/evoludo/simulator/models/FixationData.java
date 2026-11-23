@@ -87,6 +87,7 @@ public class FixationData {
 	 */
 	public boolean timeRead = true;
 
+	public int popSize = -1;
 	/**
 	 * Reset the fixation data to get ready for the next sample.
 	 */
